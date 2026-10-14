@@ -74,6 +74,9 @@ var _statistics_columns: BoxContainer
 var _touch_layout := false
 var _touch_library: Control
 var _touch_editor: Control
+var _touch_library_view: ScrollContainer
+var _touch_section_drawer: PanelContainer
+var _touch_section_toggle: Button
 var _touch_section_buttons: Array[Button] = []
 var _touch_section: OptionButton
 var _touch_library_button: Button
@@ -1548,25 +1551,32 @@ func get_panel_control() -> Control:
 
 func configure_touch_layout() -> void:
 	_touch_layout = true
-	_creature_language_picker.custom_minimum_size.x = 112
 	var touch = preload("res://vtt/mobile/touch_layout.gd")
 	var outer := _panel.get_child(0) as VBoxContainer
 	var header := outer.get_child(0) as HBoxContainer
 	(header.get_child(0) as Label).hide()
 	for child: Node in header.get_children():
-		if child is Label and child != header.get_child(0):
+		if child is Label or child is Control and child.get_class() == "Control":
 			child.hide()
-		if child is Control and child.get_class() == "Control":
+		if child == _creature_language_picker or child is Button and child.text == "Chiudi":
 			child.hide()
-		if child is Button and child.text == "Chiudi":
-			child.hide()
+	_options_menu.text = "⋯"
+	_options_menu.get_popup().add_separator("Lingua scheda")
+	_options_menu.get_popup().add_radio_check_item("Italiano", 10)
+	_options_menu.get_popup().add_radio_check_item("English", 11)
 	var library_button := Button.new()
 	_touch_library_button = library_button
 	library_button.name = "TouchCreatureList"
-	library_button.text = "Elenco / Scheda"
+	library_button.text = "← Elenco"
 	library_button.pressed.connect(func() -> void: show_touch_library(not _touch_library.visible))
 	header.add_child(library_button)
-	touch.replace_box(header, HFlowContainer.new())
+	_touch_section_toggle = Button.new()
+	_touch_section_toggle.name = "TouchSectionToggle"
+	_touch_section_toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_touch_section_toggle.pressed.connect(func() -> void:
+		_touch_section_drawer.visible = not _touch_section_drawer.visible)
+	header.add_child(_touch_section_toggle)
+	header.move_child(_options_menu, header.get_child_count() - 1)
 	var old_columns := _tabs.get_parent() as HSplitContainer
 	var pages := touch.replace_box(old_columns, VBoxContainer.new()) as VBoxContainer
 	_touch_library = pages.get_child(0) as Control
@@ -1574,10 +1584,18 @@ func configure_touch_layout() -> void:
 	_touch_library.custom_minimum_size.x = 0
 	_touch_library.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_creature_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Only the library needs an outer scroll. The editor must give its active tab
+	# a bounded viewport, especially Tratti with its own scrolling list.
+	_touch_library_view = ScrollContainer.new()
+	_touch_library_view.name = "TouchLibraryScroll"
+	_touch_library_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_touch_library_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pages.add_child(_touch_library_view)
+	_touch_library.reparent(_touch_library_view)
+	pages.move_child(_touch_library_view, 0)
 	pages.remove_child(_tabs)
 	var editor := VBoxContainer.new()
 	editor.name = "TouchSheetEditor"
-	editor.custom_minimum_size.y = 360
 	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pages.add_child(editor)
 	_touch_editor = editor
@@ -1589,11 +1607,30 @@ func configure_touch_layout() -> void:
 	_tabs.tab_changed.connect(func(index: int) -> void: _touch_section.select(index))
 	editor.add_child(_touch_section)
 	_touch_section.hide()
-	var sections := HFlowContainer.new()
+	# A right-hand drawer replaces the seven permanently visible tab buttons.
+	_touch_section_drawer = PanelContainer.new()
+	_touch_section_drawer.name = "TouchSheetSectionsDrawer"
+	_touch_section_drawer.z_index = 110
+	ui_root.add_child(_touch_section_drawer)
+	_touch_section_drawer.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	_touch_section_drawer.offset_left = -232
+	_touch_section_drawer.offset_right = -8
+	_touch_section_drawer.offset_top = 52
+	_touch_section_drawer.offset_bottom = -8
+	var drawer_body := VBoxContainer.new()
+	_touch_section_drawer.add_child(drawer_body)
+	var close_sections := Button.new()
+	close_sections.text = "✕  Sezioni"
+	close_sections.pressed.connect(close_touch_section_drawer)
+	drawer_body.add_child(close_sections)
+	var drawer_scroll := ScrollContainer.new()
+	drawer_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	drawer_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	drawer_body.add_child(drawer_scroll)
+	var sections := VBoxContainer.new()
 	sections.name = "TouchSheetSections"
-	sections.add_theme_constant_override("h_separation", 6)
-	sections.add_theme_constant_override("v_separation", 6)
-	editor.add_child(sections)
+	sections.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	drawer_scroll.add_child(sections)
 	var group := ButtonGroup.new()
 	for index: int in range(_tabs.get_tab_count()):
 		var button := Button.new()
@@ -1605,6 +1642,8 @@ func configure_touch_layout() -> void:
 		_touch_section_buttons.append(button)
 	_tabs.tab_changed.connect(_sync_touch_section_buttons)
 	_sync_touch_section_buttons(_tabs.current_tab)
+	touch.style_tree(_touch_section_drawer)
+	_touch_section_drawer.hide()
 	_spellcasting_ui.configure_touch_layout()
 	_tabs.tabs_visible = false
 	editor.add_child(_tabs)
@@ -1643,8 +1682,9 @@ func configure_touch_layout() -> void:
 	for child: Node in _touch_library.get_children():
 		if child is Button and child.text == "+ Personaggio":
 			child.pressed.connect(func() -> void: show_touch_library(false))
-	touch.scroll_body(_panel)
+	_traits_ui.configure_touch_layout()
 	touch.style_tree(_panel)
+	_traits_ui._scroll.follow_focus = false
 	var import_button := Button.new()
 	import_button.text = "Importa JSON dal PC"
 	_touch_library.add_child(import_button)
@@ -1684,7 +1724,15 @@ func _import_export_file(path: String) -> void:
 
 func _request_touch_section(index: int) -> void:
 	# Complete the finger event before changing the layout/focus hierarchy.
+	close_touch_section_drawer()
 	_apply_touch_section.call_deferred(index)
+
+
+func close_touch_section_drawer() -> bool:
+	if _touch_section_drawer == null or not _touch_section_drawer.visible:
+		return false
+	_touch_section_drawer.hide()
+	return true
 
 
 func _apply_touch_section(index: int) -> void:
@@ -1695,6 +1743,8 @@ func _apply_touch_section(index: int) -> void:
 func _sync_touch_section_buttons(index: int) -> void:
 	for i: int in range(_touch_section_buttons.size()):
 		_touch_section_buttons[i].set_pressed_no_signal(i == index)
+	if _touch_section_toggle != null and index >= 0 and index < _tabs.get_tab_count():
+		_touch_section_toggle.text = "☰ " + _tabs.get_tab_title(index)
 
 
 func is_touch_library_visible() -> bool:
@@ -1704,9 +1754,12 @@ func is_touch_library_visible() -> bool:
 func show_touch_library(show_library: bool) -> void:
 	if _touch_library == null:
 		return
+	close_touch_section_drawer()
 	_touch_library.visible = show_library
+	_touch_library_view.visible = show_library
 	_touch_editor.visible = not show_library
-	_touch_library_button.text = "Apri scheda" if show_library else "Elenco creature"
+	_touch_section_toggle.visible = not show_library
+	_touch_library_button.text = "Apri scheda" if show_library else "← Elenco"
 	_touch_library_button.disabled = show_library and _selected_id.is_empty()
 
 
@@ -1789,6 +1842,10 @@ func _on_options_selected(id: int) -> void:
 		9:
 			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(ContentCatalog.ENRICHMENT_USER_DIR))
 			OS.shell_open(ProjectSettings.globalize_path(ContentCatalog.ENRICHMENT_USER_DIR))
+		10, 11:
+			var language_index := 0 if id == 10 else 1
+			_creature_language_picker.select(language_index)
+			_on_creature_language_selected(language_index)
 
 
 func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
@@ -1896,6 +1953,12 @@ func _refresh_creature_language() -> void:
 	if _spellcasting_ui != null and _spellcasting_ui.has_method("set_gui_language"):
 		_spellcasting_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
+	if _touch_layout:
+		var menu := _options_menu.get_popup()
+		for choice_id: int in [10, 11]:
+			var menu_index := menu.get_item_index(choice_id)
+			if menu_index >= 0:
+				menu.set_item_checked(menu_index, (_creature_language == "it") == (choice_id == 10))
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
 		_automatic_dialog, _delete_dialog, _miniature_dialog, _transfer_dialog,
