@@ -55,16 +55,27 @@ func run() -> void:
 			if not check(visible_pages == 1, "Exactly one mobile page must be visible"):
 				return
 			var panel := mobile._pages[page] as Control
-			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= nav.position.y + 1,
-				"Panel must not cover navigation at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
+			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.y >= 52,
+				"Mobile page must fill the space below the compact header at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
 				return
 			if not check(mobile._archive_selector.visible == (page == 0), "Archive picker must belong only to sheets"):
+				return
+			if not check(not nav.visible, "The global page drawer must be collapsed by default"):
 				return
 			for button: Button in mobile._navigation_buttons:
 				if not check(button.size.y >= 48, "Navigation must offer finger-sized targets"):
 					return
 		mobile._select_page(0)
 		sheet.show_touch_library(false)
+		if not check(sheet._touch_library_view != null and not sheet._touch_library_view.visible,
+			"Library scroller must be hidden while the editor is open"):
+			return
+		if not check(sheet._touch_section_drawer != null and not sheet._touch_section_drawer.visible,
+			"Sheet section buttons must begin in a collapsed side drawer"):
+			return
+		if not check(not sheet._panel.has_node("TouchScroll"),
+			"Editor must not be wrapped in an outer mobile scroller"):
+			return
 		for index: int in range(sheet._tabs.get_tab_count()):
 			sheet._touch_section_buttons[index].pressed.emit()
 			await settle()
@@ -73,6 +84,14 @@ func run() -> void:
 		if not check(sheet._name.custom_minimum_size.y >= 48 and sheet._rules_edition.custom_minimum_size.y >= 48,
 			"Shared edit fields must be usable by touch"):
 			return
+		var traits: Node = sheet._traits_ui
+		if not check(not traits._touch_filters.visible and traits._scroll.size.y > 0,
+			"Traits should have a usable scroll area with filters collapsed"):
+			return
+		traits._touch_filter_toggle.pressed.emit()
+		if not check(traits._touch_filters.visible, "Trait filters must open on demand"):
+			return
+		traits._touch_filter_toggle.pressed.emit()
 		sheet.show_touch_library(true)
 	# Drive real raw touch events through the viewport: a drag never becomes a click.
 	var gesture_scroll := ScrollContainer.new()
@@ -116,6 +135,21 @@ func run() -> void:
 		return
 	gesture_scroll.queue_free()
 	mobile._page_history.clear()
+	mobile._select_page(0)
+	sheet.show_touch_library(false)
+	sheet._touch_section_toggle.pressed.emit()
+	if not check(sheet._touch_section_drawer.visible, "Section toggle must open the side drawer"):
+		return
+	mobile._go_back()
+	if not check(not sheet._touch_section_drawer.visible and not sheet.is_touch_library_visible(),
+		"Android Back must close the section drawer without leaving the editor"):
+		return
+	mobile._page_menu_button.pressed.emit()
+	if not check(mobile._page_drawer.visible, "Page menu must open the global navigation drawer"):
+		return
+	mobile._go_back()
+	if not check(not mobile._page_drawer.visible, "Android Back must close global navigation first"):
+		return
 	mobile._select_page(3)
 	mobile._go_back()
 	if not check(mobile._active_page == 0, "Back must return to the previous page"):
