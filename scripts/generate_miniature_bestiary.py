@@ -27,8 +27,8 @@ SIZE_CODE_TO_NAME = {
     "L": "Large", "H": "Huge", "G": "Gargantuan",
 }
 SIZE_TO_FOOTPRINT = {
-    "Tiny": 0.5, "Small": 1.0, "Medium": 1.0,
-    "Large": 2.0, "Huge": 3.0, "Gargantuan": 4.0,
+    "Tiny": 0.5, "Small": 1, "Medium": 1,
+    "Large": 2, "Huge": 3, "Gargantuan": 4,
 }
 
 
