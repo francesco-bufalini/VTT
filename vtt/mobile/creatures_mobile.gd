@@ -182,7 +182,6 @@ func _build_page_header() -> void:
 	_page_title = Label.new()
 	_page_title.add_theme_font_size_override("font_size", 18)
 	row.add_child(_page_title)
-	# The archive scope shares the compact header and appears only for sheets.
 
 	_connection_badge = Label.new()
 	_connection_badge.text = "Non collegato"
