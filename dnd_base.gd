@@ -1836,6 +1836,25 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 		return
 	var size_name := String(record.get("size_name", "Medium"))
 	var footprint := maxf(0.5, float(record.get("footprint", 1.0)))
+	# A changed miniature can have a different tactical footprint than the
+	# creature's base sheet. Only adopt it after that model has loaded; the
+	# original sheet size is authoritative again when the base form returns.
+	var current_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	var default_id := String(record.get("default_miniature_id", "")).strip_edges()
+	if not current_id.is_empty() and current_id != default_id:
+		var active_profile := _identity_profile_by_id(current_id)
+		var active_visual := _token_profile_visual_asset(active_profile)
+		if (
+			not active_visual.is_empty()
+			and token.has_method("get_visual_asset_path")
+			and String(token.call("get_visual_asset_path")) == active_visual
+		):
+			size_name = String(active_profile.get("size_name", size_name))
+			footprint = maxf(
+				0.5, float(active_profile.get("footprint", footprint))
+			)
 	if token.has_method("get_size_name") and (
 		String(token.call("get_size_name")) != size_name or
 		absf(float(token.call("get_footprint_cells")) - footprint) > 0.01
