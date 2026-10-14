@@ -45,7 +45,9 @@ static func migrate(target_path: String, legacy_dir: String, records_key: String
 	if writer == null:
 		push_error("Cannot migrate creature archive: " + target_path)
 		return
-	writer.store_string(JSON.stringify({"version": version, "scope": "global", records_key: result}, "  "))
+	var payload: Dictionary = {"version": version, "scope": "global"}
+	payload[records_key] = result
+	writer.store_string(JSON.stringify(payload, "  "))
 	var error := writer.get_error()
 	writer.close()
 	if error != OK or DirAccess.rename_absolute(ProjectSettings.globalize_path(temporary), ProjectSettings.globalize_path(target_path)) != OK:
