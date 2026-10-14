@@ -28,6 +28,7 @@ static func style_control(node: Node) -> void:
 		number.get_line_edit().virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	if node is Label:
 		var caption := node as Label
+		caption.mouse_filter = Control.MOUSE_FILTER_PASS
 		caption.add_theme_font_size_override("font_size", 15)
 		caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
