@@ -479,14 +479,8 @@ func _collect_sync_peer_ipv4s(use_cached: bool) -> Array[String]:
 	)
 	if _lan_presence == null or not is_instance_valid(_lan_presence):
 		return hosts
-	for peer_value: Variant in _lan_presence.call("get_online_peers"):
-		if not peer_value is Dictionary:
-			continue
-		var peer: Dictionary = peer_value
-		if String(peer.get("device", "")) != "desktop":
-			continue
-		var host := String(peer.get("ip", "")).strip_edges()
-		if host.is_valid_ip_address() and not host.contains(":") and not hosts.has(host):
+	for host: String in _lan_presence.call("get_online_desktop_ipv4s"):
+		if not hosts.has(host):
 			hosts.append(host)
 	return hosts
 
