@@ -321,24 +321,26 @@ func _slots(parent: Node, record: Dictionary) -> void:
 
 func _counter(parent: Node, remaining: int, maximum: int, change: Callable, slot_level: int = -1, record: Dictionary = {}) -> void:
 	var counter := HBoxContainer.new()
-	counter.custom_minimum_size.x = 104
+	counter.name = "ResourceCounter"
+	counter.custom_minimum_size.x = 138 if _touch_layout else 126
 	counter.add_theme_constant_override("separation", 3)
 	parent.add_child(counter)
-	if maximum == 0 and slot_level == -1:
-		var empty: Label = _label(counter, "0/0")
-		empty.autowrap_mode = TextServer.AUTOWRAP_OFF
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		return
+	# Fixed action cell: the numbers do not move when both buttons disappear.
+	var actions := HBoxContainer.new()
+	actions.name = "ResourceActions"
+	actions.custom_minimum_size.x = 73 if _touch_layout else 67
+	actions.add_theme_constant_override("separation", 3)
+	counter.add_child(actions)
 	if maximum > 0:
-		_compact_button(counter, "−", change.bind(1))
-		_compact_button(counter, "+", change.bind(-1))
+		_compact_button(actions, "−", change.bind(1))
+		_compact_button(actions, "+", change.bind(-1))
 	var count: Label = _label(counter, str(remaining))
-	count.custom_minimum_size.x = 18
+	count.custom_minimum_size.x = 24
 	count.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	count.autowrap_mode = TextServer.AUTOWRAP_OFF
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var total: Label = _label(counter, "/%d" % maximum)
-	total.custom_minimum_size.x = 24
+	total.custom_minimum_size.x = 30
 	total.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	total.autowrap_mode = TextServer.AUTOWRAP_OFF
 	if slot_level >= 0:
@@ -373,6 +375,8 @@ func _slot_max_input(event: InputEvent, level: int) -> void:
 func _compact_button(parent: Node, text: String, action: Callable) -> void:
 	var button := Button.new()
 	button.text = text
+	button.set_meta("touch_compact_action", true)
+	button.custom_minimum_size = Vector2(32 if _touch_layout else 30, 32 if _touch_layout else 26)
 	button.add_theme_font_size_override("font_size", 14)
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var style: StyleBox = button.get_theme_stylebox(state).duplicate()
