@@ -150,7 +150,7 @@ func run() -> void:
 	root.push_input(down, true)
 	root.push_input(up, true)
 	await settle()
-	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release (clicks=%d, target=%s)" % [clicks[0], target_center]):
+	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release (clicks=%d, target=%s, help=%s, duration=%dms)" % [clicks[0], target_center, mobile._help_panel.visible, Time.get_ticks_msec() - mobile._finger_started_msec]):
 		return
 	gesture_scroll.queue_free()
 	mobile._page_history.clear()
