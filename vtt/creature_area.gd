@@ -6769,7 +6769,10 @@ func _refresh_conditions(record: Dictionary) -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spell_heading.add_child(title)
 	var add_spell := Button.new()
-	add_spell.text = "+ Incantesimo"
+	add_spell.text = "+" if _touch_layout else "+ Incantesimo"
+	if _touch_layout:
+		add_spell.set_meta("touch_compact_action", true)
+		add_spell.custom_minimum_size = Vector2(34, 34)
 	add_spell.tooltip_text = "Applica un incantesimo dal catalogo. Sarà visibile anche nei Tratti e utilizzabile come origine."
 	add_spell.pressed.connect(_open_add_active_spell)
 	spell_heading.add_child(add_spell)
@@ -6801,6 +6804,9 @@ func _refresh_conditions(record: Dictionary) -> void:
 		row.add_child(detail)
 		var remove := Button.new()
 		remove.text = "×"
+		if _touch_layout:
+			remove.set_meta("touch_compact_action", true)
+			remove.custom_minimum_size = Vector2(34, 34)
 		remove.tooltip_text = "Rimuovi l'incantesimo e i benefici che concede a questa creatura."
 		remove.pressed.connect(_remove_active_spell.bind(sid))
 		row.add_child(remove)
