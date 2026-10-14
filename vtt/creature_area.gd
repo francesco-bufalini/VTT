@@ -363,10 +363,15 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			var live_id := String(token.call("get_token_pack_id"))
 			if not live_id.is_empty():
 				record["current_miniature_id"] = live_id
-		if token.has_method("get_size_name"):
-			record["size_name"] = token.call("get_size_name")
-		if token.has_method("get_footprint_cells"):
-			record["footprint"] = token.call("get_footprint_cells")
+		# A polymorphed token has a temporary size. Do not overwrite the
+		# creature's base dimensions, which are needed when restoring it.
+		var base_id := String(record.get("default_miniature_id", ""))
+		var current_id := String(record.get("current_miniature_id", ""))
+		if base_id.is_empty() or current_id == base_id:
+			if token.has_method("get_size_name"):
+				record["size_name"] = token.call("get_size_name")
+			if token.has_method("get_footprint_cells"):
+				record["footprint"] = token.call("get_footprint_cells")
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
