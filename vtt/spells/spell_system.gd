@@ -5841,7 +5841,10 @@ func remote_targeting_status(caster: Node3D, owner: String) -> Dictionary:
 			selected.append(String(token.call("get_token_id")))
 	return {"active": is_targeting(), "phase": _targeting_phase, "outcome": _remote_outcome,
 		"instruction": ("Risolvi la scelta o il tiro salvezza sul desktop, poi premi Aggiorna." if _targeting_phase in ["saving_throw", "summon_count", "summon_token_dialog", "transform_token_dialog", "resize_token_dialog", "wall_mode", "wall_orientation"] else "Tocca un bersaglio o un punto sulla mappa. Selezioni: %d." % _pending_target_history.size()), "selected_ids": selected,
-		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0}
+		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0,
+		"area_shape": String(_pending_spell().get("aoe_shape", "")),
+		"area_radius_feet": _effective_aoe_radius_feet(_pending_spell()),
+		"area_side_feet": float(_pending_spell().get("aoe_side_feet", 10))}
 
 func remote_target_input(caster: Node3D, owner: String, target: Node3D, point: Dictionary, command: String) -> Dictionary:
 	if owner != _remote_owner or caster != _remote_caster:
@@ -5874,3 +5877,21 @@ func remote_target_input(caster: Node3D, owner: String, target: Node3D, point: D
 		Input.mouse_mode = previous_mouse
 		board_root.set("_ui_owns_mouse", previous_ui)
 	return {"ok": true, "targeting": remote_targeting_status(caster, owner)}
+
+func remote_preview_input(caster: Node3D, owner: String, point: Dictionary, projection: Dictionary) -> Dictionary:
+	if owner != _remote_owner or caster != _remote_caster or not is_targeting():
+		return {"ok": false, "error": "Nessun incantesimo di questa creatura è in selezione."}
+	_remote_input_active = true
+	_remote_pick_token = null
+	_remote_pick_point = point
+	_update_spell_preview()
+	_remote_input_active = false
+	_remote_pick_point = {}
+	var contour: Array = _overlay_2d.mobile_preview_contour(projection) if is_instance_valid(_overlay_2d) else []
+	var affected: Array[String] = []
+	var measure: Node = _measurement_tool()
+	if contour.size() >= 3:
+		for token: Node3D in measure.area_affected_tokens(measure.get("_spell_preview_start"), measure.get("_spell_preview_end"), String(measure.get("_spell_preview_shape")), String(measure.get("_spell_preview_style")), float(measure.get("_spell_preview_line_width"))):
+			if board_root.is_ancestor_of(token) and token.is_visible_in_tree() and token.has_method("get_token_id"):
+				affected.append(String(token.call("get_token_id")))
+	return {"ok": true, "preview": {"points": contour, "valid": not contour.is_empty(), "affected_ids": affected}}

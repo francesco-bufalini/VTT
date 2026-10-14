@@ -2,6 +2,9 @@ extends Control
 ## A cached map with client-side zoom/pan. Coordinates always map back to
 ## the original image, so selection never drifts when magnified or dragged.
 signal map_tapped(pixel: Vector2, target_id: String)
+signal map_aimed(pixel: Vector2)
+var aim_mode := false
+var area_preview: Dictionary = {}
 var texture: ImageTexture
 var snapshot: Dictionary = {}
 var zoom := 1.0
@@ -26,7 +29,7 @@ func load_snapshot(value: Dictionary) -> bool:
 	texture = ImageTexture.create_from_image(image)
 	snapshot = value.duplicate(true)
 	if not same_view:
-		zoom = 1.0
+		zoom = clampf(float(value.get("field_feet", 60)) / 80.0, 1.0, 4.0)
 		pan = Vector2.ZERO
 	_clamp_pan()
 	queue_redraw()
@@ -92,6 +95,8 @@ func handle_screen_input(event: InputEvent) -> bool:
 			_fingers[event.index] = local
 			_last_center = _gesture_center()
 			_last_distance = _gesture_distance()
+			if aim_mode and _fingers.size() == 1:
+				_aim(local)
 			return true
 		if not _fingers.has(event.index):
 			return false
@@ -99,7 +104,7 @@ func handle_screen_input(event: InputEvent) -> bool:
 		_fingers.erase(event.index)
 		_last_center = _gesture_center()
 		_last_distance = _gesture_distance()
-		if tap:
+		if tap and not aim_mode:
 			_tap(local)
 		return true
 	if event is InputEventScreenDrag and _fingers.has(event.index):
@@ -112,6 +117,9 @@ func handle_screen_input(event: InputEvent) -> bool:
 			pan += center - _last_center
 			if _last_distance > 1.0 and distance > 1.0:
 				zoom_by(distance / _last_distance, center)
+		elif aim_mode:
+			_gesture_moved = true
+			_aim(local)
 		elif local.distance_to(_gesture_start) >= 10 or _gesture_moved:
 			_gesture_moved = true
 			pan += center - _last_center
@@ -139,16 +147,44 @@ func _gui_input(event: InputEvent) -> void:
 				_mouse_down = true
 				_gesture_start = event.position
 				_gesture_moved = false
+				if aim_mode:
+					_aim(event.position)
 			elif _mouse_down:
 				_mouse_down = false
-				if not _gesture_moved:
+				if not _gesture_moved and not aim_mode:
 					_tap(event.position)
 	elif event is InputEventMouseMotion and _mouse_down:
+		if aim_mode:
+			_aim(event.position)
+			return
 		if event.position.distance_to(_gesture_start) >= 10 or _gesture_moved:
 			_gesture_moved = true
 			pan += event.relative
 			_clamp_pan()
 			queue_redraw()
+
+func _aim(local: Vector2) -> void:
+	if texture == null:
+		return
+	var pixel := local_to_image(local)
+	if Rect2(Vector2.ZERO, Vector2(texture.get_size())).has_point(pixel):
+		map_aimed.emit(pixel)
+
+func show_local_area(pixel: Vector2, status: Dictionary) -> void:
+	var shape := String(status.get("area_shape", ""))
+	var points: Array = []
+	var scale_factor: float = float(texture.get_height()) / maxf(float(snapshot.get("field_feet", 60)), 1.0)
+	var radius: float = float(status.get("area_radius_feet", 0)) * scale_factor
+	if shape in ["sphere", "cylinder"] and radius > 0:
+		for index: int in range(64):
+			var point := pixel + Vector2.from_angle(TAU * index / 64.0) * radius
+			points.append([point.x, point.y])
+	elif shape in ["cube", "flat_square"]:
+		var half: float = float(status.get("area_side_feet", 10)) * scale_factor * 0.5
+		for offset: Vector2 in [Vector2(-half, -half), Vector2(half, -half), Vector2(half, half), Vector2(-half, half)]:
+			points.append([pixel.x + offset.x, pixel.y + offset.y])
+	area_preview = {"points": points, "valid": true}
+	queue_redraw()
 
 func _tap(local: Vector2) -> void:
 	if texture == null:
@@ -181,6 +217,13 @@ func _draw() -> void:
 			continue
 		points.append(points[0])
 		draw_polyline(points, Color("ffaa42") if bool(contour.get("long", false)) else Color("61ed86"), 2.0, true)
+	var area := PackedVector2Array()
+	for point: Array in area_preview.get("points", []):
+		area.append(image_to_local(Vector2(float(point[0]), float(point[1]))))
+	if area.size() >= 3:
+		draw_colored_polygon(area, Color(1.0, 0.35, 0.1, 0.18))
+		area.append(area[0])
+		draw_polyline(area, Color("ffad42") if bool(area_preview.get("valid", false)) else Color("ff5555"), 2.5, true)
 	var font := ThemeDB.fallback_font
 	for marker: Dictionary in snapshot.get("markers", []):
 		var point := image_to_local(Vector2(float(marker.x), float(marker.y)))

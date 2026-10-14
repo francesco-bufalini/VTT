@@ -28,6 +28,11 @@ var _spell_record_id := ""
 var _spell_slot_choice := 0
 var _movement_buttons: Array[Button] = []
 var _target_note := ""
+var _aim_pixel := Vector2.INF
+var _preview_pixel := Vector2.INF
+var _preview_request := ""
+var _preview_dirty := false
+var _preview_elapsed := 0.0
 var _finish_spell_button: Button
 var _cancel_spell_button: Button
 
@@ -120,6 +125,7 @@ func _build_viewer() -> void:
 	canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(canvas)
 	canvas.map_tapped.connect(_on_map_tapped)
+	canvas.map_aimed.connect(_on_map_aimed)
 	var movement := HBoxContainer.new()
 	body.add_child(movement)
 	for spec: Array in [["←", "west", "Ovest"], ["↑", "north", "Nord"], ["↓", "south", "Sud"], ["→", "east", "Est"], ["↥", "up", "Sali"], ["↧", "down", "Scendi"]]:
@@ -139,7 +145,7 @@ func _build_viewer() -> void:
 	spell_actions.add_child(_cancel_spell_button)
 	_finish_spell_button = Button.new()
 	_finish_spell_button.text = "Conferma bersagli"
-	_finish_spell_button.pressed.connect(_send_interaction.bind("finish_spell", {}))
+	_finish_spell_button.pressed.connect(_confirm_spell)
 	spell_actions.add_child(_finish_spell_button)
 	_cancel_spell_button.hide()
 	_finish_spell_button.hide()
@@ -224,6 +230,7 @@ func request_attack_snapshot(record: Dictionary, attack: Dictionary) -> void:
 func _reopen_snapshot() -> void:
 	if not _cached:
 		return
+	canvas.show()
 	var saved: Dictionary = canvas.snapshot
 	_snapshot_token = String(saved.get("token_id", _snapshot_token))
 	_field_feet = float(saved.get("field_feet", 120))
@@ -250,6 +257,7 @@ func begin_mobile_spell(record: Dictionary, spell: Dictionary, level: int, conte
 		return false
 	_snapshot_token = token_id
 	_snapshot_attack = {}
+	canvas.hide()
 	_spell_definition = spell.duplicate(true)
 	_spell_record_id = String(record.get("id", ""))
 	_spell_slot_choice = choice
@@ -260,6 +268,13 @@ func begin_mobile_spell(record: Dictionary, spell: Dictionary, level: int, conte
 	return not _pending_interactions.is_empty()
 
 func _send_interaction(action: String, extra: Dictionary) -> void:
+	var remote: Dictionary = controller.get_map_data()
+	if remote.is_empty():
+		caption.text = "Collega un desktop e attendi la ricezione della mappa prima di usare i comandi."
+		return
+	if int(remote.get("mobile_protocol", 0)) < 2:
+		caption.text = "Desktop da aggiornare: installa e riavvia anche la nuova versione PC. Lo snapshot da solo non abilita i comandi."
+		return
 	if not _pending_interactions.is_empty():
 		return
 	var payload := extra.duplicate(true)
@@ -286,16 +301,54 @@ func _on_map_tapped(pixel: Vector2, target_id: String) -> void:
 
 func _apply_spell_status(status: Dictionary) -> void:
 	_spell_status = status
+	canvas.aim_mode = bool(status.get("active", false)) and String(status.get("phase", "")) in ["point", "direction_point", "multi_target_points", "wall_start", "wall_segment", "wall_center", "wall_radius", "wall_arc_start", "wall_arc_end", "summon_point", "teleport_destination"]
+	if not canvas.aim_mode:
+		canvas.area_preview = {}
+		_aim_pixel = Vector2.INF
+		_preview_dirty = false
 	var active := bool(status.get("active", false))
 	_cancel_spell_button.visible = active
 	_finish_spell_button.visible = active
+	_finish_spell_button.text = "Conferma punto / area" if canvas.aim_mode else "Conferma bersagli"
 	canvas.selected_ids.assign(status.get("selected_ids", []))
 	canvas.queue_redraw()
 	if not active and not _spell_definition.is_empty() and String(status.get("outcome", "")) in ["completed", "cancelled"]:
 		sheet.finish_mobile_spell(_spell_definition, status.get("outcome") == "completed")
 		_spell_definition = {}
 
+func _on_map_aimed(pixel: Vector2) -> void:
+	if not canvas.aim_mode or not _pending_snapshot.is_empty():
+		return
+	_aim_pixel = pixel
+	_preview_dirty = true
+	canvas.show_local_area(pixel, _spell_status)
+
+func _aim_payload() -> Dictionary:
+	return {"token_id": _snapshot_token, "owner_id": Owner.local_id(), "target_id": "",
+		"pixel": [_aim_pixel.x, _aim_pixel.y], "snapshot_id": canvas.snapshot.get("snapshot_id", "")}
+
+func _process(delta: float) -> void:
+	_preview_elapsed += delta
+	if not _preview_dirty or not _preview_request.is_empty() or _preview_elapsed < 0.12 or not _pending_interactions.is_empty():
+		return
+	_preview_elapsed = 0
+	_preview_dirty = false
+	_preview_pixel = _aim_pixel
+	_preview_request = controller.request_action("preview_spell", _aim_payload())
+
+func _confirm_spell() -> void:
+	if canvas.aim_mode:
+		if _aim_pixel == Vector2.INF:
+			caption.text = "Trascina un dito per mirare; usa due dita per spostare o ingrandire la mappa."
+			return
+		_send_interaction("target_spell", _aim_payload())
+	else:
+		_send_interaction("finish_spell", {})
+
 func _send_snapshot() -> void:
+	_preview_dirty = false
+	_aim_pixel = Vector2.INF
+	canvas.area_preview = {}
 	_pending_snapshot = controller.request_action("snapshot", {"token_id": _snapshot_token,
 		"field_feet": _field_feet, "attack": _snapshot_attack, "owner_id": Owner.local_id()})
 	if _pending_snapshot.is_empty():
@@ -304,6 +357,19 @@ func _send_snapshot() -> void:
 	viewer.show()
 
 func _on_action_completed(id: String, action: String, result: Dictionary) -> void:
+	if action == "preview_spell" and id == _preview_request:
+		_preview_request = ""
+		if not bool(result.get("ok", false)):
+			caption.text = String(result.get("error", "Anteprima non disponibile."))
+			canvas.area_preview = {}
+			canvas.queue_redraw()
+			return
+		if _preview_pixel.is_equal_approx(_aim_pixel) and canvas.aim_mode and bool(result.get("ok", false)):
+			canvas.area_preview = result.get("preview", {})
+			canvas.selected_ids.assign(canvas.area_preview.get("affected_ids", []))
+			canvas.queue_redraw()
+			caption.text = "Gittata %d ft · %s" % [int(_spell_status.get("range_feet", 0)), "Trascina per mirare · due dita per zoom/spostamento · Conferma per lanciare." if bool(canvas.area_preview.get("valid", false)) else "Punto fuori gittata o non valido."]
+		return
 	if _pending_interactions.has(id):
 		_pending_interactions.erase(id)
 		for button: Button in _movement_buttons:
@@ -333,11 +399,14 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 	elif action == "snapshot" and id == _pending_snapshot:
 		_pending_snapshot = ""
 		if bool(result.get("ok", false)) and canvas.load_snapshot(result):
+			canvas.show()
 			_apply_spell_status(result.get("targeting", {}))
 			_cached = true
 			reopen_button.disabled = false
 			caption.text = "%s · campo %d ft" % [result.get("title", "Mappa"), int(result.get("field_feet", 120))]
-			if bool(_spell_status.get("active", false)):
+			if canvas.aim_mode:
+				caption.text = "%s · gittata %d ft · trascina per mirare · due dita per zoom/spostamento · Conferma per lanciare" % [result.get("title", "Mappa"), int(_spell_status.get("range_feet", 0))]
+			elif bool(_spell_status.get("active", false)):
 				caption.text += " · " + String(_spell_status.get("instruction", "Seleziona sulla mappa"))
 			if not _snapshot_attack.is_empty():
 				caption.text += " · verde: gittata normale · arancio: lunga" + _target_note

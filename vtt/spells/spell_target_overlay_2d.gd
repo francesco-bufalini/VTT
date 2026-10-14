@@ -4,6 +4,7 @@ const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 # Draw in the board UI layer above the 2D token portraits but below
 # creature sheets, dialogs, and menus; never intercept mouse events.
 
+var _mobile_projection: Dictionary = {}
 var board: Node3D
 var spell: Node
 var measure: Node3D
@@ -66,6 +67,10 @@ func _process(_delta: float) -> void:
 
 
 func _world_point(point: Vector3) -> Vector2:
+	if not _mobile_projection.is_empty():
+		var scale_factor: float = float(_mobile_projection.height) / float(_mobile_projection.size)
+		return Vector2(float(_mobile_projection.width) * 0.5 + (point.x - float(_mobile_projection.x)) * scale_factor,
+			float(_mobile_projection.height) * 0.5 + (point.z - float(_mobile_projection.z)) * scale_factor)
 	# Render on the same projected floor as the 2D token icons.
 	var floor_y: float = float(camera.call("get_top_down_level")) if camera.has_method("get_top_down_level") else point.y
 	return camera.unproject_position(Vector3(point.x, floor_y, point.z))
@@ -635,3 +640,17 @@ func _draw_dimension_radii(start: Vector3, end: Vector3, shape: String, tint: Co
 		var last: Vector2 = _world_point(transform * points[index + 1])
 		if first.distance_squared_to(last) > 0.1:
 			draw_line(first, last, color, 2.6, true)
+
+# Reuse desktop geometry without moving cameras or recapturing the map.
+func mobile_preview_contour(projection: Dictionary) -> Array:
+	var mesh: MeshInstance3D = measure.get("_spell_preview")
+	if not is_instance_valid(mesh) or not mesh.visible:
+		return []
+	_mobile_projection = projection
+	var polygon := _shape_polygon(measure.get("_spell_preview_start"), measure.get("_spell_preview_end"),
+		String(measure.get("_spell_preview_shape")), float(measure.get("_spell_preview_line_width")), String(measure.get("_spell_preview_style")))
+	_mobile_projection = {}
+	var result: Array = []
+	for point: Vector2 in polygon:
+		result.append([point.x, point.y])
+	return result

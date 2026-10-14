@@ -20,8 +20,9 @@ class Board:
 class RequestSpy:
 	extends Node
 	var captured: Dictionary = {}
+	var protocol := 2
 	func get_map_data() -> Dictionary:
-		return {"tokens": [{"id": "attacker-stable-id", "name": "Hero"}]}
+		return {"tokens": [{"id": "attacker-stable-id", "name": "Hero"}], "mobile_protocol": protocol}
 	func request_action(action: String, payload: Dictionary) -> String:
 		captured = {"action": action, "payload": payload.duplicate(true)}
 		return "attack-request"
@@ -82,7 +83,7 @@ func run() -> void:
 		var captured: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": placed.token_id,
 			"field_feet": 120, "attack": {"range_feet": 20, "long_range_feet": 60, "melee": false}})
 		assert(captured.ok and captured.contours.size() == 2)
-		assert(captured.field_feet == 120 and captured.width == 1024 and captured.height == 1024)
+		assert(captured.field_feet == 120 and captured.width == 1536 and captured.height == 1536)
 		assert(captured.markers.size() == 2, "Other elevations must remain selectable")
 		var elevation_found := false
 		for marker: Dictionary in captured.markers:
@@ -93,7 +94,7 @@ func run() -> void:
 		var found_center := false
 		for marker: Dictionary in captured.markers:
 			if marker.selected:
-				found_center = absf(marker.x - 512) < 1 and absf(marker.y - 512) < 1
+				found_center = absf(marker.x - 768) < 1 and absf(marker.y - 768) < 1
 		assert(found_center, "Selected token must be centered in the snapshot")
 		var image := Image.new()
 		assert(image.load_webp_from_buffer(Marshalls.base64_to_raw(captured.image)) == OK)
@@ -150,6 +151,16 @@ func run() -> void:
 	assert(spy.captured.action == "snapshot" and spy.captured.payload.token_id == "attacker-stable-id")
 	assert(spy.captured.payload.attack.range_feet == 80 and spy.captured.payload.attack.long_range_feet == 320)
 	print("PASS: mobile attack range requests its linked creature viewpoint and both calculated ranges")
+	spy.protocol = 0
+	spy.captured = {}
+	actions._send_interaction("move_token", {"direction": "east"})
+	assert(spy.captured.is_empty() and actions.caption.text.contains("Desktop da aggiornare"), "Old desktops must be identified before unsupported commands")
+	spy.protocol = 2
+	actions._send_interaction("move_token", {"direction": "east"})
+	assert(spy.captured.action == "move_token")
+	actions._on_action_completed("attack-request", "move_token", {"ok": true, "moved": true})
+	assert(spy.captured.action == "snapshot", "Successful movement must automatically refresh")
+	print("PASS: desktop compatibility gate and supported movement with automatic refresh")
 	spy.queue_free()
 	var image := Image.create(64, 48, false, Image.FORMAT_RGB8)
 	image.fill(Color.DARK_GREEN)

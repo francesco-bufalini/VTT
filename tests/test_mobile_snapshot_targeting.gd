@@ -42,6 +42,9 @@ func run() -> void:
 	image.fill(Color.DARK_GREEN)
 	assert(view.load_snapshot({"format": "webp", "image": Marshalls.raw_to_base64(image.save_webp_to_buffer()),
 		"token_id": "caster", "field_feet": 240, "markers": [{"id": "target", "x": 600, "y": 512, "radius": 20}]}))
+	assert(view.zoom == 3.0, "Default view must crop a wide field around the caster")
+	view.zoom = 1
+	view._clamp_pan()
 	var taps: Array = []
 	view.map_tapped.connect(func(pixel: Vector2, id: String) -> void: taps.append([pixel, id]))
 	touch(view, 0, true, Vector2(120, 200))
@@ -59,6 +62,15 @@ func run() -> void:
 	touch(view, 0, true, target)
 	touch(view, 0, false, target)
 	assert(taps.size() == 1 and taps[0][1] == "target" and taps[0][0].distance_to(Vector2(600, 512)) < 0.01)
+	view.aim_mode = true
+	var aims: Array[Vector2] = []
+	view.map_aimed.connect(func(pixel: Vector2) -> void: aims.append(pixel))
+	touch(view, 0, true, Vector2(180, 180))
+	drag(view, 0, Vector2(220, 200))
+	touch(view, 0, false, Vector2(220, 200))
+	assert(aims.size() == 2 and taps.size() == 1, "Aiming must preview without selecting or casting on release")
+	view.show_local_area(Vector2(512, 512), {"area_shape": "sphere", "area_radius_feet": 20})
+	assert(view.area_preview.points.size() == 64)
 	view.free()
 	print("PASS: exact doubled range, limits, pinch/pan without activation, stable selection after zoom")
 	var board := Board.new()
@@ -104,6 +116,27 @@ func run() -> void:
 	assert(camera.transform == camera_before)
 	started = spells.begin_remote_spell(caster, "mobile-owner", {"spell_id": "fireball", "slot_level": 3})
 	assert(started.ok and started.targeting.phase == "point")
+	assert(started.targeting.range_feet == 150 and started.targeting.area_radius_feet == 20)
+	var projection := {"x": 0.5, "y": 1, "z": 0.5, "size": 60, "width": 1536, "height": 1536}
+	var preview: Dictionary = spells.remote_preview_input(caster, "mobile-owner",
+		{"valid": true, "point": Vector3(3.5, 0, 0.5), "normal": Vector3.UP, "in_air": false}, projection)
+	assert(preview.ok and preview.preview.valid and preview.preview.points.size() == 64)
+	assert(spells.is_targeting() and spells._targeting_phase == "point", "Dragging Fireball must not cast")
+	var sync: Node = load("res://network/board_sync.gd").new()
+	board.add_child(sync)
+	sync.board_root = board
+	sync.tokens_root = board
+	caster.set_meta("creature_owner_id", "mobile-owner")
+	var caster_id: String = sync.get_sync_id_for_node(caster)
+	sync._mobile_views["preview-test"] = {"projection": projection, "token_id": caster_id, "at": Time.get_ticks_msec()}
+	var wire_preview: Dictionary = await sync._handle_mobile_action("preview_spell", {"token_id": caster_id,
+		"owner_id": "mobile-owner", "snapshot_id": "preview-test", "pixel": [844.8, 768]})
+	assert(wire_preview.ok and wire_preview.preview.valid and wire_preview.preview.points.size() == 64)
+	assert(sync.get_tactical_map_data().mobile_protocol == 2)
+	var outside: Dictionary = spells.remote_preview_input(caster, "mobile-owner",
+		{"valid": true, "point": Vector3(1000, 0, 0), "normal": Vector3.UP, "in_air": false}, projection)
+	assert(outside.ok and not outside.preview.valid, "Out-of-range aim must clear the AoE")
+	print("PASS: live Fireball native 20ft contour, range validation and preview without casting")
 	selected = spells.remote_target_input(caster, "mobile-owner", null,
 		{"valid": true, "point": Vector3(3.5, 0, 0.5), "normal": Vector3.UP, "in_air": false}, "select")
 	assert(selected.ok and selected.targeting.phase != "point", "Snapshot coordinates must enter the native AoE resolution")

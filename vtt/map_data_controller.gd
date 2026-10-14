@@ -12,7 +12,7 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
-const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack"]
+const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell"]
 const ACTION_MAX_BYTES := 2 * 1024 * 1024
 const ACTION_TIMEOUT_MS := 15000
 var _action_provider: Callable
@@ -297,7 +297,7 @@ func _process_actions() -> void:
 				_dispatch_action.call_deferred(item, message)
 
 func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
-	var result := {"ok": false, "error": "Comando mobile non disponibile."}
+	var result := {"ok": false, "error": "Il desktop non supporta questo comando. Aggiorna e riavvia anche il VTT sul computer."}
 	if _action_provider.is_valid() and message.get("action") in ACTIONS and message.get("payload") is Dictionary:
 		var value: Variant = await _action_provider.call(String(message.action), message.payload)
 		if value is Dictionary:

@@ -1,7 +1,7 @@
 extends RefCounted
 ## One-shot orthographic render in the board world. No desktop camera/UI changes.
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
-const SIZE := Vector2i(1024, 1024)
+const SIZE := Vector2i(1536, 1536)
 const MIN_FIELD_FEET := 20.0
 const MAX_FIELD_FEET := 1500.0
 const Elevation = preload("res://vtt/top_down_elevation_levels.gd")
@@ -43,11 +43,17 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	if image == null or image.is_empty():
 		viewport.queue_free()
 		return {"ok": false, "error": "Impossibile acquisire la mappa."}
+	var encoded := image.save_webp_to_buffer(false, 0.92)
+	if encoded.size() > 1300000:
+		encoded = image.save_webp_to_buffer(false, 0.78)
+	if encoded.size() > 1300000:
+		viewport.queue_free()
+		return {"ok": false, "error": "Mappa troppo complessa per lo snapshot: riduci l’inquadratura."}
 	var result := {"ok": true, "format": "webp", "width": SIZE.x, "height": SIZE.y,
-		"image": Marshalls.raw_to_base64(image.save_webp_to_buffer(true, 0.8)),
+		"image": Marshalls.raw_to_base64(encoded),
 		"token_id": "", "field_feet": field_feet, "elevation": center.y,
 		"title": String(token.call("get_display_name")), "contours": [], "markers": [],
-		"_projection": {"x": center.x, "y": center.y, "z": center.z, "size": camera.size}}
+		"_projection": {"x": center.x, "y": center.y, "z": center.z, "size": camera.size, "width": SIZE.x, "height": SIZE.y}}
 	var half: float = float(token.call("get_footprint_cells")) * cell * 0.5
 	var normal: float = float(attack.get("range_feet", 0))
 	var long_range: float = float(attack.get("long_range_feet", 0)) if not bool(attack.get("melee", true)) else 0.0
