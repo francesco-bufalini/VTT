@@ -6127,9 +6127,9 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 			) < 0
 	)
 	_miniature_hint.text = (
-		"★ Le miniature associate alla voce del bestiario sono mostrate per prime."
+		"✓ Scaricata · ★ Associata al bestiario"
 		if not _suggested_miniature_ids.is_empty()
-		else "Cerca nel catalogo e seleziona una miniatura."
+		else "✓ Scaricata · Cerca e seleziona una miniatura"
 	)
 	_miniature_filter.text = ""
 	# New characters must make an explicit selection. Do not silently
@@ -6171,10 +6171,14 @@ func _filter_miniatures(query: String) -> void:
 			continue
 		var index := _visible_miniatures.size()
 		_visible_miniatures.append(profile)
+		var available := bool(profile.get("_available_locally", false))
 		_miniature_list.add_item("%s%s%s · %s" % [
-			"✓ " if bool(profile.get("_available_locally", false)) else "",
+			"✓ " if available else "",
 			"★ " if id in _suggested_miniature_ids else "",
-			name, id
+			name, String(profile.get("size_name", "Medium"))
+		])
+		_miniature_list.set_item_tooltip(index, "ID: %s\n%s" % [
+			id, "Già scaricata" if available else "Non scaricata"
 		])
 		if id == _chosen_miniature_id:
 			selected_index = index
