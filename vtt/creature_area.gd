@@ -6228,7 +6228,7 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 		_set_status("Seleziona una creatura.")
 		return
 	# Standalone character management does not require a published 3D miniature.
-	if not _require_miniatures and (not _touch_layout or is_new):
+	if not _require_miniatures and not _touch_layout:
 		if not is_new:
 			_set_status("Scelta miniature disponibile nell'app desktop.")
 			return

@@ -315,7 +315,7 @@ func _input(event: InputEvent) -> void:
 			_finger_start = event.position
 			_finger_position = event.position
 			_dragging = false
-			_gesture_bars = TouchLayout.scroll_bars_at(ui_root, event.position)
+			_gesture_bars = _touch_scroll_bars(event.position)
 		elif not event.pressed and event.index == _finger:
 			var tap: bool = not _dragging and not event.canceled
 			_finger = -1
@@ -342,6 +342,16 @@ func _input(event: InputEvent) -> void:
 			TouchLayout.scroll_gesture(_gesture_bars, _finger_position.y - event.position.y)
 		_finger_position = event.position
 
+func _touch_scroll_bars(at: Vector2) -> Array[ScrollBar]:
+	var scroll_root: Node = ui_root
+	var point := at
+	for node: Node in ui_root.find_children("*", "Window", true, false):
+		var window := node as Window
+		if window.visible and not window is PopupMenu:
+			scroll_root = window
+			point = at - Vector2(window.position)
+	return TouchLayout.scroll_bars_at(scroll_root, point)
+
 func _dispatch_touch_tap(at: Vector2) -> void:
 	# Resolve buttons in the active embedded window directly. Its viewport
 	# uses window-local coordinates; root synthetic clicks can miss Cancel.
@@ -356,13 +366,13 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 	var buttons: Array[BaseButton] = []
 	if active_window is ConfirmationDialog:
 		var cancel: Button = active_window.get_cancel_button()
-		if cancel.is_visible_in_tree() and cancel.get_global_rect().has_point(point):
+		if not cancel.disabled and cancel.is_visible_in_tree() and cancel.get_global_rect().has_point(point):
 			active_window.canceled.emit()
 			active_window.hide()
 			return
 	if active_window is AcceptDialog:
 		var accept: Button = active_window.get_ok_button()
-		if accept.is_visible_in_tree() and accept.get_global_rect().has_point(point):
+		if not accept.disabled and accept.is_visible_in_tree() and accept.get_global_rect().has_point(point):
 			accept.pressed.emit()
 			return
 	for node: Node in active_window.find_children("*", "BaseButton", true, false):
@@ -397,39 +407,24 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 				button.button_pressed = not button.button_pressed
 			button.pressed.emit()
 		return
-	# Controls receive a complete click only after a stationary finger is lifted.
+	# Embedded fields and ItemLists need events in their own viewport,
+	# including local coordinates for focus, keyboard and row selection.
 	var motion := InputEventMouseMotion.new()
-	motion.position = at
+	motion.position = point
 	motion.global_position = at
-	get_viewport().push_input(motion, true)
-	var hovered := get_viewport().gui_get_hovered_control()
-	for node: Node in find_children("*", "Window", true, false):
-		var window := node as Window
-		if window.visible and not window is PopupMenu and Rect2(Vector2(window.position), Vector2(window.size)).has_point(at):
-			var inner := window.gui_get_hovered_control()
-			if inner != null:
-				hovered = inner
-	var target: Node = hovered
-	while target != null and not (target is OptionButton or target is MenuButton):
-		target = target.get_parent()
-	if target is OptionButton and not target.disabled:
-		_show_touch_choices(target.get_popup(), target)
-		return
-	if target is MenuButton and not target.disabled:
-		_show_touch_choices(target.get_popup())
-		return
+	active_window.push_input(motion, true)
 	for pressed: bool in [true, false]:
 		var click := InputEventMouseButton.new()
-		click.position = at
+		click.position = point
 		click.global_position = at
 		click.button_index = MOUSE_BUTTON_LEFT
 		click.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
 		click.pressed = pressed
-		get_viewport().push_input(click, true)
+		active_window.push_input(click, true)
 	var leave := InputEventMouseMotion.new()
 	leave.position = Vector2(-100, -100)
 	leave.global_position = leave.position
-	get_viewport().push_input(leave, true)
+	active_window.push_input(leave, true)
 
 func _exit_tree() -> void:
 	Input.emulate_mouse_from_touch = _previous_mouse_emulation
