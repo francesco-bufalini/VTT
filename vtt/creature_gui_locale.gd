@@ -474,6 +474,8 @@ const EN: Dictionary = {
 	"Nessuna origine": "No origin",
 	"Senza origine": "No origin",
 	"Origini": "Origins",
+	"Modifica personaggio": "Edit character",
+	"Schede": "Sheets",
 	"Origini dei tracker": "Tracker origins",
 	"Risorse / Tracker": "Resources / Trackers",
 	"Origini dei talenti": "Feat origins",
