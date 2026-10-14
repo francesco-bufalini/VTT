@@ -327,6 +327,9 @@ func _go_back() -> void:
 	_exit_dialog.popup_centered_clamped(Vector2i(340, 180), 0.9)
 
 func _input(event: InputEvent) -> void:
+	if _session_actions != null and _session_actions.handle_snapshot_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_BACK:
 		get_viewport().set_input_as_handled()
 		_request_go_back()
@@ -851,3 +854,6 @@ func list_available_miniatures() -> Array[Dictionary]:
 
 func show_mobile_attack_range(record: Dictionary, attack: Dictionary) -> void:
 	_session_actions.request_attack_snapshot(record, attack)
+
+func start_mobile_spell(record: Dictionary, spell: Dictionary, level: int, context: Dictionary, choice: int) -> bool:
+	return _session_actions.begin_mobile_spell(record, spell, level, context, choice)

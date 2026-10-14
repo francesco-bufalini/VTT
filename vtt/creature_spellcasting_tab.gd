@@ -31,6 +31,7 @@ var _view_selected_class: Dictionary = {}
 var _on_change: Callable
 var _on_status: Callable
 var _on_cast_spell: Callable
+var mobile_cast_dispatch: Callable
 var _on_bonus_request: Callable
 var _on_origin_editor: Callable
 var _slot_manual := false
@@ -608,6 +609,9 @@ func _dispatch_cast(spell: Dictionary, slot_choice: int, grant: Dictionary = {})
 			return
 		if _effective_slot_total(level) <= int(_spent[level]):
 			return
+	if mobile_cast_dispatch.is_valid():
+		mobile_cast_dispatch.call(spell, level, grant, slot_choice)
+		return
 	# The sheet's owner invokes the existing VTT system if the spell has an
 	# effect and a linked caster. A spell with no VTT effect is still cast.
 	# Ordinary spells retain the two-argument callback contract. An origin

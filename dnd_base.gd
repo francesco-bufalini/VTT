@@ -5851,3 +5851,23 @@ func _on_map_load_file_selected(path: String) -> void:
 	var error := int(board_sync.call("load_snapshot_from_file", path))
 	if error != OK and not _undo_stack.is_empty():
 		_undo_stack.pop_back()
+
+
+# Mobile arrows use the same collision, linked-motion, undo and opportunity
+# attack path as keyboard movement, without changing the desktop selection.
+func nudge_token_from_mobile(token: CharacterBody3D, direction: Vector3i) -> bool:
+	if token == null or not is_instance_valid(token) or not is_ancestor_of(token):
+		return false
+	var saved: Array[CharacterBody3D] = _selected_tokens.duplicate()
+	_selected_tokens.assign([token])
+	var origin: Vector3 = token.global_position
+	if direction.y != 0:
+		_move_selected_vertical(direction.y)
+	else:
+		var local_step := token.global_basis.inverse() * Vector3(direction)
+		_move_selected(Vector2i(roundi(local_step.x), roundi(local_step.z)))
+	_selected_tokens.assign(saved)
+	var moved := not origin.is_equal_approx(token.global_position)
+	if moved:
+		_sync_explicit_token_change()
+	return moved

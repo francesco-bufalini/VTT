@@ -39,6 +39,7 @@ const SYNC_APPEARANCE_KEYS := [
 ]
 const MobileMapCapture = preload("res://network/mobile_map_capture.gd")
 var _mobile_capture_busy := false
+var _mobile_views: Dictionary = {}
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 var map_data_controller: MapDataController
 var board_root: Node
@@ -2302,6 +2303,7 @@ func get_tactical_map_data() -> Dictionary:
 			"id": get_sync_id_for_node(node),
 			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
 			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
+			"active_spell_ids": node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else [],
 			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else ""
 		})
 	var combat: Dictionary = {"active": false, "round": 1, "active_index": -1, "entries": []}
@@ -2340,6 +2342,34 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 	var target := _visible_mobile_token(String(payload.get("token_id", "")))
 	if target == null:
 		return {"ok": false, "error": "Il token non è più presente o visibile sulla mappa."}
+	if action == "move_token":
+		var step: String = String(payload.get("direction", ""))
+		var directions := {"north": Vector3i(0, 0, -1), "south": Vector3i(0, 0, 1), "west": Vector3i(-1, 0, 0), "east": Vector3i(1, 0, 0), "up": Vector3i(0, 1, 0), "down": Vector3i(0, -1, 0)}
+		if not directions.has(step) or not board_root.has_method("nudge_token_from_mobile"):
+			return {"ok": false, "error": "Movimento non disponibile."}
+		var moved: bool = board_root.call("nudge_token_from_mobile", target, directions[step])
+		return {"ok": true, "moved": moved, "token_id": get_sync_id_for_node(target)}
+	if action == "set_condition":
+		var id: String = String(payload.get("condition_id", ""))
+		if not payload.get("enabled") is bool:
+			return {"ok": false, "error": "Condizione non valida."}
+		for definition: Dictionary in ContentCatalog.condition_definitions(String(target.get_meta("rules_version", "2014"))):
+			if String(definition.get("id", "")) == id:
+				board_root.call("_set_token_status", target, id, payload.enabled)
+				return {"ok": true}
+		return {"ok": false, "error": "Condizione sconosciuta."}
+	if action in ["begin_spell", "target_spell", "cancel_spell", "finish_spell"]:
+		return _mobile_spell_action(action, payload, target)
+	if action == "target_attack":
+		var victim := _visible_mobile_token(String(payload.get("target_id", "")))
+		var attack_system: Node = board_root.get_node_or_null("AttackSystem")
+		if victim == null or attack_system == null or not payload.get("attack") is Dictionary:
+			return {"ok": false, "error": "Bersaglio non disponibile."}
+		for key: String in ["range_feet", "long_range_feet"]:
+			var value: Variant = payload.attack.get(key, 0)
+			if not (value is int or value is float) or not is_finite(float(value)) or float(value) < 0 or float(value) > 10000:
+				return {"ok": false, "error": "Gittata non valida."}
+		return attack_system.call("select_mobile_preview_target", target, victim, payload.attack)
 	if action == "place_token":
 		return _place_mobile_token(payload.get("creature", {}), target)
 	if action != "snapshot":
@@ -2355,12 +2385,68 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		# Reject non-finite geometry before projecting or allocating buffers.
 		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 10000:
 			return {"ok": false, "error": "Gittata non valida."}
+	var spell_status := _mobile_spell_status(target, String(payload.get("owner_id", "")))
+	if bool(spell_status.get("active", false)):
+		attack = {"range_feet": float(spell_status.get("range_feet", 5)), "melee": true}
+	var range_feet: float = maxf(float(attack.get("range_feet", target.call("get_reach_feet"))), float(attack.get("long_range_feet", target.get_meta("active_weapon_long_range_feet", 0) if attack.is_empty() else 0)))
+	var field_feet := MobileMapCapture.field_for_range(range_feet)
 	_mobile_capture_busy = true
-	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, clampf(float(field), 20, 1500), attack)
+	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, field_feet, attack)
 	_mobile_capture_busy = false
 	result["token_id"] = String(payload.get("token_id", ""))
 	result["attack"] = attack.duplicate(true)
+	result["targeting"] = spell_status
+	if bool(result.get("ok", false)):
+		var key := Crypto.new().generate_random_bytes(12).hex_encode()
+		_mobile_views[key] = {"projection": result.get("_projection", {}), "token_id": result.token_id, "at": Time.get_ticks_msec()}
+		while _mobile_views.size() > 32:
+			_mobile_views.erase(_mobile_views.keys()[0])
+		result["snapshot_id"] = key
+		result.erase("_projection")
 	return result
+
+func _mobile_spell_status(caster: Node3D, owner: String) -> Dictionary:
+	var runtime: Node = board_root.get_node_or_null("SpellSystem")
+	if runtime == null or not runtime.has_method("remote_targeting_status"):
+		return {}
+	return runtime.call("remote_targeting_status", caster, owner)
+
+func _mobile_spell_action(action: String, payload: Dictionary, caster: CharacterBody3D) -> Dictionary:
+	var runtime: Node = board_root.get_node_or_null("SpellSystem")
+	var owner := String(payload.get("owner_id", ""))
+	if runtime == null or owner.is_empty() or String(caster.get_meta("creature_owner_id", "")) != owner:
+		return {"ok": false, "error": "Piazza prima la tua creatura sulla mappa del desktop."}
+	if action == "begin_spell":
+		return runtime.call("begin_remote_spell", caster, owner, payload)
+	if action in ["cancel_spell", "finish_spell"]:
+		return runtime.call("remote_target_input", caster, owner, null, {}, "cancel" if action == "cancel_spell" else "finish")
+	var victim := _visible_mobile_token(String(payload.get("target_id", "")))
+	var point_data: Dictionary = {}
+	if victim != null:
+		point_data = {"valid": true, "point": victim.global_position, "in_air": true, "normal": Vector3.UP}
+	elif not String(payload.get("target_id", "")).is_empty():
+		return {"ok": false, "error": "Il bersaglio non è più disponibile. Aggiorna lo snapshot."}
+	if victim == null:
+		var key := String(payload.get("snapshot_id", ""))
+		var pixel: Variant = payload.get("pixel")
+		if not _mobile_views.has(key) or not pixel is Array or pixel.size() != 2:
+			return {"ok": false, "error": "Aggiorna lo snapshot prima di scegliere il punto."}
+		var view: Dictionary = _mobile_views[key]
+		if view.token_id != get_sync_id_for_node(caster) or Time.get_ticks_msec() - int(view.at) > 600000:
+			return {"ok": false, "error": "Snapshot scaduto: premi Aggiorna."}
+		if not (pixel[0] is float or pixel[0] is int) or not (pixel[1] is float or pixel[1] is int):
+			return {"ok": false, "error": "Punto non valido."}
+		var x := float(pixel[0])
+		var y := float(pixel[1])
+		if not is_finite(x) or not is_finite(y) or x < 0 or y < 0 or x > MobileMapCapture.SIZE.x or y > MobileMapCapture.SIZE.y:
+			return {"ok": false, "error": "Punto fuori dalla mappa."}
+		var projection: Dictionary = view.projection
+		var scale_factor := float(projection.size) / float(MobileMapCapture.SIZE.y)
+		var world := Vector3(float(projection.x) + (x - MobileMapCapture.SIZE.x * 0.5) * scale_factor, float(projection.y), float(projection.z) + (y - MobileMapCapture.SIZE.y * 0.5) * scale_factor)
+		var query := PhysicsRayQueryParameters3D.create(world + Vector3.UP * 0.12, world + Vector3.DOWN * 1000, 1)
+		var hit := caster.get_world_3d().direct_space_state.intersect_ray(query)
+		point_data = {"valid": true, "point": hit.get("position", world), "in_air": hit.is_empty(), "normal": hit.get("normal", Vector3.UP)}
+	return runtime.call("remote_target_input", caster, owner, victim, point_data, "select")
 
 func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary:
 	if not value is Dictionary:

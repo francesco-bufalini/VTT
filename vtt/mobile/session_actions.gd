@@ -1,6 +1,7 @@
 extends Node
 ## The mobile Partita action forms and the cached snapshot viewer.
 const SnapshotView = preload("res://vtt/mobile/map_snapshot_view.gd")
+const Owner = preload("res://vtt/creature_owner.gd")
 const TouchLayout = preload("res://vtt/mobile/touch_layout.gd")
 var shell: Control
 var controller: Node
@@ -20,6 +21,15 @@ var _snapshot_token := ""
 var _snapshot_attack: Dictionary = {}
 var _field_feet := 120.0
 var _cached := false
+var _pending_interactions: Dictionary = {}
+var _spell_status: Dictionary = {}
+var _spell_definition: Dictionary = {}
+var _spell_record_id := ""
+var _spell_slot_choice := 0
+var _movement_buttons: Array[Button] = []
+var _target_note := ""
+var _finish_spell_button: Button
+var _cancel_spell_button: Button
 
 func setup(host: Control, map_controller: Node, creature_sheet: Node, column: VBoxContainer) -> void:
 	shell = host
@@ -109,6 +119,30 @@ func _build_viewer() -> void:
 	canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(canvas)
+	canvas.map_tapped.connect(_on_map_tapped)
+	var movement := HBoxContainer.new()
+	body.add_child(movement)
+	for spec: Array in [["←", "west", "Ovest"], ["↑", "north", "Nord"], ["↓", "south", "Sud"], ["→", "east", "Est"], ["↥", "up", "Sali"], ["↧", "down", "Scendi"]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.tooltip_text = spec[2]
+		button.custom_minimum_size = Vector2(48, 48)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_send_interaction.bind("move_token", {"direction": spec[1]}))
+		movement.add_child(button)
+		_movement_buttons.append(button)
+	var spell_actions := HBoxContainer.new()
+	body.add_child(spell_actions)
+	_cancel_spell_button = Button.new()
+	_cancel_spell_button.text = "Annulla incantesimo"
+	_cancel_spell_button.pressed.connect(_send_interaction.bind("cancel_spell", {}))
+	spell_actions.add_child(_cancel_spell_button)
+	_finish_spell_button = Button.new()
+	_finish_spell_button.text = "Conferma bersagli"
+	_finish_spell_button.pressed.connect(_send_interaction.bind("finish_spell", {}))
+	spell_actions.add_child(_finish_spell_button)
+	_cancel_spell_button.hide()
+	_finish_spell_button.hide()
 	TouchLayout.style_tree(viewer)
 	viewer.hide()
 
@@ -155,8 +189,13 @@ func _choose_token(callback: Callable, title: String) -> void:
 
 func _request_selected_snapshot(token_id: String) -> void:
 	picker.hide()
+	if bool(_spell_status.get("active", false)) and token_id != _snapshot_token:
+		viewer.show()
+		caption.text = "Completa o annulla l’incantesimo prima di cambiare token."
+		return
 	_snapshot_token = token_id
 	_snapshot_attack = {}
+	_target_note = ""
 	_field_feet = 120.0
 	_send_snapshot()
 
@@ -171,10 +210,15 @@ func request_attack_snapshot(record: Dictionary, attack: Dictionary) -> void:
 	if token_id.is_empty():
 		shell._show_touch_help("Usa Piazza token nella sezione Partita per collegare questa creatura alla mappa.")
 		return
+	if bool(_spell_status.get("active", false)):
+		viewer.show()
+		caption.text = "Completa o annulla prima l’incantesimo nello snapshot."
+		return
 	_snapshot_token = token_id
+	_target_note = ""
 	_snapshot_attack = {"range_feet": attack.get("range_feet", 5),
 		"long_range_feet": attack.get("long_range_feet", 0), "melee": attack.get("melee", true)}
-	_field_feet = clampf(float(attack.get("range_feet", 5)) * 2.6 + 20, 40, 1500)
+	_field_feet = clampf(maxf(float(attack.get("range_feet", 5)), float(attack.get("long_range_feet", 0))) * 2.0, 20, 1500)
 	_send_snapshot()
 
 func _reopen_snapshot() -> void:
@@ -186,22 +230,98 @@ func _reopen_snapshot() -> void:
 	_snapshot_attack = saved.get("attack", {}).duplicate(true)
 	caption.text = "%s · campo %d ft" % [saved.get("title", "Mappa"), int(_field_feet)]
 	viewer.show()
+	if bool(_spell_status.get("active", false)) and _pending_snapshot.is_empty():
+		_send_snapshot()
 
 func _zoom_snapshot(factor: float) -> void:
-	if not _pending_snapshot.is_empty():
+	if is_equal_approx(factor, 1.0):
+		if _pending_snapshot.is_empty():
+			_send_snapshot()
+	else:
+		canvas.zoom_by(1.0 / factor)
+
+func handle_snapshot_input(event: InputEvent) -> bool:
+	return viewer.visible and not picker.visible and canvas.handle_screen_input(event)
+
+func begin_mobile_spell(record: Dictionary, spell: Dictionary, level: int, context: Dictionary, choice: int) -> bool:
+	var token_id := String(record.get("linked_token_sync_id", ""))
+	if token_id.is_empty():
+		shell._show_touch_help("Usa Piazza token per collegare questa creatura alla mappa.")
+		return false
+	_snapshot_token = token_id
+	_snapshot_attack = {}
+	_spell_definition = spell.duplicate(true)
+	_spell_record_id = String(record.get("id", ""))
+	_spell_slot_choice = choice
+	var payload := {"spell_id": spell.get("id", ""), "name": spell.get("name", ""),
+		"source": spell.get("source", ""), "slot_level": level, "context": context}
+	_send_interaction("begin_spell", payload)
+	viewer.show()
+	return not _pending_interactions.is_empty()
+
+func _send_interaction(action: String, extra: Dictionary) -> void:
+	if not _pending_interactions.is_empty():
 		return
-	_field_feet = clampf(_field_feet * factor, 20, 1500)
-	_send_snapshot()
+	var payload := extra.duplicate(true)
+	payload.token_id = _snapshot_token
+	payload.owner_id = Owner.local_id()
+	var request_id: String = controller.request_action(action, payload)
+	if not request_id.is_empty():
+		_pending_interactions[request_id] = action
+		for button: Button in _movement_buttons:
+			button.disabled = true
+		caption.text = "Richiesta al desktop…"
+
+func _on_map_tapped(pixel: Vector2, target_id: String) -> void:
+	if not _pending_snapshot.is_empty() or not _pending_interactions.is_empty():
+		return
+	if bool(_spell_status.get("active", false)):
+		_send_interaction("target_spell", {"target_id": target_id, "pixel": [pixel.x, pixel.y],
+			"snapshot_id": canvas.snapshot.get("snapshot_id", "")})
+	elif not _snapshot_attack.is_empty() and not target_id.is_empty():
+		_send_interaction("target_attack", {"target_id": target_id, "attack": _snapshot_attack})
+	else:
+		canvas.selected_ids.assign([target_id] if not target_id.is_empty() else [])
+		canvas.queue_redraw()
+
+func _apply_spell_status(status: Dictionary) -> void:
+	_spell_status = status
+	var active := bool(status.get("active", false))
+	_cancel_spell_button.visible = active
+	_finish_spell_button.visible = active
+	canvas.selected_ids.assign(status.get("selected_ids", []))
+	canvas.queue_redraw()
+	if not active and not _spell_definition.is_empty() and String(status.get("outcome", "")) in ["completed", "cancelled"]:
+		sheet.finish_mobile_spell(_spell_definition, status.get("outcome") == "completed")
+		_spell_definition = {}
 
 func _send_snapshot() -> void:
 	_pending_snapshot = controller.request_action("snapshot", {"token_id": _snapshot_token,
-		"field_feet": _field_feet, "attack": _snapshot_attack})
+		"field_feet": _field_feet, "attack": _snapshot_attack, "owner_id": Owner.local_id()})
 	if _pending_snapshot.is_empty():
 		return
 	caption.text = "Richiesta snapshot al desktop…"
 	viewer.show()
 
 func _on_action_completed(id: String, action: String, result: Dictionary) -> void:
+	if _pending_interactions.has(id):
+		_pending_interactions.erase(id)
+		for button: Button in _movement_buttons:
+			button.disabled = false
+		if not bool(result.get("ok", false)):
+			caption.text = String(result.get("error", "Comando non riuscito."))
+			if action == "begin_spell":
+				sheet.finish_mobile_spell(_spell_definition, false)
+				_spell_definition = {}
+			return
+		if action == "target_attack":
+			_target_note = " · bersaglio: %d ft%s" % [int(ceil(float(result.get("distance_feet", 0)))), " · gittata lunga: svantaggio" if bool(result.get("long_range", false)) else ""]
+		if action == "begin_spell":
+			sheet.accept_mobile_spell_start(_spell_record_id, _spell_slot_choice)
+		if result.has("targeting"):
+			_apply_spell_status(result.targeting)
+		_send_snapshot()
+		return
 	if action == "place_token" and id == _pending_place:
 		_pending_place = ""
 		place_button.disabled = false
@@ -213,11 +333,14 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 	elif action == "snapshot" and id == _pending_snapshot:
 		_pending_snapshot = ""
 		if bool(result.get("ok", false)) and canvas.load_snapshot(result):
+			_apply_spell_status(result.get("targeting", {}))
 			_cached = true
 			reopen_button.disabled = false
 			caption.text = "%s · campo %d ft" % [result.get("title", "Mappa"), int(result.get("field_feet", 120))]
+			if bool(_spell_status.get("active", false)):
+				caption.text += " · " + String(_spell_status.get("instruction", "Seleziona sulla mappa"))
 			if not _snapshot_attack.is_empty():
-				caption.text += " · verde: gittata normale · arancio: lunga"
+				caption.text += " · verde: gittata normale · arancio: lunga" + _target_note
 		else:
 			caption.text = String(result.get("error", "Snapshot non disponibile."))
 

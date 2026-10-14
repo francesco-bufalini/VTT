@@ -724,3 +724,16 @@ func _show_temporary_result(
 
 func get_current_attack() -> Dictionary:
 	return _attack_data.duplicate(true)
+
+
+func select_mobile_preview_target(attacker: CharacterBody3D, target: CharacterBody3D, data: Dictionary) -> Dictionary:
+	var limits := ranged_limits(data)
+	var distance := _distance_feet(attacker, target)
+	if distance > maxf(limits.x, limits.y) + 0.001:
+		return {"ok": false, "error": "Bersaglio fuori gittata: %d ft." % int(ceil(distance))}
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if board_root.is_ancestor_of(node):
+			node.set_meta("mobile_target_selected", node == target)
+	board_root.call("set_affected_token_highlight", [target])
+	return {"ok": true, "target_id": String(target.call("get_token_id")), "distance_feet": distance,
+		"long_range": limits.y > limits.x and distance > limits.x}

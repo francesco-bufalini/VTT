@@ -79,12 +79,25 @@ var _wall_damage_side: int = 0
 var _wall_orientation: String = ""
 
 
+var _remote_owner := ""
+var _remote_caster: Node3D
+var _remote_input_active := false
+var _remote_starting := false
+var _remote_pick_token: Node3D
+var _remote_pick_point: Dictionary = {}
+var _remote_outcome := ""
+var _remote_instruction := ""
+var _remote_mouse_restore := Input.MOUSE_MODE_VISIBLE
+var _remote_ui_restore := false
+
 func setup(root: Node3D) -> void:
 	board_root = root
 	call_deferred("_initialize")
 
 
 func _process(_delta: float) -> void:
+	if not _remote_owner.is_empty() and is_targeting():
+		return
 	# Previews are cleared synchronously by _reset_cast_state(). Repeating
 	# that cleanup every rendered frame while idle does redundant scene-tree
 	# work (notably on geometry-heavy encounter maps).
@@ -320,6 +333,9 @@ func activate_spell_from_caster(
 	cast_slot_level: int = -1,
 	caster_context: Dictionary = {}
 ) -> bool:
+	if not _remote_input_active and not is_targeting():
+		_remote_owner = ""
+		_remote_caster = null
 	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
 		return false
 
@@ -588,6 +604,12 @@ func close_panel() -> void:
 
 
 func handle_input(event: InputEvent) -> bool:
+	if not _remote_owner.is_empty() and not _remote_input_active and is_targeting():
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			_cancel_pending_cast(false)
+			_return_control_to_camera()
+			return true
+		return false
 	if _pending_spell_id.is_empty():
 		return false
 	if _targeting_phase in [
@@ -2485,7 +2507,7 @@ func _wall_point_data(
 	if measurement_tool == null:
 		return {"valid": false}
 
-	var point_value: Variant = (
+	var point_value: Variant = _remote_pick_point if _remote_input_active else (
 		_screen_2d_point_data(screen_position)
 		if _is_2d_view()
 		else measurement_tool.call("get_spell_target_point", screen_position)
@@ -3148,6 +3170,8 @@ func _update_spell_preview() -> void:
 
 
 func _token_at_screen(screen_position: Vector2) -> Node3D:
+	if _remote_input_active:
+		return _remote_pick_token
 	var hit_value: Variant
 	if _is_2d_view() and board_root.has_method("_raycast_token_from_screen"):
 		hit_value = board_root.call("_raycast_token_from_screen", screen_position, true)
@@ -3278,7 +3302,7 @@ func _direction_target_data(
 	if measurement_tool == null:
 		return {"valid": false}
 
-	var point_value: Variant = measurement_tool.call(
+	var point_value: Variant = _remote_pick_point if _remote_input_active else measurement_tool.call(
 		"get_spell_target_point",
 		screen_position
 	)
@@ -3471,7 +3495,7 @@ func _point_target_data(
 			spell_data
 		)
 
-	var point_value: Variant = (
+	var point_value: Variant = _remote_pick_point if _remote_input_active else (
 		_screen_2d_point_data(screen_position)
 		if _is_2d_view()
 		else measurement_tool.call(
@@ -4117,6 +4141,9 @@ func _show_spell_data(spell_data: Dictionary) -> void:
 
 
 func _activate_selected_spell() -> void:
+	if not _remote_input_active and not is_targeting():
+		_remote_owner = ""
+		_remote_caster = null
 	if _selected_spell_id.is_empty() or _selected_spell_data.is_empty():
 		return
 
@@ -4158,6 +4185,7 @@ func _activate_selected_spell() -> void:
 	var camera: Camera3D = board_root.get_node_or_null("Camera3D") as Camera3D
 	if (
 		camera != null
+		and _remote_owner.is_empty()
 		and camera.has_method("is_first_person")
 		and bool(camera.call("is_first_person"))
 		and camera.has_method("exit_first_person")
@@ -5490,6 +5518,10 @@ func _reset_cast_state(
 
 
 func _return_control_to_camera() -> void:
+	if not _remote_owner.is_empty():
+		Input.mouse_mode = _remote_mouse_restore
+		board_root.set("_ui_owns_mouse", _remote_ui_restore)
+		return
 	if board_root != null and is_instance_valid(board_root):
 		if board_root.has_method("capture_camera_control"):
 			board_root.call("capture_camera_control")
@@ -5530,6 +5562,8 @@ func _log_spell_use() -> void:
 
 
 func _finish_cast() -> void:
+	if not _remote_owner.is_empty():
+		_remote_outcome = "completed"
 	# Applying spell origins during targeting previews would leave effects
 	# behind if the user presses Esc. Commit exactly once at successful finish.
 	if board_root != null and is_instance_valid(board_root) and board_root.has_method("apply_cast_spell_effects"):
@@ -5563,6 +5597,8 @@ func _finish_cast() -> void:
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	if not _remote_owner.is_empty() and not _remote_starting:
+		_remote_outcome = "cancelled"
 	if board_root != null and is_instance_valid(board_root) and board_root.has_method("cancel_origin_spell_cast"):
 		board_root.call("cancel_origin_spell_cast", _pending_caster, _pending_spell())
 	_post_cast_cleanup_pending = false
@@ -5758,5 +5794,83 @@ func _effective_spell_range_feet(
 
 
 func _set_instruction(message: String) -> void:
+	if not _remote_owner.is_empty() and is_targeting():
+		_remote_instruction = message
+		return
 	instruction_label.text = message
 	instruction_label.show()
+
+
+# Snapshot input is an alternate pointer source for the existing targeting
+# lifecycle, not a second implementation of spell mechanics or AoE geometry.
+func begin_remote_spell(caster: Node3D, owner: String, request: Dictionary) -> Dictionary:
+	if is_targeting():
+		return {"ok": false, "error": "Un incantesimo è già in selezione sulla board. Completa o annulla prima quello."}
+	_remote_owner = owner
+	_remote_caster = caster
+	_remote_outcome = "active"
+	_remote_instruction = ""
+	_remote_mouse_restore = Input.mouse_mode
+	_remote_ui_restore = bool(board_root.get("_ui_owns_mouse"))
+	_remote_starting = true
+	_remote_input_active = true
+	var context: Dictionary = {}
+	var raw: Variant = request.get("context", {})
+	if raw is Dictionary:
+		for key: String in ["spellcasting_ability", "spell_attack_bonus", "spell_save_dc", "source_class"]:
+			if raw.has(key):
+				context[key] = raw[key]
+	var accepted := activate_spell_from_caster(String(request.get("spell_id", "")), caster,
+		String(request.get("name", "")), String(request.get("source", "")), int(request.get("slot_level", -1)), context)
+	_remote_starting = false
+	_remote_input_active = false
+	Input.mouse_mode = _remote_mouse_restore
+	board_root.set("_ui_owns_mouse", _remote_ui_restore)
+	if not accepted:
+		_remote_owner = ""
+		_remote_caster = null
+		return {"ok": false, "error": "Questo incantesimo non ha un effetto attivabile sulla board."}
+	return {"ok": true, "targeting": remote_targeting_status(caster, owner)}
+
+func remote_targeting_status(caster: Node3D, owner: String) -> Dictionary:
+	if owner.is_empty() or owner != _remote_owner or caster != _remote_caster:
+		return {}
+	var selected: Array[String] = []
+	for token: Node3D in _pending_targets:
+		if is_instance_valid(token) and token.has_method("get_token_id"):
+			selected.append(String(token.call("get_token_id")))
+	return {"active": is_targeting(), "phase": _targeting_phase, "outcome": _remote_outcome,
+		"instruction": ("Risolvi la scelta o il tiro salvezza sul desktop, poi premi Aggiorna." if _targeting_phase in ["saving_throw", "summon_count", "summon_token_dialog", "transform_token_dialog", "resize_token_dialog", "wall_mode", "wall_orientation"] else "Tocca un bersaglio o un punto sulla mappa. Selezioni: %d." % _pending_target_history.size()), "selected_ids": selected,
+		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0}
+
+func remote_target_input(caster: Node3D, owner: String, target: Node3D, point: Dictionary, command: String) -> Dictionary:
+	if owner != _remote_owner or caster != _remote_caster:
+		return {"ok": false, "error": "Nessun incantesimo di questa creatura è in selezione."}
+	if not is_targeting():
+		return {"ok": true, "targeting": remote_targeting_status(caster, owner)}
+	_remote_input_active = true
+	_remote_pick_token = target
+	_remote_pick_point = point
+	var previous_mouse := Input.mouse_mode
+	var previous_ui: bool = bool(board_root.get("_ui_owns_mouse"))
+	if command == "cancel":
+		_cancel_pending_cast(false)
+		_return_control_to_camera()
+	elif command == "finish":
+		var key := InputEventKey.new()
+		key.pressed = true
+		key.keycode = KEY_ENTER
+		handle_input(key)
+	else:
+		var click := InputEventMouseButton.new()
+		click.pressed = true
+		click.button_index = MOUSE_BUTTON_LEFT
+		_update_spell_preview()
+		handle_input(click)
+	_remote_input_active = false
+	_remote_pick_token = null
+	_remote_pick_point = {}
+	if is_targeting() and _targeting_phase != "saving_throw":
+		Input.mouse_mode = previous_mouse
+		board_root.set("_ui_owns_mouse", previous_ui)
+	return {"ok": true, "targeting": remote_targeting_status(caster, owner)}

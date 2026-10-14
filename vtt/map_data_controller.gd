@@ -12,6 +12,7 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
+const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack"]
 const ACTION_MAX_BYTES := 2 * 1024 * 1024
 const ACTION_TIMEOUT_MS := 15000
 var _action_provider: Callable
@@ -152,6 +153,12 @@ static func valid_data(value: Variant) -> bool:
 			return false
 		if row.id.is_empty() or row.id.length() > 120 or ids.has(row.id) or row.name.length() > 256 or row.conditions.size() > 64:
 			return false
+		if row.has("active_spell_ids"):
+			if not row.active_spell_ids is Array or row.active_spell_ids.size() > 128:
+				return false
+			for spell_id: Variant in row.active_spell_ids:
+				if not spell_id is String or spell_id.length() > 256:
+					return false
 		ids[row.id] = true
 		for condition: Variant in row.conditions:
 			if not condition is String or condition.length() > 256:
@@ -188,7 +195,7 @@ func action_port() -> int:
 	return (_udp.get_local_port() if port == 0 else port) + 1
 
 func request_action(action: String, payload: Dictionary) -> String:
-	if _host.is_empty() or action not in ["place_token", "snapshot"] or _actions.size() >= 4:
+	if _host.is_empty() or action not in ACTIONS or _actions.size() >= 4:
 		status_changed.emit("Collega prima un desktop nella sezione Partita.")
 		return ""
 	_action_sequence += 1
@@ -291,7 +298,7 @@ func _process_actions() -> void:
 
 func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
 	var result := {"ok": false, "error": "Comando mobile non disponibile."}
-	if _action_provider.is_valid() and message.get("action") in ["place_token", "snapshot"] and message.get("payload") is Dictionary:
+	if _action_provider.is_valid() and message.get("action") in ACTIONS and message.get("payload") is Dictionary:
 		var value: Variant = await _action_provider.call(String(message.action), message.payload)
 		if value is Dictionary:
 			result = value

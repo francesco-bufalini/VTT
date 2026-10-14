@@ -82,11 +82,18 @@ func run() -> void:
 		var captured: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": placed.token_id,
 			"field_feet": 120, "attack": {"range_feet": 20, "long_range_feet": 60, "melee": false}})
 		assert(captured.ok and captured.contours.size() == 2)
+		assert(captured.field_feet == 120 and captured.width == 1024 and captured.height == 1024)
+		assert(captured.markers.size() == 2, "Other elevations must remain selectable")
+		var elevation_found := false
+		for marker: Dictionary in captured.markers:
+			if not marker.selected:
+				elevation_found = int(marker.elevation_cells) != 0 and not String(marker.id).is_empty()
+		assert(elevation_found, "Markers must retain stable IDs and desktop-relative altitude")
 		assert(old_camera.transform == before, "Mobile capture must not move the desktop camera")
 		var found_center := false
 		for marker: Dictionary in captured.markers:
 			if marker.selected:
-				found_center = absf(marker.x - 512) < 1 and absf(marker.y - 384) < 1
+				found_center = absf(marker.x - 512) < 1 and absf(marker.y - 512) < 1
 		assert(found_center, "Selected token must be centered in the snapshot")
 		var image := Image.new()
 		assert(image.load_webp_from_buffer(Marshalls.base64_to_raw(captured.image)) == OK)
@@ -99,7 +106,10 @@ func run() -> void:
 	desktop.set_action_provider(func(action: String, payload: Dictionary) -> Dictionary:
 		return {"ok": true, "action": action, "token_id": payload.get("token_id", ""), "blob": "x".repeat(payload_size)})
 	desktop.port = 0
-	assert(desktop.serve(true, "mobile-actions-test") == OK)
+	for attempt: int in range(10):
+		assert(desktop.serve(true, "mobile-actions-test") == OK)
+		if desktop._action_server.is_listening():
+			break
 	assert(desktop._action_server.is_listening())
 	var client := Controller.new()
 	board.add_child(client)

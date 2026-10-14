@@ -316,13 +316,22 @@ func sync_linked_token_status(token: Node3D) -> void:
 
 
 func _copy_token_spell_status(record: Dictionary, token: Node3D) -> void:
+	var status := {}
 	if token.has_method("get_conditions"):
-		record["conditions"] = token.call("get_conditions")
+		status["conditions"] = token.call("get_conditions")
 	if token.has_method("get_concentrating_spell_id"):
-		record["concentrating_spell_id"] = String(token.call("get_concentrating_spell_id"))
-	if not token.has_method("get_active_spell_ids"):
+		status["concentrating_spell_id"] = String(token.call("get_concentrating_spell_id"))
+	if token.has_method("get_active_spell_ids"):
+		status["active_spell_ids"] = token.call("get_active_spell_ids")
+	_copy_public_token_status(record, status)
+
+func _copy_public_token_status(record: Dictionary, status: Dictionary) -> void:
+	for key: String in ["conditions", "concentrating_spell_id"]:
+		if status.has(key):
+			record[key] = status[key]
+	if not status.has("active_spell_ids"):
 		return
-	var spell_ids: Array = token.call("get_active_spell_ids")
+	var spell_ids: Array = status.active_spell_ids
 	# Preserve benefit-only origins; remove only spells explicitly applied
 	# as ongoing effects and subsequently dispelled from the shared token.
 	var previous: Array = record.get("proficiency_origins", [])
@@ -1576,6 +1585,7 @@ func get_panel_control() -> Control:
 
 func configure_touch_layout() -> void:
 	_touch_layout = true
+	_spellcasting_ui.mobile_cast_dispatch = _request_mobile_spell_cast
 	var touch = preload("res://vtt/mobile/touch_layout.gd")
 	var outer := _panel.get_child(0) as VBoxContainer
 	var header := outer.get_child(0) as HBoxContainer
@@ -3875,6 +3885,7 @@ func _update_speed_display() -> void:
 # When no linked token or VTT effect exists, casting still records slot use.
 func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: Dictionary = {}) -> bool:
 	if _current().is_empty():
+		_mobile_cast_pending = false
 		return false
 	var spell_name: String = String(spell.get("name", "Incantesimo"))
 	var spell_id: String = String(spell.get("id", ""))
@@ -3893,6 +3904,7 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		grant["skip_payment"] = skip_payment
 		if not valid or (not skip_payment and OriginSpells.remaining(current_record, grant) == 0):
 			_set_status("Origine o utilizzi dell'incantesimo non disponibili.")
+			_mobile_cast_pending = false
 			return false
 		_pending_origin_spell_cast = {
 			"creature_id": String(current_record.get("id", "")),
@@ -3901,6 +3913,13 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		}
 	else:
 		_pending_origin_spell_cast.clear()
+	if board_root.has_method("start_mobile_spell"):
+		var queued: bool = bool(board_root.call("start_mobile_spell", _current(), spell, slot_level,
+			_sheet_casting_context(_current(), spell, grant), _mobile_slot_choice))
+		if not queued:
+			_mobile_cast_pending = false
+			_pending_origin_spell_cast.clear()
+		return false
 	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 	var runtime: Node = board_root.get_node_or_null("SpellSystem")
 	# A targeted grant without a token cannot apply its effect: do not spend
@@ -3923,18 +3942,7 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		return true
 	# Return to the board before entering the existing target-selection mode.
 	hide_panel()
-	var casting_context: Dictionary = {}
-	if not grant.is_empty():
-		casting_context = OriginSpells.cast_context(_current(), spell_id, grant)
-	else:
-		var ability: String = String(spell.get("caster_spellcasting_ability", ""))
-		if ability in ["str", "dex", "con", "int", "wis", "cha"]:
-			var stats: Dictionary = _current()
-			casting_context = {
-				"spellcasting_ability": ability,
-				"spell_attack_bonus": BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_attack"),
-				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
-			}
+	var casting_context := _sheet_casting_context(_current(), spell, grant)
 	var activated: bool = bool(runtime.call(
 		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level, casting_context
 	))
@@ -6966,6 +6974,8 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)
+		if _touch_layout and _map_data_controller != null and not String(record.get("linked_token_sync_id", "")).is_empty():
+			_map_data_controller.request_action("set_condition", {"token_id": String(record.linked_token_sync_id), "condition_id": id, "enabled": enabled})
 		if id == "concentrating" and _spellcasting_ui != null:
 			_spellcasting_ui.call("refresh_spell_state", record)
 
@@ -7072,9 +7082,14 @@ func _show_sheet_tab(title: String) -> void:
 # callers receive data keyed by stable sync ID, never a remote token Node.
 const MapDataReader = preload("res://vtt/map_data_controller.gd")
 var _map_data_controller: MapDataReader
+var _mobile_public_status_cache: Dictionary = {}
 
 func set_map_data_controller(controller: MapDataReader) -> void:
+	if is_instance_valid(_map_data_controller) and _map_data_controller.data_changed.is_connected(_sync_mobile_map_status):
+		_map_data_controller.data_changed.disconnect(_sync_mobile_map_status)
 	_map_data_controller = controller
+	_mobile_public_status_cache.clear()
+	controller.data_changed.connect(_sync_mobile_map_status)
 
 func get_linked_map_status(record: Dictionary) -> Dictionary:
 	if not is_instance_valid(_map_data_controller):
@@ -7116,3 +7131,85 @@ func link_mobile_token(creature_id: String, token_id: String) -> void:
 			if _archive.save(record) == OK:
 				_replace_current_record(record)
 			return
+
+
+func _sync_mobile_map_status(data: Dictionary) -> void:
+	if not _touch_layout or data.is_empty() or _archive == null:
+		return
+	var public_by_id := {}
+	var current_statuses := {}
+	for token: Dictionary in data.get("tokens", []):
+		var token_id := String(token.id)
+		var status := {}
+		for key: String in ["conditions", "concentrating_spell_id", "active_spell_ids"]:
+			if token.has(key):
+				status[key] = token[key]
+		current_statuses[token_id] = status.duplicate(true)
+		if not _mobile_public_status_cache.has(token_id) or _mobile_public_status_cache[token_id] != status:
+			public_by_id[token_id] = status
+	_mobile_public_status_cache = current_statuses
+	# Position/initiative polling must never reload and normalize every local
+	# sheet. Read the archive only when a public condition/effect changed.
+	if public_by_id.is_empty():
+		return
+	for owned: Dictionary in _archive.list_owned():
+		var id := String(owned.get("linked_token_sync_id", ""))
+		if not public_by_id.has(id):
+			continue
+		var record: Dictionary = owned.duplicate(true)
+		_copy_public_token_status(record, public_by_id[id])
+		if record == owned:
+			continue
+		_recalculate_bonus_mirrors(record)
+		if _archive.save(record) == OK:
+			_update_external_record(record)
+
+var _mobile_slot_choice := 0
+var _mobile_cast_pending := false
+
+func _request_mobile_spell_cast(spell: Dictionary, level: int, grant: Dictionary, choice: int) -> void:
+	if _mobile_cast_pending:
+		_set_status("Completa o annulla prima il lancio nello snapshot.")
+		return
+	_mobile_slot_choice = choice
+	_mobile_cast_pending = true
+	_on_spellcasting_cast_requested(spell, level, grant)
+
+func accept_mobile_spell_start(creature_id: String, choice: int) -> void:
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != creature_id:
+			continue
+		if choice >= 100:
+			record["pact_slots_spent"] = int(record.get("pact_slots_spent", 0)) + 1
+		elif choice > 0 and choice <= 9:
+			var spent: Array = record.get("spell_slots_spent", []).duplicate()
+			while spent.size() < 10:
+				spent.append(0)
+			spent[choice] = int(spent[choice]) + 1
+			record["spell_slots_spent"] = spent
+		if choice != 0 and _archive.save(record) == OK:
+			_update_external_record(record)
+		return
+
+func finish_mobile_spell(spell: Dictionary, completed: bool) -> void:
+	if completed:
+		_complete_origin_spell_cast(null, spell)
+	else:
+		_pending_origin_spell_cast.clear()
+	_mobile_cast_pending = false
+
+func _sheet_casting_context(record: Dictionary, spell: Dictionary, grant: Dictionary) -> Dictionary:
+	var spell_id := String(spell.get("id", ""))
+	var casting_context: Dictionary = {}
+	if not grant.is_empty():
+		casting_context = OriginSpells.cast_context(record, spell_id, grant)
+	else:
+		var ability: String = String(spell.get("caster_spellcasting_ability", ""))
+		if ability in ["str", "dex", "con", "int", "wis", "cha"]:
+			var stats: Dictionary = record
+			casting_context = {
+				"spellcasting_ability": ability,
+				"spell_attack_bonus": BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_attack"),
+				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
+			}
+	return casting_context
