@@ -16,12 +16,10 @@ on:
       - "**/*.tres"
       - "project.godot"
       - "scripts/validate.ps1"
-      - "tools/build_token_packs.ps1"
       - ".github/workflows/vtt-self-hosted-tests.yml"
       - "assets/spell_area_geometry.json"
       - "vtt/data/**/*.json"
       - "homebrew/**"
-      - "assets/items/**"
 
 concurrency:
   group: vtt-godot-fast-${{ github.ref }}
