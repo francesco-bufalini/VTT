@@ -54,19 +54,52 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
           }
 
-      - name: Export Android release
+      - name: Export installable Android APK
+        id: export
         shell: powershell
         run: |
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
-          .\build.ps1 -Godot $godot -Target android
-          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (-not (Test-Path "build/android/VTT-Android.apk")) { throw "Android APK is missing" }
+          New-Item -ItemType Directory -Force "build/android" | Out-Null
+          $localKey = Join-Path $env:APPDATA "VTT/signing/release.keystore"
+          $localPassword = Join-Path $env:APPDATA "VTT/signing/release-password.txt"
+          $explicitKey = $env:GODOT_ANDROID_KEYSTORE_RELEASE_PATH
+          $releaseAvailable = (($explicitKey -and (Test-Path $explicitKey) -and $env:GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD) -or ((Test-Path $localKey) -and (Test-Path $localPassword)))
+          if ($releaseAvailable) {
+            Write-Host "Release signing is available: exporting update-compatible APK."
+            .\build.ps1 -Godot $godot -Target android
+            if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $apk = "build/android/VTT-Android.apk"
+            $signing = "release"
+          } else {
+            # Never invent a new release signing identity: a different release
+            # certificate would silently break updates to existing installs.
+            Write-Warning "Release key unavailable on this runner. Building a debug-signed APK for fresh installations."
+            $debugKey = Join-Path $env:USERPROFILE ".android/debug.keystore"
+            if (-not (Test-Path $debugKey)) {
+              New-Item -ItemType Directory -Force (Split-Path $debugKey) | Out-Null
+              $keytools = @()
+              if ($env:JAVA_HOME) { $keytools += (Join-Path $env:JAVA_HOME "bin/keytool.exe") }
+              $keytools += (Join-Path $env:ProgramFiles "Android/Android Studio/jbr/bin/keytool.exe")
+              $keytool = $keytools | Where-Object { Test-Path $_ } | Select-Object -First 1
+              if (-not $keytool) { throw "Cannot create an Android debug keystore: keytool.exe was not found." }
+              & $keytool -genkeypair -v -keystore $debugKey -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 -noprompt
+              if ($LASTEXITCODE -ne 0) { throw "Creating the debug keystore failed." }
+            }
+            $apk = "build/android/VTT-Android-debug.apk"
+            & $godot --headless --path . --export-debug "Android" $apk
+            if ($LASTEXITCODE -ne 0) { throw "Godot debug Android export failed." }
+            $signing = "debug"
+          }
+          if (-not (Test-Path $apk)) { throw "Android APK is missing: $apk" }
+          Write-Host "APK created: $apk ($signing signing)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "apk=$apk"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "signing=$signing"
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: VTT-Mobile-Android-${{ github.run_number }}
-          path: build/android/VTT-Android.apk
+          name: VTT-Mobile-Android-${{ steps.export.outputs.signing }}-${{ github.run_number }}
+          path: ${{ steps.export.outputs.apk }}
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
