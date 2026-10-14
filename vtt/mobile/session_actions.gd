@@ -394,6 +394,7 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 		if bool(result.get("ok", false)):
 			sheet.link_mobile_token(String(result.get("creature_id", "")), String(result.get("token_id", "")))
 			shell._connection_status.text = "Token piazzato: " + String(result.get("name", ""))
+			_request_selected_snapshot(String(result.get("token_id", "")))
 		else:
 			shell._show_touch_help(String(result.get("error", "Piazzamento non riuscito.")))
 	elif action == "snapshot" and id == _pending_snapshot:

@@ -70,6 +70,7 @@ var _creature_list: VBoxContainer
 var _creature_filter: LineEdit
 var _creature_empty: Label
 var _abilities_grid: GridContainer
+var _touch_combat_view: ScrollContainer
 var _statistics_columns: BoxContainer
 var _touch_layout := false
 var _touch_library: Control
@@ -1586,6 +1587,14 @@ func get_panel_control() -> Control:
 func configure_touch_layout() -> void:
 	_touch_layout = true
 	_spellcasting_ui.mobile_cast_dispatch = _request_mobile_spell_cast
+	_configure_touch_statistics()
+	var statistics_page := _tabs.get_tab_control(1)
+	statistics_page.name = "Caratteristiche e abilità"
+	_tabs.set_tab_title(1, "Caratteristiche e abilità")
+	var battle := _add_sheet_tab(_tabs, "Battaglia")
+	_tabs.move_child(battle.get_parent().get_parent(), 2)
+	_touch_combat_view = _statistics_columns.get_child(1) as ScrollContainer
+	_touch_combat_view.reparent(battle)
 	var touch = preload("res://vtt/mobile/touch_layout.gd")
 	var outer := _panel.get_child(0) as VBoxContainer
 	var header := outer.get_child(0) as HBoxContainer
@@ -1671,6 +1680,7 @@ func configure_touch_layout() -> void:
 	for index: int in range(_tabs.get_tab_count()):
 		var button := Button.new()
 		button.text = _tabs.get_tab_title(index)
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.toggle_mode = true
 		button.button_group = group
 		button.pressed.connect(_request_touch_section.bind(index))
@@ -1744,7 +1754,6 @@ func configure_touch_layout() -> void:
 			child.pressed.connect(func() -> void: show_touch_library(false))
 	_traits_ui.call("configure_touch_layout")
 	touch.style_tree(_panel)
-	_configure_touch_statistics()
 	for column: Control in _statistics_columns.get_children():
 		column.custom_minimum_size.x = 0
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3421,6 +3430,13 @@ func _update_statistics_widths() -> void:
 
 func _update_stats_column_heights() -> void:
 	_update_statistics_widths()
+	if _touch_layout and _statistics_columns != null:
+		var views: Array = _statistics_columns.get_children()
+		if is_instance_valid(_touch_combat_view):
+			views.append(_touch_combat_view)
+		for view: ScrollContainer in views:
+			view.custom_minimum_size.y = (view.get_child(0) as Control).get_combined_minimum_size().y + 18
+		return
 	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
 		return
 	var left_view := _statistics_columns.get_child(0) as ScrollContainer
@@ -3429,10 +3445,6 @@ func _update_stats_column_heights() -> void:
 		return
 	var left_contents := left_view.get_child(0) as Control
 	var right_contents := right_view.get_child(0) as Control
-	if _touch_layout:
-		left_view.custom_minimum_size.y = left_contents.get_combined_minimum_size().y + 18
-		right_view.custom_minimum_size.y = right_contents.get_combined_minimum_size().y + 18
-		return
 	var needed_height: float = maxf(
 		left_contents.get_combined_minimum_size().y,
 		right_contents.get_combined_minimum_size().y

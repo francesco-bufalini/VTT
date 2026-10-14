@@ -35,9 +35,14 @@ func run() -> void:
 		return
 	if not check(root.find_children("*", "Node3D", true, false).is_empty(), "Mobile must not instantiate a board"):
 		return
-	if not check(sheet._tabs.get_tab_count() == 7 and not sheet._tabs.tabs_visible,
+	if not check(sheet._tabs.get_tab_count() == 8 and not sheet._tabs.tabs_visible,
 		"All current sheet tabs must remain accessible through the touch picker"):
 		return
+	assert(sheet._tabs.get_tab_title(1) == "Caratteristiche e abilità")
+	assert(sheet._tabs.get_tab_title(2) == "Battaglia")
+	assert(sheet._tabs.get_tab_control(2).is_ancestor_of(sheet._hp))
+	assert(not sheet._tabs.get_tab_control(1).is_ancestor_of(sheet._hp))
+	assert(sheet._tabs.get_tab_control(2).is_ancestor_of(sheet._attack_rows))
 	if not check(sheet._statistics_columns.vertical, "Statistics must stack on mobile"):
 		return
 	for viewport_size: Vector2i in [Vector2i(360, 640), Vector2i(640, 360), Vector2i(480, 960), Vector2i(960, 480)]:
@@ -115,7 +120,8 @@ func run() -> void:
 		sheet.show_touch_library(true)
 	# Drive real raw touch events through the viewport: a drag never becomes a click.
 	var gesture_scroll := ScrollContainer.new()
-	gesture_scroll.position = Vector2(20, 120)
+	# Keep the gesture fixture clear of the floating navigation icon.
+	gesture_scroll.position = Vector2(70, 120)
 	gesture_scroll.size = Vector2(300, 220)
 	gesture_scroll.z_index = 100
 	mobile.ui_root.add_child(gesture_scroll)

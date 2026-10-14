@@ -186,6 +186,10 @@ func run() -> void:
 	assert(spy.captured.action == "snapshot" and spy.captured.payload.token_id == "attacker-stable-id")
 	assert(spy.captured.payload.attack.range_feet == 80 and spy.captured.payload.attack.long_range_feet == 320)
 	print("PASS: mobile attack range requests its linked creature viewpoint and both calculated ranges")
+	actions._pending_place = "placed-test"
+	actions._on_action_completed("placed-test", "place_token", {"ok": true, "creature_id": "not-persisted", "token_id": "newly-placed", "name": "Hero"})
+	assert(spy.captured.action == "snapshot" and spy.captured.payload.token_id == "newly-placed")
+	assert(actions.viewer.visible, "Placement must automatically open the new token viewpoint")
 	spy.protocol = 0
 	spy.captured = {}
 	actions._send_interaction("move_token", {"direction": "east"})
