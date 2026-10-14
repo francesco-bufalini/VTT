@@ -45,6 +45,9 @@ func run() -> void:
 	sheet.show_touch_library(false)
 	await settle()
 	for index: int in range(sheet._tabs.get_tab_count()):
+		sheet._touch_section_toggle.pressed.emit()
+		await settle()
+		assert(sheet._touch_section_drawer.visible, "Sheet drawer must open before selecting a section")
 		var button := sheet._touch_section_buttons[index] as Button
 		var point := button.get_global_rect().get_center()
 		var down := InputEventScreenTouch.new()
@@ -58,6 +61,7 @@ func run() -> void:
 		root.push_input(up, true)
 		await settle()
 		assert(sheet._tabs.current_tab == index, "Real tap must change the populated sheet tab")
+		assert(not sheet._touch_section_drawer.visible, "Selecting a section must close the drawer")
 		assert(not sheet._touch_section.get_popup().visible, "Tab selection must never open a native popup")
 		print("PASS: populated sheet touch tab ", index)
 	assert(sheet._spellcasting_ui._view._touch_layout)
