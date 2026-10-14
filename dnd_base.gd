@@ -3619,8 +3619,15 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				and token.has_method("restore_previous_transformation")
 			):
 				push_undo_state()
-				token.call("restore_previous_transformation")
-				_refresh_token_views_after_appearance_change()
+				if bool(token.call("restore_previous_transformation")):
+					var linked_sheets := get_node_or_null("CreatureArea")
+					if (
+						linked_sheets != null
+						and linked_sheets.has_method("sync_linked_token_editor")
+					):
+						linked_sheets.call("sync_linked_token_editor", token)
+					_refresh_token_views_after_appearance_change()
+					call_deferred("_sync_explicit_token_change", token)
 		_close_context_menu_to_game()
 		return
 
