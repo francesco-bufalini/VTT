@@ -350,6 +350,7 @@ func set_visual_asset(
 		requested_path == _loaded_visual_asset_path
 		and _get_imported_visual() != null
 	):
+		var previous_native_footprint := _visual_native_footprint_cells
 		if native_footprint_override > 0.0:
 			_visual_native_footprint_cells = maxf(
 				native_footprint_override,
@@ -358,6 +359,10 @@ func set_visual_asset(
 		visual_asset_path = requested_path
 		_apply_imported_visual_front()
 		_position_imported_visual()
+		if not is_equal_approx(
+			previous_native_footprint, _visual_native_footprint_cells
+		):
+			_refresh_geometry_after_visual_change()
 		return true
 
 	# Token packs may be absent locally. Do not ask ResourceLoader about a
@@ -420,7 +425,16 @@ func set_visual_asset(
 	call_deferred("_refresh_top_down_token")
 	_apply_imported_visual_front()
 	_position_imported_visual()
+	_refresh_geometry_after_visual_change()
 	return true
+
+
+# A miniature swap changes model bounds even when the tactical size stays
+# Medium/Large. Refresh the physics shape and keep the feet on the same plane.
+func _refresh_geometry_after_visual_change() -> void:
+	var base_y := global_position.y - token_height_cells * cell_size * 0.5
+	set_token_size(_footprint_cells)
+	global_position.y = base_y + token_height_cells * cell_size * 0.5
 
 
 func get_visual_asset_path() -> String:
@@ -1729,8 +1743,11 @@ func has_previous_transformation() -> bool:
 func restore_previous_transformation() -> bool:
 	if _transformation_history.is_empty():
 		return false
-	var previous: Dictionary = _transformation_history.pop_back()
-	return apply_appearance_state(previous)
+	var previous: Dictionary = _transformation_history.back()
+	if not apply_appearance_state(previous):
+		return false
+	_transformation_history.pop_back()
+	return true
 
 
 func get_transformation_history() -> Array:
