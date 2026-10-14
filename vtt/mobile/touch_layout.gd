@@ -91,7 +91,7 @@ static func wrap_fields(root: Node) -> void:
 		root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for original: Node in root.get_children():
 		var child := original
-		if original is HBoxContainer and original.get_script() == null:
+		if (original is HBoxContainer or original is HFlowContainer and original.name in ["PhysicsFields", "PhysicsMiniatureFlow"]) and original.get_script() == null:
 			var column := VBoxContainer.new()
 			column.add_theme_constant_override("separation", 5)
 			child = replace_box(original, column)
