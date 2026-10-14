@@ -1028,8 +1028,8 @@ func _build_ui() -> void:
 	_initiative_effective.custom_minimum_size.x = 32
 	initiative_row.add_child(_initiative_effective)
 	_install_formula("initiative", _initiative_effective, [], [])
-	# Keep speeds and jumping distances beside one another on wide sheets;
-	# both wrap into separate rows when the Info panel becomes narrow.
+	# Keep speeds and jumps side by side whenever both fit, with compact
+	# speed cells and automatic wrapping on smaller sheets.
 	var movement_panel := PanelContainer.new()
 	movement_panel.name = "PhysicsMovement"
 	var movement_style := health_style.duplicate() as StyleBoxFlat
@@ -1048,33 +1048,33 @@ func _build_ui() -> void:
 	movement_box.add_child(movement_heading)
 	var movement_flow := HFlowContainer.new()
 	movement_flow.name = "PhysicsMovementFlow"
-	movement_flow.add_theme_constant_override("h_separation", 26)
-	movement_flow.add_theme_constant_override("v_separation", 9)
+	movement_flow.add_theme_constant_override("h_separation", 16)
+	movement_flow.add_theme_constant_override("v_separation", 6)
 	movement_box.add_child(movement_flow)
 	var speeds_group := VBoxContainer.new()
 	speeds_group.name = "PhysicsSpeeds"
 	speeds_group.add_theme_constant_override("separation", 3)
 	movement_flow.add_child(speeds_group)
-	# A real grid keeps all five speeds on one line when room permits;
-	# its column count is adjusted on resize for narrower sheets.
+	# Start narrow so the initial minimum size never forces a mobile
+	# sheet wider than its viewport; resize selects the appropriate columns.
 	var speed_grid := GridContainer.new()
 	speed_grid.name = "PhysicsSpeedGrid"
-	speed_grid.columns = 5
-	speed_grid.add_theme_constant_override("h_separation", 10)
-	speed_grid.add_theme_constant_override("v_separation", 5)
+	speed_grid.columns = 2
+	speed_grid.add_theme_constant_override("h_separation", 8)
+	speed_grid.add_theme_constant_override("v_separation", 4)
 	speeds_group.add_child(speed_grid)
 	_special_speed_labels.clear()
 	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
 		var speed_cell := VBoxContainer.new()
-		speed_cell.custom_minimum_size.x = 110
+		speed_cell.custom_minimum_size.x = 73
 		speed_cell.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		speed_cell.add_theme_constant_override("separation", 2)
 		speed_grid.add_child(speed_cell)
 		var speed_name: String = {"walk": "Camminata", "climb": "Scalata",
 			"swim": "Nuoto", "fly": "Volo", "burrow": "Scavo"}[mode]
 		var speed_caption := Label.new()
-		speed_caption.text = speed_name + " (ft)"
-		speed_caption.tooltip_text = speed_caption.text
+		speed_caption.text = speed_name
+		speed_caption.tooltip_text = speed_name + " (ft)"
 		speed_caption.clip_text = true
 		speed_caption.add_theme_font_size_override("font_size", 12)
 		speed_cell.add_child(speed_caption)
@@ -1110,17 +1110,17 @@ func _build_ui() -> void:
 	jumps_heading.add_theme_color_override("font_color", Color(0.77, 0.86, 0.94))
 	jumps_group.add_child(jumps_heading)
 	var jumps := HFlowContainer.new()
-	jumps.add_theme_constant_override("h_separation", 20)
+	jumps.add_theme_constant_override("h_separation", 12)
 	jumps.add_theme_constant_override("v_separation", 3)
 	jumps_group.add_child(jumps)
 	_long_jump = Label.new()
 	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_long_jump.custom_minimum_size.x = 228
+	_long_jump.custom_minimum_size.x = 210
 	_long_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
 	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_high_jump.custom_minimum_size.x = 228
+	_high_jump.custom_minimum_size.x = 210
 	_high_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_high_jump)
 	# Explicit group widths keep nested HFlowContainers from collapsing into
@@ -2811,20 +2811,30 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 func _layout_physics_movement(physics: Control, speeds: Control, jumps: Control) -> void:
 	if not is_instance_valid(physics) or not is_instance_valid(speeds) or not is_instance_valid(jumps):
 		return
-	var available: float = physics.size.x
+	# Account for the Physics panel's padding rather than sizing child groups
+	# against its outer width (which could force an unnecessary wrap).
+	var available: float = physics.size.x - 18.0
 	if available < 1.0:
 		return
-	# Five columns on desktop; three on medium sheets; two on narrow.
-	# Use explicit columns instead of nesting two flow containers that can
-	# unexpectedly wrap speed cells even when the Physics panel is wide.
-	var columns: int = 5 if available >= 1120.0 else (3 if available >= 720.0 else 2)
+	# Cell widths are 73 px plus 8 px of grid spacing. On medium widths,
+	# arranging speeds in two rows lets the jumps occupy the otherwise empty
+	# space to their right; on narrower sheets jumps wrap below all speeds.
+	var columns: int = 5
+	if available >= 865.0:
+		columns = 5
+	elif available >= 710.0:
+		columns = 3
+	elif available >= 610.0:
+		columns = 2
+	elif available < 397.0:
+		columns = 3 if available >= 235.0 else 2
 	var speed_grid: GridContainer = speeds.get_node_or_null("PhysicsSpeedGrid") as GridContainer
 	if speed_grid != null and speed_grid.columns != columns:
 		speed_grid.columns = columns
-	var speeds_width: float = float(columns * 110 + (columns - 1) * 10)
-	# Both jump captions fit alongside all five speeds on desktop. When the
-	# sheet is narrow, the two blocks wrap naturally to the next row.
-	var jumps_width: float = 476.0 if available >= 720.0 else maxf(228.0, available - 22.0)
+	var speeds_width: float = float(columns * 73 + (columns - 1) * 8)
+	# The two jump captions need 210 px each with a 12 px gutter.
+	# They can wrap separately at smaller widths without clipping values.
+	var jumps_width: float = minf(432.0, available)
 	if absf(speeds.custom_minimum_size.x - speeds_width) >= 1.0:
 		speeds.custom_minimum_size.x = speeds_width
 	if absf(jumps.custom_minimum_size.x - jumps_width) >= 1.0:
