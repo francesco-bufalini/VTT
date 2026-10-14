@@ -705,7 +705,7 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	var origins_tab := _add_sheet_tab(_tabs, "Origini")
+	var origins_tab := _add_sheet_tab(_tabs, "Modifica personaggio")
 	_origins_scroll = origins_tab.get_parent().get_parent() as ScrollContainer
 	# Keep the detailed editors exclusive without recreating them on each switch.
 	# This preserves their existing interactions and deferred loading behavior.
@@ -793,7 +793,7 @@ func _build_ui() -> void:
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_view.add_child(combat_column)
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
-	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
+	var conditions_tab := _add_sheet_tab(_tabs, "Condizioni")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Poteri")
 	_spellcasting_ui = SpellcastingTab.new()
 	spellcasting_tab.add_child(_spellcasting_ui)
@@ -813,8 +813,14 @@ func _build_ui() -> void:
 		Callable(self, "_on_documents_updated"),
 		Callable(self, "_send_document_to_peer"), Callable(self, "_get_document_peers")
 	)
-	# Origins are the final tab; navigation resolves titles instead of indices.
-	_tabs.move_child(_origins_scroll, _tabs.get_child_count() - 1)
+	# The same stable tab order is used by the desktop TabContainer and touch drawer.
+	var ordered_tabs := ["Info", "Statistiche", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
+	for index: int in range(ordered_tabs.size()):
+		for candidate_index: int in range(_tabs.get_tab_count()):
+			var page: Control = _tabs.get_tab_control(candidate_index)
+			if page.name == ordered_tabs[index]:
+				_tabs.move_child(page, index)
+				break
 	for editor: Node in [_origins_overview, _proficiencies_ui, _feats_ui, _bonuses_ui, _trackers_ui, _damage_defenses_ui, _origin_spells_ui]:
 		editor.set_meta("origin_navigate", Callable(self, "_open_origin_trait"))
 		editor.set_meta("origin_preview", Callable(self, "_origin_summary"))
@@ -1586,7 +1592,7 @@ func configure_touch_layout() -> void:
 	var library_button := Button.new()
 	_touch_library_button = library_button
 	library_button.name = "TouchCreatureList"
-	library_button.text = "‹"
+	library_button.text = "Schede"
 	library_button.pressed.connect(func() -> void: show_touch_library(not _touch_library.visible))
 	header.add_child(library_button)
 	_touch_section_toggle = Button.new()
@@ -1895,7 +1901,7 @@ func show_touch_library(show_library: bool) -> void:
 	_touch_library_view.visible = show_library
 	_touch_editor.visible = not show_library
 	_touch_section_toggle.visible = not show_library
-	_touch_library_button.text = "Apri" if show_library else "‹"
+	_touch_library_button.text = "Apri" if show_library else "Schede"
 	_touch_library_button.tooltip_text = "Apri la scheda selezionata" if show_library else "Torna all’elenco delle creature"
 	_touch_library_button.disabled = show_library and _selected_id.is_empty()
 	touch_library_changed.emit(show_library)
@@ -2636,7 +2642,7 @@ func _refresh_choice_warnings(record: Dictionary) -> void:
 
 
 func _open_trait_section(section: int) -> void:
-	_show_sheet_tab("Origini")
+	_show_sheet_tab("Modifica personaggio")
 	_select_details_editor(section)
 	call_deferred("_scroll_origins_to_top")
 
@@ -2687,7 +2693,7 @@ func _select_details_editor(index: int) -> void:
 
 
 func _open_origin_spell_editor() -> void:
-	_show_sheet_tab("Origini")
+	_show_sheet_tab("Modifica personaggio")
 	_select_details_editor(6)
 	call_deferred("_scroll_origins_to_top")
 
@@ -2734,7 +2740,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
-	_show_sheet_tab("Origini")
+	_show_sheet_tab("Modifica personaggio")
 	_select_details_editor(3)
 	_bonuses_ui.call("select_target", key)
 	# Keep the requested origin section visible after navigation.
@@ -3640,7 +3646,7 @@ func _on_info_feat_input(event: InputEvent, origin_id: String) -> void:
 	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	get_viewport().set_input_as_handled()
-	_show_sheet_tab("Origini")
+	_show_sheet_tab("Modifica personaggio")
 	_select_details_editor(2)
 	_feats_ui.call("focus_origin", origin_id)
 	call_deferred("_scroll_origins_to_top")
@@ -5804,7 +5810,7 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
-	if index >= 0 and _tabs.get_tab_control(index).name == "Origini" and _editor_section_picker.selected == 0:
+	if index >= 0 and _tabs.get_tab_control(index).name == "Modifica personaggio" and _editor_section_picker.selected == 0:
 		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
 		return
@@ -6787,7 +6793,10 @@ func _refresh_conditions(record: Dictionary) -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
 		var detail := Button.new()
-		detail.text = "Leggi effetti"
+		detail.text = "ⓘ" if _touch_layout else "Leggi effetti"
+		detail.tooltip_text = "Leggi effetti"
+		if _touch_layout:
+			detail.set_meta("touch_compact_action", true)
 		detail.pressed.connect(_show_effect_description.bind(spell.duplicate(true)))
 		row.add_child(detail)
 		var remove := Button.new()
@@ -6826,10 +6835,17 @@ func _refresh_conditions(record: Dictionary) -> void:
 			]
 			check.tooltip_text = ContentCatalog.description(definition)
 			check.button_pressed = String(definition.id) in active
+			# The description must keep the remaining width on narrow screens.
+			check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			check.clip_text = false
 			check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
 			row.add_child(check)
 			var info := Button.new()
-			info.text = "Leggi effetti"
+			info.text = "ⓘ" if _touch_layout else "Leggi effetti"
+			info.tooltip_text = "Leggi effetti"
+			if _touch_layout:
+				info.set_meta("touch_compact_action", true)
+				info.custom_minimum_size = Vector2(34, 34)
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
 
