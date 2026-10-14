@@ -7,7 +7,8 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
-const ROOT_DIR := "user://player_characters"
+const ROOT_DIR := "user://creatures"\nconst LEGACY_DIR := "user://player_characters"
+const GlobalMigration = preload("res://vtt/global_creature_migration.gd")
 const FILE_VERSION := 3
 
 var _campaign_manager: Node
@@ -18,24 +19,11 @@ func setup(campaign_manager: Node) -> void:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(ROOT_DIR)
 	)
+	GlobalMigration.migrate(_file_path(), LEGACY_DIR, "characters", FILE_VERSION)
 
 
 func scope_id() -> String:
-	if _campaign_manager != null and is_instance_valid(_campaign_manager):
-		var campaign_group_id: String = String(
-			_campaign_manager.get("selected_campaign_group_id")
-		).strip_edges()
-		if not campaign_group_id.is_empty():
-			return "campaign_" + _safe_id(campaign_group_id)
-
-		var active_campaign_id: String = String(
-			_campaign_manager.get("active_campaign_id")
-		).strip_edges()
-		if not active_campaign_id.is_empty():
-			return "scenario_" + _safe_id(active_campaign_id)
-
-	return "default"
-
+	return "global"
 
 func list_characters(include_unowned: bool = false) -> Array[Dictionary]:
 	var path: String = _file_path()
@@ -436,7 +424,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 
 
 func _file_path() -> String:
-	return ROOT_DIR.path_join(scope_id() + ".json")
+	return ROOT_DIR.path_join("characters.json")
 
 
 func _safe_id(value: String) -> String:
