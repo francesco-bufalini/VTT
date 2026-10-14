@@ -909,6 +909,29 @@ func _format_token_download_size(profile: Dictionary) -> String:
 	return "%d B" % bytes
 
 
+# 5etools is the source of the creature's tactical size, not an older PCK
+# catalog entry. Only exact curated miniature associations are considered;
+# unassociated/homebrew models retain their explicit catalog dimensions.
+func _profile_with_bestiary_size(profile: Dictionary) -> Dictionary:
+	var resolved := profile.duplicate(true)
+	var identity := String(profile.get("id", "")).strip_edges()
+	if identity.is_empty():
+		return resolved
+	for edition: String in ["2014", "2024"]:
+		var reference: Dictionary = TokenPackManager.get_bestiary_reference(
+			identity, edition
+		)
+		var size_name := String(reference.get("size_name", ""))
+		for size_definition: Dictionary in TOKEN_SIZES:
+			if String(size_definition.get("name", "")) != size_name:
+				continue
+			resolved["size_name"] = size_name
+			resolved["footprint"] = float(size_definition.get("footprint", 1.0))
+			resolved["size_source"] = "5etools"
+			return resolved
+	return resolved
+
+
 func _reload_token_miniature_list(preferred_id: String = "") -> void:
 	var previous_id := preferred_id.strip_edges()
 	if previous_id.is_empty():
@@ -945,6 +968,10 @@ func _reload_token_miniature_list(preferred_id: String = "") -> void:
 
 	_append_character_token_profiles()
 	_append_remote_token_profiles()
+	for index: int in range(_token_profiles.size()):
+		_token_profiles[index] = _profile_with_bestiary_size(
+			_token_profiles[index]
+		)
 
 	_token_profiles.sort_custom(
 		Callable(self, "_sort_token_profiles")
@@ -1162,6 +1189,8 @@ func _on_token_miniature_selected(index: int) -> void:
 	var size_name := String(
 		_selected_token_profile.get("size_name", "Medium")
 	)
+	# Never retain a previous miniature's size if a profile is malformed.
+	size_selector.select(2)
 	for size_index: int in range(TOKEN_SIZES.size()):
 		if String(TOKEN_SIZES[size_index].get("name", "")) == size_name:
 			size_selector.select(size_index)
