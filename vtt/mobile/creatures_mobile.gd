@@ -248,7 +248,7 @@ func _layout_pages() -> void:
 	for index: int in range(_pages.size()):
 		var page := _pages[index]
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		page.offset_left = 52
+		page.offset_left = 2
 		page.offset_right = -2
 		page.offset_top = header_height + 6.0
 		page.offset_bottom = -2

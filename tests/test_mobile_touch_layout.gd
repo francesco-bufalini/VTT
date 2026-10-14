@@ -55,8 +55,8 @@ func run() -> void:
 			if not check(visible_pages == 1, "Exactly one mobile page must be visible"):
 				return
 			var panel := mobile._pages[page] as Control
-			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.x >= 48,
-				"Mobile page must fill the space below the compact header at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
+			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.x <= 3,
+				"Mobile page must use the full width beneath the floating menu button at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
 				return
 			if not check(not sheet._options_menu.is_visible_in_tree(), "Mobile options must be hidden"):
 				return
