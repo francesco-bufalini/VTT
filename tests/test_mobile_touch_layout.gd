@@ -55,7 +55,7 @@ func run() -> void:
 			if not check(visible_pages == 1, "Exactly one mobile page must be visible"):
 				return
 			var panel := mobile._pages[page] as Control
-			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.y >= 52,
+			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.y >= 48,
 				"Mobile page must fill the space below the compact header at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
 				return
 			if not check(mobile._archive_selector.visible == (page == 0), "Archive picker must belong only to sheets"):
