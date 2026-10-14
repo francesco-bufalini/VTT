@@ -5,12 +5,18 @@ const TARGET := 48.0
 static func style_control(node: Node) -> void:
 	if node is BaseButton:
 		var button := node as BaseButton
-		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, TARGET)
-		button.custom_minimum_size.x = maxf(button.custom_minimum_size.x, TARGET)
-		button.add_theme_font_size_override("font_size", 16)
-		button.clip_text = true
-		if button.custom_minimum_size.x > 120:
+		var compact := button.has_meta("touch_compact_action") and bool(button.get_meta("touch_compact_action"))
+		var target: float = 32.0 if compact else TARGET
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, target)
+		button.custom_minimum_size.x = maxf(button.custom_minimum_size.x, target)
+		button.add_theme_font_size_override("font_size", 14 if compact else 16)
+		# CheckButtons have their full condition name inside the control.
+		# Clipping them at a narrow fixed width erased every name.
+		button.clip_text = not (compact or button is CheckButton)
+		if not compact and button.custom_minimum_size.x > 120:
 			button.custom_minimum_size.x = TARGET
+		if button is CheckButton:
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if button is OptionButton:
 			button.fit_to_longest_item = false
 			button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
