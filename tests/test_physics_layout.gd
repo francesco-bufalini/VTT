@@ -19,48 +19,57 @@ func run() -> void:
 		"Physics captions and controls stay together while wrapping")
 
 	var physics := HFlowContainer.new()
-	physics.add_theme_constant_override("h_separation", 26)
-	physics.add_theme_constant_override("v_separation", 9)
+	physics.add_theme_constant_override("h_separation", 16)
+	physics.add_theme_constant_override("v_separation", 6)
 	root.add_child(physics)
 	var speeds := VBoxContainer.new()
 	var jumps := VBoxContainer.new()
 	physics.add_child(speeds)
 	physics.add_child(jumps)
-	var jump_caption := Label.new()
-	jump_caption.custom_minimum_size = Vector2(228, 45)
-	jumps.add_child(jump_caption)
+	var jumps_heading := Label.new()
+	jumps_heading.text = "SALTI · DISTANZE MASSIME"
+	jumps.add_child(jumps_heading)
+	var jump_flow := HFlowContainer.new()
+	jump_flow.add_theme_constant_override("h_separation", 12)
+	jumps.add_child(jump_flow)
+	for i: int in 2:
+		var jump_caption := Label.new()
+		jump_caption.custom_minimum_size = Vector2(210, 45)
+		jump_flow.add_child(jump_caption)
 	var speed_grid := GridContainer.new()
 	speed_grid.name = "PhysicsSpeedGrid"
 	speed_grid.columns = 5
+	speed_grid.add_theme_constant_override("h_separation", 8)
 	speeds.add_child(speed_grid)
 	for i: int in 5:
 		var speed_cell := Control.new()
-		speed_cell.custom_minimum_size = Vector2(110, 45)
+		speed_cell.custom_minimum_size = Vector2(73, 45)
 		speed_grid.add_child(speed_cell)
-	physics.size = Vector2(1400, 300)
-	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speed_grid.columns == 5 and speeds.custom_minimum_size.x == 590 and jumps.custom_minimum_size.x == 476,
-		"Wide Physics panels show five speeds and two jump captions horizontally")
-	await process_frame
-	await process_frame
-	assert(absf(speeds.position.y - jumps.position.y) < 1.0,
-		"Wide panel must actually display speeds and jump section on the same visual row")
-	physics.size = Vector2(1000, 300)
-	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speed_grid.columns == 3 and speeds.custom_minimum_size.x == 350 and jumps.custom_minimum_size.x == 476,
-		"Mid-width panels use three speed columns and retain two horizontal jumps")
-	await process_frame
-	await process_frame
-	assert(absf(speeds.position.y - jumps.position.y) < 1.0,
-		"Medium panel still lays out speeds beside the jumps")
-	physics.size = Vector2(480, 300)
-	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speed_grid.columns == 2 and speeds.custom_minimum_size.x == 230
-		and jumps.custom_minimum_size.x <= 460,
-		"Narrow panels use two speed columns and allow jumps to wrap")
-	await process_frame
-	await process_frame
-	assert(jumps.position.y > speeds.position.y,
-		"Narrow panel wraps the jumps instead of causing horizontal overflow")
+	# Use an external sizing control (as in production, which measures the
+	# parent Physics section). HFlowContainer itself can clamp its size to
+	# children from the previous, wider layout before they are recomputed.
+	var physics_measure := Control.new()
+	root.add_child(physics_measure)
+	for spec: Vector3i in [
+		Vector3i(1400, 5, 1), Vector3i(1000, 5, 1),
+		Vector3i(800, 3, 1), Vector3i(660, 2, 1),
+		Vector3i(480, 5, 0), Vector3i(320, 3, 0)
+	]:
+		physics_measure.size.x = spec.x
+		area._layout_physics_movement(physics_measure, speeds, jumps)
+		physics.size = Vector2(spec.x, 300)
+		var expected_speed_width: float = float(spec.y * 73 + (spec.y - 1) * 8)
+		assert(speed_grid.columns == spec.y
+			and absf(speeds.custom_minimum_size.x - expected_speed_width) < 1.0
+			and absf(jumps.custom_minimum_size.x - minf(432.0, float(spec.x - 18))) < 1.0,
+			"Speed columns and jump width adapt to a %d px panel" % spec.x)
+		await process_frame
+		await process_frame
+		if spec.z == 1:
+			assert(absf(speeds.position.y - jumps.position.y) < 1.0,
+				"Speed and jump groups must share a row at %d px" % spec.x)
+		else:
+			assert(jumps.position.y > speeds.position.y,
+				"Jump group must wrap below speeds at %d px" % spec.x)
 	print("PASS compact Physics fields and responsive speeds/jumps")
 	quit()
