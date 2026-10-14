@@ -34,6 +34,7 @@ var _navigation_buttons: Array[Button] = []
 var _page_drawer: PanelContainer
 var _page_menu_button: Button
 var _page_title: Label
+var _page_header_row: HBoxContainer
 var _connection_badge: Label
 var _active_page := -1
 
@@ -69,6 +70,7 @@ func _ready() -> void:
 	_build_session_panel()
 	_build_archive_selector()
 	_build_page_header()
+	_install_unified_sections(sheet)
 	TouchLayout.scroll_body(_session_panel)
 	TouchLayout.style_tree(_session_panel)
 	TouchLayout.style_control(_archive_selector)
@@ -112,37 +114,43 @@ func _configure_ui_scale() -> void:
 	if window.content_scale_size != logical:
 		window.content_scale_size = logical
 
+# The single drawer lives in the sheet and includes its tabs plus the
+# standalone catalog, roller and session. No second global navigation menu.
 func _build_navigation() -> void:
-	# Keep the four destinations in a right-side drawer instead of reserving
-	# an entire row at the bottom of every small phone viewport.
-	_page_drawer = PanelContainer.new()
-	_page_drawer.name = "StandaloneNavigation"
-	_page_drawer.z_index = 100
-	ui_root.add_child(_page_drawer)
-	_page_drawer.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
-	_page_drawer.offset_left = -204
-	_page_drawer.offset_right = -8
-	_page_drawer.offset_top = 52
-	_page_drawer.offset_bottom = -8
-	var navigation := VBoxContainer.new()
-	_page_drawer.add_child(navigation)
-	var dismiss := Button.new()
-	dismiss.text = "✕  Navigazione"
-	dismiss.pressed.connect(func() -> void: _page_drawer.hide())
-	navigation.add_child(dismiss)
-	var group := ButtonGroup.new()
-	for index: int in range(4):
+	pass
+
+func _install_unified_sections(sheet: CreatureSheet) -> void:
+	_page_drawer = sheet._touch_section_drawer
+	_page_drawer.name = "MobileSectionsDrawer"
+	var sections := _page_drawer.find_child("TouchSheetSections", true, false) as VBoxContainer
+	for index: int in range(sheet._touch_section_buttons.size()):
+		sheet._touch_section_buttons[index].pressed.connect(_open_sheet_section.bind(index))
+	var subtitle := Label.new()
+	subtitle.text = "ALTRE SEZIONI"
+	sections.add_child(subtitle)
+	for index: int in range(1, 4):
 		var button := Button.new()
-		button.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
+		button.text = ["", "Catalogo", "Dadi", "Partita"][index]
 		button.custom_minimum_size.y = 48
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.toggle_mode = true
-		button.button_group = group
 		button.pressed.connect(_request_page.bind(index))
-		navigation.add_child(button)
+		sections.add_child(button)
 		_navigation_buttons.append(button)
 	TouchLayout.style_tree(_page_drawer)
+	# The section title and the existing archive/actions now share ONE header;
+	# do not keep the old sheet toolbar consuming another 48 dp underneath.
+	var toolbar := (sheet._panel.get_child(0) as VBoxContainer).get_child(0) as HBoxContainer
+	sheet._touch_library_button.reparent(_page_header_row)
+	_page_header_row.move_child(sheet._touch_library_button, 1)
+	sheet._options_menu.reparent(_page_header_row)
+	_page_header_row.move_child(sheet._options_menu, _page_header_row.get_child_count() - 2)
+	toolbar.hide()
+
+func _open_sheet_section(index: int) -> void:
 	_page_drawer.hide()
+	_select_page(0)
+	var sheet := creature_area as CreatureSheet
+	sheet.show_touch_library(false)
+	sheet._apply_touch_section.call_deferred(index)
 
 func _request_page(index: int) -> void:
 	# Let the touch release finish before hiding a drawer button.
@@ -161,15 +169,15 @@ func _build_page_header() -> void:
 	margin.add_theme_constant_override("margin_right", 4)
 	header.add_child(margin)
 	var row := HBoxContainer.new()
+	_page_header_row = row
 	row.add_theme_constant_override("separation", 6)
 	margin.add_child(row)
 	_page_menu_button = Button.new()
 	_page_menu_button.name = "MobilePageMenu"
 	_page_menu_button.text = "☰"
-	_page_menu_button.tooltip_text = "Apri la navigazione"
+	_page_menu_button.tooltip_text = "Apri le sezioni"
 	_page_menu_button.custom_minimum_size = Vector2(48, 48)
 	_page_menu_button.pressed.connect(func() -> void:
-		(creature_area as CreatureSheet).close_touch_section_drawer()
 		_page_drawer.visible = not _page_drawer.visible)
 	row.add_child(_page_menu_button)
 	_page_title = Label.new()
@@ -215,7 +223,8 @@ func _select_page(index: int) -> void:
 		1: book.show_panel()
 		2: roller.show_panel()
 		3: _session_panel.show()
-	_navigation_buttons[index].button_pressed = true
+	for i: int in range(_navigation_buttons.size()):
+		_navigation_buttons[i].set_pressed_no_signal(i + 1 == index)
 	_page_title.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
 	_page_title.visible = index != 0
 	_archive_selector.visible = index == 0

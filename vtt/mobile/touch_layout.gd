@@ -23,16 +23,19 @@ static func style_control(node: Node) -> void:
 	if node is SpinBox:
 		var number := node as SpinBox
 		number.custom_minimum_size.y = TARGET
-		number.custom_minimum_size.x = maxf(number.custom_minimum_size.x, 56.0)
+		# Leave space for multi-digit values and the built-in step arrows.
+		number.custom_minimum_size.x = maxf(number.custom_minimum_size.x, 84.0)
 		number.get_line_edit().add_theme_font_size_override("font_size", 18)
 		number.get_line_edit().virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	if node is Label:
 		var caption := node as Label
 		caption.mouse_filter = Control.MOUSE_FILTER_PASS
 		caption.add_theme_font_size_override("font_size", 15)
-		caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		caption.custom_minimum_size.x = minf(caption.custom_minimum_size.x, 44)
+		# Respect the label's original wrapping and size flags. Forcing every
+		# numerical label to wrap made +109 render one digit per line, while
+		# making every label expand hid skill names beside their modifiers.
+		if caption.autowrap_mode != TextServer.AUTOWRAP_OFF:
+			caption.custom_minimum_size.x = 0
 	if node is RichTextLabel:
 		node.custom_minimum_size.x = 0
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL

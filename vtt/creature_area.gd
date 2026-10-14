@@ -79,6 +79,7 @@ var _touch_section_drawer: PanelContainer
 var _touch_section_toggle: Button
 var _touch_section_buttons: Array[Button] = []
 var _touch_section: OptionButton
+signal touch_library_changed(show_library: bool)
 var _touch_library_button: Button
 var _skills_panel: VBoxContainer
 var _skill_buttons: Dictionary = {}
@@ -872,6 +873,7 @@ func _build_ui() -> void:
 	miniature_group.add_child(miniature_flow)
 
 	var health_panel := PanelContainer.new()
+	health_panel.name = "TouchHitPoints"
 	var health_style := StyleBoxFlat.new()
 	health_style.bg_color = Color(0.24, 0.14, 0.15, 0.96)
 	health_style.border_color = Color(0.76, 0.50, 0.30, 0.90)
@@ -890,6 +892,7 @@ func _build_ui() -> void:
 	_style_statistics_heading(health_title)
 	health_content.add_child(health_title)
 	var health := HFlowContainer.new()
+	health.name = "TouchHealthLine"
 	health.add_theme_constant_override("h_separation", 3)
 	health.add_theme_constant_override("v_separation", 3)
 	health_content.add_child(health)
@@ -940,6 +943,7 @@ func _build_ui() -> void:
 	_add_label(health, "Attuali")
 	health.move_child(health.get_child(health.get_child_count() - 1), 1)
 	var form_hp_row := HBoxContainer.new()
+	form_hp_row.name = "TouchFormHpLine"
 	form_hp_row.add_theme_constant_override("separation", 6)
 	health_content.add_child(form_hp_row)
 	_add_label(form_hp_row, "Seconda forma")
@@ -966,6 +970,7 @@ func _build_ui() -> void:
 	_second_form_max_hp.tooltip_text = "PF massimi della seconda forma (polimorfia o forma selvatica)"
 	# CA and initiative share a dedicated defense panel.
 	var defense_panel := PanelContainer.new()
+	defense_panel.name = "TouchDefense"
 	var defense_style := health_style.duplicate() as StyleBoxFlat
 	defense_style.draw_center = false
 	defense_style.border_color = Color(0.48, 0.68, 0.75, 0.85)
@@ -981,6 +986,7 @@ func _build_ui() -> void:
 	defense_content.add_child(defense_heading)
 	# A single non-wrapping row keeps initiative inside the AC panel.
 	var defense_flow := HBoxContainer.new()
+	defense_flow.name = "TouchDefenseLine"
 	defense_flow.add_theme_constant_override("separation", 5)
 	defense_content.add_child(defense_flow)
 	_defense_summary = Label.new()
@@ -1010,6 +1016,7 @@ func _build_ui() -> void:
 	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
 	_natural_ac_formula.focus_exited.connect(func() -> void: _save())
 	var natural_row := HBoxContainer.new()
+	natural_row.name = "TouchAcFormula"
 	natural_row.add_theme_constant_override("separation", 4)
 	defense_content.add_child(natural_row)
 	_add_label(natural_row, "CA naturale · formula")
@@ -1026,6 +1033,7 @@ func _build_ui() -> void:
 	temp_health.add_child(_ac_proficiency_warning)
 	defense_flow.add_child(VSeparator.new())
 	var initiative_row := HBoxContainer.new()
+	initiative_row.name = "TouchInitiativeLine"
 	initiative_row.add_theme_constant_override("separation", 3)
 	defense_flow.add_child(initiative_row)
 	_add_label(initiative_row, "Bonus iniziativa")
@@ -1720,6 +1728,7 @@ func configure_touch_layout() -> void:
 			child.pressed.connect(func() -> void: show_touch_library(false))
 	_traits_ui.call("configure_touch_layout")
 	touch.style_tree(_panel)
+	_configure_touch_statistics()
 	for column: Control in _statistics_columns.get_children():
 		column.custom_minimum_size.x = 0
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1749,6 +1758,83 @@ func configure_touch_layout() -> void:
 		touch.style_tree(_multiclass_rows)
 		touch.style_tree(_tracker_rows)
 	show_touch_library(true)
+
+
+
+# Only the statistics pane needs constrained, non-wrapping numeric cells.
+# Restore the original desktop control signals; change presentation only.
+func _configure_touch_statistics() -> void:
+	var left_view := _statistics_columns.get_child(0) as ScrollContainer
+	var right_view := _statistics_columns.get_child(1) as ScrollContainer
+	for view: ScrollContainer in [left_view, right_view]:
+		view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		view.custom_minimum_size.x = 0
+		var content := view.get_child(0) as Control
+		content.custom_minimum_size.x = 0
+		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for key: Variant in _formula_values:
+		var value: Control = _formula_values[key] as Control
+		if value == null:
+			continue
+		value.size_flags_horizontal = Control.SIZE_SHRINK_END
+		var number := value.get("value_label") as Label
+		if number != null:
+			number.autowrap_mode = TextServer.AUTOWRAP_OFF
+			number.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			number.custom_minimum_size.x = maxf(number.custom_minimum_size.x, 54)
+	for skill: String in _skill_buttons.keys():
+		var name := _skill_buttons[skill] as Label
+		name.autowrap_mode = TextServer.AUTOWRAP_OFF
+		name.clip_text = true
+		name.custom_minimum_size.x = 145
+		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var point_header := _abilities_grid.get_child(1) as Label
+	point_header.text = "Punt."
+	for heading_index: int in range(5):
+		(_abilities_grid.get_child(heading_index) as Label).autowrap_mode = TextServer.AUTOWRAP_OFF
+
+	var combat := right_view.get_child(0) as VBoxContainer
+	var health_panel := combat.get_node("TouchHitPoints") as PanelContainer
+	var health_content := health_panel.get_child(0) as VBoxContainer
+	var health := health_content.get_node("TouchHealthLine") as HFlowContainer
+	var health_stack := preload("res://vtt/mobile/touch_layout.gd").replace_box(health, VBoxContainer.new()) as VBoxContainer
+	var health_values := HBoxContainer.new()
+	health_values.add_theme_constant_override("separation", 5)
+	health_stack.add_child(health_values)
+	var actions := health_stack.get_child(0) as HBoxContainer
+	for child: Node in health_stack.get_children():
+		if child != actions and child != health_values:
+			child.reparent(health_values, false)
+	health_stack.move_child(health_values, 0)
+	_hp.custom_minimum_size.x = 90
+	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var second_form := health_content.get_node("TouchFormHpLine") as HBoxContainer
+	var form_stack := preload("res://vtt/mobile/touch_layout.gd").replace_box(second_form, VBoxContainer.new()) as VBoxContainer
+	var form_values := HBoxContainer.new()
+	form_values.add_theme_constant_override("separation", 5)
+	form_stack.add_child(form_values)
+	for child: Node in form_stack.get_children():
+		if child != form_values and child != form_stack.get_child(0):
+			child.reparent(form_values, false)
+	_second_form_hp.custom_minimum_size.x = 88
+	_second_form_max_hp.custom_minimum_size.x = 88
+
+	var defense := combat.get_node("TouchDefense") as PanelContainer
+	var defense_content := defense.get_child(0) as VBoxContainer
+	var defense_row := defense_content.get_node("TouchDefenseLine") as HBoxContainer
+	var defense_stack := preload("res://vtt/mobile/touch_layout.gd").replace_box(defense_row, VBoxContainer.new()) as VBoxContainer
+	for child: Node in defense_stack.get_children():
+		if child is VSeparator:
+			child.hide()
+	var initiative_row := defense_stack.get_node("TouchInitiativeLine") as HBoxContainer
+	(initiative_row.get_child(0) as Label).text = "Iniziativa"
+	var natural_row := defense_content.get_node("TouchAcFormula") as HBoxContainer
+	preload("res://vtt/mobile/touch_layout.gd").replace_box(natural_row, VBoxContainer.new())
+	_armor_picker.custom_minimum_size.x = 114
+	_armor_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_natural_ac_formula.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_natural_ac_formula.custom_minimum_size.x = 0
 
 
 func _import_export_file(path: String) -> void:
@@ -1812,6 +1898,7 @@ func show_touch_library(show_library: bool) -> void:
 	_touch_library_button.text = "Apri" if show_library else "‹"
 	_touch_library_button.tooltip_text = "Apri la scheda selezionata" if show_library else "Torna all’elenco delle creature"
 	_touch_library_button.disabled = show_library and _selected_id.is_empty()
+	touch_library_changed.emit(show_library)
 
 
 func _connect_touch_creature_rows() -> void:
@@ -6917,21 +7004,33 @@ func _refresh_origins_overview() -> void:
 		_origins_overview.remove_child(child)
 		child.queue_free()
 	var intro := Label.new()
-	intro.text = "Seleziona una sezione per gestire le concessioni. Passa sulle origini per vedere i benefici; ↗ apre il tratto."
+	intro.text = "Ogni origine mostra le concessioni registrate nella scheda. ↗ apre il tratto completo."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_origins_overview.add_child(intro)
 	for source: Dictionary in preload("res://vtt/creature_origin_choices.gd").available(_current()):
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or sid == preload("res://vtt/creature_origin_choices.gd").SPELL_PICKER_ID:
 			continue
+		var entry := VBoxContainer.new()
+		entry.add_theme_constant_override("separation", 4)
+		_origins_overview.add_child(entry)
 		var row := HBoxContainer.new()
-		_origins_overview.add_child(row)
+		entry.add_child(row)
 		var label := Label.new()
 		label.text = String(source.get("name", sid))
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(label)
 		preload("res://vtt/origin_editor_ui.gd").origin_link(label, row, sid, label.text)
+		# Tooltips are inaccessible on a touchscreen: render the actual grants.
+		var details := Label.new()
+		var grants := _origin_summary(sid).trim_prefix("Concessioni dell'origine:\n").strip_edges()
+		details.text = grants if not grants.is_empty() else "Nessuna concessione strutturata registrata; ↗ apre il tratto."
+		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		details.add_theme_font_size_override("font_size", 14)
+		details.add_theme_color_override("font_color", Color(0.76, 0.83, 0.88))
+		entry.add_child(details)
 
 
 func _show_sheet_tab(title: String) -> void:
