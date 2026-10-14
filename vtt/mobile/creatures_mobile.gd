@@ -48,6 +48,26 @@ var _page_header_contents: VBoxContainer
 var _archive_selector: OptionButton
 var _active_page := -1
 
+# Embedded windows own their input viewport. Forward raw touch back to the
+# same gesture dispatcher, translating its coordinates into the main viewport.
+class WindowTouchRelay:
+	extends Node
+	var mobile: Node
+	func _input(event: InputEvent) -> void:
+		if event is InputEventScreenTouch or event is InputEventScreenDrag:
+			var forwarded: InputEvent = event.duplicate()
+			forwarded.position += Vector2(get_window().position)
+			get_viewport().set_input_as_handled()
+			mobile._input(forwarded)
+
+func _install_window_touch(window: Window) -> void:
+	if window is PopupMenu or window.has_node("MobileTouchRelay"):
+		return
+	var relay := WindowTouchRelay.new()
+	relay.name = "MobileTouchRelay"
+	relay.mobile = self
+	window.add_child(relay)
+
 func _enter_tree() -> void:
 	get_tree().quit_on_go_back = false
 	get_tree().root.set_meta("vtt_touch_layout", true)
@@ -104,6 +124,7 @@ func _ready() -> void:
 	ui_root.add_child(_exit_dialog)
 	TouchLayout.fit_dialog(_exit_dialog)
 	for node: Node in ui_root.find_children("*", "Window", true, false):
+		_install_window_touch(node as Window)
 		if node is AcceptDialog:
 			node.about_to_popup.connect(_fit_touch_dialog.bind(node))
 	_presence = Presence.new()
@@ -257,6 +278,8 @@ func _style_added_control(reference: WeakRef) -> void:
 	var node: Node = reference.get_ref()
 	if is_instance_valid(node) and not node.is_queued_for_deletion():
 		TouchLayout.style_control(node)
+		if node is Window:
+			_install_window_touch(node as Window)
 
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_WM_GO_BACK_REQUEST, NOTIFICATION_WM_CLOSE_REQUEST] and _active_page >= 0:
@@ -352,6 +375,20 @@ func _touch_scroll_bars(at: Vector2) -> Array[ScrollBar]:
 			point = at - Vector2(window.position)
 	return TouchLayout.scroll_bars_at(scroll_root, point)
 
+func _touch_modal_root() -> Control:
+	if _help_panel.visible:
+		return _help_panel
+	if _choice_panel.visible:
+		return _choice_panel
+	if _session_actions != null:
+		if _session_actions.picker.visible:
+			return _session_actions.picker
+		if _session_actions.viewer.visible:
+			return _session_actions.viewer
+	if _page_drawer.visible:
+		return _page_drawer
+	return null
+
 func _dispatch_touch_tap(at: Vector2) -> void:
 	# Resolve buttons in the active embedded window directly. Its viewport
 	# uses window-local coordinates; root synthetic clicks can miss Cancel.
@@ -363,6 +400,7 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 	var point := at
 	if active_window != get_window():
 		point -= Vector2(active_window.position)
+	var modal: Control = _touch_modal_root() if active_window == get_window() else null
 	var buttons: Array[BaseButton] = []
 	if active_window is ConfirmationDialog:
 		var cancel: Button = active_window.get_cancel_button()
@@ -377,10 +415,8 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 			return
 	for node: Node in active_window.find_children("*", "BaseButton", true, false):
 		var button := node as BaseButton
-		if _session_actions != null:
-			var modal: Control = _session_actions.picker if _session_actions.picker.visible else (_session_actions.viewer if _session_actions.viewer.visible else null)
-			if modal != null and not modal.is_ancestor_of(button) and not (_help_panel.visible and _help_panel.is_ancestor_of(button)):
-				continue
+		if modal != null and not modal.is_ancestor_of(button):
+			continue
 		if button.get_window() != active_window or not button.is_visible_in_tree() or button.disabled:
 			continue
 		if not button.get_global_rect().has_point(point):
@@ -407,6 +443,44 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 				button.button_pressed = not button.button_pressed
 			button.pressed.emit()
 		return
+	var fields: Array[Control] = []
+	for node: Node in active_window.find_children("*", "Control", true, false):
+		if not (node is LineEdit or node is ItemList):
+			continue
+		var control := node as Control
+		if modal != null and not modal.is_ancestor_of(control):
+			continue
+		if control.get_window() != active_window or not control.is_visible_in_tree() or not control.get_global_rect().has_point(point):
+			continue
+		var ancestor := control.get_parent()
+		var clipped := false
+		while ancestor is Control:
+			if ancestor.clip_contents and not ancestor.get_global_rect().has_point(point):
+				clipped = true
+				break
+			ancestor = ancestor.get_parent()
+		if not clipped:
+			fields.append(control)
+	fields.sort_custom(func(a: Control, b: Control) -> bool:
+		return TouchLayout._effective_z(a) > TouchLayout._effective_z(b))
+	if not fields.is_empty():
+		active_window.grab_focus()
+		var control := fields[0]
+		if control is LineEdit and control.editable:
+			control.grab_focus()
+			if control.clear_button_enabled and point.x >= control.get_global_rect().end.x - 32 and not control.text.is_empty():
+				control.clear()
+				control.text_changed.emit("")
+			control.caret_column = control.text.length()
+			if control.virtual_keyboard_enabled and DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+				DisplayServer.virtual_keyboard_show(control.text, Rect2(), control.virtual_keyboard_type, control.max_length, control.caret_column, control.caret_column)
+			return
+		if control is ItemList:
+			var index: int = control.get_item_at_position(point - control.global_position, true)
+			if index >= 0 and control.is_item_selectable(index) and not control.is_item_disabled(index):
+				control.select(index)
+				control.item_selected.emit(index)
+			return
 	# Embedded fields and ItemLists need events in their own viewport,
 	# including local coordinates for focus, keyboard and row selection.
 	var motion := InputEventMouseMotion.new()

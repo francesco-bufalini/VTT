@@ -13,13 +13,13 @@ func settle() -> void:
 	for i: int in range(8):
 		await process_frame
 func tap(mobile: Node, window: Window, point: Vector2) -> void:
-	var position := point + Vector2(window.position)
+	var position := point
 	for pressed: bool in [true, false]:
 		var event := InputEventScreenTouch.new()
 		event.index = 0
 		event.position = position
 		event.pressed = pressed
-		mobile._input(event)
+		window.push_input(event, true)
 func run() -> void:
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	root.size = Vector2i(480,960)
@@ -49,7 +49,7 @@ func run() -> void:
 		key.pressed = true
 		key.unicode = character.unicode_at(0)
 		key.keycode = character.to_upper().unicode_at(0)
-		dialog.push_input(key, true)
+		root.push_input(key, true)
 	await settle()
 	assert(sheet._visible_miniatures.size() >= 1 and sheet._visible_miniatures.size() < sheet._miniature_choices.size(), "Typing must filter the miniature list")
 	var list: ItemList = sheet._miniature_list
