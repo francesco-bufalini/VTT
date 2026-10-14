@@ -451,6 +451,7 @@ func run() -> void:
 	board.add_child(upper_prop)
 	await physics_frame
 	await physics_frame
+	camera.call("set_top_down_floor_levels_provider", Callable(probe, "get_solid_levels"))
 	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 0.0)
 	var prop_levels: Array = probe.call("get_solid_levels")
 	var found_upper_prop := false
