@@ -35,6 +35,8 @@ var _page_menu_button: Button
 var _page_title: Label
 var _page_header_row: HBoxContainer
 var _page_header: PanelContainer
+var _page_header_contents: VBoxContainer
+var _archive_selector: OptionButton
 var _connection_badge: Label
 var _active_page := -1
 
@@ -70,6 +72,7 @@ func _ready() -> void:
 	_build_session_panel()
 
 	_build_page_header()
+	_build_archive_selector()
 	_install_unified_sections(sheet)
 	TouchLayout.scroll_body(_session_panel)
 	TouchLayout.style_tree(_session_panel)
@@ -171,10 +174,13 @@ func _build_page_header() -> void:
 	header.add_child(margin)
 	header.resized.connect(func() -> void:
 		call_deferred("_layout_pages"))
+	_page_header_contents = VBoxContainer.new()
+	_page_header_contents.add_theme_constant_override("separation", 4)
+	margin.add_child(_page_header_contents)
 	var row := HBoxContainer.new()
 	_page_header_row = row
 	row.add_theme_constant_override("separation", 6)
-	margin.add_child(row)
+	_page_header_contents.add_child(row)
 	_page_menu_button = Button.new()
 	_page_menu_button.name = "MobilePageMenu"
 	_page_menu_button.text = "☰"
@@ -228,6 +234,7 @@ func _select_page(index: int) -> void:
 	_page_title.visible = index != 0
 
 	_connection_badge.visible = index == 3
+	_archive_selector.visible = index == 0
 	_layout_pages()
 
 func _layout_pages() -> void:
@@ -448,6 +455,54 @@ func _show_map_data(data: Dictionary) -> void:
 	_map_summary.add_text("\nToken sulla mappa\n")
 	for token: Dictionary in data.get("tokens", []):
 		_map_summary.add_text("%s: %s\n" % [token.name, ", ".join(token.conditions)])
+# The storage selector belongs to the sheet header, on its own line.
+# It does not overlap the sheet or crowd the permanent navigation buttons.
+func _build_archive_selector() -> void:
+	_archive_selector = OptionButton.new()
+	_archive_selector.name = "LocalCreatureArchive"
+	_archive_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_archive_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_archive_selector.tooltip_text = "Archivio creature: generale, campagna o scenario"
+	_page_header_contents.add_child(_archive_selector)
+	_archive_selector.add_item("Creature locali · Generale")
+	_archive_selector.set_item_metadata(0, {"campaign": "", "scenario": ""})
+	var manager := get_node("/root/CampaignManager")
+	for group: Dictionary in manager.list_campaign_groups():
+		_archive_selector.add_item("Campagna · " + String(group.get("name", "")))
+		_archive_selector.set_item_metadata(_archive_selector.item_count - 1,
+			{"campaign": String(group.id), "scenario": ""})
+	for scenario: Dictionary in manager.list_campaigns():
+		_archive_selector.add_item("Scenario · " + String(scenario.get("name", "")))
+		_archive_selector.set_item_metadata(_archive_selector.item_count - 1,
+			{"campaign": "", "scenario": String(scenario.id)})
+	for index: int in range(_archive_selector.item_count):
+		var scope: Dictionary = _archive_selector.get_item_metadata(index)
+		if scope.campaign == manager.selected_campaign_group_id and (
+			not scope.campaign.is_empty() or scope.scenario == manager.active_campaign_id
+		):
+			_archive_selector.select(index)
+			break
+	_archive_selector.item_selected.connect(_select_local_archive)
+	TouchLayout.style_control(_archive_selector)
+
+
+func _select_local_archive(index: int) -> void:
+	var scope: Dictionary = _archive_selector.get_item_metadata(index)
+	var manager := get_node("/root/CampaignManager")
+	if String(scope.campaign) == manager.selected_campaign_group_id and (
+		not String(scope.campaign).is_empty() or String(scope.scenario) == manager.active_campaign_id
+	):
+		return
+	# Persist edits in their original scope before switching the backing JSON.
+	var was_open: bool = creature_area.is_panel_open()
+	if was_open:
+		creature_area.hide_panel()
+	manager.selected_campaign_group_id = String(scope.campaign)
+	manager.active_campaign_id = String(scope.scenario)
+	if was_open:
+		creature_area.show_panel()
+
+
 func _discovery_hosts() -> Array[String]:
 	var hosts: Array[String] = ["255.255.255.255"]
 	# Directed LAN broadcasts work on networks that reject limited broadcast.
