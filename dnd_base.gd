@@ -316,7 +316,7 @@ func _ready() -> void:
 		"setup",
 		self,
 		_share_session_key(),
-		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
+		Callable(board_sync, "get_session_peer_ipv4s")
 	)
 	creature_presence = preload("res://network/creature_presence.gd").new()
 	creature_presence.name = "CreaturePresence"
@@ -324,8 +324,9 @@ func _ready() -> void:
 	creature_presence.call(
 		"setup",
 		_share_session_key(),
-		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
+		Callable(board_sync, "get_presence_discovery_hosts")
 	)
+	board_sync.set_lan_presence(creature_presence)
 	var creature_sheet: Node = get_node_or_null("CreatureArea")
 	if creature_sheet != null:
 		creature_presence.document_received.connect(
@@ -5688,7 +5689,7 @@ func _on_share_session_changed(_value: float) -> void:
 
 func _build_share_dialog() -> void:
 	share_dialog = AcceptDialog.new()
-	share_dialog.title = "Mappa · locale e Tailscale"
+	share_dialog.title = "Mappa · rete locale e Tailscale"
 	$UI.add_child(share_dialog)
 	share_dialog.confirmed.connect(_close_context_menu_to_game)
 	share_dialog.canceled.connect(_close_context_menu_to_game)
@@ -5700,7 +5701,7 @@ func _build_share_dialog() -> void:
 	var info := Label.new()
 	info.text = (
 		"Puoi salvare o caricare una copia locale della mappa, oppure "
-		+ "sincronizzarla con gli altri VTT via Tailscale. La ricezione "
+		+ "sincronizzarla con gli altri VTT sulla stessa rete locale o via Tailscale. La ricezione "
 		+ "di rete resta sempre attiva. Con la sincronizzazione automatica "
 		+ "ogni modifica della mappa viene inviata agli altri dispositivi; "
 		+ "dice roller e chat restano su un canale separato."
@@ -5759,7 +5760,7 @@ func _build_share_dialog() -> void:
 	load_local.pressed.connect(_open_map_load_dialog)
 
 	var send := Button.new()
-	send.text = "Sincronizza mappa su Tailscale"
+	send.text = "Sincronizza mappa in rete"
 	layout.add_child(send)
 	send.pressed.connect(
 		func(): board_sync.send_snapshot_to_tailnet(_share_session_key())

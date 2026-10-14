@@ -8,6 +8,7 @@ var _session_panel: PanelContainer
 const Presence = preload("res://network/creature_presence.gd")
 var _presence: Presence
 var _session_picker: OptionButton
+var _host_input: LineEdit
 var _peer_list: VBoxContainer
 var _exit_dialog: ConfirmationDialog
 var _page_history: Array[int] = []
@@ -109,7 +110,7 @@ func _ready() -> void:
 			node.about_to_popup.connect(_fit_touch_dialog.bind(node))
 	_presence = Presence.new()
 	_presence.name = "CreaturePresence"
-	_presence.auto_refresh = false
+	_presence.auto_refresh = true
 	add_child(_presence)
 	_presence.peers_changed.connect(_show_online_peers)
 	_presence.setup("1", _discovery_hosts)
@@ -470,10 +471,21 @@ func _build_session_panel() -> void:
 	refresh.text = "Aggiorna utenti online"
 	refresh.pressed.connect(_refresh_online_peers)
 	column.add_child(refresh)
+	var direct_row := HBoxContainer.new()
+	column.add_child(direct_row)
+	_host_input = LineEdit.new()
+	_host_input.placeholder_text = "IP desktop · emulatore: 10.0.2.2"
+	_host_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_host_input.text_submitted.connect(func(_text: String) -> void: _connect_host_address())
+	direct_row.add_child(_host_input)
+	var direct_button := Button.new()
+	direct_button.text = "Collega IP"
+	direct_button.pressed.connect(_connect_host_address)
+	direct_row.add_child(direct_button)
 	_peer_list = VBoxContainer.new()
 	column.add_child(_peer_list)
 	var hint := Label.new()
-	hint.text = "Apri VTT sul desktop e Tailscale su entrambi i dispositivi. Tocca un desktop online per collegarti."
+	hint.text = "Con lo stesso numero di partita, scegli un desktop sulla rete locale o via Tailscale. Se non appare, inserisci il suo IPv4. Nell'emulatore Android sullo stesso PC usa 10.0.2.2."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(hint)
 	var disconnect_button := Button.new()
@@ -518,17 +530,26 @@ func _build_archive_selector() -> void:
 
 
 func _discovery_hosts() -> Array[String]:
-	var hosts: Array[String] = ["255.255.255.255"]
-	# Directed LAN broadcasts work on networks that reject limited broadcast.
-	for ip: String in IP.get_local_addresses():
-		if ip.is_valid_ip_address() and not ip.contains(":") and (ip.begins_with("192.168.") or ip.begins_with("10.")):
-			var parts := ip.split(".")
-			hosts.append("%s.%s.%s.255" % [parts[0], parts[1], parts[2]])
+	var known: Array[String] = []
+	if _host_input != null:
+		var manual_ip := _host_input.text.strip_edges()
+		if manual_ip.is_valid_ip_address() and not manual_ip.contains(":"):
+			known.append(manual_ip)
 	for peer: Dictionary in _presence.get_online_peers():
-		var ip := String(peer.get("ip", ""))
-		if not hosts.has(ip):
-			hosts.append(ip)
-	return hosts
+		known.append(String(peer.get("ip", "")))
+	return Presence.discovery_targets(known)
+
+
+func _connect_host_address() -> void:
+	var host := _host_input.text.strip_edges()
+	if not host.is_valid_ip_address() or host.contains(":"):
+		_connection_status.text = "Inserisci un indirizzo IPv4 valido del desktop"
+		return
+	var error := map_data_controller.connect_remote(host, str(_session_picker.selected + 1))
+	if error != OK:
+		_connection_status.text = "Connessione non avviata: " + error_string(error)
+	else:
+		_presence.request_refresh()
 
 func _refresh_online_peers() -> void:
 	_connection_status.text = "Ricerca degli utenti online…"
