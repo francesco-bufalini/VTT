@@ -2,6 +2,7 @@ extends "res://vtt/standalone/creatures_standalone.gd"
 ## Touch shell for the current shared sheets, compendium and offline dice.
 const MapController = preload("res://vtt/map_data_controller.gd")
 const TouchLayout = preload("res://vtt/mobile/touch_layout.gd")
+const FormulaValue = preload("res://vtt/formula_value.gd")
 var map_data_controller: MapController
 var _session_panel: PanelContainer
 const Presence = preload("res://network/creature_presence.gd")
@@ -18,6 +19,12 @@ var _dragging := false
 var _finger_started_msec := 0
 var _help_panel: PanelContainer
 var _help_text: RichTextLabel
+var _help_close_button: Button
+var _help_actions: HBoxContainer
+var _help_edit_button: Button
+var _help_bonus_button: Button
+var _help_roll_button: Button
+var _help_formula: Node
 var _gesture_bars: Array[ScrollBar] = []
 var _previous_mouse_emulation := true
 var _previous_tooltip_delay := 0.5
@@ -324,7 +331,14 @@ func _input(event: InputEvent) -> void:
 			_finger = -1
 			_gesture_bars.clear()
 			if tap:
-				if Time.get_ticks_msec() - _finger_started_msec >= 550 and not _help_panel.visible:
+				if _help_panel != null and _help_panel.visible:
+					# ScreenTouch input is consumed above, so a synthetic mouse click
+					# is not reliable for an overlay button. Dispatch it directly.
+					for action: Button in [_help_close_button, _help_edit_button, _help_bonus_button, _help_roll_button]:
+						if action != null and action.visible and action.get_global_rect().has_point(event.position):
+							action.pressed.emit()
+							break
+				elif Time.get_ticks_msec() - _finger_started_msec >= 550:
 					call_deferred("_explain_touch", event.position)
 				else:
 					call_deferred("_dispatch_touch_tap", event.position)
@@ -643,10 +657,31 @@ func _build_touch_help() -> void:
 	_help_panel.offset_bottom = -8
 	var column := VBoxContainer.new()
 	_help_panel.add_child(column)
-	var close := Button.new()
-	close.text = "Chiudi spiegazione"
-	close.pressed.connect(func() -> void: _help_panel.hide())
-	column.add_child(close)
+	_help_close_button = Button.new()
+	_help_close_button.text = "Chiudi spiegazione"
+	_help_close_button.pressed.connect(_close_touch_help)
+	column.add_child(_help_close_button)
+	_help_actions = HBoxContainer.new()
+	_help_actions.add_theme_constant_override("separation", 6)
+	column.add_child(_help_actions)
+	_help_edit_button = Button.new()
+	_help_edit_button.text = "Modifica"
+	_help_edit_button.tooltip_text = "Modifica i valori di base"
+	_help_edit_button.pressed.connect(_touch_formula_action.bind("edit"))
+	_help_actions.add_child(_help_edit_button)
+	_help_bonus_button = Button.new()
+	_help_bonus_button.text = "Bonus"
+	_help_bonus_button.tooltip_text = "Gestisci bonus e origini"
+	_help_bonus_button.pressed.connect(_touch_formula_action.bind("bonus"))
+	_help_actions.add_child(_help_bonus_button)
+	_help_roll_button = Button.new()
+	_help_roll_button.text = "Tira"
+	_help_roll_button.tooltip_text = "Esegui il tiro"
+	_help_roll_button.pressed.connect(_touch_formula_action.bind("roll"))
+	_help_actions.add_child(_help_roll_button)
+	for action: Button in [_help_edit_button, _help_bonus_button, _help_roll_button]:
+		action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_help_actions.hide()
 	_help_text = RichTextLabel.new()
 	_help_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_help_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -655,18 +690,61 @@ func _build_touch_help() -> void:
 	TouchLayout.style_tree(_help_panel)
 	_help_panel.hide()
 
-func _show_touch_help(message: String) -> void:
-	_help_text.text = message
+func _close_touch_help() -> void:
+	_help_panel.hide()
+	_help_formula = null
+
+
+func _show_touch_help(message: String, formula: Node = null) -> void:
+	_help_formula = formula if is_instance_valid(formula) else null
+	var display_text := message
+	if _help_formula != null:
+		# Desktop mouse gestures have accessible on-screen equivalents below.
+		display_text = display_text.replace("\nDoppio clic per modificare i valori consentiti.", "")
+		display_text = display_text.replace("\nClic destro per gestire i bonus e le loro origini.", "")
+		display_text = display_text.replace("\nClic sinistro per tirare nel roller.", "")
+		var fields: Variant = _help_formula.get("_fields")
+		_help_edit_button.visible = fields is Array and not (fields as Array).is_empty()
+		_help_bonus_button.show()
+		_help_roll_button.visible = bool(_help_formula.get("roll_on_click"))
+		_help_actions.show()
+	else:
+		_help_actions.hide()
+	_help_text.text = display_text
 	_help_text.scroll_to_line(0)
 	_help_panel.show()
+
+
+func _touch_formula_action(kind: String) -> void:
+	var formula: Node = _help_formula
+	_close_touch_help()
+	if not is_instance_valid(formula):
+		return
+	match kind:
+		"edit":
+			formula.call("open_editor")
+		"bonus":
+			formula.emit_signal("bonus_requested", String(formula.get("target_key")))
+		"roll":
+			formula.emit_signal("roll_requested", String(formula.get("target_key")))
+
 
 func _explain_touch(point: Vector2) -> void:
 	var captions := get_tree().root.get_node_or_null("ScrollableCaptions")
 	if captions == null:
 		return
-	var message: String = captions.touch_hint_at(point)
-	if not message.strip_edges().is_empty():
-		_show_touch_help(message)
+	var hint: Dictionary = captions.touch_hint_details_at(point)
+	var message: String = String(hint.get("text", ""))
+	if message.strip_edges().is_empty():
+		return
+	var target: Node = hint.get("target") as Control
+	var formula: Node = null
+	while target != null:
+		if target is FormulaValue:
+			formula = target
+			break
+		target = target.get_parent()
+	_show_touch_help(message, formula)
 
 func list_available_miniatures() -> Array[Dictionary]:
 	# Selection stores catalog identities; no 3D scene needs to be loaded on a phone.

@@ -6841,9 +6841,11 @@ func _refresh_conditions(record: Dictionary) -> void:
 			]
 			check.tooltip_text = ContentCatalog.description(definition)
 			check.button_pressed = String(definition.id) in active
-			# The description must keep the remaining width on narrow screens.
-			check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			check.clip_text = false
+			# Scope the non-clipping touch label to Conditions, not Statistics.
+			if _touch_layout:
+				check.set_meta("touch_full_condition", true)
+				check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				check.clip_text = false
 			check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
 			row.add_child(check)
 			var info := Button.new()

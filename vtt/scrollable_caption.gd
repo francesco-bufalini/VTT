@@ -249,13 +249,19 @@ func _exit_tree() -> void:
 
 # Touch help reads the same explanations as desktop hover without firing a click.
 func touch_hint_at(point: Vector2) -> String:
+	return String(touch_hint_details_at(point).get("text", ""))
+
+
+# Keep the source control so touch help can provide usable actions for formulas.
+func touch_hint_details_at(point: Vector2) -> Dictionary:
 	_reset()
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
 	motion.global_position = point
 	get_viewport().push_input(motion, true)
-	var hint := _hint_under_pointer()
+	var hint: Dictionary = _hint_under_pointer()
 	motion = InputEventMouseMotion.new()
 	motion.position = Vector2(-100, -100)
+	motion.global_position = motion.position
 	get_viewport().push_input(motion, true)
-	return String(hint.get("text", ""))
+	return hint

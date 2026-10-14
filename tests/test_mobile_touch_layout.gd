@@ -84,6 +84,14 @@ func run() -> void:
 			await settle()
 			if not check(sheet._tabs.current_tab == index, "Touch picker must select each real shared tab"):
 				return
+		# Statistics must fit inside their tab even after the touch Condition fixes.
+		sheet._tabs.current_tab = 1
+		await settle()
+		var statistics_bounds: Rect2 = sheet._tabs.get_global_rect()
+		for column: Control in sheet._statistics_columns.get_children():
+			if not check(column.get_global_rect().end.x <= statistics_bounds.end.x + 3.0,
+				"Statistics column must stay inside mobile viewport at %s" % viewport_size):
+				return
 		if not check(sheet._name.custom_minimum_size.y >= 48 and sheet._rules_edition.custom_minimum_size.y >= 48,
 			"Shared edit fields must be usable by touch"):
 			return
@@ -153,6 +161,33 @@ func run() -> void:
 	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release (clicks=%d, target=%s, help=%s, duration=%dms)" % [clicks[0], target_center, mobile._help_panel.visible, Time.get_ticks_msec() - mobile._finger_started_msec]):
 		return
 	gesture_scroll.queue_free()
+	# The long-press help overlay must be dismissible with a real finger tap.
+	var formula: Node = null
+	for candidate: Variant in sheet._formula_values.values():
+		if candidate is Node:
+			formula = candidate
+			break
+	if not check(formula != null, "Statistics must have formula controls for touch help"):
+		return
+	mobile._show_touch_help("Test formula\nClic destro per gestire i bonus e le loro origini.\nClic sinistro per tirare nel roller.", formula)
+	await settle()
+	if not check(mobile._help_actions.visible and mobile._help_bonus_button.visible
+		and not "Clic destro" in mobile._help_text.text and not "Clic sinistro" in mobile._help_text.text,
+		"Formula explanations must use visible touch actions instead of mouse instructions"):
+		return
+	var help_close_point: Vector2 = mobile._help_close_button.get_global_rect().get_center()
+	var help_down := InputEventScreenTouch.new()
+	help_down.index = 0
+	help_down.position = help_close_point
+	help_down.pressed = true
+	var help_up := InputEventScreenTouch.new()
+	help_up.index = 0
+	help_up.position = help_close_point
+	root.push_input(help_down, true)
+	root.push_input(help_up, true)
+	await settle()
+	if not check(not mobile._help_panel.visible, "A single touch must close the explanation popup"):
+		return
 	mobile._page_history.clear()
 	mobile._select_page(0)
 	sheet.show_touch_library(false)
