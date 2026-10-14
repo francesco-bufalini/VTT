@@ -5396,13 +5396,16 @@ func _rotate_selected(quarter_turns: int) -> void:
 	_clean_selection()
 	if _selected_tokens.is_empty():
 		if _has_selected_item():
-			item_controller.call("rotate_selected_yaw", quarter_turns)
+			# The 2D item shortcut is already correct; reverse only its
+			# 3D counterpart to match the on-screen arrow direction.
+			var item_turns := quarter_turns if _view_2d_enabled else -quarter_turns
+			item_controller.call("rotate_selected_yaw", item_turns)
 		return
 
 	push_undo_state()
-	# A top-down camera reverses the apparent clockwise direction of +Y yaw.
-	# Preserve the existing 3D controls and invert only the 2D visual action.
-	var applied_turns: int = -quarter_turns if _view_2d_enabled else quarter_turns
+	# The 2D token rotation already has the correct direction. Use the same
+	# signed turns in 3D instead of reversing the arrows in that view.
+	var applied_turns: int = -quarter_turns
 	for token: CharacterBody3D in _distinct_linked_motion_pivots(_selected_tokens):
 		var previous_transform: Transform3D = token.global_transform
 		if token.has_method("rotate_grid"):
