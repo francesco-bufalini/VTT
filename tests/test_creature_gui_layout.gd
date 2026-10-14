@@ -115,6 +115,30 @@ func run() -> void:
 	for speed_cell: Control in movement_grid.get_children():
 		assert(speed_cell.custom_minimum_size.x <= 73.0,
 			"Movement cells must be compact to fit the combat column")
+	# Probe the responsive movement layout without changing the live sheet.
+	var probe_physics := Control.new()
+	var probe_speeds := Control.new()
+	var probe_grid := GridContainer.new()
+	probe_grid.name = "PhysicsSpeedGrid"
+	probe_speeds.add_child(probe_grid)
+	var probe_jumps := Control.new()
+	for spec: Vector2i in [
+		Vector2i(1000, 5), Vector2i(800, 3), Vector2i(660, 2),
+		Vector2i(500, 5), Vector2i(320, 3), Vector2i(200, 2)
+	]:
+		probe_physics.size.x = spec.x
+		area._layout_physics_movement(probe_physics, probe_speeds, probe_jumps)
+		assert(probe_grid.columns == spec.y,
+			"Movement grid must adapt to a %d px sheet" % spec.x)
+		assert(probe_speeds.custom_minimum_size.x <= float(spec.x - 18),
+			"Movement speed cells must fit the sheet width")
+		if spec.x >= 610:
+			assert(probe_speeds.custom_minimum_size.x + 16.0
+				+ probe_jumps.custom_minimum_size.x <= float(spec.x - 18),
+				"Movement speeds and jumps should share a row when wide enough")
+	probe_physics.free()
+	probe_speeds.free()
+	probe_jumps.free()
 	var combat_column: Node = area._tracker_rows.get_parent()
 	var ac_panel: Node = area._ac_effective
 	while ac_panel.get_parent() != null and ac_panel.get_parent() != combat_column:
