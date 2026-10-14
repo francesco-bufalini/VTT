@@ -1747,6 +1747,7 @@ func configure_touch_layout() -> void:
 	if not initial_record.is_empty():
 		_load_form(initial_record)
 		touch.style_tree(_multiclass_rows)
+		touch.style_tree(_tracker_rows)
 	show_touch_library(true)
 
 
@@ -3081,9 +3082,13 @@ func _add_multiclass_row(
 		return
 	var row: BoxContainer = VBoxContainer.new() if _touch_layout else HBoxContainer.new()
 	_multiclass_rows.add_child(row)
+	if _touch_layout:
+		_add_label(row, "Classe")
 	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false, false, "classes")
 	_select_reference(selector, class_value, source, reference_id)
 	selector.item_selected.connect(func(_i: int) -> void: _on_secondary_class_changed(row))
+	if _touch_layout:
+		_add_label(row, "Sottoclasse")
 	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false, true, "subclasses")
 	subclass.item_selected.connect(func(_i: int) -> void: _save())
 	if _touch_layout:
@@ -3106,6 +3111,7 @@ func _add_multiclass_row(
 	if _touch_layout:
 		action_row = HBoxContainer.new()
 		row.add_child(action_row)
+		_add_label(action_row, "Livello")
 	action_row.add_child(level)
 	var remove := Button.new()
 	remove.text = "×"
