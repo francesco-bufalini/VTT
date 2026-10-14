@@ -1648,7 +1648,10 @@ func configure_touch_layout() -> void:
 	_tabs.tabs_visible = false
 	editor.add_child(_tabs)
 	for index: int in range(_tabs.get_tab_count()):
-		(_tabs.get_tab_control(index) as ScrollContainer).horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		var tab_scroll := _tabs.get_tab_control(index) as ScrollContainer
+		# Traits are a single vertical list; an outer horizontal scrollbar
+		# steals space without providing useful content on a phone.
+		tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if tab_scroll.name == "Tratti" else ScrollContainer.SCROLL_MODE_AUTO
 	var info := _tabs.get_tab_control(0).get_child(0).get_child(0)
 	touch.wrap_fields(info)
 	_statistics_columns = touch.replace_box(_statistics_columns, VBoxContainer.new()) as BoxContainer
