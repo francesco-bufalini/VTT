@@ -45,13 +45,19 @@ func run() -> void:
 		var speed_cell := Control.new()
 		speed_cell.custom_minimum_size = Vector2(73, 45)
 		speed_grid.add_child(speed_cell)
+	# Use an external sizing control (as in production, which measures the
+	# parent Physics section). HFlowContainer itself can clamp its size to
+	# children from the previous, wider layout before they are recomputed.
+	var physics_measure := Control.new()
+	root.add_child(physics_measure)
 	for spec: Vector3i in [
 		Vector3i(1400, 5, 1), Vector3i(1000, 5, 1),
 		Vector3i(800, 3, 1), Vector3i(660, 2, 1),
 		Vector3i(480, 5, 0), Vector3i(320, 3, 0)
 	]:
+		physics_measure.size.x = spec.x
+		area._layout_physics_movement(physics_measure, speeds, jumps)
 		physics.size = Vector2(spec.x, 300)
-		area._layout_physics_movement(physics, speeds, jumps)
 		var expected_speed_width: float = float(spec.y * 73 + (spec.y - 1) * 8)
 		assert(speed_grid.columns == spec.y
 			and absf(speeds.custom_minimum_size.x - expected_speed_width) < 1.0
