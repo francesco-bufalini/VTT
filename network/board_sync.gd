@@ -2486,9 +2486,12 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary
 			token = node as CharacterBody3D
 			break
 	if token == support:
-		return {"ok": false, "error": "Scegli un altro token come punto di appoggio."}
-	if board_root.has_method("push_undo_state"):
-		board_root.call("push_undo_state")
+		return {"ok": false, "error": "Scegli un altro token come riferimento."}
+	var undo: Dictionary = board_root.call("begin_undo_transaction") if board_root.has_method("begin_undo_transaction") else {}
+	var created := token == null
+	var previous: Dictionary = token.call("get_appearance_state") if not created else {}
+	var previous_transform: Transform3D = token.global_transform if not created else Transform3D.IDENTITY
+	var previous_default: Variant = token.get_meta("default_miniature_id", "") if not created else ""
 	if token == null:
 		token = token_scene.instantiate() as CharacterBody3D
 		# Assign ownership before adding to the board: never create a private PC sheet.
@@ -2503,17 +2506,64 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary
 	board_root.call("apply_creature_sheet_appearance", token, creature)
 	token.call("set_reach_feet", float(reach), true)
 	token.call("set_conditions", conditions)
+	var position := _mobile_adjacent_position(token, support)
+	if position == Vector3.INF:
+		if created:
+			token.queue_free()
+		else:
+			token.call("apply_appearance_state", previous)
+			token.global_transform = previous_transform
+			token.set_meta("default_miniature_id", previous_default)
+		return {"ok": false, "error": "Non c’è spazio libero accanto al token scelto. Scegli un altro riferimento."}
+	if board_root.has_method("commit_undo_transaction"):
+		board_root.call("commit_undo_transaction", undo)
+	elif board_root.has_method("push_undo_state"):
+		board_root.call("push_undo_state")
 	_queue_token_pack_id(miniature)
 	_process_token_pack_queue()
-	var support_top: float = support.global_position.y + float(support.get("token_height_cells")) * float(support.get("cell_size")) * 0.5
-	var half: float = float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
-	token.global_position = Vector3(support.global_position.x, support_top + half, support.global_position.z)
-	token.set("flying", true)
-	token.set("grid_support", support)
-	token.set("_support_transform", support.global_transform)
+	token.global_position = position
+	token.call("set_flying", true)
 	if token.has_method("set_top_down_token_enabled"):
 		token.call("set_top_down_token_enabled", bool(board_root.call("is_2d_view_enabled")))
 	mark_token_appearance_locally_edited(token)
 	board_root.call_deferred("_sync_explicit_token_change", token)
 	return {"ok": true, "token_id": get_sync_id_for_node(token), "creature_id": id,
 		"name": String(token.call("get_display_name"))}
+
+# Check adjacent footprints at the reference token's base level. Keep the
+# reference separate: moving it must not carry the new creature along.
+func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3D) -> Vector3:
+	var cell := float(board_root.get("cell_size"))
+	var width := float(token.call("get_footprint_cells")) * cell
+	var height := float(token.get("token_height_cells")) * cell
+	var offset := (width + float(reference.call("get_footprint_cells")) * cell) * 0.5
+	var base := reference.global_position.y - float(reference.get("token_height_cells")) * cell * 0.5
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(maxf(width - cell * 0.04, 0.01), maxf(height - cell * 0.04, 0.01), maxf(width - cell * 0.04, 0.01))
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.collision_mask = token.collision_mask
+	query.exclude = [token.get_rid()]
+	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP, Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
+		var candidate := Vector3(reference.global_position.x + direction.x * offset, base + height * 0.5, reference.global_position.z + direction.y * offset)
+		var blocked := false
+		# Include freshly placed bodies before their next physics update.
+		for other: Node in get_tree().get_nodes_in_group("dnd_token"):
+			if other == token or other.is_queued_for_deletion() or not board_root.is_ancestor_of(other):
+				continue
+			var other_half := float(other.call("get_footprint_cells")) * cell * 0.5
+			var other_height := float(other.get("token_height_cells")) * cell
+			var delta: Vector3 = (other as Node3D).global_position - candidate
+			if absf(delta.x) < width * 0.5 + other_half - cell * 0.02 and absf(delta.z) < width * 0.5 + other_half - cell * 0.02 and absf(delta.y) < (height + other_height) * 0.5 - cell * 0.02:
+				blocked = true
+				break
+		if blocked:
+			continue
+		query.transform = Transform3D(token.global_basis.orthonormalized(), candidate)
+		if not token.get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
+			continue
+		var validator: Callable = token.get("movement_validator")
+		if validator.is_valid() and not validator.call(token, candidate):
+			continue
+		return candidate
+	return Vector3.INF

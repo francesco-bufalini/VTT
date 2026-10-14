@@ -57,7 +57,9 @@ func run() -> void:
 	assert(placed.ok, "Mobile public creature must be placed")
 	var hero: CharacterBody3D = sync._visible_mobile_token(placed.token_id)
 	assert(hero != null and hero != support)
-	assert(is_equal_approx(hero.global_position.y - hero.token_height_cells * hero.cell_size * 0.5, support.global_position.y + support.token_height_cells * support.cell_size * 0.5), "Creature base must rest on selected hitbox top")
+	assert(is_equal_approx(hero.global_position.y - hero.token_height_cells * hero.cell_size * 0.5, support.global_position.y - support.token_height_cells * support.cell_size * 0.5), "Adjacent tokens must share their base level")
+	assert(is_equal_approx(hero.global_position.distance_to(support.global_position), 1.0), "Mobile token must be adjacent, not above")
+	assert(hero.grid_support == null, "Moving the reference must not carry the mobile token")
 	assert(hero.get_meta("creature_owner_id") == creature.owner_id)
 	assert(hero.get_reach_feet() == 10 and hero.get_conditions() == ["poisoned"])
 	var repeated: Dictionary = await sync._handle_mobile_action("place_token", {"token_id": support_id, "creature": creature})
@@ -65,8 +67,36 @@ func run() -> void:
 	assert(get_nodes_in_group("dnd_token").size() == 2, "Repeated placement must not duplicate tokens")
 	var invalid: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": "absent"})
 	assert(not invalid.ok)
-	print("PASS: remote placement on hitbox top, owner identity and idempotent token reuse")
+	var before_blocked := hero.global_transform
+	var undo_before := board.undo_count
+	var blockers: Array[Node] = []
+	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP, Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
+		var blocker: CharacterBody3D = sync.token_scene.instantiate()
+		board.add_child(blocker)
+		blocker.position = support.position + Vector3(direction.x, 0, direction.y)
+		blockers.append(blocker)
+	var refused: Dictionary = await sync._handle_mobile_action("place_token", {"token_id": support_id, "creature": creature})
+	assert(not refused.ok and hero.global_transform == before_blocked and board.undo_count == undo_before, "Blocked placement must preserve the old token and undo history")
+	blockers[1].queue_free()
+	var free_side: Dictionary = await sync._handle_mobile_action("place_token", {"token_id": support_id, "creature": creature})
+	assert(free_side.ok and is_equal_approx(hero.position.x, support.position.x - 1), "Choose a free adjacent side instead of an occupied one")
+	for blocker: Node in blockers:
+		if not blocker.is_queued_for_deletion():
+			blocker.queue_free()
+	await process_frame
+	print("PASS: adjacent placement, matching base height, free-side search, rollback and stable IDs")
+	var capture_script := load("res://network/mobile_map_capture.gd")
+	var noisy := Image.create_from_data(1536, 1536, false, Image.FORMAT_RGB8, Crypto.new().generate_random_bytes(1536 * 1536 * 3))
+	var compressed: PackedByteArray = capture_script.encode_snapshot(noisy)
+	assert(not compressed.is_empty() and compressed.size() <= 1300000, "Even a noisy full-resolution frame must fit without reducing the map field")
+	var decoded := Image.new()
+	assert(decoded.load_webp_from_buffer(compressed) == OK and decoded.get_size() == Vector2i(1536, 1536))
+	assert(capture_script.field_for_range(150) == 300)
+	print("PASS: complex 1536px WebP stays within transport limits without cropping Fireball range")
 	if DisplayServer.get_name() != "headless":
+		var elevated: CharacterBody3D = sync.token_scene.instantiate()
+		board.add_child(elevated)
+		elevated.position = support.position + Vector3(3, 4, 0)
 		var floor_mesh := MeshInstance3D.new()
 		var plane := PlaneMesh.new()
 		plane.size = Vector2(100, 100)
@@ -84,11 +114,11 @@ func run() -> void:
 			"field_feet": 120, "attack": {"range_feet": 20, "long_range_feet": 60, "melee": false}})
 		assert(captured.ok and captured.contours.size() == 2)
 		assert(captured.field_feet == 120 and captured.width == 1536 and captured.height == 1536)
-		assert(captured.markers.size() == 2, "Other elevations must remain selectable")
+		assert(captured.markers.size() == 3, "Other elevations must remain selectable")
 		var elevation_found := false
 		for marker: Dictionary in captured.markers:
 			if not marker.selected:
-				elevation_found = int(marker.elevation_cells) != 0 and not String(marker.id).is_empty()
+				elevation_found = elevation_found or (int(marker.elevation_cells) != 0 and not String(marker.id).is_empty())
 		assert(elevation_found, "Markers must retain stable IDs and desktop-relative altitude")
 		assert(old_camera.transform == before, "Mobile capture must not move the desktop camera")
 		var found_center := false
@@ -99,6 +129,11 @@ func run() -> void:
 		var image := Image.new()
 		assert(image.load_webp_from_buffer(Marshalls.base64_to_raw(captured.image)) == OK)
 		image.save_png("res://build/mobile-map-capture-test.png")
+		var fireball: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": placed.token_id,
+			"attack": {"range_feet": 150, "melee": true}})
+		assert(fireball.ok and fireball.field_feet == 300 and fireball.width == 1536 and fireball.height == 1536)
+		assert(fireball.contours.size() == 1 and String(fireball.image).length() <= 1800000)
+		print("PASS: rendered full Fireball range at 1536x1536 with bounded image payload")
 		print("PASS: real WebP board capture, centered token, two range contours and unchanged desktop camera")
 	var desktop := Controller.new()
 	board.add_child(desktop)

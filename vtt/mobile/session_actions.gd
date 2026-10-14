@@ -183,7 +183,7 @@ func _choose_support(creature: Dictionary) -> void:
 		_pending_place = controller.request_action("place_token", {"token_id": token_id, "creature": creature})
 		place_button.disabled = not _pending_place.is_empty()
 		if not _pending_place.is_empty():
-			shell._connection_status.text = "Piazzamento in corso…", "Sopra l’hitbox di quale token?")
+			shell._connection_status.text = "Piazzamento in corso…", "Accanto a quale token?")
 
 func _choose_token(callback: Callable, title: String) -> void:
 	_clear_picker(title)

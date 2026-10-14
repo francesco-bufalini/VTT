@@ -43,12 +43,10 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	if image == null or image.is_empty():
 		viewport.queue_free()
 		return {"ok": false, "error": "Impossibile acquisire la mappa."}
-	var encoded := image.save_webp_to_buffer(false, 0.92)
-	if encoded.size() > 1300000:
-		encoded = image.save_webp_to_buffer(false, 0.78)
-	if encoded.size() > 1300000:
+	var encoded := encode_snapshot(image)
+	if encoded.is_empty():
 		viewport.queue_free()
-		return {"ok": false, "error": "Mappa troppo complessa per lo snapshot: riduci l’inquadratura."}
+		return {"ok": false, "error": "Impossibile comprimere lo snapshot."}
 	var result := {"ok": true, "format": "webp", "width": SIZE.x, "height": SIZE.y,
 		"image": Marshalls.raw_to_base64(encoded),
 		"token_id": "", "field_feet": field_feet, "elevation": center.y,
@@ -83,3 +81,14 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 			"affected": bool(node.get_meta("mobile_target_selected", false))})
 	viewport.queue_free()
 	return result
+
+# Godot's first WebP argument is LOSSY (false ignores quality). Adapt the
+# encoding, never the camera field or pixel geometry used for targeting.
+static func encode_snapshot(image: Image) -> PackedByteArray:
+	var rgb := image.duplicate() as Image
+	rgb.convert(Image.FORMAT_RGB8)
+	for quality: float in [0.92, 0.78, 0.60, 0.40, 0.20, 0.0]:
+		var encoded := rgb.save_webp_to_buffer(true, quality)
+		if not encoded.is_empty() and encoded.size() <= 1300000:
+			return encoded
+	return PackedByteArray()
