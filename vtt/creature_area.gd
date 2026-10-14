@@ -1451,42 +1451,49 @@ func _build_ui() -> void:
 	_biography.text_changed.connect(_save)
 	biography_box.add_child(_biography)
 
+	# Keep both appearances stacked, before the geometry controls.
+	var appearance_rows := VBoxContainer.new()
+	appearance_rows.add_theme_constant_override("separation", 5)
+	appearance_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	miniature_group.add_child(appearance_rows)
+	miniature_group.move_child(appearance_rows, miniature_flow.get_index())
+
 	var miniature_row := HBoxContainer.new()
 	miniature_row.add_theme_constant_override("separation", 6)
-	miniature_flow.add_child(miniature_row)
+	miniature_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	appearance_rows.add_child(miniature_row)
 	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.custom_minimum_size.x = 190
-	_default_miniature.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_default_miniature.placeholder_text = "Scegli una miniatura dal catalogo"
 	_default_miniature.editable = false
 	miniature_row.add_child(_default_miniature)
 	var choose_miniature := Button.new()
-	choose_miniature.text = "Cerca e scegli…"
+	choose_miniature.text = "Scegli base…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
-	var appearance_actions := HBoxContainer.new()
-	appearance_actions.add_theme_constant_override("separation", 6)
-	miniature_flow.add_child(appearance_actions)
 	var edit_appearance := Button.new()
-	edit_appearance.text = "Scegli aspetto attuale…"
+	edit_appearance.text = "Cambia aspetto…"
 	edit_appearance.tooltip_text = "Cerca la miniatura attuale; funziona anche senza token in scena."
 	edit_appearance.pressed.connect(_edit_linked_token_appearance)
-	appearance_actions.add_child(edit_appearance)
-	var reset_appearance := Button.new()
-	reset_appearance.text = "↺ Aspetto di base"
-	reset_appearance.tooltip_text = "Reimposta l'aspetto attuale alla miniatura di base."
-	reset_appearance.pressed.connect(_restore_default_appearance)
-	appearance_actions.add_child(reset_appearance)
+	miniature_row.add_child(edit_appearance)
+
 	_current_miniature_row = HBoxContainer.new()
 	_current_miniature_row.add_theme_constant_override("separation", 6)
-	miniature_group.add_child(_current_miniature_row)
+	_current_miniature_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	appearance_rows.add_child(_current_miniature_row)
 	_add_label(_current_miniature_row, "Forma attuale")
 	_current_miniature_name = LineEdit.new()
 	_current_miniature_name.editable = false
-	_current_miniature_name.custom_minimum_size.x = 240
-	_current_miniature_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_current_miniature_name.custom_minimum_size.x = 190
+	_current_miniature_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_current_miniature_row.add_child(_current_miniature_name)
+	var reset_appearance := Button.new()
+	reset_appearance.text = "↺ Aspetto di base"
+	reset_appearance.tooltip_text = "Ripristina aspetto e taglia della miniatura di base."
+	reset_appearance.pressed.connect(_restore_default_appearance)
+	_current_miniature_row.add_child(reset_appearance)
 	_current_miniature_row.hide()
 
 	# Token geometry belongs with the miniature settings, not the species row.
@@ -5384,6 +5391,28 @@ func _set_second_form_hp(maximum: int) -> void:
 	_sync_token_health(record)
 
 
+# The base miniature's profile (including its 5etools size) is the source of
+# truth on restoration. The editable size field may have held the other form.
+func _apply_base_miniature_size(record: Dictionary, miniature_id: String) -> void:
+	if not board_root.has_method("list_available_miniatures"):
+		return
+	var profiles: Variant = board_root.call("list_available_miniatures")
+	if not profiles is Array:
+		return
+	for value: Variant in profiles:
+		if not value is Dictionary:
+			continue
+		var profile: Dictionary = value as Dictionary
+		if String(profile.get("id", "")) != miniature_id:
+			continue
+		var size_name := String(profile.get("size_name", ""))
+		if size_name not in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
+			return
+		record["size_name"] = size_name
+		record["footprint"] = maxf(0.5, float(profile.get("footprint", 1.0)))
+		return
+
+
 func _restore_base_form(clear_hp: bool, target_id: String = "") -> void:
 	var record: Dictionary = _current()
 	if not target_id.is_empty() and String(record.get("id", "")) != target_id:
@@ -5398,6 +5427,7 @@ func _restore_base_form(clear_hp: bool, target_id: String = "") -> void:
 	if original_id.is_empty():
 		return
 	record["current_miniature_id"] = original_id
+	_apply_base_miniature_size(record, original_id)
 	if clear_hp:
 		record["second_form_hp"] = 0
 		record["second_form_max_hp"] = 0
@@ -5998,12 +6028,20 @@ func _build_miniature_dialog() -> void:
 	_miniature_dialog.dialog_text = ""
 	_miniature_dialog.min_size = Vector2i(540, 340)
 	ui_root.add_child(_miniature_dialog)
+	# The list scrolls by itself; avoid a parent scroll wrapper that shrinks
+	# it to its 168px minimum and leaves most of the popup unused.
+	var viewport_body := ScrollContainer.new()
+	viewport_body.name = "MiniaturePickerViewport"
+	viewport_body.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	viewport_body.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	viewport_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	viewport_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_miniature_dialog.add_child(viewport_body)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 9)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# The picker must not grow past the dialog action row on first opening.
-	body.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	_miniature_dialog.add_child(body)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	viewport_body.add_child(body)
 	_miniature_hint = Label.new()
 	_miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_miniature_hint.custom_minimum_size.y = 24
@@ -6017,7 +6055,7 @@ func _build_miniature_dialog() -> void:
 	_miniature_list.mouse_force_pass_scroll_events = false
 	_miniature_list.custom_minimum_size = Vector2(0, 168)
 	_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_miniature_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_miniature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_miniature_list.item_selected.connect(_on_miniature_selected)
 	_miniature_list.item_activated.connect(_on_miniature_selected)
 	body.add_child(_miniature_list)
@@ -6056,7 +6094,9 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 		for candidate: Variant in raw:
 
 			if candidate is Dictionary and not String(candidate.get("id", "")).is_empty():
-				_miniature_choices.append((candidate as Dictionary).duplicate(true))
+				var profile: Dictionary = (candidate as Dictionary).duplicate(true)
+				profile["_available_locally"] = _miniature_is_local(profile)
+				_miniature_choices.append(profile)
 	# A ternary with [] returns an untyped Array in GDScript. Keep the
 	# result typed on both paths, including creation of a new character.
 	var associated_ids: Array[String] = []
@@ -6101,7 +6141,22 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 		))
 	)
 	_filter_miniatures("")
-	_popup_sheet_dialog(_miniature_dialog, Vector2i(650, 450))
+	_popup_sheet_dialog(_miniature_dialog, Vector2i(760, 570))
+
+
+# Evaluate the real local PCK cache once per picker opening, rather than
+# re-hashing downloaded files on each keystroke of the search field.
+func _miniature_is_local(profile: Dictionary) -> bool:
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin in ["local_pack", "character", "current"]:
+		return true
+	if origin != "remote":
+		return false
+	var packs := get_node_or_null("/root/TokenPackManager")
+	if packs == null:
+		return false
+	var id := String(profile.get("id", ""))
+	return bool(packs.call("is_mounted", id)) or bool(packs.call("is_downloaded", id))
 
 
 func _filter_miniatures(query: String) -> void:
@@ -6116,8 +6171,10 @@ func _filter_miniatures(query: String) -> void:
 			continue
 		var index := _visible_miniatures.size()
 		_visible_miniatures.append(profile)
-		_miniature_list.add_item("%s%s · %s" % [
-			"★ " if id in _suggested_miniature_ids else "", name, id
+		_miniature_list.add_item("%s%s%s · %s" % [
+			"✓ " if bool(profile.get("_available_locally", false)) else "",
+			"★ " if id in _suggested_miniature_ids else "",
+			name, id
 		])
 		if id == _chosen_miniature_id:
 			selected_index = index
