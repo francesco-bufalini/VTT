@@ -255,5 +255,17 @@ func get_online_peers() -> Array[Dictionary]:
 	return result
 
 
+# Only full desktop VTT instances accept board/chat TCP connections.
+func get_online_desktop_ipv4s() -> Array[String]:
+	var hosts: Array[String] = []
+	for peer: Dictionary in get_online_peers():
+		if String(peer.get("device", "desktop")) != "desktop":
+			continue
+		var host := String(peer.get("ip", ""))
+		if host.is_valid_ip_address() and not host.contains(":") and not hosts.has(host):
+			hosts.append(host)
+	return hosts
+
+
 func _exit_tree() -> void:
 	_udp.close()
