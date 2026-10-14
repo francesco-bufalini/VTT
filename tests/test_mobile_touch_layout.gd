@@ -62,9 +62,12 @@ func run() -> void:
 				return
 			if not check(not nav.visible, "The global page drawer must be collapsed by default"):
 				return
+			mobile._page_menu_button.pressed.emit()
+			await settle()
 			for button: Button in mobile._navigation_buttons:
 				if not check(button.size.y >= 48, "Navigation must offer finger-sized targets"):
 					return
+			mobile._page_drawer.hide()
 		mobile._select_page(0)
 		sheet.show_touch_library(false)
 		if not check(sheet._touch_library_view != null and not sheet._touch_library_view.visible,
