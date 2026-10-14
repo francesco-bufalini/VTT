@@ -1,0 +1,72 @@
+name: VTT Mobile Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - fix/mobile-compact-sheet-navigation
+    paths:
+      - ".github/workflows/mobile-android-apk.yml"
+      - "project.godot"
+      - "export_presets.cfg"
+      - "build.ps1"
+      - "vtt/**"
+      - "network/**"
+      - "tests/test_mobile_*.gd"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vtt-mobile-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Validate and build signed Android APK
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+
+      - name: Ensure complete checkout
+        shell: powershell
+        run: |
+          git sparse-checkout disable
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git reset --hard HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Import resources and validate mobile scripts
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($test in @("test_mobile_touch_layout.gd", "test_mobile_sheet_navigation.gd", "test_mobile_main_menu.gd")) {
+            Write-Host "Running $test"
+            & $godot --headless --path . --script "res://tests/$test"
+            if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
+          }
+
+      - name: Export Android release
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          .\build.ps1 -Godot $godot -Target android
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "build/android/VTT-Android.apk")) { throw "Android APK is missing" }
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VTT-Mobile-Android-${{ github.run_number }}
+          path: build/android/VTT-Android.apk
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

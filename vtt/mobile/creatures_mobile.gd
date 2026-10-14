@@ -27,6 +27,8 @@ var _map_summary: RichTextLabel
 var _archive_selector: OptionButton
 var _pages: Array[Control] = []
 var _navigation_buttons: Array[Button] = []
+var _page_drawer: PanelContainer
+var _page_menu_button: Button
 var _page_title: Label
 var _connection_badge: Label
 var _active_page := -1
@@ -67,7 +69,7 @@ func _ready() -> void:
 		_connection_status.text = message)
 	map_data_controller.data_changed.connect(_show_map_data)
 	map_data_controller.data_changed.connect(func(data: Dictionary) -> void:
-		_connection_badge.text = "Offline" if data.is_empty() else "Collegato")
+		_connection_badge.text = "Non collegato" if data.is_empty() else "Collegato")
 	resized.connect(_layout_pages)
 	get_tree().node_added.connect(_on_touch_node_added)
 	_select_page(0)
@@ -103,28 +105,41 @@ func _configure_ui_scale() -> void:
 		window.content_scale_size = logical
 
 func _build_navigation() -> void:
-	var navigation := HBoxContainer.new()
-	navigation.name = "StandaloneNavigation"
-	navigation.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	navigation.offset_left = 8
-	navigation.offset_right = -8
-	navigation.offset_top = -72
-	navigation.offset_bottom = -8
-	navigation.z_index = 50
-	navigation.add_theme_constant_override("separation", 4)
-	ui_root.add_child(navigation)
+	# Keep the four destinations in a right-side drawer instead of reserving
+	# an entire row at the bottom of every small phone viewport.
+	_page_drawer = PanelContainer.new()
+	_page_drawer.name = "StandaloneNavigation"
+	_page_drawer.z_index = 100
+	ui_root.add_child(_page_drawer)
+	_page_drawer.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	_page_drawer.offset_left = -204
+	_page_drawer.offset_right = -8
+	_page_drawer.offset_top = 52
+	_page_drawer.offset_bottom = -8
+	var navigation := VBoxContainer.new()
+	_page_drawer.add_child(navigation)
+	var dismiss := Button.new()
+	dismiss.text = "✕  Navigazione"
+	dismiss.pressed.connect(func() -> void: _page_drawer.hide())
+	navigation.add_child(dismiss)
 	var group := ButtonGroup.new()
 	for index: int in range(4):
 		var button := Button.new()
 		button.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
-		button.custom_minimum_size.y = 56
-		button.add_theme_font_size_override("font_size", 16)
+		button.custom_minimum_size.y = 48
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.toggle_mode = true
 		button.button_group = group
-		button.pressed.connect(_select_page.bind(index))
+		button.pressed.connect(_request_page.bind(index))
 		navigation.add_child(button)
 		_navigation_buttons.append(button)
+	TouchLayout.style_tree(_page_drawer)
+	_page_drawer.hide()
+
+func _request_page(index: int) -> void:
+	# Let the touch release finish before hiding a drawer button.
+	_select_page.call_deferred(index)
+
 
 func _build_page_header() -> void:
 	var header := PanelContainer.new()
@@ -138,14 +153,28 @@ func _build_page_header() -> void:
 	margin.add_theme_constant_override("margin_right", 16)
 	header.add_child(margin)
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
 	margin.add_child(row)
+	_page_menu_button = Button.new()
+	_page_menu_button.name = "MobilePageMenu"
+	_page_menu_button.text = "☰"
+	_page_menu_button.tooltip_text = "Apri la navigazione"
+	_page_menu_button.custom_minimum_size = Vector2(48, 48)
+	_page_menu_button.pressed.connect(func() -> void:
+		(creature_area as CreatureSheet).close_touch_section_drawer()
+		_page_drawer.visible = not _page_drawer.visible)
+	row.add_child(_page_menu_button)
 	_page_title = Label.new()
-	_page_title.add_theme_font_size_override("font_size", 22)
-	_page_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_page_title.add_theme_font_size_override("font_size", 18)
 	row.add_child(_page_title)
+	# The archive scope shares the compact header and appears only for sheets.
+	_archive_selector.reparent(row)
+	_archive_selector.custom_minimum_size = Vector2(116, 48)
+	_archive_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_archive_selector.z_index = 0
 	_connection_badge = Label.new()
-	_connection_badge.text = "Offline"
-	_connection_badge.add_theme_font_size_override("font_size", 16)
+	_connection_badge.text = "Non collegato"
+	_connection_badge.add_theme_font_size_override("font_size", 14)
 	row.add_child(_connection_badge)
 
 func _select_page(index: int) -> void:
@@ -156,6 +185,8 @@ func _select_page(index: int) -> void:
 	var sheet := creature_area as CreatureSheet
 	var book := compendium as Compendium
 	var roller := dice_roller as DiceRoller
+	_page_drawer.hide()
+	sheet.close_touch_section_drawer()
 	if sheet.is_panel_open() and index != 0:
 		sheet.hide_panel()
 	if index != 1:
@@ -171,8 +202,9 @@ func _select_page(index: int) -> void:
 		2: roller.show_panel()
 		3: _session_panel.show()
 	_navigation_buttons[index].button_pressed = true
-	_page_title.text = ["Le mie schede", "Compendio", "Dadi e registro", "La partita"][index]
+	_page_title.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
 	_archive_selector.visible = index == 0
+	_connection_badge.visible = index == 3
 	_layout_pages()
 
 func _layout_pages() -> void:
@@ -181,8 +213,8 @@ func _layout_pages() -> void:
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		page.offset_left = 8
 		page.offset_right = -8
-		page.offset_top = 116 if index == 0 else 60
-		page.offset_bottom = -80
+		page.offset_top = 56
+		page.offset_bottom = -8
 
 func _on_touch_node_added(node: Node) -> void:
 	if is_ancestor_of(node):
@@ -207,6 +239,11 @@ func _request_go_back() -> void:
 func _go_back() -> void:
 	if _choice_panel != null and _choice_panel.visible:
 		_close_touch_choices()
+		return
+	if _page_drawer != null and _page_drawer.visible:
+		_page_drawer.hide()
+		return
+	if _active_page == 0 and (creature_area as CreatureSheet).close_touch_section_drawer():
 		return
 	# Close the current popup before changing the screen underneath it.
 	var windows := ui_root.find_children("*", "Window", true, false)
@@ -460,7 +497,7 @@ func _build_choice_picker() -> void:
 	_choice_panel.offset_left = 12
 	_choice_panel.offset_right = -12
 	_choice_panel.offset_top = 60
-	_choice_panel.offset_bottom = -80
+	_choice_panel.offset_bottom = -8
 	ui_root.add_child(_choice_panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)

@@ -25,6 +25,8 @@ var _cards: Dictionary = {}
 var _expanded: Dictionary = {}
 var _active_origin := ""
 var _record_id := ""
+var _touch_filters: VBoxContainer
+var _touch_filter_toggle: Button
 
 
 func setup() -> void:
@@ -85,6 +87,46 @@ func setup() -> void:
 	load_record({})
 
 
+# On phones, leave only the result count and a filter toggle above the traits.
+# Reparent the existing controls to preserve selection, search and signals.
+func configure_touch_layout() -> void:
+	(get_child(0) as Label).hide()
+	var origin_row := _origin_choice.get_parent() as HBoxContainer
+	var actions := _counter.get_parent() as HBoxContainer
+	_touch_filters = VBoxContainer.new()
+	_touch_filters.name = "TouchTraitFilters"
+	add_child(_touch_filters)
+	move_child(_touch_filters, 1)
+	origin_row.reparent(_touch_filters)
+	_search.reparent(_touch_filters)
+	actions.reparent(_touch_filters)
+	(origin_row.get_child(0) as Label).hide()
+	_origin_choice.custom_minimum_size.x = 0
+
+	var toolbar := HBoxContainer.new()
+	toolbar.name = "TouchTraitToolbar"
+	add_child(toolbar)
+	move_child(toolbar, 1)
+	_counter.reparent(toolbar)
+	_counter.clip_text = true
+	_touch_filter_toggle = Button.new()
+	_touch_filter_toggle.name = "ToggleTraitFilters"
+	_touch_filter_toggle.pressed.connect(func() -> void:
+		_touch_filters.visible = not _touch_filters.visible
+		_update_touch_filter_label())
+	toolbar.add_child(_touch_filter_toggle)
+	_touch_filters.hide()
+	_scroll.follow_focus = false
+	_update_touch_filter_label()
+
+
+func _update_touch_filter_label() -> void:
+	if _touch_filter_toggle == null:
+		return
+	var active := not _active_origin.is_empty() or not _search.text.strip_edges().is_empty()
+	_touch_filter_toggle.text = ("Filtri • " if active else "Filtri ") + ("▴" if _touch_filters.visible else "▾")
+
+
 func load_record(record: Dictionary) -> void:
 	var record_id: String = String(record.get("id", ""))
 	if record_id != _record_id:
@@ -120,6 +162,7 @@ func load_record(record: Dictionary) -> void:
 	if _active_origin.is_empty():
 		_origin_choice.select(0)
 	_rebuild()
+	_update_touch_filter_label()
 
 
 func _on_origin_selected(index: int) -> void:
@@ -153,7 +196,8 @@ func _rebuild() -> void:
 		child.queue_free()
 	_cards.clear()
 	var visible: Array[Dictionary] = _visible_features()
-	_counter.text = "%d tratti e descrizioni" % visible.size()
+	_counter.text = "%d tratti" % visible.size() if _touch_filters != null else "%d tratti e descrizioni" % visible.size()
+	_update_touch_filter_label()
 	if visible.is_empty():
 		var hint := Label.new()
 		hint.text = "Nessun privilegio da mostrare."
