@@ -13,9 +13,19 @@ The normal startup menu routes Android/iOS (`mobile`) and custom-feature `vtt_mo
 
 ## Connection
 
-Run Tailscale on both devices. Open VTT on the desktop, then select the online desktop in the mobile Partita screen. The app listens to the existing session-scoped presence announcements and performs one discovery request at startup; further requests happen only when the user presses Aggiorna utenti online or explicitly changes the selected game. The same desktop game selector (1–5) defaults to 1. No IP address or free-text session code is needed.
+Open VTT on a desktop and select the same **Partita** (1–5, default 1) on mobile. Both devices may use the **same local Wi-Fi/LAN without Tailscale**, or continue using Tailscale for remote play. Mobile discovers session-matching desktop VTT instances with UDP heartbeats, refreshed automatically every 4.5 seconds, and shows only verified users rather than arbitrary LAN IPs.
 
-Presence uses the existing UDP 45456 service. A startup/manual LAN broadcast discovers reachable local VTT instances; desktops also announce themselves directly to their cached Tailscale peers, including mobile devices. Tailscale must be connected on both devices, and network access controls/firewalls must permit these packets. There is no public Internet directory and mobile does not run the desktop Tailscale command-line program. Only session-matching VTT announcements appear, with desktop/mobile labels; expired entries disappear without sending more discovery requests. UDP 45457 serves read-only map data; TCP snapshots remain unchanged. Older desktop builds can respond to presence requests but lack the device label (treated as desktop for compatibility).
+If automatic discovery fails, choose **Collega IP** in the mobile Partita page and enter the desktop's IPv4 address (for example `192.168.1.50`). **Android Studio emulator running on the same PC as VTT:** enter `10.0.2.2`, which is the emulator's built-in alias for the host PC; **do not use `127.0.0.1`**, which points to the emulator itself. The desktop app must be running and listening for the same session. Manual connection works without broadcast discovery and can also target a known Tailscale IPv4 address.
+
+Services and firewall rules on the desktop:
+- **UDP 45456**: session-scoped presence; local broadcast, directed broadcast, and known peer IPs. Heartbeat replies use the source UDP port to support emulator NAT.
+- **UDP 45457**: read-only tactical map for the mobile app, polled every 1.5 seconds.
+- **TCP 45454**: full desktop-to-desktop board snapshots.
+- **TCP 45455**: full desktop-to-desktop synchronized dice/chat events.
+
+Allow VTT/Godot inbound access on **private** Windows networks (or these ports in the private firewall profile), and confirm the devices are on the same reachable subnet without Wi-Fi client isolation. LAN broadcast only discovers peers on reachable local networks; it is not an Internet directory or router traversal service. Desktops also keep Tailscale discovery/sync when installed. Mobile does not run Tailscale CLI.
+
+Desktop automatic synchronization and chat select verified *desktop* LAN peers of the same session, in addition to existing Tailscale peers. Mobile intentionally does not accept full desktop TCP map snapshots: its tactical view is a read-only UDP projection, and creature sheets remain independently editable offline.
 
 Mobile handles raw finger gestures before GUI mouse input. A stationary tap dispatches one complete click on release; crossing the drag threshold scrolls the deepest visible scrollable area, then its ancestors at the boundary, and never dispatches a click. The bestiary import panel enables the public 5etools download with a bounded HTTP timeout and mirror fallback; no GitHub account is needed. Android Back closes dialogs, returns from a sheet to the library or to the previous page, then asks for confirmation before quitting.
 
