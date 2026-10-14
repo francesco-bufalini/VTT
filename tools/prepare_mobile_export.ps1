@@ -41,7 +41,13 @@ if (-not $presets.Contains('architectures/x86_64=true')) {
     throw 'Android preset does not contain the expected x86_64 setting.'
 }
 $presets = $presets.Replace('architectures/x86_64=true', 'architectures/x86_64=false')
+# Export the mobile shell directly; the desktop menu references 3D scenes that
+# intentionally do not exist in this isolated project.
+$presets = $presets.Replace('export_files=PackedStringArray("res://vtt/menu/main_menu.tscn", "res://vtt/mobile/creatures_mobile.tscn")', 'export_files=PackedStringArray("res://vtt/mobile/creatures_mobile.tscn")')
 [IO.File]::WriteAllText($presetPath, $presets, [Text.UTF8Encoding]::new($false))
+$projectPath = Join-Path $Destination 'project.godot'
+$project = [IO.File]::ReadAllText($projectPath).Replace('run/main_scene="res://vtt/menu/main_menu.tscn"', 'run/main_scene="res://vtt/mobile/creatures_mobile.tscn"')
+[IO.File]::WriteAllText($projectPath, $project, [Text.UTF8Encoding]::new($false))
 
 foreach ($file in @(
     'project.godot',

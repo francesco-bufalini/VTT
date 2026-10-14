@@ -1,6 +1,17 @@
 extends SceneTree
 const Mobile = preload("res://vtt/mobile/creatures_mobile.tscn")
 
+class MemoryArchive extends "res://vtt/creature_archive.gd":
+ var saved: Dictionary = {}
+ func save(record: Dictionary) -> Error:
+  saved = record.duplicate(true)
+  return OK
+ func list_owned() -> Array[Dictionary]:
+  var records: Array[Dictionary] = []
+  if not saved.is_empty():
+   records.append(saved.duplicate(true))
+  return records
+
 func _initialize() -> void:
  call_deferred("run")
 
@@ -71,7 +82,16 @@ func run() -> void:
  await settle()
  assert(sheet._miniature_dialog.visible and not sheet._miniature_choices.is_empty())
  assert(sheet._miniature_dialog.size.x <= root.size.x)
+ var memory := MemoryArchive.new()
+ sheet._archive = memory
+ sheet._chosen_miniature_id = "kryss"
  sheet._miniature_dialog.hide()
+ sheet._confirm_miniature()
+ assert(memory.saved.current_miniature_id == "kryss")
+ assert(memory.saved.default_miniature_id == record.default_miniature_id, "Current appearance must preserve the base miniature")
+ assert(memory.saved.owner_id == record.owner_id)
+ sheet._miniature_dialog.hide()
+ sheet._form_hp_dialog.hide()
  var dialog := ConfirmationDialog.new()
  dialog.dialog_text = "A long explanation that must wrap on mobile. ".repeat(12)
  mobile.ui_root.add_child(dialog)
