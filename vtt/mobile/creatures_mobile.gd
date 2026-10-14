@@ -28,7 +28,6 @@ var _choice_filter: LineEdit
 var _choice_owner_window: Window
 var _connection_status: Label
 var _map_summary: RichTextLabel
-var _archive_selector: OptionButton
 var _pages: Array[Control] = []
 var _navigation_buttons: Array[Button] = []
 var _page_drawer: PanelContainer
@@ -68,12 +67,12 @@ func _ready() -> void:
 	_build_choice_picker()
 	_build_touch_help()
 	_build_session_panel()
-	_build_archive_selector()
+
 	_build_page_header()
 	_install_unified_sections(sheet)
 	TouchLayout.scroll_body(_session_panel)
 	TouchLayout.style_tree(_session_panel)
-	TouchLayout.style_control(_archive_selector)
+
 	_pages.assign([sheet.get_panel_control(), book.get_panel_control(), roller.panel, _session_panel])
 	map_data_controller.status_changed.connect(func(message: String) -> void:
 		_connection_status.text = message)
@@ -183,11 +182,7 @@ func _build_page_header() -> void:
 	_page_title = Label.new()
 	_page_title.add_theme_font_size_override("font_size", 18)
 	row.add_child(_page_title)
-	# The archive scope shares the compact header and appears only for sheets.
-	_archive_selector.reparent(row)
-	_archive_selector.custom_minimum_size = Vector2(116, 48)
-	_archive_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_archive_selector.z_index = 0
+
 	_connection_badge = Label.new()
 	_connection_badge.text = "Non collegato"
 	_connection_badge.add_theme_font_size_override("font_size", 14)
@@ -227,7 +222,7 @@ func _select_page(index: int) -> void:
 		_navigation_buttons[i].set_pressed_no_signal(i + 1 == index)
 	_page_title.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
 	_page_title.visible = index != 0
-	_archive_selector.visible = index == 0
+
 	_connection_badge.visible = index == 3
 	_layout_pages()
 
@@ -441,46 +436,6 @@ func _show_map_data(data: Dictionary) -> void:
 	_map_summary.add_text("\nToken sulla mappa\n")
 	for token: Dictionary in data.get("tokens", []):
 		_map_summary.add_text("%s: %s\n" % [token.name, ", ".join(token.conditions)])
-# Select the same local storage scope used by desktop, without opening a board.
-func _build_archive_selector() -> void:
-	_archive_selector = OptionButton.new()
-	_archive_selector.name = "LocalCreatureArchive"
-	_archive_selector.z_index = 40
-	_archive_selector.offset_left = 12
-	_archive_selector.offset_right = -12
-	_archive_selector.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_archive_selector.offset_top = 60
-	_archive_selector.offset_bottom = 108
-	_archive_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	ui_root.add_child(_archive_selector)
-	_archive_selector.add_item("Creature locali · Generale")
-	_archive_selector.set_item_metadata(0, {"campaign": "", "scenario": ""})
-	var manager := get_node("/root/CampaignManager")
-	for group: Dictionary in manager.list_campaign_groups():
-		_archive_selector.add_item("Campagna · " + String(group.get("name", "")))
-		_archive_selector.set_item_metadata(_archive_selector.item_count - 1, {"campaign": String(group.id), "scenario": ""})
-	for scenario: Dictionary in manager.list_campaigns():
-		_archive_selector.add_item("Scenario · " + String(scenario.get("name", "")))
-		_archive_selector.set_item_metadata(_archive_selector.item_count - 1, {"campaign": "", "scenario": String(scenario.id)})
-	for index in range(_archive_selector.item_count):
-		var scope: Dictionary = _archive_selector.get_item_metadata(index)
-		if scope.campaign == manager.selected_campaign_group_id and (not scope.campaign.is_empty() or scope.scenario == manager.active_campaign_id):
-			_archive_selector.select(index)
-			break
-	_archive_selector.item_selected.connect(_select_local_archive)
-
-func _select_local_archive(index: int) -> void:
-	var was_open: bool = creature_area.is_panel_open()
-	# Save under the old scope before changing it; do not copy or migrate files.
-	if was_open:
-		creature_area.hide_panel()
-	var scope: Dictionary = _archive_selector.get_item_metadata(index)
-	var manager := get_node("/root/CampaignManager")
-	manager.selected_campaign_group_id = String(scope.campaign)
-	manager.active_campaign_id = String(scope.scenario)
-	if was_open:
-		creature_area.show_panel()
-
 func _discovery_hosts() -> Array[String]:
 	var hosts: Array[String] = ["255.255.255.255"]
 	# Directed LAN broadcasts work on networks that reject limited broadcast.
