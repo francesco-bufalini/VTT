@@ -1567,7 +1567,7 @@ func configure_touch_layout() -> void:
 	var library_button := Button.new()
 	_touch_library_button = library_button
 	library_button.name = "TouchCreatureList"
-	library_button.text = "← Elenco"
+	library_button.text = "‹"
 	library_button.pressed.connect(func() -> void: show_touch_library(not _touch_library.visible))
 	header.add_child(library_button)
 	_touch_section_toggle = Button.new()
@@ -1646,12 +1646,15 @@ func configure_touch_layout() -> void:
 	_touch_section_drawer.hide()
 	_spellcasting_ui.configure_touch_layout()
 	_tabs.tabs_visible = false
+	_tabs.custom_minimum_size.x = 0
+	_panel.custom_minimum_size.x = 0
+	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	editor.add_child(_tabs)
 	for index: int in range(_tabs.get_tab_count()):
 		var tab_scroll := _tabs.get_tab_control(index) as ScrollContainer
 		# Traits are a single vertical list; an outer horizontal scrollbar
 		# steals space without providing useful content on a phone.
-		tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if tab_scroll.name == "Tratti" else ScrollContainer.SCROLL_MODE_AUTO
+		tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var info := _tabs.get_tab_control(0).get_child(0).get_child(0)
 	touch.wrap_fields(info)
 	_statistics_columns = touch.replace_box(_statistics_columns, VBoxContainer.new()) as BoxContainer
@@ -1687,6 +1690,10 @@ func configure_touch_layout() -> void:
 			child.pressed.connect(func() -> void: show_touch_library(false))
 	_traits_ui.call("configure_touch_layout")
 	touch.style_tree(_panel)
+	for column: Control in _statistics_columns.get_children():
+		column.custom_minimum_size.x = 0
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		touch.wrap_fields(column.get_child(0))
 	var traits_scroll := _traits_ui.get("_scroll") as ScrollContainer
 	if traits_scroll != null:
 		traits_scroll.follow_focus = false
@@ -1749,7 +1756,7 @@ func _sync_touch_section_buttons(index: int) -> void:
 	for i: int in range(_touch_section_buttons.size()):
 		_touch_section_buttons[i].set_pressed_no_signal(i == index)
 	if _touch_section_toggle != null and index >= 0 and index < _tabs.get_tab_count():
-		_touch_section_toggle.text = "☰ " + _tabs.get_tab_title(index)
+		_touch_section_toggle.text = _tabs.get_tab_title(index)
 
 
 func is_touch_library_visible() -> bool:
@@ -1764,7 +1771,8 @@ func show_touch_library(show_library: bool) -> void:
 	_touch_library_view.visible = show_library
 	_touch_editor.visible = not show_library
 	_touch_section_toggle.visible = not show_library
-	_touch_library_button.text = "Apri scheda" if show_library else "← Elenco"
+	_touch_library_button.text = "Apri" if show_library else "‹"
+	_touch_library_button.tooltip_text = "Apri la scheda selezionata" if show_library else "Torna all’elenco delle creature"
 	_touch_library_button.disabled = show_library and _selected_id.is_empty()
 
 
@@ -5971,6 +5979,8 @@ func _popup_sheet_dialog(
 		return
 	dialog.get_ok_button().show()
 	dialog.get_cancel_button().show()
+	if _touch_layout:
+		preload("res://vtt/mobile/touch_layout.gd").fit_dialog(dialog)
 	DialogLayout.popup(dialog, preferred, ratio)
 
 

@@ -15,6 +15,9 @@ var _finger := -1
 var _finger_start := Vector2.ZERO
 var _finger_position := Vector2.ZERO
 var _dragging := false
+var _finger_started_msec := 0
+var _help_panel: PanelContainer
+var _help_text: RichTextLabel
 var _gesture_bars: Array[ScrollBar] = []
 var _previous_mouse_emulation := true
 var _last_back_msec := -1000
@@ -35,6 +38,7 @@ var _active_page := -1
 
 func _enter_tree() -> void:
 	get_tree().quit_on_go_back = false
+	get_tree().root.set_meta("vtt_touch_layout", true)
 
 func _ready() -> void:
 	_configure_ui_scale()
@@ -58,6 +62,7 @@ func _ready() -> void:
 	book.configure_touch_layout()
 	roller.configure_touch_layout()
 	_build_choice_picker()
+	_build_touch_help()
 	_build_session_panel()
 	_build_archive_selector()
 	_build_page_header()
@@ -145,12 +150,12 @@ func _build_page_header() -> void:
 	var header := PanelContainer.new()
 	header.name = "MobilePageHeader"
 	header.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	header.offset_bottom = 52
+	header.offset_bottom = 48
 	header.z_index = 40
 	ui_root.add_child(header)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_left", 4)
+	margin.add_theme_constant_override("margin_right", 4)
 	header.add_child(margin)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -176,6 +181,12 @@ func _build_page_header() -> void:
 	_connection_badge.text = "Non collegato"
 	_connection_badge.add_theme_font_size_override("font_size", 14)
 	row.add_child(_connection_badge)
+	var help := Button.new()
+	help.text = "?"
+	help.tooltip_text = "Aiuto e spiegazioni"
+	help.custom_minimum_size = Vector2(44, 48)
+	help.pressed.connect(func() -> void: _show_touch_help("Tieni premuto un pulsante, un valore o una formula per leggere la spiegazione. La pressione prolungata non esegue l’azione. Scorri con il dito per leggere il resto della scheda."))
+	row.add_child(help)
 
 func _select_page(index: int) -> void:
 	if _pages.is_empty() or index == _active_page:
@@ -203,6 +214,7 @@ func _select_page(index: int) -> void:
 		3: _session_panel.show()
 	_navigation_buttons[index].button_pressed = true
 	_page_title.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
+	_page_title.visible = index != 0
 	_archive_selector.visible = index == 0
 	_connection_badge.visible = index == 3
 	_layout_pages()
@@ -211,10 +223,10 @@ func _layout_pages() -> void:
 	for index: int in range(_pages.size()):
 		var page := _pages[index]
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		page.offset_left = 8
-		page.offset_right = -8
-		page.offset_top = 56
-		page.offset_bottom = -8
+		page.offset_left = 2
+		page.offset_right = -2
+		page.offset_top = 48
+		page.offset_bottom = -2
 
 func _on_touch_node_added(node: Node) -> void:
 	if is_ancestor_of(node):
@@ -237,6 +249,9 @@ func _request_go_back() -> void:
 	_go_back()
 
 func _go_back() -> void:
+	if _help_panel != null and _help_panel.visible:
+		_help_panel.hide()
+		return
 	if _choice_panel != null and _choice_panel.visible:
 		_close_touch_choices()
 		return
@@ -273,6 +288,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if event.pressed and _finger == -1:
 			_finger = event.index
+			_finger_started_msec = Time.get_ticks_msec()
 			_finger_start = event.position
 			_finger_position = event.position
 			_dragging = false
@@ -282,7 +298,10 @@ func _input(event: InputEvent) -> void:
 			_finger = -1
 			_gesture_bars.clear()
 			if tap:
-				call_deferred("_dispatch_touch_tap", event.position)
+				if Time.get_ticks_msec() - _finger_started_msec >= 550 and not _help_panel.visible:
+					call_deferred("_explain_touch", event.position)
+				else:
+					call_deferred("_dispatch_touch_tap", event.position)
 	elif event is InputEventScreenDrag:
 		get_viewport().set_input_as_handled()
 		if event.index != _finger:
@@ -330,6 +349,7 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 
 func _exit_tree() -> void:
 	Input.emulate_mouse_from_touch = _previous_mouse_emulation
+	get_tree().root.remove_meta("vtt_touch_layout")
 
 func _build_session_panel() -> void:
 	_session_panel = PanelContainer.new()
@@ -575,3 +595,40 @@ func _close_touch_choices() -> void:
 	if is_instance_valid(_choice_owner_window):
 		_choice_owner_window.show()
 	_choice_owner_window = null
+
+func _build_touch_help() -> void:
+	_help_panel = PanelContainer.new()
+	_help_panel.name = "TouchHelp"
+	_help_panel.z_index = 250
+	ui_root.add_child(_help_panel)
+	_help_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_help_panel.offset_left = 8
+	_help_panel.offset_right = -8
+	_help_panel.offset_top = 48
+	_help_panel.offset_bottom = -8
+	var column := VBoxContainer.new()
+	_help_panel.add_child(column)
+	var close := Button.new()
+	close.text = "Chiudi spiegazione"
+	close.pressed.connect(func() -> void: _help_panel.hide())
+	column.add_child(close)
+	_help_text = RichTextLabel.new()
+	_help_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_help_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_help_text.selection_enabled = true
+	column.add_child(_help_text)
+	TouchLayout.style_tree(_help_panel)
+	_help_panel.hide()
+
+func _show_touch_help(message: String) -> void:
+	_help_text.text = message
+	_help_text.scroll_to_line(0)
+	_help_panel.show()
+
+func _explain_touch(point: Vector2) -> void:
+	var captions := get_tree().root.get_node_or_null("ScrollableCaptions")
+	if captions == null:
+		return
+	var message: String = captions.touch_hint_at(point)
+	if not message.strip_edges().is_empty():
+		_show_touch_help(message)

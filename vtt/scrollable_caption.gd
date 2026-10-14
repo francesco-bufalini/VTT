@@ -57,13 +57,16 @@ func _ready() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is Window and node != get_tree().root:
-		_install_later.call_deferred(node)
+		_install_later.call_deferred(weakref(node))
 
-func _install_later(window: Node) -> void:
-	if is_instance_valid(window) and window.is_inside_tree():
+func _install_later(reference: WeakRef) -> void:
+	var window: Node = reference.get_ref()
+	if is_instance_valid(window) and not window.is_queued_for_deletion() and window.is_inside_tree():
 		install(window)
 
 func _process(delta: float) -> void:
+	if OS.has_feature("mobile") or get_tree().root.has_meta("vtt_touch_layout"):
+		return
 	var viewport: Viewport = get_viewport()
 	if viewport is Window and not (viewport as Window).visible:
 		_reset()
@@ -244,3 +247,16 @@ func _show_caption() -> void:
 
 func _exit_tree() -> void:
 	_restore_target()
+
+# Touch help reads the same explanations as desktop hover without firing a click.
+func touch_hint_at(point: Vector2) -> String:
+	_reset()
+	var motion := InputEventMouseMotion.new()
+	motion.position = point
+	motion.global_position = point
+	get_viewport().push_input(motion, true)
+	var hint := _hint_under_pointer()
+	motion = InputEventMouseMotion.new()
+	motion.position = Vector2(-100, -100)
+	get_viewport().push_input(motion, true)
+	return String(hint.get("text", ""))

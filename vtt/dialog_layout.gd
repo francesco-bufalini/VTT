@@ -15,7 +15,10 @@ static func popup(
 		accept.add_theme_constant_override("buttons_min_width", 100)
 		accept.add_theme_constant_override("buttons_min_height", 34)
 		_keep_body_within_viewport(accept, fallback_ratio)
-	dialog.wrap_controls = true
+	var touch := OS.has_feature("mobile") or dialog.get_tree().root.has_meta("vtt_touch_layout")
+	if touch:
+		preload("res://vtt/mobile/touch_layout.gd").fit_dialog(dialog)
+	dialog.wrap_controls = not touch
 	dialog.child_controls_changed()
 	dialog.reset_size()
 	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
@@ -41,6 +44,7 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	scroll.mouse_force_pass_scroll_events = false
 	scroll.name = "DialogScrollBody"
 	scroll.follow_focus = true
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	dialog.remove_child(body)
 	dialog.add_child(scroll)
 	scroll.add_child(body)
@@ -51,6 +55,12 @@ static func _check_first_frame_layout(dialog: Window) -> void:
 	var tree: SceneTree = dialog.get_tree()
 	await tree.process_frame
 	if not is_instance_valid(dialog) or not dialog.visible:
+		return
+	if OS.has_feature("mobile") or tree.root.has_meta("vtt_touch_layout"):
+		var available := Vector2i(dialog.get_parent().get_viewport().get_visible_rect().size)
+		dialog.min_size = Vector2i.ZERO
+		dialog.size = dialog.size.min(available - Vector2i(12, 12))
+		dialog.position = (available - dialog.size) / 2
 		return
 	# Re-measure the first completed frame. Grow if necessary, never shrink
 	# below the actual content minimum (which includes the native footer).
