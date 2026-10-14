@@ -115,7 +115,7 @@ func send_document(recipient_id: String, document: Dictionary) -> String:
 	if encoded.size() > MAX_DOCUMENT_PACKET:
 		return ""
 	_pending_documents[delivery_id] = {
-		"ip": String(peer.get("ip", "")), "bytes": encoded,
+		"ip": String(peer.get("ip", "")), "recipient": recipient_id, "bytes": encoded,
 		"tries": 0, "last_sent": -DOCUMENT_RETRY_MS
 	}
 	_send_document_packet(delivery_id)
@@ -163,13 +163,15 @@ func _accept_heartbeat(value: Dictionary, ip: String) -> void:
 		# The sender must already have proven online status from this IP.
 		if not _online.has(owner) or String(_online[owner].get("ip", "")) != ip:
 			return
+		if Time.get_ticks_msec() - int(_online[owner].get("last_seen", 0)) >= EXPIRE_MS:
+			return
 		if String(value.get("recipient", "")) != Owner.local_id():
 			return
 		var delivery_id: String = String(value.get("delivery_id", ""))
 		if delivery_id.is_empty() or delivery_id.length() > 120:
 			return
 		if kind == "document_ack":
-			if _pending_documents.has(delivery_id):
+			if _pending_documents.has(delivery_id) and String(_pending_documents[delivery_id].get("recipient", "")) == owner:
 				_pending_documents.erase(delivery_id)
 				document_delivered.emit(delivery_id)
 			return
