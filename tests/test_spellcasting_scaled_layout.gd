@@ -76,11 +76,13 @@ func run() -> void:
 		var ordinary: HBoxContainer = grid.get_child(level * 3 + 1)
 		var pact: HBoxContainer = grid.get_child(level * 3 + 2)
 		if level == 1:
-			assert(ordinary.get_child_count() == 4, "Visible slot counter contains two actions and two values")
-			assert(ordinary.get_child(0) is Button and ordinary.get_child(1) is Button,
-				"Slot action buttons precede the remaining count")
-			assert((ordinary.get_child(0) as Button).text == "−" and (ordinary.get_child(1) as Button).text == "+")
-			assert((ordinary.get_child(2) as Label).text == "4" and (ordinary.get_child(3) as Label).text == "/4",
+			assert(ordinary.get_child_count() == 3, "Visible slot counter has a fixed action cell and two values")
+			assert(ordinary.get_child(0) is HBoxContainer
+				and ordinary.get_child(0).get_child_count() == 2,
+				"Slot action buttons occupy the fixed cell before the remaining count")
+			assert((ordinary.get_child(0).get_child(0) as Button).text == "−"
+				and (ordinary.get_child(0).get_child(1) as Button).text == "+")
+			assert((ordinary.get_child(1) as Label).text == "4" and (ordinary.get_child(2) as Label).text == "/4",
 				"Current and maximum slot values stay together")
 		assert(pact.find_children("*", "Button", true, false).is_empty(), "No Pact controls without Pact slots")
 		assert(absf(pact.position.x - grid.get_child(5).position.x) < 1, "Pact cells stay in their column")
@@ -94,9 +96,10 @@ func run() -> void:
 	grid = view._rows[0].get_child(1).get_child(0).get_node("SlotGrid")
 	var active_pact: HBoxContainer = grid.get_child(11)
 	assert(active_pact.find_children("*", "Button", true, false).size() == 2)
-	assert(active_pact.get_child(0) is Button and active_pact.get_child(1) is Button,
-		"Pact action buttons precede the remaining count")
-	assert((active_pact.get_child(2) as Label).text == "2" and (active_pact.get_child(3) as Label).text == "/2")
+	assert(active_pact.get_child(0) is HBoxContainer
+		and active_pact.get_child(0).get_child_count() == 2,
+		"Pact action buttons occupy the fixed cell before the remaining count")
+	assert((active_pact.get_child(1) as Label).text == "2" and (active_pact.get_child(2) as Label).text == "/2")
 	for level: int in range(1,10):
 		assert(absf(grid.get_child(level * 3 + 2).position.x - grid.get_child(11).position.x) < 1,
 			"Real Pact controls do not shift the table")

@@ -72,8 +72,10 @@ func run() -> void:
 			"Each tracker is represented by one horizontal row")
 		var counter: HBoxContainer = item.get_child(0)
 		var title: Label = item.get_child(1)
-		assert(counter.get_child(0) is Button and counter.get_child(1) is Button,
-			"Tracker actions appear before the resource name")
+		assert(counter.get_child(0) is HBoxContainer
+			and counter.get_child(0).get_child(0) is Button
+			and counter.get_child(0).get_child(1) is Button,
+			"Tracker actions occupy a fixed cell before the resource name")
 		assert(title.name == "TrackerName" and title.text.begins_with("Shadow Touched")
 			and not title.text.begins_with("Tracker"),
 			"Tracker name is not prefixed by redundant wording")
