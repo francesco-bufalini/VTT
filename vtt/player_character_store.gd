@@ -7,7 +7,8 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
-const ROOT_DIR := "user://creatures"\nconst LEGACY_DIR := "user://player_characters"
+const ROOT_DIR := "user://creatures"
+const LEGACY_DIR := "user://player_characters"
 const GlobalMigration = preload("res://vtt/global_creature_migration.gd")
 const FILE_VERSION := 3
 
