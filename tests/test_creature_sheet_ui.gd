@@ -163,7 +163,7 @@ func run() -> void:
 	context_event.button_index = MOUSE_BUTTON_RIGHT
 	context_event.pressed = true
 	feat_summary.gui_input.emit(context_event)
-	assert(area._tabs.current_tab == 1 and area._editor_section_picker.selected == 2
+	assert(area._tabs.current_tab == 6 and area._editor_section_picker.selected == 2
 		and String(area._feats_ui.get("_selected_id")) == "",
 		"Right-clicking an Info feat must navigate to its source in Feats editor")
 	assert(area._current().feats_catalog.size() == 1,
@@ -183,12 +183,12 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 6, "Appearance is consolidated into Info instead of a separate tab")
+	assert(area._tabs.get_tab_count() == 7, "The seven sheet sections must remain available")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Poteri" in tab_titles and "Aspetto" not in tab_titles and "Competenze" not in tab_titles
-		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
+	assert(tab_titles == ["Info", "Statistiche", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"],
+		"Tabs must keep the same reading order on desktop and mobile")
 	var info_root: Node = area._name.get_parent().get_parent().get_parent().get_parent()
 	var physics_found := false
 	for frame: Node in info_root.get_children():
