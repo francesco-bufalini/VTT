@@ -1645,7 +1645,41 @@ func configure_touch_layout() -> void:
 			child.pressed.connect(func() -> void: show_touch_library(false))
 	touch.scroll_body(_panel)
 	touch.style_tree(_panel)
+	var import_button := Button.new()
+	import_button.text = "Importa JSON dal PC"
+	_touch_library.add_child(import_button)
+	var file_picker := FileDialog.new()
+	file_picker.title = "Importa scheda esportata dal PC"
+	file_picker.access = FileDialog.ACCESS_FILESYSTEM
+	file_picker.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	file_picker.use_native_dialog = OS.has_feature("mobile")
+	file_picker.add_filter("*.json", "Scheda VTT esportata")
+	ui_root.add_child(file_picker)
+	file_picker.file_selected.connect(_import_export_file)
+	import_button.pressed.connect(func() -> void: file_picker.popup_centered_clamped(Vector2i(680, 600), 0.9))
+	touch.style_control(import_button)
 	show_touch_library(true)
+
+
+func _import_export_file(path: String) -> void:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_set_status("Impossibile leggere il file selezionato.")
+		return
+	if file.get_length() > 16 * 1024 * 1024:
+		_set_status("File scheda troppo grande.")
+		return
+	var payload: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not payload is Dictionary:
+		_set_status("Seleziona un file JSON esportato da VTT sul PC.")
+		return
+	var error: Error = _archive.import_export_copy(payload)
+	if error != OK:
+		_set_status("Importazione non riuscita: " + error_string(error))
+		return
+	_reload()
+	_set_status("Scheda importata come copia locale. Aprila dall'elenco creature.")
 
 
 func _request_touch_section(index: int) -> void:
@@ -1697,7 +1731,10 @@ func _connect_touch_creature_rows() -> void:
 func _open_touch_creature_actions(index: int, button: Button) -> void:
 	_select_creature_row(index)
 	_creature_context_menu.position = Vector2i(button.get_global_rect().position + Vector2(0, 48))
-	_creature_context_menu.popup()
+	if _touch_layout and board_root.has_method("show_touch_popup"):
+		board_root.show_touch_popup(_creature_context_menu)
+	else:
+		_creature_context_menu.popup()
 
 
 func _open_touch_sheet() -> void:
@@ -1764,7 +1801,10 @@ func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
 	_creature_context_menu.position = Vector2i(
 		get_viewport().get_mouse_position()
 	)
-	_creature_context_menu.popup()
+	if _touch_layout and board_root.has_method("show_touch_popup"):
+		board_root.show_touch_popup(_creature_context_menu)
+	else:
+		_creature_context_menu.popup()
 	get_viewport().set_input_as_handled()
 
 

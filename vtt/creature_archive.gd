@@ -193,3 +193,16 @@ func _upsert(collection: Array[Dictionary], entry: Dictionary) -> void:
 			collection[index] = entry.duplicate(true)
 			return
 	collection.append(entry.duplicate(true))
+
+# Portable exports create an independent local copy, never an ownership transfer.
+func import_export_copy(payload: Dictionary) -> Error:
+	if payload.get("format") != "vtt_creature_export_v1" or payload.get("version") != 1 or not payload.get("creature") is Dictionary:
+		return ERR_INVALID_DATA
+	var record: Dictionary = payload.creature.duplicate(true)
+	if record.get("kind") not in ["character", "monster"] or String(record.get("name", "")).strip_edges().is_empty():
+		return ERR_INVALID_DATA
+	record["id"] = "import_" + Crypto.new().generate_random_bytes(16).hex_encode()
+	record["owner_id"] = CreatureOwner.local_id()
+	record["transfer_revision"] = 0
+	record["linked_token_sync_id"] = ""
+	return save(record)

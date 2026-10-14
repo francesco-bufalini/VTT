@@ -131,6 +131,9 @@ func get_panel_control() -> Control:
 
 
 func configure_touch_layout() -> void:
+	_allow_remote_catalog = true
+	if DisplayServer.get_name() != "headless":
+		_client.load_catalog()
 	var touch = preload("res://vtt/mobile/touch_layout.gd")
 	var outer := _panel.get_child(0) as VBoxContainer
 	var header := outer.get_child(0) as HBoxContainer

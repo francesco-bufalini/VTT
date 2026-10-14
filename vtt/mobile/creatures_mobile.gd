@@ -18,6 +18,10 @@ var _dragging := false
 var _gesture_bars: Array[ScrollBar] = []
 var _previous_mouse_emulation := true
 var _last_back_msec := -1000
+var _choice_panel: PanelContainer
+var _choice_list: VBoxContainer
+var _choice_filter: LineEdit
+var _choice_owner_window: Window
 var _connection_status: Label
 var _map_summary: RichTextLabel
 var _archive_selector: OptionButton
@@ -51,6 +55,7 @@ func _ready() -> void:
 	sheet.configure_touch_layout()
 	book.configure_touch_layout()
 	roller.configure_touch_layout()
+	_build_choice_picker()
 	_build_session_panel()
 	_build_archive_selector()
 	_build_page_header()
@@ -200,6 +205,9 @@ func _request_go_back() -> void:
 	_go_back()
 
 func _go_back() -> void:
+	if _choice_panel != null and _choice_panel.visible:
+		_close_touch_choices()
+		return
 	# Close the current popup before changing the screen underneath it.
 	var windows := ui_root.find_children("*", "Window", true, false)
 	for index: int in range(windows.size() - 1, -1, -1):
@@ -254,6 +262,22 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 	motion.position = at
 	motion.global_position = at
 	get_viewport().push_input(motion, true)
+	var hovered := get_viewport().gui_get_hovered_control()
+	for node: Node in find_children("*", "Window", true, false):
+		var window := node as Window
+		if window.visible and not window is PopupMenu and Rect2(Vector2(window.position), Vector2(window.size)).has_point(at):
+			var inner := window.gui_get_hovered_control()
+			if inner != null:
+				hovered = inner
+	var target: Node = hovered
+	while target != null and not (target is OptionButton or target is MenuButton):
+		target = target.get_parent()
+	if target is OptionButton and not target.disabled:
+		_show_touch_choices(target.get_popup(), target)
+		return
+	if target is MenuButton and not target.disabled:
+		_show_touch_choices(target.get_popup())
+		return
 	for pressed: bool in [true, false]:
 		var click := InputEventMouseButton.new()
 		click.position = at
@@ -427,3 +451,90 @@ func _show_online_peers() -> void:
 		empty.text = "Nessun utente trovato. Usa Aggiorna dopo aver aperto VTT sul desktop."
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_peer_list.add_child(empty)
+
+func _build_choice_picker() -> void:
+	_choice_panel = PanelContainer.new()
+	_choice_panel.name = "MobileChoicePicker"
+	_choice_panel.z_index = 200
+	_choice_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_choice_panel.offset_left = 12
+	_choice_panel.offset_right = -12
+	_choice_panel.offset_top = 60
+	_choice_panel.offset_bottom = -80
+	ui_root.add_child(_choice_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_choice_panel.add_child(column)
+	var close := Button.new()
+	close.text = "Annulla · Torna indietro"
+	close.pressed.connect(_close_touch_choices)
+	column.add_child(close)
+	_choice_filter = LineEdit.new()
+	_choice_filter.placeholder_text = "Cerca un'opzione…"
+	_choice_filter.text_changed.connect(func(query: String) -> void:
+		for row: Button in _choice_list.get_children():
+			row.visible = query.is_empty() or row.text.to_lower().contains(query.to_lower()))
+	column.add_child(_choice_filter)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+	_choice_list = VBoxContainer.new()
+	_choice_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_choice_list)
+	TouchLayout.style_tree(_choice_panel)
+	_choice_panel.hide()
+
+func _show_touch_choices(menu: PopupMenu, option: OptionButton = null) -> void:
+	var owner_node: Node = option if option != null else menu.get_parent()
+	var owner_window := owner_node.get_window()
+	if owner_window != get_window() and not owner_window is PopupMenu:
+		_choice_owner_window = owner_window
+		owner_window.hide()
+	# Do not open an embedded native Window while dispatching synthetic input.
+	_choice_filter.clear()
+	for child: Node in _choice_list.get_children():
+		_choice_list.remove_child(child)
+		child.queue_free()
+	for index: int in range(menu.item_count):
+		if menu.is_item_separator(index):
+			continue
+		var row := Button.new()
+		row.text = menu.get_item_text(index)
+		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if option != null:
+			row.text = ("● " if option.selected == index else "○ ") + row.text
+		elif menu.is_item_checkable(index) or menu.is_item_radio_checkable(index):
+			row.text = ("● " if menu.is_item_checked(index) else "○ ") + row.text
+		row.disabled = menu.is_item_disabled(index)
+		row.pressed.connect(_choose_touch_option.bind(menu, option, index))
+		_choice_list.add_child(row)
+		TouchLayout.style_control(row)
+	_choice_panel.show()
+
+func _choose_touch_option(menu: PopupMenu, option: OptionButton, index: int) -> void:
+	if not is_instance_valid(menu) or index < 0 or index >= menu.item_count or menu.is_item_disabled(index):
+		return
+	var submenu := String(menu.get_item_submenu(index))
+	if not submenu.is_empty():
+		var nested := menu.get_node_or_null(submenu) as PopupMenu
+		if nested != null:
+			_show_touch_choices(nested)
+		return
+	_close_touch_choices()
+	if is_instance_valid(option):
+		option.select(index)
+		option.item_selected.emit(index)
+	else:
+		menu.id_pressed.emit(menu.get_item_id(index))
+		menu.index_pressed.emit(index)
+
+func show_touch_popup(menu: PopupMenu) -> void:
+	_show_touch_choices(menu)
+
+func _close_touch_choices() -> void:
+	_choice_panel.hide()
+	if is_instance_valid(_choice_owner_window):
+		_choice_owner_window.show()
+	_choice_owner_window = null
