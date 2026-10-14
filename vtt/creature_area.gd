@@ -6130,11 +6130,18 @@ func _confirm_miniature() -> void:
 		return
 	var record: Dictionary = _pending_miniature_record.duplicate(true)
 	var previous_current_id: String = String(record.get("current_miniature_id", ""))
+	var previous_default_id: String = String(record.get("default_miniature_id", ""))
 	if _picker_current:
 		record["current_miniature_id"] = _chosen_miniature_id
 	else:
 		record["default_miniature_id"] = _chosen_miniature_id
-		if _pending_new_creature or String(record.get("current_miniature_id", "")).is_empty():
+		# When editing the base form itself, keep current and base aligned.
+		# Do not discard an independent, actively transformed appearance.
+		if (
+			_pending_new_creature
+			or previous_current_id.is_empty()
+			or previous_current_id == previous_default_id
+		):
 			record["current_miniature_id"] = _chosen_miniature_id
 		# An explicitly selected base miniature defines the creature's base
 		# size, including an existing creature whose base miniature changes.
@@ -6152,18 +6159,22 @@ func _confirm_miniature() -> void:
 		return
 	_selected_id = String(record.get("id", ""))
 	_selected_kind = String(record.get("kind", ""))
-	var changed_current: bool = _picker_current and previous_current_id != _chosen_miniature_id
+	var changed_current: bool = previous_current_id != String(
+		record.get("current_miniature_id", "")
+	)
+	var explicitly_changed_form: bool = _picker_current and changed_current
 	_pending_miniature_record.clear()
 	_pending_new_creature = false
 	_picker_current = false
 	_reload()
 	if changed_current:
 		_apply_current_appearance(record)
-		if (String(record.get("current_miniature_id", ""))
-			!= String(record.get("default_miniature_id", ""))):
-			_prompt_second_form_hp(record)
-		elif int(record.get("second_form_hp", 0)) > 0:
-			_popup_sheet_dialog(_restore_form_dialog, Vector2i(510, 200))
+		if explicitly_changed_form:
+			if (String(record.get("current_miniature_id", ""))
+				!= String(record.get("default_miniature_id", ""))):
+				_prompt_second_form_hp(record)
+			elif int(record.get("second_form_hp", 0)) > 0:
+				_popup_sheet_dialog(_restore_form_dialog, Vector2i(510, 200))
 	_set_status("Aspetto attuale aggiornato." if changed_current else
 		"Miniatura di base selezionata: %s" % _chosen_miniature_id)
 
