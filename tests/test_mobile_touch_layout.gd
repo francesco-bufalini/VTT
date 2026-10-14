@@ -138,12 +138,19 @@ func run() -> void:
 	await settle()
 	if not check(gesture_scroll.scroll_vertical >= 80 and clicks[0] == 0, "Dragging over a button must scroll without clicking: scroll=%d clicks=%d" % [gesture_scroll.scroll_vertical, clicks[0]]):
 		return
-	down.position = Vector2(80, 190)
-	up.position = down.position
+	# Tap a real, fully visible button rather than an assumed coordinate:
+	# button positions vary as the responsive theme and font metrics change.
+	var target_button := gesture_body.get_child(3) as Button
+	var target_center := target_button.get_global_rect().get_center()
+	if not check(gesture_scroll.get_global_rect().has_point(target_center),
+		"Test target must be visible after scrolling"):
+		return
+	down.position = target_center
+	up.position = target_center
 	root.push_input(down, true)
 	root.push_input(up, true)
 	await settle()
-	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release"):
+	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release (clicks=%d, target=%s, help=%s, duration=%dms)" % [clicks[0], target_center, mobile._help_panel.visible, Time.get_ticks_msec() - mobile._finger_started_msec]):
 		return
 	gesture_scroll.queue_free()
 	mobile._page_history.clear()
