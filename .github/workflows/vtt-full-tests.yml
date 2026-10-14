@@ -40,3 +40,27 @@ jobs:
       - name: Full import and tests
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" -FullTests
+
+      # Tooling parsing moved out of the 60-second CI smoke job.
+      - name: Parse token pack tooling
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --check-only --script res://tools/token_packs/build_one_token_pack.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $godot --headless --path . --check-only --script res://tools/token_packs/verify_token_pack.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Parse token pack PowerShell
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path ".\tools\build_token_packs.ps1"),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }

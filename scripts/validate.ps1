@@ -1,6 +1,7 @@
 param(
     [string]$Godot = "godot",
     [switch]$Tests,
+    [switch]$SmokeTests,
     [switch]$FullTests
 )
 
@@ -94,7 +95,7 @@ function Invoke-Godot {
         if ($null -ne $exitCode -and $exitCode -ne 0) {
             throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
         }
-        if ($RequirePass -and (($stdout + $stderr) -notmatch "(?m)^PASS:")) {
+        if ($RequirePass -and (($stdout + $stderr) -notmatch "(?m)^PASS(?::|\s)")) {
             throw "Godot test ended without PASS marker: $($Arguments -join ' ')"
         }
     } finally {
@@ -174,15 +175,27 @@ $fastTests = @(
     "test_bestiary_token_hat.gd"
 )
 
+# Small, representative CI smoke suite; the existing -Tests and -FullTests
+# remain available for broader regression coverage outside the 60s CI gate.
+$smokeTests = @(
+    "test_spell_catalog_smoke.gd",
+    "test_origin_granted_spells.gd",
+    "test_structured_resource_trackers.gd",
+    "test_creature_sheet_controller.gd",
+    "test_mobile_main_menu.gd",
+    "test_board_smoke.gd",
+    "test_standalone_creatures.gd"
+)
+
 if ($FullTests) {
     Write-Host "== Full project import / parse =="
     Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit") 300
 
     $testFiles = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot "tests") `
         -Filter "test_*.gd" -File | Sort-Object Name
-} elseif ($Tests) {
-    Write-Host "== Fast VTT validation =="
-    $testFiles = foreach ($name in $fastTests) {
+} elseif ($SmokeTests -or $Tests) {
+    Write-Host $(if ($SmokeTests) { "== Bounded CI smoke validation ==" } else { "== Fast VTT validation ==" })
+    $testFiles = foreach ($name in $(if ($SmokeTests) { $smokeTests } else { $fastTests })) {
         $path = Join-Path (Join-Path $ProjectRoot "tests") $name
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Fast test is missing from checkout: $name"
@@ -197,7 +210,9 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests -and $test.Name -eq "test_creature_sheet_ui.gd") {
+    $testTimeout = if ($SmokeTests) {
+        10
+    } elseif ($FullTests -and $test.Name -eq "test_creature_sheet_ui.gd") {
         # Full suite only: exercises hundreds of UI callbacks.
         300
     } elseif ($FullTests) {
