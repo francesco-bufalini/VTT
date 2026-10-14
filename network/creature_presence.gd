@@ -1,5 +1,7 @@
 extends Node
 
+signal peers_changed
+
 signal document_received(document: Dictionary, sender_id: String)
 signal document_delivered(delivery_id: String)
 
@@ -15,6 +17,7 @@ const MAX_DOCUMENT_PACKET := 7500
 const DOCUMENT_RETRY_MS := 1100
 const DOCUMENT_RETRIES := 6
 
+var auto_refresh := true
 var _udp := PacketPeerUDP.new()
 var _provider: Callable
 var _session := ""
@@ -32,6 +35,7 @@ func setup(session_key: String, peer_provider: Callable) -> void:
 	# shows no verified-online recipients instead of guessing from IPs.
 	if DisplayServer.get_name() != "headless":
 		_listening = _udp.bind(PORT, "*") == OK
+	_udp.set_broadcast_enabled(true)
 	set_process(_listening)
 
 
@@ -40,6 +44,7 @@ func set_session_key(session_key: String) -> void:
 	if digest != _session:
 		_session = digest
 		_online.clear()
+		peers_changed.emit()
 		_last_hello_ms = -HEARTBEAT_MS
 		_pending_documents.clear()
 		_seen_delivery_ids.clear()
@@ -56,8 +61,12 @@ func _process(_delta: float) -> void:
 		var parsed: Variant = JSON.parse_string(bytes.get_string_from_utf8())
 		if parsed is Dictionary:
 			_accept_heartbeat(parsed as Dictionary, sender)
+	var count_before := _online.size()
+	get_online_peers()
+	if _online.size() != count_before:
+		peers_changed.emit()
 	var now: int = Time.get_ticks_msec()
-	if now - _last_hello_ms >= HEARTBEAT_MS:
+	if auto_refresh and now - _last_hello_ms >= HEARTBEAT_MS:
 		request_refresh()
 	for delivery_id: String in _pending_documents.keys():
 		var pending: Dictionary = _pending_documents[delivery_id]
@@ -125,11 +134,16 @@ func _send_document_packet(delivery_id: String) -> void:
 
 
 func _send_heartbeat(ip: String, kind: String) -> void:
+	var label := OS.get_model_name() if OS.has_feature("mobile") else OS.get_environment("COMPUTERNAME")
+	if label.is_empty():
+		label = OS.get_name() + " · " + Owner.local_id().substr(0, 8)
 	_udp.set_dest_address(ip, PORT)
 	_udp.put_packet(JSON.stringify({
 		"magic": MAGIC,
 		"session": _session,
 		"owner": Owner.local_id(),
+		"label": label,
+		"device": "mobile" if OS.has_feature("mobile") else "desktop",
 		"kind": kind
 	}).to_utf8_buffer())
 
@@ -184,8 +198,10 @@ func _accept_heartbeat(value: Dictionary, ip: String) -> void:
 		return
 	_online[owner] = {
 		"id": owner, "ip": ip, "last_seen": Time.get_ticks_msec(),
-		"label": "Giocatore " + owner.substr(0, 8)
+		"label": String(value.get("label", "Giocatore " + owner.substr(0, 8))).substr(0, 80),
+		"device": String(value.get("device", "desktop"))
 	}
+	peers_changed.emit()
 	if kind == "hello" and _listening:
 		_send_heartbeat(ip, "here")
 

@@ -72,6 +72,60 @@ func run() -> void:
 			"Shared edit fields must be usable by touch"):
 			return
 		sheet.show_touch_library(true)
+	# Drive real raw touch events through the viewport: a drag never becomes a click.
+	var gesture_scroll := ScrollContainer.new()
+	gesture_scroll.position = Vector2(20, 120)
+	gesture_scroll.size = Vector2(300, 220)
+	gesture_scroll.z_index = 100
+	mobile.ui_root.add_child(gesture_scroll)
+	var gesture_body := VBoxContainer.new()
+	gesture_scroll.add_child(gesture_body)
+	var clicks := [0]
+	for index: int in range(15):
+		var button := Button.new()
+		button.text = "Touch test %d" % index
+		button.custom_minimum_size = Vector2(280, 48)
+		button.pressed.connect(func() -> void: clicks[0] += 1)
+		gesture_body.add_child(button)
+	await settle()
+	var down := InputEventScreenTouch.new()
+	down.index = 0
+	down.position = Vector2(80, 250)
+	down.pressed = true
+	root.push_input(down, true)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = Vector2(80, 160)
+	drag.relative = Vector2(0, -90)
+	root.push_input(drag, true)
+	var up := InputEventScreenTouch.new()
+	up.index = 0
+	up.position = drag.position
+	root.push_input(up, true)
+	await settle()
+	if not check(gesture_scroll.scroll_vertical >= 80 and clicks[0] == 0, "Dragging over a button must scroll without clicking: scroll=%d clicks=%d" % [gesture_scroll.scroll_vertical, clicks[0]]):
+		return
+	down.position = Vector2(80, 190)
+	up.position = down.position
+	root.push_input(down, true)
+	root.push_input(up, true)
+	await settle()
+	if not check(clicks[0] == 1, "A stationary tap must click exactly once on release"):
+		return
+	gesture_scroll.queue_free()
+	mobile._page_history.clear()
+	mobile._select_page(3)
+	mobile._go_back()
+	if not check(mobile._active_page == 0, "Back must return to the previous page"):
+		return
+	sheet.show_touch_library(false)
+	mobile._go_back()
+	if not check(sheet.is_touch_library_visible(), "Back must close the creature editor first"):
+		return
+	mobile._go_back()
+	if not check(mobile._exit_dialog.visible, "Back at the root must ask before exiting"):
+		return
+	mobile._exit_dialog.hide()
 	mobile.queue_free()
 	await settle()
 	manager.selected_campaign_group_id = previous_campaign

@@ -103,3 +103,52 @@ static func wrap_fields(root: Node) -> void:
 				index += 2
 			else:
 				index += 1
+
+# Deepest scrollable area first; any unused distance continues in its parent.
+static func scroll_bars_at(root: Node, at: Vector2) -> Array[ScrollBar]:
+	var candidates: Array[Control] = []
+	for node: Node in root.find_children("*", "Control", true, false):
+		var control := node as Control
+		if not control.is_visible_in_tree() or not control.get_global_rect().has_point(at):
+			continue
+		var clipped := false
+		var parent := control.get_parent()
+		while parent != null:
+			if parent is Control and parent.clip_contents and not parent.get_global_rect().has_point(at):
+				clipped = true
+				break
+			parent = parent.get_parent()
+		if not clipped and (control is ScrollContainer or control is ItemList or control is RichTextLabel or control is TextEdit):
+			candidates.append(control)
+	candidates.sort_custom(func(a: Control, b: Control) -> bool:
+		var az := _effective_z(a)
+		var bz := _effective_z(b)
+		return az > bz if az != bz else a.get_path().get_name_count() > b.get_path().get_name_count())
+	var result: Array[ScrollBar] = []
+	for control: Control in candidates:
+		if control != candidates[0] and not control.is_ancestor_of(candidates[0]):
+			continue
+		var bar: ScrollBar = control.get_v_scroll_bar()
+		if bar.max_value - bar.page > bar.min_value and not result.has(bar):
+			result.append(bar)
+	return result
+
+static func scroll_gesture(bars: Array[ScrollBar], distance: float) -> void:
+	var remaining := distance
+	for bar: ScrollBar in bars:
+		if not is_instance_valid(bar):
+			continue
+		var previous := bar.value
+		bar.value = clampf(previous + remaining, bar.min_value, maxf(bar.min_value, bar.max_value - bar.page))
+		remaining -= bar.value - previous
+		if absf(remaining) < 0.5:
+			break
+
+static func _effective_z(control: Control) -> int:
+	var result := 0
+	var current: Node = control
+	while current != null:
+		if current is CanvasItem:
+			result += current.z_index
+		current = current.get_parent()
+	return result

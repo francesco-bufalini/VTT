@@ -4,8 +4,19 @@ const MapController = preload("res://vtt/map_data_controller.gd")
 const TouchLayout = preload("res://vtt/mobile/touch_layout.gd")
 var map_data_controller: MapController
 var _session_panel: PanelContainer
-var _host_input: LineEdit
-var _session_input: LineEdit
+const Presence = preload("res://network/creature_presence.gd")
+var _presence: Presence
+var _session_picker: OptionButton
+var _peer_list: VBoxContainer
+var _exit_dialog: ConfirmationDialog
+var _page_history: Array[int] = []
+var _back_navigation := false
+var _finger := -1
+var _finger_start := Vector2.ZERO
+var _finger_position := Vector2.ZERO
+var _dragging := false
+var _gesture_bars: Array[ScrollBar] = []
+var _previous_mouse_emulation := true
 var _connection_status: Label
 var _map_summary: RichTextLabel
 var _archive_selector: OptionButton
@@ -17,6 +28,10 @@ var _active_page := -1
 
 func _ready() -> void:
 	_configure_ui_scale()
+	get_tree().auto_accept_quit = false
+	get_viewport().gui_embed_subwindows = true
+	_previous_mouse_emulation = Input.emulate_mouse_from_touch
+	Input.emulate_mouse_from_touch = false
 	if OS.has_feature("mobile"):
 		get_window().size_changed.connect(_configure_ui_scale)
 		get_tree().auto_accept_quit = false
@@ -37,8 +52,6 @@ func _ready() -> void:
 	TouchLayout.scroll_body(_session_panel)
 	TouchLayout.style_tree(_session_panel)
 	TouchLayout.style_control(_archive_selector)
-	_host_input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_URL
-	_session_input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	_pages.assign([sheet.get_panel_control(), book.get_panel_control(), roller.panel, _session_panel])
 	map_data_controller.status_changed.connect(func(message: String) -> void:
 		_connection_status.text = message)
@@ -48,6 +61,21 @@ func _ready() -> void:
 	resized.connect(_layout_pages)
 	get_tree().node_added.connect(_on_touch_node_added)
 	_select_page(0)
+	_exit_dialog = ConfirmationDialog.new()
+	_exit_dialog.title = "Uscire dall'app?"
+	_exit_dialog.dialog_text = "Vuoi chiudere VTT Mobile? Le schede restano salvate sul dispositivo."
+	_exit_dialog.ok_button_text = "Esci"
+	_exit_dialog.cancel_button_text = "Resta nell'app"
+	_exit_dialog.confirmed.connect(func() -> void: get_tree().quit())
+	ui_root.add_child(_exit_dialog)
+	TouchLayout.style_tree(_exit_dialog)
+	_presence = Presence.new()
+	_presence.name = "CreaturePresence"
+	_presence.auto_refresh = false
+	add_child(_presence)
+	_presence.peers_changed.connect(_show_online_peers)
+	_presence.setup("1", _discovery_hosts)
+	_presence.request_refresh()
 
 func _configure_ui_scale() -> void:
 	if not OS.has_feature("mobile"):
@@ -113,6 +141,8 @@ func _build_page_header() -> void:
 func _select_page(index: int) -> void:
 	if _pages.is_empty() or index == _active_page:
 		return
+	if _active_page >= 0 and not _back_navigation:
+		_page_history.append(_active_page)
 	var sheet := creature_area as CreatureSheet
 	var book := compendium as Compendium
 	var roller := dice_roller as DiceRoller
@@ -154,11 +184,79 @@ func _style_added_control(reference: WeakRef) -> void:
 		TouchLayout.style_control(node)
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST and _active_page >= 0:
-		if _active_page != 0:
-			_select_page(0)
-		else:
-			(creature_area as CreatureSheet).show_touch_library(true)
+	if what in [NOTIFICATION_WM_GO_BACK_REQUEST, NOTIFICATION_WM_CLOSE_REQUEST] and _active_page >= 0:
+		_go_back()
+
+func _go_back() -> void:
+	# Close the current popup before changing the screen underneath it.
+	var windows := ui_root.find_children("*", "Window", true, false)
+	for index: int in range(windows.size() - 1, -1, -1):
+		var popup := windows[index] as Window
+		if popup.visible:
+			popup.hide()
+			return
+	if _active_page == 1 and (compendium as Compendium).close_touch_details():
+		return
+	var sheet := creature_area as CreatureSheet
+	if _active_page == 0 and not sheet.is_touch_library_visible():
+		sheet.show_touch_library(true)
+		return
+	if not _page_history.is_empty():
+		_back_navigation = true
+		_select_page(_page_history.pop_back())
+		_back_navigation = false
+		return
+	_exit_dialog.popup_centered(Vector2i(340, 180))
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_BACK:
+		get_viewport().set_input_as_handled()
+		_go_back()
+	elif event is InputEventScreenTouch:
+		get_viewport().set_input_as_handled()
+		if event.pressed and _finger == -1:
+			_finger = event.index
+			_finger_start = event.position
+			_finger_position = event.position
+			_dragging = false
+			_gesture_bars = TouchLayout.scroll_bars_at(ui_root, event.position)
+		elif not event.pressed and event.index == _finger:
+			var tap: bool = not _dragging and not event.canceled
+			_finger = -1
+			_gesture_bars.clear()
+			if tap:
+				call_deferred("_dispatch_touch_tap", event.position)
+	elif event is InputEventScreenDrag:
+		get_viewport().set_input_as_handled()
+		if event.index != _finger:
+			return
+		if not _dragging and event.position.distance_to(_finger_start) >= 10:
+			_dragging = true
+		if _dragging:
+			TouchLayout.scroll_gesture(_gesture_bars, _finger_position.y - event.position.y)
+		_finger_position = event.position
+
+func _dispatch_touch_tap(at: Vector2) -> void:
+	# Controls receive a complete click only after a stationary finger is lifted.
+	var motion := InputEventMouseMotion.new()
+	motion.position = at
+	motion.global_position = at
+	get_viewport().push_input(motion, true)
+	for pressed: bool in [true, false]:
+		var click := InputEventMouseButton.new()
+		click.position = at
+		click.global_position = at
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+		click.pressed = pressed
+		get_viewport().push_input(click, true)
+	var leave := InputEventMouseMotion.new()
+	leave.position = Vector2(-100, -100)
+	leave.global_position = leave.position
+	get_viewport().push_input(leave, true)
+
+func _exit_tree() -> void:
+	Input.emulate_mouse_from_touch = _previous_mouse_emulation
 
 func _build_session_panel() -> void:
 	_session_panel = PanelContainer.new()
@@ -178,23 +276,30 @@ func _build_session_panel() -> void:
 	heading.text = "Collega le schede alla partita"
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(heading)
-	_host_input = LineEdit.new()
-	_host_input.placeholder_text = "Indirizzo Tailscale del VTT desktop"
-	_host_input.custom_minimum_size.y = 48
-	column.add_child(_host_input)
-	_session_input = LineEdit.new()
-	_session_input.placeholder_text = "Codice sessione della board"
-	_session_input.custom_minimum_size.y = 48
-	column.add_child(_session_input)
-	var connect_button := Button.new()
-	connect_button.text = "Connetti"
-	connect_button.custom_minimum_size.y = 48
-	connect_button.pressed.connect(func() -> void:
-		var error := map_data_controller.connect_remote(_host_input.text.strip_edges(), _session_input.text)
-		if error != OK:
-			_connection_status.text = "Connessione non avviata: " + error_string(error)
-	)
-	column.add_child(connect_button)
+	var session_row := HBoxContainer.new()
+	column.add_child(session_row)
+	var session_label := Label.new()
+	session_label.text = "Partita"
+	session_row.add_child(session_label)
+	_session_picker = OptionButton.new()
+	_session_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for number: int in range(1, 6):
+		_session_picker.add_item("Partita %d%s" % [number, " · predefinita" if number == 1 else ""])
+	_session_picker.item_selected.connect(func(index: int) -> void:
+		map_data_controller.disconnect_remote()
+		_presence.set_session_key(str(index + 1))
+		_refresh_online_peers())
+	session_row.add_child(_session_picker)
+	var refresh := Button.new()
+	refresh.text = "Aggiorna utenti online"
+	refresh.pressed.connect(_refresh_online_peers)
+	column.add_child(refresh)
+	_peer_list = VBoxContainer.new()
+	column.add_child(_peer_list)
+	var hint := Label.new()
+	hint.text = "Apri VTT sul desktop e Tailscale su entrambi i dispositivi. Tocca un desktop online per collegarti."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(hint)
 	var disconnect_button := Button.new()
 	disconnect_button.text = "Disconnetti"
 	disconnect_button.custom_minimum_size.y = 48
@@ -269,3 +374,44 @@ func _select_local_archive(index: int) -> void:
 	manager.active_campaign_id = String(scope.scenario)
 	if was_open:
 		creature_area.show_panel()
+
+func _discovery_hosts() -> Array[String]:
+	var hosts: Array[String] = ["255.255.255.255"]
+	# Directed LAN broadcasts work on networks that reject limited broadcast.
+	for ip: String in IP.get_local_addresses():
+		if ip.is_valid_ip_address() and not ip.contains(":") and (ip.begins_with("192.168.") or ip.begins_with("10.")):
+			var parts := ip.split(".")
+			hosts.append("%s.%s.%s.255" % [parts[0], parts[1], parts[2]])
+	for peer: Dictionary in _presence.get_online_peers():
+		var ip := String(peer.get("ip", ""))
+		if not hosts.has(ip):
+			hosts.append(ip)
+	return hosts
+
+func _refresh_online_peers() -> void:
+	_connection_status.text = "Ricerca degli utenti online…"
+	_presence.request_refresh()
+	_show_online_peers()
+
+func _show_online_peers() -> void:
+	for child: Node in _peer_list.get_children():
+		_peer_list.remove_child(child)
+		child.queue_free()
+	var peers := _presence.get_online_peers()
+	for peer: Dictionary in peers:
+		var button := Button.new()
+		var desktop := String(peer.get("device", "desktop")) == "desktop"
+		button.text = "%s · %s" % [peer.get("label", "Giocatore"), "Desktop" if desktop else "Mobile"]
+		button.disabled = not desktop
+		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		button.pressed.connect(func() -> void:
+			var error := map_data_controller.connect_remote(String(peer.ip), str(_session_picker.selected + 1))
+			if error != OK:
+				_connection_status.text = "Connessione non avviata: " + error_string(error))
+		_peer_list.add_child(button)
+		TouchLayout.style_control(button)
+	if peers.is_empty():
+		var empty := Label.new()
+		empty.text = "Nessun utente trovato. Usa Aggiorna dopo aver aperto VTT sul desktop."
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_peer_list.add_child(empty)

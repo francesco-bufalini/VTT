@@ -30,6 +30,7 @@ func setup() -> void:
 	)
 	_http = HTTPRequest.new()
 	_http.name = "BestiaryHttp"
+	_http.timeout = 12.0
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
 

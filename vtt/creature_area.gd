@@ -1613,7 +1613,10 @@ func configure_touch_layout() -> void:
 			child.reparent(catalog_group, false)
 	var catalog_button := Button.new()
 	catalog_button.text = "Importa dal bestiario"
-	catalog_button.pressed.connect(func() -> void: catalog_group.visible = not catalog_group.visible)
+	catalog_button.pressed.connect(func() -> void:
+		catalog_group.visible = not catalog_group.visible
+		if catalog_group.visible and DisplayServer.get_name() != "headless":
+			_client.load_catalog())
 	_touch_library.add_child(catalog_button)
 	catalog_group.hide()
 	_creature_list.child_entered_tree.connect(func(_node: Node) -> void: call_deferred("_connect_touch_creature_rows"))
@@ -1624,6 +1627,10 @@ func configure_touch_layout() -> void:
 	touch.scroll_body(_panel)
 	touch.style_tree(_panel)
 	show_touch_library(true)
+
+
+func is_touch_library_visible() -> bool:
+	return _touch_library != null and _touch_library.visible
 
 
 func show_touch_library(show_library: bool) -> void:

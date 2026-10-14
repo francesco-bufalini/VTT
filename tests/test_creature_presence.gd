@@ -17,12 +17,16 @@ func run() -> void:
 		"magic": Presence.MAGIC,
 		"session": "2".sha256_text(),
 		"owner": "remote-owner-0123456789abcdef",
-		"kind": "here"
+		"kind": "here",
+		"label": "Desktop di prova", "device": "desktop"
 	}
 	presence.call("_accept_heartbeat", data, "100.101.102.103")
 	var peers: Array = presence.call("get_online_peers")
 	assert(peers.size() == 1)
 	assert(peers[0].id == "remote-owner-0123456789abcdef")
+	assert(peers[0].label == "Desktop di prova" and peers[0].device == "desktop")
+	presence.auto_refresh = false
+	assert(not presence.auto_refresh)
 	# Other sessions, malformed addresses and self must not appear.
 	var stale: Dictionary = data.duplicate(true)
 	stale["session"] = "other".sha256_text()

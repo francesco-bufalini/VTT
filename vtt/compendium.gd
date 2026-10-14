@@ -162,6 +162,16 @@ func configure_touch_layout() -> void:
 	touch.style_tree(_panel)
 
 
+func close_touch_details() -> bool:
+	if _details == null or not _details.visible:
+		return false
+	var back := _panel.find_child("TouchCatalogBack", true, false) as Button
+	if back == null:
+		return false
+	back.pressed.emit()
+	return true
+
+
 func is_panel_open() -> bool:
 	return _panel != null and _panel.visible
 

@@ -13,9 +13,12 @@ The normal startup menu routes Android/iOS (`mobile`) and custom-feature `vtt_mo
 
 ## Connection
 
-Run Tailscale on both devices. In the mobile Partita screen, enter the desktop's Tailscale IP and the board's current shared session code, then press Connetti. The desktop must have board reception enabled. The read-only service uses UDP 45457; the existing TCP map snapshot protocol is unchanged. A bind failure is reported through the existing desktop sync status signal.
+Run Tailscale on both devices. Open VTT on the desktop, then select the online desktop in the mobile Partita screen. The app listens to the existing session-scoped presence announcements and performs one discovery request at startup; further requests happen only when the user presses Aggiorna utenti online or explicitly changes the selected game. The same desktop game selector (1–5) defaults to 1. No IP address or free-text session code is needed.
 
-Mobile does not execute `tailscale status`, start a VPN, or discover peers automatically: the installed Tailscale app provides routing. Existing Tailscale/network access controls and the configured UDP port must permit the connection. The existing session code separates games; it is not a new authentication credential.
+Presence uses the existing UDP 45456 service. A startup/manual LAN broadcast discovers reachable local VTT instances; desktops also announce themselves directly to their cached Tailscale peers, including mobile devices. Tailscale must be connected on both devices, and network access controls/firewalls must permit these packets. There is no public Internet directory and mobile does not run the desktop Tailscale command-line program. Only session-matching VTT announcements appear, with desktop/mobile labels; expired entries disappear without sending more discovery requests. UDP 45457 serves read-only map data; TCP snapshots remain unchanged. Older desktop builds can respond to presence requests but lack the device label (treated as desktop for compatibility).
+
+Mobile handles raw finger gestures before GUI mouse input. A stationary tap dispatches one complete click on release; crossing the drag threshold scrolls the deepest visible scrollable area, then its ancestors at the boundary, and never dispatches a click. The bestiary import panel enables the public 5etools download with a bounded HTTP timeout and mirror fallback; no GitHub account is needed. Android Back closes dialogs, returns from a sheet to the library or to the previous page, then asks for confirmation before quitting.
+
 
 The controller polls every 1.5 seconds. Responses must match peer IP/port, session and request ID and pass schema checks. Data older than five seconds is cleared. Disconnecting, changing connection or selecting an invalid connection clears old data. Sheets remain stored locally and editable offline.
 
