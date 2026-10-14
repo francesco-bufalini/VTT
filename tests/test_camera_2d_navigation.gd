@@ -116,5 +116,5 @@ func run() -> void:
 	):
 		return
 	board.queue_free()
-	print("Camera 2D touchpad and mouse navigation: OK")
+	print("PASS: Camera 2D touchpad and mouse navigation")
 	quit()
