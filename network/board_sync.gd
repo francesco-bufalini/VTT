@@ -2,6 +2,7 @@ extends Node
 
 signal status_changed(message: String)
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const CreaturePresence = preload("res://network/creature_presence.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
 const MAGIC := "DND_MAP_SYNC_V6"
@@ -51,6 +52,7 @@ var _tailscale_last_error := ""
 var _tailscale_peer_cache: Array[String] = []
 var _tailscale_peer_cache_updated_msec := 0
 var _tailscale_peer_refresh_thread: Thread = null
+var _lan_presence: Node = null
 var _bulk_generation := 0
 var _bulk_pending := 0
 var _bulk_total := 0
@@ -361,15 +363,9 @@ func send_snapshot_to_tailnet(
 	if payload.is_empty():
 		return ERR_BUSY
 
-	var hosts: Array[String] = (
-		get_cached_tailscale_peer_ipv4s()
-		if use_cached_peers
-		else _tailscale_peer_ipv4s()
-	)
+	var hosts: Array[String] = _collect_sync_peer_ipv4s(use_cached_peers)
 	if hosts.is_empty():
-		status_changed.emit(
-			"Nessun nodo Tailscale trovato. %s" % _tailscale_last_error
-		)
+		status_changed.emit("Nessun altro VTT trovato nella partita (LAN o Tailscale)")
 		return ERR_DOES_NOT_EXIST
 
 	_bulk_generation += 1
@@ -394,13 +390,13 @@ func send_snapshot_to_tailnet(
 
 	if _bulk_pending == 0:
 		status_changed.emit(
-			"Trovati %d nodi Tailscale, ma nessuna connessione Ã¨ partita"
+			"Trovati %d dispositivi, ma nessuna connessione è partita"
 			% _bulk_total
 		)
 		return ERR_CANT_CONNECT
 
 	status_changed.emit(
-		"Trovati %d nodi Tailscale Â· invio in corsoâ€¦" % _bulk_total
+		"Trovati %d dispositivi · invio in corso…" % _bulk_total
 	)
 	return OK
 
@@ -458,6 +454,35 @@ func _queue_snapshot_payload(
 		}
 	)
 	return OK
+
+
+# The presence service verifies that a LAN peer really is running VTT in the
+# same game. Mobile clients are intentionally excluded from TCP map/chat pushes:
+# they poll the desktop's tactical UDP service instead.
+func set_lan_presence(presence: Node) -> void:
+	_lan_presence = presence
+
+
+func get_presence_discovery_hosts() -> Array[String]:
+	return CreaturePresence.discovery_targets(get_cached_tailscale_peer_ipv4s())
+
+
+func get_session_peer_ipv4s() -> Array[String]:
+	return _collect_sync_peer_ipv4s(true)
+
+
+func _collect_sync_peer_ipv4s(use_cached: bool) -> Array[String]:
+	var hosts: Array[String] = (
+		get_cached_tailscale_peer_ipv4s()
+		if use_cached
+		else _tailscale_peer_ipv4s()
+	)
+	if _lan_presence == null or not is_instance_valid(_lan_presence):
+		return hosts
+	for host: String in _lan_presence.call("get_online_desktop_ipv4s"):
+		if not hosts.has(host):
+			hosts.append(host)
+	return hosts
 
 
 func get_cached_tailscale_peer_ipv4s() -> Array[String]:

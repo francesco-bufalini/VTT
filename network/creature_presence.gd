@@ -5,8 +5,8 @@ signal peers_changed
 signal document_received(document: Dictionary, sender_id: String)
 signal document_delivered(delivery_id: String)
 
-# App-level presence, separate from the TCP/Tailscale map snapshots.
-# A Tailscale peer IP alone is NOT proof that a VTT user is online.
+# App-level presence, separate from the TCP map snapshots.
+# A LAN broadcast or a Tailscale peer IP alone does not prove a VTT user is online.
 # Only VTT instances responding to a session-scoped UDP heartbeat appear.
 const Owner = preload("res://vtt/creature_owner.gd")
 const PORT := 45456
@@ -26,6 +26,34 @@ var _last_hello_ms := -HEARTBEAT_MS
 var _listening := false
 var _pending_documents: Dictionary = {}
 var _seen_delivery_ids: Dictionary = {}
+
+
+# Discover instances on the local subnet as well as via optional Tailscale.
+# Android Emulator reaches its host PC through 10.0.2.2 (not localhost).
+static func discovery_targets(extra_hosts: Array[String] = []) -> Array[String]:
+	var hosts: Array[String] = ["255.255.255.255"]
+	if OS.has_feature("mobile"):
+		hosts.append("10.0.2.2")
+	for address: String in IP.get_local_addresses():
+		if not address.is_valid_ip_address() or address.contains(":"):
+			continue
+		var parts := address.split(".")
+		if parts.size() != 4:
+			continue
+		var second := int(parts[1])
+		if not (
+			address.begins_with("10.")
+			or address.begins_with("192.168.")
+			or (address.begins_with("172.") and second >= 16 and second <= 31)
+		):
+			continue
+		var directed := "%s.%s.%s.255" % [parts[0], parts[1], parts[2]]
+		if not hosts.has(directed):
+			hosts.append(directed)
+	for host: String in extra_hosts:
+		if host.is_valid_ip_address() and not host.contains(":") and not hosts.has(host):
+			hosts.append(host)
+	return hosts
 
 
 func setup(session_key: String, peer_provider: Callable) -> void:
@@ -58,9 +86,10 @@ func _process(_delta: float) -> void:
 		if bytes.size() > MAX_DOCUMENT_PACKET or bytes.is_empty():
 			continue
 		var sender: String = _udp.get_packet_ip()
+		var sender_port: int = _udp.get_packet_port()
 		var parsed: Variant = JSON.parse_string(bytes.get_string_from_utf8())
 		if parsed is Dictionary:
-			_accept_heartbeat(parsed as Dictionary, sender)
+			_accept_heartbeat(parsed as Dictionary, sender, sender_port)
 	var count_before := _online.size()
 	get_online_peers()
 	if _online.size() != count_before:
@@ -115,7 +144,8 @@ func send_document(recipient_id: String, document: Dictionary) -> String:
 	if encoded.size() > MAX_DOCUMENT_PACKET:
 		return ""
 	_pending_documents[delivery_id] = {
-		"ip": String(peer.get("ip", "")), "recipient": recipient_id, "bytes": encoded,
+		"ip": String(peer.get("ip", "")), "port": int(peer.get("port", PORT)),
+		"recipient": recipient_id, "bytes": encoded,
 		"tries": 0, "last_sent": -DOCUMENT_RETRY_MS
 	}
 	_send_document_packet(delivery_id)
@@ -126,18 +156,18 @@ func _send_document_packet(delivery_id: String) -> void:
 	if not _pending_documents.has(delivery_id):
 		return
 	var pending: Dictionary = _pending_documents[delivery_id]
-	_udp.set_dest_address(String(pending["ip"]), PORT)
+	_udp.set_dest_address(String(pending["ip"]), int(pending.get("port", PORT)))
 	_udp.put_packet(pending["bytes"])
 	pending["tries"] = int(pending["tries"]) + 1
 	pending["last_sent"] = Time.get_ticks_msec()
 	_pending_documents[delivery_id] = pending
 
 
-func _send_heartbeat(ip: String, kind: String) -> void:
+func _send_heartbeat(ip: String, kind: String, destination_port: int = PORT) -> void:
 	var label := OS.get_model_name() if OS.has_feature("mobile") else OS.get_environment("COMPUTERNAME")
 	if label.is_empty():
 		label = OS.get_name() + " · " + Owner.local_id().substr(0, 8)
-	_udp.set_dest_address(ip, PORT)
+	_udp.set_dest_address(ip, destination_port)
 	_udp.put_packet(JSON.stringify({
 		"magic": MAGIC,
 		"session": _session,
@@ -148,7 +178,7 @@ func _send_heartbeat(ip: String, kind: String) -> void:
 	}).to_utf8_buffer())
 
 
-func _accept_heartbeat(value: Dictionary, ip: String) -> void:
+func _accept_heartbeat(value: Dictionary, ip: String, sender_port: int = PORT) -> void:
 	if String(value.get("magic", "")) != MAGIC:
 		return
 	if String(value.get("session", "")) != _session:
@@ -189,7 +219,7 @@ func _accept_heartbeat(value: Dictionary, ip: String) -> void:
 			received["id"] = "received_" + delivery_id
 			received["sender_id"] = owner
 			document_received.emit(received, owner)
-		_udp.set_dest_address(ip, PORT)
+		_udp.set_dest_address(ip, sender_port)
 		_udp.put_packet(JSON.stringify({
 			"magic": MAGIC, "session": _session, "kind": "document_ack",
 			"owner": Owner.local_id(), "recipient": owner,
@@ -199,13 +229,14 @@ func _accept_heartbeat(value: Dictionary, ip: String) -> void:
 	if kind not in ["hello", "here"]:
 		return
 	_online[owner] = {
-		"id": owner, "ip": ip, "last_seen": Time.get_ticks_msec(),
+		"id": owner, "ip": ip, "port": sender_port,
+		"last_seen": Time.get_ticks_msec(),
 		"label": String(value.get("label", "Giocatore " + owner.substr(0, 8))).substr(0, 80),
 		"device": String(value.get("device", "desktop"))
 	}
 	peers_changed.emit()
 	if kind == "hello" and _listening:
-		_send_heartbeat(ip, "here")
+		_send_heartbeat(ip, "here", sender_port)
 
 
 func get_online_peers() -> Array[Dictionary]:
@@ -222,6 +253,18 @@ func get_online_peers() -> Array[Dictionary]:
 			return String(a.get("label", "")).naturalnocasecmp_to(String(b.get("label", ""))) < 0
 	)
 	return result
+
+
+# Only full desktop VTT instances accept board/chat TCP connections.
+func get_online_desktop_ipv4s() -> Array[String]:
+	var hosts: Array[String] = []
+	for peer: Dictionary in get_online_peers():
+		if String(peer.get("device", "desktop")) != "desktop":
+			continue
+		var host := String(peer.get("ip", ""))
+		if host.is_valid_ip_address() and not host.contains(":") and not hosts.has(host):
+			hosts.append(host)
+	return hosts
 
 
 func _exit_tree() -> void:
