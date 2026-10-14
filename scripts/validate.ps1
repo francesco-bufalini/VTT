@@ -177,7 +177,7 @@ $fastTests = @(
 
 # Small, representative CI smoke suite; the existing -Tests and -FullTests
 # remain available for broader regression coverage outside the 60s CI gate.
-$smokeTests = @(
+$ciSmokeTestNames = @(
     "test_spell_catalog_smoke.gd",
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
@@ -195,7 +195,7 @@ if ($FullTests) {
         -Filter "test_*.gd" -File | Sort-Object Name
 } elseif ($SmokeTests -or $Tests) {
     Write-Host $(if ($SmokeTests) { "== Bounded CI smoke validation ==" } else { "== Fast VTT validation ==" })
-    $testFiles = foreach ($name in $(if ($SmokeTests) { $smokeTests } else { $fastTests })) {
+    $testFiles = foreach ($name in $(if ($SmokeTests) { $ciSmokeTestNames } else { $fastTests })) {
         $path = Join-Path (Join-Path $ProjectRoot "tests") $name
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Fast test is missing from checkout: $name"
