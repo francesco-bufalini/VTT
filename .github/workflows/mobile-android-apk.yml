@@ -122,19 +122,7 @@ jobs:
               if ($paths -notcontains $essential) { throw "Essential APK entry absent: $essential" }
             }
             $unexpected = @($paths | Where-Object {
-              $_ -match '^assets/\.godot/imported/.*\.(scn|glb)
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "apk=$apk"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "signing=$signing"
-
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: VTT-Mobile-Android-${{ steps.export.outputs.signing }}-${{ github.run_number }}
-          path: ${{ steps.export.outputs.apk }}
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
- -or
+              $_ -match '^assets/\.godot/imported/.*\.(scn|glb)$' -or
               $_ -match '^(assets/)?(encounter/assets/|assets/presets/)' -or
               $_ -like 'lib/x86_64/*' -or
               $_ -match 'post_kaos_editable\.scn'
