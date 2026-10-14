@@ -34,6 +34,7 @@ var _page_drawer: PanelContainer
 var _page_menu_button: Button
 var _page_title: Label
 var _page_header_row: HBoxContainer
+var _page_header: PanelContainer
 var _connection_badge: Label
 var _active_page := -1
 
@@ -158,15 +159,18 @@ func _request_page(index: int) -> void:
 
 func _build_page_header() -> void:
 	var header := PanelContainer.new()
+	_page_header = header
 	header.name = "MobilePageHeader"
 	header.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	header.offset_bottom = 48
+	header.offset_bottom = 56
 	header.z_index = 40
 	ui_root.add_child(header)
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 4)
 	margin.add_theme_constant_override("margin_right", 4)
 	header.add_child(margin)
+	header.resized.connect(func() -> void:
+		call_deferred("_layout_pages"))
 	var row := HBoxContainer.new()
 	_page_header_row = row
 	row.add_theme_constant_override("separation", 6)
@@ -227,12 +231,20 @@ func _select_page(index: int) -> void:
 	_layout_pages()
 
 func _layout_pages() -> void:
+	# The themed header is taller than its original hardcoded 48dp viewport.
+	# Allocate real space above every page, rather than overlaying the sheet.
+	var header_height := 56.0
+	if _page_header != null:
+		header_height = maxf(header_height, _page_header.get_combined_minimum_size().y)
+		_page_header.offset_bottom = header_height
+	if _page_drawer != null:
+		_page_drawer.offset_top = header_height + 6.0
 	for index: int in range(_pages.size()):
 		var page := _pages[index]
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		page.offset_left = 2
 		page.offset_right = -2
-		page.offset_top = 48
+		page.offset_top = header_height + 6.0
 		page.offset_bottom = -2
 
 func _on_touch_node_added(node: Node) -> void:
