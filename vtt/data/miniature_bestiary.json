@@ -9,14 +9,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#ape_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ape.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Ape",
           "source": "XMM",
           "page": 348,
           "url": "https://5e.tools/bestiary.html#ape_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ape.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -28,14 +32,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#awakened%20tree_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Awakened%20Tree.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Awakened%20Tree.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Awakened Tree",
           "source": "XMM",
           "page": 23,
           "url": "https://5e.tools/bestiary.html#awakened%20tree_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Awakened%20Tree.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Awakened%20Tree.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -47,14 +55,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#awakened%20shrub_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Awakened%20Shrub.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Awakened%20Shrub.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Awakened Shrub",
           "source": "XMM",
           "page": 23,
           "url": "https://5e.tools/bestiary.html#awakened%20shrub_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Awakened%20Shrub.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Awakened%20Shrub.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -66,14 +78,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#axe%20beak_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Axe Beak",
           "source": "XMM",
           "page": 24,
           "url": "https://5e.tools/bestiary.html#axe%20beak_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -85,14 +101,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#axe%20beak_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Axe Beak",
           "source": "XMM",
           "page": 24,
           "url": "https://5e.tools/bestiary.html#axe%20beak_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -104,14 +124,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#axe%20beak_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Axe Beak",
           "source": "XMM",
           "page": 24,
           "url": "https://5e.tools/bestiary.html#axe%20beak_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Axe%20Beak.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -123,14 +147,18 @@
           "source": "MM",
           "page": 318,
           "url": "https://5e.tools/bestiary.html#baboon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Baboon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Baboon.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Baboon",
           "source": "XMM",
           "page": 349,
           "url": "https://5e.tools/bestiary.html#baboon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Baboon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Baboon.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -142,14 +170,18 @@
           "source": "MM",
           "page": 318,
           "url": "https://5e.tools/bestiary.html#badger_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Badger.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Badger",
           "source": "XMM",
           "page": 349,
           "url": "https://5e.tools/bestiary.html#badger_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Badger.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -161,14 +193,18 @@
           "source": "MM",
           "page": 318,
           "url": "https://5e.tools/bestiary.html#bat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Bat",
           "source": "XMM",
           "page": 349,
           "url": "https://5e.tools/bestiary.html#bat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -180,14 +216,18 @@
           "source": "MM",
           "page": 317,
           "url": "https://5e.tools/bestiary.html#ape_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ape.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Ape",
           "source": "XMM",
           "page": 348,
           "url": "https://5e.tools/bestiary.html#ape_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ape.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -199,14 +239,18 @@
           "source": "MM",
           "page": 318,
           "url": "https://5e.tools/bestiary.html#black%20bear_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Black%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Black%20Bear.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Black Bear",
           "source": "XMM",
           "page": 349,
           "url": "https://5e.tools/bestiary.html#black%20bear_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Black%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Black%20Bear.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -218,14 +262,18 @@
           "source": "MM",
           "page": 318,
           "url": "https://5e.tools/bestiary.html#blink%20dog_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blink%20Dog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blink%20Dog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Blink Dog",
           "source": "XMM",
           "page": 46,
           "url": "https://5e.tools/bestiary.html#blink%20dog_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blink%20Dog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blink%20Dog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -237,14 +285,18 @@
           "source": "MM",
           "page": 319,
           "url": "https://5e.tools/bestiary.html#blood%20hawk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blood%20Hawk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blood%20Hawk.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Blood Hawk",
           "source": "XMM",
           "page": 350,
           "url": "https://5e.tools/bestiary.html#blood%20hawk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blood%20Hawk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blood%20Hawk.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -256,14 +308,18 @@
           "source": "MM",
           "page": 319,
           "url": "https://5e.tools/bestiary.html#boar_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Boar.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Boar",
           "source": "XMM",
           "page": 350,
           "url": "https://5e.tools/bestiary.html#boar_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Boar.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -275,14 +331,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#camel_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Camel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Camel.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Camel",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#camel_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Camel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Camel.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -294,14 +354,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#camel_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Camel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Camel.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Camel",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#camel_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Camel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Camel.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -313,14 +377,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#cat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Cat",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#cat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -332,14 +400,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#cat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Cat",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#cat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -351,14 +423,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#cat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Cat",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#cat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -370,14 +446,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#constrictor%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Constrictor%20Snake.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Constrictor Snake",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#constrictor%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Constrictor%20Snake.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -389,14 +469,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#constrictor%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Constrictor%20Snake.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Constrictor Snake",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#constrictor%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Constrictor%20Snake.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -408,14 +492,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#crab_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Crab.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Crab.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Crab",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#crab_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Crab.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Crab.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -427,14 +515,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#crocodile_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Crocodile.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Crocodile.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Crocodile",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#crocodile_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Crocodile.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Crocodile.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -446,14 +538,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#death%20dog_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Death%20Dog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Death%20Dog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Death Dog",
           "source": "XMM",
           "page": 91,
           "url": "https://5e.tools/bestiary.html#death%20dog_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Death%20Dog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Death%20Dog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -465,14 +561,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#deer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Deer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Deer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Deer",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#deer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Deer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Deer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -484,14 +584,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Dire Wolf",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -503,14 +607,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Dire Wolf",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -522,14 +630,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Dire Wolf",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Dire%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -541,14 +653,18 @@
           "source": "MM",
           "page": 321,
           "url": "https://5e.tools/bestiary.html#draft%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Draft%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Draft%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Draft Horse",
           "source": "XMM",
           "page": 352,
           "url": "https://5e.tools/bestiary.html#draft%20horse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Draft%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Draft%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -560,14 +676,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#eagle_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Eagle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Eagle.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Eagle",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#eagle_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Eagle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Eagle.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -579,14 +699,18 @@
           "source": "MM",
           "page": 320,
           "url": "https://5e.tools/bestiary.html#cat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Cat",
           "source": "XMM",
           "page": 351,
           "url": "https://5e.tools/bestiary.html#cat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Cat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -598,14 +722,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#elephant_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elephant.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elephant.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Elephant",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#elephant_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elephant.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elephant.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -617,14 +745,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#elk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Elk",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#elk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -636,14 +768,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#elk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Elk",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#elk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -655,14 +791,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#elk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Elk",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#elk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Elk.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -674,14 +814,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#flying%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Flying%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Flying%20Snake.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Flying Snake",
           "source": "XMM",
           "page": 353,
           "url": "https://5e.tools/bestiary.html#flying%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Flying%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Flying%20Snake.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -693,14 +837,18 @@
           "source": "MM",
           "page": 322,
           "url": "https://5e.tools/bestiary.html#frog_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Frog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Frog.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Frog",
           "source": "XMM",
           "page": 354,
           "url": "https://5e.tools/bestiary.html#frog_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Frog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Frog.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -712,14 +860,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20ape_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Ape.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Ape",
           "source": "XMM",
           "page": 354,
           "url": "https://5e.tools/bestiary.html#giant%20ape_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Ape.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Ape.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -731,14 +883,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20badger_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Badger.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Badger",
           "source": "XMM",
           "page": 354,
           "url": "https://5e.tools/bestiary.html#giant%20badger_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Badger.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -750,14 +906,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20badger_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Badger.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Badger",
           "source": "XMM",
           "page": 354,
           "url": "https://5e.tools/bestiary.html#giant%20badger_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Badger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Badger.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -769,14 +929,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20bat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Bat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Bat.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Bat",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20bat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Bat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Bat.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -788,14 +952,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20boar_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Boar",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20boar_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -807,14 +975,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20boar_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Boar",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20boar_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -826,14 +998,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20boar_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Boar",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20boar_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Boar.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -845,14 +1021,18 @@
           "source": "MM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#giant%20centipede_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Centipede.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Centipede.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Centipede",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20centipede_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Centipede.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Centipede.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -864,14 +1044,18 @@
           "source": "MM",
           "page": 324,
           "url": "https://5e.tools/bestiary.html#giant%20constrictor%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Constrictor%20Snake.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Constrictor Snake",
           "source": "XMM",
           "page": 355,
           "url": "https://5e.tools/bestiary.html#giant%20constrictor%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Constrictor%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Constrictor%20Snake.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -883,14 +1067,18 @@
           "source": "MM",
           "page": 324,
           "url": "https://5e.tools/bestiary.html#giant%20crab_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Crab.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Crab.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Crab",
           "source": "XMM",
           "page": 356,
           "url": "https://5e.tools/bestiary.html#giant%20crab_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Crab.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Crab.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -902,14 +1090,18 @@
           "source": "MM",
           "page": 324,
           "url": "https://5e.tools/bestiary.html#giant%20crocodile_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Crocodile.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Crocodile.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Crocodile",
           "source": "XMM",
           "page": 356,
           "url": "https://5e.tools/bestiary.html#giant%20crocodile_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Crocodile.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Crocodile.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -921,14 +1113,18 @@
           "source": "MM",
           "page": 324,
           "url": "https://5e.tools/bestiary.html#giant%20eagle_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Eagle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Eagle.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Eagle",
           "source": "XMM",
           "page": 356,
           "url": "https://5e.tools/bestiary.html#giant%20eagle_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Eagle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Eagle.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -940,14 +1136,18 @@
           "source": "MM",
           "page": 325,
           "url": "https://5e.tools/bestiary.html#giant%20elk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Elk.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Elk",
           "source": "XMM",
           "page": 356,
           "url": "https://5e.tools/bestiary.html#giant%20elk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Elk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Elk.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -959,14 +1159,18 @@
           "source": "MM",
           "page": 325,
           "url": "https://5e.tools/bestiary.html#giant%20fire%20beetle_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Fire%20Beetle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Fire%20Beetle.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Fire Beetle",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20fire%20beetle_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Fire%20Beetle.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Fire%20Beetle.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -978,14 +1182,18 @@
           "source": "MM",
           "page": 325,
           "url": "https://5e.tools/bestiary.html#giant%20frog_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Frog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Frog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Frog",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20frog_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Frog.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Frog.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -997,14 +1205,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20goat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Goat",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20goat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1016,14 +1228,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20goat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Goat",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20goat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1035,14 +1251,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20goat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Goat",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20goat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Goat.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1054,14 +1274,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20hyena_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Hyena.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Hyena.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Hyena",
           "source": "XMM",
           "page": 357,
           "url": "https://5e.tools/bestiary.html#giant%20hyena_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Hyena.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Hyena.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1073,14 +1297,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Lizard",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1092,14 +1320,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Lizard",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1111,14 +1343,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Lizard",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1130,14 +1366,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Lizard",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Lizard.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1149,14 +1389,18 @@
           "source": "MM",
           "page": 326,
           "url": "https://5e.tools/bestiary.html#giant%20octopus_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Octopus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Octopus.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Octopus",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20octopus_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Octopus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Octopus.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1168,14 +1412,18 @@
           "source": "MM",
           "page": 327,
           "url": "https://5e.tools/bestiary.html#giant%20owl_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Owl.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Owl.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Owl",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20owl_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Owl.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Owl.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1187,14 +1435,18 @@
           "source": "MM",
           "page": 327,
           "url": "https://5e.tools/bestiary.html#giant%20poisonous%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Poisonous%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Poisonous%20Snake.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Venomous Snake",
           "source": "XMM",
           "page": 361,
           "url": "https://5e.tools/bestiary.html#giant%20venomous%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Venomous%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Venomous%20Snake.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1206,14 +1458,18 @@
           "source": "MM",
           "page": 327,
           "url": "https://5e.tools/bestiary.html#giant%20rat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Rat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Rat.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Rat",
           "source": "XMM",
           "page": 358,
           "url": "https://5e.tools/bestiary.html#giant%20rat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Rat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Rat.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -1225,14 +1481,18 @@
           "source": "MM",
           "page": 327,
           "url": "https://5e.tools/bestiary.html#giant%20scorpion_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Scorpion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Scorpion.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Scorpion",
           "source": "XMM",
           "page": 359,
           "url": "https://5e.tools/bestiary.html#giant%20scorpion_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Scorpion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Scorpion.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1244,14 +1504,18 @@
           "source": "MM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#giant%20sea%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Sea%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Sea%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Seahorse",
           "source": "XMM",
           "page": 359,
           "url": "https://5e.tools/bestiary.html#giant%20seahorse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Seahorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Seahorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1263,14 +1527,18 @@
           "source": "MM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#giant%20shark_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Shark.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Shark",
           "source": "XMM",
           "page": 359,
           "url": "https://5e.tools/bestiary.html#giant%20shark_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Shark.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -1282,14 +1550,18 @@
           "source": "MM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#giant%20shark_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Shark.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Giant Shark",
           "source": "XMM",
           "page": 359,
           "url": "https://5e.tools/bestiary.html#giant%20shark_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Shark.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -1301,14 +1573,18 @@
           "source": "MM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#giant%20spider_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Spider.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Spider",
           "source": "XMM",
           "page": 359,
           "url": "https://5e.tools/bestiary.html#giant%20spider_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Spider.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1320,14 +1596,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20toad_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Toad.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Toad.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Toad",
           "source": "XMM",
           "page": 360,
           "url": "https://5e.tools/bestiary.html#giant%20toad_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Toad.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Toad.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1339,14 +1619,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20toad_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Toad.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Toad.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Toad",
           "source": "XMM",
           "page": 360,
           "url": "https://5e.tools/bestiary.html#giant%20toad_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Toad.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Toad.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1358,14 +1642,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20vulture_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Vulture.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Vulture.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Giant Vulture",
           "source": "XMM",
           "page": 361,
           "url": "https://5e.tools/bestiary.html#giant%20vulture_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Vulture.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Vulture.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1377,14 +1665,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20wasp_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wasp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wasp.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Wasp",
           "source": "XMM",
           "page": 361,
           "url": "https://5e.tools/bestiary.html#giant%20wasp_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wasp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wasp.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1396,14 +1688,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20wasp_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wasp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wasp.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Wasp",
           "source": "XMM",
           "page": 361,
           "url": "https://5e.tools/bestiary.html#giant%20wasp_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wasp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wasp.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1415,14 +1711,18 @@
           "source": "MM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#giant%20weasel_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Weasel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Weasel.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Weasel",
           "source": "XMM",
           "page": 361,
           "url": "https://5e.tools/bestiary.html#giant%20weasel_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Weasel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Weasel.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1434,14 +1734,18 @@
           "source": "MM",
           "page": 330,
           "url": "https://5e.tools/bestiary.html#giant%20wolf%20spider_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wolf%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Giant%20Wolf%20Spider.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Giant Wolf Spider",
           "source": "XMM",
           "page": 362,
           "url": "https://5e.tools/bestiary.html#giant%20wolf%20spider_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wolf%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Giant%20Wolf%20Spider.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1453,14 +1757,18 @@
           "source": "MM",
           "page": 330,
           "url": "https://5e.tools/bestiary.html#goat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Goat.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Goat",
           "source": "XMM",
           "page": 362,
           "url": "https://5e.tools/bestiary.html#goat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Goat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Goat.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1472,14 +1780,18 @@
           "source": "MM",
           "page": 330,
           "url": "https://5e.tools/bestiary.html#hawk_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hawk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hawk.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Hawk",
           "source": "XMM",
           "page": 362,
           "url": "https://5e.tools/bestiary.html#hawk_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hawk.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hawk.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -1491,14 +1803,18 @@
           "source": "MM",
           "page": 330,
           "url": "https://5e.tools/bestiary.html#hunter%20shark_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hunter%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hunter%20Shark.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Hunter Shark",
           "source": "XMM",
           "page": 363,
           "url": "https://5e.tools/bestiary.html#hunter%20shark_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hunter%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hunter%20Shark.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1510,14 +1826,18 @@
           "source": "MM",
           "page": 331,
           "url": "https://5e.tools/bestiary.html#hyena_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hyena.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hyena.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hyena",
           "source": "XMM",
           "page": 363,
           "url": "https://5e.tools/bestiary.html#hyena_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hyena.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hyena.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1529,14 +1849,18 @@
           "source": "MM",
           "page": 331,
           "url": "https://5e.tools/bestiary.html#jackal_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Jackal.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Jackal.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Jackal",
           "source": "XMM",
           "page": 364,
           "url": "https://5e.tools/bestiary.html#jackal_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Jackal.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Jackal.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -1548,14 +1872,18 @@
           "source": "MM",
           "page": 331,
           "url": "https://5e.tools/bestiary.html#killer%20whale_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Killer%20Whale.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Killer%20Whale.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Killer Whale",
           "source": "XMM",
           "page": 364,
           "url": "https://5e.tools/bestiary.html#killer%20whale_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Killer%20Whale.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Killer%20Whale.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -1567,14 +1895,18 @@
           "source": "MM",
           "page": 202,
           "url": "https://5e.tools/bestiary.html#lich_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lich.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lich.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Lich",
           "source": "XMM",
           "page": 196,
           "url": "https://5e.tools/bestiary.html#lich_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lich.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lich.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1586,14 +1918,18 @@
           "source": "MM",
           "page": 331,
           "url": "https://5e.tools/bestiary.html#lion_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lion.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Lion",
           "source": "XMM",
           "page": 364,
           "url": "https://5e.tools/bestiary.html#lion_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lion.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1605,14 +1941,18 @@
           "source": "MM",
           "page": 331,
           "url": "https://5e.tools/bestiary.html#lion_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lion.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Lion",
           "source": "XMM",
           "page": 364,
           "url": "https://5e.tools/bestiary.html#lion_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lion.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1624,14 +1964,18 @@
           "source": "MM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#lizard_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Lizard.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Lizard",
           "source": "XMM",
           "page": 364,
           "url": "https://5e.tools/bestiary.html#lizard_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lizard.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Lizard.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -1643,14 +1987,18 @@
           "source": "MM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#mammoth_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mammoth.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mammoth.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Mammoth",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mammoth_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mammoth.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mammoth.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -1662,14 +2010,18 @@
           "source": "MM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#mastiff_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mastiff",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mastiff_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1681,14 +2033,18 @@
           "source": "MM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#mastiff_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mastiff",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mastiff_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1700,14 +2056,18 @@
           "source": "MM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#mastiff_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mastiff",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mastiff_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mastiff.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1719,14 +2079,18 @@
           "source": "MM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#mule_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mule.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mule.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mule",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mule_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mule.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mule.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1738,14 +2102,18 @@
           "source": "MM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#mule_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mule.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mule.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mule",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#mule_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mule.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mule.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1757,14 +2125,18 @@
           "source": "MM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#octopus_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Octopus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Octopus.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Octopus",
           "source": "XMM",
           "page": 365,
           "url": "https://5e.tools/bestiary.html#octopus_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Octopus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Octopus.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -1776,14 +2148,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#raven_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Raven.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Raven.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Raven",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#raven_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Raven.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Raven.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -1795,14 +2171,18 @@
           "source": "MM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#owl_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Owl.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Owl.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Owl",
           "source": "XMM",
           "page": 366,
           "url": "https://5e.tools/bestiary.html#owl_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Owl.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Owl.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -1814,14 +2194,18 @@
           "source": "MM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#panther_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Panther.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Panther.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Panther",
           "source": "XMM",
           "page": 366,
           "url": "https://5e.tools/bestiary.html#panther_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Panther.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Panther.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1833,14 +2217,18 @@
           "source": "MM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#phase%20spider_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Phase%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Phase%20Spider.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Phase Spider",
           "source": "XMM",
           "page": 239,
           "url": "https://5e.tools/bestiary.html#phase%20spider_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Phase%20Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Phase%20Spider.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1852,14 +2240,18 @@
           "source": "MM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#poisonous%20snake_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Poisonous%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Poisonous%20Snake.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Venomous Snake",
           "source": "XMM",
           "page": 372,
           "url": "https://5e.tools/bestiary.html#venomous%20snake_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Venomous%20Snake.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Venomous%20Snake.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -1871,14 +2263,18 @@
           "source": "MM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#polar%20bear_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Polar Bear",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#polar%20bear_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1890,14 +2286,18 @@
           "source": "MM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#polar%20bear_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Polar Bear",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#polar%20bear_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1909,14 +2309,18 @@
           "source": "MM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#polar%20bear_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Polar Bear",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#polar%20bear_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Polar%20Bear.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -1928,14 +2332,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#pony_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Pony",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#pony_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1947,14 +2355,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#pony_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Pony",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#pony_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1966,14 +2378,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#pony_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Pony",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#pony_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pony.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -1985,14 +2401,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#quipper_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Quipper.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Quipper.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Piranha",
           "source": "XMM",
           "page": 366,
           "url": "https://5e.tools/bestiary.html#piranha_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Piranha.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Piranha.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2004,14 +2424,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#rat_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Rat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Rat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Rat",
           "source": "XMM",
           "page": 367,
           "url": "https://5e.tools/bestiary.html#rat_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Rat.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Rat.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2023,14 +2447,18 @@
           "source": "MM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#raven_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Raven.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Raven.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Raven",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#raven_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Raven.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Raven.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2042,14 +2470,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#reef%20shark_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Reef%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Reef%20Shark.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Reef Shark",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#reef%20shark_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Reef%20Shark.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Reef%20Shark.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2061,14 +2493,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#rhinoceros_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Rhinoceros.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Rhinoceros.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Rhinoceros",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#rhinoceros_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Rhinoceros.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Rhinoceros.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2080,14 +2516,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#riding%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Riding Horse",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#riding%20horse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2099,14 +2539,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#riding%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Riding Horse",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#riding%20horse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2118,14 +2562,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#riding%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Riding Horse",
           "source": "XMM",
           "page": 368,
           "url": "https://5e.tools/bestiary.html#riding%20horse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Riding%20Horse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2137,14 +2585,18 @@
           "source": "MM",
           "page": 336,
           "url": "https://5e.tools/bestiary.html#saber-toothed%20tiger_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Saber-Toothed%20Tiger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Saber-Toothed%20Tiger.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Saber-Toothed Tiger",
           "source": "XMM",
           "page": 369,
           "url": "https://5e.tools/bestiary.html#saber-toothed%20tiger_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Saber-Toothed%20Tiger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Saber-Toothed%20Tiger.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2156,14 +2608,18 @@
           "source": "MM",
           "page": 337,
           "url": "https://5e.tools/bestiary.html#scorpion_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Scorpion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Scorpion.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Scorpion",
           "source": "XMM",
           "page": 369,
           "url": "https://5e.tools/bestiary.html#scorpion_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Scorpion.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Scorpion.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2175,14 +2631,18 @@
           "source": "MM",
           "page": 337,
           "url": "https://5e.tools/bestiary.html#sea%20horse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Sea%20Horse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Sea%20Horse.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Seahorse",
           "source": "XMM",
           "page": 369,
           "url": "https://5e.tools/bestiary.html#seahorse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Seahorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Seahorse.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2194,14 +2654,18 @@
           "source": "MM",
           "page": 337,
           "url": "https://5e.tools/bestiary.html#spider_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Spider.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Spider",
           "source": "XMM",
           "page": 369,
           "url": "https://5e.tools/bestiary.html#spider_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Spider.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Spider.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2213,14 +2677,18 @@
           "source": "MM",
           "page": 337,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20bats_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Bats.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Bats.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Bats",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20bats_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Bats.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Bats.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2232,14 +2700,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20beetles_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Beetles.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Beetles.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Insects",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2251,14 +2723,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20centipedes_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Centipedes.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Centipedes.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Insects",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2270,14 +2746,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Insects.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Insects.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Insects",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2289,14 +2769,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20poisonous%20snakes_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Poisonous%20Snakes.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Poisonous%20Snakes.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Venomous Snakes",
           "source": "XMM",
           "page": 371,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20venomous%20snakes_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Venomous%20Snakes.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Venomous%20Snakes.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2308,14 +2792,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20quippers_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Quippers.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Quippers.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Piranhas",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20piranhas_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Piranhas.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Piranhas.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2327,14 +2815,18 @@
           "source": "MM",
           "page": 339,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20rats_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Rats.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Rats.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Rats",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20rats_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Rats.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Rats.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2346,14 +2838,18 @@
           "source": "MM",
           "page": 339,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20ravens_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Ravens.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Ravens.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Ravens",
           "source": "XMM",
           "page": 371,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20ravens_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Ravens.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Ravens.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2365,14 +2861,18 @@
           "source": "MM",
           "page": 338,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20spiders_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Spiders.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Swarm%20of%20Spiders.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Swarm of Insects",
           "source": "XMM",
           "page": 370,
           "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Swarm%20of%20Insects.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2384,14 +2884,18 @@
           "source": "MM",
           "page": 339,
           "url": "https://5e.tools/bestiary.html#tiger_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Tiger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Tiger.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Tiger",
           "source": "XMM",
           "page": 371,
           "url": "https://5e.tools/bestiary.html#tiger_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Tiger.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Tiger.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2403,14 +2907,18 @@
           "source": "MM",
           "page": 339,
           "url": "https://5e.tools/bestiary.html#vulture_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Vulture.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Vulture.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Vulture",
           "source": "XMM",
           "page": 372,
           "url": "https://5e.tools/bestiary.html#vulture_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Vulture.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Vulture.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2422,14 +2930,18 @@
           "source": "MM",
           "page": 340,
           "url": "https://5e.tools/bestiary.html#warhorse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Warhorse",
           "source": "XMM",
           "page": 373,
           "url": "https://5e.tools/bestiary.html#warhorse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2441,14 +2953,18 @@
           "source": "MM",
           "page": 340,
           "url": "https://5e.tools/bestiary.html#warhorse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Warhorse",
           "source": "XMM",
           "page": 373,
           "url": "https://5e.tools/bestiary.html#warhorse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2460,14 +2976,18 @@
           "source": "MM",
           "page": 340,
           "url": "https://5e.tools/bestiary.html#warhorse_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Warhorse",
           "source": "XMM",
           "page": 373,
           "url": "https://5e.tools/bestiary.html#warhorse_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Warhorse.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2479,14 +2999,18 @@
           "source": "MM",
           "page": 340,
           "url": "https://5e.tools/bestiary.html#weasel_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Weasel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Weasel.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Weasel",
           "source": "XMM",
           "page": 372,
           "url": "https://5e.tools/bestiary.html#weasel_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Weasel.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Weasel.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -2498,14 +3022,18 @@
           "source": "MM",
           "page": 340,
           "url": "https://5e.tools/bestiary.html#winter%20wolf_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Winter%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Winter%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Winter Wolf",
           "source": "XMM",
           "page": 334,
           "url": "https://5e.tools/bestiary.html#winter%20wolf_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Winter%20Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Winter%20Wolf.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2517,14 +3045,18 @@
           "source": "MM",
           "page": 341,
           "url": "https://5e.tools/bestiary.html#wolf_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wolf.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Wolf",
           "source": "XMM",
           "page": 373,
           "url": "https://5e.tools/bestiary.html#wolf_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wolf.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wolf.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -2536,14 +3068,18 @@
           "source": "MM",
           "page": 341,
           "url": "https://5e.tools/bestiary.html#worg_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Worg.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Worg.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Worg",
           "source": "XMM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#worg_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Worg.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Worg.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2555,14 +3091,18 @@
           "source": "MM",
           "page": 341,
           "url": "https://5e.tools/bestiary.html#worg_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Worg.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Worg.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Worg",
           "source": "XMM",
           "page": 335,
           "url": "https://5e.tools/bestiary.html#worg_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Worg.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Worg.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2574,14 +3114,18 @@
           "source": "MM",
           "page": 250,
           "url": "https://5e.tools/bestiary.html#pegasus_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pegasus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pegasus.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Pegasus",
           "source": "XMM",
           "page": 235,
           "url": "https://5e.tools/bestiary.html#pegasus_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pegasus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Pegasus.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -2625,14 +3169,18 @@
           "source": "MM",
           "page": 105,
           "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Brass Dragon",
           "source": "XMM",
           "page": 55,
           "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2644,14 +3192,18 @@
           "source": "MM",
           "page": 105,
           "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Brass Dragon",
           "source": "XMM",
           "page": 55,
           "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2663,14 +3215,18 @@
           "source": "MM",
           "page": 108,
           "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Bronze Dragon",
           "source": "XMM",
           "page": 59,
           "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2682,14 +3238,18 @@
           "source": "MM",
           "page": 108,
           "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Bronze Dragon",
           "source": "XMM",
           "page": 59,
           "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2701,14 +3261,18 @@
           "source": "MM",
           "page": 112,
           "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Copper Dragon",
           "source": "XMM",
           "page": 79,
           "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2720,14 +3284,18 @@
           "source": "MM",
           "page": 112,
           "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Copper Dragon",
           "source": "XMM",
           "page": 79,
           "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2739,14 +3307,18 @@
           "source": "MM",
           "page": 114,
           "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Gold Dragon",
           "source": "XMM",
           "page": 145,
           "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2758,14 +3330,18 @@
           "source": "MM",
           "page": 114,
           "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Gold Dragon",
           "source": "XMM",
           "page": 145,
           "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2777,14 +3353,18 @@
           "source": "MM",
           "page": 117,
           "url": "https://5e.tools/bestiary.html#adult%20silver%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Silver%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Silver%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Silver Dragon",
           "source": "XMM",
           "page": 279,
           "url": "https://5e.tools/bestiary.html#adult%20silver%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Silver%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Silver%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2796,14 +3376,18 @@
           "source": "MM",
           "page": 104,
           "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Brass Dragon",
           "source": "XMM",
           "page": 56,
           "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2815,14 +3399,18 @@
           "source": "MM",
           "page": 104,
           "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Brass Dragon",
           "source": "XMM",
           "page": 56,
           "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2834,14 +3422,18 @@
           "source": "MM",
           "page": 107,
           "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Bronze Dragon",
           "source": "XMM",
           "page": 60,
           "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2853,14 +3445,18 @@
           "source": "MM",
           "page": 107,
           "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Bronze Dragon",
           "source": "XMM",
           "page": 60,
           "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2872,14 +3468,18 @@
           "source": "MM",
           "page": 110,
           "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Copper Dragon",
           "source": "XMM",
           "page": 80,
           "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2891,14 +3491,18 @@
           "source": "MM",
           "page": 110,
           "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Copper Dragon",
           "source": "XMM",
           "page": 80,
           "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2910,14 +3514,18 @@
           "source": "MM",
           "page": 113,
           "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Gold Dragon",
           "source": "XMM",
           "page": 146,
           "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2929,14 +3537,18 @@
           "source": "MM",
           "page": 113,
           "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Gold Dragon",
           "source": "XMM",
           "page": 146,
           "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -2960,14 +3572,18 @@
           "source": "MM",
           "page": 88,
           "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Black Dragon",
           "source": "XMM",
           "page": 39,
           "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2979,14 +3595,18 @@
           "source": "MM",
           "page": 88,
           "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Black Dragon",
           "source": "XMM",
           "page": 39,
           "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -2998,14 +3618,18 @@
           "source": "MM",
           "page": 88,
           "url": "https://5e.tools/bestiary.html#young%20black%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Black%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Black Dragon",
           "source": "XMM",
           "page": 38,
           "url": "https://5e.tools/bestiary.html#young%20black%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Black%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3017,14 +3641,18 @@
           "source": "MM",
           "page": 91,
           "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Blue Dragon",
           "source": "XMM",
           "page": 49,
           "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3036,14 +3664,18 @@
           "source": "MM",
           "page": 90,
           "url": "https://5e.tools/bestiary.html#ancient%20blue%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Blue%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Blue Dragon",
           "source": "XMM",
           "page": 50,
           "url": "https://5e.tools/bestiary.html#ancient%20blue%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Blue%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -3055,14 +3687,18 @@
           "source": "MM",
           "page": 91,
           "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Blue Dragon",
           "source": "XMM",
           "page": 49,
           "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3074,14 +3710,18 @@
           "source": "MM",
           "page": 91,
           "url": "https://5e.tools/bestiary.html#blue%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blue%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blue%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Blue Dragon Wyrmling",
           "source": "XMM",
           "page": 48,
           "url": "https://5e.tools/bestiary.html#blue%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blue%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blue%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3093,14 +3733,18 @@
           "source": "MM",
           "page": 106,
           "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Brass Dragon Wyrmling",
           "source": "XMM",
           "page": 54,
           "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3112,14 +3756,18 @@
           "source": "MM",
           "page": 106,
           "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Brass Dragon Wyrmling",
           "source": "XMM",
           "page": 54,
           "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3131,14 +3779,18 @@
           "source": "MM",
           "page": 109,
           "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Bronze Dragon Wyrmling",
           "source": "XMM",
           "page": 58,
           "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3150,14 +3802,18 @@
           "source": "MM",
           "page": 109,
           "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Bronze Dragon Wyrmling",
           "source": "XMM",
           "page": 58,
           "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3169,14 +3825,18 @@
           "source": "MM",
           "page": 111,
           "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Copper Dragon Wyrmling",
           "source": "XMM",
           "page": 78,
           "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3188,14 +3848,18 @@
           "source": "MM",
           "page": 111,
           "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Copper Dragon Wyrmling",
           "source": "XMM",
           "page": 78,
           "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3207,14 +3871,18 @@
           "source": "MM",
           "page": 115,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Gold Dragon Wyrmling",
           "source": "XMM",
           "page": 144,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3226,14 +3894,18 @@
           "source": "MM",
           "page": 115,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Gold Dragon Wyrmling",
           "source": "XMM",
           "page": 144,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3245,14 +3917,18 @@
           "source": "MM",
           "page": 115,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Gold Dragon Wyrmling",
           "source": "XMM",
           "page": 144,
           "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3264,14 +3940,18 @@
           "source": "MM",
           "page": 94,
           "url": "https://5e.tools/bestiary.html#adult%20green%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Green%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Green%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Green Dragon",
           "source": "XMM",
           "page": 153,
           "url": "https://5e.tools/bestiary.html#adult%20green%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Green%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Green%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3283,14 +3963,18 @@
           "source": "MM",
           "page": 95,
           "url": "https://5e.tools/bestiary.html#green%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Green Dragon Wyrmling",
           "source": "XMM",
           "page": 152,
           "url": "https://5e.tools/bestiary.html#green%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3302,14 +3986,18 @@
           "source": "MM",
           "page": 94,
           "url": "https://5e.tools/bestiary.html#young%20green%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Green%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Green%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Green Dragon",
           "source": "XMM",
           "page": 152,
           "url": "https://5e.tools/bestiary.html#young%20green%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Green%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Green%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3321,14 +4009,18 @@
           "source": "MM",
           "page": 87,
           "url": "https://5e.tools/bestiary.html#ancient%20black%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Black%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Black Dragon",
           "source": "XMM",
           "page": 40,
           "url": "https://5e.tools/bestiary.html#ancient%20black%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Black%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Black%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -3340,14 +4032,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Red Dragon",
           "source": "XMM",
           "page": 255,
           "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3359,14 +4055,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult Red Dragon",
           "source": "XMM",
           "page": 255,
           "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3378,14 +4078,18 @@
           "source": "MM",
           "page": 97,
           "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Red Dragon",
           "source": "XMM",
           "page": 256,
           "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -3397,14 +4101,18 @@
           "source": "MM",
           "page": 97,
           "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         },
         "2024": {
           "name": "Ancient Red Dragon",
           "source": "XMM",
           "page": 256,
           "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp",
+          "size_name": "Gargantuan",
+          "footprint": 4
         }
       }
     },
@@ -3416,14 +4124,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Red Dragon",
           "source": "XMM",
           "page": 254,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3435,14 +4147,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Red Dragon Wyrmling",
           "source": "XMM",
           "page": 254,
           "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3454,14 +4170,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Red Dragon Wyrmling",
           "source": "XMM",
           "page": 254,
           "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3473,14 +4193,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Red Dragon",
           "source": "XMM",
           "page": 254,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3492,14 +4216,18 @@
           "source": "MM",
           "page": 98,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Red Dragon",
           "source": "XMM",
           "page": 254,
           "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3511,14 +4239,18 @@
           "source": "MM",
           "page": 118,
           "url": "https://5e.tools/bestiary.html#silver%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Silver%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Silver%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Silver Dragon Wyrmling",
           "source": "XMM",
           "page": 278,
           "url": "https://5e.tools/bestiary.html#silver%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Silver%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Silver%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3566,14 +4298,18 @@
           "source": "MM",
           "page": 101,
           "url": "https://5e.tools/bestiary.html#adult%20white%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20White%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20White%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Adult White Dragon",
           "source": "XMM",
           "page": 329,
           "url": "https://5e.tools/bestiary.html#adult%20white%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20White%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20White%20Dragon.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -3585,14 +4321,18 @@
           "source": "MM",
           "page": 102,
           "url": "https://5e.tools/bestiary.html#white%20dragon%20wyrmling_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/White%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/White%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "White Dragon Wyrmling",
           "source": "XMM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#white%20dragon%20wyrmling_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/White%20Dragon%20Wyrmling.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/White%20Dragon%20Wyrmling.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3604,14 +4344,18 @@
           "source": "MM",
           "page": 101,
           "url": "https://5e.tools/bestiary.html#young%20white%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20White%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20White%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young White Dragon",
           "source": "XMM",
           "page": 328,
           "url": "https://5e.tools/bestiary.html#young%20white%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20White%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20White%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3623,14 +4367,18 @@
           "source": "MM",
           "page": 105,
           "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Brass Dragon",
           "source": "XMM",
           "page": 54,
           "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3642,14 +4390,18 @@
           "source": "MM",
           "page": 105,
           "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Brass Dragon",
           "source": "XMM",
           "page": 54,
           "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3661,14 +4413,18 @@
           "source": "MM",
           "page": 108,
           "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Bronze Dragon",
           "source": "XMM",
           "page": 58,
           "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3680,14 +4436,18 @@
           "source": "MM",
           "page": 108,
           "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Bronze Dragon",
           "source": "XMM",
           "page": 58,
           "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3699,14 +4459,18 @@
           "source": "MM",
           "page": 112,
           "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Copper Dragon",
           "source": "XMM",
           "page": 78,
           "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3718,14 +4482,18 @@
           "source": "MM",
           "page": 112,
           "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Copper Dragon",
           "source": "XMM",
           "page": 78,
           "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3737,14 +4505,18 @@
           "source": "MM",
           "page": 115,
           "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Gold Dragon",
           "source": "XMM",
           "page": 144,
           "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3756,14 +4528,18 @@
           "source": "MM",
           "page": 115,
           "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Gold Dragon",
           "source": "XMM",
           "page": 144,
           "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3775,14 +4551,18 @@
           "source": "MM",
           "page": 118,
           "url": "https://5e.tools/bestiary.html#young%20silver%20dragon_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Silver%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Silver%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Young Silver Dragon",
           "source": "XMM",
           "page": 278,
           "url": "https://5e.tools/bestiary.html#young%20silver%20dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Silver%20Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Silver%20Dragon.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -3794,7 +4574,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3806,7 +4588,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3818,7 +4602,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3830,7 +4616,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3842,7 +4630,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3854,7 +4644,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3866,7 +4658,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3878,7 +4672,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3890,7 +4686,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3902,7 +4700,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3914,7 +4714,9 @@
           "source": "XMM",
           "page": 163,
           "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3926,14 +4728,18 @@
           "source": "MM",
           "page": 177,
           "url": "https://5e.tools/bestiary.html#green%20hag_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Green Hag",
           "source": "XMM",
           "page": 156,
           "url": "https://5e.tools/bestiary.html#green%20hag_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3945,14 +4751,18 @@
           "source": "MM",
           "page": 181,
           "url": "https://5e.tools/bestiary.html#harpy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Harpy",
           "source": "XMM",
           "page": 164,
           "url": "https://5e.tools/bestiary.html#harpy_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3964,14 +4774,18 @@
           "source": "MM",
           "page": 181,
           "url": "https://5e.tools/bestiary.html#harpy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Harpy",
           "source": "XMM",
           "page": 164,
           "url": "https://5e.tools/bestiary.html#harpy_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -3983,14 +4797,18 @@
           "source": "MM",
           "page": 182,
           "url": "https://5e.tools/bestiary.html#hell%20hound_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hell Hound",
           "source": "XMM",
           "page": 165,
           "url": "https://5e.tools/bestiary.html#hell%20hound_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4002,14 +4820,18 @@
           "source": "MM",
           "page": 182,
           "url": "https://5e.tools/bestiary.html#hell%20hound_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hell Hound",
           "source": "XMM",
           "page": 165,
           "url": "https://5e.tools/bestiary.html#hell%20hound_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4021,14 +4843,18 @@
           "source": "MM",
           "page": 183,
           "url": "https://5e.tools/bestiary.html#helmed%20horror_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Helmed%20Horror.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Helmed%20Horror.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Helmed Horror",
           "source": "XMM",
           "page": 166,
           "url": "https://5e.tools/bestiary.html#helmed%20horror_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Helmed%20Horror.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Helmed%20Horror.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4040,14 +4866,18 @@
           "source": "MM",
           "page": 186,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20captain_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Captain.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Captain.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hobgoblin Captain",
           "source": "XMM",
           "page": 171,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20captain_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Captain.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Captain.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4059,14 +4889,18 @@
           "source": "MM",
           "page": 187,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20warlord_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Warlord.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Warlord.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hobgoblin Warlord",
           "source": "XMM",
           "page": 171,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20warlord_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warlord.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warlord.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4078,14 +4912,18 @@
           "source": "MM",
           "page": 186,
           "url": "https://5e.tools/bestiary.html#hobgoblin_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hobgoblin Warrior",
           "source": "XMM",
           "page": 170,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20warrior_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4097,14 +4935,18 @@
           "source": "MM",
           "page": 186,
           "url": "https://5e.tools/bestiary.html#hobgoblin_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Hobgoblin Warrior",
           "source": "XMM",
           "page": 170,
           "url": "https://5e.tools/bestiary.html#hobgoblin%20warrior_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4116,14 +4958,18 @@
           "source": "MM",
           "page": 188,
           "url": "https://5e.tools/bestiary.html#homunculus_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Homunculus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Homunculus.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Homunculus",
           "source": "XMM",
           "page": 172,
           "url": "https://5e.tools/bestiary.html#homunculus_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Homunculus.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Homunculus.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -4135,14 +4981,18 @@
           "source": "MM",
           "page": 189,
           "url": "https://5e.tools/bestiary.html#hook%20horror_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hook%20Horror.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hook%20Horror.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Hook Horror",
           "source": "XMM",
           "page": 173,
           "url": "https://5e.tools/bestiary.html#hook%20horror_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hook%20Horror.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hook%20Horror.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4154,14 +5004,18 @@
           "source": "MM",
           "page": 190,
           "url": "https://5e.tools/bestiary.html#hydra_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hydra.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hydra.webp",
+          "size_name": "Huge",
+          "footprint": 3
         },
         "2024": {
           "name": "Hydra",
           "source": "XMM",
           "page": 175,
           "url": "https://5e.tools/bestiary.html#hydra_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hydra.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hydra.webp",
+          "size_name": "Huge",
+          "footprint": 3
         }
       }
     },
@@ -4173,14 +5027,18 @@
           "source": "MM",
           "page": 178,
           "url": "https://5e.tools/bestiary.html#night%20hag_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Night%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Night%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Night Hag",
           "source": "XMM",
           "page": 225,
           "url": "https://5e.tools/bestiary.html#night%20hag_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Night%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Night%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4192,14 +5050,18 @@
           "source": "MM",
           "page": 179,
           "url": "https://5e.tools/bestiary.html#sea%20hag_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Sea%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Sea%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Sea Hag",
           "source": "XMM",
           "page": 271,
           "url": "https://5e.tools/bestiary.html#sea%20hag_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Sea%20Hag.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Sea%20Hag.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4211,14 +5073,18 @@
           "source": "MM",
           "page": 225,
           "url": "https://5e.tools/bestiary.html#duodrone_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Duodrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Duodrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Modron Duodrone",
           "source": "XMM",
           "page": 217,
           "url": "https://5e.tools/bestiary.html#modron%20duodrone_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Duodrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Duodrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4230,7 +5096,9 @@
           "source": "MM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#minotaur_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4242,7 +5110,9 @@
           "source": "MM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#minotaur_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4254,7 +5124,9 @@
           "source": "MM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#minotaur_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4266,7 +5138,9 @@
           "source": "MM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#minotaur_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4278,14 +5152,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4297,14 +5175,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4316,14 +5198,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4335,14 +5221,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4354,14 +5244,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4373,14 +5267,18 @@
           "source": "MM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#mind%20flayer%20arcanist_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer%20Arcanist.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer%20Arcanist.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mind Flayer Arcanist",
           "source": "XMM",
           "page": 214,
           "url": "https://5e.tools/bestiary.html#mind%20flayer%20arcanist_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer%20Arcanist.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer%20Arcanist.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4392,14 +5290,18 @@
           "source": "MM",
           "page": 224,
           "url": "https://5e.tools/bestiary.html#monodrone_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Monodrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Monodrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Modron Monodrone",
           "source": "XMM",
           "page": 216,
           "url": "https://5e.tools/bestiary.html#modron%20monodrone_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Monodrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Monodrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4411,7 +5313,9 @@
           "source": "MM",
           "page": 229,
           "url": "https://5e.tools/bestiary.html#mummy%20lord_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy%20Lord.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy%20Lord.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mummy Lord",
@@ -4430,7 +5334,9 @@
           "source": "MM",
           "page": 228,
           "url": "https://5e.tools/bestiary.html#mummy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mummy",
@@ -4449,7 +5355,9 @@
           "source": "MM",
           "page": 228,
           "url": "https://5e.tools/bestiary.html#mummy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mummy",
@@ -4468,7 +5376,9 @@
           "source": "MM",
           "page": 228,
           "url": "https://5e.tools/bestiary.html#mummy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mummy",
@@ -4487,7 +5397,9 @@
           "source": "MM",
           "page": 228,
           "url": "https://5e.tools/bestiary.html#mummy_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Mummy",
@@ -4506,14 +5418,18 @@
           "source": "MM",
           "page": 232,
           "url": "https://5e.tools/bestiary.html#myconid%20adult_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Myconid Adult",
           "source": "XMM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#myconid%20adult_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4525,14 +5441,18 @@
           "source": "MM",
           "page": 232,
           "url": "https://5e.tools/bestiary.html#myconid%20adult_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Myconid Adult",
           "source": "XMM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#myconid%20adult_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4544,14 +5464,18 @@
           "source": "MM",
           "page": 232,
           "url": "https://5e.tools/bestiary.html#myconid%20sovereign_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sovereign.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sovereign.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Myconid Sovereign",
           "source": "XMM",
           "page": 223,
           "url": "https://5e.tools/bestiary.html#myconid%20sovereign_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sovereign.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sovereign.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4563,14 +5487,18 @@
           "source": "MM",
           "page": 230,
           "url": "https://5e.tools/bestiary.html#myconid%20sprout_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sprout.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sprout.webp",
+          "size_name": "Small",
+          "footprint": 1
         },
         "2024": {
           "name": "Myconid Sprout",
           "source": "XMM",
           "page": 222,
           "url": "https://5e.tools/bestiary.html#myconid%20sprout_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sprout.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sprout.webp",
+          "size_name": "Small",
+          "footprint": 1
         }
       }
     },
@@ -4582,14 +5510,18 @@
           "source": "MM",
           "page": 226,
           "url": "https://5e.tools/bestiary.html#pentadrone_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pentadrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pentadrone.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Modron Pentadrone",
           "source": "XMM",
           "page": 218,
           "url": "https://5e.tools/bestiary.html#modron%20pentadrone_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Pentadrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Pentadrone.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4601,14 +5533,18 @@
           "source": "MM",
           "page": 226,
           "url": "https://5e.tools/bestiary.html#quadrone_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Quadrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Quadrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Modron Quadrone",
           "source": "XMM",
           "page": 218,
           "url": "https://5e.tools/bestiary.html#modron%20quadrone_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Quadrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Quadrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4620,14 +5556,18 @@
           "source": "MM",
           "page": 225,
           "url": "https://5e.tools/bestiary.html#tridrone_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Tridrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Tridrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Modron Tridrone",
           "source": "XMM",
           "page": 217,
           "url": "https://5e.tools/bestiary.html#modron%20tridrone_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Tridrone.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Tridrone.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4639,14 +5579,18 @@
           "source": "MM",
           "page": 299,
           "url": "https://5e.tools/bestiary.html#water%20weird_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Water%20Weird.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Water%20Weird.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Water Weird",
           "source": "XMM",
           "page": 323,
           "url": "https://5e.tools/bestiary.html#water%20weird_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Water%20Weird.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Water%20Weird.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },
@@ -4658,14 +5602,18 @@
           "source": "MM",
           "page": 300,
           "url": "https://5e.tools/bestiary.html#wight_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Wight",
           "source": "XMM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#wight_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4677,14 +5625,18 @@
           "source": "MM",
           "page": 300,
           "url": "https://5e.tools/bestiary.html#wight_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Wight",
           "source": "XMM",
           "page": 332,
           "url": "https://5e.tools/bestiary.html#wight_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp",
+          "size_name": "Medium",
+          "footprint": 1
         }
       }
     },
@@ -4696,14 +5648,18 @@
           "source": "MM",
           "page": 301,
           "url": "https://5e.tools/bestiary.html#will-o%27-wisp_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Will-o%27-Wisp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Will-o%27-Wisp.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         },
         "2024": {
           "name": "Will-o'-Wisp",
           "source": "XMM",
           "page": 333,
           "url": "https://5e.tools/bestiary.html#will-o%27-wisp_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Will-o%27-Wisp.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Will-o%27-Wisp.webp",
+          "size_name": "Tiny",
+          "footprint": 0.5
         }
       }
     },
@@ -4715,7 +5671,9 @@
           "source": "MM",
           "page": 302,
           "url": "https://5e.tools/bestiary.html#wraith_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Wraith",
@@ -4734,7 +5692,9 @@
           "source": "MM",
           "page": 302,
           "url": "https://5e.tools/bestiary.html#wraith_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp",
+          "size_name": "Medium",
+          "footprint": 1
         },
         "2024": {
           "name": "Wraith",
@@ -4753,14 +5713,18 @@
           "source": "MM",
           "page": 303,
           "url": "https://5e.tools/bestiary.html#wyvern_mm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wyvern.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wyvern.webp",
+          "size_name": "Large",
+          "footprint": 2
         },
         "2024": {
           "name": "Wyvern",
           "source": "XMM",
           "page": 337,
           "url": "https://5e.tools/bestiary.html#wyvern_xmm",
-          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wyvern.webp"
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wyvern.webp",
+          "size_name": "Large",
+          "footprint": 2
         }
       }
     },

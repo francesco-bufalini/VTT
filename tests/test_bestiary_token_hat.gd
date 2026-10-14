@@ -30,6 +30,33 @@ func _run() -> void:
 	assert(manager.get_bestiary_reference("tiamat_necklace", "2024").is_empty())
 	assert(manager.get_bestiary_token_url("tiamat_necklace").is_empty())
 
+	# The miniature's exact 5etools association determines its tactical size,
+	# even if a stale PCK catalog reports a different size.
+	assert(manager.get_bestiary_reference("awakened_tree", "2014").size_name == "Huge")
+	assert(manager.get_bestiary_reference("awakened_tree", "2014").footprint == 3)
+	assert(manager.get_bestiary_reference("giant_goat", "2014").size_name == "Large")
+	assert(manager.get_bestiary_reference("giant_goat", "2014").footprint == 2)
+	assert(manager.get_bestiary_reference("red_half_dragon", "2024").size_name == "Medium")
+	var board := load("res://dnd_base.gd").new()
+	var resolved: Dictionary = board._profile_with_bestiary_size({
+		"id": "awakened_tree", "size_name": "Small", "footprint": 1.0
+	})
+	assert(resolved.size_name == "Huge" and resolved.footprint == 3.0)
+	resolved = board._profile_with_bestiary_size({
+		"id": "adult_brass_dragon_flying_updated",
+		"size_name": "Medium", "footprint": 1.0
+	})
+	assert(resolved.size_name == "Huge" and resolved.footprint == 3.0)
+	resolved = board._profile_with_bestiary_size({
+		"id": "red_half_dragon", "size_name": "Large", "footprint": 2.0
+	})
+	assert(resolved.size_name == "Medium" and resolved.footprint == 1.0)
+	resolved = board._profile_with_bestiary_size({
+		"id": "old_black_dragon", "size_name": "Large", "footprint": 2.0
+	})
+	assert(resolved.size_name == "Large" and resolved.footprint == 2.0)
+	board.free()
+
 	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
 	var texture := ImageTexture.create_from_image(image)

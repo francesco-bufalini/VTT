@@ -909,6 +909,29 @@ func _format_token_download_size(profile: Dictionary) -> String:
 	return "%d B" % bytes
 
 
+# 5etools is the source of the creature's tactical size, not an older PCK
+# catalog entry. Only exact curated miniature associations are considered;
+# unassociated/homebrew models retain their explicit catalog dimensions.
+func _profile_with_bestiary_size(profile: Dictionary) -> Dictionary:
+	var resolved := profile.duplicate(true)
+	var identity := String(profile.get("id", "")).strip_edges()
+	if identity.is_empty():
+		return resolved
+	for edition: String in ["2014", "2024"]:
+		var reference: Dictionary = TokenPackManager.get_bestiary_reference(
+			identity, edition
+		)
+		var size_name := String(reference.get("size_name", ""))
+		for size_definition: Dictionary in TOKEN_SIZES:
+			if String(size_definition.get("name", "")) != size_name:
+				continue
+			resolved["size_name"] = size_name
+			resolved["footprint"] = float(size_definition.get("footprint", 1.0))
+			resolved["size_source"] = "5etools"
+			return resolved
+	return resolved
+
+
 func _reload_token_miniature_list(preferred_id: String = "") -> void:
 	var previous_id := preferred_id.strip_edges()
 	if previous_id.is_empty():
@@ -945,6 +968,10 @@ func _reload_token_miniature_list(preferred_id: String = "") -> void:
 
 	_append_character_token_profiles()
 	_append_remote_token_profiles()
+	for index: int in range(_token_profiles.size()):
+		_token_profiles[index] = _profile_with_bestiary_size(
+			_token_profiles[index]
+		)
 
 	_token_profiles.sort_custom(
 		Callable(self, "_sort_token_profiles")
@@ -1162,6 +1189,8 @@ func _on_token_miniature_selected(index: int) -> void:
 	var size_name := String(
 		_selected_token_profile.get("size_name", "Medium")
 	)
+	# Never retain a previous miniature's size if a profile is malformed.
+	size_selector.select(2)
 	for size_index: int in range(TOKEN_SIZES.size()):
 		if String(TOKEN_SIZES[size_index].get("name", "")) == size_name:
 			size_selector.select(size_index)
@@ -1836,6 +1865,25 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 		return
 	var size_name := String(record.get("size_name", "Medium"))
 	var footprint := maxf(0.5, float(record.get("footprint", 1.0)))
+	# A changed miniature can have a different tactical footprint than the
+	# creature's base sheet. Only adopt it after that model has loaded; the
+	# original sheet size is authoritative again when the base form returns.
+	var current_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	var default_id := String(record.get("default_miniature_id", "")).strip_edges()
+	if not current_id.is_empty() and current_id != default_id:
+		var active_profile := _identity_profile_by_id(current_id)
+		var active_visual := _token_profile_visual_asset(active_profile)
+		if (
+			not active_visual.is_empty()
+			and token.has_method("get_visual_asset_path")
+			and String(token.call("get_visual_asset_path")) == active_visual
+		):
+			size_name = String(active_profile.get("size_name", size_name))
+			footprint = maxf(
+				0.5, float(active_profile.get("footprint", footprint))
+			)
 	if token.has_method("get_size_name") and (
 		String(token.call("get_size_name")) != size_name or
 		absf(float(token.call("get_footprint_cells")) - footprint) > 0.01
@@ -3600,8 +3648,15 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				and token.has_method("restore_previous_transformation")
 			):
 				push_undo_state()
-				token.call("restore_previous_transformation")
-				_refresh_token_views_after_appearance_change()
+				if bool(token.call("restore_previous_transformation")):
+					var linked_sheets := get_node_or_null("CreatureArea")
+					if (
+						linked_sheets != null
+						and linked_sheets.has_method("sync_linked_token_editor")
+					):
+						linked_sheets.call("sync_linked_token_editor", token)
+					_refresh_token_views_after_appearance_change()
+					call_deferred("_sync_explicit_token_change", token)
 		_close_context_menu_to_game()
 		return
 
