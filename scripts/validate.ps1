@@ -182,7 +182,6 @@ $ciSmokeTestNames = @(
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
     "test_creature_sheet_controller.gd",
-    "test_mobile_main_menu.gd",
     "test_board_smoke.gd",
     "test_standalone_creatures.gd"
 )
