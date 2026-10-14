@@ -31,7 +31,7 @@ func run() -> void:
 	var sheet: Node = mobile.creature_area
 	if not check(mobile.map_data_controller.source_name() == "offline", "Mobile must start without a network connection"):
 		return
-	if not check(mobile._archive_selector.item_count >= 1, "The local archive selector must remain available"):
+	if not check(mobile._archive_selector == null and manager.selected_campaign_group_id.is_empty() and manager.active_campaign_id.is_empty(), "Mobile must use the general archive without a picker"):
 		return
 	if not check(root.find_children("*", "Node3D", true, false).is_empty(), "Mobile must not instantiate a board"):
 		return
@@ -55,10 +55,10 @@ func run() -> void:
 			if not check(visible_pages == 1, "Exactly one mobile page must be visible"):
 				return
 			var panel := mobile._pages[page] as Control
-			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.y >= 48,
+			if not check(panel.get_global_rect().end.x <= viewport_size.x + 1 and panel.get_global_rect().end.y <= viewport_size.y + 1 and panel.get_global_rect().position.x >= 48,
 				"Mobile page must fill the space below the compact header at %s, page %d: %s" % [viewport_size, page, panel.get_global_rect()]):
 				return
-			if not check(mobile._archive_selector.visible == (page == 0), "Archive picker must belong only to sheets"):
+			if not check(not sheet._options_menu.is_visible_in_tree(), "Mobile options must be hidden"):
 				return
 			if not check(not nav.visible, "Sections drawer must be collapsed by default"):
 				return

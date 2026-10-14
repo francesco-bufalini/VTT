@@ -66,6 +66,9 @@ func _ready() -> void:
 	map_data_controller = MapController.new()
 	map_data_controller.name = "MapDataController"
 	add_child(map_data_controller)
+	var manager := get_node("/root/CampaignManager")
+	manager.selected_campaign_group_id = ""
+	manager.active_campaign_id = ""
 	super._ready()
 	var sheet := creature_area as CreatureSheet
 	var book := compendium as Compendium
@@ -100,7 +103,10 @@ func _ready() -> void:
 	_exit_dialog.cancel_button_text = "Resta nell'app"
 	_exit_dialog.confirmed.connect(func() -> void: get_tree().quit())
 	ui_root.add_child(_exit_dialog)
-	TouchLayout.style_tree(_exit_dialog)
+	TouchLayout.fit_dialog(_exit_dialog)
+	for node: Node in ui_root.find_children("*", "Window", true, false):
+		if node is AcceptDialog:
+			node.about_to_popup.connect(_fit_touch_dialog.bind(node))
 	_presence = Presence.new()
 	_presence.name = "CreaturePresence"
 	_presence.auto_refresh = false
@@ -108,6 +114,15 @@ func _ready() -> void:
 	_presence.peers_changed.connect(_show_online_peers)
 	_presence.setup("1", _discovery_hosts)
 	_presence.request_refresh()
+
+func _fit_touch_dialog(dialog: AcceptDialog) -> void:
+	TouchLayout.fit_dialog(dialog)
+	for button: Button in [dialog.get_ok_button(), dialog.get_cancel_button() if dialog is ConfirmationDialog else null]:
+		if button != null:
+			button.clip_text = false
+			button.custom_minimum_size.x = 120
+	var viewport_size := get_viewport_rect().size
+	dialog.size = Vector2i(minf(dialog.size.x, viewport_size.x - 16), minf(dialog.size.y, viewport_size.y - 48))
 
 func _configure_ui_scale() -> void:
 	if not OS.has_feature("mobile"):
@@ -149,10 +164,17 @@ func _install_unified_sections(sheet: CreatureSheet) -> void:
 	# The section title and the existing archive/actions now share ONE header;
 	# do not keep the old sheet toolbar consuming another 48 dp underneath.
 	var toolbar := (sheet._panel.get_child(0) as VBoxContainer).get_child(0) as HBoxContainer
-	sheet._touch_library_button.reparent(_page_header_row)
-	_page_header_row.move_child(sheet._touch_library_button, 1)
-	sheet._options_menu.reparent(_page_header_row)
-	_page_header_row.move_child(sheet._options_menu, _page_header_row.get_child_count() - 2)
+	var library := Button.new()
+	library.text = "Creature locali"
+	library.pressed.connect(func() -> void:
+		_page_drawer.hide()
+		_select_page(0)
+		sheet.show_touch_library(true))
+	sections.add_child(library)
+	sheet._options_menu.hide()
+	var transfer_index := sheet._creature_context_menu.get_item_index(4)
+	if transfer_index >= 0:
+		sheet._creature_context_menu.remove_item(transfer_index)
 	toolbar.hide()
 
 func _open_sheet_section(index: int) -> void:
@@ -168,48 +190,18 @@ func _request_page(index: int) -> void:
 
 
 func _build_page_header() -> void:
-	var header := PanelContainer.new()
-	_page_header = header
-	header.name = "MobilePageHeader"
-	header.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	header.offset_bottom = 56
-	header.z_index = 40
-	ui_root.add_child(header)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 4)
-	margin.add_theme_constant_override("margin_right", 4)
-	header.add_child(margin)
-	header.resized.connect(func() -> void:
-		call_deferred("_layout_pages"))
-	_page_header_contents = VBoxContainer.new()
-	_page_header_contents.add_theme_constant_override("separation", 4)
-	margin.add_child(_page_header_contents)
-	var row := HBoxContainer.new()
-	_page_header_row = row
-	row.add_theme_constant_override("separation", 6)
-	_page_header_contents.add_child(row)
 	_page_menu_button = Button.new()
 	_page_menu_button.name = "MobilePageMenu"
 	_page_menu_button.text = "☰"
 	_page_menu_button.tooltip_text = "Apri le sezioni"
+	_page_menu_button.position = Vector2(2, 2)
 	_page_menu_button.custom_minimum_size = Vector2(48, 48)
+	_page_menu_button.z_index = 100
 	_page_menu_button.pressed.connect(func() -> void:
 		_page_drawer.visible = not _page_drawer.visible)
-	row.add_child(_page_menu_button)
+	ui_root.add_child(_page_menu_button)
 	_page_title = Label.new()
-	_page_title.add_theme_font_size_override("font_size", 18)
-	row.add_child(_page_title)
-
 	_connection_badge = Label.new()
-	_connection_badge.text = "Non collegato"
-	_connection_badge.add_theme_font_size_override("font_size", 14)
-	row.add_child(_connection_badge)
-	var help := Button.new()
-	help.text = "?"
-	help.tooltip_text = "Aiuto e spiegazioni"
-	help.custom_minimum_size = Vector2(44, 48)
-	help.pressed.connect(func() -> void: _show_touch_help("Tieni premuto un pulsante, un valore o una formula per leggere la spiegazione. La pressione prolungata non esegue l’azione. Scorri con il dito per leggere il resto della scheda."))
-	row.add_child(help)
 
 func _select_page(index: int) -> void:
 	if _pages.is_empty() or index == _active_page:
@@ -241,13 +233,13 @@ func _select_page(index: int) -> void:
 	_page_title.visible = index != 0
 
 	_connection_badge.visible = index == 3
-	_archive_selector.visible = index == 0
+
 	_layout_pages()
 
 func _layout_pages() -> void:
 	# The themed header is taller than its original hardcoded 48dp viewport.
 	# Allocate real space above every page, rather than overlaying the sheet.
-	var header_height := 56.0
+	var header_height := 0.0
 	if _page_header != null:
 		header_height = maxf(header_height, _page_header.get_combined_minimum_size().y)
 		_page_header.offset_bottom = header_height
@@ -256,7 +248,7 @@ func _layout_pages() -> void:
 	for index: int in range(_pages.size()):
 		var page := _pages[index]
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		page.offset_left = 2
+		page.offset_left = 52
 		page.offset_right = -2
 		page.offset_top = header_height + 6.0
 		page.offset_bottom = -2
@@ -311,7 +303,7 @@ func _go_back() -> void:
 		_select_page(_page_history.pop_back())
 		_back_navigation = false
 		return
-	_exit_dialog.popup_centered(Vector2i(340, 180))
+	_exit_dialog.popup_centered_clamped(Vector2i(340, 180), 0.9)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_BACK:
@@ -341,7 +333,7 @@ func _input(event: InputEvent) -> void:
 				elif Time.get_ticks_msec() - _finger_started_msec >= 550:
 					call_deferred("_explain_touch", event.position)
 				else:
-					call_deferred("_dispatch_touch_tap", event.position)
+					_dispatch_touch_tap(event.position)
 	elif event is InputEventScreenDrag:
 		get_viewport().set_input_as_handled()
 		if event.index != _finger:
@@ -353,6 +345,56 @@ func _input(event: InputEvent) -> void:
 		_finger_position = event.position
 
 func _dispatch_touch_tap(at: Vector2) -> void:
+	# Resolve buttons in the active embedded window directly. Its viewport
+	# uses window-local coordinates; root synthetic clicks can miss Cancel.
+	var active_window: Window = get_window()
+	for node: Node in ui_root.find_children("*", "Window", true, false):
+		var popup := node as Window
+		if popup.visible and not popup is PopupMenu:
+			active_window = popup
+	var point := at
+	if active_window != get_window():
+		point -= Vector2(active_window.position)
+	var buttons: Array[BaseButton] = []
+	if active_window is ConfirmationDialog:
+		var cancel: Button = active_window.get_cancel_button()
+		if cancel.is_visible_in_tree() and cancel.get_global_rect().has_point(point):
+			active_window.canceled.emit()
+			active_window.hide()
+			return
+	if active_window is AcceptDialog:
+		var accept: Button = active_window.get_ok_button()
+		if accept.is_visible_in_tree() and accept.get_global_rect().has_point(point):
+			accept.pressed.emit()
+			return
+	for node: Node in active_window.find_children("*", "BaseButton", true, false):
+		var button := node as BaseButton
+		if button.get_window() != active_window or not button.is_visible_in_tree() or button.disabled:
+			continue
+		if not button.get_global_rect().has_point(point):
+			continue
+		var parent := button.get_parent()
+		var clipped := false
+		while parent is Control:
+			if parent.clip_contents and not parent.get_global_rect().has_point(point):
+				clipped = true
+				break
+			parent = parent.get_parent()
+		if not clipped:
+			buttons.append(button)
+	buttons.sort_custom(func(a: BaseButton, b: BaseButton) -> bool:
+		return TouchLayout._effective_z(a) > TouchLayout._effective_z(b))
+	if not buttons.is_empty():
+		var button := buttons[0]
+		if button is OptionButton:
+			_show_touch_choices(button.get_popup(), button)
+		elif button is MenuButton:
+			_show_touch_choices(button.get_popup())
+		else:
+			if button.toggle_mode:
+				button.button_pressed = not button.button_pressed
+			button.pressed.emit()
+		return
 	# Controls receive a complete click only after a stationary finger is lifted.
 	var motion := InputEventMouseMotion.new()
 	motion.position = at
@@ -472,49 +514,7 @@ func _show_map_data(data: Dictionary) -> void:
 # The storage selector belongs to the sheet header, on its own line.
 # It does not overlap the sheet or crowd the permanent navigation buttons.
 func _build_archive_selector() -> void:
-	_archive_selector = OptionButton.new()
-	_archive_selector.name = "LocalCreatureArchive"
-	_archive_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_archive_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_archive_selector.tooltip_text = "Archivio creature: generale, campagna o scenario"
-	_page_header_contents.add_child(_archive_selector)
-	_archive_selector.add_item("Creature locali · Generale")
-	_archive_selector.set_item_metadata(0, {"campaign": "", "scenario": ""})
-	var manager := get_node("/root/CampaignManager")
-	for group: Dictionary in manager.list_campaign_groups():
-		_archive_selector.add_item("Campagna · " + String(group.get("name", "")))
-		_archive_selector.set_item_metadata(_archive_selector.item_count - 1,
-			{"campaign": String(group.id), "scenario": ""})
-	for scenario: Dictionary in manager.list_campaigns():
-		_archive_selector.add_item("Scenario · " + String(scenario.get("name", "")))
-		_archive_selector.set_item_metadata(_archive_selector.item_count - 1,
-			{"campaign": "", "scenario": String(scenario.id)})
-	for index: int in range(_archive_selector.item_count):
-		var scope: Dictionary = _archive_selector.get_item_metadata(index)
-		if scope.campaign == manager.selected_campaign_group_id and (
-			not scope.campaign.is_empty() or scope.scenario == manager.active_campaign_id
-		):
-			_archive_selector.select(index)
-			break
-	_archive_selector.item_selected.connect(_select_local_archive)
-	TouchLayout.style_control(_archive_selector)
-
-
-func _select_local_archive(index: int) -> void:
-	var scope: Dictionary = _archive_selector.get_item_metadata(index)
-	var manager := get_node("/root/CampaignManager")
-	if String(scope.campaign) == manager.selected_campaign_group_id and (
-		not String(scope.campaign).is_empty() or String(scope.scenario) == manager.active_campaign_id
-	):
-		return
-	# Persist edits in their original scope before switching the backing JSON.
-	var was_open: bool = creature_area.is_panel_open()
-	if was_open:
-		creature_area.hide_panel()
-	manager.selected_campaign_group_id = String(scope.campaign)
-	manager.active_campaign_id = String(scope.scenario)
-	if was_open:
-		creature_area.show_panel()
+	pass
 
 
 func _discovery_hosts() -> Array[String]:
