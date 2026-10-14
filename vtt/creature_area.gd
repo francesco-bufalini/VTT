@@ -1055,11 +1055,10 @@ func _build_ui() -> void:
 	speeds_group.name = "PhysicsSpeeds"
 	speeds_group.add_theme_constant_override("separation", 3)
 	movement_flow.add_child(speeds_group)
-	# Start narrow so the initial minimum size never forces a mobile
-	# sheet wider than its viewport; resize selects the appropriate columns.
+	# Default to one compact row; resize adapts the columns to the sheet.
 	var speed_grid := GridContainer.new()
 	speed_grid.name = "PhysicsSpeedGrid"
-	speed_grid.columns = 2
+	speed_grid.columns = 5
 	speed_grid.add_theme_constant_override("h_separation", 8)
 	speed_grid.add_theme_constant_override("v_separation", 4)
 	speeds_group.add_child(speed_grid)
