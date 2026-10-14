@@ -28,6 +28,20 @@ var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
 var close_button: Button
+var actor_picker: OptionButton
+var _manual_roll := false
+var _manual_actor: Dictionary = {}
+var _mobile_controller: Node
+var _mobile_creatures: Callable
+var _mobile_current: Callable
+var _mobile_outbox: Array[Dictionary] = []
+var _mobile_send := ""
+var _mobile_send_event := ""
+var _mobile_send_session := ""
+var _mobile_poll := ""
+var _mobile_poll_session := ""
+var _mobile_cursor := ""
+var _mobile_elapsed := 0.0
 
 
 func setup(
@@ -77,6 +91,7 @@ func set_session_key(value: String) -> void:
 		return
 
 	_save_history()
+	_mobile_cursor = ""
 	session_key = clean
 	_load_history()
 	if sync != null:
@@ -100,6 +115,7 @@ func show_panel() -> void:
 		return
 	if roll_mode_input != null:
 		roll_mode_input.select(0)
+	_refresh_roll_actors()
 	panel.show()
 	if board_root != null and board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
@@ -293,6 +309,17 @@ func _build_ui() -> void:
 	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(mode_hint)
 
+	var actor_row := HBoxContainer.new()
+	outer.add_child(actor_row)
+	var actor_label := Label.new()
+	actor_label.text = "Creatura:"
+	actor_row.add_child(actor_label)
+	actor_picker = OptionButton.new()
+	actor_picker.name = "RollCreaturePicker"
+	actor_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actor_picker.get_popup().about_to_popup.connect(_refresh_roll_actors)
+	actor_row.add_child(actor_picker)
+	_refresh_roll_actors()
 	var dice_grid := GridContainer.new()
 	dice_grid.columns = 4
 	dice_grid.add_theme_constant_override("h_separation", 5)
@@ -372,7 +399,7 @@ func configure_touch_layout() -> void:
 				if control is Label and control.size_flags_horizontal == Control.SIZE_EXPAND_FILL:
 					control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 					control.custom_minimum_size.x = 220
-	chat_input.placeholder_text = "Nota per il registro locale…"
+	chat_input.placeholder_text = "Scrivi in chat…"
 	touch.scroll_body(panel)
 	touch.style_tree(panel)
 	close_button.hide()
@@ -438,20 +465,25 @@ func _on_dice_count_changed(value: float) -> void:
 
 
 func _roll(die: String) -> void:
+	_refresh_roll_actors()
 	var count := 1
 	var modifier := 0
 	if dice_count_input != null:
 		count = clampi(int(dice_count_input.value), 1, 100)
 	if dice_modifier_input != null:
 		modifier = clampi(int(dice_modifier_input.value), -9999, 9999)
+	_manual_roll = true
+	_manual_actor = actor_picker.get_selected_metadata() if actor_picker != null else {}
 	_roll_specific(
 		"",
 		die,
 		count,
 		modifier,
 		"",
-		_selected_action_actor()
+		_manual_actor.get("token") as Node3D
 	)
+	_manual_roll = false
+	_manual_actor = {}
 
 
 func roll_from_sheet(
@@ -488,9 +520,14 @@ func _roll_specific(
 
 	var event := _new_event("roll")
 	var resolved_actor: Node3D = actor
-	if resolved_actor == null or not is_instance_valid(resolved_actor):
+	if not _manual_roll and (resolved_actor == null or not is_instance_valid(resolved_actor)):
 		resolved_actor = _selected_action_actor()
 	_attach_actor_combat_context(event, resolved_actor)
+	if _manual_roll:
+		event["author"] = String(_manual_actor.get("name", _master_author_name())).left(80)
+		if not _manual_actor.is_empty():
+			event["actor"] = String(_manual_actor.get("name", "Creatura")).left(120)
+			event["actor_id"] = String(_manual_actor.get("id", ""))
 	event["die"] = die
 	event["count"] = count
 	event["modifier"] = modifier
@@ -626,6 +663,11 @@ func roll_expression_from_sheet(
 	if resolved_actor == null or not is_instance_valid(resolved_actor):
 		resolved_actor = _selected_action_actor()
 	_attach_actor_combat_context(event, resolved_actor)
+	if _manual_roll:
+		event["author"] = String(_manual_actor.get("name", _master_author_name())).left(80)
+		if not _manual_actor.is_empty():
+			event["actor"] = String(_manual_actor.get("name", "Creatura")).left(120)
+			event["actor_id"] = String(_manual_actor.get("id", ""))
 	event["die"] = "formula"
 	event["count"] = total_dice
 	event["modifier"] = fixed_modifier
@@ -1007,6 +1049,11 @@ func _attach_actor_combat_context(
 	actor: Node3D
 ) -> void:
 	if actor == null or not is_instance_valid(actor):
+		if not _manual_roll and _mobile_current.is_valid():
+			var current: Dictionary = _mobile_current.call()
+			if not current.is_empty():
+				event["actor"] = String(current.get("name", "")).left(120)
+				event["actor_id"] = String(current.get("owner_id", "")) + ":" + String(current.get("id", ""))
 		return
 	var actor_name := _actor_display_name(actor)
 	if not actor_name.is_empty():
@@ -1087,6 +1134,10 @@ func _append_event(event: Dictionary, broadcast: bool) -> void:
 	if String(event.get("kind", "")) == "roll":
 		_show_quick_roll_result(event)
 
+	if broadcast and _mobile_controller != null:
+		_mobile_outbox.append({"session": session_key, "event": event.duplicate(true)})
+		while _mobile_outbox.size() > MAX_HISTORY:
+			_mobile_outbox.pop_front()
 	if broadcast and sync != null:
 		sync.call(
 			"broadcast_event",
@@ -1309,6 +1360,10 @@ func _save_history() -> void:
 
 
 func _author_name() -> String:
+	if _mobile_current.is_valid():
+		var current: Dictionary = _mobile_current.call()
+		if not current.is_empty():
+			return String(current.get("name", "Giocatore")).left(80)
 	var identity_token := _identity_token()
 	if identity_token != null:
 		var token_name := _actor_display_name(identity_token)
@@ -1336,3 +1391,104 @@ func _escape_bb(value: String) -> String:
 
 func _exit_tree() -> void:
 	_save_history()
+
+func _refresh_roll_actors() -> void:
+	if actor_picker == null:
+		return
+	var old: Dictionary = actor_picker.get_selected_metadata() if actor_picker.item_count > 0 else {}
+	actor_picker.clear()
+	actor_picker.add_item("Nessuna creatura")
+	actor_picker.set_item_metadata(0, {})
+	var choices: Array = _mobile_creatures.call() if _mobile_creatures.is_valid() else []
+	if not _mobile_creatures.is_valid():
+		for token: Node3D in _scene_identity_tokens():
+			choices.append({"id": String(token.call("get_token_id")), "name": _actor_display_name(token), "token": token})
+	for choice: Dictionary in choices:
+		var index := actor_picker.item_count
+		actor_picker.add_item(String(choice.get("name", "Creatura")))
+		actor_picker.set_item_metadata(index, choice)
+		if not old.is_empty() and String(old.get("id", "")) == String(choice.get("id", "")):
+			actor_picker.select(index)
+
+func configure_mobile_connection(controller: Node, creatures: Callable, current: Callable) -> void:
+	_mobile_controller = controller
+	_mobile_creatures = creatures
+	_mobile_current = current
+	controller.action_completed.connect(_mobile_chat_completed)
+	set_session_key("1")
+	_refresh_roll_actors()
+	status_label.text = "Chat condivisa quando il desktop è collegato · disponibile offline"
+
+func _process(delta: float) -> void:
+	if _mobile_controller == null:
+		return
+	_mobile_elapsed += delta
+	if _mobile_elapsed < 1.5:
+		return
+	_mobile_elapsed = 0
+	var data: Dictionary = _mobile_controller.get_map_data()
+	if data.is_empty():
+		status_label.text = "Chat locale · collega un desktop in Partita"
+		return
+	if int(data.get("mobile_protocol", 0)) < 3:
+		status_label.text = "Aggiorna anche il desktop per sincronizzare chat e dadi"
+		return
+	if _mobile_send.is_empty():
+		for item: Dictionary in _mobile_outbox:
+			if item.session != session_key:
+				continue
+			_mobile_send_event = String(item.event.id)
+			_mobile_send_session = session_key
+			_mobile_send = _mobile_controller.request_action("chat_send", {"event": item.event})
+			break
+	if _mobile_poll.is_empty():
+		_mobile_poll_session = session_key
+		_mobile_poll = _mobile_controller.request_action("chat_poll", {"after": _mobile_cursor})
+
+func _mobile_chat_completed(id: String, action: String, result: Dictionary) -> void:
+	if action == "chat_send" and id == _mobile_send:
+		_mobile_send = ""
+		if bool(result.get("ok", false)):
+			for index: int in range(_mobile_outbox.size() - 1, -1, -1):
+				if _mobile_outbox[index].session == _mobile_send_session and String(_mobile_outbox[index].event.id) == _mobile_send_event:
+					_mobile_outbox.remove_at(index)
+		return
+	if action != "chat_poll" or id != _mobile_poll:
+		return
+	_mobile_poll = ""
+	if _mobile_poll_session != session_key:
+		return
+	if not bool(result.get("ok", false)):
+		status_label.text = String(result.get("error", "Chat non sincronizzata"))
+		return
+	var changed := false
+	for event: Dictionary in result.get("events", []):
+		if not DiceChatSync.valid_event(event):
+			continue
+		_mobile_cursor = String(event.id)
+		if seen_ids.has(_mobile_cursor):
+			continue
+		seen_ids[_mobile_cursor] = true
+		history.append(event.duplicate(true))
+		changed = true
+	while history.size() > MAX_HISTORY:
+		seen_ids.erase(String(history.pop_front().id))
+	if changed:
+		_save_history()
+		_render_history()
+	status_label.text = "Chat e dadi sincronizzati · Partita " + session_key
+
+func accept_shared_event(event: Dictionary) -> bool:
+	if JSON.stringify(event).to_utf8_buffer().size() > DiceChatSync.MAX_BYTES or not DiceChatSync.valid_event(event):
+		return false
+	_append_event(event, true)
+	return true
+
+func shared_events_after(after: String) -> Array[Dictionary]:
+	var first := maxi(0, history.size() - 40)
+	if not after.is_empty():
+		for index: int in range(history.size()):
+			if String(history[index].id) == after:
+				first = index + 1
+				break
+	return history.slice(first, mini(first + 40, history.size())).duplicate(true)

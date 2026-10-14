@@ -4096,6 +4096,8 @@ func _update_external_record(record: Dictionary) -> void:
 			break
 	if creature_id == _selected_id:
 		_refresh_conditions(record)
+		if _touch_layout:
+			_update_current_appearance_display(record)
 		if _spellcasting_ui != null:
 			_spellcasting_ui.call("refresh_spell_state", record)
 
@@ -5445,6 +5447,16 @@ func _apply_sheet_properties(record: Dictionary) -> void:
 
 
 func _apply_current_appearance(record: Dictionary) -> void:
+	if _touch_layout and _map_data_controller != null and not String(record.get("linked_token_sync_id", "")).is_empty():
+		var token_id := String(record.linked_token_sync_id)
+		if int(_map_data_controller.get_map_data().get("mobile_protocol", 0)) < 3:
+			_set_status("Aggiorna anche il desktop per sincronizzare l’aspetto.")
+			return
+		var request_id := _map_data_controller.request_action("set_appearance", {"token_id": token_id,
+			"owner_id": Owner.local_id(), "miniature_id": record.get("current_miniature_id", record.get("default_miniature_id", ""))})
+		if not request_id.is_empty():
+			_mobile_appearance_requests[request_id] = token_id
+		return
 	var token := find_linked_token_for_creature(String(record.get("id", "")))
 	if token != null and board_root.has_method("apply_creature_sheet_appearance"):
 		var applied: bool = bool(board_root.call(
@@ -7095,11 +7107,15 @@ func _show_sheet_tab(title: String) -> void:
 const MapDataReader = preload("res://vtt/map_data_controller.gd")
 var _map_data_controller: MapDataReader
 var _mobile_public_status_cache: Dictionary = {}
+var _mobile_appearance_requests: Dictionary = {}
 
 func set_map_data_controller(controller: MapDataReader) -> void:
 	if is_instance_valid(_map_data_controller) and _map_data_controller.data_changed.is_connected(_sync_mobile_map_status):
 		_map_data_controller.data_changed.disconnect(_sync_mobile_map_status)
+	if is_instance_valid(_map_data_controller) and _map_data_controller.action_completed.is_connected(_mobile_appearance_completed):
+		_map_data_controller.action_completed.disconnect(_mobile_appearance_completed)
 	_map_data_controller = controller
+	controller.action_completed.connect(_mobile_appearance_completed)
 	_mobile_public_status_cache.clear()
 	controller.data_changed.connect(_sync_mobile_map_status)
 
@@ -7153,7 +7169,7 @@ func _sync_mobile_map_status(data: Dictionary) -> void:
 	for token: Dictionary in data.get("tokens", []):
 		var token_id := String(token.id)
 		var status := {}
-		for key: String in ["conditions", "concentrating_spell_id", "active_spell_ids"]:
+		for key: String in ["conditions", "concentrating_spell_id", "active_spell_ids", "current_miniature_id", "default_miniature_id"]:
 			if token.has(key):
 				status[key] = token[key]
 		current_statuses[token_id] = status.duplicate(true)
@@ -7170,6 +7186,11 @@ func _sync_mobile_map_status(data: Dictionary) -> void:
 			continue
 		var record: Dictionary = owned.duplicate(true)
 		_copy_public_token_status(record, public_by_id[id])
+		if not _mobile_appearance_requests.values().has(id):
+			for field: String in ["current_miniature_id", "default_miniature_id"]:
+				var value := String(public_by_id[id].get(field, ""))
+				if not value.is_empty():
+					record[field] = value
 		if record == owned:
 			continue
 		_recalculate_bonus_mirrors(record)
@@ -7225,3 +7246,18 @@ func _sheet_casting_context(record: Dictionary, spell: Dictionary, grant: Dictio
 				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
 			}
 	return casting_context
+
+func _mobile_appearance_completed(id: String, action: String, result: Dictionary) -> void:
+	if action != "set_appearance" or not _mobile_appearance_requests.has(id):
+		return
+	var token_id: String = _mobile_appearance_requests[id]
+	_mobile_appearance_requests.erase(id)
+	_mobile_public_status_cache.erase(token_id)
+	if not bool(result.get("ok", false)):
+		_set_status(String(result.get("error", "Aspetto non aggiornato.")))
+
+func get_mobile_roll_creatures() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for record: Dictionary in _archive.list_owned():
+		result.append({"id": String(record.get("owner_id", Owner.local_id())) + ":" + String(record.get("id", "")), "name": String(record.get("name", "Creatura"))})
+	return result

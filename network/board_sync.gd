@@ -2304,7 +2304,9 @@ func get_tactical_map_data() -> Dictionary:
 			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
 			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
 			"active_spell_ids": node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else [],
-			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else ""
+			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else "",
+			"current_miniature_id": String(node.call("get_token_pack_id")) if node.has_method("get_token_pack_id") else "",
+			"default_miniature_id": String(node.get_meta("default_miniature_id", ""))
 		})
 	var combat: Dictionary = {"active": false, "round": 1, "active_index": -1, "entries": []}
 	var tracker := _initiative_tracker()
@@ -2329,7 +2331,7 @@ func get_tactical_map_data() -> Dictionary:
 				projected_active_index = entries.size() - 1
 		combat["entries"] = entries
 		combat["active_index"] = projected_active_index
-	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 2}
+	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3}
 
 
 func _visible_mobile_token(id: String) -> CharacterBody3D:
@@ -2339,9 +2341,36 @@ func _visible_mobile_token(id: String) -> CharacterBody3D:
 	return null
 
 func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
+	if action in ["chat_send", "chat_poll"]:
+		var chat: Node = board_root.get_node_or_null("DiceRollerChat")
+		if chat == null:
+			return {"ok": false, "error": "Chat desktop non disponibile."}
+		if action == "chat_send":
+			var event: Variant = payload.get("event")
+			if not event is Dictionary or not chat.accept_shared_event(event):
+				return {"ok": false, "error": "Messaggio o tiro non valido."}
+			return {"ok": true}
+		return {"ok": true, "events": chat.shared_events_after(String(payload.get("after", "")))}
 	var target := _visible_mobile_token(String(payload.get("token_id", "")))
 	if target == null:
 		return {"ok": false, "error": "Il token non è più presente o visibile sulla mappa."}
+	if action == "set_appearance":
+		var owner := String(payload.get("owner_id", ""))
+		var wanted := String(payload.get("miniature_id", ""))
+		if owner.is_empty() or owner != String(target.get_meta("creature_owner_id", "")) or wanted.length() > 256:
+			return {"ok": false, "error": "Questa creatura non è controllata dal telefono."}
+		var profile: Dictionary = board_root.call("_identity_profile_by_id", wanted)
+		if profile.is_empty():
+			return {"ok": false, "error": "Miniatura non disponibile sul desktop."}
+		var undo: Dictionary = board_root.call("begin_undo_transaction")
+		var record := {"id": String(target.get_meta("creature_id", "")), "current_miniature_id": wanted}
+		if not bool(board_root.call("apply_creature_sheet_appearance", target, record, false)):
+			return {"ok": false, "error": "La miniatura deve essere disponibile sul desktop prima di applicarla."}
+		target.call("set_size_category", String(profile.get("size_name", "Medium")), float(profile.get("footprint", 1.0)), false)
+		board_root.call("commit_undo_transaction", undo)
+		mark_token_appearance_locally_edited(target)
+		board_root.call_deferred("_sync_explicit_token_change", target)
+		return {"ok": true}
 	if action == "move_token":
 		var step: String = String(payload.get("direction", ""))
 		var directions := {"north": Vector3i(0, 0, -1), "south": Vector3i(0, 0, 1), "west": Vector3i(-1, 0, 0), "east": Vector3i(1, 0, 0), "up": Vector3i(0, 1, 0), "down": Vector3i(0, -1, 0)}

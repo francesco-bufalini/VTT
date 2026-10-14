@@ -12,7 +12,7 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
-const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell"]
+const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "set_appearance", "chat_send", "chat_poll"]
 const ACTION_MAX_BYTES := 2 * 1024 * 1024
 const ACTION_TIMEOUT_MS := 15000
 var _action_provider: Callable
@@ -159,6 +159,9 @@ static func valid_data(value: Variant) -> bool:
 			for spell_id: Variant in row.active_spell_ids:
 				if not spell_id is String or spell_id.length() > 256:
 					return false
+		for field: String in ["current_miniature_id", "default_miniature_id"]:
+			if row.has(field) and (not row[field] is String or row[field].length() > 256):
+				return false
 		ids[row.id] = true
 		for condition: Variant in row.conditions:
 			if not condition is String or condition.length() > 256:

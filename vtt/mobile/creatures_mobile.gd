@@ -101,6 +101,7 @@ func _ready() -> void:
 	_build_choice_picker()
 	_build_touch_help()
 	_build_session_panel()
+	roller.configure_mobile_connection(map_data_controller, Callable(sheet, "get_mobile_roll_creatures"), Callable(sheet, "_current"))
 
 	_build_page_header()
 	_build_archive_selector()
@@ -538,6 +539,7 @@ func _build_session_panel() -> void:
 	_session_picker.item_selected.connect(func(index: int) -> void:
 		map_data_controller.disconnect_remote()
 		_presence.set_session_key(str(index + 1))
+		dice_roller.set_session_key(str(index + 1))
 		_refresh_online_peers())
 	session_row.add_child(_session_picker)
 	var refresh := Button.new()

@@ -1915,7 +1915,7 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 
 # Apply an explicitly chosen miniature immediately when it is available.
 # Undownloaded PCKs are fetched; the selection is already safe in the sheet.
-func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary) -> bool:
+func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary, update_properties: bool = true) -> bool:
 	if token == null or not is_instance_valid(token):
 		return false
 	var miniature_id := String(record.get(
@@ -1947,7 +1947,8 @@ func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary)
 			profile.get("token_pack_id", miniature_id)
 			if origin == "current" else miniature_id
 		))
-	apply_creature_sheet_properties(token, record)
+	if update_properties:
+		apply_creature_sheet_properties(token, record)
 	_refresh_token_views_after_appearance_change()
 	return true
 

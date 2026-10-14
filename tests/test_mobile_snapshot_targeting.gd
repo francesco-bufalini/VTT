@@ -132,7 +132,7 @@ func run() -> void:
 	var wire_preview: Dictionary = await sync._handle_mobile_action("preview_spell", {"token_id": caster_id,
 		"owner_id": "mobile-owner", "snapshot_id": "preview-test", "pixel": [844.8, 768]})
 	assert(wire_preview.ok and wire_preview.preview.valid and wire_preview.preview.points.size() == 64)
-	assert(sync.get_tactical_map_data().mobile_protocol == 2)
+	assert(sync.get_tactical_map_data().mobile_protocol == 3)
 	var outside: Dictionary = spells.remote_preview_input(caster, "mobile-owner",
 		{"valid": true, "point": Vector3(1000, 0, 0), "normal": Vector3.UP, "in_air": false}, projection)
 	assert(outside.ok and not outside.preview.valid, "Out-of-range aim must clear the AoE")
