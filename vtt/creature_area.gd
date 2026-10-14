@@ -1682,9 +1682,11 @@ func configure_touch_layout() -> void:
 	for child: Node in _touch_library.get_children():
 		if child is Button and child.text == "+ Personaggio":
 			child.pressed.connect(func() -> void: show_touch_library(false))
-	_traits_ui.configure_touch_layout()
+	_traits_ui.call("configure_touch_layout")
 	touch.style_tree(_panel)
-	_traits_ui._scroll.follow_focus = false
+	var traits_scroll := _traits_ui.get("_scroll") as ScrollContainer
+	if traits_scroll != null:
+		traits_scroll.follow_focus = false
 	var import_button := Button.new()
 	import_button.text = "Importa JSON dal PC"
 	_touch_library.add_child(import_button)
