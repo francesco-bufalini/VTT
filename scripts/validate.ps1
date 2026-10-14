@@ -111,6 +111,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 
 $fastTests = @(
     "test_map_data_controller.gd",
+    "test_mobile_map_actions.gd",
     "test_mobile_main_menu.gd",
     "test_mobile_touch_layout.gd",
     "test_mobile_sheet_navigation.gd",

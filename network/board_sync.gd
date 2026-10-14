@@ -37,6 +37,8 @@ const SYNC_APPEARANCE_KEYS := [
 	"visual_front_quarter_turns",
 	"transformation_history"
 ]
+const MobileMapCapture = preload("res://network/mobile_map_capture.gd")
+var _mobile_capture_busy := false
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 var map_data_controller: MapDataController
 var board_root: Node
@@ -80,6 +82,7 @@ func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	map_data_controller.name = "MapDataController"
 	add_child(map_data_controller)
 	map_data_controller.use_board(get_tactical_map_data)
+	map_data_controller.set_action_provider(_handle_mobile_action)
 	_connect_token_pack_manager()
 	_request_tailscale_peer_refresh()
 
@@ -2325,3 +2328,101 @@ func get_tactical_map_data() -> Dictionary:
 		combat["entries"] = entries
 		combat["active_index"] = projected_active_index
 	return {"version": 1, "tokens": tokens, "combat": combat}
+
+
+func _visible_mobile_token(id: String) -> CharacterBody3D:
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is CharacterBody3D and board_root.is_ancestor_of(node) and not node.is_queued_for_deletion() and node.is_visible_in_tree() and get_sync_id_for_node(node) == id:
+			return node as CharacterBody3D
+	return null
+
+func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
+	var target := _visible_mobile_token(String(payload.get("token_id", "")))
+	if target == null:
+		return {"ok": false, "error": "Il token non è più presente o visibile sulla mappa."}
+	if action == "place_token":
+		return _place_mobile_token(payload.get("creature", {}), target)
+	if action != "snapshot":
+		return {"ok": false, "error": "Comando sconosciuto."}
+	if _mobile_capture_busy:
+		return {"ok": false, "error": "Acquisizione in corso. Riprova tra un istante."}
+	var field: Variant = payload.get("field_feet", 120)
+	var attack: Variant = payload.get("attack", {})
+	if not (field is float or field is int) or not is_finite(float(field)) or not attack is Dictionary:
+		return {"ok": false, "error": "Parametri snapshot non validi."}
+	for key: String in ["range_feet", "long_range_feet"]:
+		var value: Variant = attack.get(key, 0)
+		# Reject non-finite geometry before projecting or allocating buffers.
+		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 10000:
+			return {"ok": false, "error": "Gittata non valida."}
+	_mobile_capture_busy = true
+	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, clampf(float(field), 20, 1500), attack)
+	_mobile_capture_busy = false
+	result["token_id"] = String(payload.get("token_id", ""))
+	result["attack"] = attack.duplicate(true)
+	return result
+
+func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary:
+	if not value is Dictionary:
+		return {"ok": false, "error": "Creatura non valida."}
+	var creature: Dictionary = value
+	for key: String in ["id", "owner_id", "name", "current_miniature_id", "default_miniature_id", "size_name"]:
+		if not creature.get(key, "") is String or String(creature.get(key, "")).length() > 256:
+			return {"ok": false, "error": "Identità creatura non valida."}
+	var id := String(creature.get("id", ""))
+	var owner := String(creature.get("owner_id", ""))
+	if id.is_empty() or owner.length() < 16:
+		return {"ok": false, "error": "Identità creatura mancante."}
+	var footprint: Variant = creature.get("footprint", 1.0)
+	if not (footprint is float or footprint is int) or not is_finite(float(footprint)) or float(footprint) < 0.5 or float(footprint) > 30:
+		return {"ok": false, "error": "Dimensioni creatura non valide."}
+	var reach: Variant = creature.get("reach_feet", 5)
+	var conditions: Variant = creature.get("conditions", [])
+	if not (reach is float or reach is int) or not is_finite(float(reach)) or float(reach) < 0 or float(reach) > 10000 or not conditions is Array or conditions.size() > 64:
+		return {"ok": false, "error": "Parametri tattici non validi."}
+	for condition: Variant in conditions:
+		if not condition is String or condition.length() > 256:
+			return {"ok": false, "error": "Condizione non valida."}
+	var miniature := String(creature.get("current_miniature_id", ""))
+	if miniature.is_empty():
+		miniature = String(creature.get("default_miniature_id", ""))
+	var profile: Dictionary = board_root.call("_identity_profile_by_id", miniature)
+	if profile.is_empty():
+		return {"ok": false, "error": "La miniatura scelta sul telefono non è disponibile nel catalogo del desktop."}
+	var token: CharacterBody3D
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is CharacterBody3D and board_root.is_ancestor_of(node) and not node.is_queued_for_deletion() and String(node.get_meta("creature_id", "")) == id and String(node.get_meta("creature_owner_id", "")) == owner:
+			token = node as CharacterBody3D
+			break
+	if token == support:
+		return {"ok": false, "error": "Scegli un altro token come punto di appoggio."}
+	if board_root.has_method("push_undo_state"):
+		board_root.call("push_undo_state")
+	if token == null:
+		token = token_scene.instantiate() as CharacterBody3D
+		# Assign ownership before adding to the board: never create a private PC sheet.
+		token.set_meta("creature_id", id)
+		token.set_meta("creature_owner_id", owner)
+		tokens_root.add_child(token)
+		token.call("configure", Color.WHITE, float(board_root.get("cell_size")), String(creature.get("size_name", "Medium")), float(footprint))
+	token.set_meta("default_miniature_id", String(creature.get("default_miniature_id", miniature)))
+	token.call("set_display_name", String(creature.get("name", "Creatura")))
+	token.call("set_size_category", String(creature.get("size_name", "Medium")), float(footprint), false)
+	token.call("set_token_pack_id", miniature)
+	board_root.call("apply_creature_sheet_appearance", token, creature)
+	token.call("set_reach_feet", float(reach), true)
+	token.call("set_conditions", conditions)
+	_queue_token_pack_id(miniature)
+	_process_token_pack_queue()
+	var support_top: float = support.global_position.y + float(support.get("token_height_cells")) * float(support.get("cell_size")) * 0.5
+	var half: float = float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
+	token.global_position = Vector3(support.global_position.x, support_top + half, support.global_position.z)
+	token.set("flying", true)
+	token.set("grid_support", support)
+	token.set("_support_transform", support.global_transform)
+	if token.has_method("set_top_down_token_enabled"):
+		token.call("set_top_down_token_enabled", bool(board_root.call("is_2d_view_enabled")))
+	mark_token_appearance_locally_edited(token)
+	board_root.call_deferred("_sync_explicit_token_change", token)
+	return {"ok": true, "token_id": get_sync_id_for_node(token), "creature_id": id,
+		"name": String(token.call("get_display_name"))}

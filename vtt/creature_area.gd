@@ -4384,10 +4384,6 @@ func _activate_attack(attack_id: String) -> void:
 
 func _preview_attack_from_sheet(attack_id: String) -> void:
 	var record: Dictionary = _current()
-	var token: CharacterBody3D = find_linked_token_for_creature(_selected_id)
-	if token == null:
-		_set_status("Per visualizzare la gittata occorre una miniatura collegata alla creatura.")
-		return
 	var attack_data: Dictionary = {}
 	for entry: Dictionary in AttackData.definitions(record):
 		if String(entry.get("id", "")) == attack_id:
@@ -4397,6 +4393,13 @@ func _preview_attack_from_sheet(attack_id: String) -> void:
 		return
 	attack_data["range_feet"] = AttackData.range_for(record, attack_data)
 	attack_data["long_range_feet"] = AttackData.long_range_for(record, attack_data)
+	if board_root.has_method("show_mobile_attack_range"):
+		board_root.call("show_mobile_attack_range", record, attack_data)
+		return
+	var token: CharacterBody3D = find_linked_token_for_creature(_selected_id)
+	if token == null:
+		_set_status("Per visualizzare la gittata occorre una miniatura collegata alla creatura.")
+		return
 	var runtime: Node = board_root.get_node_or_null("AttackSystem")
 	if runtime == null or not runtime.has_method("preview_attack_range"):
 		_set_status("Visualizzazione tattica della gittata non disponibile.")
@@ -4533,8 +4536,10 @@ func _refresh_attacks(record: Dictionary) -> void:
 		_install_formula("attack_hit:" + attack_id, hit_label, [], [])
 		var inspect_range := Button.new()
 		inspect_range.name = "PreviewRange_" + attack_id.validate_node_name()
-		inspect_range.text = "◎ Gittata"
+		inspect_range.text = "Vedi gittata" if _touch_layout else "◎ Gittata"
 		inspect_range.tooltip_text = "Chiude la scheda e mostra le creature raggiungibili da questo attacco. Clic per selezionare, Esc per chiudere, nessun danno automatico."
+		if _touch_layout:
+			inspect_range.tooltip_text = "Richiede al desktop uno snapshot della mappa centrato sulla creatura, con la gittata di questo attacco."
 		inspect_range.pressed.connect(_preview_attack_from_sheet.bind(attack_id))
 		hit_row.add_child(inspect_range)
 		var damage_row := HFlowContainer.new()
@@ -7089,3 +7094,25 @@ func _edit_origin_spell_popup(origin_id: String = "", choice: Dictionary = {}) -
 		return
 	_origin_spells_ui.call("load_record", record)
 	_origin_spells_ui.call("open_for_origin", origin_id, choice)
+
+
+# Only public miniature placement data crosses to the connected desktop.
+func get_mobile_placement_creatures() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for record: Dictionary in _archive.list_owned():
+		var row := {"owner_id": Owner.local_id()}
+		for key: String in ["id", "name", "kind", "default_miniature_id", "current_miniature_id", "size_name", "footprint", "visual_front_quarter_turns", "party_id", "rules_version"]:
+			if record.has(key):
+				row[key] = record[key]
+		row["reach_feet"] = AttackData.active_range(record)
+		row["conditions"] = record.get("conditions", []).duplicate()
+		result.append(row)
+	return result
+
+func link_mobile_token(creature_id: String, token_id: String) -> void:
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) == creature_id:
+			record["linked_token_sync_id"] = token_id
+			if _archive.save(record) == OK:
+				_replace_current_record(record)
+			return

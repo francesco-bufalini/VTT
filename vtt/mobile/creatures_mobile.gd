@@ -1,5 +1,7 @@
 extends "res://vtt/standalone/creatures_standalone.gd"
 ## Touch shell for the current shared sheets, compendium and offline dice.
+const SessionActions = preload("res://vtt/mobile/session_actions.gd")
+var _session_actions: SessionActions
 const MapController = preload("res://vtt/map_data_controller.gd")
 const TouchLayout = preload("res://vtt/mobile/touch_layout.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
@@ -40,12 +42,10 @@ var _pages: Array[Control] = []
 var _navigation_buttons: Array[Button] = []
 var _page_drawer: PanelContainer
 var _page_menu_button: Button
-var _page_title: Label
 var _page_header_row: HBoxContainer
 var _page_header: PanelContainer
 var _page_header_contents: VBoxContainer
 var _archive_selector: OptionButton
-var _connection_badge: Label
 var _active_page := -1
 
 func _enter_tree() -> void:
@@ -92,8 +92,6 @@ func _ready() -> void:
 	map_data_controller.status_changed.connect(func(message: String) -> void:
 		_connection_status.text = message)
 	map_data_controller.data_changed.connect(_show_map_data)
-	map_data_controller.data_changed.connect(func(data: Dictionary) -> void:
-		_connection_badge.text = "Non collegato" if data.is_empty() else "Collegato")
 	resized.connect(_layout_pages)
 	get_tree().node_added.connect(_on_touch_node_added)
 	_select_page(0)
@@ -201,8 +199,6 @@ func _build_page_header() -> void:
 	_page_menu_button.pressed.connect(func() -> void:
 		_page_drawer.visible = not _page_drawer.visible)
 	ui_root.add_child(_page_menu_button)
-	_page_title = Label.new()
-	_connection_badge = Label.new()
 
 func _select_page(index: int) -> void:
 	if _pages.is_empty() or index == _active_page:
@@ -230,16 +226,15 @@ func _select_page(index: int) -> void:
 		3: _session_panel.show()
 	for i: int in range(_navigation_buttons.size()):
 		_navigation_buttons[i].set_pressed_no_signal(i + 1 == index)
-	_page_title.text = ["Schede", "Catalogo", "Dadi", "Partita"][index]
-	_page_title.visible = index != 0
-
-	_connection_badge.visible = index == 3
 
 	_layout_pages()
 
 func _layout_pages() -> void:
-	# The themed header is taller than its original hardcoded 48dp viewport.
-	# Allocate real space above every page, rather than overlaying the sheet.
+	# Floating controls share the side of the screen without reserving a column.
+	if _page_menu_button != null:
+		_page_menu_button.position = Vector2(2, maxf(2, get_viewport_rect().size.y * 0.5 - 50))
+	if _session_actions != null:
+		_session_actions.reopen_button.position = _page_menu_button.position + Vector2(0, 54)
 	var header_height := 0.0
 	if _page_header != null:
 		header_height = maxf(header_height, _page_header.get_combined_minimum_size().y)
@@ -280,6 +275,8 @@ func _go_back() -> void:
 		return
 	if _choice_panel != null and _choice_panel.visible:
 		_close_touch_choices()
+		return
+	if _session_actions != null and _session_actions.close_overlay():
 		return
 	if _page_drawer != null and _page_drawer.visible:
 		_page_drawer.hide()
@@ -370,6 +367,10 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 			return
 	for node: Node in active_window.find_children("*", "BaseButton", true, false):
 		var button := node as BaseButton
+		if _session_actions != null:
+			var modal: Control = _session_actions.picker if _session_actions.picker.visible else (_session_actions.viewer if _session_actions.viewer.visible else null)
+			if modal != null and not modal.is_ancestor_of(button) and not (_help_panel.visible and _help_panel.is_ancestor_of(button)):
+				continue
 		if button.get_window() != active_window or not button.is_visible_in_tree() or button.disabled:
 			continue
 		if not button.get_global_rect().has_point(point):
@@ -503,6 +504,9 @@ func _build_session_panel() -> void:
 	_map_summary = RichTextLabel.new()
 	_map_summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_map_summary)
+	_session_actions = SessionActions.new()
+	add_child(_session_actions)
+	_session_actions.setup(self, map_data_controller, creature_area, column)
 	var close_button := Button.new()
 	close_button.text = "Torna alle schede"
 	close_button.custom_minimum_size.y = 48
@@ -774,3 +778,7 @@ func list_available_miniatures() -> Array[Dictionary]:
 	if packs != null:
 		result.assign(packs.get_entries())
 	return result
+
+
+func show_mobile_attack_range(record: Dictionary, attack: Dictionary) -> void:
+	_session_actions.request_attack_snapshot(record, attack)

@@ -1,8 +1,9 @@
 extends Node
-## Shared read-only tactical data boundary. Desktop reads the local board;
-## mobile polls an explicit peer address over the OS Tailscale connection.
+## Shared tactical boundary: UDP public reads and explicit framed TCP actions.
+## Desktop owns the board; mobile keeps sheets and cached map images only.
 signal data_changed(data: Dictionary)
 signal status_changed(message: String)
+signal action_completed(request_id: String, action: String, result: Dictionary)
 
 const PORT := 45457
 const MAGIC := "VTT_TACTICAL_READ_V1"
@@ -11,6 +12,12 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
+const ACTION_MAX_BYTES := 2 * 1024 * 1024
+const ACTION_TIMEOUT_MS := 15000
+var _action_provider: Callable
+var _action_server := TCPServer.new()
+var _actions: Array[Dictionary] = []
+var _action_sequence := 0
 var _provider: Callable
 var _udp := PacketPeerUDP.new()
 var _session := ""
@@ -32,6 +39,7 @@ func use_board(provider: Callable) -> void:
 func serve(enabled: bool, session: String) -> Error:
 	_udp.close()
 	_serving = false
+	_close_actions()
 	_session = session.strip_edges()
 	if not enabled:
 		return OK
@@ -39,6 +47,10 @@ func serve(enabled: bool, session: String) -> Error:
 		return ERR_INVALID_PARAMETER
 	var error := _udp.bind(port)
 	_serving = error == OK
+	if _serving and _action_provider.is_valid():
+		var action_error := _action_server.listen(action_port())
+		if action_error != OK:
+			status_changed.emit("Comandi mobile non disponibili: " + error_string(action_error))
 	return error
 
 func connect_remote(host: String, session: String) -> Error:
@@ -57,6 +69,7 @@ func connect_remote(host: String, session: String) -> Error:
 	return OK
 
 func disconnect_remote() -> void:
+	_close_actions()
 	_udp.close()
 	_host = ""
 	_session = ""
@@ -72,6 +85,7 @@ func get_map_data() -> Dictionary:
 	return _data.duplicate(true)
 
 func _process(_delta: float) -> void:
+	_process_actions()
 	if not _serving and _host.is_empty():
 		return
 	for _i in range(mini(16, _udp.get_available_packet_count())):
@@ -163,4 +177,127 @@ static func valid_data(value: Variant) -> bool:
 
 
 func _exit_tree() -> void:
+	_close_actions()
 	_udp.close()
+
+# Small framed TCP requests share the tactical session. Images never go over UDP.
+func set_action_provider(provider: Callable) -> void:
+	_action_provider = provider
+
+func action_port() -> int:
+	return (_udp.get_local_port() if port == 0 else port) + 1
+
+func request_action(action: String, payload: Dictionary) -> String:
+	if _host.is_empty() or action not in ["place_token", "snapshot"] or _actions.size() >= 4:
+		status_changed.emit("Collega prima un desktop nella sezione Partita.")
+		return ""
+	_action_sequence += 1
+	var id := str(Time.get_ticks_usec()) + "_" + str(_action_sequence)
+	var peer := StreamPeerTCP.new()
+	var error := peer.connect_to_host(_host, port + 1)
+	if error != OK:
+		status_changed.emit("Richiesta non avviata: " + error_string(error))
+		return ""
+	_actions.append({"peer": peer, "client": true, "id": id, "action": action,
+		"buffer": PackedByteArray(), "size": -1, "sent": 0,
+		"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS,
+		"out": _action_frame({"magic": MAGIC, "session": _session, "request_id": id,
+			"action": action, "payload": payload})})
+	return id
+
+static func _action_frame(message: Dictionary) -> PackedByteArray:
+	var payload := JSON.stringify(message).to_utf8_buffer()
+	if payload.size() > ACTION_MAX_BYTES:
+		return PackedByteArray()
+	var frame := PackedByteArray()
+	frame.resize(4)
+	frame.encode_u32(0, payload.size())
+	frame.append_array(payload)
+	return frame
+
+func _close_actions() -> void:
+	_action_server.stop()
+	for item: Dictionary in _actions:
+		if bool(item.client) and not bool(item.get("done", false)):
+			action_completed.emit(item.id, item.action, {"ok": false, "error": "Connessione alla partita chiusa."})
+		item.peer.disconnect_from_host()
+	_actions.clear()
+
+func _process_actions() -> void:
+	while _action_server.is_connection_available():
+		var peer := _action_server.take_connection()
+		if _actions.size() >= 8:
+			peer.disconnect_from_host()
+			continue
+		_actions.append({"peer": peer, "client": false, "buffer": PackedByteArray(),
+			"size": -1, "sent": 0, "out": PackedByteArray(),
+			"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS})
+	for index: int in range(_actions.size() - 1, -1, -1):
+		var item: Dictionary = _actions[index]
+		var peer: StreamPeerTCP = item.peer
+		peer.poll()
+		if Time.get_ticks_msec() > int(item.deadline) or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
+			if bool(item.client) and not bool(item.get("done", false)):
+				action_completed.emit(item.id, item.action, {"ok": false, "error": "Il desktop non ha risposto. Aggiorna anche VTT sul PC."})
+			peer.disconnect_from_host()
+			_actions.remove_at(index)
+			continue
+		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			continue
+		var output: PackedByteArray = item.out
+		if int(item.sent) < output.size():
+			var written := peer.put_partial_data(output.slice(item.sent, mini(int(item.sent) + 65536, output.size())))
+			if written[0] != OK:
+				item.deadline = 0
+				continue
+			item.sent = int(item.sent) + int(written[1])
+		if bool(item.get("replied", false)) and int(item.sent) == output.size():
+			# Client ACK keeps the socket alive until its whole image was read.
+			if peer.get_available_bytes() > 0:
+				peer.get_data(1)
+				item.deadline = 0
+			continue
+		var available := peer.get_available_bytes()
+		if available > 0:
+			var read := peer.get_data(mini(available, 131072))
+			if read[0] != OK:
+				item.deadline = 0
+				continue
+			var buffer: PackedByteArray = item.buffer
+			buffer.append_array(read[1])
+			item.buffer = buffer
+		var buffer: PackedByteArray = item.buffer
+		if int(item.size) == -1 and buffer.size() >= 4:
+			item.size = buffer.decode_u32(0)
+			buffer = buffer.slice(4)
+			item.buffer = buffer
+			if int(item.size) <= 0 or int(item.size) > ACTION_MAX_BYTES:
+				item.deadline = 0
+				continue
+		if int(item.size) > 0 and buffer.size() >= int(item.size) and not bool(item.get("busy", false)):
+			item.busy = true
+			var message: Variant = JSON.parse_string(buffer.slice(0, item.size).get_string_from_utf8())
+			if not message is Dictionary or message.get("magic") != MAGIC or message.get("session") != _session:
+				item.deadline = 0
+				continue
+			if bool(item.client):
+				if message.get("request_id") == item.id and message.get("result") is Dictionary:
+					item.done = true
+					peer.put_data(PackedByteArray([1]))
+					action_completed.emit(item.id, item.action, message.result)
+				item.deadline = 0
+			else:
+				_dispatch_action.call_deferred(item, message)
+
+func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
+	var result := {"ok": false, "error": "Comando mobile non disponibile."}
+	if _action_provider.is_valid() and message.get("action") in ["place_token", "snapshot"] and message.get("payload") is Dictionary:
+		var value: Variant = await _action_provider.call(String(message.action), message.payload)
+		if value is Dictionary:
+			result = value
+	if not _actions.has(item):
+		return
+	item.out = _action_frame({"magic": MAGIC, "session": _session,
+		"request_id": String(message.get("request_id", "")), "result": result})
+	item.sent = 0
+	item.replied = true

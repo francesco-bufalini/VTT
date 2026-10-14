@@ -7,7 +7,7 @@ The normal startup menu routes Android/iOS (`mobile`) and custom-feature `vtt_mo
 - `vtt/mobile/creatures_mobile.gd`: mobile navigation, explicit peer/session inputs, connection status and tactical overview.
 - `vtt/standalone/creatures_standalone.gd`: shared non-3D sheet/compendium/offline dice composition. This remains usable offline.
 - `vtt/creature_sheet_controller.gd`: shared creature mutations and rules.
-- `vtt/map_data_controller.gd`: read-only map-data controller. `use_board()` supplies a live local reader; `connect_remote()` selects a peer over the operating system's network connection. Neither path instantiates a remote board.
+- `vtt/map_data_controller.gd`: public map-data reader and explicit mobile-action transport. `use_board()` supplies a live local reader; `connect_remote()` selects a peer over the operating system's network connection. Neither path instantiates a remote board.
 - `network/board_sync.gd`: owns the desktop tactical projection and the controller's server lifecycle. Enabling/disabling reception and changing the existing session also updates the mobile service.
 - `CreatureArea.set_map_data_controller()` injects the same reader on either platform. `get_linked_map_status(record)` looks up a detached token status by `linked_token_sync_id`.
 
@@ -25,7 +25,7 @@ Services and firewall rules on the desktop:
 
 Allow VTT/Godot inbound access on **private** Windows networks (or these ports in the private firewall profile), and confirm the devices are on the same reachable subnet without Wi-Fi client isolation. LAN broadcast only discovers peers on reachable local networks; it is not an Internet directory or router traversal service. Desktops also keep Tailscale discovery/sync when installed. Mobile does not run Tailscale CLI.
 
-Desktop automatic synchronization and chat select verified *desktop* LAN peers of the same session, in addition to existing Tailscale peers. Mobile intentionally does not accept full desktop TCP map snapshots: its tactical view is a read-only UDP projection, and creature sheets remain independently editable offline.
+Desktop automatic synchronization and chat select verified *desktop* LAN peers of the same session, in addition to existing Tailscale peers. Mobile intentionally does not accept full desktop TCP map snapshots: its tactical polling is an allowlisted UDP projection, and creature sheets remain independently editable offline.
 
 Mobile handles raw finger gestures before GUI mouse input. A stationary tap dispatches one complete click on release; crossing the drag threshold scrolls the deepest visible scrollable area, then its ancestors at the boundary, and never dispatches a click. The bestiary import panel enables the public 5etools download with a bounded HTTP timeout and mirror fallback; no GitHub account is needed. Android Back closes dialogs, returns from a sheet to the library or to the previous page, then asks for confirmation before quitting.
 
@@ -36,7 +36,7 @@ The controller polls every 1.5 seconds. Responses must match peer IP/port, sessi
 
 Payloads contain visible token sync IDs, display names, condition IDs, concentration spell IDs, and combat active state/round/current entry with name and initiative. Hidden tokens and their linked initiative rows are omitted; the active index is remapped after filtering. Exact HP, private creature records, inventory, assets, coordinates and encounter secrets are not exported. The UI uses plain text for peer-provided names.
 
-This increment reads context only: remote commands, sheet-to-board mutations, private-sheet transfer, mobile chat/dice networking are future work. The mobile touch shell reuses the current shared sheets: density-aware scaling, exclusive bottom navigation, list/detail navigation, section picker, larger input targets and vertically stacked editors. The Android APK export and installation workflow is documented in `docs/exporting.md`. This controller test does not prove networking between physical devices.
+The mobile tactical service also accepts explicit placement and image requests over TCP on the tactical UDP port plus one (default TCP 45458). Private-sheet transfer and mobile chat/dice networking are not part of these commands. The mobile touch shell reuses the current shared sheets: density-aware scaling, exclusive bottom navigation, list/detail navigation, section picker, larger input targets and vertically stacked editors. The Android APK export and installation workflow is documented in `docs/exporting.md`. This controller test does not prove networking between physical devices.
 
 ## Validation
 
@@ -44,3 +44,16 @@ This increment reads context only: remote commands, sheet-to-board mutations, pr
 Mobile sheet sections use direct wrapping buttons instead of an embedded OptionButton popup, with the tab switch deferred until the input event completes. Spell and resource panels stack vertically on mobile; desktop keeps its paired columns. Android navigation explicitly disables SceneTree.quit_on_go_back (independent of auto_accept_quit), from the menu onward, and deduplicates back deliveries within 250 ms. The populated-sheet touch regression covers a Wizard with spells, all seven direct section buttons, and duplicate Back notifications.
 
 Mobile OptionButton and MenuButton taps now share a searchable in-page choice panel, preserving disabled items, IDs, selections and original signals without opening embedded PopupMenu windows. Creature row action menus use the same panel. The mobile Compendium enables public bestiary loading and name/source search. For a desktop character, choose Scarica creatura from its actions, copy the exported JSON to the phone, and select Importa JSON dal PC in Schede. This imports an independent locally owned copy with a new creature ID and no token link; it does not transfer ownership or keep desktop/mobile edits synchronized. Android uses its native file picker.
+
+
+## Mobile placement and map images
+
+The floating sections icon sits halfway down the left edge, over the full-width sheet. The icon below it reopens the last successfully received snapshot, kept in memory until the app closes. Back closes action pickers and the image before navigating away.
+
+In **Partita**, **Piazza token** asks for a locally owned creature, then a visible map token by stable sync ID. Only allowlisted public miniature identity/size data is sent. The desktop places the creature base on the selected hitbox top, preserves mobile ownership, and reuses that owner's existing token for the creature on repeated placement. It does not import or claim the private creature sheet. An unavailable desktop miniature catalog entry produces a visible error.
+
+**Richiedi snapshot** asks for the source token. A separate one-shot orthographic viewport renders the board at that token's height and center; it does not move the desktop camera or toggle desktop targeting. The reply contains a 1024x768 lossy WebP image, projected token markers and optional vector attack contours, rather than the 3D scene or continuous video. Zoom +/- requests a new field of view (20–1500 ft); Aggiorna refreshes the same view. Closing and reopening uses the cached image without a new network request.
+
+**Vedi gittata** on a mobile attack requests the same image automatically using the creature's saved linked token ID and its calculated normal/long ranges. Green and orange vector contours reuse the desktop footprint range geometry. Place the mobile creature first to establish its stable link. The desktop and Android app both need this version; an older desktop that lacks the command listener produces a visible request error/timeout. The existing UDP session validation and public-data filtering are unchanged. Commands and image frames have matching session/request IDs, a 2 MiB bound and a 15-second deadline.
+
+`test_mobile_map_actions.gd` covers real TCP transfer larger than a UDP packet, wrong-session rejection, placement on hitbox tops without duplicate tokens, centered icons, Back and cached WebP reopening. When run with graphics it also captures a real board image and checks centered markers, two range contours and an unchanged desktop camera.
