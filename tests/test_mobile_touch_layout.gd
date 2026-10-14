@@ -45,9 +45,9 @@ func run() -> void:
 		for page: int in range(4):
 			mobile._select_page(page)
 			await settle()
-			var nav := mobile.ui_root.get_node("StandaloneNavigation") as Control
+			var nav := mobile.ui_root.get_node("MobileSectionsDrawer") as Control
 			if not check(nav.get_global_rect().end.x <= viewport_size.x + 1 and nav.get_global_rect().end.y <= viewport_size.y + 1,
-				"Touch navigation must fit %s: %s" % [viewport_size, nav.get_global_rect()]):
+				"Unified sections drawer must fit %s: %s" % [viewport_size, nav.get_global_rect()]):
 				return
 			var visible_pages := 0
 			for candidate: Control in mobile._pages:
@@ -60,7 +60,7 @@ func run() -> void:
 				return
 			if not check(mobile._archive_selector.visible == (page == 0), "Archive picker must belong only to sheets"):
 				return
-			if not check(not nav.visible, "The global page drawer must be collapsed by default"):
+			if not check(not nav.visible, "Sections drawer must be collapsed by default"):
 				return
 			mobile._page_menu_button.pressed.emit()
 			await settle()
@@ -157,17 +157,17 @@ func run() -> void:
 	mobile._select_page(0)
 	sheet.show_touch_library(false)
 	sheet._touch_section_toggle.pressed.emit()
-	if not check(sheet._touch_section_drawer.visible, "Section toggle must open the side drawer"):
+	if not check(sheet._touch_section_drawer.visible, "Section toggle must open the unified drawer"):
 		return
 	mobile._go_back()
 	if not check(not sheet._touch_section_drawer.visible and not sheet.is_touch_library_visible(),
 		"Android Back must close the section drawer without leaving the editor"):
 		return
 	mobile._page_menu_button.pressed.emit()
-	if not check(mobile._page_drawer.visible, "Page menu must open the global navigation drawer"):
+	if not check(mobile._page_drawer.visible, "Page menu must open the unified sections drawer"):
 		return
 	mobile._go_back()
-	if not check(not mobile._page_drawer.visible, "Android Back must close global navigation first"):
+	if not check(not mobile._page_drawer.visible, "Android Back must close the sections drawer first"):
 		return
 	mobile._select_page(3)
 	mobile._go_back()
@@ -191,5 +191,5 @@ func run() -> void:
 	await settle()
 	manager.selected_campaign_group_id = previous_campaign
 	manager.active_campaign_id = previous_scenario
-	print("PASS: touch page bounds, exclusive navigation, current sheet tabs, portrait/landscape and shared controls")
+	print("PASS: touch page bounds, unified sections, current sheet tabs, portrait/landscape and shared controls")
 	quit()
