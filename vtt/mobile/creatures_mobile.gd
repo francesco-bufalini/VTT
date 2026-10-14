@@ -69,7 +69,7 @@ func _ready() -> void:
 		_connection_status.text = message)
 	map_data_controller.data_changed.connect(_show_map_data)
 	map_data_controller.data_changed.connect(func(data: Dictionary) -> void:
-		_connection_badge.text = "Offline" if data.is_empty() else "Collegato")
+		_connection_badge.text = "Non collegato" if data.is_empty() else "Collegato")
 	resized.connect(_layout_pages)
 	get_tree().node_added.connect(_on_touch_node_added)
 	_select_page(0)
@@ -130,11 +130,16 @@ func _build_navigation() -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.toggle_mode = true
 		button.button_group = group
-		button.pressed.connect(func() -> void: _select_page.call_deferred(index))
+		button.pressed.connect(_request_page.bind(index))
 		navigation.add_child(button)
 		_navigation_buttons.append(button)
 	TouchLayout.style_tree(_page_drawer)
 	_page_drawer.hide()
+
+func _request_page(index: int) -> void:
+	# Let the touch release finish before hiding a drawer button.
+	_select_page.call_deferred(index)
+
 
 func _build_page_header() -> void:
 	var header := PanelContainer.new()
