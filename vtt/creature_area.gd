@@ -1741,6 +1741,12 @@ func configure_touch_layout() -> void:
 	file_picker.file_selected.connect(_import_export_file)
 	import_button.pressed.connect(func() -> void: file_picker.popup_centered_clamped(Vector2i(680, 600), 0.9))
 	touch.style_control(import_button)
+	# Initial sheets may have been populated before mobile mode was enabled.
+	# Rebuild their dynamic multiclass/tracker rows with the touch layout too.
+	var initial_record := _current()
+	if not initial_record.is_empty():
+		_load_form(initial_record)
+		touch.style_tree(_multiclass_rows)
 	show_touch_library(true)
 
 
