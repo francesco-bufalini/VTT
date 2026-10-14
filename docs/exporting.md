@@ -64,3 +64,5 @@ adb logcat -d -s godot:V AndroidRuntime:E
 ```
 
 Su un emulatore verificare anche l'interfaccia, la scheda e i pulsanti Partita/Compendio/Dadi. Se SwiftShader segnala un limite di uniform shader, usare l'emulatore con `-gpu host`; l'installazione da sola non prova il rendering. Per iOS è necessario un Mac con Xcode e un'identità di firma Apple; Windows non produce un IPA installabile.
+
+La build touch 2026.10.14-touch.1 mantiene lo stesso package ID e la stessa chiave della prima APK, con version code maggiore. Le schede e i cataloghi vengono compilati dai sorgenti attuali di main. La GUI mobile usa pagine esclusive, una barra inferiore, un selettore delle sezioni della scheda e controlli da almeno 48 pixel logici, scalati sulla densità del telefono. La verifica dell'APK viene eseguita nell'emulatore con GPU host.

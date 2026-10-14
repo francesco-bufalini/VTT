@@ -70,7 +70,12 @@ var _creature_list: VBoxContainer
 var _creature_filter: LineEdit
 var _creature_empty: Label
 var _abilities_grid: GridContainer
-var _statistics_columns: HBoxContainer
+var _statistics_columns: BoxContainer
+var _touch_layout := false
+var _touch_library: Control
+var _touch_editor: Control
+var _touch_section: OptionButton
+var _touch_library_button: Button
 var _skills_panel: VBoxContainer
 var _skill_buttons: Dictionary = {}
 var _skill_values: Dictionary = {}
@@ -1046,7 +1051,11 @@ func _build_ui() -> void:
 	speeds_group.name = "PhysicsSpeeds"
 	speeds_group.add_theme_constant_override("separation", 3)
 	movement_flow.add_child(speeds_group)
-	var speed_grid := HFlowContainer.new()
+	# A real grid keeps all five speeds on one line when room permits;
+	# its column count is adjusted on resize for narrower sheets.
+	var speed_grid := GridContainer.new()
+	speed_grid.name = "PhysicsSpeedGrid"
+	speed_grid.columns = 5
 	speed_grid.add_theme_constant_override("h_separation", 10)
 	speed_grid.add_theme_constant_override("v_separation", 5)
 	speeds_group.add_child(speed_grid)
@@ -1102,12 +1111,12 @@ func _build_ui() -> void:
 	jumps_group.add_child(jumps)
 	_long_jump = Label.new()
 	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_long_jump.custom_minimum_size.x = 260
+	_long_jump.custom_minimum_size.x = 228
 	_long_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
 	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_high_jump.custom_minimum_size.x = 260
+	_high_jump.custom_minimum_size.x = 228
 	_high_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_high_jump)
 	# Explicit group widths keep nested HFlowContainers from collapsing into
@@ -1472,14 +1481,15 @@ func _build_ui() -> void:
 	_current_miniature_row.add_child(_current_miniature_name)
 	_current_miniature_row.hide()
 
-	var size_field := _physics_field(physics_fields, "Taglia", 124)
+	# Token geometry belongs with the miniature settings, not the species row.
+	var size_field := _physics_field(miniature_flow, "Taglia", 124)
 	_size_choice = OptionButton.new()
 	_size_choice.custom_minimum_size.x = 124
 	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
 		_size_choice.add_item(size_name)
 	_size_choice.item_selected.connect(func(_i: int) -> void: _save())
 	size_field.add_child(_size_choice)
-	var facing_field := _physics_field(physics_fields, "Fronte della miniatura", 200)
+	var facing_field := _physics_field(miniature_flow, "Fronte della miniatura", 200)
 	_front = OptionButton.new()
 	_front.custom_minimum_size.x = 200
 	for direction: String in ["−Z · 0°", "+X · 90°", "+Z · 180°", "−X · 270°"]:
@@ -1529,6 +1539,128 @@ func _build_ui() -> void:
 	_panel.resized.connect(_update_sheet_layout)
 	call_deferred("_update_sheet_layout")
 
+
+
+func get_panel_control() -> Control:
+	return _panel
+
+
+func configure_touch_layout() -> void:
+	_touch_layout = true
+	_creature_language_picker.custom_minimum_size.x = 112
+	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	var outer := _panel.get_child(0) as VBoxContainer
+	var header := outer.get_child(0) as HBoxContainer
+	(header.get_child(0) as Label).hide()
+	for child: Node in header.get_children():
+		if child is Label and child != header.get_child(0):
+			child.hide()
+		if child is Control and child.get_class() == "Control":
+			child.hide()
+		if child is Button and child.text == "Chiudi":
+			child.hide()
+	var library_button := Button.new()
+	_touch_library_button = library_button
+	library_button.name = "TouchCreatureList"
+	library_button.text = "Elenco / Scheda"
+	library_button.pressed.connect(func() -> void: show_touch_library(not _touch_library.visible))
+	header.add_child(library_button)
+	touch.replace_box(header, HFlowContainer.new())
+	var old_columns := _tabs.get_parent() as HSplitContainer
+	var pages := touch.replace_box(old_columns, VBoxContainer.new()) as VBoxContainer
+	_touch_library = pages.get_child(0) as Control
+	_touch_library.name = "TouchLibrary"
+	_touch_library.custom_minimum_size.x = 0
+	_touch_library.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_creature_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pages.remove_child(_tabs)
+	var editor := VBoxContainer.new()
+	editor.name = "TouchSheetEditor"
+	editor.custom_minimum_size.y = 360
+	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pages.add_child(editor)
+	_touch_editor = editor
+	_touch_section = OptionButton.new()
+	_touch_section.name = "TouchSheetSection"
+	for index: int in range(_tabs.get_tab_count()):
+		_touch_section.add_item(_tabs.get_tab_title(index))
+	_touch_section.item_selected.connect(func(index: int) -> void: _tabs.current_tab = index)
+	_tabs.tab_changed.connect(func(index: int) -> void: _touch_section.select(index))
+	editor.add_child(_touch_section)
+	_tabs.tabs_visible = false
+	editor.add_child(_tabs)
+	for index: int in range(_tabs.get_tab_count()):
+		(_tabs.get_tab_control(index) as ScrollContainer).horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var info := _tabs.get_tab_control(0).get_child(0).get_child(0)
+	touch.wrap_fields(info)
+	_statistics_columns = touch.replace_box(_statistics_columns, VBoxContainer.new()) as BoxContainer
+	for columns: Node in _panel.find_children("EditorColumns", "HBoxContainer", true, false):
+		var stacked := touch.replace_box(columns, VBoxContainer.new()) as VBoxContainer
+		for child: Control in stacked.get_children():
+			child.custom_minimum_size.x = 0
+			child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		touch.wrap_fields(stacked)
+	_origins_overview.custom_minimum_size.x = 0
+	_editor_section_picker.custom_minimum_size.x = 0
+	var catalog_group := VBoxContainer.new()
+	catalog_group.name = "TouchBestiary"
+	_touch_library.add_child(catalog_group)
+	_catalog_filter.reparent(catalog_group, false)
+	_catalog_list.reparent(catalog_group, false)
+	_catalog_list.custom_minimum_size.y = 160
+	for child: Node in _touch_library.get_children():
+		if child is Button and child.text == "+ Dal bestiario":
+			child.reparent(catalog_group, false)
+	var catalog_button := Button.new()
+	catalog_button.text = "Importa dal bestiario"
+	catalog_button.pressed.connect(func() -> void: catalog_group.visible = not catalog_group.visible)
+	_touch_library.add_child(catalog_button)
+	catalog_group.hide()
+	_creature_list.child_entered_tree.connect(func(_node: Node) -> void: call_deferred("_connect_touch_creature_rows"))
+	_connect_touch_creature_rows()
+	for child: Node in _touch_library.get_children():
+		if child is Button and child.text == "+ Personaggio":
+			child.pressed.connect(func() -> void: show_touch_library(false))
+	touch.scroll_body(_panel)
+	touch.style_tree(_panel)
+	show_touch_library(true)
+
+
+func show_touch_library(show_library: bool) -> void:
+	if _touch_library == null:
+		return
+	_touch_library.visible = show_library
+	_touch_editor.visible = not show_library
+	_touch_library_button.text = "Apri scheda" if show_library else "Elenco creature"
+	_touch_library_button.disabled = show_library and _selected_id.is_empty()
+
+
+func _connect_touch_creature_rows() -> void:
+	for index: int in range(_creature_row_buttons.size()):
+		var button := _creature_row_buttons[index]
+		if not button.pressed.is_connected(_open_touch_sheet):
+			button.pressed.connect(_open_touch_sheet)
+		var row := button.get_parent()
+		if row.get_node_or_null("TouchActions") == null:
+			var actions := Button.new()
+			actions.name = "TouchActions"
+			actions.text = "⋯"
+			actions.tooltip_text = "Azioni della creatura"
+			actions.custom_minimum_size = Vector2(48, 48)
+			actions.pressed.connect(_open_touch_creature_actions.bind(index, actions))
+			row.add_child(actions)
+	for eye: Button in _creature_eye_buttons:
+		eye.hide()
+
+
+func _open_touch_creature_actions(index: int, button: Button) -> void:
+	_select_creature_row(index)
+	_creature_context_menu.position = Vector2i(button.get_global_rect().position + Vector2(0, 48))
+	_creature_context_menu.popup()
+
+
+func _open_touch_sheet() -> void:
+	show_touch_library(false)
 
 
 func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
@@ -2533,9 +2665,17 @@ func _layout_physics_movement(physics: Control, speeds: Control, jumps: Control)
 	var available: float = physics.size.x
 	if available < 1.0:
 		return
-	var speeds_width: float = (590.0 if available >= 1200.0
-		else (350.0 if available >= 650.0 else maxf(110.0, available - 22.0)))
-	var jumps_width: float = 550.0 if available >= 650.0 else maxf(260.0, available - 22.0)
+	# Five columns on desktop; three on medium sheets; two on narrow.
+	# Use explicit columns instead of nesting two flow containers that can
+	# unexpectedly wrap speed cells even when the Physics panel is wide.
+	var columns: int = 5 if available >= 1120.0 else (3 if available >= 720.0 else 2)
+	var speed_grid: GridContainer = speeds.get_node_or_null("PhysicsSpeedGrid") as GridContainer
+	if speed_grid != null and speed_grid.columns != columns:
+		speed_grid.columns = columns
+	var speeds_width: float = float(columns * 110 + (columns - 1) * 10)
+	# Both jump captions fit alongside all five speeds on desktop. When the
+	# sheet is narrow, the two blocks wrap naturally to the next row.
+	var jumps_width: float = 476.0 if available >= 720.0 else maxf(228.0, available - 22.0)
 	if absf(speeds.custom_minimum_size.x - speeds_width) >= 1.0:
 		speeds.custom_minimum_size.x = speeds_width
 	if absf(jumps.custom_minimum_size.x - jumps_width) >= 1.0:
@@ -2916,6 +3056,11 @@ func _filter_owned_creatures(query: String) -> void:
 
 
 func _update_statistics_widths() -> void:
+	if _touch_layout:
+		for child: Control in _statistics_columns.get_children():
+			child.custom_minimum_size.x = 0
+			child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		return
 	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
 		return
 	var left_view := _statistics_columns.get_child(0) as Control
@@ -2962,6 +3107,10 @@ func _update_stats_column_heights() -> void:
 		return
 	var left_contents := left_view.get_child(0) as Control
 	var right_contents := right_view.get_child(0) as Control
+	if _touch_layout:
+		left_view.custom_minimum_size.y = left_contents.get_combined_minimum_size().y + 18
+		right_view.custom_minimum_size.y = right_contents.get_combined_minimum_size().y + 18
+		return
 	var needed_height: float = maxf(
 		left_contents.get_combined_minimum_size().y,
 		right_contents.get_combined_minimum_size().y

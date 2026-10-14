@@ -13,6 +13,7 @@ var history: Array[Dictionary] = []
 var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
 var _selected_die := "d20"
+var _touch_layout := false
 
 var toggle_button: Button
 var panel: PanelContainer
@@ -104,7 +105,7 @@ func show_panel() -> void:
 		board_root.call("release_camera_control")
 	elif board_root != null and board_root.has_method("_release_mouse"):
 		board_root.call("_release_mouse")
-	if chat_input != null:
+	if chat_input != null and not _touch_layout:
 		chat_input.call_deferred("grab_focus")
 
 
@@ -348,6 +349,40 @@ func _build_ui() -> void:
 	chat_row.add_child(send)
 
 	_build_quick_result_popup()
+
+
+func configure_touch_layout() -> void:
+	_touch_layout = true
+	roll_mode_input.custom_minimum_size.x = 160
+	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	toggle_button.hide()
+	panel.z_index = 30
+	history_view.custom_minimum_size.y = 140
+	history_view.size_flags_vertical = Control.SIZE_FILL
+	var outer := panel.get_child(0) as VBoxContainer
+	for child: Node in outer.get_children():
+		if child is GridContainer:
+			child.columns = 3
+	for child: Node in outer.get_children():
+		if child is HBoxContainer and child != outer.get_child(0):
+			var row := touch.replace_box(child, HFlowContainer.new()) as HFlowContainer
+			row.add_theme_constant_override("h_separation", 8)
+			row.add_theme_constant_override("v_separation", 8)
+			for control: Node in row.get_children():
+				if control is Label and control.size_flags_horizontal == Control.SIZE_EXPAND_FILL:
+					control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+					control.custom_minimum_size.x = 220
+	chat_input.placeholder_text = "Nota per il registro locale…"
+	touch.scroll_body(panel)
+	touch.style_tree(panel)
+	close_button.hide()
+	status_label.text = "Tiri e registro locali · disponibili offline"
+	quick_result_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	quick_result_panel.offset_left = 12
+	quick_result_panel.offset_right = -12
+	quick_result_panel.offset_top = 60
+	quick_result_panel.offset_bottom = 164
+	touch.style_tree(quick_result_panel)
 
 
 func _build_quick_result_popup() -> void:

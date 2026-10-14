@@ -1,6 +1,6 @@
 extends SceneTree
 const Controller = preload("res://vtt/map_data_controller.gd")
-const Mobile = preload("res://vtt/mobile/creatures_mobile.tscn")
+const CreatureSheet = preload("res://vtt/creature_area.gd")
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -35,28 +35,15 @@ func run() -> void:
 	assert(client.get_map_data().is_empty() and client.source_name() == "offline")
 	assert(client.connect_remote("invalid", "test") == ERR_INVALID_PARAMETER)
 	assert(not Controller.valid_data({"version": 1, "tokens": ["invalid"], "combat": {}}))
-	var mobile := Mobile.instantiate()
-	root.add_child(mobile)
-	await process_frame
-	assert(mobile.map_data_controller.source_name() == "offline")
-	assert(root.find_children("*", "Node3D", true, false).is_empty())
-	var sheet: Node = mobile.get_node("CreatureArea")
-	var creature_button := mobile.ui_root.get_node("StandaloneNavigation").get_child(0) as Button
-	assert(sheet.is_panel_open())
-	creature_button.pressed.emit()
-	assert(not sheet.is_panel_open(), "Creature button must collapse the section")
-	creature_button.pressed.emit()
-	assert(sheet.is_panel_open(), "Creature button must reopen the section")
-	var selector := mobile.ui_root.get_node("LocalCreatureArchive") as OptionButton
-	assert(selector.item_count > 1)
-	assert((mobile.ui_root.get_node("CreatureSheet") as Control).offset_top >= selector.offset_bottom)
-	assert(selector.z_index > (mobile.ui_root.get_node("CreatureSheet") as Control).z_index)
+	var sheet := CreatureSheet.new()
+	root.add_child(sheet)
+
 	sheet.set_map_data_controller(desktop)
 	assert(sheet.get_linked_map_status({"linked_token_sync_id": "stable-id"}).name == "Hero")
 	assert(sheet.get_linked_map_status({"linked_token_sync_id": "absent"}).is_empty())
-	mobile.queue_free()
+	sheet.queue_free()
 	client.queue_free()
 	desktop.queue_free()
 	await process_frame
-	print("PASS: local/remote map data, UDP session isolation, detached data, mobile shell and stable sheet links")
+	print("PASS: local/remote map data, UDP session isolation, detached data and stable sheet links")
 	quit()
