@@ -50,14 +50,14 @@ func _run() -> void:
 	var deliveries: Array[Dictionary] = []
 	var tab := Inventory.new()
 	root.add_child(tab)
-	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)), Callable(),
-		Callable(), func(recipient: String, document: Dictionary) -> String:
-			deliveries.append({"recipient": recipient, "document": document.duplicate(true)})
-			return "test_delivery_" + recipient,
-		func() -> Array[Dictionary]:
-			return [{"id": "person_one", "label": "Giocatore uno"},
-				{"id": "person_two", "label": "Giocatore due"}]
-	)
+	var record_delivery := func(recipient: String, document: Dictionary) -> String:
+		deliveries.append({"recipient": recipient, "document": document.duplicate(true)})
+		return "test_delivery_" + recipient
+	var online_peers := func() -> Array[Dictionary]:
+		return [{"id": "person_one", "label": "Giocatore uno"},
+			{"id": "person_two", "label": "Giocatore due"}]
+	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)),
+		Callable(), Callable(), record_delivery, online_peers)
 	tab.load_record({"inventory": [row], "documents": [legacy]})
 	await process_frame
 	await process_frame
