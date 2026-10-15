@@ -44,6 +44,7 @@ func wait_until(predicate: Callable) -> bool:
 	return bool(predicate.call())
 
 func run() -> void:
+	assert("claim_free_token" in Controller.ACTIONS, "Remote takeover must be an allowed TCP action")
 	var board := Board.new()
 	root.add_child(board)
 	var sync: Node = load("res://network/board_sync.gd").new()
