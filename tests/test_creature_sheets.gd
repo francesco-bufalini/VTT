@@ -179,8 +179,55 @@ func run() -> void:
 		and normalized_monster.classes[0].name == "Wizard"
 		and normalized_monster.level == 3 and normalized_monster.class == "Wizard",
 		"The first actual monster class becomes primary and CR never adds levels")
-	assert(normalized_monster.xp >= Rules.experience_for_level(3),
-		"Monster CR must not contribute to class-level XP requirements")
+	assert(is_equal_approx(Rules.effective_monster_cr(normalized_monster), 3.5),
+		"The base fractional CR plus every class level gives effective CR")
+	assert(normalized_monster.stat_block.cr == "1/2",
+		"Class levels cannot mutate the original bestiary challenge rating")
+	assert(normalized_monster.xp >= Rules.monster_experience_for_cr(3.5),
+		"Monster XP floor must use effective CR, not class-only level thresholds")
+	assert(Bonuses.value(normalized_monster, "proficiency") == 2,
+		"Effective CR below 5 retains proficiency +2")
+	var advanced_monster: Dictionary = normalized_monster.duplicate(true)
+	advanced_monster["classes"][0]["level"] = 5
+	advanced_monster = monster.normalize_creature(advanced_monster)
+	assert(is_equal_approx(Rules.effective_monster_cr(advanced_monster), 5.5)
+		and Bonuses.value(advanced_monster, "proficiency") == 3
+		and advanced_monster.xp >= Rules.monster_experience_for_cr(5.5),
+		"Monster proficiency and XP floor must grow when class levels grow")
+	assert(Rules.monster_experience_for_cr(0.125) == 25
+		and Rules.monster_experience_for_cr(0.25) == 50
+		and Rules.monster_experience_for_cr(0.5) == 100,
+		"Fractional monster challenge ratings retain their own XP thresholds")
+	var character_level: Dictionary = {
+		"kind": "character", "class": "Wizard", "level": 5,
+		"classes": [{"name": "Wizard", "level": 3}, {"name": "Fighter", "level": 2}]
+	}
+	assert(Rules.proficiency_bonus(character_level) == 3
+		and Rules.minimum_experience(character_level) == Rules.experience_for_level(5),
+		"Character progression uses the sum of the class levels")
+	var controller: Script = load("res://vtt/creature_sheet_controller.gd")
+	var resource_character: Dictionary = {
+		"kind": "character", "class": "Wizard", "level": 3,
+		"classes": [{"name": "Wizard", "source": "PHB", "level": 3}],
+		"abilities": {"int": 16},
+		"prepared_spells": [{"id": "spell:test", "name": "Test"}],
+		"proficiency_choices": [{"id": "choice:test", "origin_id": "custom:test"}],
+		"spell_slots_total": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		"spell_slots_spent": [0, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+		"spell_slots_manual": false, "spell_slots_automatic": false,
+		"pact_slots_spent": 0, "resource_tracker_spent": {"custom": 2}
+	}
+	controller.sync_automatic_progression(resource_character)
+	assert(resource_character.spell_slots_total[1] == 4
+		and resource_character.spell_slots_total[2] == 2
+		and resource_character.spell_slots_spent[1] == 2
+		and resource_character.spell_slots_spent[2] == 1,
+		"Automatic level progression must retain already consumed slots")
+	assert(resource_character.prepared_spells.size() == 1
+		and resource_character.proficiency_choices.size() == 1
+		and resource_character.resource_tracker_spent.custom == 2,
+		"Automatic progression must preserve spells, prior origin choices and resource usage")
+
 	# Editions are alternatives for a class, not separate entries for each book.
 	for edition: String in ["2014", "2024"]:
 		var class_names: Dictionary = {}

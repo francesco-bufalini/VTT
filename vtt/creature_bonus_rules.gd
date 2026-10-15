@@ -275,7 +275,7 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 	if target == "level":
 		return {"ok": true, "value": int(record.get("level", 1))}
 	if target == "proficiency":
-		if String(record.get("kind", "")) == "monster":
+		if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
 			var cr: float = Rules.effective_monster_cr(record)
 			return {"ok": true, "value": 2 + maxi(0, floori((minf(cr, 30.0) - 1.0) / 4.0))}
 		return {"ok": true, "value": Rules.proficiency_bonus(record)}

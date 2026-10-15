@@ -55,7 +55,7 @@ static func monster_experience_for_cr(cr: float) -> int:
 
 
 static func minimum_experience(record: Dictionary) -> int:
-	if String(record.get("kind", "character")) == "monster":
+	if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
 		return monster_experience_for_cr(effective_monster_cr(record))
 	return experience_for_level(class_levels(record))
 
