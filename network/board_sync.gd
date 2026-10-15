@@ -2315,6 +2315,11 @@ func get_tactical_map_data() -> Dictionary:
 		tokens.append({
 			"id": get_sync_id_for_node(node),
 			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
+			# This public bit is the only extra information the mobile picker needs.
+			"free": bool(board_root.call("is_free_scene_token", node)) if board_root.has_method("is_free_scene_token") else (
+				String(node.get_meta("creature_id", "")).is_empty()
+				and String(node.get_meta("creature_owner_id", "")).is_empty()
+			),
 			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
 			"active_spell_ids": node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else [],
 			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else "",
@@ -2414,6 +2419,8 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		return attack_system.call("select_mobile_preview_target", target, victim, payload.attack)
 	if action == "place_token":
 		return _place_mobile_token(payload.get("creature", {}), target)
+	if action == "claim_free_token":
+		return _place_mobile_token(payload.get("creature", {}), target, true)
 	if action != "snapshot":
 		return {"ok": false, "error": "Comando sconosciuto."}
 	if _mobile_capture_busy:
@@ -2495,7 +2502,7 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		return runtime.call("remote_preview_input", caster, owner, point_data, projection)
 	return runtime.call("remote_target_input", caster, owner, victim, point_data, "select")
 
-func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary:
+func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: bool = false) -> Dictionary:
 	if not value is Dictionary:
 		return {"ok": false, "error": "Creatura non valida."}
 	var creature: Dictionary = value
@@ -2527,13 +2534,27 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary
 		if node is CharacterBody3D and board_root.is_ancestor_of(node) and not node.is_queued_for_deletion() and String(node.get_meta("creature_id", "")) == id and String(node.get_meta("creature_owner_id", "")) == owner:
 			token = node as CharacterBody3D
 			break
-	if token == support:
+	if claim_free:
+		if token != null:
+			return {"ok": false, "error": "La creatura ha già un token sulla mappa."}
+		if not (board_root.has_method("is_free_scene_token") and bool(board_root.call("is_free_scene_token", support))):
+			return {"ok": false, "error": "Il token scelto non è libero."}
+		token = support
+	elif token == support:
 		return {"ok": false, "error": "Scegli un altro token come riferimento."}
 	var undo: Dictionary = board_root.call("begin_undo_transaction") if board_root.has_method("begin_undo_transaction") else {}
 	var created := token == null
 	var previous: Dictionary = token.call("get_appearance_state") if not created else {}
 	var previous_transform: Transform3D = token.global_transform if not created else Transform3D.IDENTITY
 	var previous_default: Variant = token.get_meta("default_miniature_id", "") if not created else ""
+	var old_bottom: float = (token.global_position.y - float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5) if claim_free else 0.0
+	if claim_free:
+		# Validate/model-load before assigning ownership; a failed claim
+		# leaves the existing token unmodified and still available.
+		if not bool(board_root.call("apply_creature_sheet_appearance", token, creature, false)):
+			return {"ok": false, "error": "Miniatura non pronta sul desktop. Scaricala e riprova."}
+		token.set_meta("creature_id", id)
+		token.set_meta("creature_owner_id", owner)
 	if token == null:
 		token = token_scene.instantiate() as CharacterBody3D
 		# Assign ownership before adding to the board: never create a private PC sheet.
@@ -2545,10 +2566,15 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary
 	token.call("set_display_name", String(creature.get("name", "Creatura")))
 	token.call("set_size_category", String(creature.get("size_name", "Medium")), float(footprint), false)
 	token.call("set_token_pack_id", miniature)
-	board_root.call("apply_creature_sheet_appearance", token, creature)
+	if not claim_free:
+		board_root.call("apply_creature_sheet_appearance", token, creature)
+	elif board_root.has_method("apply_creature_sheet_properties"):
+		board_root.call("apply_creature_sheet_properties", token, creature)
 	token.call("set_reach_feet", float(reach), true)
 	token.call("set_conditions", conditions)
-	var position := _mobile_adjacent_position(token, support)
+	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support)
+	if claim_free:
+		position.y = old_bottom + float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
 	if position == Vector3.INF:
 		if created:
 			token.queue_free()
@@ -2564,13 +2590,14 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D) -> Dictionary
 	_queue_token_pack_id(miniature)
 	_process_token_pack_queue()
 	token.global_position = position
-	token.call("set_flying", true)
+	if not claim_free:
+		token.call("set_flying", true)
 	if token.has_method("set_top_down_token_enabled"):
 		token.call("set_top_down_token_enabled", bool(board_root.call("is_2d_view_enabled")))
 	mark_token_appearance_locally_edited(token)
 	board_root.call_deferred("_sync_explicit_token_change", token)
 	return {"ok": true, "token_id": get_sync_id_for_node(token), "creature_id": id,
-		"name": String(token.call("get_display_name"))}
+		"claimed": claim_free, "name": String(token.call("get_display_name"))}
 
 # Check adjacent footprints at the reference token's base level. Keep the
 # reference separate: moving it must not carry the new creature along.
