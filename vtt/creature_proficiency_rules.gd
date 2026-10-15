@@ -392,6 +392,28 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 				"name": _origin_title(group, name, row_mode) + " · " + source,
 				"group": group, "data": row, "mode": row_mode
 			})
+	# Quick-created local backgrounds and feats contain typed fixed
+	# proficiency grants. Match only selected identities, never arbitrary
+	# catalog contents, so they work through the ordinary origin engine.
+	for group: String in ["background", "feat"]:
+		var category: String = "backgrounds" if group == "background" else "feats"
+		for row: Dictionary in Catalog.entries(category):
+			if not String(row.get("id", "")).begins_with("homebrew:quick_local:"):
+				continue
+			var name: String = String(row.get("name", ""))
+			var source: String = String(row.get("source", ""))
+			if not _selected_source(record, group, name, source, row):
+				continue
+			var sid: String = group + "|" + normalized_key(source) + "|" + normalized_key(name)
+			var exists := false
+			for candidate: Dictionary in candidates:
+				if String(candidate.get("id", "")) == sid:
+					exists = true
+					break
+			if not exists:
+				candidates.append({"id": sid,
+					"name": _origin_title(group, name, "starting") + " · " + source,
+					"group": group, "data": row, "mode": "starting"})
 	return candidates
 
 
