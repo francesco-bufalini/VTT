@@ -5,7 +5,8 @@ extends RefCounted
 const PATHS: Array[String] = [
 	"res://vtt/data/fightclub_monster_resources_2014_a.json",
 	"res://vtt/data/fightclub_monster_resources_2014_b.json",
-	"res://vtt/data/fightclub_monster_resources_2014_c.json"
+	"res://vtt/data/fightclub_monster_resources_2014_c.json",
+	"res://vtt/data/fightclub_monster_resources_2014_mm.json"
 ]
 static var _loaded := false
 static var _index: Dictionary = {}
