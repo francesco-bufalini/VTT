@@ -22,6 +22,7 @@ OUTPUTS = [
     ROOT / "vtt/data/fightclub_monster_resources_2014_a.json",
     ROOT / "vtt/data/fightclub_monster_resources_2014_b.json",
     ROOT / "vtt/data/fightclub_monster_resources_2014_c.json",
+    ROOT / "vtt/data/fightclub_monster_resources_2014_mm.json",
 ]
 # Fight Club filenames are not always 5etools source IDs.
 # Checked against 5etools data/bestiary/index.json.
