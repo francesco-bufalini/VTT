@@ -49,6 +49,13 @@ static func _add_field(panel: VBoxContainer, title: String) -> void:
 	panel.add_child(label)
 
 
+# Temporary hiding is used by the mobile choice picker; free only after an
+# actual confirm/cancel/close action, not whenever visibility changes.
+static func _free_on_close(dialog: AcceptDialog) -> void:
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+
 static func create_popup(parent: Control, category: String, on_created: Callable, preferred_type: String = "") -> void:
 	if category not in Store.ALLOWED:
 		return
@@ -61,7 +68,7 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 	dialog.ok_button_text = "Salva nel catalogo"
 	dialog.cancel_button_text = "Annulla"
 	parent.add_child(dialog)
-	dialog.popup_hide.connect(func() -> void: dialog.queue_free())
+	_free_on_close(dialog)
 	var scroller := ScrollContainer.new()
 	scroller.custom_minimum_size = Vector2(330, 220)
 	dialog.add_child(scroller)
@@ -193,7 +200,7 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 			warning.title = "Impossibile salvare"
 			warning.dialog_text = "Controlla che il nome non sia già usato da un altro contenuto personalizzato e che il catalogo locale sia scrivibile."
 			parent.add_child(warning)
-			warning.popup_hide.connect(func() -> void: warning.queue_free())
+			_free_on_close(warning)
 			DialogLayout.popup(warning, Vector2i(430, 190), 0.90)
 	)
 	DialogLayout.popup(dialog, Vector2i(520, 490), 0.90)
@@ -213,5 +220,5 @@ static func delete_popup(parent: Control, entry: Dictionary, on_removed: Callabl
 		if Store.remove(entry) and on_removed.is_valid():
 			on_removed.call()
 	)
-	dialog.popup_hide.connect(func() -> void: dialog.queue_free())
+	_free_on_close(dialog)
 	DialogLayout.popup(dialog, Vector2i(455, 200), 0.90)

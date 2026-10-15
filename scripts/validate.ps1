@@ -136,6 +136,7 @@ $fastTests = @(
     "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
+    "test_quick_custom_dialogs.gd",
     "test_spell_origins.gd",
     "test_dice_bonus_scopes.gd",
     "test_inventory_quantities.gd",
