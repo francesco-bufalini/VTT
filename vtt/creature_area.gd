@@ -102,12 +102,7 @@ var _creature_language_picker: OptionButton
 var _creature_context_menu: PopupMenu
 var _automatic_dialog: ConfirmationDialog
 var _automatic_hp: CheckBox
-var _automatic_proficiency: CheckBox
-var _automatic_spells: CheckBox
-var _automatic_slots: CheckBox
-var _automatic_derived: CheckBox
-var _automatic_combat: CheckBox
-var _automatic_trackers: CheckBox
+var _automatic_class_features: CheckBox
 var _automatic_preview: RichTextLabel
 var _automatic_target_id := ""
 var _delete_dialog: ConfirmationDialog
@@ -681,8 +676,8 @@ func _build_ui() -> void:
 	_creature_list_scroll.add_child(_creature_list)
 	_creature_context_menu = PopupMenu.new()
 	_creature_context_menu.add_separator("Scheda e controllo")
-	_creature_context_menu.add_item("Calcola automaticamente…", 2)
-	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(2), "Mostra un riepilogo prima di ricalcolare i valori derivati dalle origini.")
+	_creature_context_menu.add_item("Ricalcoli manuali…", 2)
+	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(2), "Solo punti ferita e ripristino dei privilegi di classe in caso di anomalie.")
 	_creature_context_menu.add_item("Cedi controllo…", 4)
 	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(4), "Trasferisci questa scheda e i suoi dati privati al destinatario scelto.")
 	_creature_context_menu.add_separator("Eliminazione")
@@ -1127,7 +1122,7 @@ func _build_ui() -> void:
 			_speed.custom_minimum_size = Vector2(66, 30)
 			_speed.value_changed.connect(_on_speed_changed)
 			speed_cell.add_child(_speed)
-			_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
+			_speed.tooltip_text = "Velocità base dalla razza/sottorazza; modificabile solo per i mostri"
 			_install_formula("speed", _speed_effective, [_speed], ["Base"])
 			_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 		else:
@@ -1380,6 +1375,7 @@ func _build_ui() -> void:
 	_challenge_rating.custom_minimum_size.x = 76
 	_challenge_rating.tooltip_text = "Grado sfida del bestiario, anche frazionario (es. 1/4). Non è un livello di classe."
 	_challenge_rating.text_submitted.connect(func(_text: String) -> void: _save())
+	_challenge_rating.text_changed.connect(func(_text: String) -> void: _refresh_xp_minimum())
 	_challenge_rating.focus_exited.connect(_save)
 	challenge_field.add_child(_challenge_rating)
 	var type_field := _physics_field(physics_fields, "Tipo", 126)
@@ -1414,7 +1410,7 @@ func _build_ui() -> void:
 	_add_label(classes_title_row, "XP")
 	_xp = _spin(classes_title_row, 0, 999999999)
 	_xp.custom_minimum_size.x = 130
-	_xp.tooltip_text = "XP calcolati unicamente dai livelli di classe effettivi; il GS è indipendente"
+	_xp.tooltip_text = "XP minimi dai livelli di classe o dal GS effettivo (GS del mostro + livelli di classe)"
 	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
@@ -2160,61 +2156,30 @@ func _on_creature_context_action(action: int) -> void:
 
 func _build_automatic_dialog() -> void:
 	_automatic_dialog = ConfirmationDialog.new()
-	_automatic_dialog.title = "Calcola automaticamente"
+	_automatic_dialog.title = "Ricalcoli manuali"
 	_automatic_dialog.get_ok_button().text = "Applica"
 	_automatic_dialog.get_cancel_button().text = "Annulla"
-	_automatic_dialog.dialog_text = ""
-	_automatic_dialog.min_size = Vector2i(560, 360)
+	_automatic_dialog.min_size = Vector2i(520, 290)
 	ui_root.add_child(_automatic_dialog)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
-	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_automatic_dialog.add_child(content)
 	var intro := Label.new()
-	intro.text = "Scegli i valori da ricalcolare. Gli altri campi restano invariati."
+	intro.text = "I valori derivati sono già aggiornati automaticamente. Queste opzioni servono solo in casi particolari."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro.custom_minimum_size.y = 24
 	content.add_child(intro)
 	_automatic_hp = CheckBox.new()
-	_automatic_hp.text = "PF massimi: media dei dadi vita + Costituzione"
+	_automatic_hp.text = "Ricalcola i punti ferita massimi"
 	_automatic_hp.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
 	content.add_child(_automatic_hp)
-	_automatic_proficiency = CheckBox.new()
-	_automatic_proficiency.text = "Bonus di competenza: somma livelli di classe"
-	_automatic_proficiency.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_proficiency)
-	_automatic_spells = CheckBox.new()
-	_automatic_spells.text = "Limiti degli incantesimi conosciuti/preparabili"
-	_automatic_spells.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_spells)
-	_automatic_slots = CheckBox.new()
-	_automatic_slots.text = "Slot incantesimo e Magia del Patto dal livello di classe"
-	_automatic_slots.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_slots)
-	_automatic_trackers = CheckBox.new()
-	_automatic_trackers.text = "Aggiorna i massimi dei tracker strutturati e limita gli utilizzi"
-	_automatic_trackers.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_trackers)
-	_automatic_derived = CheckBox.new()
-	_automatic_derived.text = "Dadi vita, XP minimo, iniziativa e velocità base"
-	_automatic_derived.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_derived)
-	_automatic_combat = CheckBox.new()
-	_automatic_combat.text = "Difese, iniziativa, competenze e portata attiva da dati strutturati"
-	_automatic_combat.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
-	content.add_child(_automatic_combat)
-	var explanation := Label.new()
-	explanation.text = "Gli incantesimi effettivamente scelti non vengono cambiati. I PF attuali sono conservati (limitati al nuovo massimo)."
-	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(explanation)
+	_automatic_class_features = CheckBox.new()
+	_automatic_class_features.text = "Ripristina privilegi di classe (solo in caso di bug)"
+	_automatic_class_features.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_class_features)
 	_automatic_preview = RichTextLabel.new()
-	_automatic_preview.mouse_force_pass_scroll_events = false
-	_automatic_preview.set_meta("creature_gui_text", true)
-	_automatic_preview.custom_minimum_size = Vector2(0, 135)
-	_automatic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_automatic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_automatic_preview.custom_minimum_size.y = 95
 	_automatic_preview.scroll_active = true
+	_automatic_preview.set_meta("creature_gui_text", true)
 	content.add_child(_automatic_preview)
 	_automatic_dialog.confirmed.connect(_apply_automatic_calculation)
 
@@ -2225,38 +2190,19 @@ func _open_automatic_calculation() -> void:
 	if record.is_empty():
 		return
 	_automatic_target_id = String(record.get("id", ""))
-	var character: bool = String(record.get("kind", "")) == "character"
+	var hp_context: Dictionary = record.duplicate(true)
+	hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 	var hp_result: Dictionary = (
-		Rules.automatic_hit_points(record)
-		if character else Rules.automatic_monster_hit_points(record)
+		Rules.automatic_hit_points(hp_context)
+		if String(record.get("kind", "")) == "character"
+		else Rules.automatic_monster_hit_points(record)
 	)
 	_automatic_hp.disabled = not bool(hp_result.get("available", false))
-	_automatic_proficiency.disabled = not character
-	_automatic_spells.disabled = not character
-	_automatic_slots.disabled = not character
-	_automatic_trackers.disabled = _structured_trackers(record).is_empty()
-	_automatic_derived.disabled = not character
-	_automatic_combat.disabled = false
+	_automatic_class_features.disabled = Rules.class_levels(record) == 0
 	_automatic_hp.set_pressed_no_signal(false)
-	_automatic_proficiency.set_pressed_no_signal(false)
-	_automatic_spells.set_pressed_no_signal(false)
-	_automatic_slots.set_pressed_no_signal(false)
-	_automatic_trackers.set_pressed_no_signal(false)
-	_automatic_derived.set_pressed_no_signal(false)
-	_automatic_combat.set_pressed_no_signal(false)
+	_automatic_class_features.set_pressed_no_signal(false)
 	_refresh_automatic_preview()
-	_popup_sheet_dialog(_automatic_dialog, Vector2i(675, 545), 0.90)
-
-
-func _automatic_combat_values(record: Dictionary) -> Dictionary:
-	var active_attack: Dictionary = AttackData.active_attack(record)
-	return {
-		"armor_class": maxi(0, BonusRules.value(record, "ac")),
-		"initiative_base": BonusRules.value(record, "ability_mod:dex"),
-		"initiative": BonusRules.value(record, "initiative"),
-		"attack_id": String(active_attack.get("id", "")),
-		"reach_feet": int(AttackData.active_range(record))
-	}
+	_popup_sheet_dialog(_automatic_dialog, Vector2i(575, 365), 0.90)
 
 
 func _refresh_automatic_preview() -> void:
@@ -2264,60 +2210,23 @@ func _refresh_automatic_preview() -> void:
 		return
 	var record: Dictionary = _current()
 	var lines := PackedStringArray()
-	var is_character: bool = String(record.get("kind", "")) == "character"
-	var hp_context: Dictionary = record.duplicate(true)
-	hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
-	var hp: Dictionary = (
-		Rules.automatic_hit_points(hp_context)
-		if is_character else Rules.automatic_monster_hit_points(record)
-	)
-	if _automatic_hp.button_pressed and bool(hp.get("available", false)):
-		lines.append("PF massimi → %d (%s)" % [
-			int(hp.get("value", 0)), String(hp.get("detail", ""))
-		])
-	elif not bool(hp.get("available", false)):
-		lines.append("PF non calcolabili: " + String(hp.get("reason", "")))
-	if is_character:
-		if _automatic_proficiency.button_pressed:
-			lines.append("Competenza → +%d" % Rules.proficiency_bonus(record))
-		if _automatic_spells.button_pressed:
-			var limits: Dictionary = Rules.spellcasting_limits(_with_effective_modifiers(record))
-			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
-		if _automatic_derived.button_pressed:
-			var dice: String = Rules.automatic_hit_dice(record)
-			lines.append("Dadi vita: %s · XP minimi: %d · Iniziativa: %+d" % [
-				dice if not dice.is_empty() else "non disponibili",
-				Rules.experience_for_level(int(record.get("level", 1))),
-				BonusRules.value(record, "initiative")
-			])
-	if _automatic_combat.button_pressed:
-		var combat: Dictionary = _automatic_combat_values(record)
-		lines.append("CA %d (scudo compreso) · Iniziativa %+d · Portata %d ft" % [
-			int(combat["armor_class"]), int(combat["initiative"]), int(combat["reach_feet"])
-		])
-		lines.append("Competenze e abilità: risincronizzate dalle origini; TS, abilità e modificatori si aggiornano dalle formule.")
-	if _automatic_slots.button_pressed:
-		var slot_result: Dictionary = Rules.spell_slot_progression(record)
-		var slots: Array = slot_result.get("slots", [])
-		lines.append("Slot dal livello: %s · Patto %d (livello %d)" % [
-			str(slots.slice(1)), int(slot_result.get("pact_total", 0)),
-			int(slot_result.get("pact_level", 1))
-		])
-		if not String(slot_result.get("warnings", "")).is_empty():
-			lines.append(String(slot_result["warnings"]))
-	if _automatic_trackers.button_pressed:
-		lines.append("Massimi derivati dai dati strutturati: %d tracker; i bonus cumulabili restano invariati." % _structured_trackers(record).size())
+	if _automatic_hp.button_pressed:
+		var context: Dictionary = record.duplicate(true)
+		context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
+		var hp: Dictionary = (
+			Rules.automatic_hit_points(context)
+			if String(record.get("kind", "")) == "character"
+			else Rules.automatic_monster_hit_points(record)
+		)
+		if bool(hp.get("available", false)):
+			lines.append("Nuovi PF massimi: %d (%s)" % [int(hp.get("value", 0)), String(hp.get("detail", ""))])
+	if _automatic_class_features.button_pressed:
+		lines.append("Ricostruisce le concessioni automatiche delle classi senza cancellare le scelte e le modifiche alle origini ancora attive.")
 	if lines.is_empty():
-		lines.append("Seleziona almeno un valore per vedere l'anteprima.")
+		lines.append("Scegli un ricalcolo manuale. XP, competenza, velocità, slot e altri valori derivati si aggiornano già da soli.")
 	_automatic_preview.text = "\n".join(lines)
 	_automatic_dialog.get_ok_button().disabled = (
-		not _automatic_hp.button_pressed
-		and not _automatic_proficiency.button_pressed
-		and not _automatic_spells.button_pressed
-		and not _automatic_slots.button_pressed
-		and not _automatic_trackers.button_pressed
-		and not _automatic_derived.button_pressed
-		and not _automatic_combat.button_pressed
+		not _automatic_hp.button_pressed and not _automatic_class_features.button_pressed
 	)
 
 
@@ -2326,82 +2235,31 @@ func _apply_automatic_calculation() -> void:
 	if record.is_empty() or String(record.get("id", "")) != _automatic_target_id:
 		return
 	if _automatic_hp.button_pressed:
-		var hp_context: Dictionary = record.duplicate(true)
-		hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
+		var context: Dictionary = record.duplicate(true)
+		context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 		var hp: Dictionary = (
-			Rules.automatic_hit_points(hp_context)
+			Rules.automatic_hit_points(context)
 			if String(record.get("kind", "")) == "character"
 			else Rules.automatic_monster_hit_points(record)
 		)
 		if bool(hp.get("available", false)):
-			var base_maximum: int = int(hp.get("value", 1))
-			record["max_hp_base"] = base_maximum
-			var maximum: int = maxi(0, BonusRules.value(record, "hp"))
-			record["max_hp"] = maximum
-			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
-	if _automatic_proficiency.button_pressed:
-		record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	if _automatic_spells.button_pressed:
-		record["spellcasting_calculation"] = Rules.spellcasting_limits(_with_effective_modifiers(record))
-	if _automatic_slots.button_pressed:
-		var progression: Dictionary = Rules.spell_slot_progression(record)
-		var derived_slots: Array = progression.get("slots", [])
-		if derived_slots is Array and derived_slots.size() >= 10:
-			record["spell_slots_total"] = derived_slots.duplicate()
-			var spent: Array = record.get("spell_slots_spent", []).duplicate()
-			for index: int in range(1, mini(10, spent.size())):
-				spent[index] = clampi(int(spent[index]), 0, maxi(0, BonusRules.add(record, "slot:" + str(index), int(derived_slots[index]))))
-			record["spell_slots_spent"] = spent
-		record["pact_slots_total"] = int(progression.get("pact_total", 0))
-		record["pact_slot_level"] = int(progression.get("pact_level", 1))
-		record["pact_slots_spent"] = mini(int(record.get("pact_slots_spent", 0)),
-			maxi(0, BonusRules.add(record, "pact_slot", int(record["pact_slots_total"]))))
-	if _automatic_derived.button_pressed:
-		record["hit_dice"] = Rules.automatic_hit_dice(record)
-		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
-		record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-		record["initiative"] = BonusRules.value(record, "initiative")
-		if not bool(record.get("speed_is_custom", false)):
-			for race: Dictionary in Player5eTools.entries("races"):
-				if (String(race.get("id", "")) == String(record.get("species_id", ""))
-					or (String(race.get("name", "")) == String(record.get("species", ""))
-					and String(race.get("source", "")) == String(record.get("species_source", "")))):
-					record["speed_base"] = Rules.walking_speed(race.get("speed", 30))
-					record["speed"] = maxi(0, BonusRules.value(record, "speed"))
-					break
-	if _automatic_combat.button_pressed:
-		var combat: Dictionary = _automatic_combat_values(record)
-		record["armor_class"] = int(combat["armor_class"])
-		record["initiative_base"] = int(combat["initiative_base"])
-		record["initiative"] = int(combat["initiative"])
-		record["equipped_attack_id"] = String(combat["attack_id"])
-		record["reach_feet"] = int(combat["reach_feet"])
-		# Only legacy mirrors are persisted: the normalized origin grants
-		# remain the authority for skill and saving-throw calculations.
+			record["max_hp_base"] = int(hp.get("value", 1))
+			record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
+			record["current_hp"] = mini(int(record.get("current_hp", 0)), int(record["max_hp"]))
+	if _automatic_class_features.button_pressed:
+		ProficiencyRules.reconcile_origin_dependents(record)
 		ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
-	if _automatic_trackers.button_pressed:
-		var spent_values: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-		for tracker: Dictionary in _structured_trackers(record):
-			var tracker_id: String = String(tracker.get("id", ""))
-			var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id,
-				int(tracker.get("max", 0))))
-			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
-		record["resource_tracker_spent"] = spent_values
-	# Normalize all mirrors even when recalculating a subset of base inputs.
-	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
-	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-	record["initiative"] = BonusRules.value(record, "initiative")
-	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
+		SheetController.sync_automatic_progression(record)
+		SheetController.sync_origin_resources(record)
+	_recalculate_bonus_mirrors(record)
 	if _archive.save(record) != OK:
-		_set_status("Calcolo riuscito ma salvataggio non completato.")
+		_set_status("Ricalcolo eseguito ma non salvato.")
 		return
 	_replace_current_record(record)
 	_load_form(record)
 	_apply_sheet_properties(record)
 	_sync_token_health(record)
-	_set_status("Calcoli selezionati applicati alla creatura.")
+	_set_status("Ricalcolo manuale applicato.")
 
 
 func _build_transfer_request_dialog() -> void:
@@ -2753,6 +2611,7 @@ func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
 	if record.is_empty():
 		return
 	SheetController.update_origin_spells(record, grants, configs)
+	SheetController.sync_origin_resources(record)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare gli incantesimi da origini.")
 		return
@@ -2774,6 +2633,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 	if not origins.is_empty():
 		record["proficiency_origins"] = origins.duplicate(true)
 	ProficiencyRules.reconcile_origin_dependents(record)
+	SheetController.sync_origin_resources(record)
 	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
@@ -2934,6 +2794,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	if record.is_empty():
 		return
 	SheetController.update_trackers(record, trackers, origins)
+	SheetController.sync_origin_resources(record)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare tracker e origini.")
 		return
@@ -2951,6 +2812,8 @@ func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = [], dice_ro
 	if record.is_empty():
 		return
 	SheetController.update_bonuses(record, rows, origins, feats, dice_rows)
+	SheetController.sync_origin_resources(record)
+	SheetController.sync_automatic_progression(record)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
@@ -2979,7 +2842,8 @@ func _live_stats_record() -> Dictionary:
 	if _second_form_max_hp != null:
 		record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	if _speed != null:
-		record["speed_base"] = int(_speed.value)
+		record["speed_base"] = (_speed_from_species()
+			if String(record.get("kind", "character")) == "character" else int(_speed.value))
 	return record
 
 
@@ -3647,7 +3511,8 @@ func _load_form(record: Dictionary) -> void:
 	_speed_custom = bool(record.get("speed_is_custom", false))
 	var source_speed: int = (Rules.walking_speed(_effective_species().get("speed", 30))
 		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))
-	_speed.value = maxi(0, int(record.get("speed_base", record.get("speed", source_speed))) if _speed_custom else source_speed)
+	_speed.value = maxi(0, int(record.get("speed_base", record.get("speed", source_speed))) if _speed_custom and not is_character else source_speed)
+	_speed.editable = not is_character
 	_update_speed_display()
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", ""))
@@ -3693,7 +3558,7 @@ func _load_form(record: Dictionary) -> void:
 	_level.rounded = true
 	_level.value = clampi(primary_level, 1, 20)
 	_refresh_xp_minimum()
-	_xp.value = maxi(int(record.get("xp", 0)), Rules.experience_for_level(_class_xp_level()))
+	_xp.value = maxi(int(record.get("xp", 0)), Rules.minimum_experience(record))
 	_level.tooltip_text = "Livello della classe base (il GS dei mostri è indipendente)"
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
@@ -3842,7 +3707,13 @@ func _class_xp_level() -> int:
 func _refresh_xp_minimum() -> void:
 	if _xp == null:
 		return
+	var record: Dictionary = _current()
 	var minimum: int = Rules.experience_for_level(_class_xp_level())
+	if String(record.get("kind", "character")) == "monster":
+		var base_cr: float = Rules.monster_cr_value({"cr": _challenge_rating.text})
+		var effective_cr: float = base_cr + float(_class_xp_level())
+		minimum = Rules.monster_experience_for_cr(effective_cr)
+		_challenge_caption.text = "GS · eff. %s" % str(effective_cr)
 	# Avoid another save when changing the floor programmatically.
 	var previously_loading: bool = _loading
 	_loading = true
@@ -3902,7 +3773,7 @@ func _refresh_creature_type(record: Dictionary) -> void:
 
 func _on_speed_changed(_value: float) -> void:
 	_update_speed_display()
-	if _loading:
+	if _loading or String(_current().get("kind", "")) == "character":
 		return
 	_speed_custom = true
 	_save()
@@ -5061,6 +4932,8 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	record["feats_catalog"] = feats.duplicate(true)
 	record["proficiency_choices"] = typed_rows.duplicate(true)
 	ProficiencyRules.reconcile_origin_dependents(record)
+	SheetController.sync_origin_resources(record)
+	SheetController.sync_automatic_progression(record)
 	# Reconcile the saved editor state with the current traits and the
 	# unremovable grants before persisting it.
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
@@ -5239,8 +5112,9 @@ func _save() -> void:
 	record["armor_class_base"] = int(_ac.value)
 	if _natural_ac_formula != null:
 		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()
-	record["speed_base"] = int(_speed.value)
-	record["speed_is_custom"] = _speed_custom
+	record["speed_base"] = (_speed_from_species()
+		if String(record.get("kind", "character")) == "character" else int(_speed.value))
+	record["speed_is_custom"] = _speed_custom if String(record.get("kind", "")) == "monster" else false
 	var abilities: Dictionary = {}
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
@@ -5334,7 +5208,7 @@ func _save() -> void:
 		})
 	record["classes"] = classes
 	_refresh_xp_minimum()
-	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
+	record["xp"] = maxi(int(_xp.value), Rules.minimum_experience(record))
 	# Refresh grants only if actual identity/source selections changed,
 	# not for HP, counters, weapon range or individual stat edits.
 	var identity_changed := false
@@ -5344,6 +5218,8 @@ func _save() -> void:
 			break
 	if identity_changed:
 		ProficiencyRules.reconcile_origin_dependents(record)
+		SheetController.sync_automatic_progression(record)
+		SheetController.sync_origin_resources(record)
 		# Identity changes also replace their structured, origin-backed
 		# resistances/immunities immediately, preserving per-grant overrides.
 		record["damage_defense_entries"] = DamageDefensesTab._entries_from_record(
