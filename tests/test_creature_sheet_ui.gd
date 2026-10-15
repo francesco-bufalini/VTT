@@ -436,10 +436,10 @@ func run() -> void:
 		"CON score bonus must change computed HP")
 	area._on_bonuses_updated([], area._current().get("proficiency_origins", []))
 	area._open_automatic_calculation()
-	assert(not area._automatic_hp.button_pressed)
+	assert(not area._automatic_hp.button_pressed
+		and not area._automatic_class_features.button_pressed,
+		"Only HP and emergency class-feature recovery remain manual")
 	area._automatic_hp.button_pressed = true
-	area._automatic_proficiency.button_pressed = true
-	area._automatic_spells.button_pressed = true
 	area._apply_automatic_calculation()
 	area._automatic_dialog.hide()
 	var automatically_calculated: Dictionary = area._current()

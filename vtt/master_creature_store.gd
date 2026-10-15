@@ -357,7 +357,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		result["subclass"] = String(first.get("subclass", ""))
 		result["subclass_source"] = String(first.get("subclass_source", ""))
 		result["subclass_id"] = String(first.get("subclass_id", ""))
-	result["xp"] = maxi(int(result["xp"]), CreatureRules.experience_for_level(int(result["level"])))
+	result["xp"] = maxi(int(result["xp"]), CreatureRules.minimum_experience(result))
 	if String(result["id"]).is_empty():
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())

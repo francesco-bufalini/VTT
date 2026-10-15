@@ -12,7 +12,7 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
-const ACTIONS := ["place_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "set_appearance", "chat_send", "chat_poll"]
+const ACTIONS := ["place_token", "claim_free_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "set_appearance", "chat_send", "chat_poll"]
 const ACTION_MAX_BYTES := 2 * 1024 * 1024
 const ACTION_TIMEOUT_MS := 15000
 var _action_provider: Callable
@@ -152,6 +152,8 @@ static func valid_data(value: Variant) -> bool:
 		if not row is Dictionary or not row.get("id") is String or not row.get("name") is String or not row.get("conditions") is Array:
 			return false
 		if row.id.is_empty() or row.id.length() > 120 or ids.has(row.id) or row.name.length() > 256 or row.conditions.size() > 64:
+			return false
+		if row.has("free") and not row.free is bool:
 			return false
 		if row.has("active_spell_ids"):
 			if not row.active_spell_ids is Array or row.active_spell_ids.size() > 128:

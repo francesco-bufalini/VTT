@@ -1,0 +1,48 @@
+name: Creature free-token takeover (Godot)
+on:
+  pull_request:
+    paths:
+      - "vtt/creature_area.gd"
+      - "vtt/mobile/session_actions.gd"
+      - "vtt/map_data_controller.gd"
+      - "network/board_sync.gd"
+      - "dnd_base.gd"
+      - "tests/test_mobile_map_actions.gd"
+      - ".github/workflows/free-token-takeover.yml"
+  workflow_dispatch:
+jobs:
+  takeover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /interaction/
+            /items/
+            /homebrew/
+            /tests/test_mobile_map_actions.gd
+            /assets/items/
+            /assets/tokens/test/
+            /assets/spell_area_geometry.json
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Run mobile takeover regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          "$GODOT" --headless --path . --editor --import --quit
+          "$GODOT" --headless --path . --script res://tests/test_mobile_map_actions.gd

@@ -43,7 +43,7 @@ func setup(host: Control, map_controller: Node, creature_sheet: Node, column: VB
 	place_button = Button.new()
 	place_button.name = "PlaceMobileToken"
 	place_button.text = "Piazza token"
-	place_button.pressed.connect(_choose_creature)
+	place_button.pressed.connect(_choose_placement_mode)
 	column.add_child(place_button)
 	snapshot_button = Button.new()
 	snapshot_button.name = "RequestMapSnapshot"
@@ -167,31 +167,57 @@ func _add_choice(text: String, callback: Callable) -> void:
 	picker_rows.add_child(button)
 	TouchLayout.style_control(button)
 
-func _choose_creature() -> void:
+func _choose_placement_mode() -> void:
+	if not _pending_place.is_empty():
+		return
+	_clear_picker("Come vuoi piazzare il token?")
+	_add_choice("Piazza accanto a un altro token", _choose_creature.bind("place_token"))
+	_add_choice("Prendi controllo di un token libero", _choose_creature.bind("claim_free_token"))
+
+
+func _choose_creature(action: String = "place_token") -> void:
 	if not _pending_place.is_empty():
 		return
 	_clear_picker("Quale creatura vuoi piazzare?")
 	var creatures: Array[Dictionary] = sheet.get_mobile_placement_creatures()
 	for creature: Dictionary in creatures:
-		_add_choice(String(creature.get("name", "Creatura")), _choose_support.bind(creature))
+		_add_choice(String(creature.get("name", "Creatura")), _choose_target_for_action.bind(creature, action))
 	if creatures.is_empty():
 		picker_title.text = "Crea o importa prima una creatura nelle schede locali."
 
-func _choose_support(creature: Dictionary) -> void:
-	_choose_token(func(token_id: String) -> void:
-		picker.hide()
-		_pending_place = controller.request_action("place_token", {"token_id": token_id, "creature": creature})
-		place_button.disabled = not _pending_place.is_empty()
-		if not _pending_place.is_empty():
-			shell._connection_status.text = "Piazzamento in corso…", "Accanto a quale token?")
 
-func _choose_token(callback: Callable, title: String) -> void:
+func _choose_target_for_action(creature: Dictionary, action: String) -> void:
+	var claiming: bool = action == "claim_free_token"
+	_choose_token(_send_placement_request.bind(creature, action),
+		"Quale token libero vuoi sostituire?" if claiming else "Accanto a quale token?",
+		claiming)
+
+
+func _choose_support(creature: Dictionary) -> void:
+	_choose_target_for_action(creature, "place_token")
+
+
+func _send_placement_request(creature: Dictionary, action: String, token_id: String) -> void:
+	picker.hide()
+	_pending_place = controller.request_action(action, {"token_id": token_id, "creature": creature})
+	place_button.disabled = not _pending_place.is_empty()
+	if not _pending_place.is_empty():
+		shell._connection_status.text = "Associazione in corso…" if action == "claim_free_token" else "Piazzamento in corso…"
+
+
+func _choose_token(callback: Callable, title: String, free_only: bool = false) -> void:
 	_clear_picker(title)
 	var data: Dictionary = controller.get_map_data()
+	var choices: int = 0
 	for token: Dictionary in data.get("tokens", []):
+		if free_only and not bool(token.get("free", false)):
+			continue
 		_add_choice(String(token.get("name", "Token")), callback.bind(String(token.id)))
-	if data.get("tokens", []).is_empty():
-		picker_title.text = "Collega un desktop con una mappa e almeno un token visibile."
+		choices += 1
+	if choices == 0:
+		picker_title.text = ("Nessun token libero disponibile nella mappa. Aggiorna la connessione."
+			if free_only else "Collega un desktop con una mappa e almeno un token visibile.")
+
 
 func _request_selected_snapshot(token_id: String) -> void:
 	picker.hide()
@@ -388,12 +414,12 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 			_apply_spell_status(result.targeting)
 		_send_snapshot()
 		return
-	if action == "place_token" and id == _pending_place:
+	if action in ["place_token", "claim_free_token"] and id == _pending_place:
 		_pending_place = ""
 		place_button.disabled = false
 		if bool(result.get("ok", false)):
 			sheet.link_mobile_token(String(result.get("creature_id", "")), String(result.get("token_id", "")))
-			shell._connection_status.text = "Token piazzato: " + String(result.get("name", ""))
+			shell._connection_status.text = ("Token associato: " if action == "claim_free_token" else "Token piazzato: ") + String(result.get("name", ""))
 			_request_selected_snapshot(String(result.get("token_id", "")))
 		else:
 			shell._show_touch_help(String(result.get("error", "Piazzamento non riuscito.")))
