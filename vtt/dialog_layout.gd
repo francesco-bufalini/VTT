@@ -19,6 +19,11 @@ static func popup(
 	if touch:
 		preload("res://vtt/mobile/touch_layout.gd").fit_dialog(dialog)
 	dialog.wrap_controls = not touch
+	if touch:
+		# Native buttons and delayed Control measurements cannot force an
+		# embedded Android/window popup beyond the visible touchscreen.
+		var bounds := Vector2i(dialog.get_tree().root.get_visible_rect().size)
+		dialog.max_size = (bounds - Vector2i(12, 12)).max(Vector2i(1, 1))
 	dialog.child_controls_changed()
 	dialog.reset_size()
 	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
@@ -62,5 +67,15 @@ static func _check_first_frame_layout(dialog: Window) -> void:
 	var touch := OS.has_feature("mobile") or tree.root.has_meta("vtt_touch_layout")
 	var margin := Vector2i(12, 12) if touch else Vector2i(24, 24)
 	dialog.min_size = Vector2i.ZERO
-	dialog.size = dialog.size.min(available - margin)
+	var allowed := (available - margin).max(Vector2i(1, 1))
+	if touch:
+		dialog.max_size = allowed
+	dialog.size = dialog.size.min(allowed)
 	dialog.position = (available - dialog.size) / 2
+	# The native confirmation row can get a second size pass. Keep the
+	# visible popup constrained without altering a user's desktop layout.
+	if touch:
+		await tree.process_frame
+		if is_instance_valid(dialog) and dialog.visible:
+			dialog.size = dialog.size.min(allowed)
+			dialog.position = (available - dialog.size) / 2

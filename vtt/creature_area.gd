@@ -1289,7 +1289,7 @@ func _build_ui() -> void:
 		saving_throw.custom_minimum_size.x = 44
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		save_cell.add_child(saving_throw)
-		abilities_row.add_child(save_icon)
+		save_cell.add_child(save_icon)
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
