@@ -139,6 +139,11 @@ func _ready() -> void:
 	_presence.document_delivered.connect(func(_id: String) -> void:
 		creature_area.call("_set_status", "Documento consegnato al destinatario.")
 	)
+	_presence.item_received.connect(
+		Callable(creature_area, "receive_shared_item"))
+	_presence.item_delivered.connect(func(_id: String) -> void:
+		creature_area.call("_set_status", "Oggetto consegnato al destinatario.")
+	)
 	_presence.request_refresh()
 	# Standalone dice/chat is offline by default; the mobile session shell
 	# supplies a real session-scoped sync when multiplayer is available.
@@ -391,7 +396,7 @@ func _input(event: InputEvent) -> void:
 							action.pressed.emit()
 							break
 				elif Time.get_ticks_msec() - _finger_started_msec >= 550:
-					if not _show_document_long_press(event.position):
+					if not _show_document_long_press(event.position) and not _show_inventory_item_long_press(event.position):
 						call_deferred("_explain_touch", event.position)
 				else:
 					_dispatch_touch_tap(event.position)
@@ -429,6 +434,26 @@ func _show_document_long_press(at: Vector2) -> bool:
 	if index < 0:
 		return false
 	documents.call("_open_share_menu", index, local_point)
+	return true
+
+
+func _show_inventory_item_long_press(at: Vector2) -> bool:
+	if _active_page != 0 or creature_area == null:
+		return false
+	var sheet: Node = creature_area
+	if sheet.has_method("is_touch_library_visible") and bool(sheet.call("is_touch_library_visible")):
+		return false
+	var inventory: Node = sheet.get("_inventory_ui") as Node
+	if inventory == null or not (inventory as Control).is_visible_in_tree():
+		return false
+	var list: ItemList = inventory.get("_inventory_list") as ItemList
+	if list == null or not list.is_visible_in_tree() or not list.get_global_rect().has_point(at):
+		return false
+	var local_position: Vector2 = at - list.get_global_rect().position
+	var index: int = list.get_item_at_position(local_position, true)
+	if index < 0:
+		return false
+	inventory.call("_open_item_share_menu", index, local_position)
 	return true
 
 
