@@ -124,7 +124,7 @@ func _ready() -> void:
 	_exit_dialog.confirmed.connect(func() -> void: get_tree().quit())
 	ui_root.add_child(_exit_dialog)
 	TouchLayout.fit_dialog(_exit_dialog)
-	for node: Node in ui_root.find_children("*", "Window", true, false):
+	for node: Node in find_children("*", "Window", true, false):
 		_install_window_touch(node as Window)
 		if node is AcceptDialog:
 			node.about_to_popup.connect(_fit_touch_dialog.bind(node))
@@ -343,7 +343,7 @@ func _go_back() -> void:
 	if _active_page == 0 and (creature_area as CreatureSheet).close_touch_section_drawer():
 		return
 	# Close the current popup before changing the screen underneath it.
-	var windows := ui_root.find_children("*", "Window", true, false)
+	var windows := find_children("*", "Window", true, false)
 	for index: int in range(windows.size() - 1, -1, -1):
 		var popup := windows[index] as Window
 		if popup.visible:
@@ -435,7 +435,7 @@ func _show_document_long_press(at: Vector2) -> bool:
 func _touch_scroll_bars(at: Vector2) -> Array[ScrollBar]:
 	var scroll_root: Node = ui_root
 	var point := at
-	for node: Node in ui_root.find_children("*", "Window", true, false):
+	for node: Node in find_children("*", "Window", true, false):
 		var window := node as Window
 		if window.visible and not window is PopupMenu:
 			scroll_root = window
@@ -460,7 +460,7 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 	# Resolve buttons in the active embedded window directly. Its viewport
 	# uses window-local coordinates; root synthetic clicks can miss Cancel.
 	var active_window: Window = get_window()
-	for node: Node in ui_root.find_children("*", "Window", true, false):
+	for node: Node in find_children("*", "Window", true, false):
 		var popup := node as Window
 		if popup.visible and not popup is PopupMenu:
 			active_window = popup

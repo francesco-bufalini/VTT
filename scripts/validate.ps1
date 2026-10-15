@@ -111,6 +111,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 
 $fastTests = @(
     "test_map_data_controller.gd",
+    "test_mobile_action_limits.gd",
     "test_mobile_map_actions.gd",
     "test_mobile_miniature_picker.gd",
     "test_mobile_main_menu.gd",
@@ -135,6 +136,7 @@ $fastTests = @(
     "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
+    "test_quick_custom_dialogs.gd",
     "test_spell_origins.gd",
     "test_dice_bonus_scopes.gd",
     "test_inventory_quantities.gd",

@@ -106,6 +106,14 @@ func run() -> void:
 		"Only feat-granting origins should be listed.")
 	_select_source(feats._origin_picker, "item:test_potion")
 	assert(not feats._catalog_matches.is_empty())
+	# The first catalog row now creates a custom feat; choose a real entry.
+	var actual_feat := -1
+	for index: int in range(feats._catalog_matches.size()):
+		if String(feats._catalog_matches[index].get("id", "")) != "__create_custom_feat__":
+			actual_feat = index
+			break
+	assert(actual_feat >= 0)
+	feats._feat_picker.select(actual_feat)
 	feats._add_feat()
 	assert(feats._origin_cards.get_child_count() == 2,
 		"The origin of a new feat should appear after assignment.")
