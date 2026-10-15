@@ -390,7 +390,8 @@ func _input(event: InputEvent) -> void:
 							action.pressed.emit()
 							break
 				elif Time.get_ticks_msec() - _finger_started_msec >= 550:
-					call_deferred("_explain_touch", event.position)
+					if not _show_document_long_press(event.position):
+						call_deferred("_explain_touch", event.position)
 				else:
 					_dispatch_touch_tap(event.position)
 	elif event is InputEventScreenDrag:
@@ -402,6 +403,33 @@ func _input(event: InputEvent) -> void:
 		if _dragging:
 			TouchLayout.scroll_gesture(_gesture_bars, _finger_position.y - event.position.y)
 		_finger_position = event.position
+
+
+# Mobile consumes raw touch events before child ItemList.gui_input gets
+# them; intercept Documenti here rather than triggering the general
+# long-press explanation popup.
+func _show_document_long_press(at: Vector2) -> bool:
+	if _active_page != 0 or creature_area == null:
+		return false
+	var sheet: Node = creature_area
+	if sheet.has_method("is_touch_library_visible") and bool(sheet.call("is_touch_library_visible")):
+		return false
+	var inventory: Node = sheet.get("_inventory_ui") as Node
+	if inventory == null:
+		return false
+	var documents: Node = inventory.get("_documents_tab") as Node
+	if documents == null or not (documents as Control).is_visible_in_tree():
+		return false
+	var list: ItemList = documents.get("_list") as ItemList
+	if list == null or not list.is_visible_in_tree() or not list.get_global_rect().has_point(at):
+		return false
+	var local_point := at - list.get_global_rect().position
+	var index := list.get_item_at_position(local_point, true)
+	if index < 0:
+		return false
+	documents.call("_open_share_menu", index, local_point)
+	return true
+
 
 func _touch_scroll_bars(at: Vector2) -> Array[ScrollBar]:
 	var scroll_root: Node = ui_root
