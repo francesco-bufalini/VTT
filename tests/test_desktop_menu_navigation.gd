@@ -38,7 +38,7 @@ func _run() -> void:
 		if not expected.has(button.text) or tested.has(button.text):
 			continue
 		button.pressed.emit()
-		assert(sheet._tabs.get_tab_control(sheet._tabs.current_tab).name == "Origini")
+		assert(sheet._tabs.get_tab_control(sheet._tabs.current_tab).name == "Modifica personaggio")
 		assert(sheet._editor_section_picker.selected == int(expected[button.text]))
 		assert(not button.tooltip_text.is_empty())
 		tested[button.text] = true

@@ -59,7 +59,7 @@ static func reload_enrichment() -> void:
 	_condition_definition_cache.clear()
 	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
 	if extension != null:
-		extension.call("reload")
+		extension.call("reload_overlays")
 
 
 static func enrichment_diagnostics() -> Array[String]:

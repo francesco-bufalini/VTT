@@ -43,7 +43,7 @@ func _run() -> void:
 	var metadata := FileAccess.open(overlay_path, FileAccess.WRITE)
 	metadata.store_string(JSON.stringify(overlay))
 	metadata.close()
-	Enrichment.reload([integration_folder])
+	Enrichment.reload_overlays([integration_folder])
 	var extended: Dictionary = Spells.catalog_spell(String(spells[0].id))
 	assert(extended.get("name") == "Prism Pulse", "Enrichment must not replace compendium identity")
 	assert(extended.get("target_mode") == "token_then_point")
@@ -53,7 +53,9 @@ func _run() -> void:
 	assert(not Catalog.home_entries("spells")[0].has("aoe_radius_feet"), "Source remains unchanged")
 	assert(FileAccess.get_file_as_string(native_path) == original_text, "Native JSON remains intact")
 
-	Enrichment.reload()
+	var overlay_revision: int = Enrichment.revision()
+	Catalog.reload_enrichment()
+	assert(Enrichment.revision() > overlay_revision, "Catalog reload must refresh overlay data, not reload the script resource")
 	assert(Enrichment.extension_for("spells", "meteor_swarm").has("meteor_drop_height_feet"),
 		"Existing authored mechanics must survive separation")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(overlay_path))
