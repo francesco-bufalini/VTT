@@ -4,10 +4,7 @@ extends RefCounted
 # only homebrew definitions actually referenced by the sheet (including
 # owned documents), never the whole private homebrew folder.
 const Catalog = preload("res://vtt/content_catalog.gd")
-const CATEGORIES := ["items", "documents", "subclasses", "subclass_features", "monsters",
-	"races", "classes", "spells", "conditions", "diseases", "effects",
-	"feats", "backgrounds", "tools", "weapons", "armor", "magic_items",
-	"mundane_items", "class_features", "languages", "species_traits"]
+const CATEGORIES := Catalog.CATEGORIES
 const IMPORT_DIR := "user://homebrew/portable_imports"
 const MAX_ENTRIES := 250
 const MAX_BYTES := 2 * 1024 * 1024
