@@ -81,7 +81,13 @@ class FightClubMonsterResourceTests(unittest.TestCase):
                         self.assertIn(item["recharge_min"], range(2, 7))
             total += len(data["monsters"])
         self.assertGreaterEqual(len(all_sources), 20)
-        self.assertGreaterEqual(total, 400)
+        self.assertEqual(total, 629, "All 31 selected 2014 bestiaries must be bundled")
+        mm = json.loads(converter.OUTPUTS[-1].read_text(encoding="utf-8"))
+        self.assertEqual(len(mm["source_files"]), 1)
+        self.assertTrue(mm["source_files"][0].endswith("/bestiary-mm.xml"))
+        self.assertEqual(len(mm["monsters"]), 148)
+        self.assertEqual(sum(len(m["resources"]) for m in mm["monsters"]), 225)
+        self.assertTrue(all(m["source"] == "MM" for m in mm["monsters"]))
 
 
 if __name__ == "__main__":
