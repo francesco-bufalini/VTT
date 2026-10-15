@@ -9,6 +9,7 @@ on:
       - "vtt/**"
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_document_homebrew.gd"
+      - "tests/test_content_catalog.gd"
       - "tests/test_charoptions_as_feats.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
@@ -45,6 +46,10 @@ jobs:
             /network/
             /tests/test_origin_granted_spells.gd
             /tests/test_document_homebrew.gd
+            /tests/test_content_catalog.gd
+            /token.tscn
+            /token.gd
+            /vision_cone.gd
             /tests/test_charoptions_as_feats.gd
             /tests/test_origin_spell_editor.gd
             /tests/test_creature_spellcasting_cast.gd
@@ -76,6 +81,8 @@ jobs:
           cp -R network /tmp/vtt-origin-test/
           cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
           cp tests/test_document_homebrew.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_content_catalog.gd /tmp/vtt-origin-test/tests/
+          cp token.tscn token.gd vision_cone.gd /tmp/vtt-origin-test/
           cp tests/test_charoptions_as_feats.gd /tmp/vtt-origin-test/tests/
           cp tests/test_origin_spell_editor.gd /tmp/vtt-origin-test/tests/
           cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
@@ -99,6 +106,7 @@ jobs:
               --path /tmp/vtt-origin-test --check-only --script "res://${script}"
           done
           for test in \
+            test_content_catalog \
             test_document_homebrew \
             test_powers_tracker_layout \
             test_origin_granted_spells \
