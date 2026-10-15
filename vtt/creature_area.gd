@@ -444,6 +444,63 @@ func find_linked_token_for_creature(creature_id: String) -> CharacterBody3D:
 	return null
 
 
+# Claim an unlinked token already on the desktop board. Preserve its
+# position and stable synchronization ID; the sheet owns all public identity.
+func claim_free_scene_token(token: CharacterBody3D, creature_id: String) -> bool:
+	if (token == null or not is_instance_valid(token)
+		or not board_root.has_method("is_free_scene_token")
+		or not bool(board_root.call("is_free_scene_token", token))):
+		return false
+	var record: Dictionary = {}
+	for owned: Dictionary in _archive.list_owned():
+		if String(owned.get("id", "")) == creature_id and Owner.is_owner(owned):
+			record = owned
+			break
+	if record.is_empty() or find_linked_token_for_creature(creature_id) != null:
+		return false
+	var sync: Node = board_root.get("board_sync") as Node
+	if sync == null:
+		return false
+	var sync_id: String = String(sync.call("get_sync_id_for_node", token))
+	if sync_id.is_empty():
+		return false
+	var previous_appearance: Dictionary = token.call("get_appearance_state")
+	var previous_transform: Transform3D = token.global_transform
+	var bottom: float = token.global_position.y - float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
+	# A missing/delayed miniature must not claim the target prematurely.
+	if not bool(board_root.call("apply_creature_sheet_appearance", token, record, false)):
+		return false
+	record["linked_token_sync_id"] = sync_id
+	record["linked_token_name"] = String(record.get("name", ""))
+	if _archive.save(record) != OK:
+		token.call("apply_appearance_state", previous_appearance)
+		token.global_transform = previous_transform
+		_set_status("Impossibile salvare l'associazione del token.")
+		return false
+	board_root.call("push_undo_state")
+	for field: String in ["player_character_id", "player_character_name",
+		"master_creature_id", "master_creature_name", "master_creature_side"]:
+		if token.has_meta(field):
+			token.remove_meta(field)
+	token.set_meta("creature_id", creature_id)
+	token.set_meta("creature_owner_id", Owner.local_id())
+	token.set_meta("default_miniature_id", String(record.get("default_miniature_id", "")))
+	if String(record.get("kind", "")) == "character":
+		token.set_meta("player_character_id", creature_id)
+		token.set_meta("player_character_name", String(record.get("name", "")))
+	else:
+		token.set_meta("master_creature_id", creature_id)
+		token.set_meta("master_creature_name", String(record.get("name", "")))
+		token.set_meta("master_creature_side", String(record.get("side", "ally")))
+	board_root.call("apply_creature_sheet_properties", token, record)
+	token.global_position.y = bottom + float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
+	_sync_token_health(record)
+	_replace_current_record(record)
+	_refresh_creature_eye_buttons()
+	_set_status("Token libero associato alla scheda; nome, condizioni, aspetto e taglia aggiornati.")
+	return true
+
+
 func link_spawned_token(token: CharacterBody3D, creature_id: String) -> void:
 	if token == null or not is_instance_valid(token):
 		return
