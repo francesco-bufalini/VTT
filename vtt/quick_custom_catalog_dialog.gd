@@ -73,6 +73,10 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 	var name := LineEdit.new()
 	name.placeholder_text = "Nome del contenuto personalizzato"
 	form.add_child(name)
+	dialog.get_ok_button().disabled = true
+	name.text_changed.connect(func(value: String) -> void:
+		dialog.get_ok_button().disabled = value.strip_edges().is_empty()
+	)
 	_add_field(form, "Descrizione")
 	var description := TextEdit.new()
 	description.custom_minimum_size.y = 92
@@ -166,9 +170,6 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 		value.step = 1
 		value.rounded = true
 		form.add_child(value)
-	var message := Label.new()
-	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	form.add_child(message)
 	dialog.confirmed.connect(func() -> void:
 		if name.text.strip_edges().is_empty():
 			return
@@ -179,8 +180,16 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 			details["value"] = int(value.value)
 		var saved: Dictionary = Store.create(category, name.text, description.text,
 			proficiencies, details)
-		if not saved.is_empty() and on_created.is_valid():
-			on_created.call(saved)
+		if not saved.is_empty():
+			if on_created.is_valid():
+				on_created.call(saved)
+		else:
+			var warning := AcceptDialog.new()
+			warning.title = "Impossibile salvare"
+			warning.dialog_text = "Controlla che il nome non sia già usato da un altro contenuto personalizzato e che il catalogo locale sia scrivibile."
+			parent.add_child(warning)
+			warning.popup_hide.connect(func() -> void: warning.queue_free())
+			DialogLayout.popup(warning, Vector2i(430, 190), 0.90)
 	)
 	DialogLayout.popup(dialog, Vector2i(520, 490), 0.90)
 	name.grab_focus.call_deferred()
@@ -193,7 +202,7 @@ static func delete_popup(parent: Control, entry: Dictionary, on_removed: Callabl
 	dialog.title = "Elimina contenuto personalizzato"
 	dialog.ok_button_text = "Elimina"
 	dialog.cancel_button_text = "Annulla"
-	dialog.dialog_text = "Eliminare '%s' dal catalogo locale?\nLe copie già assegnate ai personaggi non saranno cancellate automaticamente." % String(entry.get("name", ""))
+	dialog.dialog_text = "Eliminare '%s' dal catalogo locale?\nLe schede che lo usano potrebbero perdere i benefici automatici.\nGli oggetti già nell'inventario rimangono." % String(entry.get("name", ""))
 	parent.add_child(dialog)
 	dialog.confirmed.connect(func() -> void:
 		if Store.remove(entry) and on_removed.is_valid():
