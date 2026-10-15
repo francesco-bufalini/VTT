@@ -169,3 +169,31 @@ static func migrate_legacy_species(record: Dictionary) -> Dictionary:
 				copy["subrace_id"] = String(child.get("id", ""))
 				return copy
 	return record
+
+
+# Lookup by the stored stable identity. Never trust an old saved speed_base:
+# selecting a race/subrace changes the walking and special speeds immediately.
+static func speed_for_record(record: Dictionary) -> Variant:
+	var race_name: String = String(record.get("species", ""))
+	var race_source: String = String(record.get("species_source", ""))
+	var race_id: String = String(record.get("species_id", ""))
+	if race_name.is_empty() and race_id.is_empty():
+		return {}
+	var parent: Dictionary = {}
+	for entry: Dictionary in Catalog.entries("races"):
+		if (not race_id.is_empty() and String(entry.get("id", "")) == race_id) or (
+			String(entry.get("name", "")).nocasecmp_to(race_name) == 0
+			and String(entry.get("source", "")) == race_source
+		):
+			parent = entry
+			break
+	if parent.is_empty():
+		return {}
+	var subrace_name: String = String(record.get("subrace", ""))
+	if subrace_name.is_empty():
+		return parent.get("speed", {})
+	for subrace: Dictionary in subraces_for(parent):
+		if (String(subrace.get("name", "")).nocasecmp_to(subrace_name) == 0
+			and String(subrace.get("source", "")) == String(record.get("subrace_source", ""))):
+			return effective_race(parent, subrace).get("speed", parent.get("speed", {}))
+	return parent.get("speed", {})

@@ -364,7 +364,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	if not defaults.get("classes", []) is Array:
 		defaults["classes"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
-	defaults["xp"] = maxi(CreatureRules.experience_for_level(int(defaults["level"])), int(value.get("xp", 0)))
+	defaults["xp"] = maxi(CreatureRules.minimum_experience(defaults), int(value.get("xp", 0)))
 	var classes_value: Variant = defaults.get("classes", [])
 	if classes_value is Array and (classes_value as Array).size() == 1:
 		var first_value: Variant = (classes_value as Array)[0]
@@ -421,9 +421,13 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
 	defaults["party_id"] = String(defaults.get("party_id", ""))
 	defaults["armor_class"] = maxi(0, int(defaults.get("armor_class", 10)))
-	defaults["speed_base"] = maxi(0, int(value.get("speed_base", value.get("speed", 30))))
+	# Character speed is supplied by the selected race/subrace; legacy manual
+	# values are only a fallback when that catalogue entry is unavailable.
+	var selected_speed: Variant = RaceRules.speed_for_record(defaults)
+	defaults["speed_base"] = (CreatureRules.walking_speed(selected_speed)
+		if selected_speed != {} else maxi(0, int(value.get("speed_base", value.get("speed", 30)))))
 	defaults["speed"] = int(defaults["speed_base"])
-	defaults["speed_is_custom"] = bool(defaults.get("speed_is_custom", false))
+	defaults["speed_is_custom"] = false
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
 	defaults["exhaustion"] = clampi(int(defaults.get("exhaustion", 0)), 0, 6)
 	defaults["max_hp"] = maxi(0, Bonuses.value(defaults, "hp"))

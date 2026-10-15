@@ -19,6 +19,48 @@ static func experience_for_level(level: int) -> int:
 	return LEVEL_XP[clampi(level, 0, 20)]
 
 
+# XP for monsters is awarded by effective challenge rating, not by the
+# character level-up thresholds. Keep the original fractional bestiary CR.
+const MONSTER_CR_XP := [
+	10, 200, 450, 700, 1100, 1800, 2300, 2900, 3900, 5000,
+	5900, 7200, 8400, 10000, 11500, 13000, 15000, 18000,
+	20000, 22000, 25000, 33000, 41000, 50000, 62000,
+	75000, 90000, 105000, 120000, 135000, 155000
+]
+
+
+static func class_levels(record: Dictionary) -> int:
+	var total: int = 0
+	for cls: Dictionary in level_classes(record):
+		total += maxi(0, int(cls.get("level", 0)))
+	return total
+
+
+static func effective_monster_cr(record: Dictionary) -> float:
+	return monster_cr_value(record.get("stat_block", {})) + float(class_levels(record))
+
+
+static func monster_experience_for_cr(cr: float) -> int:
+	if cr < 1.0:
+		if cr <= 0.0:
+			return 10
+		if cr <= 0.125:
+			return 25
+		if cr <= 0.25:
+			return 50
+		return 100
+	# Fractional CRs after adding class levels have no official XP entry.
+	# Use the highest full CR not exceeding the effective rating.
+	return MONSTER_CR_XP[clampi(floori(cr), 1, 30)]
+
+
+static func minimum_experience(record: Dictionary) -> int:
+	if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
+		return monster_experience_for_cr(effective_monster_cr(record))
+	return experience_for_level(class_levels(record))
+
+
+
 # The monster's challenge rating remains in the original stat block (including
 # fractions), while the displayed class level is always an integer.
 static func monster_level(stat: Dictionary) -> int:
@@ -308,10 +350,7 @@ static func automatic_hit_dice(character: Dictionary) -> String:
 
 
 static func proficiency_bonus(character: Dictionary) -> int:
-	var total: int = 0
-	for cls: Dictionary in level_classes(character):
-		total += maxi(0, int(cls.get("level", 1)))
-	return 2 + (clampi(total, 1, 20) - 1) / 4
+	return 2 + (clampi(class_levels(character), 1, 20) - 1) / 4
 
 
 static func spellcasting_limits(character: Dictionary) -> Dictionary:
