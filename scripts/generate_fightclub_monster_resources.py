@@ -23,6 +23,15 @@ OUTPUTS = [
     ROOT / "vtt/data/fightclub_monster_resources_2014_b.json",
     ROOT / "vtt/data/fightclub_monster_resources_2014_c.json",
 ]
+# Fight Club filenames are not always 5etools source IDs.
+# Checked against 5etools data/bestiary/index.json.
+SOURCE_ALIASES = {
+    "MOSH": "SCC", "BOMT": "BMT", "TWBTW": "WBtW",
+    "PABSO": "PaBTSO", "PAM": "MPP", "VER": "VEoR",
+    "QIS": "QftIS", "KGV": "KftGV",
+    "MC2DC": "MCV2DC", "MC1SC": "MCV1SC", "MC4EC": "MCV4EC",
+    "MMV1": "MisMV1", "VRGTR": "VRGR",
+}
 SECTIONS = {"trait", "action", "bonus", "reaction", "legendary", "mythic"}
 
 
@@ -83,7 +92,8 @@ def regenerate(checkout: Path, *, check: bool = False) -> int:
             match = re.fullmatch(r"bestiary-([a-z0-9]+)\.xml", path.name, re.I)
             if not match:
                 raise ValueError(f"Unexpected source file: {path}")
-            rows.extend(parse_bestiary(path, match[1].upper()))
+            source_id = SOURCE_ALIASES.get(match[1].upper(), match[1].upper()).upper()
+            rows.extend(parse_bestiary(path, source_id))
         unique: dict[tuple[str, str], dict] = {}
         for row in rows:
             identity = (row["source"], row["name"].casefold())
