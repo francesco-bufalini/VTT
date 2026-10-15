@@ -80,11 +80,17 @@ static func is_learned(record: Dictionary, option: Dictionary) -> bool:
 	return false
 
 
-static func active_count(inventory: Array) -> int:
+static func active_count(inventory: Array, creator_id: String = "") -> int:
 	var count := 0
 	for raw: Variant in inventory:
-		if raw is Dictionary and int(raw.get("quantity", 0)) > 0 and raw.get("infusion", {}) is Dictionary and not (raw.get("infusion", {}) as Dictionary).is_empty():
-			count += 1
+		if not raw is Dictionary or int(raw.get("quantity", 0)) <= 0:
+			continue
+		var infusion: Variant = raw.get("infusion", {})
+		if not infusion is Dictionary or (infusion as Dictionary).is_empty():
+			continue
+		if not creator_id.is_empty() and String(infusion.get("creator_id", "")) != creator_id:
+			continue
+		count += 1
 	return count
 
 
