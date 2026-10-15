@@ -5,6 +5,7 @@ extends RefCounted
 # the value in the save file. Source removal automatically withdraws the grant.
 const ABILITY_GRANTS_PATH := "res://vtt/data/structured_ability_grants_5etools.json"
 const Items = preload("res://vtt/creature_item_rules.gd")
+const Infusions = preload("res://vtt/creature_infusions.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
@@ -81,6 +82,9 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 		if item_id.is_empty():
 			continue
 		var entry: Dictionary = Items.entry_for(owned)
+		# Infusion bonuses use the same typed item fields and equipment gates as
+		# ordinary catalog items, without creating a second bonus evaluator.
+		entry.merge(Infusions.numeric_bonuses(record, owned), true)
 		var sid: String = "item:" + item_id
 		var kind: String = Items.kind(entry)
 		var slots: Array = Items.slots(owned)
