@@ -22,7 +22,7 @@ JSON files in `vtt/data/fightclub_monster_resources_2014_{a,b,c}.json`.
 The source-file allowlists in these files are the reproducible input manifest.
 The huge core Monster Manual and 2024 bestiaries are **not in this snapshot**;
 the generator can be extended deliberately when their complete source files
-are available locally. An unrelated book's monster with the same name never
+are available locally. Fight Club filename codes which differ from the 5etools bestiary index\n(e.g. `MOSH` to `SCC`, `PABSO` to `PaBTSO`) are explicitly mapped at\nbuild time. An unrelated book's monster with the same name never
 inherits these counters.
 
 ## Supported <recharge> values
