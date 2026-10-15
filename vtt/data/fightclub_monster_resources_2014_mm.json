@@ -1,0 +1,2373 @@
+{
+  "schema_version": 1,
+  "origin_repository": "vidalvanbergen/FightClub5eXML",
+  "edition": "2014",
+  "source_files": [
+    "Sources/DND_5e/WizardsOfTheCoast/01_Core/03_Monster_Manual/bestiary-mm.xml"
+  ],
+  "monsters": [
+    {
+      "source": "MM",
+      "name": "Aboleth",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enslave (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Abominable Yeti",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Black Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Acid Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Blue Dracolich",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Blue Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Brass Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Bronze Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Copper Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Gold Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Green Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Poison Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Red Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult Silver Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Adult White Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Air Elemental",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Whirlwind (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Black Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Acid Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Blue Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Brass Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Bronze Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Copper Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Gold Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Green Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Poison Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Red Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient Silver Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ancient White Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Androsphinx",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Roar (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ankheg",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Acid Spray (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Assassin",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Balor",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Banshee",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Wail (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Barbed Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Barlgura",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Bearded Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Behir",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Beholder",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Black Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Acid Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Blink Dog",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Teleport (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Blue Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Boar",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Relentless (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Bone Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Brass Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Bronze Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Chain Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animate Chains (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Chasme",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Chimera",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Clay Golem",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Haste (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Cloaker",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Phantasms (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Copper Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Darkmantle",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Darkness Aura (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Death Knight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Hellfire Orb (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Death Tyrant",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (1/Turn)",
+          "max": 1,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Demilich",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Howl (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (4/Turn)",
+          "max": 4,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Deva",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Dragon Turtle",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Steam Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Dretch",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fetid Cloud (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Drow Mage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Drow Priestess of Lolth",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Duergar",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Invisibility (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Dust Mephit",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Innate Spellcasting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Blinding Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Empyrean",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Erinyes",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ettercap",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Web (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Blue)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Green)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Indigo)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Older)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Orange)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Red)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Violet)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Yellow)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Faerie Dragon (Younger)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Flumph",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Stench Spray (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Fomorian",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Curse of the Evil Eye (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Galeb Duhr",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animate Boulders (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ghost",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Possession (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Giant Boar",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Relentless (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Giant Octopus",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Ink Cloud (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Giant Spider",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Web (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gibbering Mouther",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blinding Spittle (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Glabrezu",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gnoll Pack Lord",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Incite Rampage (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gold Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gorgon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Petrifying Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gray Ooze",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Psychic Gray Ooze (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Green Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Poison Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Gynosphinx",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Half-Red Dragon Veteran",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Hell Hound",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Hezrou",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Hobgoblin Captain",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Hobgoblin Warlord",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Horned Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ice Devil",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Wall of Ice (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Ice Mephit",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Innate Spellcasting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Frost Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Iron Golem",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Poison Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Knight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Kraken",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Lich",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (4/Turn)",
+          "max": 4,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Lizardfolk Shaman",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Change Shape (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Magma Mephit",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Innate Spellcasting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Marilith",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Mind Flayer",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Mind Flayer Arcanist",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Mud Mephit",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mud Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Mummy Lord",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (5/Turn)",
+          "max": 5,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Myconid Adult",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Pacifying Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Variant: Zuggtomoy's Empowerment",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Myconid Sovereign",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animating Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Variant: Zuggtomoy's Empowerment",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Myconid Sprout",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Rapport Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Nalfeshnee",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Horror Nimbus (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Night Hag",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Nightmare Haunting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Nycaloth",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Yugoloth Summoning",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Octopus",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Ink Cloud (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Orc War Chief",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Battle Cry (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Pentadrone",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Paralysis Gas (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Pit Fiend",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Devil Summoning (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Planetar",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Quasit",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Scare (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Red Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Silver Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Smoke Mephit",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Innate Spellcasting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Cinder Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Solar",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Spy",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Steam Mephit",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Innate Spellcasting (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Steam Breath (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Mephits (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Stone Golem",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Slow (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Storm Giant",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Strike (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Variant: New Giant Options",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Tarrasque",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Treant",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animate Trees (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Unicorn",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Teleport (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Vampire",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Children of the Night (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Vampire Spellcaster",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Children of the Night (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Vampire Warrior",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Children of the Night (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Vine Blight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Entangling Plants (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Vrock",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Spores (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Stunning Screech (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Water Elemental",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Whelm (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Wereboar",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Relentless (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "White Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Winter Wolf",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Yochlol",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Variant: Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Black Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Acid Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Blue Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Brass Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Bronze Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Copper Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Gold Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Green Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Poison Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Red Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Red Shadow Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Shadow Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young Silver Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "MM",
+      "name": "Young White Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    }
+  ]
+}
