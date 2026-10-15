@@ -1526,8 +1526,7 @@ func _apply_infusion() -> void:
 		_infusion_message("Livello dell'Artefice insufficiente per questa infusione.")
 		return
 	var owned: Dictionary = _inventory[index]
-	if int(owned.get("quantity", 0)) != 1:
-		_infusion_message("Le infusioni richiedono un oggetto singolo: separa prima la pila.")
+	if int(owned.get("quantity", 0)) <= 0:
 		return
 	if not Infusions.item_eligible(selected, owned):
 		_infusion_message("Oggetto incompatibile con i prerequisiti di questa infusione.")
@@ -1546,6 +1545,17 @@ func _apply_infusion() -> void:
 	if (not old is Dictionary or (old as Dictionary).is_empty()) and Infusions.active_count(_inventory, _loaded_creature_id) >= Infusions.active_limit(record):
 		_infusion_message("Limite di oggetti infusi raggiunto: termina prima un'altra infusione.")
 		return
+	# A single physical item receives the infusion. Splitting a stack preserves
+	# its remaining ordinary copies without inventing a second item system.
+	if int(owned.get("quantity", 1)) > 1:
+		var remainder: Dictionary = owned.duplicate(true)
+		remainder["quantity"] = int(owned["quantity"]) - 1
+		remainder.erase("infusion")
+		remainder["equipped_slots"] = []
+		remainder["equipped"] = false
+		remainder["attuned"] = false
+		_inventory.append(remainder)
+		owned["quantity"] = 1
 	owned["infusion"] = {
 		"id": selected.get("id", ""), "name": selected.get("name", ""),
 		"source": "TCE", "level": level, "creator_id": _loaded_creature_id,
