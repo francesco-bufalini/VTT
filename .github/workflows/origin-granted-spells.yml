@@ -89,8 +89,15 @@ jobs:
           printf 'config_version=5\n' > /tmp/vtt-origin-test/project.godot
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
             --path /tmp/vtt-origin-test --editor --import --quit
-          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
-            --path /tmp/vtt-origin-test --check-only --script res://vtt/portable_creature_content.gd
+          for script in \
+            vtt/portable_creature_content.gd \
+            vtt/creature_documents_tab.gd \
+            vtt/creature_area.gd \
+            vtt/mobile/creatures_mobile.gd
+          do
+            /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
+              --path /tmp/vtt-origin-test --check-only --script "res://${script}"
+          done
           for test in \
             test_document_homebrew \
             test_powers_tracker_layout \
