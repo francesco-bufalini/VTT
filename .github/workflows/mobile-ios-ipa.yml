@@ -15,7 +15,7 @@ jobs:
   build-ios:
     name: Build unsigned iPhone IPA
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 18
     env:
       GODOT_TAG: 4.7.2-stable
       GODOT_TEMPLATES_VERSION: 4.7.2.stable
@@ -40,6 +40,7 @@ jobs:
           set -euo pipefail
           asset_base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_TAG}"
           curl -fL --retry 3 "${asset_base}/Godot_v${GODOT_TAG}_macos.universal.zip" -o "$RUNNER_TEMP/godot-macos.zip"
+          echo 'c58a24e31d720be9d62f60cb5627c4e695fb72f21b0cfe1bc9ccaa9a3b3ba63e  '"$RUNNER_TEMP/godot-macos.zip" | shasum -a 256 -c -
           mkdir -p "$RUNNER_TEMP/godot"
           unzip -q "$RUNNER_TEMP/godot-macos.zip" -d "$RUNNER_TEMP/godot"
           godot="$RUNNER_TEMP/godot/Godot.app/Contents/MacOS/Godot"
@@ -54,6 +55,7 @@ jobs:
 
           # Extract ONLY the iOS template, not the full multi-platform .tpz.
           curl -fL --retry 3 "${asset_base}/Godot_v${GODOT_TAG}_export_templates.tpz" -o "$RUNNER_TEMP/templates.tpz"
+          echo 'f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011  '"$RUNNER_TEMP/templates.tpz" | shasum -a 256 -c -
           template_dir="$HOME/Library/Application Support/Godot/export_templates/${GODOT_TEMPLATES_VERSION}"
           mkdir -p "$template_dir"
           unzip -p "$RUNNER_TEMP/templates.tpz" templates/ios.zip > "$template_dir/ios.zip"
