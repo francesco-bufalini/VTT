@@ -114,6 +114,8 @@ var _sheet_spawn_pending_record: Dictionary = {}
 var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
+var identity_free_tokens_panel: PanelContainer
+var identity_free_tokens_rows: VBoxContainer
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
 var context_place_creature_menu: PopupMenu
@@ -688,6 +690,83 @@ func _build_identity_placement_hint() -> void:
 	identity_placement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	identity_placement_label.add_theme_font_size_override("font_size", 15)
 	identity_placement_panel.add_child(identity_placement_label)
+	identity_free_tokens_panel = PanelContainer.new()
+	identity_free_tokens_panel.name = "FreeCreaturePlacementTokens"
+	identity_free_tokens_panel.anchor_left = 1.0
+	identity_free_tokens_panel.anchor_right = 1.0
+	identity_free_tokens_panel.offset_left = -248.0
+	identity_free_tokens_panel.offset_right = -10.0
+	identity_free_tokens_panel.offset_top = 115.0
+	identity_free_tokens_panel.offset_bottom = 465.0
+	$UI.add_child(identity_free_tokens_panel)
+	var body := VBoxContainer.new()
+	identity_free_tokens_panel.add_child(body)
+	var caption := Label.new()
+	caption.text = "Oppure usa un token libero:"
+	body.add_child(caption)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(scroll)
+	identity_free_tokens_rows = VBoxContainer.new()
+	identity_free_tokens_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(identity_free_tokens_rows)
+	identity_free_tokens_panel.hide()
+
+
+# A token with any existing creature ownership must never be claimed.
+func is_free_scene_token(node: Node) -> bool:
+	if not node is CharacterBody3D or not tokens_root.is_ancestor_of(node):
+		return false
+	if node.is_queued_for_deletion() or not node.is_visible_in_tree() or not node.is_in_group("dnd_token"):
+		return false
+	for key: String in ["creature_id", "creature_owner_id", "player_character_id", "master_creature_id"]:
+		if not String(node.get_meta(key, "")).is_empty():
+			return false
+	return true
+
+
+func _refresh_free_placement_tokens() -> void:
+	if identity_free_tokens_rows == null:
+		return
+	for child: Node in identity_free_tokens_rows.get_children():
+		identity_free_tokens_rows.remove_child(child)
+		child.queue_free()
+	var count: int = 0
+	for node: Node in tokens_root.get_children():
+		if not is_free_scene_token(node):
+			continue
+		var free_token: CharacterBody3D = node as CharacterBody3D
+		var button := Button.new()
+		button.text = String(free_token.call("get_display_name"))
+		button.tooltip_text = "Associa questa scheda al token, mantenendone la posizione"
+		button.pressed.connect(_claim_free_token_from_placement.bind(free_token))
+		identity_free_tokens_rows.add_child(button)
+		count += 1
+	identity_free_tokens_panel.visible = _sheet_spawn_picking
+	if count == 0:
+		var empty := Label.new()
+		empty.text = "Nessun token libero"
+		identity_free_tokens_rows.add_child(empty)
+
+
+func _claim_free_token_from_placement(token: CharacterBody3D) -> bool:
+	if not _sheet_spawn_picking or not is_instance_valid(token) or not is_free_scene_token(token):
+		_set_identity_placement_hint("Il token non è più libero: scegline un altro.")
+		_refresh_free_placement_tokens()
+		return false
+	var area: Node = get_node_or_null("CreatureArea")
+	if area == null or not area.has_method("claim_free_scene_token"):
+		return false
+	if not bool(area.call("claim_free_scene_token", token, String(_sheet_spawn_record.get("id", "")))):
+		_set_identity_placement_hint("Associazione non riuscita: controlla la scheda o la miniatura.")
+		_refresh_free_placement_tokens()
+		return false
+	_sheet_spawn_picking = false
+	_sheet_spawn_record.clear()
+	_hide_identity_placement_hint()
+	_replace_selection(token)
+	call_deferred("_sync_explicit_token_change", token)
+	return true
 
 
 func _set_identity_placement_hint(text: String) -> void:
@@ -700,6 +779,8 @@ func _set_identity_placement_hint(text: String) -> void:
 func _hide_identity_placement_hint() -> void:
 	if identity_placement_panel != null:
 		identity_placement_panel.hide()
+	if identity_free_tokens_panel != null:
+		identity_free_tokens_panel.hide()
 
 
 func _connect_token_pack_manager() -> void:
@@ -1663,6 +1744,7 @@ func begin_creature_token_placement(record: Dictionary) -> bool:
 		return false
 	_sheet_spawn_record = record.duplicate(true)
 	_sheet_spawn_picking = true
+	_refresh_free_placement_tokens()
 	_ui_owns_mouse = false
 	_set_identity_placement_hint(
 		"Clicca sulla mappa per piazzare la creatura. "
@@ -1690,11 +1772,17 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 		return true
 	if button_event.button_index != MOUSE_BUTTON_LEFT:
 		return false
+	if identity_free_tokens_panel != null and identity_free_tokens_panel.visible and identity_free_tokens_panel.get_global_rect().has_point(button_event.position):
+		return false
 	var point: Vector2 = (
 		_screen_center()
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		else button_event.position
 	)
+	var picked: Node = _raycast_token_from_screen(point, true).get("collider") as Node
+	if is_free_scene_token(picked):
+		_claim_free_token_from_placement(picked as CharacterBody3D)
+		return true
 	if not _set_pending_spawn_from_screen(point):
 		_set_identity_placement_hint(
 			"Punta una superficie valida e clicca per piazzare la creatura."
