@@ -4,6 +4,8 @@ const Catalog = preload("res://vtt/content_catalog.gd")
 const Documents = preload("res://vtt/document_homebrew.gd")
 const Instances = preload("res://vtt/item_instance.gd")
 const Inventory = preload("res://vtt/creature_inventory_tab.gd")
+const PortableContent = preload("res://vtt/portable_creature_content.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 
 
 func _initialize() -> void:
@@ -45,9 +47,17 @@ func _run() -> void:
 		"style": "lettera"
 	}
 	var events: Array = []
+	var deliveries: Array[Dictionary] = []
 	var tab := Inventory.new()
 	root.add_child(tab)
-	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)), Callable())
+	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)), Callable(),
+		Callable(), func(recipient: String, document: Dictionary) -> String:
+			deliveries.append({"recipient": recipient, "document": document.duplicate(true)})
+			return "test_delivery_" + recipient,
+		func() -> Array[Dictionary]:
+			return [{"id": "person_one", "label": "Giocatore uno"},
+				{"id": "person_two", "label": "Giocatore due"}]
+	)
 	tab.load_record({"inventory": [row], "documents": [legacy]})
 	await process_frame
 	await process_frame
@@ -57,6 +67,53 @@ func _run() -> void:
 	assert(migrated.get("id") == Documents.legacy_id(legacy))
 	assert(migrated.get("display_style") == "lettera")
 	assert(Documents.definition_for(migrated).get("description") == "Consegna originale")
+	# Desktop right-click/mobile long-press use this same context action.
+	# A single share should queue one sanitized copy for each online peer.
+	var docs_tab: Node = tab._documents_tab
+	var owned_document_list: ItemList = docs_tab.get("_list")
+	owned_document_list.select(0)
+	docs_tab.set("_share_index", 0)
+	docs_tab.call("_share_selected_document")
+	assert(deliveries.size() == 2)
+	for delivery: Dictionary in deliveries:
+		assert(String(delivery.document.title) == "Titolo modificato"
+			and String(delivery.document.text) == "Nuovo contenuto"
+			and String(delivery.document.id) == identifier,
+			"Send current saved document definition, not an empty inventory snapshot")
+
+	# Export only referenced homebrew, and preserve the document's body.
+	var portable_record: Dictionary = {"kind": "character", "inventory": [row]}
+	var local_background: Dictionary = QuickCustom.create("backgrounds", "Portable " + stamp,
+		"Descrizione trasportabile", [{"kind": "skill", "key": "arcana"}])
+	assert(not local_background.is_empty())
+	portable_record["background_id"] = local_background.id
+	portable_record["background"] = local_background.name
+	var bundled: Array[Dictionary] = PortableContent.bundle(portable_record)
+	var ids: Array[String] = []
+	for entry: Dictionary in bundled:
+		ids.append(String(entry.get("id", "")))
+	assert(identifier in ids and String(local_background.id) in ids
+		and bundled.size() == 2, "Only directly used homebrew records must travel")
+	assert(PortableContent.install(bundled) == OK,
+		"Import must skip existing definitions without creating duplicates")
+	assert(QuickCustom.remove(local_background))
+	assert(PortableContent.install(bundled) == OK,
+		"On a second device, import must restore missing homebrew by its stable ID")
+	var restored := false
+	for local: Dictionary in Catalog.home_entries("backgrounds"):
+		if String(local.get("id", "")) == String(local_background.id):
+			restored = String(local.get("description", "")) == "Descrizione trasportabile"
+	assert(restored, "Restored background must have its description and original ID")
+	var invalid: Array = [{"id": "homebrew:bad:backgrounds:../../unsafe",
+		"name": "Unsafe", "data": {}}]
+	assert(PortableContent.install(invalid) == ERR_INVALID_DATA,
+		"Imported definition IDs must not create arbitrary filesystem paths")
+	var local_parts: PackedStringArray = String(local_background.id).split(":")
+	var imported_path := PortableContent.IMPORT_DIR.path_join(local_parts[1]).path_join(
+		local_parts[2] + "_" + local_parts[3] + ".json")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(imported_path))
+	Catalog.reload_homebrew()
+
 	# Regression: ItemList's prior selection must not index the replacement
 	# inventory while switching from a creature with documents to one without.
 	var documents_tab: Node = tab._documents_tab
