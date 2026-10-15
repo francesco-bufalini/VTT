@@ -1001,12 +1001,18 @@ func _send_chat() -> void:
 	if message.is_empty():
 		return
 
+	# Refresh ownership first, so a removed/reassigned creature cannot
+	# continue speaking under its old name from a stale selector.
+	_refresh_roll_actors()
 	var event := _new_event("chat")
-	# The same explicit creature choice labels manual dice rolls and chat.
 	var picked: Dictionary = actor_picker.get_selected_metadata() if actor_picker != null else {}
 	var picked_name := String(picked.get("name", "")).strip_edges()
 	if not picked_name.is_empty():
 		event["author"] = picked_name.left(80)
+	elif _mobile_controller != null:
+		event["author"] = "Giocatore (%s)" % _device_name()
+	else:
+		event["author"] = _master_author_name()
 	event["text"] = message
 	chat_input.clear()
 	_append_event(event, true)
