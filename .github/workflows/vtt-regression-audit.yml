@@ -25,6 +25,7 @@ jobs:
             /vtt/
             /network/
             /interaction/
+            /encounter/*.gd
             /items/
             /homebrew/
             /tests/
@@ -71,18 +72,23 @@ jobs:
             test_creature_gui_layout.gd
             test_creature_sheet_ui.gd
           )
+          failures=()
           for test in "${tests[@]}"; do
             echo "::group::$test"
             log=$(mktemp)
             limit=100
             if [[ "$test" == "test_creature_sheet_ui.gd" ]]; then limit=320; fi
             if ! timeout "${limit}s" "$GODOT" --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
-              cat "$log"; echo "FAILED: $test"; exit 1
+              failures+=("$test (crash/timeout)")
+            elif grep -Eq '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '(^PASS:|^PASS )' "$log"; then
+              failures+=("$test (Godot error/failed assertion)")
             fi
             cat "$log"
-            if grep -E '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '(^PASS:|^PASS )' "$log"; then
-              echo "FAILED output: $test"; exit 1
-            fi
             rm -f "$log"
             echo "::endgroup::"
           done
+          if (( ${#failures[@]} > 0 )); then
+            printf 'FAILED REGRESSIONS: %s\\n' "${failures[@]}"
+            exit 1
+          fi
+          echo "PASS: all 20 extended regressions"

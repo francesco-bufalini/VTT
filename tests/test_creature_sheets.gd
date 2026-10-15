@@ -147,6 +147,7 @@ func run() -> void:
 	assert(monster_attacks.size() == 2
 		and monster_attacks[0].range_feet == 10 and monster_attacks[1].range_feet == 80,
 		"Every 5etools attack must retain its own melee or ranged distance")
+	print("AUDIT monster attack: kind=", monster_attack.get("kind"), " base_hit=", monster_attacks[0].get("base_hit"), " id=", monster_attacks[0].get("id"), " grants=", Bonuses.bonus(monster_attack, "attack_hit:monster:action:0"), " calculated=", attack_data.attack_bonus(monster_attack, monster_attacks[0], 3))
 	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 7,
 		"Monster hit already contains proficiency: apply only additional grants")
 	assert(attack_data.max_melee_range(monster_attack) == 15.0,
