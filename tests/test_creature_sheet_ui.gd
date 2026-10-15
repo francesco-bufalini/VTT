@@ -966,6 +966,18 @@ func run() -> void:
 	var appearance: Dictionary = token.get_appearance_state()
 	area._link_selected_token()
 	assert(token.get_meta("creature_id") == original_id and token.has_condition("poisoned"))
+	var other_token: CharacterBody3D = TokenScene.instantiate()
+	board.add_child(other_token)
+	other_token.set_meta("creature_id", "another-owned-sheet")
+	other_token.set_meta("creature_owner_id", Owner.local_id())
+	board.selected_tokens = [other_token]
+	var saved_link: String = String(area._current().get("linked_token_sync_id", ""))
+	area._link_selected_token()
+	assert(other_token.get_meta("creature_id") == "another-owned-sheet"
+		and String(area._current().get("linked_token_sync_id", "")) == saved_link,
+		"Manual link cannot steal a token already attached to another local sheet")
+	other_token.queue_free()
+	board.selected_tokens = [token]
 	area._refresh_creature_eye_buttons()
 	assert(area._creature_eye_buttons[0].visible and area._creature_eye_buttons[0].text == "👁",
 		"Linked token should show the eye button")

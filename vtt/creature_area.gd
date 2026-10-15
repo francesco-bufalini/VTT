@@ -6537,49 +6537,56 @@ func _link_selected_token() -> void:
 	if not board_root.has_method("get_selected_tokens_for_creatures"):
 		_set_status("Collegamento ai token disponibile soltanto nella partita desktop.")
 		return
-	var selected_value: Variant = board_root.call(
-		"get_selected_tokens_for_creatures"
-	)
+	var selected_value: Variant = board_root.call("get_selected_tokens_for_creatures")
 	if not selected_value is Array or (selected_value as Array).size() != 1:
 		_set_status("Seleziona un solo token nella scena.")
 		return
-	var record := _current()
+	var record: Dictionary = _current()
 	if record.is_empty():
 		return
 	var token: Node3D = (selected_value as Array)[0] as Node3D
-	if token == null:
+	if token == null or not board_root.is_ancestor_of(token):
 		return
-	if token.has_meta("creature_owner_id") and String(token.get_meta("creature_owner_id")) != Owner.local_id():
+	var creature_id: String = String(record.get("id", ""))
+	var previous_id: String = String(token.get_meta("creature_id", ""))
+	var previous_owner: String = String(token.get_meta("creature_owner_id", ""))
+	# Never steal another sheet's live token, even if both sheets belong to
+	# this desktop. An explicit unlinked token can be assigned instead.
+	if not previous_id.is_empty() and previous_id != creature_id:
+		_set_status("Il token appartiene già a un'altra scheda creatura.")
+		return
+	if not previous_owner.is_empty() and previous_owner != Owner.local_id():
 		_set_status("Il token è associato a una creatura di un altro controllore.")
 		return
-	var creature_id := String(record.get("id", ""))
+	var sync: Node = board_root.get("board_sync") as Node
+	if sync == null:
+		_set_status("Sincronizzazione token non disponibile.")
+		return
+	var updated: Dictionary = record.duplicate(true)
+	updated["linked_token_sync_id"] = String(sync.call("get_sync_id_for_node", token))
+	updated["linked_token_name"] = String(token.call("get_display_name"))
+	if updated["linked_token_sync_id"].is_empty() or _archive.save(updated) != OK:
+		_set_status("Impossibile salvare l'associazione; nessun token modificato.")
+		return
+	# Only detach an earlier local representation AFTER the new link has
+	# been persisted. Never strip foreign-owned scene metadata.
 	for other: Node in get_tree().get_nodes_in_group("dnd_token"):
-		if other != token and other.has_meta("creature_id"):
-			if String(other.get_meta("creature_id", "")) == creature_id:
-				for field: String in [
-					"creature_id", "creature_owner_id", "default_miniature_id",
-					"player_character_id", "player_character_name",
-					"master_creature_id", "master_creature_name",
-					"master_creature_side"
-				]:
-					if other.has_meta(field):
-						other.remove_meta(field)
-	for field: String in [
-		"player_character_id", "player_character_name",
-		"master_creature_id", "master_creature_name",
-		"master_creature_side"
-	]:
+		if (other == token or not board_root.is_ancestor_of(other)
+			or String(other.get_meta("creature_id", "")) != creature_id
+			or String(other.get_meta("creature_owner_id", "")) != Owner.local_id()):
+			continue
+		for field: String in ["creature_id", "creature_owner_id", "default_miniature_id",
+			"player_character_id", "player_character_name",
+			"master_creature_id", "master_creature_name", "master_creature_side"]:
+			if other.has_meta(field):
+				other.remove_meta(field)
+	for field: String in ["player_character_id", "player_character_name",
+		"master_creature_id", "master_creature_name", "master_creature_side"]:
 		if token.has_meta(field):
 			token.remove_meta(field)
 	token.set_meta("creature_id", creature_id)
 	token.set_meta("creature_owner_id", Owner.local_id())
 	token.set_meta("default_miniature_id", String(record.get("default_miniature_id", "")))
-	var sync: Node = board_root.get("board_sync") as Node
-	if sync != null:
-		record["linked_token_sync_id"] = String(
-			sync.call("get_sync_id_for_node", token)
-		)
-	record["linked_token_name"] = String(token.call("get_display_name"))
 	if String(record.get("kind", "")) == "character":
 		token.set_meta("player_character_id", creature_id)
 		token.set_meta("player_character_name", String(record.get("name", "")))
@@ -6587,10 +6594,9 @@ func _link_selected_token() -> void:
 		token.set_meta("master_creature_id", creature_id)
 		token.set_meta("master_creature_name", String(record.get("name", "")))
 		token.set_meta("master_creature_side", String(record.get("side", "ally")))
-	if _archive.save(record) == OK:
-		_replace_current_record(record)
-		_sync_token_health(record)
-		_set_status("Creatura associata alla miniatura senza modificarne l'aspetto.")
+	_replace_current_record(updated)
+	_sync_token_health(updated)
+	_set_status("Creatura associata alla miniatura senza modificarne l'aspetto.")
 
 
 func _species_default_miniature(species: String) -> String:

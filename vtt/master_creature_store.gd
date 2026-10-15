@@ -225,6 +225,9 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	var proficiency_record: Dictionary = value.duplicate(true)
 	proficiency_record["kind"] = "monster"
 	var result := {
+		# Preserve explicit runtime type: attack, spell and sheet logic depend
+		# on it, not merely on the presence of a stat block.
+		"kind": "monster",
 		"id": String(value.get("id", "")),
 		"name": String(value.get("name", base_name)),
 		"base_name": base_name,

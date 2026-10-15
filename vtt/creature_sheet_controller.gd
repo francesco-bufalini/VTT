@@ -56,6 +56,10 @@ static func recalculate_bonus_mirrors(record: Dictionary) -> void:
 static func sync_automatic_progression(record: Dictionary) -> void:
 	record["xp"] = maxi(int(record.get("xp", 0)), Rules.minimum_experience(record))
 	var has_classes: bool = Rules.class_levels(record) > 0
+	# Innate monster features/slots are not derived from character classes.
+	# Recomputing a classless monster must never wipe its stat-block resources.
+	if not has_classes and (String(record.get("kind", "")) == "monster" or record.has("stat_block")):
+		return
 	record["hit_dice"] = Rules.automatic_hit_dice(record) if has_classes else ""
 	if not has_classes:
 		record["spellcasting_calculation"] = {}
