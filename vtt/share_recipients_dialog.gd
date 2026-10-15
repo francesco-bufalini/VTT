@@ -22,7 +22,7 @@ static func choose(host: Control, peers: Array, subject: String,
 		return null
 
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "Destinatari del %s" % subject
+	dialog.title = "Invia %s: scegli destinatari" % subject
 	dialog.ok_button_text = "Invia"
 	dialog.cancel_button_text = "Annulla"
 	dialog.get_ok_button().disabled = true
