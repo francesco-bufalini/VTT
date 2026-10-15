@@ -297,6 +297,33 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_set_search_visible(false)
 
 
+func configure_touch_layout() -> void:
+	# This tab belongs to a vertical-only sheet scroller; reflow wide
+	# fixed rows instead of letting their minimum width exceed the phone.
+	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	var objects_page := _inventory_list.get_parent() as VBoxContainer
+	var header := objects_page.get_child(0) as HBoxContainer
+	var title := header.get_child(0) as Label
+	title.text = "Inventario"
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	touch.replace_box(header, VBoxContainer.new())
+	touch.replace_box(_search.get_parent() as HBoxContainer, VBoxContainer.new())
+	touch.replace_box(_add_button.get_parent() as HBoxContainer, VBoxContainer.new())
+	touch.replace_box(_quantity.get_parent() as HBoxContainer, HFlowContainer.new())
+	touch.replace_box(_weapon_size_choice.get_parent() as HBoxContainer, HFlowContainer.new())
+	_search_panel.custom_minimum_size.x = 0
+	_inventory_list.custom_minimum_size.x = 0
+	_catalog_list.custom_minimum_size.x = 0
+	_documents_tab.custom_minimum_size.x = 0
+	var document_toolbar := _documents_tab.get_child(0) as HBoxContainer
+	touch.replace_box(document_toolbar, HFlowContainer.new())
+	var tabs := objects_page.get_parent() as TabContainer
+	tabs.custom_minimum_size.x = 0
+	for page: Control in [objects_page, _documents_tab]:
+		page.custom_minimum_size.x = 0
+		page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+
 func _add_catalog_filter(parent: HFlowContainer, caption: String, option: OptionButton, width_px: float) -> void:
 	var group := VBoxContainer.new()
 	group.custom_minimum_size.x = width_px
