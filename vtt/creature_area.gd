@@ -2,6 +2,7 @@ extends Node
 
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
@@ -2507,7 +2508,8 @@ func _save_exported_creature(path: String) -> void:
 	file.store_string(JSON.stringify({
 		"format": "vtt_creature_export_v1",
 		"version": 1,
-		"creature": record
+		"creature": record,
+		"homebrew_content": PortableContent.bundle(record)
 	}, "  "))
 	var error: Error = file.get_error()
 	file.close()
