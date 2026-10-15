@@ -80,8 +80,8 @@ func _run() -> void:
 	var docs_tab: Node = tab._documents_tab
 	var owned_document_list: ItemList = docs_tab.get("_list")
 	owned_document_list.select(0)
-	docs_tab.set("_share_index", 0)
-	docs_tab.call("_share_selected_document")
+	assert(not (docs_tab.get("_share_button") as Button).disabled)
+	(docs_tab.get("_share_button") as Button).pressed.emit()
 	assert(deliveries.is_empty(), "Opening a document share must not broadcast")
 	var document_dialog: ConfirmationDialog
 	for child: Node in docs_tab.get_children():
@@ -136,8 +136,8 @@ func _run() -> void:
 	item_instance["equipped_slots"] = ["main"]
 	tab._inventory.append(item_instance.duplicate(true))
 	tab.call("_refresh_inventory", tab._inventory.size() - 1)
-	tab.set("_item_share_index", tab._inventory.size() - 1)
-	tab.call("_share_selected_item")
+	assert(not (tab.get("_item_share_button") as Button).disabled)
+	(tab.get("_item_share_button") as Button).pressed.emit()
 	assert(item_deliveries.is_empty(), "Opening an item share must not broadcast")
 	var item_dialog: ConfirmationDialog
 	for child: Node in tab.get_children():
@@ -241,7 +241,9 @@ func _run() -> void:
 	assert(tab.get_combined_minimum_size().x <= 360,
 		"Inventory content must not widen its phone-sized sheet")
 	documents_tab.call("load_inventory", [row])
-	documents_tab.call("_open_document", 0)
+	var open_document_button := documents_tab.get("_open_button") as Button
+	assert(not open_document_button.disabled)
+	open_document_button.pressed.emit()
 	await process_frame
 	documents_tab.call("_toggle_editor", true)
 	await process_frame
