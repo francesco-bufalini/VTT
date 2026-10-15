@@ -1145,558 +1145,6 @@
       ]
     },
     {
-      "source": "MOSH",
-      "name": "Archaic",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Gravity Shift (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "reaction",
-          "name": "Spell Mimicry (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Art Elemental Mascot",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Captivating Artistry (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Beledros Witherbloom",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Decaying Breath (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Daemogoth",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Terrify (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Daemogoth Titan",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "First-Year Student",
-      "resources": [
-        {
-          "section": "reaction",
-          "name": "Beginner's Luck (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Galazeth Prismari",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Dancing Elements Breath (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Inkling Mascot",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Ink Spray (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Lorehold Apprentice",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Reduce to Memory (Recharge 6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 6
-        },
-        {
-          "section": "reaction",
-          "name": "Learn from the Past (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Lorehold Pledgemage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Reduce to Memory (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "action",
-          "name": "Chronal Break (1/Day) (Bonus Action)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "reaction",
-          "name": "Learn from the Past (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Lorehold Professor of Chaos",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Voice from the Past (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Weight of History (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Lorehold Professor of Order",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Voice from the Past (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Force Barrier (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "reaction",
-          "name": "Arcane Stasis (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Murgaxor",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Blood Boil (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Oracle of Strixhaven",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Paradoxy (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Oriq Blood Mage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Blood Boil (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Prismari Apprentice",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Surge of Artistry (Recharge 4-6) (Bonus Action)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Prismari Pledgemage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Showstopper (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Surge of Artistry (Recharge 4-6) (Bonus Action)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Prismari Professor of Expression",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Lightning Flourish (Recharge 6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 6
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Quandrix Pledgemage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Vortex Calculus (Recharge 4-6) (Bonus Action)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Quandrix Professor of Substance",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Dilation (Recharge 5-6) (Bonus Action)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "reaction",
-          "name": "Avoidant Translation (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Quandrix Professor of Theory",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Overriding Theorem (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        },
-        {
-          "section": "reaction",
-          "name": "Divide by Zero (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Shadrix Silverquill",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Illuminating Shadow Breath (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Silverquill Pledgemage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Demotivate (2/Day) (Bonus Action)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Spirit Statue Mascot",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Counsel of the Past (2/Day)",
-          "max": 2,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Tanazir Quandrix",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Diminution Breath (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Velomachus Lorehold",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Legendary Resistance (3/Day)",
-          "max": 3,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Battle Tide Breath (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        },
-        {
-          "section": "legendary",
-          "name": "Legendary Actions (3/Turn)",
-          "max": 3,
-          "recharge": "turn",
-          "legendary_pool": true
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Witherbloom Pledgemage",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Vociferous Form (1/Day) (Bonus Action)",
-          "max": 1,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Witherbloom Professor of Decay",
-      "resources": [
-        {
-          "section": "trait",
-          "name": "Essence Transfer (1/Day)",
-          "max": 1,
-          "recharge": "long_rest"
-        },
-        {
-          "section": "action",
-          "name": "Essence Pulse (Recharge 5-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 5
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Witherbloom Professor of Growth",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Summon Nature's Avatar (Recharges after a Short or Long Rest)",
-          "max": 1,
-          "recharge": "short_rest"
-        }
-      ]
-    },
-    {
-      "source": "MOSH",
-      "name": "Y'demi",
-      "resources": [
-        {
-          "section": "action",
-          "name": "Blood Boil (Recharge 4-6)",
-          "max": 1,
-          "recharge": "d6",
-          "recharge_min": 4
-        },
-        {
-          "section": "action",
-          "name": "Sanguine Tentacles (1/Day) (Bonus Action)",
-          "max": 1,
-          "recharge": "long_rest"
-        }
-      ]
-    },
-    {
       "source": "MOT",
       "name": "Abhorrent Overlord",
       "resources": [
@@ -2189,6 +1637,558 @@
       ]
     },
     {
+      "source": "SCC",
+      "name": "Archaic",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Gravity Shift (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "reaction",
+          "name": "Spell Mimicry (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Art Elemental Mascot",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Captivating Artistry (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Beledros Witherbloom",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Decaying Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Daemogoth",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Terrify (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Daemogoth Titan",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "First-Year Student",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Beginner's Luck (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Galazeth Prismari",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Dancing Elements Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Inkling Mascot",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Ink Spray (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Lorehold Apprentice",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Reduce to Memory (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "reaction",
+          "name": "Learn from the Past (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Lorehold Pledgemage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Reduce to Memory (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Chronal Break (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "reaction",
+          "name": "Learn from the Past (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Lorehold Professor of Chaos",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Voice from the Past (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Weight of History (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Lorehold Professor of Order",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Voice from the Past (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Force Barrier (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "reaction",
+          "name": "Arcane Stasis (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Murgaxor",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blood Boil (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Oracle of Strixhaven",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Paradoxy (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Oriq Blood Mage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blood Boil (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Prismari Apprentice",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Surge of Artistry (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Prismari Pledgemage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Showstopper (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Surge of Artistry (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Prismari Professor of Expression",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Flourish (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Quandrix Pledgemage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Vortex Calculus (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Quandrix Professor of Substance",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Dilation (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "reaction",
+          "name": "Avoidant Translation (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Quandrix Professor of Theory",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Overriding Theorem (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "reaction",
+          "name": "Divide by Zero (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Shadrix Silverquill",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Illuminating Shadow Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Silverquill Pledgemage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Demotivate (2/Day) (Bonus Action)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Spirit Statue Mascot",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Counsel of the Past (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Tanazir Quandrix",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Diminution Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Velomachus Lorehold",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Battle Tide Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Witherbloom Pledgemage",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Vociferous Form (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Witherbloom Professor of Decay",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Essence Transfer (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Essence Pulse (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Witherbloom Professor of Growth",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Nature's Avatar (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "SCC",
+      "name": "Y'demi",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blood Boil (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "action",
+          "name": "Sanguine Tentacles (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
       "source": "TCE",
       "name": "Adult Red Dracolich",
       "resources": [
@@ -2239,7 +2239,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Apprentice",
       "resources": [
         {
@@ -2251,7 +2251,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Brain in a Jar",
       "resources": [
         {
@@ -2264,7 +2264,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Carrion Stalker",
       "resources": [
         {
@@ -2276,7 +2276,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Dullahan",
       "resources": [
         {
@@ -2301,7 +2301,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Greater Star Spawn Emissary",
       "resources": [
         {
@@ -2327,7 +2327,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Gremishka",
       "resources": [
         {
@@ -2339,7 +2339,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Inquisitor of the Mind Fire",
       "resources": [
         {
@@ -2352,7 +2352,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Inquisitor of the Tome",
       "resources": [
         {
@@ -2365,7 +2365,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Lesser Star Spawn Emissary",
       "resources": [
         {
@@ -2384,7 +2384,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Loup Garou",
       "resources": [
         {
@@ -2403,7 +2403,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Necrichor",
       "resources": [
         {
@@ -2422,7 +2422,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Nosferatu",
       "resources": [
         {
@@ -2435,7 +2435,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Priest of Osybus",
       "resources": [
         {
@@ -2448,7 +2448,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Relentless Juggernaut",
       "resources": [
         {
@@ -2474,7 +2474,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Relentless Slasher",
       "resources": [
         {
@@ -2493,7 +2493,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Strigoi",
       "resources": [
         {
@@ -2505,7 +2505,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Unspeakable Horror",
       "resources": [
         {
@@ -2518,7 +2518,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Vampiric Mind Flayer",
       "resources": [
         {
@@ -2531,7 +2531,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Zombie Clot",
       "resources": [
         {
@@ -2544,7 +2544,7 @@
       ]
     },
     {
-      "source": "VRGTR",
+      "source": "VRGR",
       "name": "Zombie Plague Spreader",
       "resources": [
         {
