@@ -10,6 +10,7 @@ on:
       - feature/tokens-lazy-load
       - feature/origin-spells-dice-bonuses
       - refactor/standalone-creatures-from-pr85
+      - feature/fightclub-monster-recharge-enrichment-20261015
     paths:
       - "**/*.gd"
       - "**/*.tscn"
