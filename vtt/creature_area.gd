@@ -2501,16 +2501,32 @@ func _save_exported_creature(path: String) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
+	var missing: Array[String] = PortableContent.unresolved(record)
+	if not missing.is_empty():
+		_set_status("Esportazione annullata: mancano %d definizioni homebrew usate dalla scheda (%s)." % [
+			missing.size(), ", ".join(missing.slice(0, 3))])
+		return
+	var companions: Array[Dictionary] = PortableContent.bundle(record)
+	if companions.size() > PortableContent.MAX_ENTRIES:
+		_set_status("Esportazione annullata: troppe definizioni personalizzate per il formato portatile.")
+		return
+	if JSON.stringify(companions).to_utf8_buffer().size() > PortableContent.MAX_BYTES:
+		_set_status("Esportazione annullata: contenuti personalizzati troppo voluminosi.")
+		return
+	var export_text: String = JSON.stringify({
+		"format": "vtt_creature_export_v1",
+		"version": 1,
+		"creature": record,
+		"homebrew_content": companions
+	}, "  ")
+	if export_text.to_utf8_buffer().size() > 16 * 1024 * 1024:
+		_set_status("Esportazione annullata: il file supera il limite d'importazione di 16 MB.")
+		return
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		_set_status("Esportazione non riuscita: " + error_string(FileAccess.get_open_error()))
 		return
-	file.store_string(JSON.stringify({
-		"format": "vtt_creature_export_v1",
-		"version": 1,
-		"creature": record,
-		"homebrew_content": PortableContent.bundle(record)
-	}, "  "))
+	file.store_string(export_text)
 	var error: Error = file.get_error()
 	file.close()
 	_set_status(
