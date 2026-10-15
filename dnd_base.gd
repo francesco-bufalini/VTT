@@ -343,6 +343,10 @@ func _ready() -> void:
 			func(_delivery_id: String) -> void:
 				creature_sheet.call("_set_status", "Oggetto consegnato al destinatario.")
 		)
+		creature_presence.item_failed.connect(
+			func(_delivery_id: String) -> void:
+				creature_sheet.call("_set_status", "Invio oggetto non riuscito: destinatario non raggiunto.")
+		)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
