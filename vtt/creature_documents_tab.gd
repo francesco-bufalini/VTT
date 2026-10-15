@@ -25,6 +25,8 @@ var _editing_key := ""
 
 var _list: ItemList
 var _remove_button: Button
+var _open_button: Button
+var _share_button: Button
 var _dialog: AcceptDialog
 var _style_picker: OptionButton
 var _edit_button: Button
@@ -56,6 +58,16 @@ func setup(on_change: Callable, on_status: Callable,
 	create.text = "+ Nuovo documento"
 	create.pressed.connect(_add_document)
 	toolbar.add_child(create)
+	_open_button = Button.new()
+	_open_button.text = "Apri / modifica"
+	_open_button.disabled = true
+	_open_button.pressed.connect(_open_selected_document)
+	toolbar.add_child(_open_button)
+	_share_button = Button.new()
+	_share_button.text = "Invia…"
+	_share_button.disabled = true
+	_share_button.pressed.connect(_share_current_document)
+	toolbar.add_child(_share_button)
 	_remove_button = Button.new()
 	_remove_button.text = "Elimina"
 	_remove_button.disabled = true
@@ -225,6 +237,8 @@ func _refresh_list() -> void:
 	else:
 		_active_id = ""
 	_remove_button.disabled = _selected_inventory_index() < 0
+	_open_button.disabled = _remove_button.disabled
+	_share_button.disabled = _remove_button.disabled or not _send_document.is_valid()
 
 
 func _on_document_input(event: InputEvent) -> void:
@@ -265,6 +279,14 @@ func _open_share_menu(index: int, local_position: Vector2) -> void:
 	_share_menu.set_item_disabled(0, peers.is_empty() or not _send_document.is_valid())
 	_share_menu.position = Vector2i(_list.get_global_rect().position + local_position)
 	_share_menu.popup()
+
+
+func _share_current_document() -> void:
+	var selected: PackedInt32Array = _list.get_selected_items()
+	if selected.is_empty():
+		return
+	_share_index = int(selected[0])
+	_share_selected_document()
 
 
 func _share_selected_document() -> void:
@@ -319,6 +341,14 @@ func _select_document(_index: int) -> void:
 	if index >= 0:
 		_active_id = _instance_key(_inventory[index])
 	_remove_button.disabled = index < 0
+	_open_button.disabled = index < 0
+	_share_button.disabled = index < 0 or not _send_document.is_valid()
+
+
+func _open_selected_document() -> void:
+	var selected: PackedInt32Array = _list.get_selected_items()
+	if not selected.is_empty():
+		_open_document(int(selected[0]))
 
 
 func _add_document() -> void:
