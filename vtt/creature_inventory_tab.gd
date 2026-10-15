@@ -678,7 +678,14 @@ func _filter_catalog() -> void:
 	_catalog_list.add_item("＋ Crea oggetto personalizzato")
 	var matches := 0
 	var selected_index := -1
+	var prioritized: Array[Dictionary] = []
 	for item: Dictionary in _catalog:
+		if QuickCustom.is_custom(item):
+			prioritized.append(item)
+	for item: Dictionary in _catalog:
+		if not QuickCustom.is_custom(item):
+			prioritized.append(item)
+	for item: Dictionary in prioritized:
 		if String(item.get("name", "")).strip_edges().is_empty() or not _catalog_matches(item, words):
 			continue
 		matches += 1
