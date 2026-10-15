@@ -59,7 +59,7 @@ func run() -> void:
 	tab._apply_infusion()
 	assert(changed.size() == 2 and not (changed.back()[0].get("infusion", {}) as Dictionary).is_empty())
 	record.optional_features_catalog = tab.optional_features()
-	record.inventory = Instances.from_saved(changed.back()[0])
+	record.inventory = [Instances.from_saved(changed.back()[0])]
 	assert(Bonuses.bonus(record, "ac") == 1, "Equipped infused armor must use ordinary item bonus pipeline")
 	record.classes[0].level = 10
 	assert(Bonuses.bonus(record, "ac") == 2, "Bonus must scale with its creator's Artificer level")
