@@ -267,10 +267,10 @@ func _open_local_creation() -> void:
 		"magic_items": "magic", "mundane_items": "other",
 		"weapons": "weapon", "armor": "armor", "tools": "tool"
 	}.get(section, ""))
-	QuickCustomDialog.create_popup(_panel, category, func(_created: Dictionary) -> void:
+	var on_created := func(_created: Dictionary) -> void:
 		_filter.clear()
 		_refresh()
-	, initial_type)
+	QuickCustomDialog.create_popup(_panel, category, on_created, initial_type)
 
 
 func _delete_selected_custom() -> void:
@@ -302,10 +302,11 @@ func _refresh() -> void:
 		_list.add_item(create_label)
 	var needle := _filter.text.strip_edges().to_lower()
 	var prioritized: Array[Dictionary] = []
-	for entry: Dictionary in _entries_for(_current_category()):
+	var catalog_entries: Array[Dictionary] = _entries_for(_current_category())
+	for entry: Dictionary in catalog_entries:
 		if QuickCustom.is_custom(entry):
 			prioritized.append(entry)
-	for entry: Dictionary in _entries_for(_current_category()):
+	for entry: Dictionary in catalog_entries:
 		if not QuickCustom.is_custom(entry):
 			prioritized.append(entry)
 	for entry: Dictionary in prioritized:
