@@ -121,6 +121,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 	var hp := _default_hp(stat_block)
 	return {
 		"id": "master_creature_%d_%d" % [now, unique],
+		"kind": "monster",
 		"name": base_name,
 		"base_name": base_name,
 		"source": String(stat_block.get("source", "")),
@@ -225,6 +226,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	var proficiency_record: Dictionary = value.duplicate(true)
 	proficiency_record["kind"] = "monster"
 	var result := {
+		"kind": "monster",
 		"id": String(value.get("id", "")),
 		"name": String(value.get("name", base_name)),
 		"base_name": base_name,

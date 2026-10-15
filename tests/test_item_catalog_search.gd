@@ -53,24 +53,24 @@ func _run() -> void:
 		"id": "dagger|xphb", "name": "Dagger 2024", "type": "M|XPHB",
 		"source": "XPHB", "damage": "1d4", "properties": ["F"], "rarity": "common"
 	}
-	tab._catalog = [longsword, rapier, moonblade, xphb]
-	tab._populate_catalog_options()
 	tab.load_record({"rules_version": "2014", "inventory": [
 		{"id": "old-rope", "name": "Rope", "source": "PHB", "quantity": 2}
 	]})
-	# Test fixture replaces the catalog after setup; rebuild its visible results.
+	# load_record reloads the production catalog; install this isolated fixture afterwards.
+	tab._catalog = [longsword, rapier, moonblade, xphb]
+	tab._populate_catalog_options()
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3")
+	assert(tab._filtered.size() == 4 and tab._catalog_count.text == "Risultati: 3")
 	# Reproduction of the regression: localized labels used to make the
 	# Italian-only category comparison reject every item.
 	Locale.apply(tab, "en")
 	assert(tab._category_filter.get_item_text(0) == "All")
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3",
+	assert(tab._filtered.size() == 4 and tab._catalog_count.text == "Risultati: 3",
 		"Localized All filter must still include the entire 2014 catalog")
 	tab._category_filter.select(1)
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 3, "Localized Weapons category must keep matching by stable ID")
+	assert(tab._filtered.size() == 4, "Localized Weapons category must keep matching by stable ID")
 	Locale.apply(tab, "it")
 	tab._category_filter.select(0)
 	tab._filter_catalog()
@@ -87,22 +87,22 @@ func _run() -> void:
 	tab._category_filter.select(1)
 	tab._property_filter.select(_choice_index(tab._property_filter, "F"))
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 1 and tab._filtered[0].id == rapier.id,
+	assert(tab._filtered.size() == 2 and tab._filtered[1].id == rapier.id,
 		"Weapon type and structured property filters must combine")
 	tab._reset_catalog_filters()
 	tab._search.text = "moon legendary"
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 1 and tab._filtered[0].id == moonblade.id,
+	assert(tab._filtered.size() == 2 and tab._filtered[1].id == moonblade.id,
 		"Search words must match different structured fields")
 	tab._search.clear()
 	tab._rarity_filter.select(_choice_index(tab._rarity_filter, "legendary"))
 	tab._source_filter.select(_choice_index(tab._source_filter, "DMG"))
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 1 and tab._filtered[0].id == moonblade.id,
+	assert(tab._filtered.size() == 2 and tab._filtered[1].id == moonblade.id,
 		"Rarity and source filters must work together")
 	tab._reset_catalog_filters()
-	tab._catalog_list.select(1)
-	tab._catalog_list.item_selected.emit(1)
+	tab._catalog_list.select(2)
+	tab._catalog_list.item_selected.emit(2)
 	assert(tab._details.visible and tab._details_from_catalog
 		and tab._details.get_parent() == tab._inventory_list.get_parent()
 		and tab._details.text.contains("Rapier")
@@ -116,9 +116,12 @@ func _run() -> void:
 		and tab._inventory_list.visible and tab._inventory_list.item_count == 2
 		and not tab._details_from_catalog)
 	tab._set_search_visible(true)
-	assert(tab._filtered.size() == 3 and tab._catalog_list.item_count == 3)
+	assert(tab._filtered.size() == 4 and tab._catalog_list.item_count == 4)
 	tab.load_record({"rules_version": "2024", "inventory": events.back()})
-	assert(tab._filtered.size() == 4 and _choice_index(tab._source_filter, "XPHB") >= 0,
+	tab._catalog = [longsword, rapier, moonblade, xphb]
+	tab._populate_catalog_options()
+	tab._filter_catalog()
+	assert(tab._filtered.size() == 5 and _choice_index(tab._source_filter, "XPHB") >= 0,
 		"2024 entries remain available for 2024 characters")
 	# The selected generic item's real checkbox and attunement control
 	# must persist independently. A visible checkbox is provided instead
