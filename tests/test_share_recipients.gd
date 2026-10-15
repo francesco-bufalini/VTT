@@ -27,7 +27,6 @@ func run() -> void:
 		"Sending must require explicit recipient selection")
 	await process_frame
 	await process_frame
-	print("AUDIT recipient geometry: root=", root.size, " viewport=", root.get_visible_rect().size, " window=", dialog.position, "/", dialog.size, " min=", dialog.min_size, " max=", dialog.max_size)
 	assert(dialog.position.x >= 0 and dialog.position.y >= 0
 		and dialog.position.x + dialog.size.x <= root.size.x
 		and dialog.position.y + dialog.size.y <= root.size.y,

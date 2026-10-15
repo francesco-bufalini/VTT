@@ -258,7 +258,6 @@ func _run() -> void:
 	assert(editor.is_visible_in_tree() and editor.virtual_keyboard_enabled
 		and not preview.visible,
 		"On mobile the full-width multiline editor replaces the preview")
-	print("AUDIT document geometry: root=", root.size, " viewport=", root.get_visible_rect().size, " window=", edit_dialog.position, "/", edit_dialog.size, " min=", edit_dialog.min_size, " max=", edit_dialog.max_size)
 	assert(edit_dialog.position.x >= 0 and edit_dialog.position.y >= 0
 		and edit_dialog.position.x + edit_dialog.size.x <= root.size.x
 		and edit_dialog.position.y + edit_dialog.size.y <= root.size.y,
