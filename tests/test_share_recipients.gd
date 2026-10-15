@@ -31,6 +31,16 @@ func run() -> void:
 		"Only checked peer IDs may be passed to document/item transport")
 	await process_frame
 	assert(not is_instance_valid(dialog))
+	var multiple := ShareRecipients.choose(host, peers, "documento",
+		func(selected: Array[String]) -> void: delivered.append(selected))
+	var multiple_checks := multiple.find_children("*", "CheckBox", true, false)
+	for check: CheckBox in multiple_checks:
+		check.button_pressed = true
+	multiple.hide()
+	multiple.confirmed.emit()
+	assert(delivered.size() == 2 and delivered[1] == ["peer-anna", "peer-bruno"],
+		"Multiple recipients must preserve exactly the selected peer IDs")
+	await process_frame
 	host.queue_free()
 	await process_frame
 	print("PASS: recipient selection is opt-in and never sends to unchecked peers")

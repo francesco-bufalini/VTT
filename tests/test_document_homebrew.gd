@@ -91,7 +91,9 @@ func _run() -> void:
 	var document_checks := document_dialog.find_children("*", "CheckBox", true, false)
 	assert(document_checks.size() == 2)
 	(document_checks[0] as CheckBox).button_pressed = true
+	document_dialog.hide()
 	document_dialog.confirmed.emit()
+	await process_frame
 	assert(deliveries.size() == 1 and deliveries[0].recipient == "person_one")
 	assert(String(deliveries[0].document.title) == "Titolo modificato"
 		and String(deliveries[0].document.text) == "Nuovo contenuto"
@@ -145,7 +147,9 @@ func _run() -> void:
 	var item_checks := item_dialog.find_children("*", "CheckBox", true, false)
 	assert(item_checks.size() == 2)
 	(item_checks[0] as CheckBox).button_pressed = true
+	item_dialog.hide()
 	item_dialog.confirmed.emit()
+	await process_frame
 	assert(item_deliveries.size() == 1 and item_deliveries[0].recipient == "person_one")
 	for sent: Dictionary in item_deliveries:
 		assert(int(sent.item.quantity) == 1 and not bool(sent.item.equipped)
