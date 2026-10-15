@@ -3559,7 +3559,7 @@ func _load_form(record: Dictionary) -> void:
 	_level.value = clampi(primary_level, 1, 20)
 	_refresh_xp_minimum()
 	_xp.value = maxi(int(record.get("xp", 0)), Rules.minimum_experience(record))
-	_level.tooltip_text = "Livello della classe base (il GS dei mostri è indipendente)"
+	_level.tooltip_text = "Livello della classe base; per i mostri ogni livello aumenta il GS effettivo di 1"
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
 	_update_current_appearance_display(record)

@@ -172,6 +172,15 @@ func run() -> void:
 			found_racial_speed = Rules.walking_speed(race.get("speed", 30)) == 20
 			break
 	assert(found_racial_speed, "5etools race movement must remain available in the offline catalogue")
+	var racially_slow: Dictionary = PlayerStore.new().create_character()
+	racially_slow["species"] = "Aarakocra"
+	racially_slow["species_source"] = "DMG"
+	racially_slow["speed_base"] = 99 # Corrupted legacy stored speed is ignored.
+	var normalized_race: Dictionary = PlayerStore.new().normalize_character(racially_slow)
+	assert(normalized_race.speed_base == 20 and Bonuses.value(normalized_race, "speed") == 20,
+		"Walking speed must be resolved from the current race, not a saved copy")
+	assert(normalized_race.xp >= Rules.minimum_experience(normalized_race),
+		"Character minimum XP must always follow the current class levels")
 	var multiclass_monster := creature.duplicate(true)
 	multiclass_monster["classes"].append({"name": "Wizard", "level": 3, "source": "PHB"})
 	var normalized_monster: Dictionary = monster.normalize_creature(multiclass_monster)
