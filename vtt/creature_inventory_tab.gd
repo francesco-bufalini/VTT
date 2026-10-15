@@ -4,6 +4,7 @@ extends VBoxContainer
 # placing or deleting physical objects on the board never changes a sheet.
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const Infusions = preload("res://vtt/creature_infusions.gd")
 const ItemInstance = preload("res://vtt/item_instance.gd")
 const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
@@ -63,6 +64,18 @@ var _item_share_index := -1
 var _item_touch_start := Vector2.ZERO
 var _item_touch_active := false
 var _item_touch_generation := 0
+var _optional_features: Array[Dictionary] = []
+var _infusion_record: Dictionary = {}
+var _infusion_panel: VBoxContainer
+var _infusion_status: Label
+var _infusion_catalog_picker: OptionButton
+var _infusion_known_picker: OptionButton
+var _infusion_candidates: Array[Dictionary] = []
+var _infusion_known: Array[Dictionary] = []
+var _infusion_learn_button: Button
+var _infusion_forget_button: Button
+var _infusion_apply_button: Button
+var _infusion_clear_button: Button
 
 
 func setup(on_change: Callable, on_status: Callable, on_document_change: Callable = Callable(),
@@ -188,6 +201,50 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_item_share_button.disabled = true
 	_item_share_button.pressed.connect(_share_current_item)
 	add_child(_item_share_button)
+	# Infusions are optional class features applied to existing owned items.
+	# They live inside the existing inventory tab, not in a parallel editor.
+	_infusion_panel = VBoxContainer.new()
+	_infusion_panel.add_theme_constant_override("separation", 5)
+	_infusion_panel.visible = false
+	add_child(_infusion_panel)
+	var infusion_heading := Label.new()
+	infusion_heading.text = "Infusioni · Artefice (TCE)"
+	infusion_heading.add_theme_font_size_override("font_size", 15)
+	_infusion_panel.add_child(infusion_heading)
+	_infusion_status = Label.new()
+	_infusion_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_infusion_panel.add_child(_infusion_status)
+	var learn_row := HFlowContainer.new()
+	_infusion_panel.add_child(learn_row)
+	_infusion_catalog_picker = OptionButton.new()
+	_infusion_catalog_picker.fit_to_longest_item = false
+	_infusion_catalog_picker.custom_minimum_size.x = 180
+	_infusion_catalog_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	learn_row.add_child(_infusion_catalog_picker)
+	_infusion_learn_button = Button.new()
+	_infusion_learn_button.text = "Impara"
+	_infusion_learn_button.pressed.connect(_learn_infusion)
+	learn_row.add_child(_infusion_learn_button)
+	var use_row := HFlowContainer.new()
+	_infusion_panel.add_child(use_row)
+	_infusion_known_picker = OptionButton.new()
+	_infusion_known_picker.fit_to_longest_item = false
+	_infusion_known_picker.custom_minimum_size.x = 180
+	_infusion_known_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_infusion_known_picker.item_selected.connect(func(_index: int) -> void: _refresh_infusion_ui())
+	use_row.add_child(_infusion_known_picker)
+	_infusion_apply_button = Button.new()
+	_infusion_apply_button.text = "Infondi oggetto"
+	_infusion_apply_button.pressed.connect(_apply_infusion)
+	use_row.add_child(_infusion_apply_button)
+	_infusion_forget_button = Button.new()
+	_infusion_forget_button.text = "Dimentica"
+	_infusion_forget_button.pressed.connect(_forget_infusion)
+	use_row.add_child(_infusion_forget_button)
+	_infusion_clear_button = Button.new()
+	_infusion_clear_button.text = "Termina infusione"
+	_infusion_clear_button.pressed.connect(_clear_infusion)
+	_infusion_panel.add_child(_infusion_clear_button)
 	var equipment_row := HFlowContainer.new()
 	equipment_row.add_theme_constant_override("h_separation", 6)
 	equipment_row.add_theme_constant_override("v_separation", 3)
@@ -586,6 +643,11 @@ func reload_catalog() -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	_infusion_record = record.duplicate(true)
+	_optional_features.clear()
+	for raw_feature: Variant in record.get("optional_features_catalog", []):
+		if raw_feature is Dictionary:
+			_optional_features.append((raw_feature as Dictionary).duplicate(true))
 	_loaded_creature_id = String(record.get("id", ""))
 	_creature_size_name = String(record.get("size_name", "Medium"))
 	if _creature_size_name not in ItemRules.WEAPON_SIZES:
@@ -651,6 +713,7 @@ func load_record(record: Dictionary) -> void:
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
+	_refresh_infusion_ui()
 	if _documents_tab != null:
 		_documents_tab.call("load_inventory", _inventory)
 	if migrated:
@@ -964,10 +1027,11 @@ func _on_inventory_selected(index: int) -> void:
 	_remove_button.disabled = false
 	_item_share_button.disabled = DocumentStore.is_document(_inventory[index]) or not _send_item.is_valid()
 	_update_equip_buttons()
+	_refresh_infusion_ui()
 	var item_id: String = String(_inventory[index].get("id", ""))
 	for catalog_item: Dictionary in _catalog:
 		if String(catalog_item.get("id", "")) == item_id:
-			_show_details(catalog_item)
+			_show_details(_catalog_entry(_inventory[index]))
 			return
 	_details.text = "%s\n%s%s\n%s" % [
 		String(_inventory[index].get("name", "")),
@@ -1062,6 +1126,9 @@ func _on_quantity_changed(value: float) -> void:
 	if DocumentStore.is_document(_inventory[index]):
 		_quantity.set_value_no_signal(1)
 		return
+	if _inventory[index].get("infusion", {}) is Dictionary and not (_inventory[index].get("infusion", {}) as Dictionary).is_empty() and int(value) != 1:
+		_quantity.set_value_no_signal(1)
+		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
 	_sanitize_equipment()
 	_update_equip_buttons()
@@ -1110,6 +1177,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_quantity.editable = selected_index >= 0 and not DocumentStore.is_document(_inventory[selected_index])
 	_update_equip_buttons()
 	_loading = old_loading
+	_refresh_infusion_ui()
 
 
 # ItemList has no cell checkbox mode. Its checkbox theme icons form clickable
@@ -1156,6 +1224,9 @@ func _inventory_label(item: Dictionary) -> String:
 	var size_name: String = String((extra as Dictionary).get("weapon_size", "")) if extra is Dictionary else ""
 	var size_label := " · " + CreatureLocale.text_for("taglia", _gui_language) + " " + CreatureLocale.text_for(size_name, _gui_language) if size_name in ItemRules.WEAPON_SIZES else ""
 	var item_name: String = String(item.get("name", ""))
+	var infusion: Variant = item.get("infusion", {})
+	if infusion is Dictionary and not (infusion as Dictionary).is_empty():
+		item_name += " ✦ " + String((infusion as Dictionary).get("name", ""))
 	if DocumentStore.is_document(item):
 		item_name = String(_catalog_entry(item).get("name", item_name))
 	return "%d × %s%s%s · %s" % [item.get("quantity", 1), item_name, equipment, size_label, item.get("source", "")]
@@ -1164,6 +1235,11 @@ func _inventory_label(item: Dictionary) -> String:
 func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text_from_raw_item(item)
 	_details.text = CreatureLocale.text_for(ItemRules.category_name(item), _gui_language) + "\n" + Player5eTools.info_text(item, description)
+	var attached: Variant = item.get("infusion", {})
+	if attached is Dictionary and not (attached as Dictionary).is_empty():
+		var option: Dictionary = Infusions.definition(attached as Dictionary)
+		_details.text += "\n\nInfusione: " + String((attached as Dictionary).get("name", ""))
+		_details.text += "\n" + Player5eTools.description_text("optional_features", option)
 	_details.show()
 
 
@@ -1315,3 +1391,174 @@ func _publish() -> void:
 		if _documents_tab != null:
 			_documents_tab.call("load_inventory", _inventory)
 		_on_change.call(_inventory.duplicate(true))
+
+
+# Preserve other optional class features when adding/removing an Artificer
+# infusion. The creature sheet already persists this field on save/export.
+func optional_features() -> Array[Dictionary]:
+	return _optional_features.duplicate(true)
+
+
+func _effective_infusion_record() -> Dictionary:
+	var record: Dictionary = _infusion_record.duplicate(true)
+	record["optional_features_catalog"] = _optional_features.duplicate(true)
+	record["inventory"] = _inventory.duplicate(true)
+	return record
+
+
+func _refresh_infusion_ui() -> void:
+	if _infusion_panel == null:
+		return
+	var record: Dictionary = _effective_infusion_record()
+	var level: int = Infusions.artificer_level(record)
+	_infusion_panel.visible = level > 0
+	if level <= 0:
+		return
+	var limit: int = Infusions.known_limit(record)
+	var active_limit: int = Infusions.active_limit(record)
+	_infusion_status.text = "Conosciute: %d/%d · Oggetti infusi: %d/%d" % [
+		Infusions.known(record).size(), limit, Infusions.active_count(_inventory), active_limit]
+	if level < 2:
+		_infusion_status.text += " · Disponibili dal livello 2"
+	var previous: int = _infusion_known_picker.selected
+	_infusion_known = Infusions.known(record)
+	_infusion_known_picker.clear()
+	for option: Dictionary in _infusion_known:
+		var caption: String = String(option.get("name", ""))
+		if not String(option.get("plan_item_name", "")).is_empty():
+			caption += " → " + String(option.get("plan_item_name", ""))
+		_infusion_known_picker.add_item(caption)
+	if not _infusion_known.is_empty():
+		_infusion_known_picker.select(clampi(previous, 0, _infusion_known.size() - 1))
+	_infusion_candidates.clear()
+	_infusion_catalog_picker.clear()
+	for option: Dictionary in Infusions.catalog():
+		if int(option.get("min_level", 2)) > level:
+			continue
+		if String(option.get("name", "")) != "Replicate Magic Item" and Infusions.is_learned(record, option):
+			continue
+		_infusion_candidates.append(option)
+		_infusion_catalog_picker.add_item(String(option.get("name", "")))
+		_infusion_catalog_picker.set_item_tooltip(_infusion_catalog_picker.item_count - 1,
+			String(option.get("item_prerequisite", "")))
+	if not _infusion_candidates.is_empty():
+		_infusion_catalog_picker.select(0)
+	_infusion_learn_button.disabled = level < 2 or _infusion_candidates.is_empty() or _infusion_known.size() >= limit
+	_infusion_forget_button.disabled = _infusion_known.is_empty()
+	var selected_index: int = _selected_inventory_index()
+	var owns: bool = selected_index >= 0 and selected_index < _inventory.size()
+	_infusion_apply_button.disabled = not owns or _infusion_known.is_empty() or level < 2
+	_infusion_clear_button.disabled = not owns or not _inventory[selected_index].get("infusion", {}) is Dictionary or (
+		(_inventory[selected_index].get("infusion", {}) as Dictionary).is_empty())
+
+
+func _infusion_message(message: String) -> void:
+	if _on_status.is_valid():
+		_on_status.call(message)
+	_infusion_status.text = message
+
+
+func _learn_infusion() -> void:
+	var index: int = _infusion_catalog_picker.selected
+	if index < 0 or index >= _infusion_candidates.size():
+		return
+	var record: Dictionary = _effective_infusion_record()
+	var level: int = Infusions.artificer_level(record)
+	if level < 2 or Infusions.known(record).size() >= Infusions.known_limit(record):
+		_infusion_message("Limite delle infusioni conosciute raggiunto.")
+		return
+	var option: Dictionary = _infusion_candidates[index]
+	var learned: Dictionary = {"id": option.get("id", ""), "name": option.get("name", ""), "source": "TCE"}
+	if String(option.get("name", "")) == "Replicate Magic Item":
+		var selected: int = _selected_inventory_index()
+		if selected < 0 or selected >= _inventory.size():
+			_infusion_message("Seleziona prima dall'inventario l'oggetto magico da replicare.")
+			return
+		var entry: Dictionary = _catalog_entry(_inventory[selected])
+		if not Infusions.replicable(option, entry, level):
+			_infusion_message("Questo oggetto non è nei piani replicabili disponibili a questo livello.")
+			return
+		learned["plan_item_id"] = String(_inventory[selected].get("id", ""))
+		learned["plan_item_name"] = String(entry.get("name", ""))
+	if Infusions.is_learned(record, learned):
+		_infusion_message("Infusione o piano già conosciuto.")
+		return
+	_optional_features.append(learned)
+	_refresh_infusion_ui()
+	_publish()
+
+
+func _selected_known_infusion() -> Dictionary:
+	var index: int = _infusion_known_picker.selected
+	if index >= 0 and index < _infusion_known.size():
+		return _infusion_known[index]
+	return {}
+
+
+func _forget_infusion() -> void:
+	var selected: Dictionary = _selected_known_infusion()
+	if selected.is_empty():
+		return
+	var sid: String = String(selected.get("id", ""))
+	var plan: String = String(selected.get("plan_item_id", ""))
+	for i: int in range(_optional_features.size() - 1, -1, -1):
+		var feature: Dictionary = _optional_features[i]
+		if String(feature.get("id", "")) == sid and String(feature.get("plan_item_id", "")) == plan:
+			_optional_features.remove_at(i)
+			break
+	for owned: Dictionary in _inventory:
+		var active: Variant = owned.get("infusion", {})
+		if active is Dictionary and String(active.get("id", "")) == sid and String(active.get("plan_item_id", "")) == plan:
+			owned.erase("infusion")
+			owned["attuned"] = false
+	_refresh_inventory(_selected_inventory_index())
+	_publish()
+
+
+func _apply_infusion() -> void:
+	var selected: Dictionary = _selected_known_infusion()
+	var index: int = _selected_inventory_index()
+	if selected.is_empty() or index < 0 or index >= _inventory.size():
+		return
+	var record: Dictionary = _effective_infusion_record()
+	var level: int = Infusions.artificer_level(record)
+	if level < int(selected.get("min_level", 2)):
+		_infusion_message("Livello dell'Artefice insufficiente per questa infusione.")
+		return
+	var owned: Dictionary = _inventory[index]
+	if int(owned.get("quantity", 0)) != 1:
+		_infusion_message("Le infusioni richiedono un oggetto singolo: separa prima la pila.")
+		return
+	if not Infusions.item_eligible(selected, owned):
+		_infusion_message("Oggetto incompatibile con i prerequisiti di questa infusione.")
+		return
+	for i: int in range(_inventory.size()):
+		if i == index:
+			continue
+		var other: Variant = _inventory[i].get("infusion", {})
+		if other is Dictionary and String(other.get("id", "")) == String(selected.get("id", "")) and String(other.get("plan_item_id", "")) == String(selected.get("plan_item_id", "")):
+			_infusion_message("Questa infusione è già applicata a un altro oggetto.")
+			return
+	var old: Variant = owned.get("infusion", {})
+	if (not old is Dictionary or (old as Dictionary).is_empty()) and Infusions.active_count(_inventory) >= Infusions.active_limit(record):
+		_infusion_message("Limite di oggetti infusi raggiunto: termina prima un'altra infusione.")
+		return
+	owned["infusion"] = {
+		"id": selected.get("id", ""), "name": selected.get("name", ""),
+		"source": "TCE", "level": level, "creator_id": _loaded_creature_id,
+		"plan_item_id": selected.get("plan_item_id", ""),
+		"requires_attunement": bool(selected.get("requires_attunement", false))
+	}
+	_inventory[index] = owned
+	_refresh_inventory(index)
+	_publish()
+
+
+func _clear_infusion() -> void:
+	var index: int = _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	_inventory[index].erase("infusion")
+	_inventory[index]["attuned"] = false
+	_refresh_inventory(index)
+	_publish()
