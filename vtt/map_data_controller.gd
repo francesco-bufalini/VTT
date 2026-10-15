@@ -153,6 +153,8 @@ static func valid_data(value: Variant) -> bool:
 			return false
 		if row.id.is_empty() or row.id.length() > 120 or ids.has(row.id) or row.name.length() > 256 or row.conditions.size() > 64:
 			return false
+		if row.has("free") and not row.free is bool:
+			return false
 		if row.has("active_spell_ids"):
 			if not row.active_spell_ids is Array or row.active_spell_ids.size() > 128:
 				return false

@@ -732,7 +732,7 @@ func _refresh_free_placement_tokens() -> void:
 		identity_free_tokens_rows.remove_child(child)
 		child.queue_free()
 	var count: int = 0
-	for node: Node in tokens_root.get_children():
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not is_free_scene_token(node):
 			continue
 		var free_token: CharacterBody3D = node as CharacterBody3D
