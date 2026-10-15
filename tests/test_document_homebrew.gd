@@ -88,6 +88,13 @@ func _run() -> void:
 	assert(not local_background.is_empty())
 	portable_record["background_id"] = local_background.id
 	portable_record["background"] = local_background.name
+	assert(PortableContent.unresolved(portable_record).is_empty(),
+		"Valid local homebrew references must all be exportable")
+	portable_record["additional_item_id"] = "homebrew:quick_local:items:missing_definition"
+	assert(PortableContent.unresolved(portable_record) == [
+		"homebrew:quick_local:items:missing_definition"],
+		"Export must detect missing local dependencies instead of silently omitting them")
+	portable_record.erase("additional_item_id")
 	var bundled: Array[Dictionary] = PortableContent.bundle(portable_record)
 	var ids: Array[String] = []
 	for entry: Dictionary in bundled:
