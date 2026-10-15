@@ -226,6 +226,23 @@ func run() -> void:
 		"spell_slots_manual": false, "spell_slots_automatic": false,
 		"pact_slots_spent": 0, "resource_tracker_spent": {"custom": 2}
 	}
+	var innate_monster: Dictionary = {
+		"kind": "monster", "stat_block": {"cr": "1/2"},
+		"classes": [], "xp": 0, "hit_dice": "5d8",
+		"spell_slots_automatic": true, "spell_slots_manual": false,
+		"spell_slots_total": [0, 3, 1, 0, 0, 0, 0, 0, 0, 0],
+		"spell_slots_spent": [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+		"pact_slots_total": 1, "pact_slots_spent": 1,
+		"spellcasting_calculation": {"innate": true}
+	}
+	controller.sync_automatic_progression(innate_monster)
+	assert(innate_monster.xp >= Rules.minimum_experience(innate_monster)
+		and innate_monster.hit_dice == "5d8"
+		and innate_monster.spell_slots_total[1] == 3
+		and innate_monster.spell_slots_spent[1] == 1
+		and innate_monster.pact_slots_total == 1
+		and innate_monster.spellcasting_calculation.get("innate", false),
+		"Classless monsters must keep innate dice, spell slots and consumption")
 	controller.sync_automatic_progression(resource_character)
 	assert(resource_character.spell_slots_total[1] == 4
 		and resource_character.spell_slots_total[2] == 2

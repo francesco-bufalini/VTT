@@ -3,8 +3,11 @@ extends RefCounted
 # Race/subrace selection is based on structured 5etools identity fields.
 # The compact race catalog also contains flattened "Race (Subrace)" entries.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const INDEX_PATH := "res://vtt/data/proficiency_grants_5etools.json"
 static var _indexed_subraces: Array[Dictionary] = []
+static var _speed_cache_revision: int = -1
+static var _speed_cache: Dictionary = {}
 
 
 # Internal scanning must reuse the index without repeatedly deep-copying it.
@@ -174,6 +177,26 @@ static func migrate_legacy_species(record: Dictionary) -> Dictionary:
 # Lookup by the stored stable identity. Never trust an old saved speed_base:
 # selecting a race/subrace changes the walking and special speeds immediately.
 static func speed_for_record(record: Dictionary) -> Variant:
+	# Speed participates in live statistics/formula refresh; repeatedly
+	# deep-copying the merged race catalog here causes noticeable UI lag.
+	var revision: int = ContentCatalog.revision()
+	if revision != _speed_cache_revision:
+		_speed_cache.clear()
+		_speed_cache_revision = revision
+	var key: String = JSON.stringify([
+		record.get("species_id", ""), record.get("species", ""),
+		record.get("species_source", ""), record.get("subrace", ""),
+		record.get("subrace_source", "")
+	])
+	if _speed_cache.has(key):
+		var cached: Variant = _speed_cache[key]
+		return cached.duplicate(true) if cached is Dictionary else cached
+	var speed: Variant = _uncached_speed_for_record(record)
+	_speed_cache[key] = speed.duplicate(true) if speed is Dictionary else speed
+	return speed
+
+
+static func _uncached_speed_for_record(record: Dictionary) -> Variant:
 	var race_name: String = String(record.get("species", ""))
 	var race_source: String = String(record.get("species_source", ""))
 	var race_id: String = String(record.get("species_id", ""))
