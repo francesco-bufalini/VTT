@@ -6,6 +6,7 @@ const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const OriginSpells5e = preload("res://vtt/structured_origin_spells_5etools.gd")
+const FightClubMonsters = preload("res://vtt/fightclub_monster_resources.gd")
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -145,6 +146,93 @@ static func _append_monster_trackers(record: Dictionary, output: Array[Dictionar
 				"recharge": "d6",
 				"recharge_min": int(match_data["min"])
 			})
+
+
+
+	# Supplement 5etools with source-qualified Fight Club counters. Only attach
+	# a counter to the same, uniquely named feature in the SAME section; never
+	# assign resources based on prose or a matching monster name alone.
+	for supplement: Dictionary in FightClubMonsters.for_monster(record):
+		var max_uses: int = int(supplement.get("max", 0))
+		var recovery: String = String(supplement.get("recharge", ""))
+		if max_uses <= 0 or recovery not in ["d6", "turn", "short_rest", "long_rest"]:
+			continue
+		if bool(supplement.get("legendary_pool", false)):
+			var legendary_value: Variant = stat.get("legendary", [])
+			if not legendary_value is Array or (legendary_value as Array).is_empty():
+				continue
+			var existing_pool := false
+			for tracker: Dictionary in output:
+				if String(tracker.get("id", "")) == "legendary_actions":
+					existing_pool = true
+					break
+			if not existing_pool:
+				output.append({
+					"id": "legendary_actions", "name": "Azioni leggendarie",
+					"max": max_uses, "origin": "Azioni leggendarie",
+					"recharge": "turn", "source_label": "Fight Club 5e"
+				})
+			continue
+		var section: String = String(supplement.get("section", ""))
+		if section not in ["trait", "action", "bonus", "reaction", "legendary", "mythic"]:
+			continue
+		var section_value: Variant = stat.get(section, [])
+		if not section_value is Array:
+			continue
+		var wanted: String = _normalise_monster_feature_name(String(supplement.get("name", "")))
+		if wanted.is_empty():
+			continue
+		var matching_index := -1
+		for index: int in range((section_value as Array).size()):
+			var raw_entry: Variant = (section_value as Array)[index]
+			if not raw_entry is Dictionary:
+				continue
+			var candidate: String = _normalise_monster_feature_name(
+				String((raw_entry as Dictionary).get("name", "")))
+			if candidate != wanted:
+				continue
+			if matching_index >= 0:
+				matching_index = -1  # Ambiguous names must be resolved manually.
+				break
+			matching_index = index
+		if matching_index < 0:
+			continue
+		var native_id: String = "recharge:%s:%d" % [section, matching_index]
+		var already_available := false
+		for tracker: Dictionary in output:
+			if String(tracker.get("id", "")) == native_id:
+				already_available = true
+				break
+		if already_available:
+			continue  # 5etools is authoritative for explicit recharge markup.
+		var raw_entry: Dictionary = (section_value as Array)[matching_index]
+		var actual_title: String = String(raw_entry.get("name", ""))
+		var display_name: String = _clean_monster_recharge_name(actual_title)
+		var tracker: Dictionary = {
+			"id": "fightclub:%s:%d" % [section, matching_index],
+			"name": display_name, "max": max_uses, "origin": actual_title,
+			"recharge": recovery, "source_label": "Fight Club 5e"
+		}
+		if recovery == "d6":
+			tracker["recharge_min"] = int(supplement.get("recharge_min", 6))
+		output.append(tracker)
+
+
+static func _clean_monster_recharge_name(title: String) -> String:
+	var expression := RegEx.create_from_string(
+		"\\{@recharge(?: [1-6])?\\}|\\(recharge [1-6](?:-[1-6])?\\)")
+	if expression == null:
+		return title.strip_edges()
+	# Regex is lower-case, but preserve capitalization in the displayed title.
+	var lowercase: String = title.to_lower()
+	var found: RegExMatch = expression.search(lowercase)
+	if found != null:
+		return title.erase(found.get_start(), found.get_string().length()).strip_edges()
+	return title.strip_edges()
+
+
+static func _normalise_monster_feature_name(title: String) -> String:
+	return _clean_monster_recharge_name(title).to_lower().strip_edges()
 
 
 static func _recharge_markup(title: String) -> Dictionary:
