@@ -33,6 +33,10 @@ static func _document() -> Dictionary:
 
 
 static func _persist(doc: Dictionary) -> bool:
+	var encoded: String = JSON.stringify(doc, "  ") + "\n"
+	# Never replace a valid package with one the catalog refuses to load.
+	if encoded.to_utf8_buffer().size() > ContentCatalog.MAX_FILE_BYTES:
+		return false
 	var folder: String = PATH.get_base_dir()
 	if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder)) != OK:
 		return false
@@ -41,9 +45,13 @@ static func _persist(doc: Dictionary) -> bool:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string(JSON.stringify(doc, "  ") + "\n")
+	file.store_string(encoded)
 	file.flush()
+	var write_error: Error = file.get_error()
 	file.close()
+	if write_error != OK:
+		DirAccess.remove_absolute(temporary)
+		return false
 	# Replace the previous file only after the new one has been written.
 	var err: Error = DirAccess.rename_absolute(temporary, path)
 	if err != OK and FileAccess.file_exists(path):

@@ -68,7 +68,10 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 	dialog.ok_button_text = "Salva nel catalogo"
 	dialog.cancel_button_text = "Annulla"
 	parent.add_child(dialog)
-	_free_on_close(dialog)
+	# Keep the entered data available when validation or persistence fails.
+	dialog.dialog_hide_on_ok = false
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
 	var scroller := ScrollContainer.new()
 	scroller.custom_minimum_size = Vector2(330, 220)
 	dialog.add_child(scroller)
@@ -79,6 +82,7 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 	_add_field(form, "Nome")
 	var name := LineEdit.new()
 	name.placeholder_text = "Nome del contenuto personalizzato"
+	name.max_length = 120
 	form.add_child(name)
 	dialog.get_ok_button().disabled = true
 	name.text_changed.connect(func(value: String) -> void:
@@ -193,13 +197,15 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 		var saved: Dictionary = Store.create(category, name.text, description.text,
 			proficiencies, details)
 		if not saved.is_empty():
+			dialog.hide()
+			dialog.queue_free()
 			if on_created.is_valid():
 				on_created.call(saved)
 		else:
 			var warning := AcceptDialog.new()
 			warning.title = "Impossibile salvare"
-			warning.dialog_text = "Controlla che il nome non sia già usato da un altro contenuto personalizzato e che il catalogo locale sia scrivibile."
-			parent.add_child(warning)
+			warning.dialog_text = "Controlla che il nome non sia già usato, che il catalogo locale sia scrivibile e che non superi 2 MB. I dati inseriti sono ancora nel modulo."
+			dialog.add_child(warning)
 			_free_on_close(warning)
 			DialogLayout.popup(warning, Vector2i(430, 190), 0.90)
 	)

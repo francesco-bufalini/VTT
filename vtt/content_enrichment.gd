@@ -14,7 +14,7 @@ static var _overlays: Dictionary = {}
 static var diagnostics: Array[String] = []
 
 
-static func reload(paths: Array[String] = [BUNDLED_DIR, USER_DIR]) -> void:
+static func reload_overlays(paths: Array[String] = [BUNDLED_DIR, USER_DIR]) -> void:
 	_revision += 1
 	_overlays.clear()
 	diagnostics.clear()
@@ -25,7 +25,7 @@ static func reload(paths: Array[String] = [BUNDLED_DIR, USER_DIR]) -> void:
 
 static func revision() -> int:
 	if not _loaded:
-		reload()
+		reload_overlays()
 	return _revision
 
 
@@ -86,7 +86,7 @@ static func _load_file(path: String) -> void:
 
 static func apply_to(category: String, definition: Dictionary) -> Dictionary:
 	if not _loaded:
-		reload()
+		reload_overlays()
 	var result: Dictionary = definition.duplicate(true)
 	if category == "items":
 		# Adapt native 5etools names only on the catalog view.
@@ -111,6 +111,6 @@ static func apply_to(category: String, definition: Dictionary) -> Dictionary:
 
 static func extension_for(category: String, catalog_id: String) -> Dictionary:
 	if not _loaded:
-		reload()
+		reload_overlays()
 	var extension: Variant = _overlays.get(category + "|" + catalog_id, {})
 	return (extension as Dictionary).duplicate(true) if extension is Dictionary else {}
