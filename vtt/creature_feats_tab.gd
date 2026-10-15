@@ -498,6 +498,7 @@ func _on_feat_catalog_selected(index: int) -> void:
 
 func _open_custom_feat_editor() -> void:
 	QuickCustomDialog.create_popup(self, "feats", func(created: Dictionary) -> void:
+		_feat_filter.clear()
 		_catalog_cache.erase("feats")
 		_refresh_feat_picker()
 		# The user can now select an origin and grant this new feat normally.
