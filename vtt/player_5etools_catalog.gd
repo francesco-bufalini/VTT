@@ -463,8 +463,16 @@ static func info_text(
 				lines.append("Prerequisiti: " + requirement_text)
 
 	var type_code := str(entry.get("type", "")).split("|")[0]
-	if not type_code.is_empty():
+	var custom_type: String = String(entry.get("custom_item_type", ""))
+	if not custom_type.is_empty():
+		lines.append("Tipo: " + String({
+			"other": "Oggetto", "magic": "Oggetto magico", "weapon": "Arma",
+			"armor": "Armatura", "shield": "Scudo", "tool": "Strumento"
+		}.get(custom_type, custom_type)))
+	elif not type_code.is_empty():
 		lines.append("Tipo: %s" % _item_type_name(type_code))
+	if entry.has("value_gp"):
+		lines.append("Valore: %d mo" % int(entry.get("value_gp", 0)))
 
 	var rarity := str(entry.get("rarity", "")).strip_edges()
 	if not rarity.is_empty() and rarity.to_lower() != "none":
