@@ -3,6 +3,7 @@ extends RefCounted
 # Every numeric formula target may receive several independent, additive grants.
 # "expression" is deliberately arithmetic only: no dice and no method calls.
 const Rules = preload("res://vtt/creature_rules.gd")
+const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
@@ -274,9 +275,9 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 	if target == "level":
 		return {"ok": true, "value": int(record.get("level", 1))}
 	if target == "proficiency":
-		if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
-			var cr: float = Rules.monster_cr_value(record.get("stat_block", {}))
-			return {"ok": true, "value": 2 + maxi(0, floori((cr - 1.0) / 4.0))}
+		if String(record.get("kind", "")) == "monster":
+			var cr: float = Rules.effective_monster_cr(record)
+			return {"ok": true, "value": 2 + maxi(0, floori((minf(cr, 30.0) - 1.0) / 4.0))}
 		return {"ok": true, "value": Rules.proficiency_bonus(record)}
 	if target == "initiative":
 		var dex: Dictionary = _resolve(record, "ability_mod:dex", stack)
@@ -305,6 +306,12 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 			armor_record["effective_armor_dex"] = int(dex["value"])
 		return {"ok": true, "value": int(Items.armor_base(armor_record).get("value", 10)) + Items.shield_bonus(record.get("inventory", []))}
 	if target == "speed":
+		if String(record.get("kind", "character")) != "monster":
+			var species_speed: Variant = record.get("species_speed", {})
+			if species_speed == {}:
+				species_speed = RaceRules.speed_for_record(record)
+			if species_speed != {}:
+				return {"ok": true, "value": Rules.walking_speed(species_speed)}
 		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30)))}
 	if target.begins_with("speed:"):
 		var movement: String = target.substr(6)
