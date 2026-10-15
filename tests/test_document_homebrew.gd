@@ -228,6 +228,41 @@ func _run() -> void:
 		and int(documents_tab.call("_selected_inventory_index")) == 0,
 		"Documents can be selected again after an empty inventory")
 	documents_tab.call("load_inventory", [])
+
+	# Catch the regressions that were invisible to the transport tests:
+	# narrow inventory width, a readable document body editor and a
+	# bounded modal with usable native action buttons.
+	root.gui_embed_subwindows = true
+	root.set_meta("vtt_touch_layout", true)
+	root.size = Vector2i(360, 640)
+	tab.configure_touch_layout()
+	tab.size = Vector2(360, 600)
+	await process_frame
+	assert(tab.get_combined_minimum_size().x <= 360,
+		"Inventory content must not widen its phone-sized sheet")
+	documents_tab.call("load_inventory", [row])
+	documents_tab.call("_open_document", 0)
+	await process_frame
+	documents_tab.call("_toggle_editor", true)
+	await process_frame
+	var editor: TextEdit = documents_tab.get("_body_edit") as TextEdit
+	var preview: TextureRect = documents_tab.get("_full_image") as TextureRect
+	var edit_dialog: AcceptDialog = documents_tab.get("_dialog") as AcceptDialog
+	assert(editor.is_visible_in_tree() and editor.virtual_keyboard_enabled
+		and not preview.visible,
+		"On mobile the full-width multiline editor replaces the preview")
+	assert(edit_dialog.position.x >= 0 and edit_dialog.position.y >= 0
+		and edit_dialog.position.x + edit_dialog.size.x <= root.size.x
+		and edit_dialog.position.y + edit_dialog.size.y <= root.size.y,
+		"Document editing popup must remain inside the mobile screen")
+	editor.text = "Corpo documento modificabile\nSeconda riga"
+	editor.text_changed.emit()
+	documents_tab.call("_flush_edit")
+	assert(String(Documents.definition_for(row).get("description", "")) ==
+		"Corpo documento modificabile\nSeconda riga",
+		"Mobile multiline document edits must persist")
+	edit_dialog.hide()
+	documents_tab.call("load_inventory", [])
 	tab.queue_free()
 	await process_frame
 
