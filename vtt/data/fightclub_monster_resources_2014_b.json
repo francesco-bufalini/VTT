@@ -1,0 +1,3875 @@
+{
+  "schema_version": 1,
+  "origin_repository": "vidalvanbergen/FightClub5eXML",
+  "edition": "2014",
+  "source_files": [
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Ghosts_of_Saltmarsh/bestiary-gos.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/The_Wild_Beyond_the_Witchlight/bestiary-twbtw.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Journeys_Through_the_Radiant_Citadel/bestiary-jttrc.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Phandelver_and_Below_the_Shattered_Obelisk/bestiary-pabso.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Planescape_Adventures_in_the_Multiverse/bestiary-pam.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Princes_of_the_Apocalypse/bestiary-pota.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Vecna_Eve_of_Ruin/bestiary-ver.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Book_of_Many_Things/bestiary-bomt.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Acquisitions_Incorporated/bestiary-ai.xml",
+    "Sources/DND_5e/WizardsOfTheCoast/05_Adventures/Out_of_the_Abyss/bestiary-oota.xml"
+  ],
+  "monsters": [
+    {
+      "source": "AI",
+      "name": "Ancient Deep Crow",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Brahma Lutier",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Taunt (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Song of Domination (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Chaos Quadrapod",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Chaos Cloud (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Clockwork Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Donaar Blit'zen",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Champion Challenge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Keg Robot",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Hot Oil Spray (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Oak Truestrike",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Return the Favor (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Omin Dran",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "War God's Blessing (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Pendragon Beestinger",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Echo Spell (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Phoenix Anvil",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Divine Display (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Portentia Dran",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Splugoth the Returned",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Word From Beyond (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Viari",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "AI",
+      "name": "Walnut Dankgrass",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Wild Shape (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Ambitious Assassin",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Asteria",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Empowering Aegis (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Aurnozci",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Mucus Spray (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Brusipha",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Incite the Hunters (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Enchanting Infiltrator",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Euryale",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Petrifying Gaze (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Fate Hag",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "trait",
+          "name": "Trace the Threads (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Gremorly's Ghost",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Possession (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        },
+        {
+          "section": "action",
+          "name": "Ethereal Step (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Grim Champion of Bloodshed",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Blade Storm (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Grim Champion of Desolation",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Step into Nothing (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Grim Champion of Pestilence",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Harrow Hawk",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Plane Shift (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Harrow Hound",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Shadow Step (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Hierophant Medusa",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Devotion's Call (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Petrifying Gaze (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Hierophant of the Comet",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Comet's Voice (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "All-Consuming Star (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Hulgaz",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Brimstone Vapor (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Initiate of the Comet",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Moment of Foresight (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Malaxxix",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Mezzoloth Vortex (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Minotaur Infiltrator",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Otherworldly Corrupter",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Pazrodine",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapon (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Riffler",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Card Spray (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Ruin Spider",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Web (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Solar Bastion Knight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Solar Flare (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "BOMT",
+      "name": "Veiled Presence",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Bullywug Croaker",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Glaaar-pat (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Rooooo-glog (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Bullywug Royal",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Croaked Decree (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Drowned Assassin",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Reveal (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Drowned Master",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Necrotic Ink (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Harpy Matriarch",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Visage of Desire (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Juvenile Kraken",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Koalinth Sergeant",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Spear the Helpless (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Living Iron Statue",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Whirl (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Lizardfolk Render",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Rend the Field (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Lizardfolk Subchief",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Jaws of Semuanya (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Maw of Sekolah",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Merfolk Salvager",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Inject Toxin (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Monstrous Peryton",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Mr. Dory",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Eye of Corruption (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Pirate Captain",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Shape Up, Ye Dog (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Sahuagin Wave Shaper",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Whirlpool (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Skeletal Juggernaut",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Avalanche of Bones (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Thousand Teeth",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "GOS",
+      "name": "Vampiric Jade Statue",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Amanisha Manivarshi",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Ashen Heir Assassin",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Atash",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Bakunawa",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Diva Luma",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Jade Soldier Statue",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Slow (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Lu Zhong Yin",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Paloma",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Riverine",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Samira Arah",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Sholeh",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Breath Weapons (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Soul Shaker",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Enthralled Lure (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Tlexolotl",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Pyroclasm (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Whistler",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Otherworldly Melody (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "JTTRC",
+      "name": "Wynling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cloak of the Mountain (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Aljanor Keenblade",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Bridesmaid of Zuggtmoy",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Infestation Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Chamberlain of Zuggtmoy",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Infestation Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Deepking Horgar Steelshadow V",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Invisibility (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Droki",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Drow Spy",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Duergar Alchemist",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Invisibility (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Duergar Darkhaft",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Invisibility (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Duergar Keeper of the Flame",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Enlarge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Invisibility (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Four-Armed Statue",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Slow (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Giant Rocktopus",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Ink Cloud (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Grazilaxx",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Ilvara Mizzrym",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Jade Giant Spider",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Slow (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Jimjar",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Khalessa Draga",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Kinyel Druu'giir",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Lords' Alliance Spy",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Lorthuun",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Narrak",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Armor of Shadows (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Peebles",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Pudding King, The",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Create Green Slime (Recharges after a Long Rest)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Rumpadump",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Rapport Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Rystia Zav",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Sovereign Basidia",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animating Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Spider King",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Web (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Stool",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Rapport Spores (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Themberchaud",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Fire Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Troglodyte Champion of Laogzed",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Acid Spray (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Xazax the Eyemonger",
+      "resources": [
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "OOTA",
+      "name": "Yestabrod",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Caustic Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Infestation Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (2/Turn)",
+          "max": 2,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Aberrant Zealot",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Void Warp (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Aberrant Zealot (Tentacled)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Void Warp (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Brain Breaker",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Chishinix",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Unleash Void (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Cloaker Mutate",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Psychic Moan (Recharge 6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Encephalon Cluster",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Spawn Progeny (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Fiendish Auger",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Burst of Heat (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Goblin Psi Commander",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Synaptic Rend (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Hashutu",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Unleash Void (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Hjoldak Hollowhelm",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Psionic Crown (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Iarno \"Glasstaff\" Albrek",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Teleport (2/Day) (Bonus Action)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Infected Elder Brain",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Lowarnizel",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Singularity Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Mind Flayer Clairvoyant",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Unleash Void (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Mind Flayer Nothic",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Mind Flayer Prophet",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Whip (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Oculorb",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Antipathic Flood (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Oshundo the Alhoon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Thundering Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "reaction",
+          "name": "Negate Spell (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Psionic Ashenwight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Psionic Crown (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Qunbraxel",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Refraction of Ilvaash",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (5/Day)",
+          "max": 5,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Mind Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Ruxithid the Chosen",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Brain Tendrils (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Shalfi Lewin",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Void Warp (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Voalsh",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Unleash Void (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PABSO",
+      "name": "Zeond",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Scare (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Adult Time Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Time Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Ancient Time Dragon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (5/Day)",
+          "max": 5,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Time Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Time Gate (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Athar Null",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Nullify Spell (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Aurumach Rilmani",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Invoke Weakness (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Baernaloth",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Miasma of Discord (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Summon Yugoloth (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Bleak Cabal Void Soother",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Soothing Word (3/Day) (Bonus Action)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Dabus",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Grasping Ground (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Decaton Modron",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Lightning Rays (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Equinal Guardinal",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Shout (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Eyestalk of Gzemnid",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Eradication Gaze (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Farastu Demodand",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demodand (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Fraternity of Order Law Bender",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Probability Loophole (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Githzerai Futurist",
+      "resources": [
+        {
+          "section": "reaction",
+          "name": "Future Insight (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Githzerai Traveler",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Matter Manipulation (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Harmonium Captain",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Dictate (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Heralds of Dust Remnant",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Phase (2/Day) (Bonus Action)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Hexton Modron",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Kelubar Demodand",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demodand (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Nauseating Fog (Recharge 6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Kolyarut",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Edict of Blades (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Plane Shift (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Maelephant",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Mind Poison (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Mercykiller Bloodhound",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Marked for Pursuit (3/Day) (Bonus Action)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Octon Modron",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Whirlwind of Tentacles (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Planar Incarnate",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Planar Exhalation (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Razorvine Blight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Life-Draining Vines (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Shator Demodand",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Jailer (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Inhibitory Spray (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Summon Demodand (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Shemeshka",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (4/Day)",
+          "max": 4,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "reaction",
+          "name": "Fell Counterspell (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Swarm of Sunflies",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Dazzling Lights (Recharge 6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Time Dragon Wyrmling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Time Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Vargouille Reflection",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Horrific Reflection (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "PAM",
+      "name": "Young Time Dragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Time Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Aerisi Kalinoth",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Bronzefume",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Steam Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Darathra Shendrel",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Drannin Splithelm",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Action Surge (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "trait",
+          "name": "Indomitable (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "trait",
+          "name": "Second Wind (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Elizar Dryflagon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Summon Mephits (Recharges after a Long Rest)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Emberhorn Minotaur",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Burning Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Eternal Flame Guardian",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Flaming Weapon (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Fathomer",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Shapechanger (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Gar Shatterkeel",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Grumink the Renegade",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Hellenrae",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Stunning Strike (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Howling Hatred Initiate",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Guiding Wind (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Imix",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Summon Elementals (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Marlos Urnrayle",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Nurvureem, The Dark Lady",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Acid Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Ogrémoch",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Summon Elementals (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Olhydra",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Summon Elementals (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Oreioth",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Swift Animation (Recharges after a Long Rest)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Renwick",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (4/Turn)",
+          "max": 4,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Stone Warrior",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Slow (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Vanifer",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "POTA",
+      "name": "Yan-C-Bin",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Thundercrack (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        },
+        {
+          "section": "action",
+          "name": "Summon Elementals (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Alagarthas",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Leadership (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Bavlorna Blightstraw",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Create Lornlings (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Brigganock",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Time Lapse (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Bullywug Knight",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Croak of Charming (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Bullywug Royal",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Croaked Decree  (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Campestri",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Clapperclaw the Scarecrow",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Unsettling Presence  (Recharge 6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 6
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Darkling Elder",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Darkness (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Elkhorn",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Feint  (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Second Wind  (Recharges after a Short or Long Rest) (Bonus Action)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Envy",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Petrifying Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Glasswork Golem",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Dazzling Light  (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Iggwilv the Witch Queen",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Abyssal Rift (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "reaction",
+          "name": "Negate Spell (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Jabberwock",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Fiery Gaze (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Kelek",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Fiery Explosion (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        },
+        {
+          "section": "reaction",
+          "name": "Arcane Defense (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Kettlesteam the Kenku",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Twilight Sleep (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Living Doll",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Cackle  (Recharge 4-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Mercion",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Radiant Fire (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Mister Light",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blessing of the Raven Queen  (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Mister Witch",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blessing of the Raven Queen  (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Raezil",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Sneak Attack (1/Turn)",
+          "max": 1,
+          "recharge": "turn"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Selenelion Twin",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Moon Ray (Gleam Only; 3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Sun Ray (Glister Only; 3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Twin Sight (Recharges after a Short or Long Rest)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Sir Talavar",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Euphoria Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Swarm of Campestris",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Spores (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Treant Sapling",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animate Trees (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Warduke",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Second Wind  (Recharges after a Short or Long Rest) (Bonus Action)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Will-o'-Wisp (Variant)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Magic Boon (Recharges after a Long Rest)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Witchlight Hand",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Pixie Dust (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Witchlight Hand (Small)",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Pixie Dust (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "TWBTW",
+      "name": "Zargash",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Cling to Life (Recharges after a Long Rest)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Animate Corpse  (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Alustriel Silverhand",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Silver Fire (2/Day) (Bonus Action)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Blade Lieutenant",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Rally the Troops (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Blade Scout",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Snare Trap (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Blazebear",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Stunning Gaze (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Borthak",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Noxious Regurgitation (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Citadel Spider",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Crunch",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Snare Trap (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Deathwolf",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Phantom Deathwolf (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "False Lich",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Bloodcurdling Lament (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Glaive",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Overdrive (Recharges after Finishing a Short or Long Rest) (Bonus Action)",
+          "max": 1,
+          "recharge": "short_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Hazvongel",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blood Barrage (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Hertilod",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistances (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Inda",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Healing Touch (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Jerot Galgin",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Undead (1/Day) (Bonus Action)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Kas the Betrayer",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Kaylan Renaudon",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Children of the Night (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Ker-Arach",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Spiderling Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Stifling Webs (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Miska the Wolf-Spider",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Moonlight Guardian",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Moonlight Blast (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Naxa",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Orinix",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (2/Day)",
+          "max": 2,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Cold Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Phase (3/Day) (Bonus Action)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Phisarazu Spyder-Fiend",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Scintillating Spray (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Quavilithku Spyder-Fiend",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Dissolving Web (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Rack",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Snare Trap (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Redbud",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Animate Trees (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Relentless Impaler",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Spike Burst (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Rerak",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Bloodcurdling Lament (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Sangora",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Children of the Night (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Sarusanda Allester",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Implode (Recharge 4-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 4
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Spiderdragon",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Spiderling Breath (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "action",
+          "name": "Stifling Webs (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Strahd, Master of Death House",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Blighted Fire (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Tasha the Witch",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Abyssal Visage (2/Day) (Bonus Action)",
+          "max": 2,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Vaeve",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Summon Demon (1/Day)",
+          "max": 1,
+          "recharge": "long_rest"
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Vecna the Archlich",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (5/Day)",
+          "max": 5,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Flight of the Damned (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Whirling Chandelier",
+      "resources": [
+        {
+          "section": "action",
+          "name": "Blazing Vortex (Recharge 5-6)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        }
+      ]
+    },
+    {
+      "source": "VER",
+      "name": "Windfall",
+      "resources": [
+        {
+          "section": "trait",
+          "name": "Legendary Resistance (3/Day)",
+          "max": 3,
+          "recharge": "long_rest"
+        },
+        {
+          "section": "action",
+          "name": "Stunning Scintillation (Recharge 5-6) (Bonus Action)",
+          "max": 1,
+          "recharge": "d6",
+          "recharge_min": 5
+        },
+        {
+          "section": "legendary",
+          "name": "Legendary Actions (3/Turn)",
+          "max": 3,
+          "recharge": "turn",
+          "legendary_pool": true
+        }
+      ]
+    }
+  ]
+}
