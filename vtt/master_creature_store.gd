@@ -120,6 +120,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		base_name = "Creatura"
 	var hp := _default_hp(stat_block)
 	return {
+		"kind": "monster",
 		"id": "master_creature_%d_%d" % [now, unique],
 		"name": base_name,
 		"base_name": base_name,
