@@ -6,6 +6,8 @@ const Instances = preload("res://vtt/item_instance.gd")
 const Inventory = preload("res://vtt/creature_inventory_tab.gd")
 const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 
 
 func _initialize() -> void:
@@ -86,6 +88,31 @@ func _run() -> void:
 	var local_background: Dictionary = QuickCustom.create("backgrounds", "Portable " + stamp,
 		"Descrizione trasportabile", [{"kind": "skill", "key": "arcana"}])
 	assert(not local_background.is_empty())
+	var custom_feat: Dictionary = QuickCustom.create("feats", "Portable Feat " + stamp,
+		"Talento trasportabile", [{"kind": "tool", "key": "thieves' tools"}])
+	assert(not custom_feat.is_empty())
+	var custom_item: Dictionary = QuickCustom.create("items", "Portable Item " + stamp,
+		"Oggetto trasportabile", [], {
+		"type": "OTH", "custom_item_type": "magic", "rarity": "rare", "value": 250})
+	assert(not custom_item.is_empty())
+	var prof_record: Dictionary = {"kind": "character",
+		"background": local_background.name, "background_source": "Personalizzato",
+		"feats_catalog": [{"id": custom_feat.id, "name": custom_feat.name,
+			"source": "Personalizzato"}]}
+	var selected: Array[Dictionary] = Proficiencies.choices(prof_record)
+	assert(Proficiencies.has_choice(selected, "skill", "arcana"))
+	assert(Proficiencies.has_choice(selected, "tool", "thieves' tools"))
+	var item_definition: Dictionary = {}
+	for entry: Dictionary in Catalog.home_entries("items"):
+		if String(entry.get("id", "")) == String(custom_item.id):
+			item_definition = entry
+	assert(ItemRules.kind(item_definition) == "magic"
+		and int(item_definition.get("value", 0)) == 250,
+		"Custom item fields must load through the normal catalog")
+	var item_instance: Dictionary = Instances.from_catalog(item_definition)
+	assert(String(item_instance.get("rarity", "")) == "rare"
+		and int(item_instance.get("value", 0)) == 250)
+	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
 	portable_record["background_id"] = local_background.id
 	portable_record["background"] = local_background.name
 	assert(PortableContent.unresolved(portable_record).is_empty(),
@@ -118,7 +145,10 @@ func _run() -> void:
 	var local_parts: PackedStringArray = String(local_background.id).split(":")
 	var imported_path := PortableContent.IMPORT_DIR.path_join(local_parts[1]).path_join(
 		local_parts[2] + "_" + local_parts[3] + ".json")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(imported_path))
+	assert(FileAccess.file_exists(imported_path))
+	assert(QuickCustom.remove(local_background),
+		"Imported quick-created backgrounds must remain deletable by the user")
+	assert(not FileAccess.file_exists(imported_path))
 	Catalog.reload_homebrew()
 
 	# Regression: ItemList's prior selection must not index the replacement
