@@ -19,7 +19,7 @@ var _inventory: Array[Dictionary] = []
 var _indices: Array[int] = []
 var _loading := false
 var _dirty := false
-var _save_revision := 0
+var _autosave_timer: Timer
 var _active_id := ""
 var _editing_key := ""
 
@@ -51,6 +51,13 @@ func setup(on_change: Callable, on_status: Callable,
 	_send_document = send_document
 	_online_peers = online_peers
 	add_theme_constant_override("separation", 8)
+	# One reusable timer avoids creating an unbounded number of delayed
+	# coroutines while typing long documents or using the mobile keyboard.
+	_autosave_timer = Timer.new()
+	_autosave_timer.one_shot = true
+	_autosave_timer.wait_time = 1.2
+	_autosave_timer.timeout.connect(_flush_edit)
+	add_child(_autosave_timer)
 
 	var toolbar := HBoxContainer.new()
 	add_child(toolbar)
@@ -451,20 +458,14 @@ func _on_editor_changed() -> void:
 	if _loading:
 		return
 	_dirty = true
-	# Avoid redrawing a full page texture on each character while editing.
-	if _full_image.is_visible_in_tree():
-		_update_preview()
-	_save_revision += 1
-	_save_later(_save_revision)
-
-
-func _save_later(revision: int) -> void:
-	await get_tree().create_timer(1.2).timeout
-	if revision == _save_revision and _dirty and is_inside_tree():
-		_flush_edit()
+	# Debounce disk writes and page texture updates together: do not rebuild
+	# a 640x780 viewport for every keystroke on desktop or Android.
+	_autosave_timer.start()
 
 
 func _flush_edit() -> void:
+	if _autosave_timer != null:
+		_autosave_timer.stop()
 	if not _dirty:
 		return
 	var owned_index := -1
@@ -482,7 +483,6 @@ func _flush_edit() -> void:
 		_status("Impossibile salvare la definizione homebrew del documento.")
 		return
 	_dirty = false
-	_save_revision += 1
 	# The shared definition has changed. Refresh saved fallback names on
 	# every copy without touching their individual date or presentation.
 	for i: int in range(_inventory.size()):
@@ -491,6 +491,8 @@ func _flush_edit() -> void:
 	_dialog.title = "Documento · " + title
 	_refresh_list()
 	_publish()
+	if _full_image.is_visible_in_tree():
+		_update_preview()
 
 
 func _update_preview() -> void:

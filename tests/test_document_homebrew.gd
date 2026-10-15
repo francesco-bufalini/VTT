@@ -259,7 +259,11 @@ func _run() -> void:
 		"Document editing popup must remain inside the mobile screen")
 	editor.text = "Corpo documento modificabile\nSeconda riga"
 	editor.text_changed.emit()
+	var save_timer: Timer = documents_tab.get("_autosave_timer") as Timer
+	assert(save_timer != null and not save_timer.is_stopped(),
+		"Document editor must use one reusable debounce timer while typing")
 	documents_tab.call("_flush_edit")
+	assert(save_timer.is_stopped(), "Manual save must cancel a pending autosave")
 	assert(String(Documents.definition_for(row).get("description", "")) ==
 		"Corpo documento modificabile\nSeconda riga",
 		"Mobile multiline document edits must persist")
