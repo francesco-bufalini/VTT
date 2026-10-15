@@ -5,6 +5,7 @@ extends RefCounted
 const CharacterStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const PortableContent = preload("res://vtt/portable_creature_content.gd")
 
 var _characters
 var _monsters
@@ -201,6 +202,9 @@ func import_export_copy(payload: Dictionary) -> Error:
 	var record: Dictionary = payload.creature.duplicate(true)
 	if record.get("kind") not in ["character", "monster"] or String(record.get("name", "")).strip_edges().is_empty():
 		return ERR_INVALID_DATA
+	var content_error: Error = PortableContent.install(payload.get("homebrew_content", null))
+	if content_error != OK:
+		return content_error
 	record["id"] = "import_" + Crypto.new().generate_random_bytes(16).hex_encode()
 	record["owner_id"] = CreatureOwner.local_id()
 	record["transfer_revision"] = 0
