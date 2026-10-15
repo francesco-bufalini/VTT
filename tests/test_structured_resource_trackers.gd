@@ -242,5 +242,60 @@ func run() -> void:
 	assert(int(_find_resource(monster, "Flame Breath").get("recharge_min", 0)) == 5)
 	assert(int(_find_resource(monster, "Shadow Breath").get("recharge_min", 0)) == 6)
 	assert(_find_resource(monster, "Legendary Resistance").is_empty())
+
+	# Source-qualified Fight Club supplements enrich only matching 5etools
+	# features; 5etools {@recharge} and numeric legendaryActions take priority.
+	var archaic: Dictionary = {
+		"kind": "monster",
+		"stat_block": {
+			"source": "MOSH", "name": "Archaic",
+			"trait": [{"name": "Legendary Resistance (3/Day)"}],
+			"action": [{"name": "Gravity Shift {@recharge 5}"}],
+			"reaction": [{"name": "Spell Mimicry (1/Day)"}],
+			"legendary": [{"name": "Claw"}]
+		}
+	}
+	var enriched: Array[Dictionary] = Trackers.for_creature(archaic)
+	assert(enriched.size() == 4, "Fight Club must add only missing counters and a legendary pool")
+	assert(int(_find_resource(enriched, "Legendary Resistance (3/Day)").get("max", 0)) == 3)
+	assert(String(_find_resource(enriched, "Legendary Resistance (3/Day)").get("recharge", "")) == "long_rest")
+	assert(int(_find_resource(enriched, "Spell Mimicry (1/Day)").get("max", 0)) == 1)
+	assert(String(_find_resource(enriched, "Gravity Shift").get("id", "")) == "recharge:action:0",
+		"5etools-native d6 counters must keep their ID and avoid duplicates")
+	assert(int(_find_resource(enriched, "Azioni leggendarie").get("max", 0)) == 3)
+	archaic["resource_tracker_spent"] = {
+		"fightclub:trait:0": 1, "fightclub:reaction:0": 1,
+		"recharge:action:0": 1, "legendary_actions": 2
+	}
+	var rested: Dictionary = Trackers.spent_after_recovery(archaic, "long_rest")
+	assert(not rested.has("fightclub:trait:0") and not rested.has("fightclub:reaction:0"))
+	assert(rested.has("recharge:action:0"), "d6 recharge must not be reset by rests")
+	assert(rested.has("legendary_actions"), "long rest must not trigger a turn reset")
+	assert(not Trackers.spent_after_recovery(archaic, "turn").has("legendary_actions"))
+	archaic["stat_block"]["legendaryActions"] = 2
+	var explicit_pool: Array[Dictionary] = Trackers.for_creature(archaic)
+	assert(int(_find_resource(explicit_pool, "Azioni leggendarie").get("max", 0)) == 2,
+		"Native legendaryActions must override Fight Club's pool count")
+	archaic["stat_block"]["source"] = "OTHER"
+	assert(Trackers.for_creature(archaic).size() == 2,
+		"Supplement must never match a different source with the same monster name")
+	archaic["stat_block"]["source"] = "MOSH"
+	archaic["stat_block"]["name"] = "Variant Archaic"
+	assert(Trackers.for_creature(archaic).size() == 2,
+		"Supplement must not guess from a different monster variant")
+	var short_rest_creature: Dictionary = {
+		"kind": "monster",
+		"stat_block": {
+			"source": "AI", "name": "Chaos Quadrapod",
+			"action": [{"name": "Chaos Cloud (Recharges after a Short or Long Rest)"}]
+		},
+		"resource_tracker_spent": {"fightclub:action:0": 1}
+	}
+	var short_counter: Dictionary = _find_resource(
+		Trackers.for_creature(short_rest_creature),
+		"Chaos Cloud (Recharges after a Short or Long Rest)")
+	assert(String(short_counter.get("recharge", "")) == "short_rest")
+	assert(not Trackers.spent_after_recovery(short_rest_creature, "short_rest").has("fightclub:action:0"))
+
 	print("PASS: structured 5etools resource trackers")
 	quit()
