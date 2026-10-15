@@ -144,6 +144,9 @@ func _ready() -> void:
 	_presence.item_delivered.connect(func(_id: String) -> void:
 		creature_area.call("_set_status", "Oggetto consegnato al destinatario.")
 	)
+	_presence.item_failed.connect(func(_id: String) -> void:
+		creature_area.call("_set_status", "Invio oggetto non riuscito: destinatario non raggiunto.")
+	)
 	_presence.request_refresh()
 	# Standalone dice/chat is offline by default; the mobile session shell
 	# supplies a real session-scoped sync when multiplayer is available.
