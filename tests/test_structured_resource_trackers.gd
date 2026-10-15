@@ -248,7 +248,7 @@ func run() -> void:
 	var archaic: Dictionary = {
 		"kind": "monster",
 		"stat_block": {
-			"source": "MOSH", "name": "Archaic",
+			"source": "SCC", "name": "Archaic",
 			"trait": [{"name": "Legendary Resistance (3/Day)"}],
 			"action": [{"name": "Gravity Shift {@recharge 5}"}],
 			"reaction": [{"name": "Spell Mimicry (1/Day)"}],
@@ -279,7 +279,7 @@ func run() -> void:
 	archaic["stat_block"]["source"] = "OTHER"
 	assert(Trackers.for_creature(archaic).size() == 2,
 		"Supplement must never match a different source with the same monster name")
-	archaic["stat_block"]["source"] = "MOSH"
+	archaic["stat_block"]["source"] = "SCC"
 	archaic["stat_block"]["name"] = "Variant Archaic"
 	assert(Trackers.for_creature(archaic).size() == 2,
 		"Supplement must not guess from a different monster variant")
