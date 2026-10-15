@@ -74,7 +74,11 @@ func run() -> void:
 	await wait_for(func() -> bool: return desktop.history.size() == 4)
 	assert(desktop.accept_shared_event(mobile.history.back()))
 	assert(desktop.history.size() == 4, "Retries must not duplicate events")
-	print("PASS: real mobile TCP chat in both directions, creature dice attribution, explicit None and retry deduplication")
+	mobile.chat_input.text = "Senza creatura"
+	mobile._send_chat()
+	assert(mobile.history.back().author.begins_with("Giocatore ("),
+		"Explicit None must not reuse the currently open character's name")
+	print("PASS: real mobile TCP chat in both directions, creature dice/chat attribution, explicit None and retry deduplication")
 	client.disconnect_remote()
 	server.serve(false, "test-chat-mobile")
 	host.queue_free()
