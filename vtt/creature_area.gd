@@ -2,6 +2,8 @@ extends Node
 
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const DiceRoller = preload("res://vtt/dice_roller_chat.gd")
@@ -177,6 +179,7 @@ var _challenge_caption: Label
 var _challenge_rating: LineEdit
 var _creature_type_display: Label
 var _background: OptionButton
+var _delete_custom_background: Button
 var _subclass_name: OptionButton
 var _class_name: OptionButton
 var _add_class_button: Button
@@ -1385,7 +1388,14 @@ func _build_ui() -> void:
 	var background_row := HBoxContainer.new()
 	identity_box.add_child(background_row)
 	_add_label(background_row, "Background")
-	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"), true, true, "backgrounds")
+	_background = _reference_option(background_row, _background_choices(), true, false, "backgrounds")
+	_background.item_selected.connect(_on_background_chosen)
+	_delete_custom_background = Button.new()
+	_delete_custom_background.text = "Elimina"
+	_delete_custom_background.tooltip_text = "Elimina il background personalizzato dal catalogo locale"
+	_delete_custom_background.pressed.connect(_delete_selected_custom_background)
+	_delete_custom_background.hide()
+	background_row.add_child(_delete_custom_background)
 	_update_reference_tooltip(_background)
 
 	var classes_box := _info_panel(form, "CLASSI E PROGRESSIONE")
@@ -3102,6 +3112,49 @@ func _populate_reference_popup(option: OptionButton) -> void:
 	option.set_meta("reference_popups_ready", true)
 
 
+func _background_choices() -> Array[Dictionary]:
+	var result: Array[Dictionary] = [{
+		"id": "__create_custom_background__", "name": "＋ Crea background personalizzato",
+		"source": ""
+	}]
+	result.append_array(Player5eTools.entries("backgrounds"))
+	return result
+
+
+func _refresh_custom_background_actions() -> void:
+	if _delete_custom_background != null:
+		_delete_custom_background.visible = QuickCustom.is_custom(_reference_entry(_background))
+
+
+func _on_background_chosen(index: int) -> void:
+	if index == 1 and String(_reference_entry(_background).get("id", "")) == "__create_custom_background__":
+		var selected: Dictionary = _current()
+		_select_reference(_background, String(selected.get("background", "")),
+			String(selected.get("background_source", "")), String(selected.get("background_id", "")))
+		QuickCustomDialog.create_popup(_panel, "backgrounds", func(created: Dictionary) -> void:
+			_set_reference_choices(_background, _background_choices())
+			_select_reference(_background, String(created.get("name", "")),
+				String(created.get("source", "")), String(created.get("id", "")))
+			_refresh_custom_background_actions()
+			_save()
+		)
+		return
+	_refresh_custom_background_actions()
+	_save()
+
+
+func _delete_selected_custom_background() -> void:
+	var selected: Dictionary = _reference_entry(_background)
+	if not QuickCustom.is_custom(selected):
+		return
+	QuickCustomDialog.delete_popup(_panel, selected, func() -> void:
+		_set_reference_choices(_background, _background_choices())
+		_background.select(0)
+		_refresh_custom_background_actions()
+		_save()
+	)
+
+
 func _selected_rules_version() -> String:
 	return "2024" if _rules_edition.selected == 1 else "2014"
 
@@ -3557,8 +3610,9 @@ func _load_form(record: Dictionary) -> void:
 	var challenge: Variant = record.get("stat_block", {}).get("cr", "0")
 	_challenge_rating.text = String(challenge.get("cr", "0") if challenge is Dictionary else challenge)
 	_refresh_creature_type(record)
-	_set_reference_choices(_background, Player5eTools.entries("backgrounds"))
+	_set_reference_choices(_background, _background_choices())
 	_select_reference(_background, String(record.get("background", "")), String(record.get("background_source", "")), String(record.get("background_id", "")))
+	_refresh_custom_background_actions()
 	_speed_custom = bool(record.get("speed_is_custom", false))
 	var source_speed: int = (Rules.walking_speed(_effective_species().get("speed", 30))
 		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))

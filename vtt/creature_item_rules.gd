@@ -47,6 +47,9 @@ static func entry_for(saved: Dictionary) -> Dictionary:
 static func kind(entry: Dictionary) -> String:
 	if String(entry.get("category", "")) == "documents":
 		return "document"
+	var custom_kind: String = String(entry.get("custom_item_type", ""))
+	if custom_kind in ["weapon", "shield", "armor", "tool", "magic", "other"]:
+		return custom_kind
 	var type_code := String(entry.get("type", "")).split("|")[0].to_upper()
 	if type_code in ["M", "R"] and (
 		not String(entry.get("weapon_category", "")).is_empty()
