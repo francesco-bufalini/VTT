@@ -1703,6 +1703,7 @@ func configure_touch_layout() -> void:
 	touch.style_tree(_touch_section_drawer)
 	_touch_section_drawer.hide()
 	_spellcasting_ui.configure_touch_layout()
+	_inventory_ui.configure_touch_layout()
 	_tabs.tabs_visible = false
 	_tabs.custom_minimum_size.x = 0
 	_panel.custom_minimum_size.x = 0
