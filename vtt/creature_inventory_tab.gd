@@ -10,6 +10,8 @@ const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -44,6 +46,7 @@ var _weapon_size_choice: OptionButton
 var _creature_size_name := "Medium"
 var _details: RichTextLabel
 var _add_button: Button
+var _delete_custom_item: Button
 var _remove_button: Button
 var _documents_tab: Node
 var _image_preview: AcceptDialog
@@ -135,6 +138,11 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_add_button.tooltip_text = "Aggiungi l'oggetto selezionato; doppio clic sulla lista per aggiungere"
 	_add_button.pressed.connect(_add_selected)
 	results_row.add_child(_add_button)
+	_delete_custom_item = Button.new()
+	_delete_custom_item.text = "Elimina dal catalogo"
+	_delete_custom_item.disabled = true
+	_delete_custom_item.pressed.connect(_delete_selected_custom_item)
+	results_row.add_child(_delete_custom_item)
 	_catalog_list = ItemList.new()
 	_catalog_list.mouse_force_pass_scroll_events = false
 	_catalog_list.custom_minimum_size.y = 190
@@ -666,6 +674,8 @@ func _filter_catalog() -> void:
 	var words: PackedStringArray = _search.text.strip_edges().to_lower().split(" ", false)
 	_filtered.clear()
 	_catalog_list.clear()
+	_filtered.append({"id": "__create_custom_item__", "name": "＋ Crea oggetto personalizzato"})
+	_catalog_list.add_item("＋ Crea oggetto personalizzato")
 	var matches := 0
 	var selected_index := -1
 	for item: Dictionary in _catalog:
@@ -688,6 +698,7 @@ func _filter_catalog() -> void:
 		else "Risultati: 250 di %d · Affina i filtri per vedere gli altri" % matches
 	)
 	_add_button.disabled = true
+	_delete_custom_item.disabled = true
 	if _details_from_catalog:
 		_details.hide()
 		_details_from_catalog = false
@@ -697,7 +708,13 @@ func _filter_catalog() -> void:
 
 
 func _on_catalog_selected(index: int) -> void:
+	if index >= 0 and index < _filtered.size() and String(_filtered[index].get("id", "")) == "__create_custom_item__":
+		_add_button.disabled = true
+		_delete_custom_item.disabled = true
+		_open_custom_item_editor()
+		return
 	_add_button.disabled = index < 0 or index >= _filtered.size()
+	_delete_custom_item.disabled = index < 0 or index >= _filtered.size() or not QuickCustom.is_custom(_filtered[index])
 	if index >= 0 and index < _filtered.size():
 		var item: Dictionary = _filtered[index]
 		_details_from_catalog = true
@@ -706,6 +723,25 @@ func _on_catalog_selected(index: int) -> void:
 		if _details_from_catalog:
 			_details.hide()
 			_details_from_catalog = false
+
+
+func _open_custom_item_editor() -> void:
+	QuickCustomDialog.create_popup(self, "items", func(_created: Dictionary) -> void:
+		reload_catalog()
+		_set_search_visible(true)
+	)
+
+
+func _delete_selected_custom_item() -> void:
+	var selected: PackedInt32Array = _catalog_list.get_selected_items()
+	if selected.is_empty() or selected[0] >= _filtered.size():
+		return
+	var item: Dictionary = _filtered[selected[0]]
+	if not QuickCustom.is_custom(item):
+		return
+	QuickCustomDialog.delete_popup(self, item, func() -> void:
+		reload_catalog()
+	)
 
 
 func _selected_inventory_index() -> int:
@@ -744,7 +780,7 @@ func _add_selected() -> void:
 		return
 	var source_item: Dictionary = _filtered[selected[0]]
 	var item_id: String = String(source_item.get("id", "")).strip_edges()
-	if item_id.is_empty():
+	if item_id.is_empty() or item_id == "__create_custom_item__":
 		return
 	for i: int in range(_inventory.size()):
 		if not DocumentStore.is_document(source_item) and String(_inventory[i].get("id", "")) == item_id and not ItemInstance.has_customizations(_inventory[i]):
