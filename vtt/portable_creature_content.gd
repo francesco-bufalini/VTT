@@ -7,7 +7,7 @@ const Catalog = preload("res://vtt/content_catalog.gd")
 const CATEGORIES := Catalog.CATEGORIES
 const IMPORT_DIR := "user://homebrew/portable_imports"
 const MAX_ENTRIES := 250
-const MAX_BYTES := 2 * 1024 * 1024
+const MAX_BYTES := 12 * 1024 * 1024
 
 
 static func _referenced(value: Variant, wanted: Dictionary) -> void:
@@ -29,6 +29,34 @@ static func _definitions() -> Dictionary:
 		for entry: Dictionary in Catalog.home_entries(category):
 			result[String(entry.get("id", ""))] = entry
 	return result
+
+
+static func unresolved(creature: Dictionary) -> Array[String]:
+	# Abort an export rather than promising portability while a referenced
+	# homebrew definition has already disappeared from this device.
+	var wanted: Dictionary = {}
+	_referenced(creature, wanted)
+	var definitions: Dictionary = _definitions()
+	var checked: Dictionary = {}
+	for _pass: int in range(MAX_ENTRIES):
+		var changed := false
+		for raw_id: Variant in wanted.keys():
+			var identifier: String = String(raw_id)
+			if checked.has(identifier):
+				continue
+			checked[identifier] = true
+			if definitions.has(identifier):
+				_referenced(definitions[identifier], wanted)
+				changed = true
+		if not changed:
+			break
+	var missing: Array[String] = []
+	for raw_id: Variant in wanted.keys():
+		var identifier: String = String(raw_id)
+		if not definitions.has(identifier):
+			missing.append(identifier)
+	missing.sort()
+	return missing
 
 
 static func bundle(creature: Dictionary) -> Array[Dictionary]:
