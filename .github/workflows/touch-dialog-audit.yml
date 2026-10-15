@@ -1,0 +1,71 @@
+name: Touch dialogs and statistics regression (Godot)
+on:
+  pull_request:
+    paths:
+      - "vtt/dialog_layout.gd"
+      - "vtt/creature_area.gd"
+      - "vtt/creature_documents_tab.gd"
+      - "vtt/creature_inventory_tab.gd"
+      - "tests/test_share_recipients.gd"
+      - "tests/test_document_homebrew.gd"
+      - "tests/test_creature_gui_layout.gd"
+      - ".github/workflows/touch-dialog-audit.yml"
+  workflow_dispatch:
+jobs:
+  touch-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /interaction/
+            /items/
+            /homebrew/
+            /encounter/*.gd
+            /tests/test_share_recipients.gd
+            /tests/test_document_homebrew.gd
+            /tests/test_creature_gui_layout.gd
+            /assets/items/
+            /assets/tokens/test/
+            /assets/spell_area_geometry.json
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Import Godot scripts
+        shell: bash
+        run: |
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
+      - name: Run relevant touch regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          failures=()
+          for test in test_share_recipients.gd test_document_homebrew.gd test_creature_gui_layout.gd; do
+            echo "::group::$test"
+            log=$(mktemp)
+            if ! timeout 170s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
+              failures+=("$test (crash/timeout)")
+            elif grep -Eq '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '^PASS' "$log"; then
+              failures+=("$test (Godot error)")
+            fi
+            cat "$log"
+            rm -f "$log"
+            echo "::endgroup::"
+          done
+          if (( ${#failures[@]} > 0 )); then
+            printf 'FAILED: %s\\n' "${failures[@]}"
+            exit 1
+          fi
+          echo "PASS: touch dialog and responsive layout regressions"
