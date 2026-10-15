@@ -139,6 +139,36 @@ func _ready() -> void:
 		creature_area.call("_set_status", "Documento consegnato al destinatario.")
 	)
 	_presence.request_refresh()
+	# Standalone dice/chat is offline by default; the mobile session shell
+	# supplies a real session-scoped sync when multiplayer is available.
+	var chat: Node = dice_roller
+	var chat_sync := preload("res://network/dice_chat_sync.gd").new()
+	chat_sync.name = "DiceChatSync"
+	chat.add_child(chat_sync)
+	chat_sync.setup(_chat_peer_addresses)
+	chat_sync.event_received.connect(Callable(chat, "_on_remote_event"))
+	chat_sync.status_changed.connect(Callable(chat, "_on_sync_status"))
+	chat.set("sync", chat_sync)
+	chat.call("set_session_key", "1")
+
+
+func _chat_peer_addresses() -> Array[String]:
+	var result: Array[String] = []
+	if _presence != null:
+		for peer: Dictionary in _presence.get_online_peers():
+			if String(peer.get("device", "")) != "desktop":
+				continue
+			var ip: String = String(peer.get("ip", ""))
+			if ip.is_valid_ip_address() and not result.has(ip):
+				result.append(ip)
+	if _host_input != null:
+		var manual := _host_input.text.strip_edges()
+		if manual.is_valid_ip_address() and not result.has(manual):
+			result.append(manual)
+	if OS.has_feature("mobile") and not result.has("10.0.2.2"):
+		result.append("10.0.2.2")
+	return result
+
 
 func _fit_touch_dialog(dialog: AcceptDialog) -> void:
 	TouchLayout.fit_dialog(dialog)
@@ -543,6 +573,7 @@ func _build_session_panel() -> void:
 	_session_picker.item_selected.connect(func(index: int) -> void:
 		map_data_controller.disconnect_remote()
 		_presence.set_session_key(str(index + 1))
+		dice_roller.call("set_session_key", str(index + 1))
 		_refresh_online_peers())
 	session_row.add_child(_session_picker)
 	var refresh := Button.new()
