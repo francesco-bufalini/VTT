@@ -6,6 +6,7 @@ signal document_received(document: Dictionary, sender_id: String)
 signal document_delivered(delivery_id: String)
 signal item_received(transfer: Dictionary, sender_id: String)
 signal item_delivered(delivery_id: String)
+signal item_failed(delivery_id: String)
 
 # App-level presence, separate from the TCP map snapshots.
 # A LAN broadcast or a Tailscale peer IP alone does not prove a VTT user is online.
@@ -116,6 +117,8 @@ func _process(_delta: float) -> void:
 			continue
 		if int(pending.get("tries", 0)) >= DOCUMENT_RETRIES:
 			_pending_documents.erase(delivery_id)
+			if String(pending.get("type", "")) == "item":
+				item_failed.emit(delivery_id)
 			continue
 		_send_document_packet(delivery_id)
 
