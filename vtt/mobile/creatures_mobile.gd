@@ -133,6 +133,11 @@ func _ready() -> void:
 	add_child(_presence)
 	_presence.peers_changed.connect(_show_online_peers)
 	_presence.setup("1", _discovery_hosts)
+	_presence.document_received.connect(
+		Callable(creature_area, "receive_shared_document"))
+	_presence.document_delivered.connect(func(_id: String) -> void:
+		creature_area.call("_set_status", "Documento consegnato al destinatario.")
+	)
 	_presence.request_refresh()
 
 func _fit_touch_dialog(dialog: AcceptDialog) -> void:
