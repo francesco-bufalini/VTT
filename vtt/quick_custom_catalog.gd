@@ -27,7 +27,7 @@ static func _document() -> Dictionary:
 			var data: Dictionary = raw
 			if data.get("schema_version") == 1 and data.get("namespace") == NAMESPACE and data.get("entries") is Array:
 				return data
-	# A corrupt or unrelated existing file must never be overwritten.
+		# A corrupt or unrelated existing file must never be overwritten.
 		return {}
 	return {"schema_version": 1, "namespace": NAMESPACE, "entries": []}
 
