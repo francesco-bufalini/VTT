@@ -55,9 +55,16 @@ static func recalculate_bonus_mirrors(record: Dictionary) -> void:
 # selected spells, origin choices, or usages when levels/origins change.
 static func sync_automatic_progression(record: Dictionary) -> void:
 	record["xp"] = maxi(int(record.get("xp", 0)), Rules.minimum_experience(record))
-	if Rules.class_levels(record) == 0:
+	var has_classes: bool = Rules.class_levels(record) > 0
+	record["hit_dice"] = Rules.automatic_hit_dice(record) if has_classes else ""
+	if not has_classes:
+		record["spellcasting_calculation"] = {}
+		if bool(record.get("spell_slots_automatic", false)) and not bool(record.get("spell_slots_manual", false)):
+			record["spell_slots_total"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			record["spell_slots_spent"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			record["pact_slots_total"] = 0
+			record["pact_slots_spent"] = 0
 		return
-	record["hit_dice"] = Rules.automatic_hit_dice(record)
 	var context: Dictionary = record.duplicate(false)
 	var effective: Dictionary = {}
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:

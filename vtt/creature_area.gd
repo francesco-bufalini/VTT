@@ -5015,6 +5015,8 @@ func _on_inventory_updated(inventory: Array) -> void:
 	# genuinely disappeared; unequipping merely deactivates their benefits.
 	ProficiencyRules.reconcile_origin_dependents(record)
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
+	SheetController.sync_automatic_progression(record)
+	SheetController.sync_origin_resources(record)
 	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
@@ -5085,6 +5087,7 @@ func _save() -> void:
 	if record.is_empty():
 		return
 	# Ordinary statistic edits must not rebuild the entire feat/trait graph.
+	var previous_abilities: Dictionary = record.get("abilities", {}).duplicate(true)
 	var previous_identity: Dictionary = {}
 	for field: String in ["species", "species_source", "species_id",
 		"subrace", "subrace_source", "subrace_id",
@@ -5218,12 +5221,13 @@ func _save() -> void:
 			break
 	if identity_changed:
 		ProficiencyRules.reconcile_origin_dependents(record)
-		SheetController.sync_automatic_progression(record)
 		SheetController.sync_origin_resources(record)
 		# Identity changes also replace their structured, origin-backed
 		# resistances/immunities immediately, preserving per-grant overrides.
 		record["damage_defense_entries"] = DamageDefensesTab._entries_from_record(
 			record, DamageDefensesTab._sources(record))
+	if identity_changed or previous_abilities != abilities:
+		SheetController.sync_automatic_progression(record)
 	var current_grants: Array[Dictionary] = ProficiencyRules.choices(record)
 	ProficiencyRules.sync_legacy_fields(record, current_grants)
 	var saved_origins: Array[Dictionary] = []

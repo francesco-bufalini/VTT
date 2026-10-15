@@ -236,6 +236,15 @@ func run() -> void:
 		and resource_character.proficiency_choices.size() == 1
 		and resource_character.resource_tracker_spent.custom == 2,
 		"Automatic progression must preserve spells, prior origin choices and resource usage")
+	resource_character["classes"] = []
+	resource_character["class"] = ""
+	resource_character["level"] = 0
+	controller.sync_automatic_progression(resource_character)
+	assert(resource_character.spell_slots_total[1] == 0
+		and resource_character.spell_slots_spent[1] == 0
+		and resource_character.prepared_spells.size() == 1,
+		"Removing the last class must reset automatic slots but preserve spell selections")
+
 
 	# Editions are alternatives for a class, not separate entries for each book.
 	for edition: String in ["2014", "2024"]:
