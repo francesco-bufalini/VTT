@@ -50,6 +50,60 @@ static func recalculate_bonus_mirrors(record: Dictionary) -> void:
 	record["reach_feet"] = AttackData.active_range(record)
 
 
+
+# Derived progression is a cache of current class/ability data. Never replace
+# selected spells, origin choices, or usages when levels/origins change.
+static func sync_automatic_progression(record: Dictionary) -> void:
+	record["xp"] = maxi(int(record.get("xp", 0)), Rules.minimum_experience(record))
+	if Rules.class_levels(record) == 0:
+		return
+	record["hit_dice"] = Rules.automatic_hit_dice(record)
+	var context: Dictionary = record.duplicate(false)
+	var effective: Dictionary = {}
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		effective[ability] = Bonuses.value(record, "ability_mod:" + ability)
+	context["effective_ability_modifiers"] = effective
+	record["spellcasting_calculation"] = Rules.spellcasting_limits(context)
+	# Keep explicit edits and legacy imported slot totals untouched. Otherwise
+	# class progression is authoritative and resource consumption is retained.
+	if bool(record.get("spell_slots_manual", false)):
+		return
+	var previous: Array = record.get("spell_slots_total", [])
+	var has_legacy_totals: bool = false
+	if previous is Array:
+		for raw: Variant in previous:
+			has_legacy_totals = has_legacy_totals or int(raw) > 0
+	if has_legacy_totals and not bool(record.get("spell_slots_automatic", false)):
+		return
+	var progression: Dictionary = Rules.spell_slot_progression(record)
+	var totals: Array = progression.get("slots", []).duplicate()
+	if totals.size() < 10:
+		return
+	record["spell_slots_total"] = totals
+	var spent: Array = record.get("spell_slots_spent", []).duplicate()
+	while spent.size() < 10:
+		spent.append(0)
+	for index: int in range(1, 10):
+		spent[index] = clampi(int(spent[index]), 0,
+			maxi(0, Bonuses.add(record, "slot:" + str(index), int(totals[index]))))
+	record["spell_slots_spent"] = spent
+	record["pact_slots_total"] = int(progression.get("pact_total", 0))
+	record["pact_slot_level"] = int(progression.get("pact_level", 1))
+	record["pact_slots_spent"] = clampi(int(record.get("pact_slots_spent", 0)),
+		0, maxi(0, Bonuses.add(record, "pact_slot", int(record["pact_slots_total"]))))
+	record["spell_slots_automatic"] = true
+
+
+static func sync_origin_resources(record: Dictionary) -> void:
+	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
+	for tracker: Dictionary in Trackers.for_creature(record):
+		var id: String = String(tracker.get("id", ""))
+		if spent.has(id):
+			spent[id] = clampi(int(spent[id]), 0,
+				maxi(0, Bonuses.add(record, "tracker:" + id, int(tracker.get("max", 0)))))
+	record["resource_tracker_spent"] = spent
+
+
 static func update_bonuses(
 	record: Dictionary, rows: Array, origins: Array,
 	feats: Array = [], dice_rows: Array = []
