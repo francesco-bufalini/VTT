@@ -481,7 +481,8 @@ static func _grants_data(candidate: Dictionary, kind: String) -> Variant:
 	var field_names: Dictionary = {
 		"weapon": "weaponProficiencies", "armor": "armorProficiencies",
 		"skill": "skillProficiencies", "expertise": "expertise",
-		"tool": "toolProficiencies", "language": "languageProficiencies"
+		"tool": "toolProficiencies", "language": "languageProficiencies",
+		"save": "saveProficiencies"
 	}
 	var field_name: String = String(field_names.get(kind, ""))
 	return row.get(field_name, [])
