@@ -49,7 +49,7 @@ static func _add_field(panel: VBoxContainer, title: String) -> void:
 	panel.add_child(label)
 
 
-static func create_popup(parent: Control, category: String, on_created: Callable) -> void:
+static func create_popup(parent: Control, category: String, on_created: Callable, preferred_type: String = "") -> void:
 	if category not in Store.ALLOWED:
 		return
 	var dialog := ConfirmationDialog.new()
@@ -152,6 +152,11 @@ static func create_popup(parent: Control, category: String, on_created: Callable
 			item_type.set_item_metadata(item_type.item_count - 1,
 				{"custom_item_type": pair[1], "type": pair[2]})
 		form.add_child(item_type)
+		for i: int in range(item_type.item_count):
+			var data: Dictionary = item_type.get_item_metadata(i)
+			if String(data.get("custom_item_type", "")) == preferred_type:
+				item_type.select(i)
+				break
 		_add_field(form, "Rarità")
 		rarity = OptionButton.new()
 		for pair: Array in [
