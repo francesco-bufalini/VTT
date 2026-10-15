@@ -16,13 +16,15 @@ homebrew definitions. No network requests occur at runtime.
   have smaller historical source trees, with many identical bestiary files.
   They were checked for comparison, not combined to create ambiguous overrides.
 
-Current snapshot: **30 source-qualified 2014 bestiary XMLs**, containing
-**481 monsters with 720 structured counters**, split across three checked-in
-JSON files in `vtt/data/fightclub_monster_resources_2014_{a,b,c}.json`.
+Current snapshot: **31 source-qualified 2014 bestiary XMLs**, containing
+**629 monster entries with 945 structured counters**. The 30 smaller source
+books are bundled in `vtt/data/fightclub_monster_resources_2014_{a,b,c}.json`;
+**Monster Manual (2014)** is bundled separately in
+`vtt/data/fightclub_monster_resources_2014_mm.json`.
+Its original Fight Club bestiary has 454 monsters, of which 148 explicitly
+have 225 convertible `<recharge>` counters; the JSON stores only those 148.
 The source-file allowlists in these files are the reproducible input manifest.
-The huge core Monster Manual and 2024 bestiaries are **not in this snapshot**;
-the generator can be extended deliberately when their complete source files
-are available locally. Fight Club filename codes which differ from the 5etools bestiary index
+2024 bestiaries are not part of this 2014 snapshot. Fight Club filename codes which differ from the 5etools bestiary index
 (e.g. `MOSH` to `SCC`, `PABSO` to `PaBTSO`) are explicitly mapped at
 build time. An unrelated book's monster with the same name never
 inherits these counters.
