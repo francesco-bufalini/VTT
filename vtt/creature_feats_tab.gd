@@ -469,7 +469,14 @@ func _refresh_feat_picker() -> void:
 	_feat_picker.add_item("＋ Crea talento personalizzato")
 	var needle: String = _feat_filter.text.strip_edges().to_lower()
 	var edition: String = String(_record.get("rules_version", "2014"))
+	var feat_choices: Array[Dictionary] = []
 	for feat: Dictionary in _catalog_entries("feats"):
+		if QuickCustom.is_custom(feat):
+			feat_choices.append(feat)
+	for feat: Dictionary in _catalog_entries("feats"):
+		if not QuickCustom.is_custom(feat):
+			feat_choices.append(feat)
+	for feat: Dictionary in feat_choices:
 		var source: String = String(feat.get("source", ""))
 		if edition == "2014" and (source in ["XPHB", "XDMG", "EFA"] or String(feat.get("edition", "")) == "one"):
 			continue
