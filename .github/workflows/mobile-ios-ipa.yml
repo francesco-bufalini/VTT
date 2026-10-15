@@ -1,0 +1,137 @@
+name: VTT Mobile iOS (unsigned IPA)
+
+# Deliberately manual: macOS hosted runners consume GitHub Actions quota.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vtt-mobile-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Build unsigned iPhone IPA
+    runs-on: macos-15
+    timeout-minutes: 18
+    env:
+      GODOT_TAG: 4.7.2-stable
+      GODOT_TEMPLATES_VERSION: 4.7.2.stable
+      IOS_PRESET: iOS
+    steps:
+      - name: Checkout VTT
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check available Xcode and iPhoneOS SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+          df -h .
+
+      - name: Download matching Godot editor and iOS templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_TAG}"
+          curl -fL --retry 3 "${asset_base}/Godot_v${GODOT_TAG}_macos.universal.zip" -o "$RUNNER_TEMP/godot-macos.zip"
+          echo 'c58a24e31d720be9d62f60cb5627c4e695fb72f21b0cfe1bc9ccaa9a3b3ba63e  '"$RUNNER_TEMP/godot-macos.zip" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/godot"
+          unzip -q "$RUNNER_TEMP/godot-macos.zip" -d "$RUNNER_TEMP/godot"
+          godot="$RUNNER_TEMP/godot/Godot.app/Contents/MacOS/Godot"
+          if [[ ! -f "$godot" ]]; then
+            echo "Godot binary not found in macOS release ZIP" >&2
+            find "$RUNNER_TEMP/godot" -maxdepth 4 -name Godot -print
+            exit 1
+          fi
+          chmod +x "$godot"
+          "$godot" --version | grep -q '^4\.7\.2\.stable'
+          echo "GODOT_BINARY=$godot" >> "$GITHUB_ENV"
+
+          # Extract ONLY the iOS template, not the full multi-platform .tpz.
+          curl -fL --retry 3 "${asset_base}/Godot_v${GODOT_TAG}_export_templates.tpz" -o "$RUNNER_TEMP/templates.tpz"
+          echo 'f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011  '"$RUNNER_TEMP/templates.tpz" | shasum -a 256 -c -
+          template_dir="$HOME/Library/Application Support/Godot/export_templates/${GODOT_TEMPLATES_VERSION}"
+          mkdir -p "$template_dir"
+          unzip -p "$RUNNER_TEMP/templates.tpz" templates/ios.zip > "$template_dir/ios.zip"
+          unzip -p "$RUNNER_TEMP/templates.tpz" templates/version.txt > "$template_dir/version.txt"
+          test -s "$template_dir/ios.zip"
+          unzip -tq "$template_dir/ios.zip" >/dev/null
+          echo "iOS templates ready"
+
+      - name: Stage portable slim mobile project
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/vtt-mobile-ios-${GITHUB_RUN_ID}"
+          bash tools/prepare_mobile_export.sh "$GITHUB_WORKSPACE" "$stage"
+          echo "MOBILE_STAGE=$stage" >> "$GITHUB_ENV"
+
+      - name: Import and validate staged Godot resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BINARY" --headless --path "$MOBILE_STAGE" --editor --import --quit
+          for test_file in test_mobile_touch_layout.gd test_mobile_sheet_navigation.gd test_mobile_main_menu.gd; do
+            "$GODOT_BINARY" --headless --path "$MOBILE_STAGE" --script "res://tests/$test_file"
+          done
+
+      - name: Export unsigned Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/ios
+          "$GODOT_BINARY" --headless --path "$MOBILE_STAGE" \
+            --export-release "$IOS_PRESET" "$GITHUB_WORKSPACE/build/ios/VTT.xcodeproj"
+          test -f build/ios/VTT.xcodeproj/project.pbxproj
+          xcodebuild -list -project build/ios/VTT.xcodeproj
+
+      - name: Compile unsigned iOS archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project build/ios/VTT.xcodeproj \
+            -scheme VTT \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/VTT.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
+          test -d "$RUNNER_TEMP/VTT.xcarchive/Products/Applications"
+
+      - name: Package and inspect unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          find "$RUNNER_TEMP/VTT.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' -exec cp -R {} "$RUNNER_TEMP/ipa/Payload/" \;
+          app_count="$(find "$RUNNER_TEMP/ipa/Payload" -mindepth 1 -maxdepth 1 -name '*.app' | wc -l | tr -d ' ')"
+          [[ "$app_count" == 1 ]] || { echo "Expected exactly one iOS .app, found $app_count" >&2; exit 1; }
+          app="$(find "$RUNNER_TEMP/ipa/Payload" -mindepth 1 -maxdepth 1 -name '*.app' -print -quit)"
+          test -f "$app/Info.plist"
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")"
+          [[ "$bundle_id" == 'org.kruphix.chessboard.mobile' ]] || { echo "Unexpected iOS bundle ID: $bundle_id" >&2; exit 1; }
+          find "$app" -name '*.pck' -print -quit | grep -q .
+          cd "$RUNNER_TEMP/ipa"
+          zip -qr "$GITHUB_WORKSPACE/build/ios/VTT-iOS-unsigned.ipa" Payload
+          unzip -tq "$GITHUB_WORKSPACE/build/ios/VTT-iOS-unsigned.ipa"
+          du -h "$GITHUB_WORKSPACE/build/ios/VTT-iOS-unsigned.ipa"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: VTT-iOS-unsigned-${{ github.run_number }}
+          path: build/ios/VTT-iOS-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
