@@ -9,7 +9,7 @@ const ALLOWED := ["backgrounds", "feats", "items"]
 const PROFICIENCY_FIELDS := {
 	"skill": "skillProficiencies", "tool": "toolProficiencies",
 	"language": "languageProficiencies", "weapon": "weaponProficiencies",
-	"armor": "armorProficiencies", "save": "savingThrows",
+	"armor": "armorProficiencies", "save": "saveProficiencies",
 	"expertise": "expertise"
 }
 
@@ -44,6 +44,18 @@ static func _persist(doc: Dictionary) -> bool:
 	file.close()
 	# Replace the previous file only after the new one has been written.
 	var err: Error = DirAccess.rename_absolute(temporary, path)
+	if err != OK and FileAccess.file_exists(path):
+		# Windows does not always replace an existing destination on rename.
+		# Use a backup to restore the old package if the second move fails.
+		var backup: String = path + ".bak"
+		if FileAccess.file_exists(backup):
+			DirAccess.remove_absolute(backup)
+		if DirAccess.rename_absolute(path, backup) == OK:
+			err = DirAccess.rename_absolute(temporary, path)
+			if err != OK:
+				DirAccess.rename_absolute(backup, path)
+			else:
+				DirAccess.remove_absolute(backup)
 	if err != OK:
 		DirAccess.remove_absolute(temporary)
 		return false
