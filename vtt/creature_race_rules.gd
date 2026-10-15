@@ -175,10 +175,10 @@ static func migrate_legacy_species(record: Dictionary) -> Dictionary:
 # selecting a race/subrace changes the walking and special speeds immediately.
 static func speed_for_record(record: Dictionary) -> Variant:
 	var race_name: String = String(record.get("species", ""))
-	if race_name.is_empty():
-		return {}
 	var race_source: String = String(record.get("species_source", ""))
 	var race_id: String = String(record.get("species_id", ""))
+	if race_name.is_empty() and race_id.is_empty():
+		return {}
 	var parent: Dictionary = {}
 	for entry: Dictionary in Catalog.entries("races"):
 		if (not race_id.is_empty() and String(entry.get("id", "")) == race_id) or (
