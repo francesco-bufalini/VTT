@@ -2,6 +2,7 @@ extends Node
 
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
@@ -2500,15 +2501,32 @@ func _save_exported_creature(path: String) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
+	var missing: Array[String] = PortableContent.unresolved(record)
+	if not missing.is_empty():
+		_set_status("Esportazione annullata: mancano %d definizioni homebrew usate dalla scheda (%s)." % [
+			missing.size(), ", ".join(missing.slice(0, 3))])
+		return
+	var companions: Array[Dictionary] = PortableContent.bundle(record)
+	if companions.size() > PortableContent.MAX_ENTRIES:
+		_set_status("Esportazione annullata: troppe definizioni personalizzate per il formato portatile.")
+		return
+	if JSON.stringify(companions).to_utf8_buffer().size() > PortableContent.MAX_BYTES:
+		_set_status("Esportazione annullata: contenuti personalizzati troppo voluminosi.")
+		return
+	var export_text: String = JSON.stringify({
+		"format": "vtt_creature_export_v1",
+		"version": 1,
+		"creature": record,
+		"homebrew_content": companions
+	}, "  ")
+	if export_text.to_utf8_buffer().size() > 16 * 1024 * 1024:
+		_set_status("Esportazione annullata: il file supera il limite d'importazione di 16 MB.")
+		return
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		_set_status("Esportazione non riuscita: " + error_string(FileAccess.get_open_error()))
 		return
-	file.store_string(JSON.stringify({
-		"format": "vtt_creature_export_v1",
-		"version": 1,
-		"creature": record
-	}, "  "))
+	file.store_string(export_text)
 	var error: Error = file.get_error()
 	file.close()
 	_set_status(
@@ -4932,7 +4950,18 @@ func _send_document_to_peer(recipient_id: String, document: Dictionary) -> Strin
 	var presence: Node = board_root.get_node_or_null("CreaturePresence")
 	if presence == null:
 		return ""
-	return String(presence.call("send_document", recipient_id, document))
+	var delivery_id: String = String(presence.call("send_document", recipient_id, document))
+	if not delivery_id.is_empty():
+		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+		if roller != null and roller.has_method("log_action"):
+			var peer_label := recipient_id.substr(0, 8)
+			for peer: Dictionary in _get_document_peers():
+				if String(peer.get("id", "")) == recipient_id:
+					peer_label = String(peer.get("label", peer_label))
+					break
+			roller.call("log_action", "📜 Documento '%s' inviato a %s" % [
+				String(document.get("title", "Documento")), peer_label])
+	return delivery_id
 
 
 func receive_shared_document(document: Dictionary, sender_id: String) -> void:
@@ -4942,9 +4971,13 @@ func receive_shared_document(document: Dictionary, sender_id: String) -> void:
 	var current: Dictionary = _current()
 	if not current.is_empty() and _inventory_ui != null:
 		_inventory_ui.call("receive_document")
-	_set_status("Lettera ricevuta da giocatore %s: %s" % [
+	_set_status("Documento ricevuto da giocatore %s: %s" % [
 		sender_id.substr(0, 8), String(document.get("title", "Documento"))
 	])
+	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+	if roller != null and roller.has_method("log_action"):
+		roller.call("log_action", "📜 Documento '%s' ricevuto da %s" % [
+			String(document.get("title", "Documento")), sender_id.substr(0, 8)])
 
 
 func _on_documents_updated(documents: Array) -> void:

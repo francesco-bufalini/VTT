@@ -270,7 +270,8 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_documents_tab = DocumentsTab.new()
 	_documents_tab.name = "Documenti"
 	inner_tabs.add_child(_documents_tab)
-	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status)
+	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status,
+		_send_document, _peer_provider)
 	_image_preview = ItemImagePreview.new()
 	add_child(_image_preview)
 	_image_preview.call("setup")

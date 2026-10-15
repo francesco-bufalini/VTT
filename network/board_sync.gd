@@ -475,6 +475,19 @@ func get_session_peer_ipv4s() -> Array[String]:
 	return _collect_sync_peer_ipv4s(true)
 
 
+# Chat is separate from board snapshots: mobile VTT is a full chat peer,
+# even though it never participates as a desktop map snapshot server.
+func get_session_chat_peer_ipv4s() -> Array[String]:
+	var hosts: Array[String] = get_session_peer_ipv4s()
+	if _lan_presence == null or not is_instance_valid(_lan_presence):
+		return hosts
+	for peer: Dictionary in _lan_presence.call("get_online_peers"):
+		var host: String = String(peer.get("ip", ""))
+		if host.is_valid_ip_address() and not host.contains(":") and not hosts.has(host):
+			hosts.append(host)
+	return hosts
+
+
 func _collect_sync_peer_ipv4s(use_cached: bool) -> Array[String]:
 	var hosts: Array[String] = (
 		get_cached_tailscale_peer_ipv4s()

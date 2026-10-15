@@ -120,17 +120,39 @@ static func remove(entry: Dictionary) -> bool:
 	var parts: PackedStringArray = String(entry.get("id", "")).split(":")
 	if parts.size() != 4 or parts[2] not in ALLOWED:
 		return false
+	# An imported definition can live in portable_imports rather than the
+	# original quick-create package. Allow deletion from either location,
+	# without ever accepting filesystem separators from a remote ID.
+	var local_id: String = parts[3]
+	var valid := RegEx.create_from_string("^[a-z0-9][a-z0-9_-]{0,63}$")
+	if valid.search(local_id) == null:
+		return false
+	var changed := false
 	var doc: Dictionary = _document()
-	if doc.is_empty():
-		return false
-	var retained: Array = []
-	var found := false
-	for raw: Variant in doc["entries"]:
-		if raw is Dictionary and String(raw.get("id", "")) == parts[3] and String(raw.get("category", "")) == parts[2]:
-			found = true
-			continue
-		retained.append(raw)
-	if not found:
-		return false
-	doc["entries"] = retained
-	return _persist(doc)
+	if not doc.is_empty():
+		var retained: Array = []
+		for raw: Variant in doc["entries"]:
+			if raw is Dictionary and String(raw.get("id", "")) == local_id and String(raw.get("category", "")) == parts[2]:
+				changed = true
+				continue
+			retained.append(raw)
+		if changed:
+			doc["entries"] = retained
+			if not _persist(doc):
+				return false
+	var imported: String = "user://homebrew/portable_imports/%s/%s_%s.json" % [
+		NAMESPACE, parts[2], local_id]
+	if FileAccess.file_exists(imported):
+		# Only delete the expected single-entry package, never an unrelated
+		# user file that happens to share a path.
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(imported))
+		if saved is Dictionary and String(saved.get("namespace", "")) == NAMESPACE:
+			var entries: Variant = saved.get("entries", [])
+			if entries is Array and entries.size() == 1:
+				var candidate: Variant = entries[0]
+				if candidate is Dictionary and String(candidate.get("id", "")) == local_id and String(candidate.get("category", "")) == parts[2]:
+					if DirAccess.remove_absolute(ProjectSettings.globalize_path(imported)) == OK:
+						changed = true
+	if changed:
+		ContentCatalog.reload_homebrew()
+	return changed

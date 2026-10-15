@@ -51,7 +51,26 @@ static func _write(documents: Array[Dictionary]) -> bool:
 	file.close()
 	if error != OK:
 		return false
-	return DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(temporary),
-		ProjectSettings.globalize_path(PATH)
-	) == OK
+	var temp_path: String = ProjectSettings.globalize_path(temporary)
+	var final_path: String = ProjectSettings.globalize_path(PATH)
+	var moved: Error = DirAccess.rename_absolute(temp_path, final_path)
+	if moved == OK:
+		return true
+	# On Windows an existing inbox may not be replaceable directly. Keep
+	# the previous file recoverable until the new version is in place.
+	if not FileAccess.file_exists(PATH):
+		DirAccess.remove_absolute(temp_path)
+		return false
+	var backup: String = final_path + ".bak"
+	if FileAccess.file_exists(backup):
+		DirAccess.remove_absolute(backup)
+	if DirAccess.rename_absolute(final_path, backup) != OK:
+		DirAccess.remove_absolute(temp_path)
+		return false
+	moved = DirAccess.rename_absolute(temp_path, final_path)
+	if moved != OK:
+		DirAccess.rename_absolute(backup, final_path)
+		DirAccess.remove_absolute(temp_path)
+		return false
+	DirAccess.remove_absolute(backup)
+	return true
