@@ -236,6 +236,11 @@ func _run() -> void:
 	root.set_meta("vtt_touch_layout", true)
 	root.size = Vector2i(360, 640)
 	tab.configure_touch_layout()
+	# Reconfiguring an already compact screen must not dereference old
+	# HBox nodes or assume the first document child is still its toolbar.
+	tab.configure_touch_layout()
+	assert(documents_tab.get_node_or_null("DocumentsToolbar") is HFlowContainer,
+		"Touch layout must reflow the real document toolbar exactly once")
 	tab.size = Vector2(360, 600)
 	await process_frame
 	assert(tab.get_combined_minimum_size().x <= 360,

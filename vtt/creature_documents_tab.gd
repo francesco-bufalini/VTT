@@ -60,6 +60,7 @@ func setup(on_change: Callable, on_status: Callable,
 	add_child(_autosave_timer)
 
 	var toolbar := HBoxContainer.new()
+	toolbar.name = "DocumentsToolbar"
 	add_child(toolbar)
 	var create := Button.new()
 	create.text = "+ Nuovo documento"
