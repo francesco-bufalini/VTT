@@ -27,6 +27,8 @@ static func _document() -> Dictionary:
 			var data: Dictionary = raw
 			if data.get("schema_version") == 1 and data.get("namespace") == NAMESPACE and data.get("entries") is Array:
 				return data
+	# A corrupt or unrelated existing file must never be overwritten.
+		return {}
 	return {"schema_version": 1, "namespace": NAMESPACE, "entries": []}
 
 
@@ -68,6 +70,14 @@ static func create(category: String, name: String, description: String,
 	name = name.strip_edges()
 	if category not in ALLOWED or name.is_empty() or name.length() > 120:
 		return {}
+	# Background and feat identities use (source, name), not a catalog ID.
+	# Reject colliding labels so one selection cannot merge two origins.
+	for existing: Dictionary in ContentCatalog.home_entries(category):
+		if is_custom(existing) and String(existing.get("name", "")).nocasecmp_to(name) == 0:
+			return {}
+	var doc: Dictionary = _document()
+	if doc.is_empty():
+		return {}
 	var id: String = "local_%s_%s" % [
 		str(int(Time.get_unix_time_from_system())),
 		Crypto.new().generate_random_bytes(8).hex_encode()
@@ -92,7 +102,6 @@ static func create(category: String, name: String, description: String,
 			var grant: Dictionary = {key: true}
 			if grant not in values:
 				values.append(grant)
-	var doc: Dictionary = _document()
 	var entry: Dictionary = {
 		"id": id, "name": name, "category": category,
 		"source": "Personalizzato", "data": data
@@ -112,6 +121,8 @@ static func remove(entry: Dictionary) -> bool:
 	if parts.size() != 4 or parts[2] not in ALLOWED:
 		return false
 	var doc: Dictionary = _document()
+	if doc.is_empty():
+		return false
 	var retained: Array = []
 	var found := false
 	for raw: Variant in doc["entries"]:
