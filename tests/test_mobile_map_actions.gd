@@ -8,8 +8,15 @@ class Board:
 	var undo_count := 0
 	func _identity_profile_by_id(id: String) -> Dictionary:
 		return {"id": id} if id == "mobile_test_miniature" else {}
-	func apply_creature_sheet_appearance(_token: CharacterBody3D, _creature: Dictionary) -> void:
+	func apply_creature_sheet_appearance(_token: CharacterBody3D, _creature: Dictionary, _update_properties: bool = true) -> bool:
+		return true
+	func apply_creature_sheet_properties(_token: CharacterBody3D, _creature: Dictionary) -> void:
 		pass
+	func is_free_scene_token(node: Node) -> bool:
+		return (node is CharacterBody3D and is_ancestor_of(node)
+			and not node.is_queued_for_deletion()
+			and String(node.get_meta("creature_id", "")).is_empty()
+			and String(node.get_meta("creature_owner_id", "")).is_empty())
 	func push_undo_state() -> void:
 		undo_count += 1
 	func is_2d_view_enabled() -> bool:
@@ -65,6 +72,43 @@ func run() -> void:
 	var repeated: Dictionary = await sync._handle_mobile_action("place_token", {"token_id": support_id, "creature": creature})
 	assert(repeated.token_id == placed.token_id, "Repeated placement must retain the stable ID")
 	assert(get_nodes_in_group("dnd_token").size() == 2, "Repeated placement must not duplicate tokens")
+	# A free token is a subset of the ordinary adjacent-placement targets.
+	var orphan: CharacterBody3D = sync.token_scene.instantiate()
+	board.add_child(orphan)
+	orphan.global_position = Vector3(8.5, 3.0, 8.5)
+	orphan.call("set_display_name", "Unlinked placeholder")
+	orphan.call("set_conditions", ["frightened"])
+	var orphan_id: String = sync.get_sync_id_for_node(orphan)
+	var bottom_before: float = orphan.global_position.y - float(orphan.token_height_cells) * float(orphan.cell_size) * 0.5
+	var before_claim: Dictionary = sync.get_tactical_map_data()
+	var eligible: Dictionary = {}
+	for visible: Dictionary in before_claim.tokens:
+		if String(visible.id) == orphan_id:
+			eligible = visible
+	assert(eligible.get("free", false) and not hero.get_meta("creature_id", "").is_empty(),
+		"Only unassociated tokens may be offered for takeover")
+	var claimed_creature: Dictionary = creature.duplicate(true)
+	claimed_creature["id"] = "claimed_creature"
+	claimed_creature["name"] = "Replacement hero"
+	claimed_creature["conditions"] = ["poisoned"]
+	claimed_creature["size_name"] = "Large"
+	claimed_creature["footprint"] = 2.0
+	var claimed: Dictionary = await sync._handle_mobile_action("claim_free_token", {
+		"token_id": orphan_id, "creature": claimed_creature
+	})
+	assert(claimed.ok and claimed.token_id == orphan_id and orphan.get_meta("creature_id") == "claimed_creature",
+		"Takeover must keep the original token and network ID")
+	assert(orphan.get_display_name() == "Replacement hero" and orphan.get_conditions() == ["poisoned"]
+		and orphan.get_footprint_cells() == 2.0,
+		"Taking control must overwrite name, conditions and tactical size")
+	assert(is_equal_approx(orphan.global_position.y - orphan.token_height_cells * orphan.cell_size * 0.5, bottom_before),
+		"Token takeover must keep the same world base level")
+	var blocked_claim: Dictionary = await sync._handle_mobile_action("claim_free_token", {
+		"token_id": placed.token_id, "creature": claimed_creature
+	})
+	assert(not blocked_claim.ok and get_nodes_in_group("dnd_token").size() == 3,
+		"Claiming a token already linked to a sheet must be rejected, without duplication")
+
 	var invalid: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": "absent"})
 	assert(not invalid.ok)
 	var before_blocked := hero.global_transform
