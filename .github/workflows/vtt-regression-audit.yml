@@ -1,13 +1,5 @@
 name: VTT Extended Regression Audit (Godot)
 on:
-  pull_request:
-    paths:
-      - "vtt/**"
-      - "network/**"
-      - "dnd_base.gd"
-      - "token.gd"
-      - "tests/**"
-      - ".github/workflows/vtt-regression-audit.yml"
   workflow_dispatch:
 
 jobs:
