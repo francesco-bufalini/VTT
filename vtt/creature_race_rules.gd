@@ -174,6 +174,15 @@ static func migrate_legacy_species(record: Dictionary) -> Dictionary:
 	return record
 
 
+# Racial movement can be a scalar (including a JSON-decoded float) or a
+# structured walk/fly/swim map. Comparing either scalar to {} is invalid
+# in GDScript and used to crash sheet loads and token placement.
+static func has_speed(raw: Variant) -> bool:
+	return raw is int or raw is float or (
+		raw is Dictionary and not (raw as Dictionary).is_empty()
+	)
+
+
 # Lookup by the stored stable identity. Never trust an old saved speed_base:
 # selecting a race/subrace changes the walking and special speeds immediately.
 static func speed_for_record(record: Dictionary) -> Variant:
