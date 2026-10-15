@@ -671,6 +671,8 @@ func _filter_catalog() -> void:
 	var selected: PackedInt32Array = _catalog_list.get_selected_items()
 	if not selected.is_empty() and selected[0] < _filtered.size():
 		selected_id = String(_filtered[selected[0]].get("id", ""))
+	if selected_id == "__create_custom_item__":
+		selected_id = ""
 	var words: PackedStringArray = _search.text.strip_edges().to_lower().split(" ", false)
 	_filtered.clear()
 	_catalog_list.clear()
