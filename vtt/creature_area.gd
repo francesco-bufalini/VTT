@@ -1225,7 +1225,7 @@ func _build_ui() -> void:
 	var abilities_row := _abilities_grid
 	# Use separate cells for values and proficiency icons so headers and
 	# numeric readouts stay aligned even when an inline editor opens.
-	abilities_row.columns = 5
+	abilities_row.columns = 4
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
@@ -1239,7 +1239,7 @@ func _build_ui() -> void:
 	abilities_panel.add_child(abilities_content)
 	abilities_content.add_child(ability_title)
 	abilities_content.add_child(abilities_row)
-	for ability_column_title: String in ["Car.", "Punteggio", "Mod.", "TS", ""]:
+	for ability_column_title: String in ["Car.", "Punteggio", "Mod.", "TS"]:
 		var column_heading := Label.new()
 		column_heading.text = ability_column_title
 		column_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if ability_column_title != "Car." else HORIZONTAL_ALIGNMENT_LEFT
@@ -1289,7 +1289,7 @@ func _build_ui() -> void:
 		saving_throw.custom_minimum_size.x = 44
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		save_cell.add_child(saving_throw)
-		abilities_row.add_child(save_icon)
+		save_cell.add_child(save_icon)
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))

@@ -59,10 +59,10 @@ func run() -> void:
 					var editor_columns: HBoxContainer = editor.get_node("EditorColumns")
 					assert(absf(editor_columns.get_child(1).global_position.x - right.global_position.x) <= 1.0, "Editor and statistics divider must align")
 				var grid: GridContainer = area._abilities_grid
-				assert(grid.columns == 5)
+				assert(grid.columns == 4)
 				for row: int in range(6):
-					for column: int in range(5):
-						assert(is_equal_approx(grid.get_child(column).position.x, grid.get_child(5 + row * 5 + column).position.x), "Ability rows must align with headers")
+					for column: int in range(4):
+						assert(is_equal_approx(grid.get_child(column).position.x, grid.get_child(4 + row * 4 + column).position.x), "Ability rows must align with headers")
 	# Optional image output when running with a rendering backend.
 	if not OS.get_cmdline_user_args().is_empty():
 		root.size = Vector2i(1400, 1000)

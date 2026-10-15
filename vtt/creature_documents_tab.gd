@@ -428,14 +428,14 @@ func _toggle_editor(enabled: bool) -> void:
 	# Do not re-open an active dialog on edit-mode changes: that steals
 	# keyboard focus and can make its controls expand off-screen.
 	if _dialog.visible:
-		var screen_size := Vector2i(get_viewport().get_visible_rect().size)
+		var screen_size := get_tree().root.size
 		var target := Vector2i(950, 660) if enabled else Vector2i(640, 620)
 		_dialog.size = target.min(screen_size - Vector2i(20, 32))
 		_dialog.position = (screen_size - _dialog.size) / 2
 
 
 func _apply_dialog_layout(editing: bool) -> void:
-	var viewport_width := get_viewport().get_visible_rect().size.x
+	var viewport_width := get_tree().root.size.x
 	var touch := get_tree().root.has_meta("vtt_touch_layout") or OS.has_feature("mobile")
 	# In phone/compact mode, editing uses the entire width; the preview
 	# returns when the user finishes modifying the document.

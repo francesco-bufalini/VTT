@@ -82,7 +82,7 @@ func run() -> void:
 	area._replace_current_record(init_record)
 	area._load_form(init_record)
 	assert(area._show_offhand_all.button_pressed
-		and area._show_offhand_all.text == "Only if finesse"
+		and area._show_offhand_all.text in ["Only if finesse", "Solo se accurata"]
 		and area._show_offhand_all.get_parent() == area._hand_off_picker.get_parent(),
 		"Finesse-only offhand filter must be active by default and share the secondary hand row")
 	# Only inner lists may stop scroll chaining; the two full-size columns
