@@ -5040,6 +5040,10 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	# The inventory editor also owns the existing optional-feature choices
+	# when it edits artificer infusions. Preserve unrelated optional features.
+	if _inventory_ui != null and _inventory_ui.has_method("optional_features"):
+		record["optional_features_catalog"] = _inventory_ui.call("optional_features")
 	# Inventory mutations never equip an item or choose a replacement attack.
 	# A weapon removed from the inventory invalidates only its own attack ID.
 	var known_attacks: Dictionary = {}
