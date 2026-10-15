@@ -8,6 +8,8 @@ const ItemInstance = preload("res://vtt/item_instance.gd")
 const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
+const ItemInbox = preload("res://vtt/item_inbox.gd")
+const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
@@ -53,14 +55,23 @@ var _image_preview: AcceptDialog
 var _document_change: Callable
 var _send_document: Callable
 var _peer_provider: Callable
+var _send_item: Callable
+var _item_share_menu: PopupMenu
+var _item_share_index := -1
+var _item_touch_start := Vector2.ZERO
+var _item_touch_active := false
+var _item_touch_generation := 0
 
 
-func setup(on_change: Callable, on_status: Callable, on_document_change: Callable = Callable(), send_document: Callable = Callable(), peer_provider: Callable = Callable()) -> void:
+func setup(on_change: Callable, on_status: Callable, on_document_change: Callable = Callable(),
+		send_document: Callable = Callable(), peer_provider: Callable = Callable(),
+		send_item: Callable = Callable()) -> void:
 	_on_change = on_change
 	_on_status = on_status
 	_document_change = on_document_change
 	_send_document = send_document
 	_peer_provider = peer_provider
+	_send_item = send_item
 	add_theme_constant_override("separation", 7)
 	var heading_row := HBoxContainer.new()
 	heading_row.add_theme_constant_override("separation", 7)
@@ -162,7 +173,12 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_inventory_list.item_selected.connect(_on_inventory_selected)
 	_inventory_list.gui_input.connect(_on_image_click.bind(false))
 	_inventory_list.gui_input.connect(_on_inventory_checkbox_input)
+	_inventory_list.gui_input.connect(_on_inventory_item_input)
 	add_child(_inventory_list)
+	_item_share_menu = PopupMenu.new()
+	_item_share_menu.add_item("Invia una copia agli utenti online", 1)
+	_item_share_menu.id_pressed.connect(func(_id: int) -> void: _share_selected_item())
+	_inventory_list.add_child(_item_share_menu)
 	var equipment_row := HFlowContainer.new()
 	equipment_row.add_theme_constant_override("h_separation", 6)
 	equipment_row.add_theme_constant_override("v_separation", 3)
@@ -361,6 +377,131 @@ func receive_document() -> void:
 		_publish()
 
 
+# Document sharing has its own tab. All other owned inventory entries use
+# the same online peers, but send a single unequipped copy instead of
+# mutating the sender's equipped/attuned stack.
+func _on_inventory_item_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse: InputEventMouseButton = event
+		if mouse.button_index == MOUSE_BUTTON_RIGHT and mouse.pressed:
+			var index: int = _inventory_list.get_item_at_position(mouse.position, true)
+			if index >= 0:
+				_open_item_share_menu(index, mouse.position)
+	elif event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		_item_touch_generation += 1
+		_item_touch_active = touch.pressed
+		if touch.pressed:
+			_item_touch_start = touch.position
+			var generation := _item_touch_generation
+			var index: int = _inventory_list.get_item_at_position(touch.position, true)
+			if index >= 0:
+				get_tree().create_timer(0.55).timeout.connect(func() -> void:
+					if is_inside_tree() and _item_touch_active and generation == _item_touch_generation:
+						_item_touch_active = false
+						_open_item_share_menu(index, _item_touch_start)
+				)
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event
+		if drag.position.distance_to(_item_touch_start) > 18.0:
+			_item_touch_active = false
+
+
+func _open_item_share_menu(index: int, local_position: Vector2) -> void:
+	if index < 0 or index >= _inventory.size() or DocumentStore.is_document(_inventory[index]):
+		return
+	_item_share_index = index
+	_inventory_list.select(index)
+	_on_inventory_selected(index)
+	var peers: Array = _peer_provider.call() if _peer_provider.is_valid() else []
+	_item_share_menu.set_item_disabled(0, peers.is_empty() or not _send_item.is_valid())
+	_item_share_menu.position = Vector2i(_inventory_list.get_global_rect().position + local_position)
+	_item_share_menu.popup()
+
+
+func _share_selected_item() -> void:
+	if _item_share_index < 0 or _item_share_index >= _inventory.size():
+		return
+	if not _peer_provider.is_valid() or not _send_item.is_valid():
+		_report_item_share("Sincronizzazione oggetti non disponibile.")
+		return
+	var selected: Dictionary = _inventory[_item_share_index]
+	if DocumentStore.is_document(selected):
+		return
+	var definition: Dictionary = _catalog_entry(selected)
+	var instance: Dictionary = ItemInstance.from_saved(selected)
+	for field: String in ItemInstance.SNAPSHOT_FIELDS:
+		if not instance.has(field) and definition.has(field):
+			var value: Variant = definition[field]
+			instance[field] = value.duplicate(true) if value is Array or value is Dictionary else value
+	instance["quantity"] = 1
+	instance["equipped"] = false
+	instance["equipped_slots"] = []
+	instance["attuned"] = false
+	instance["active"] = true
+	instance.erase("instance_id")
+	var reference: Dictionary = {"inventory": [instance]}
+	var missing: Array[String] = PortableContent.unresolved(reference)
+	if not missing.is_empty():
+		_report_item_share("Impossibile inviare: definizioni homebrew mancanti (%s)." % ", ".join(missing))
+		return
+	var definitions: Array[Dictionary] = PortableContent.bundle(reference)
+	var sent := 0
+	for peer: Variant in _peer_provider.call():
+		if not peer is Dictionary:
+			continue
+		var recipient: String = String((peer as Dictionary).get("id", ""))
+		if recipient.is_empty():
+			continue
+		var delivery_id: String = String(_send_item.call(recipient, instance, definitions))
+		if not delivery_id.is_empty():
+			sent += 1
+	if sent == 0:
+		_report_item_share("Oggetto non inviato: nessun utente raggiungibile o dati troppo grandi.")
+	else:
+		_report_item_share("Una copia di '%s' in consegna a %d utenti." % [
+			String(instance.get("name", "Oggetto")), sent])
+
+
+func _report_item_share(message: String) -> void:
+	if _on_status.is_valid():
+		_on_status.call(message)
+
+
+func receive_item() -> void:
+	# The durable inbox is shared by desktop and mobile, even if no
+	# character was selected when the network packet was acknowledged.
+	var incoming: Array[Dictionary] = ItemInbox.take_all()
+	var changed := false
+	for delivery: Dictionary in incoming:
+		var raw: Variant = delivery.get("item", {})
+		var definitions: Variant = delivery.get("definitions", [])
+		if not raw is Dictionary or not definitions is Array:
+			ItemInbox.requeue(delivery)
+			continue
+		if PortableContent.install(definitions) != OK:
+			ItemInbox.requeue(delivery)
+			continue
+		var owned: Dictionary = ItemInstance.from_saved(raw as Dictionary)
+		if String(owned.get("id", "")).is_empty() or String(owned.get("name", "")).is_empty():
+			ItemInbox.requeue(delivery)
+			continue
+		owned["quantity"] = 1
+		owned["equipped"] = false
+		owned["equipped_slots"] = []
+		owned["attuned"] = false
+		owned["active"] = true
+		owned["instance_id"] = "received_item_%d" % Time.get_ticks_usec()
+		_inventory.append(owned)
+		changed = true
+	if changed:
+		_sanitize_equipment()
+		reload_catalog()
+		_refresh_inventory(_inventory.size() - 1)
+		_documents_tab.call("load_inventory", _inventory)
+		_publish()
+
+
 # 5etools indexes weapons and armor as both specialized and mundane items.
 # Keep the richer specialized record in search without changing saved IDs.
 static func _catalog_identity(item: Dictionary) -> String:
@@ -467,6 +608,8 @@ func load_record(record: Dictionary) -> void:
 		# CreatureArea is still loading the sheet here; publishing synchronously
 		# would be ignored by its _loading guard.
 		call_deferred("_publish_migration", _loaded_creature_id)
+	if not ItemInbox.pending().is_empty():
+		call_deferred("receive_item")
 
 
 func _catalog_entry(item: Dictionary) -> Dictionary:

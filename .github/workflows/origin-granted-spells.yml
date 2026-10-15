@@ -9,6 +9,7 @@ on:
       - "vtt/**"
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_document_homebrew.gd"
+      - "tests/test_document_delivery_ack.gd"
       - "tests/test_charoptions_as_feats.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
@@ -45,6 +46,7 @@ jobs:
             /network/
             /tests/test_origin_granted_spells.gd
             /tests/test_document_homebrew.gd
+            /tests/test_document_delivery_ack.gd
             /tests/test_charoptions_as_feats.gd
             /tests/test_origin_spell_editor.gd
             /tests/test_creature_spellcasting_cast.gd
@@ -76,6 +78,7 @@ jobs:
           cp -R network /tmp/vtt-origin-test/
           cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
           cp tests/test_document_homebrew.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_document_delivery_ack.gd /tmp/vtt-origin-test/tests/
           cp tests/test_charoptions_as_feats.gd /tmp/vtt-origin-test/tests/
           cp tests/test_origin_spell_editor.gd /tmp/vtt-origin-test/tests/
           cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
@@ -90,6 +93,9 @@ jobs:
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
             --path /tmp/vtt-origin-test --editor --import --quit
           for script in \
+            vtt/item_inbox.gd \
+            network/creature_presence.gd \
+            vtt/creature_inventory_tab.gd \
             vtt/portable_creature_content.gd \
             vtt/creature_documents_tab.gd \
             vtt/creature_area.gd \
@@ -100,6 +106,7 @@ jobs:
           done
           for test in \
             test_document_homebrew \
+            test_document_delivery_ack \
             test_powers_tracker_layout \
             test_origin_granted_spells \
             test_charoptions_as_feats \

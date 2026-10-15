@@ -4,12 +4,16 @@ signal peers_changed
 
 signal document_received(document: Dictionary, sender_id: String)
 signal document_delivered(delivery_id: String)
+signal item_received(transfer: Dictionary, sender_id: String)
+signal item_delivered(delivery_id: String)
+signal item_failed(delivery_id: String)
 
 # App-level presence, separate from the TCP map snapshots.
 # A LAN broadcast or a Tailscale peer IP alone does not prove a VTT user is online.
 # Only VTT instances responding to a session-scoped UDP heartbeat appear.
 const Owner = preload("res://vtt/creature_owner.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
+const ItemInbox = preload("res://vtt/item_inbox.gd")
 const PORT := 45456
 const MAGIC := "KRUPHIX_CREATURE_PRESENCE_V1"
 const HEARTBEAT_MS := 4500
@@ -17,6 +21,10 @@ const EXPIRE_MS := 16000
 const MAX_DOCUMENT_PACKET := 7500
 const DOCUMENT_RETRY_MS := 1100
 const DOCUMENT_RETRIES := 6
+const MAX_ITEM_BYTES := 192 * 1024
+const ITEM_CHUNK_BYTES := 3200
+const MAX_ITEM_CHUNKS := 64
+const INCOMING_ITEM_TIMEOUT_MS := 30000
 
 var auto_refresh := true
 var _udp := PacketPeerUDP.new()
@@ -27,6 +35,7 @@ var _last_hello_ms := -HEARTBEAT_MS
 var _listening := false
 var _pending_documents: Dictionary = {}
 var _seen_delivery_ids: Dictionary = {}
+var _incoming_items: Dictionary = {}
 
 
 # Discover instances on the local subnet as well as via optional Tailscale.
@@ -77,6 +86,7 @@ func set_session_key(session_key: String) -> void:
 		_last_hello_ms = -HEARTBEAT_MS
 		_pending_documents.clear()
 		_seen_delivery_ids.clear()
+		_incoming_items.clear()
 
 
 func _process(_delta: float) -> void:
@@ -98,12 +108,17 @@ func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	if auto_refresh and now - _last_hello_ms >= HEARTBEAT_MS:
 		request_refresh()
+	for incoming_id: String in _incoming_items.keys():
+		if now - int(_incoming_items[incoming_id].get("updated", 0)) > INCOMING_ITEM_TIMEOUT_MS:
+			_incoming_items.erase(incoming_id)
 	for delivery_id: String in _pending_documents.keys():
 		var pending: Dictionary = _pending_documents[delivery_id]
 		if now - int(pending.get("last_sent", 0)) < DOCUMENT_RETRY_MS:
 			continue
 		if int(pending.get("tries", 0)) >= DOCUMENT_RETRIES:
 			_pending_documents.erase(delivery_id)
+			if String(pending.get("type", "")) == "item":
+				item_failed.emit(delivery_id)
 			continue
 		_send_document_packet(delivery_id)
 
@@ -153,12 +168,125 @@ func send_document(recipient_id: String, document: Dictionary) -> String:
 	return delivery_id
 
 
+# Items are transported as one serialized inventory snapshot plus the
+# homebrew definitions it actually depends on, split into bounded UDP chunks.
+# An ACK is issued only after *all* chunks are stored in the durable inbox.
+func send_item(recipient_id: String, item: Dictionary, definitions: Array[Dictionary]) -> String:
+	if not _listening or not _online.has(recipient_id):
+		return ""
+	var peer: Dictionary = _online[recipient_id]
+	if Time.get_ticks_msec() - int(peer.get("last_seen", 0)) >= EXPIRE_MS:
+		return ""
+	if String(item.get("id", "")).is_empty() or String(item.get("name", "")).is_empty():
+		return ""
+	var data: PackedByteArray = JSON.stringify({
+		"item": item, "definitions": definitions
+	}).to_utf8_buffer()
+	if data.is_empty() or data.size() > MAX_ITEM_BYTES:
+		return ""
+	var count: int = ceili(float(data.size()) / ITEM_CHUNK_BYTES)
+	if count <= 0 or count > MAX_ITEM_CHUNKS:
+		return ""
+	var delivery_id := "%s_%d" % [Owner.local_id(), Time.get_ticks_usec()]
+	var packets: Array[PackedByteArray] = []
+	for index: int in range(count):
+		var fragment: PackedByteArray = data.slice(index * ITEM_CHUNK_BYTES,
+			mini(data.size(), (index + 1) * ITEM_CHUNK_BYTES))
+		var packet: PackedByteArray = JSON.stringify({
+			"magic": MAGIC, "session": _session, "kind": "item_chunk",
+			"owner": Owner.local_id(), "recipient": recipient_id,
+			"delivery_id": delivery_id, "index": index, "total": count,
+			"data": Marshalls.raw_to_base64(fragment)
+		}).to_utf8_buffer()
+		if packet.size() > MAX_DOCUMENT_PACKET:
+			return ""
+		packets.append(packet)
+	_pending_documents[delivery_id] = {
+		"ip": String(peer.get("ip", "")), "port": int(peer.get("port", PORT)),
+		"recipient": recipient_id, "packets": packets, "type": "item",
+		"tries": 0, "last_sent": -DOCUMENT_RETRY_MS
+	}
+	_send_document_packet(delivery_id)
+	return delivery_id
+
+
+func _send_item_ack(ip: String, sender_port: int, recipient: String, delivery_id: String) -> void:
+	_udp.set_dest_address(ip, sender_port)
+	_udp.put_packet(JSON.stringify({
+		"magic": MAGIC, "session": _session, "kind": "item_ack",
+		"owner": Owner.local_id(), "recipient": recipient, "delivery_id": delivery_id
+	}).to_utf8_buffer())
+
+
+func _accept_item_chunk(value: Dictionary, owner: String, ip: String, sender_port: int,
+		delivery_id: String) -> void:
+	if _seen_delivery_ids.has(delivery_id):
+		_send_item_ack(ip, sender_port, owner, delivery_id)
+		return
+	var index: int = int(value.get("index", -1))
+	var total: int = int(value.get("total", 0))
+	var encoded: String = String(value.get("data", ""))
+	if total < 1 or total > MAX_ITEM_CHUNKS or index < 0 or index >= total or encoded.length() > 4400:
+		return
+	var chunk: PackedByteArray = Marshalls.base64_to_raw(encoded)
+	if chunk.is_empty() or chunk.size() > ITEM_CHUNK_BYTES:
+		return
+	var packet_key: String = owner + ":" + delivery_id
+	if _incoming_items.size() >= 12 and not _incoming_items.has(packet_key):
+		return
+	var state: Dictionary = _incoming_items.get(packet_key, {
+		"owner": owner, "total": total, "chunks": {}, "updated": Time.get_ticks_msec()
+	})
+	if int(state.get("total", 0)) != total or String(state.get("owner", "")) != owner:
+		return
+	var chunks: Dictionary = state["chunks"]
+	chunks[index] = chunk
+	state["updated"] = Time.get_ticks_msec()
+	_incoming_items[packet_key] = state
+	if chunks.size() < total:
+		return
+	var assembled := PackedByteArray()
+	for part: int in range(total):
+		if not chunks.has(part):
+			return
+		assembled.append_array(chunks[part])
+		if assembled.size() > MAX_ITEM_BYTES:
+			_incoming_items.erase(packet_key)
+			return
+	_incoming_items.erase(packet_key)
+	var decoded: Variant = JSON.parse_string(assembled.get_string_from_utf8())
+	if not decoded is Dictionary:
+		return
+	var payload: Dictionary = decoded
+	if not payload.get("item") is Dictionary or not payload.get("definitions") is Array:
+		return
+	var saved_item: Dictionary = payload["item"]
+	if String(saved_item.get("id", "")).is_empty() or String(saved_item.get("name", "")).is_empty():
+		return
+	var transfer: Dictionary = {
+		"id": delivery_id, "sender_id": owner,
+		"item": saved_item, "definitions": payload["definitions"]
+	}
+	if not ItemInbox.receive(transfer):
+		return
+	_seen_delivery_ids[delivery_id] = Time.get_ticks_msec()
+	if _seen_delivery_ids.size() > 500:
+		_seen_delivery_ids.clear()
+		_seen_delivery_ids[delivery_id] = Time.get_ticks_msec()
+	item_received.emit(transfer, owner)
+	_send_item_ack(ip, sender_port, owner, delivery_id)
+
+
 func _send_document_packet(delivery_id: String) -> void:
 	if not _pending_documents.has(delivery_id):
 		return
 	var pending: Dictionary = _pending_documents[delivery_id]
 	_udp.set_dest_address(String(pending["ip"]), int(pending.get("port", PORT)))
-	_udp.put_packet(pending["bytes"])
+	if pending.has("packets"):
+		for packet: PackedByteArray in pending["packets"]:
+			_udp.put_packet(packet)
+	else:
+		_udp.put_packet(pending["bytes"])
 	pending["tries"] = int(pending["tries"]) + 1
 	pending["last_sent"] = Time.get_ticks_msec()
 	_pending_documents[delivery_id] = pending
@@ -190,6 +318,25 @@ func _accept_heartbeat(value: Dictionary, ip: String, sender_port: int = PORT) -
 	if owner.length() < 16 or owner == Owner.local_id():
 		return
 	var kind: String = String(value.get("kind", ""))
+	if kind in ["item_chunk", "item_ack"]:
+		if not _online.has(owner) or String(_online[owner].get("ip", "")) != ip:
+			return
+		if Time.get_ticks_msec() - int(_online[owner].get("last_seen", 0)) >= EXPIRE_MS:
+			return
+		if String(value.get("recipient", "")) != Owner.local_id():
+			return
+		var delivery_id: String = String(value.get("delivery_id", ""))
+		if delivery_id.is_empty() or delivery_id.length() > 120:
+			return
+		if kind == "item_ack":
+			if _pending_documents.has(delivery_id):
+				var pending: Dictionary = _pending_documents[delivery_id]
+				if String(pending.get("type", "")) == "item" and String(pending.get("recipient", "")) == owner:
+					_pending_documents.erase(delivery_id)
+					item_delivered.emit(delivery_id)
+			return
+		_accept_item_chunk(value, owner, ip, sender_port, delivery_id)
+		return
 	if kind == "document" or kind == "document_ack":
 		# The sender must already have proven online status from this IP.
 		if not _online.has(owner) or String(_online[owner].get("ip", "")) != ip:
@@ -202,7 +349,7 @@ func _accept_heartbeat(value: Dictionary, ip: String, sender_port: int = PORT) -
 		if delivery_id.is_empty() or delivery_id.length() > 120:
 			return
 		if kind == "document_ack":
-			if _pending_documents.has(delivery_id) and String(_pending_documents[delivery_id].get("recipient", "")) == owner:
+			if _pending_documents.has(delivery_id) and not _pending_documents[delivery_id].has("packets") and String(_pending_documents[delivery_id].get("recipient", "")) == owner:
 				_pending_documents.erase(delivery_id)
 				document_delivered.emit(delivery_id)
 			return

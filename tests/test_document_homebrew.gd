@@ -8,6 +8,7 @@ const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const ItemInbox = preload("res://vtt/item_inbox.gd")
 
 
 func _initialize() -> void:
@@ -50,6 +51,7 @@ func _run() -> void:
 	}
 	var events: Array = []
 	var deliveries: Array[Dictionary] = []
+	var item_deliveries: Array[Dictionary] = []
 	var tab := Inventory.new()
 	root.add_child(tab)
 	var record_delivery := func(recipient: String, document: Dictionary) -> String:
@@ -58,8 +60,12 @@ func _run() -> void:
 	var online_peers := func() -> Array[Dictionary]:
 		return [{"id": "person_one", "label": "Giocatore uno"},
 			{"id": "person_two", "label": "Giocatore due"}]
+	var record_item_delivery := func(recipient: String, item: Dictionary, definitions: Array[Dictionary]) -> String:
+		item_deliveries.append({"recipient": recipient, "item": item.duplicate(true),
+			"definitions": definitions.duplicate(true)})
+		return "item_delivery_" + recipient
 	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)),
-		Callable(), Callable(), record_delivery, online_peers)
+		Callable(), Callable(), record_delivery, online_peers, record_item_delivery)
 	tab.load_record({"inventory": [row], "documents": [legacy]})
 	await process_frame
 	await process_frame
@@ -112,7 +118,38 @@ func _run() -> void:
 	var item_instance: Dictionary = Instances.from_catalog(item_definition)
 	assert(String(item_instance.get("rarity", "")) == "rare"
 		and int(item_instance.get("value", 0)) == 250)
+	# A single copy, not the whole stack, reaches each online peer and
+	# retains the catalog definition needed on another device.
+	item_instance["quantity"] = 6
+	item_instance["equipped"] = true
+	item_instance["equipped_slots"] = ["main"]
+	tab._inventory.append(item_instance.duplicate(true))
+	tab.call("_refresh_inventory", tab._inventory.size() - 1)
+	tab.set("_item_share_index", tab._inventory.size() - 1)
+	tab.call("_share_selected_item")
+	assert(item_deliveries.size() == 2)
+	for sent: Dictionary in item_deliveries:
+		assert(int(sent.item.quantity) == 1 and not bool(sent.item.equipped)
+			and not (sent.definitions as Array).is_empty(),
+			"Shared homebrew items must arrive as one unequipped copy with definitions")
+	assert(int(tab._inventory[tab._inventory.size() - 1].quantity) == 6,
+		"Sending a copy must not change the sender's stack")
+	var arriving: Dictionary = item_deliveries[0]
+	assert(ItemInbox.receive({
+		"id": "inventory_transfer_" + stamp, "sender_id": "person_one",
+		"item": arriving.item, "definitions": arriving.definitions
+	}))
+	# Mimic another device without the source definition.
 	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
+	tab.call("receive_item")
+	assert(ItemInbox.pending().is_empty())
+	assert(tab._inventory.size() == 4 and not bool(tab._inventory[-1].equipped)
+		and String(tab._inventory[-1].id) == String(custom_item.id),
+		"Incoming item must append to the inventory without equipping itself")
+	assert(Catalog.home_entries("items").any(func(entry: Dictionary) -> bool:
+		return String(entry.get("id", "")) == String(custom_item.id)),
+		"Receiving homebrew item must install the missing definition")
+	assert(QuickCustom.remove(custom_item), "Imported quick-created item must still be removable")
 	portable_record["background_id"] = local_background.id
 	portable_record["background"] = local_background.name
 	assert(PortableContent.unresolved(portable_record).is_empty(),
