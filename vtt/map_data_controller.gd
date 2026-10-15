@@ -203,6 +203,11 @@ func request_action(action: String, payload: Dictionary) -> String:
 		return ""
 	_action_sequence += 1
 	var id := str(Time.get_ticks_usec()) + "_" + str(_action_sequence)
+	var frame := _action_frame({"magic": MAGIC, "session": _session, "request_id": id,
+		"action": action, "payload": payload})
+	if frame.is_empty():
+		status_changed.emit("Richiesta troppo grande per la connessione mobile.")
+		return ""
 	var peer := StreamPeerTCP.new()
 	var error := peer.connect_to_host(_host, port + 1)
 	if error != OK:
@@ -211,8 +216,7 @@ func request_action(action: String, payload: Dictionary) -> String:
 	_actions.append({"peer": peer, "client": true, "id": id, "action": action,
 		"buffer": PackedByteArray(), "size": -1, "sent": 0,
 		"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS,
-		"out": _action_frame({"magic": MAGIC, "session": _session, "request_id": id,
-			"action": action, "payload": payload})})
+		"out": frame})
 	return id
 
 static func _action_frame(message: Dictionary) -> PackedByteArray:
@@ -309,5 +313,9 @@ func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
 		return
 	item.out = _action_frame({"magic": MAGIC, "session": _session,
 		"request_id": String(message.get("request_id", "")), "result": result})
+	if item.out.is_empty():
+		item.out = _action_frame({"magic": MAGIC, "session": _session,
+			"request_id": String(message.get("request_id", "")),
+			"result": {"ok": false, "error": "Risposta troppo grande per la connessione mobile."}})
 	item.sent = 0
 	item.replied = true
