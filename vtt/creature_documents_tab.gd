@@ -4,6 +4,7 @@ extends VBoxContainer
 # addition date and preferred display style belong to the live inventory.
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const ShareRecipients = preload("res://vtt/share_recipients_dialog.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -71,7 +72,7 @@ func setup(on_change: Callable, on_status: Callable,
 	_list.gui_input.connect(_on_document_input)
 	add_child(_list)
 	_share_menu = PopupMenu.new()
-	_share_menu.add_item("Invia agli altri utenti online", 1)
+	_share_menu.add_item("Invia a utenti selezionati", 1)
 	_share_menu.id_pressed.connect(func(_id: int) -> void: _share_selected_document())
 	_list.add_child(_share_menu)
 
@@ -268,6 +269,14 @@ func _share_selected_document() -> void:
 	if not _send_document.is_valid() or not _online_peers.is_valid():
 		_status("La sincronizzazione dei documenti non è disponibile.")
 		return
+	if ShareRecipients.choose(self, _online_peers.call(), "documento",
+			Callable(self, "_send_selected_document_to")) == null:
+		_status("Nessun utente online disponibile per l'invio.")
+
+
+func _send_selected_document_to(recipients: Array[String]) -> void:
+	if _share_index < 0 or _share_index >= _indices.size():
+		return
 	var owned_index: int = _indices[_share_index]
 	if owned_index < 0 or owned_index >= _inventory.size():
 		return
@@ -281,13 +290,7 @@ func _share_selected_document() -> void:
 		"style": String(item.get("display_style", "pergamena"))
 	}
 	var sent := 0
-	var peers: Array = _online_peers.call()
-	for peer: Variant in peers:
-		if not peer is Dictionary:
-			continue
-		var recipient: String = String((peer as Dictionary).get("id", ""))
-		if recipient.is_empty():
-			continue
+	for recipient: String in recipients:
 		var delivery: String = String(_send_document.call(recipient, document))
 		if not delivery.is_empty():
 			sent += 1

@@ -309,17 +309,6 @@ func _build_ui() -> void:
 	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(mode_hint)
 
-	var actor_row := HBoxContainer.new()
-	outer.add_child(actor_row)
-	var actor_label := Label.new()
-	actor_label.text = "Creatura:"
-	actor_row.add_child(actor_label)
-	actor_picker = OptionButton.new()
-	actor_picker.name = "RollCreaturePicker"
-	actor_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actor_picker.get_popup().about_to_popup.connect(_refresh_roll_actors)
-	actor_row.add_child(actor_picker)
-	_refresh_roll_actors()
 	var dice_grid := GridContainer.new()
 	dice_grid.columns = 4
 	dice_grid.add_theme_constant_override("h_separation", 5)
@@ -354,6 +343,17 @@ func _build_ui() -> void:
 	roll_button.pressed.connect(_roll_selected_die)
 	outer.add_child(roll_button)
 
+	var actor_row := HBoxContainer.new()
+	outer.add_child(actor_row)
+	var actor_label := Label.new()
+	actor_label.text = "Creatura:"
+	actor_row.add_child(actor_label)
+	actor_picker = OptionButton.new()
+	actor_picker.name = "RollCreaturePicker"
+	actor_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actor_picker.get_popup().about_to_popup.connect(_refresh_roll_actors)
+	actor_row.add_child(actor_picker)
+	_refresh_roll_actors()
 	var chat_row := HBoxContainer.new()
 	chat_row.custom_minimum_size = Vector2(0, 42)
 	chat_row.add_theme_constant_override("separation", 6)
@@ -1002,6 +1002,11 @@ func _send_chat() -> void:
 		return
 
 	var event := _new_event("chat")
+	# The same explicit creature choice labels manual dice rolls and chat.
+	var picked: Dictionary = actor_picker.get_selected_metadata() if actor_picker != null else {}
+	var picked_name := String(picked.get("name", "")).strip_edges()
+	if not picked_name.is_empty():
+		event["author"] = picked_name.left(80)
 	event["text"] = message
 	chat_input.clear()
 	_append_event(event, true)

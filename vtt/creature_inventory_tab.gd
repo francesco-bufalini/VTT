@@ -14,6 +14,7 @@ const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
+const ShareRecipients = preload("res://vtt/share_recipients_dialog.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -176,7 +177,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_inventory_list.gui_input.connect(_on_inventory_item_input)
 	add_child(_inventory_list)
 	_item_share_menu = PopupMenu.new()
-	_item_share_menu.add_item("Invia una copia agli utenti online", 1)
+	_item_share_menu.add_item("Invia copia a utenti selezionati", 1)
 	_item_share_menu.id_pressed.connect(func(_id: int) -> void: _share_selected_item())
 	_inventory_list.add_child(_item_share_menu)
 	var equipment_row := HFlowContainer.new()
@@ -425,6 +426,14 @@ func _share_selected_item() -> void:
 	if not _peer_provider.is_valid() or not _send_item.is_valid():
 		_report_item_share("Sincronizzazione oggetti non disponibile.")
 		return
+	if ShareRecipients.choose(self, _peer_provider.call(), "oggetto",
+			Callable(self, "_send_selected_item_to")) == null:
+		_report_item_share("Nessun utente online disponibile per l'invio.")
+
+
+func _send_selected_item_to(recipients: Array[String]) -> void:
+	if _item_share_index < 0 or _item_share_index >= _inventory.size():
+		return
 	var selected: Dictionary = _inventory[_item_share_index]
 	if DocumentStore.is_document(selected):
 		return
@@ -447,12 +456,7 @@ func _share_selected_item() -> void:
 		return
 	var definitions: Array[Dictionary] = PortableContent.bundle(reference)
 	var sent := 0
-	for peer: Variant in _peer_provider.call():
-		if not peer is Dictionary:
-			continue
-		var recipient: String = String((peer as Dictionary).get("id", ""))
-		if recipient.is_empty():
-			continue
+	for recipient: String in recipients:
 		var delivery_id: String = String(_send_item.call(recipient, instance, definitions))
 		if not delivery_id.is_empty():
 			sent += 1
