@@ -12,6 +12,8 @@ const Traits = preload("res://vtt/creature_traits_tab.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -26,6 +28,7 @@ var _origin_picker: OptionButton
 var _feat_editor: VBoxContainer
 var _feat_filter: LineEdit
 var _feat_picker: OptionButton
+var _delete_custom_feat: Button
 var _catalog_matches: Array[Dictionary] = []
 var _remove_dialog: ConfirmationDialog
 var _remove_picker: OptionButton
@@ -106,6 +109,11 @@ func setup(on_change: Callable) -> void:
 	_feat_picker = OptionButton.new()
 	_feat_picker.fit_to_longest_item = false
 	_feat_editor.add_child(_feat_picker)
+	_feat_picker.item_selected.connect(_on_feat_catalog_selected)
+	_delete_custom_feat = Button.new()
+	_delete_custom_feat.text = "Elimina talento personalizzato"
+	_delete_custom_feat.pressed.connect(_delete_selected_custom_feat)
+	_feat_editor.add_child(_delete_custom_feat)
 	_origin_picker = OptionButton.new()
 	_origin_picker.fit_to_longest_item = false
 	_origin_picker.tooltip_text = "Scegli l'origine che concede il talento (o senza origine)"
@@ -457,6 +465,8 @@ func _refresh_origin_picker() -> void:
 func _refresh_feat_picker() -> void:
 	_catalog_matches.clear()
 	_feat_picker.clear()
+	_catalog_matches.append({"id": "__create_custom_feat__", "name": "＋ Crea talento personalizzato"})
+	_feat_picker.add_item("＋ Crea talento personalizzato")
 	var needle: String = _feat_filter.text.strip_edges().to_lower()
 	var edition: String = String(_record.get("rules_version", "2014"))
 	for feat: Dictionary in _catalog_entries("feats"):
@@ -474,6 +484,42 @@ func _refresh_feat_picker() -> void:
 			break
 	if _feat_picker.item_count > 0:
 		_feat_picker.select(0)
+	_delete_custom_feat.disabled = true
+
+
+func _on_feat_catalog_selected(index: int) -> void:
+	if index < 0 or index >= _catalog_matches.size():
+		return
+	var feat: Dictionary = _catalog_matches[index]
+	_delete_custom_feat.disabled = not QuickCustom.is_custom(feat)
+	if String(feat.get("id", "")) == "__create_custom_feat__":
+		_open_custom_feat_editor()
+
+
+func _open_custom_feat_editor() -> void:
+	QuickCustomDialog.create_popup(self, "feats", func(created: Dictionary) -> void:
+		_catalog_cache.erase("feats")
+		_refresh_feat_picker()
+		# The user can now select an origin and grant this new feat normally.
+		for index: int in range(_catalog_matches.size()):
+			if String(_catalog_matches[index].get("id", "")) == String(created.get("id", "")):
+				_feat_picker.select(index)
+				_on_feat_catalog_selected(index)
+				break
+	)
+
+
+func _delete_selected_custom_feat() -> void:
+	var index: int = _feat_picker.selected
+	if index < 0 or index >= _catalog_matches.size():
+		return
+	var entry: Dictionary = _catalog_matches[index]
+	if not QuickCustom.is_custom(entry):
+		return
+	QuickCustomDialog.delete_popup(self, entry, func() -> void:
+		_catalog_cache.erase("feats")
+		_refresh_feat_picker()
+	)
 
 
 func _select_origin(sid: String) -> void:
@@ -507,6 +553,9 @@ func _add_feat() -> void:
 	if index < 0 or index >= _catalog_matches.size():
 		return
 	var feat: Dictionary = _catalog_matches[index]
+	if String(feat.get("id", "")) == "__create_custom_feat__":
+		_open_custom_feat_editor()
+		return
 	var sid: String = Rules.feat_source_id(feat)
 	var source: Dictionary = OriginChoices.selected(_origin_picker)
 	var origin_id: String = String(source.get("id", ""))
