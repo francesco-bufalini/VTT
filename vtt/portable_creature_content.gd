@@ -77,9 +77,9 @@ static func _valid_entry(entry: Dictionary) -> bool:
 	var parts := id.split(":")
 	if parts.size() != 4 or parts[0] != "homebrew" or parts[2] not in CATEGORIES:
 		return false
-	var namespace := RegEx.create_from_string("^[a-z0-9][a-z0-9_-]{0,47}$")
-	var local := RegEx.create_from_string("^[a-z0-9][a-z0-9_-]{0,63}$")
-	if namespace.search(parts[1]) == null or local.search(parts[3]) == null:
+	var namespace_pattern := RegEx.create_from_string("^[a-z0-9][a-z0-9_-]{0,47}$")
+	var local_pattern := RegEx.create_from_string("^[a-z0-9][a-z0-9_-]{0,63}$")
+	if namespace_pattern.search(parts[1]) == null or local_pattern.search(parts[3]) == null:
 		return false
 	return entry.get("data") is Dictionary and not String(entry.get("name", "")).strip_edges().is_empty() and String(entry.get("name", "")).length() <= 160
 
