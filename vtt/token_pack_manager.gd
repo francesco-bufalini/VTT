@@ -13,14 +13,14 @@ const CACHE_DIR := "user://token_cache"
 const CATALOG_CACHE_PATH := CACHE_DIR + "/token_catalog.json"
 const OFFLINE_CATALOG_PATH := "res://vtt/data/token_catalog_offline.json"
 
-# Public HTTP is always attempted first. This URL can later be replaced with
-# R2/B2/a public GitHub Release without changing the manager API.
+# The maintained, unified catalog (covering packs across ALL releases).
+# A test release catalog only contains a subset and must not replace it.
 const DEFAULT_CATALOG_URL := (
-	"https://github.com/francesco-bufalini/VTT/releases/download/"
-	+ "token-packs-test-001/token_catalog.json"
+	"https://raw.githubusercontent.com/francesco-bufalini/VTT/main/"
+	+ "vtt/data/token_catalog_offline.json"
 )
 
-# Development-only fallback while the GitHub repository is private.
+# Optional GitHub CLI fallback for development/private repo access.
 const GITHUB_REPOSITORY := "francesco-bufalini/VTT"
 const GITHUB_RELEASE_TAG := "token-packs-test-001"
 const CATALOG_FILENAME := "token_catalog.json"
@@ -38,9 +38,15 @@ var _validated_cache_sha: Dictionary = {}
 
 func _ready() -> void:
 	_ensure_cache_dir()
-	var had_cached_catalog := _load_cached_catalog()
-	if not had_cached_catalog and FileAccess.file_exists(OFFLINE_CATALOG_PATH):
-		had_cached_catalog = _accept_catalog_text(FileAccess.get_file_as_string(OFFLINE_CATALOG_PATH), false)
+	# Always seed the full bundled catalog, even if an old installation cached
+	# only the small test-release catalog. Then apply cached remote updates.
+	var had_cached_catalog := false
+	if FileAccess.file_exists(OFFLINE_CATALOG_PATH):
+		had_cached_catalog = _accept_catalog_text(
+			FileAccess.get_file_as_string(OFFLINE_CATALOG_PATH), false
+		)
+	if _load_cached_catalog():
+		had_cached_catalog = true
 	if had_cached_catalog:
 		print(
 			"TokenPackManager: cached catalog loaded (%d tokens)"
@@ -511,22 +517,35 @@ func _accept_catalog_text(raw: String, persist: bool) -> bool:
 	if not tokens_value is Array:
 		return false
 
-	var entries: Dictionary = {}
+	# Remote/test catalogs can be partial: never discard bundled or cached
+	# identities when receiving only a subset. A matching ID is refreshed.
+	var entries: Dictionary = _entries_by_id.duplicate(true)
 	for value: Variant in tokens_value:
 		if not value is Dictionary:
 			continue
-		var entry := value as Dictionary
+		var entry := (value as Dictionary).duplicate(true)
 		var token_id := String(entry.get("id", "")).strip_edges()
 		if token_id.is_empty():
 			continue
-		entries[token_id] = entry.duplicate(true)
+		entry["id"] = token_id
+		if entry.has("release_tag"):
+			entry["release_tag"] = String(entry["release_tag"]).strip_edges()
+		entries[token_id] = entry
 
-	_catalog = catalog.duplicate(true)
+	var merged_tokens: Array[Dictionary] = []
+	for value: Variant in entries.values():
+		if value is Dictionary:
+			merged_tokens.append((value as Dictionary).duplicate(true))
+	merged_tokens.sort_custom(_sort_entries)
+	var merged_catalog := catalog.duplicate(true)
+	merged_catalog["tokens"] = merged_tokens
+	_catalog = merged_catalog
 	_entries_by_id = entries
 	_validated_cache_sha.clear()
 
 	if persist:
-		var cache_error := _save_catalog_cache(raw)
+		# Persist the MERGED catalog so offline restarts retain all entries.
+		var cache_error := _save_catalog_cache(JSON.stringify(_catalog, "\t"))
 		if cache_error != OK:
 			push_warning(
 				"TokenPackManager: catalog loaded but cache write failed: %s"
@@ -567,8 +586,7 @@ func _on_catalog_request_completed(
 		) % [result, response_code]
 	)
 
-	# Current private-repository development fallback. This path is not required
-	# once the catalog URL is publicly downloadable.
+	# Development fallback when the public raw catalog is inaccessible.
 	if _refresh_catalog_via_gh():
 		return
 
@@ -585,10 +603,8 @@ func _refresh_catalog_via_gh() -> bool:
 	if gh_path.is_empty():
 		return false
 
-	# While the repository is private, discover every release that publishes a
-	# token_catalog.json and merge them into one runtime catalog. This mirrors
-	# the future public setup where a single global catalog can point at PCKs
-	# spread across multiple releases.
+	# Discover release catalogs through the GitHub CLI for offline/private
+	# development; the public raw catalog is the primary online source.
 	var release_output: Array = []
 	var release_exit := OS.execute(
 		gh_path,
