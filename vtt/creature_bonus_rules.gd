@@ -308,9 +308,9 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 	if target == "speed":
 		if String(record.get("kind", "character")) != "monster":
 			var species_speed: Variant = record.get("species_speed", {})
-			if species_speed == {}:
+			if not RaceRules.has_speed(species_speed):
 				species_speed = RaceRules.speed_for_record(record)
-			if species_speed != {}:
+			if RaceRules.has_speed(species_speed):
 				return {"ok": true, "value": Rules.walking_speed(species_speed)}
 		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30)))}
 	if target.begins_with("speed:"):

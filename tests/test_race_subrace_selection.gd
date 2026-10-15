@@ -1,6 +1,8 @@
 extends SceneTree
 
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
@@ -71,6 +73,38 @@ func run() -> void:
 	var migrated := RaceRules.migrate_legacy_species(legacy)
 	assert(migrated.species == "Elf" and migrated.subrace == "High",
 		"Legacy flattened races migrate without discarding selected child")
+	# Reproduce the real crash: a cached 5etools race speed is a float,
+	# while legacy saves may keep a stale numeric speed_base.
+	assert(RaceRules.has_speed(25.0) and RaceRules.has_speed(25)
+		and RaceRules.has_speed({"walk": 30, "fly": 60})
+		and not RaceRules.has_speed({}) and not RaceRules.has_speed(null),
+		"Numeric and structured racial speeds need type-safe detection")
+	var numeric_race: Dictionary = PlayerStore.new().create_character()
+	numeric_race["species"] = "Elf"
+	numeric_race["species_source"] = "PHB"
+	numeric_race["species_id"] = String(elf.get("id", ""))
+	numeric_race["speed_base"] = 99
+	var race_key: String = JSON.stringify([
+		numeric_race.get("species_id", ""), numeric_race.get("species", ""),
+		numeric_race.get("species_source", ""), numeric_race.get("subrace", ""),
+		numeric_race.get("subrace_source", "")
+	])
+	RaceRules._speed_cache_revision = ContentCatalog.revision()
+	RaceRules._speed_cache[race_key] = 20.0
+	var restored_numeric: Dictionary = PlayerStore.new().normalize_character(numeric_race)
+	assert(restored_numeric.speed_base == 20 and restored_numeric.speed == 20,
+		"Float racial speed must override stale saved speed in both normalization and formulas")
+	RaceRules._speed_cache.erase(race_key)
+	assert(Bonuses.value({"kind": "character", "species_speed": 25.0,
+		"speed_base": 99}, "speed") == 25,
+		"Formula-based speed must accept a float without comparing it with a Dictionary")
+	assert(Bonuses.value({"kind": "character", "species_speed": {"walk": 40, "fly": 60},
+		"speed_base": 99}, "speed") == 40,
+		"Structured walking speed must still be honored by formula evaluation")
+	assert(PlayerStore.new().normalize_character({
+		"speed_base": 27, "species": "", "species_id": ""
+	}).speed_base == 27,
+		"No race speed must preserve the legacy base-speed fallback")
 	var stat := {"name": "Sample Monster", "source": "MM", "cr": "1/4", "type": "beast"}
 	var monsters := MonsterStore.new()
 	var creature := monsters.create_creature(stat, "enemy")

@@ -425,7 +425,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	# values are only a fallback when that catalogue entry is unavailable.
 	var selected_speed: Variant = RaceRules.speed_for_record(defaults)
 	defaults["speed_base"] = (CreatureRules.walking_speed(selected_speed)
-		if selected_speed != {} else maxi(0, int(value.get("speed_base", value.get("speed", 30)))))
+		if RaceRules.has_speed(selected_speed)
+		else maxi(0, int(value.get("speed_base", value.get("speed", 30)))))
 	defaults["speed"] = int(defaults["speed_base"])
 	defaults["speed_is_custom"] = false
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
