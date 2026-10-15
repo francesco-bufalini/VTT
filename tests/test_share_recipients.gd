@@ -8,6 +8,10 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	# Exercise a narrow touch viewport, not only the default desktop window.
+	root.gui_embed_subwindows = true
+	root.set_meta("vtt_touch_layout", true)
+	root.size = Vector2i(360, 640)
 	var host := Control.new()
 	root.add_child(host)
 	var delivered: Array = []
@@ -21,6 +25,14 @@ func run() -> void:
 	)
 	assert(dialog != null and dialog.get_ok_button().disabled,
 		"Sending must require explicit recipient selection")
+	await process_frame
+	await process_frame
+	assert(dialog.position.x >= 0 and dialog.position.y >= 0
+		and dialog.position.x + dialog.size.x <= root.size.x
+		and dialog.position.y + dialog.size.y <= root.size.y,
+		"Recipient popup must stay within a 360x640 mobile screen")
+	assert(dialog.get_ok_button().is_visible_in_tree(),
+		"Native Invia control must remain visible and reachable")
 	var checks := dialog.find_children("*", "CheckBox", true, false)
 	assert(checks.size() == 2)
 	assert(not (checks[0] as CheckBox).button_pressed and not (checks[1] as CheckBox).button_pressed)

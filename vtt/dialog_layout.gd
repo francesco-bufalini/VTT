@@ -56,22 +56,11 @@ static func _check_first_frame_layout(dialog: Window) -> void:
 	await tree.process_frame
 	if not is_instance_valid(dialog) or not dialog.visible:
 		return
-	if OS.has_feature("mobile") or tree.root.has_meta("vtt_touch_layout"):
-		var available := Vector2i(dialog.get_parent().get_viewport().get_visible_rect().size)
-		dialog.min_size = Vector2i.ZERO
-		dialog.size = dialog.size.min(available - Vector2i(12, 12))
-		dialog.position = (available - dialog.size) / 2
-		return
-	# Re-measure the first completed frame. Grow if necessary, never shrink
-	# below the actual content minimum (which includes the native footer).
-	dialog.child_controls_changed()
-	var content_minimum: Vector2 = dialog.get_contents_minimum_size()
-	var required: Vector2i = Vector2i(
-		maxi(dialog.min_size.x, ceili(content_minimum.x)),
-		maxi(dialog.min_size.y, ceili(content_minimum.y))
-	)
-	if dialog.size.x < required.x or dialog.size.y < required.y:
-		dialog.size = Vector2i(
-			maxi(dialog.size.x, required.x),
-			maxi(dialog.size.y, required.y)
-		)
+	# Late content measurement must never grow popups outside the viewport.
+	# DialogScrollBody can scroll; keep native action buttons on screen.
+	var available := Vector2i(dialog.get_parent().get_viewport().get_visible_rect().size)
+	var touch := OS.has_feature("mobile") or tree.root.has_meta("vtt_touch_layout")
+	var margin := Vector2i(12, 12) if touch else Vector2i(24, 24)
+	dialog.min_size = Vector2i.ZERO
+	dialog.size = dialog.size.min(available - margin)
+	dialog.position = (available - dialog.size) / 2

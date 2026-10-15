@@ -25,6 +25,8 @@ var _editing_key := ""
 
 var _list: ItemList
 var _remove_button: Button
+var _open_button: Button
+var _share_button: Button
 var _dialog: AcceptDialog
 var _style_picker: OptionButton
 var _edit_button: Button
@@ -56,6 +58,16 @@ func setup(on_change: Callable, on_status: Callable,
 	create.text = "+ Nuovo documento"
 	create.pressed.connect(_add_document)
 	toolbar.add_child(create)
+	_open_button = Button.new()
+	_open_button.text = "Apri / modifica"
+	_open_button.disabled = true
+	_open_button.pressed.connect(_open_selected_document)
+	toolbar.add_child(_open_button)
+	_share_button = Button.new()
+	_share_button.text = "Invia…"
+	_share_button.disabled = true
+	_share_button.pressed.connect(_share_current_document)
+	toolbar.add_child(_share_button)
 	_remove_button = Button.new()
 	_remove_button.text = "Elimina"
 	_remove_button.disabled = true
@@ -80,7 +92,7 @@ func setup(on_change: Callable, on_status: Callable,
 	# and remains active even while the Documents tab is not selected.
 	_viewport = SubViewport.new()
 	_viewport.size = Vector2i(640, 780)
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	add_child(_viewport)
 	_paper = ColorRect.new()
@@ -106,7 +118,10 @@ func setup(on_change: Callable, on_status: Callable,
 	var popup_body := VBoxContainer.new()
 	popup_body.add_theme_constant_override("separation", 8)
 	_dialog.add_child(popup_body)
-	var controls := HBoxContainer.new()
+	# Flow buttons onto a second line rather than widening the popup on phones.
+	var controls := HFlowContainer.new()
+	controls.add_theme_constant_override("h_separation", 8)
+	controls.add_theme_constant_override("v_separation", 6)
 	popup_body.add_child(controls)
 	var style_title := Label.new()
 	style_title.text = "Visualizzazione"
@@ -131,7 +146,7 @@ func setup(on_change: Callable, on_status: Callable,
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	popup_body.add_child(layout)
 	_editor_panel = VBoxContainer.new()
-	_editor_panel.custom_minimum_size.x = 355
+	_editor_panel.custom_minimum_size.x = 0
 	_editor_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_editor_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_editor_panel.hide()
@@ -149,7 +164,8 @@ func setup(on_change: Callable, on_status: Callable,
 	_editor_panel.add_child(content_label)
 	_body_edit = TextEdit.new()
 	_body_edit.mouse_force_pass_scroll_events = false
-	_body_edit.custom_minimum_size = Vector2(320, 550)
+	_body_edit.custom_minimum_size = Vector2(0, 240)
+	_body_edit.virtual_keyboard_enabled = true
 	_body_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_body_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
@@ -158,7 +174,7 @@ func setup(on_change: Callable, on_status: Callable,
 	_editor_panel.add_child(_body_edit)
 
 	_full_image = TextureRect.new()
-	_full_image.custom_minimum_size = Vector2(460, 590)
+	_full_image.custom_minimum_size = Vector2(0, 300)
 	_full_image.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_full_image.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_full_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -221,6 +237,8 @@ func _refresh_list() -> void:
 	else:
 		_active_id = ""
 	_remove_button.disabled = _selected_inventory_index() < 0
+	_open_button.disabled = _remove_button.disabled
+	_share_button.disabled = _remove_button.disabled or not _send_document.is_valid()
 
 
 func _on_document_input(event: InputEvent) -> void:
@@ -261,6 +279,14 @@ func _open_share_menu(index: int, local_position: Vector2) -> void:
 	_share_menu.set_item_disabled(0, peers.is_empty() or not _send_document.is_valid())
 	_share_menu.position = Vector2i(_list.get_global_rect().position + local_position)
 	_share_menu.popup()
+
+
+func _share_current_document() -> void:
+	var selected: PackedInt32Array = _list.get_selected_items()
+	if selected.is_empty():
+		return
+	_share_index = int(selected[0])
+	_share_selected_document()
 
 
 func _share_selected_document() -> void:
@@ -315,6 +341,14 @@ func _select_document(_index: int) -> void:
 	if index >= 0:
 		_active_id = _instance_key(_inventory[index])
 	_remove_button.disabled = index < 0
+	_open_button.disabled = index < 0
+	_share_button.disabled = index < 0 or not _send_document.is_valid()
+
+
+func _open_selected_document() -> void:
+	var selected: PackedInt32Array = _list.get_selected_items()
+	if not selected.is_empty():
+		_open_document(int(selected[0]))
 
 
 func _add_document() -> void:
@@ -369,7 +403,8 @@ func _open_document(index: int) -> void:
 	_date_label.text = "Aggiunto: " + _format_date(int(item.get("added_at", 0)))
 	_dialog.title = "Documento · " + _title_edit.text
 	_update_preview()
-	DialogLayout.popup(_dialog, Vector2i(690, 790), 0.90)
+	_apply_dialog_layout(false)
+	DialogLayout.popup(_dialog, Vector2i(640, 620), 0.90)
 	_remove_button.disabled = false
 
 
@@ -381,8 +416,24 @@ func _toggle_editor(enabled: bool) -> void:
 	_edit_button.text = "Termina modifica" if enabled else "Modifica"
 	if not enabled:
 		_flush_edit()
+	_apply_dialog_layout(enabled)
+	# Do not re-open an active dialog on edit-mode changes: that steals
+	# keyboard focus and can make its controls expand off-screen.
 	if _dialog.visible:
-		DialogLayout.popup(_dialog, Vector2i(1110, 830) if enabled else Vector2i(690, 790), 0.92)
+		var screen_size := Vector2i(get_viewport().get_visible_rect().size)
+		var target := Vector2i(950, 660) if enabled else Vector2i(640, 620)
+		_dialog.size = target.min(screen_size - Vector2i(20, 32))
+		_dialog.position = (screen_size - _dialog.size) / 2
+
+
+func _apply_dialog_layout(editing: bool) -> void:
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	var touch := get_tree().root.has_meta("vtt_touch_layout") or OS.has_feature("mobile")
+	# In phone/compact mode, editing uses the entire width; the preview
+	# returns when the user finishes modifying the document.
+	_full_image.visible = not editing or (not touch and viewport_width >= 930.0)
+	if not editing:
+		_update_preview()
 
 
 func _on_style_changed(index: int) -> void:
@@ -400,13 +451,15 @@ func _on_editor_changed() -> void:
 	if _loading:
 		return
 	_dirty = true
-	_update_preview()
+	# Avoid redrawing a full page texture on each character while editing.
+	if _full_image.is_visible_in_tree():
+		_update_preview()
 	_save_revision += 1
 	_save_later(_save_revision)
 
 
 func _save_later(revision: int) -> void:
-	await get_tree().create_timer(0.45).timeout
+	await get_tree().create_timer(1.2).timeout
 	if revision == _save_revision and _dirty and is_inside_tree():
 		_flush_edit()
 
@@ -446,7 +499,7 @@ func _update_preview() -> void:
 	# No mail emoji before the text in letter layout.
 	var prefix: String = "" if is_letter else "❧  "
 	_paper_text.text = prefix + _title_edit.text + "\n\n" + _body_edit.text
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 func _format_date(unix_time: int) -> String:

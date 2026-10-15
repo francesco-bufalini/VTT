@@ -321,6 +321,12 @@ func _on_touch_node_added(node: Node) -> void:
 func _style_added_control(reference: WeakRef) -> void:
 	var node: Node = reference.get_ref()
 	if is_instance_valid(node) and not node.is_queued_for_deletion():
+		# Share confirmation dialogs are created dynamically, after _ready().
+		# Without a per-window relay their CheckBoxes/Invia touch input is lost.
+		if node is Window:
+			_install_window_touch(node as Window)
+			if node is AcceptDialog and not node.about_to_popup.is_connected(_fit_touch_dialog.bind(node)):
+				node.about_to_popup.connect(_fit_touch_dialog.bind(node))
 		TouchLayout.style_control(node)
 		if node is Window:
 			_install_window_touch(node as Window)
@@ -540,7 +546,7 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 		return
 	var fields: Array[Control] = []
 	for node: Node in active_window.find_children("*", "Control", true, false):
-		if not (node is LineEdit or node is ItemList):
+		if not (node is LineEdit or node is ItemList or node is TextEdit):
 			continue
 		var control := node as Control
 		if modal != null and not modal.is_ancestor_of(control):
@@ -569,6 +575,11 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 			control.caret_column = control.text.length()
 			if control.virtual_keyboard_enabled and DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
 				DisplayServer.virtual_keyboard_show(control.text, Rect2(), control.virtual_keyboard_type, control.max_length, control.caret_column, control.caret_column)
+			return
+		if control is TextEdit:
+			# Explicit focus is needed when the mobile shell consumed the
+			# original raw touch. This activates multiline keyboard input.
+			control.grab_focus()
 			return
 		if control is ItemList:
 			var index: int = control.get_item_at_position(point - control.global_position, true)

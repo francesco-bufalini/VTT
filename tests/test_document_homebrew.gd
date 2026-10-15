@@ -80,8 +80,8 @@ func _run() -> void:
 	var docs_tab: Node = tab._documents_tab
 	var owned_document_list: ItemList = docs_tab.get("_list")
 	owned_document_list.select(0)
-	docs_tab.set("_share_index", 0)
-	docs_tab.call("_share_selected_document")
+	assert(not (docs_tab.get("_share_button") as Button).disabled)
+	(docs_tab.get("_share_button") as Button).pressed.emit()
 	assert(deliveries.is_empty(), "Opening a document share must not broadcast")
 	var document_dialog: ConfirmationDialog
 	for child: Node in docs_tab.get_children():
@@ -136,8 +136,8 @@ func _run() -> void:
 	item_instance["equipped_slots"] = ["main"]
 	tab._inventory.append(item_instance.duplicate(true))
 	tab.call("_refresh_inventory", tab._inventory.size() - 1)
-	tab.set("_item_share_index", tab._inventory.size() - 1)
-	tab.call("_share_selected_item")
+	assert(not (tab.get("_item_share_button") as Button).disabled)
+	(tab.get("_item_share_button") as Button).pressed.emit()
 	assert(item_deliveries.is_empty(), "Opening an item share must not broadcast")
 	var item_dialog: ConfirmationDialog
 	for child: Node in tab.get_children():
@@ -227,6 +227,43 @@ func _run() -> void:
 	assert(document_list.item_count == 1
 		and int(documents_tab.call("_selected_inventory_index")) == 0,
 		"Documents can be selected again after an empty inventory")
+	documents_tab.call("load_inventory", [])
+
+	# Catch the regressions that were invisible to the transport tests:
+	# narrow inventory width, a readable document body editor and a
+	# bounded modal with usable native action buttons.
+	root.gui_embed_subwindows = true
+	root.set_meta("vtt_touch_layout", true)
+	root.size = Vector2i(360, 640)
+	tab.configure_touch_layout()
+	tab.size = Vector2(360, 600)
+	await process_frame
+	assert(tab.get_combined_minimum_size().x <= 360,
+		"Inventory content must not widen its phone-sized sheet")
+	documents_tab.call("load_inventory", [row])
+	var open_document_button := documents_tab.get("_open_button") as Button
+	assert(not open_document_button.disabled)
+	open_document_button.pressed.emit()
+	await process_frame
+	documents_tab.call("_toggle_editor", true)
+	await process_frame
+	var editor: TextEdit = documents_tab.get("_body_edit") as TextEdit
+	var preview: TextureRect = documents_tab.get("_full_image") as TextureRect
+	var edit_dialog: AcceptDialog = documents_tab.get("_dialog") as AcceptDialog
+	assert(editor.is_visible_in_tree() and editor.virtual_keyboard_enabled
+		and not preview.visible,
+		"On mobile the full-width multiline editor replaces the preview")
+	assert(edit_dialog.position.x >= 0 and edit_dialog.position.y >= 0
+		and edit_dialog.position.x + edit_dialog.size.x <= root.size.x
+		and edit_dialog.position.y + edit_dialog.size.y <= root.size.y,
+		"Document editing popup must remain inside the mobile screen")
+	editor.text = "Corpo documento modificabile\nSeconda riga"
+	editor.text_changed.emit()
+	documents_tab.call("_flush_edit")
+	assert(String(Documents.definition_for(row).get("description", "")) ==
+		"Corpo documento modificabile\nSeconda riga",
+		"Mobile multiline document edits must persist")
+	edit_dialog.hide()
 	documents_tab.call("load_inventory", [])
 	tab.queue_free()
 	await process_frame

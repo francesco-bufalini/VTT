@@ -58,6 +58,7 @@ var _send_document: Callable
 var _peer_provider: Callable
 var _send_item: Callable
 var _item_share_menu: PopupMenu
+var _item_share_button: Button
 var _item_share_index := -1
 var _item_touch_start := Vector2.ZERO
 var _item_touch_active := false
@@ -180,6 +181,13 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_item_share_menu.add_item("Invia copia a utenti selezionati", 1)
 	_item_share_menu.id_pressed.connect(func(_id: int) -> void: _share_selected_item())
 	_inventory_list.add_child(_item_share_menu)
+	# A visible action is essential on Android: a regular tap on ItemList
+	# does not open the desktop right-click menu.
+	_item_share_button = Button.new()
+	_item_share_button.text = "Invia una copia…"
+	_item_share_button.disabled = true
+	_item_share_button.pressed.connect(_share_current_item)
+	add_child(_item_share_button)
 	var equipment_row := HFlowContainer.new()
 	equipment_row.add_theme_constant_override("h_separation", 6)
 	equipment_row.add_theme_constant_override("v_separation", 3)
@@ -295,6 +303,33 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	reload_catalog()
 	_refresh_inventory()
 	_set_search_visible(false)
+
+
+func configure_touch_layout() -> void:
+	# This tab belongs to a vertical-only sheet scroller; reflow wide
+	# fixed rows instead of letting their minimum width exceed the phone.
+	var touch = preload("res://vtt/mobile/touch_layout.gd")
+	var objects_page := _inventory_list.get_parent() as VBoxContainer
+	var header := objects_page.get_child(0) as HBoxContainer
+	var title := header.get_child(0) as Label
+	title.text = "Inventario"
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	touch.replace_box(header, VBoxContainer.new())
+	touch.replace_box(_search.get_parent() as HBoxContainer, VBoxContainer.new())
+	touch.replace_box(_add_button.get_parent() as HBoxContainer, VBoxContainer.new())
+	touch.replace_box(_quantity.get_parent() as HBoxContainer, HFlowContainer.new())
+	touch.replace_box(_weapon_size_choice.get_parent() as HBoxContainer, HFlowContainer.new())
+	_search_panel.custom_minimum_size.x = 0
+	_inventory_list.custom_minimum_size.x = 0
+	_catalog_list.custom_minimum_size.x = 0
+	_documents_tab.custom_minimum_size.x = 0
+	var document_toolbar := _documents_tab.get_child(0) as HBoxContainer
+	touch.replace_box(document_toolbar, HFlowContainer.new())
+	var tabs := objects_page.get_parent() as TabContainer
+	tabs.custom_minimum_size.x = 0
+	for page: Control in [objects_page, _documents_tab]:
+		page.custom_minimum_size.x = 0
+		page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 func _add_catalog_filter(parent: HFlowContainer, caption: String, option: OptionButton, width_px: float) -> void:
@@ -418,6 +453,11 @@ func _open_item_share_menu(index: int, local_position: Vector2) -> void:
 	_item_share_menu.set_item_disabled(0, peers.is_empty() or not _send_item.is_valid())
 	_item_share_menu.position = Vector2i(_inventory_list.get_global_rect().position + local_position)
 	_item_share_menu.popup()
+
+
+func _share_current_item() -> void:
+	_item_share_index = _selected_inventory_index()
+	_share_selected_item()
 
 
 func _share_selected_item() -> void:
@@ -916,6 +956,7 @@ func _on_inventory_selected(index: int) -> void:
 	_set_weapon_size_choice(_inventory[index])
 	_quantity.editable = not DocumentStore.is_document(_inventory[index])
 	_remove_button.disabled = false
+	_item_share_button.disabled = DocumentStore.is_document(_inventory[index]) or not _send_item.is_valid()
 	_update_equip_buttons()
 	var item_id: String = String(_inventory[index].get("id", ""))
 	for catalog_item: Dictionary in _catalog:
@@ -1058,6 +1099,8 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_details.hide()
 	_set_weapon_size_choice(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {})
 	_remove_button.disabled = selected_index < 0
+	_item_share_button.disabled = selected_index < 0 or not _send_item.is_valid() or (
+		selected_index >= 0 and DocumentStore.is_document(_inventory[selected_index]))
 	_quantity.editable = selected_index >= 0 and not DocumentStore.is_document(_inventory[selected_index])
 	_update_equip_buttons()
 	_loading = old_loading
