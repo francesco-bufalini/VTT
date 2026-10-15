@@ -3,6 +3,7 @@ extends RefCounted
 # The granted choices are explicit sheet state. 5etools data only suggests
 # origins; never infer proficiencies by parsing feature descriptions.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const LocalCatalog = preload("res://vtt/content_catalog.gd")
 const SourcePath := "res://vtt/data/proficiency_grants_5etools.json"
 const TYPES := ["weapon", "armor", "skill", "expertise", "save", "tool", "language"]
 const SKILLS := ["acrobatics", "animal handling", "arcana", "athletics", "deception",
@@ -397,7 +398,7 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 	# catalog contents, so they work through the ordinary origin engine.
 	for group: String in ["background", "feat"]:
 		var category: String = "backgrounds" if group == "background" else "feats"
-		for row: Dictionary in Catalog.entries(category):
+		for row: Dictionary in LocalCatalog.home_entries(category):
 			if not String(row.get("id", "")).begins_with("homebrew:quick_local:"):
 				continue
 			var name: String = String(row.get("name", ""))
