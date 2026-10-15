@@ -124,6 +124,10 @@ static func install(raw: Variant) -> Error:
 	for item: Variant in raw:
 		if not item is Dictionary or not _valid_entry(item as Dictionary):
 			return ERR_INVALID_DATA
+		# The normal homebrew loader caps each package at 2 MB, even if a
+		# creature bundle may contain several such packages.
+		if JSON.stringify(item).to_utf8_buffer().size() > Catalog.MAX_FILE_BYTES - 512:
+			return ERR_INVALID_DATA
 		var entry: Dictionary = item as Dictionary
 		var identifier: String = String(entry["id"])
 		if known.has(identifier) or new_entries.has(identifier):
