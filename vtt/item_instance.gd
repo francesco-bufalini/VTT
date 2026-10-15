@@ -53,7 +53,7 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 		"active": bool(saved.get("active", true)),
 		"instance_overrides": {}
 	}
-	for field: String in ["category", "added_at", "display_style", "instance_id"]:
+	for field: String in ["category", "added_at", "display_style", "instance_id", "infusion"]:
 		if saved.has(field):
 			result[field] = saved[field].duplicate(true) if saved[field] is Array or saved[field] is Dictionary else saved[field]
 	for field: String in SNAPSHOT_FIELDS:
@@ -69,7 +69,7 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 
 static func has_customizations(saved: Dictionary) -> bool:
 	var value: Variant = saved.get("instance_overrides", {})
-	return value is Dictionary and not (value as Dictionary).is_empty()
+	return (value is Dictionary and not (value as Dictionary).is_empty()) or (saved.get("infusion", {}) is Dictionary and not (saved.get("infusion", {}) as Dictionary).is_empty())
 
 
 static func resolve(definition: Dictionary, saved: Dictionary) -> Dictionary:
@@ -79,4 +79,9 @@ static func resolve(definition: Dictionary, saved: Dictionary) -> Dictionary:
 		for field: String in INSTANCE_FIELD_OVERRIDES:
 			if (value as Dictionary).has(field):
 				effective[field] = (value as Dictionary)[field]
+	var infusion: Variant = saved.get("infusion", {})
+	if infusion is Dictionary and not (infusion as Dictionary).is_empty():
+		effective["infusion"] = (infusion as Dictionary).duplicate(true)
+		if bool((infusion as Dictionary).get("requires_attunement", false)):
+			effective["req_attune"] = true
 	return effective
