@@ -1417,7 +1417,7 @@ func _refresh_infusion_ui() -> void:
 	var limit: int = Infusions.known_limit(record)
 	var active_limit: int = Infusions.active_limit(record)
 	_infusion_status.text = "Conosciute: %d/%d · Oggetti infusi: %d/%d" % [
-		Infusions.known(record).size(), limit, Infusions.active_count(_inventory), active_limit]
+		Infusions.known(record).size(), limit, Infusions.active_count(_inventory, _loaded_creature_id), active_limit]
 	if level < 2:
 		_infusion_status.text += " · Disponibili dal livello 2"
 	var previous: int = _infusion_known_picker.selected
@@ -1508,7 +1508,7 @@ func _forget_infusion() -> void:
 			break
 	for owned: Dictionary in _inventory:
 		var active: Variant = owned.get("infusion", {})
-		if active is Dictionary and String(active.get("id", "")) == sid and String(active.get("plan_item_id", "")) == plan:
+		if active is Dictionary and String(active.get("creator_id", "")) == _loaded_creature_id and String(active.get("id", "")) == sid and String(active.get("plan_item_id", "")) == plan:
 			owned.erase("infusion")
 			owned["attuned"] = false
 	_refresh_inventory(_selected_inventory_index())
@@ -1536,11 +1536,14 @@ func _apply_infusion() -> void:
 		if i == index:
 			continue
 		var other: Variant = _inventory[i].get("infusion", {})
-		if other is Dictionary and String(other.get("id", "")) == String(selected.get("id", "")) and String(other.get("plan_item_id", "")) == String(selected.get("plan_item_id", "")):
+		if other is Dictionary and String(other.get("creator_id", "")) == _loaded_creature_id and String(other.get("id", "")) == String(selected.get("id", "")) and String(other.get("plan_item_id", "")) == String(selected.get("plan_item_id", "")):
 			_infusion_message("Questa infusione è già applicata a un altro oggetto.")
 			return
 	var old: Variant = owned.get("infusion", {})
-	if (not old is Dictionary or (old as Dictionary).is_empty()) and Infusions.active_count(_inventory) >= Infusions.active_limit(record):
+	if old is Dictionary and not (old as Dictionary).is_empty() and String(old.get("creator_id", "")) != _loaded_creature_id:
+		_infusion_message("L'oggetto è già infuso da un altro Artefice.")
+		return
+	if (not old is Dictionary or (old as Dictionary).is_empty()) and Infusions.active_count(_inventory, _loaded_creature_id) >= Infusions.active_limit(record):
 		_infusion_message("Limite di oggetti infusi raggiunto: termina prima un'altra infusione.")
 		return
 	owned["infusion"] = {
