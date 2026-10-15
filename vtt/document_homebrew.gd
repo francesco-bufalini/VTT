@@ -137,13 +137,35 @@ static func _write_native(path: String, local_id: String, name: String, descript
 
 
 static func _write_json(path: String, payload: Dictionary) -> bool:
-	var err: Error = DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
-	if err != OK:
+	var absolute: String = ProjectSettings.globalize_path(path)
+	if DirAccess.make_dir_recursive_absolute(absolute.get_base_dir()) != OK:
 		return false
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	var temporary := absolute + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return false
 	file.store_string(JSON.stringify(payload, "  "))
-	var write_error: Error = file.get_error()
+	file.flush()
+	var error: Error = file.get_error()
 	file.close()
-	return write_error == OK
+	if error != OK:
+		DirAccess.remove_absolute(temporary)
+		return false
+	if DirAccess.rename_absolute(temporary, absolute) == OK:
+		return true
+	# Preserve the previous definition if Windows cannot replace it directly.
+	if not FileAccess.file_exists(absolute):
+		DirAccess.remove_absolute(temporary)
+		return false
+	var backup := absolute + ".bak"
+	if FileAccess.file_exists(backup):
+		DirAccess.remove_absolute(backup)
+	if DirAccess.rename_absolute(absolute, backup) != OK:
+		DirAccess.remove_absolute(temporary)
+		return false
+	if DirAccess.rename_absolute(temporary, absolute) != OK:
+		DirAccess.rename_absolute(backup, absolute)
+		DirAccess.remove_absolute(temporary)
+		return false
+	DirAccess.remove_absolute(backup)
+	return true

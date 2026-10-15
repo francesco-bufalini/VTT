@@ -338,7 +338,7 @@ func _documents_changed(inventory: Array) -> void:
 func receive_document() -> void:
 	# Compatibility for incoming documents from older peers. The new editor
 	# does not expose sending; this migrates any pre-existing inbox deliveries.
-	var incoming: Array[Dictionary] = DocumentInbox.take_all()
+	var incoming: Array[Dictionary] = DocumentInbox.pending()
 	var changed := false
 	for note: Dictionary in incoming:
 		var item: Dictionary = DocumentStore.from_legacy(note)
@@ -354,7 +354,7 @@ func receive_document() -> void:
 		if not already_owned:
 			_inventory.append(item)
 			changed = true
-	if changed:
+	if changed or not incoming.is_empty():
 		reload_catalog()
 		_refresh_inventory()
 		_documents_tab.call("load_inventory", _inventory)
@@ -442,7 +442,7 @@ func load_record(record: Dictionary) -> void:
 			migrated = true
 	# Retain the previous inbox import behavior for deliveries received when
 	# no creature was selected. There is no document-only sending UI.
-	for note: Dictionary in DocumentInbox.take_all():
+	for note: Dictionary in DocumentInbox.pending():
 		var received_id: String = DocumentStore.legacy_id(note)
 		var already_owned := false
 		for owned: Dictionary in _inventory:
@@ -450,6 +450,7 @@ func load_record(record: Dictionary) -> void:
 				already_owned = true
 				break
 		if already_owned:
+			migrated = true # Publish and acknowledge only after archive save.
 			continue
 		var received: Dictionary = DocumentStore.from_legacy(note)
 		if received.is_empty():

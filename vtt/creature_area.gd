@@ -1888,7 +1888,10 @@ func _import_export_file(path: String) -> void:
 		return
 	var error: Error = _archive.import_export_copy(payload)
 	if error != OK:
-		_set_status("Importazione non riuscita: " + error_string(error))
+		if error == ERR_ALREADY_EXISTS:
+			_set_status("Importazione annullata: una definizione homebrew con lo stesso ID è diversa da quella locale. Nessun contenuto locale è stato sostituito.")
+		else:
+			_set_status("Importazione non riuscita: " + error_string(error))
 		return
 	_reload()
 	_set_status("Scheda importata come copia locale. Aprila dall'elenco creature.")
@@ -4973,7 +4976,7 @@ func _send_document_to_peer(recipient_id: String, document: Dictionary) -> Strin
 				if String(peer.get("id", "")) == recipient_id:
 					peer_label = String(peer.get("label", peer_label))
 					break
-			roller.call("log_action", "📜 Documento '%s' inviato a %s" % [
+			roller.call("log_action", "📜 Documento '%s' in consegna a %s" % [
 				String(document.get("title", "Documento")), peer_label])
 	return delivery_id
 
@@ -5137,6 +5140,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if error != OK:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
+	DocumentInbox.acknowledge_inventory(inventory)
 	_replace_current_record(record)
 	_refresh_formula_dependents(record)
 	_sync_token_health(record)

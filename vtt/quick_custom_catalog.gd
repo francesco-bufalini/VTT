@@ -43,7 +43,11 @@ static func _persist(doc: Dictionary) -> bool:
 		return false
 	file.store_string(JSON.stringify(doc, "  ") + "\n")
 	file.flush()
+	var write_error: Error = file.get_error()
 	file.close()
+	if write_error != OK:
+		DirAccess.remove_absolute(temporary)
+		return false
 	# Replace the previous file only after the new one has been written.
 	var err: Error = DirAccess.rename_absolute(temporary, path)
 	if err != OK and FileAccess.file_exists(path):

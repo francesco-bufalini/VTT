@@ -8,6 +8,11 @@ const PortableContent = preload("res://vtt/portable_creature_content.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const Inbox = preload("res://vtt/document_inbox.gd")
+const Archive = preload("res://vtt/creature_archive.gd")
+class TestCampaign extends Node:
+	var selected_campaign_group_id := ""
+	var active_campaign_id := ""
 
 
 func _initialize() -> void:
@@ -73,7 +78,18 @@ func _run() -> void:
 	# A single share should queue one sanitized copy for each online peer.
 	var docs_tab: Node = tab._documents_tab
 	var owned_document_list: ItemList = docs_tab.get("_list")
+	(docs_tab.get_parent() as TabContainer).current_tab = 1
+	await process_frame
+	await process_frame
 	owned_document_list.select(0)
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = owned_document_list.get_item_rect(0).get_center()
+	docs_tab.call("_on_document_input", right_click)
+	assert(int(docs_tab.get("_share_index")) == 0,
+		"Desktop right-click must select the clicked document for sharing")
+	(docs_tab.get("_share_menu") as PopupMenu).hide()
 	docs_tab.set("_share_index", 0)
 	docs_tab.call("_share_selected_document")
 	assert(deliveries.size() == 2)
@@ -112,7 +128,8 @@ func _run() -> void:
 	var item_instance: Dictionary = Instances.from_catalog(item_definition)
 	assert(String(item_instance.get("rarity", "")) == "rare"
 		and int(item_instance.get("value", 0)) == 250)
-	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
+	portable_record["inventory"] = [row, item_instance]
+	portable_record["feats_catalog"] = prof_record["feats_catalog"].duplicate(true)
 	portable_record["background_id"] = local_background.id
 	portable_record["background"] = local_background.name
 	assert(PortableContent.unresolved(portable_record).is_empty(),
@@ -127,10 +144,17 @@ func _run() -> void:
 	for entry: Dictionary in bundled:
 		ids.append(String(entry.get("id", "")))
 	assert(identifier in ids and String(local_background.id) in ids
-		and bundled.size() == 2, "Only directly used homebrew records must travel")
+		and String(custom_feat.id) in ids and String(custom_item.id) in ids
+		and bundled.size() == 4, "Every referenced background, feat, item and document must travel")
 	assert(PortableContent.install(bundled) == OK,
 		"Import must skip existing definitions without creating duplicates")
+	var conflict: Array[Dictionary] = bundled.duplicate(true)
+	conflict[0]["data"]["description"] = "Conflicting remote edit"
+	assert(PortableContent.install(conflict) == ERR_ALREADY_EXISTS,
+		"Conflicting stable IDs must reject import before replacing local content")
+	assert(Documents.definition_for(row).get("description") == "Nuovo contenuto")
 	assert(QuickCustom.remove(local_background))
+	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
 	assert(PortableContent.install(bundled) == OK,
 		"On a second device, import must restore missing homebrew by its stable ID")
 	var restored := false
@@ -138,6 +162,42 @@ func _run() -> void:
 		if String(local.get("id", "")) == String(local_background.id):
 			restored = String(local.get("description", "")) == "Descrizione trasportabile"
 	assert(restored, "Restored background must have its description and original ID")
+	var restored_choices: Array[Dictionary] = Proficiencies.choices(prof_record)
+	assert(Proficiencies.has_choice(restored_choices, "skill", "arcana")
+		and Proficiencies.has_choice(restored_choices, "tool", "thieves' tools"),
+		"Imported background and feat must retain their proficiency grants")
+	var restored_item := false
+	for entry: Dictionary in Catalog.home_entries("items"):
+		if String(entry.get("id", "")) == String(custom_item.id):
+			restored_item = ItemRules.kind(entry) == "magic" and int(entry.get("value", 0)) == 250
+	assert(restored_item, "Imported item must retain type, value and stable identity")
+	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
+	# Exercise the same public import API as a selected desktop/Android JSON.
+	var campaign := TestCampaign.new()
+	campaign.selected_campaign_group_id = "test_portable_" + stamp
+	root.add_child(campaign)
+	var archive := Archive.new()
+	archive.setup(campaign)
+	portable_record["name"] = "Portable character"
+	portable_record["id"] = "original_identity"
+	var exported: Dictionary = {"format": "vtt_creature_export_v1", "version": 1,
+		"creature": portable_record, "homebrew_content": bundled}
+	var decoded: Dictionary = JSON.parse_string(JSON.stringify(exported))
+	assert(archive.import_export_copy(decoded) == OK)
+	var imported: Array[Dictionary] = archive.list_owned()
+	assert(imported.size() == 1 and imported[0].id != "original_identity")
+	assert(imported[0].inventory.size() == 2
+		and imported[0].feats_catalog[0].id == custom_feat.id,
+		"JSON import must persist owned items and homebrew feat references")
+	var reopened := Archive.new()
+	reopened.setup(campaign)
+	assert(reopened.list_owned()[0].id == imported[0].id,
+		"Imported creature must survive reopening its archive")
+	assert(archive.delete(imported[0]) == OK)
+	for store in [archive._characters, archive._monsters]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	campaign.queue_free()
+	assert(QuickCustom.remove(custom_feat) and QuickCustom.remove(custom_item))
 	var invalid: Array = [{"id": "homebrew:bad:backgrounds:../../unsafe",
 		"name": "Unsafe", "data": {}}]
 	assert(PortableContent.install(invalid) == ERR_INVALID_DATA,
@@ -168,6 +228,23 @@ func _run() -> void:
 		and int(documents_tab.call("_selected_inventory_index")) == 0,
 		"Documents can be selected again after an empty inventory")
 	documents_tab.call("load_inventory", [])
+	var delivery: Dictionary = {"id": "durable_" + stamp, "title": "Durable", "text": "Keep until saved"}
+	assert(Inbox.receive(delivery))
+	tab.load_record({"id": "durable-character", "inventory": []})
+	await process_frame
+	await process_frame
+	assert(Inbox.pending().size() == 1,
+		"Publishing a UI change without a successful archive save must retain the inbox delivery")
+	assert(tab._inventory.size() == 1)
+	tab.load_record({"id": "durable-character", "inventory": tab._inventory.duplicate(true)})
+	await process_frame
+	assert(tab._inventory.size() == 1 and Inbox.pending().size() == 1,
+		"Reloading a pending delivery must not duplicate its inventory document")
+	assert(Inbox.acknowledge_inventory(tab._inventory))
+	assert(Inbox.pending().is_empty())
+	var delivery_path: String = Documents.ROOT_DIR.path_join(
+		Documents.legacy_id(delivery).trim_prefix(Documents.OWN_PREFIX) + ".json")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(delivery_path))
 	tab.queue_free()
 	await process_frame
 
@@ -177,5 +254,5 @@ func _run() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(document_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))
 	Catalog.reload_homebrew()
-	print("PASS: homebrew Documents definitions, live item date/style, rename and legacy migration")
+	print("PASS: documents, custom background/feat/item JSON round-trip, persistence, conflicts, context menu and durable inbox")
 	quit()

@@ -259,6 +259,14 @@ func _open_share_menu(index: int, local_position: Vector2) -> void:
 	var peers: Array = _online_peers.call() if _online_peers.is_valid() else []
 	_share_menu.set_item_disabled(0, peers.is_empty() or not _send_document.is_valid())
 	_share_menu.position = Vector2i(_list.get_global_rect().position + local_position)
+	# The mobile shell consumes touch before native PopupMenu input.
+	# Route the same action through its existing in-page choice picker.
+	var host: Node = self
+	while host != null:
+		if host.has_method("show_touch_popup"):
+			host.call("show_touch_popup", _share_menu)
+			return
+		host = host.get_parent()
 	_share_menu.popup()
 
 

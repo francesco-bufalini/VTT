@@ -19,6 +19,12 @@ static func pending() -> Array[Dictionary]:
 
 
 static func receive(document: Dictionary) -> bool:
+	# A damaged inbox must remain recoverable, never be replaced by [] plus
+	# the newest packet. Let the sender retry without acknowledging it.
+	if FileAccess.file_exists(PATH):
+		var parser := JSON.new()
+		if parser.parse(FileAccess.get_file_as_string(PATH)) != OK or not parser.data is Array:
+			return false
 	var rows: Array[Dictionary] = pending()
 	var id: String = String(document.get("id", ""))
 	if id.is_empty():
@@ -26,10 +32,26 @@ static func receive(document: Dictionary) -> bool:
 	for row: Dictionary in rows:
 		if String(row.get("id", "")) == id:
 			return true
+	if rows.size() >= MAX_DOCUMENTS:
+		return false # Never evict an acknowledged delivery to accept a new one.
 	rows.append(document.duplicate(true))
-	while rows.size() > MAX_DOCUMENTS:
-		rows.remove_at(0)
 	return _write(rows)
+
+
+# Called only with an inventory that has successfully reached the archive.
+# Until then the inbox remains the durable owner of each delivery.
+static func acknowledge_inventory(inventory: Array) -> bool:
+	var documents = load("res://vtt/document_homebrew.gd")
+	var owned: Dictionary = {}
+	for item: Variant in inventory:
+		if item is Dictionary:
+			owned[String(item.get("id", ""))] = true
+	var rows: Array[Dictionary] = pending()
+	var retained: Array[Dictionary] = []
+	for note: Dictionary in rows:
+		if not owned.has(documents.legacy_id(note)):
+			retained.append(note)
+	return retained.size() == rows.size() or _write(retained)
 
 
 static func take_all() -> Array[Dictionary]:
