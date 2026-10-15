@@ -47,6 +47,8 @@ func run() -> void:
 	mobile.setup(host, "test-chat-mobile", Callable(), ui, false)
 	mobile.configure_mobile_connection(client, func() -> Array: return [{"id": "owner:hero", "name": "Eroe"}], func() -> Dictionary: return {"id": "hero", "owner_id": "owner", "name": "Eroe"})
 	mobile.set_session_key("test-chat-mobile")
+	# The shared actor selector sits directly above the chat composer.
+	assert(mobile.actor_picker.get_parent().get_index() + 1 == mobile.chat_input.get_parent().get_index())
 	mobile.actor_picker.select(1)
 	mobile._roll("d6")
 	assert(mobile.history.back().author == "Eroe" and mobile.history.back().actor_id == "owner:hero")
@@ -58,14 +60,25 @@ func run() -> void:
 	mobile._process(1.6)
 	await wait_for(func() -> bool: return mobile.history.size() == 2)
 	assert(mobile.history.back().text == "Dal desktop al telefono")
+	mobile.chat_input.text = "Parlo come Eroe"
+	mobile._send_chat()
+	assert(mobile.history.back().author == "Eroe",
+		"Chat sender must match the selected dice creature")
+	mobile._process(1.6)
+	await wait_for(func() -> bool: return desktop.history.size() == 3)
+	assert(desktop.history.back().author == "Eroe")
 	mobile.actor_picker.select(0)
 	mobile._roll("d20")
 	assert(not mobile.history.back().has("actor_id") and not mobile.history.back().has("actor"), "Explicit None must bypass selected creature")
 	mobile._process(1.6)
-	await wait_for(func() -> bool: return desktop.history.size() == 3)
+	await wait_for(func() -> bool: return desktop.history.size() == 4)
 	assert(desktop.accept_shared_event(mobile.history.back()))
-	assert(desktop.history.size() == 3, "Retries must not duplicate events")
-	print("PASS: real mobile TCP chat in both directions, creature dice attribution, explicit None and retry deduplication")
+	assert(desktop.history.size() == 4, "Retries must not duplicate events")
+	mobile.chat_input.text = "Senza creatura"
+	mobile._send_chat()
+	assert(mobile.history.back().author.begins_with("Giocatore ("),
+		"Explicit None must not reuse the currently open character's name")
+	print("PASS: real mobile TCP chat in both directions, creature dice/chat attribution, explicit None and retry deduplication")
 	client.disconnect_remote()
 	server.serve(false, "test-chat-mobile")
 	host.queue_free()

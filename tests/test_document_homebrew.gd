@@ -75,19 +75,30 @@ func _run() -> void:
 	assert(migrated.get("id") == Documents.legacy_id(legacy))
 	assert(migrated.get("display_style") == "lettera")
 	assert(Documents.definition_for(migrated).get("description") == "Consegna originale")
-	# Desktop right-click/mobile long-press use this same context action.
-	# A single share should queue one sanitized copy for each online peer.
+	# Both desktop right-click and mobile long-press open the same
+	# opt-in recipient picker; opening it must never send to all peers.
 	var docs_tab: Node = tab._documents_tab
 	var owned_document_list: ItemList = docs_tab.get("_list")
 	owned_document_list.select(0)
 	docs_tab.set("_share_index", 0)
 	docs_tab.call("_share_selected_document")
-	assert(deliveries.size() == 2)
-	for delivery: Dictionary in deliveries:
-		assert(String(delivery.document.title) == "Titolo modificato"
-			and String(delivery.document.text) == "Nuovo contenuto"
-			and String(delivery.document.id) == identifier,
-			"Send current saved document definition, not an empty inventory snapshot")
+	assert(deliveries.is_empty(), "Opening a document share must not broadcast")
+	var document_dialog: ConfirmationDialog
+	for child: Node in docs_tab.get_children():
+		if child is ConfirmationDialog and child.title == "Invia documento: scegli destinatari":
+			document_dialog = child
+	assert(document_dialog != null and document_dialog.get_ok_button().disabled)
+	var document_checks := document_dialog.find_children("*", "CheckBox", true, false)
+	assert(document_checks.size() == 2)
+	(document_checks[0] as CheckBox).button_pressed = true
+	document_dialog.hide()
+	document_dialog.confirmed.emit()
+	await process_frame
+	assert(deliveries.size() == 1 and deliveries[0].recipient == "person_one")
+	assert(String(deliveries[0].document.title) == "Titolo modificato"
+		and String(deliveries[0].document.text) == "Nuovo contenuto"
+		and String(deliveries[0].document.id) == identifier,
+		"Only the selected peer receives the current saved document definition")
 
 	# Export only referenced homebrew, and preserve the document's body.
 	var portable_record: Dictionary = {"kind": "character", "inventory": [row]}
@@ -118,8 +129,8 @@ func _run() -> void:
 	var item_instance: Dictionary = Instances.from_catalog(item_definition)
 	assert(String(item_instance.get("rarity", "")) == "rare"
 		and int(item_instance.get("value", 0)) == 250)
-	# A single copy, not the whole stack, reaches each online peer and
-	# retains the catalog definition needed on another device.
+	# Explicitly send a single unequipped copy, including its homebrew
+	# definitions, to just one of the two online recipients.
 	item_instance["quantity"] = 6
 	item_instance["equipped"] = true
 	item_instance["equipped_slots"] = ["main"]
@@ -127,7 +138,19 @@ func _run() -> void:
 	tab.call("_refresh_inventory", tab._inventory.size() - 1)
 	tab.set("_item_share_index", tab._inventory.size() - 1)
 	tab.call("_share_selected_item")
-	assert(item_deliveries.size() == 2)
+	assert(item_deliveries.is_empty(), "Opening an item share must not broadcast")
+	var item_dialog: ConfirmationDialog
+	for child: Node in tab.get_children():
+		if child is ConfirmationDialog and child.title == "Invia oggetto: scegli destinatari":
+			item_dialog = child
+	assert(item_dialog != null and item_dialog.get_ok_button().disabled)
+	var item_checks := item_dialog.find_children("*", "CheckBox", true, false)
+	assert(item_checks.size() == 2)
+	(item_checks[0] as CheckBox).button_pressed = true
+	item_dialog.hide()
+	item_dialog.confirmed.emit()
+	await process_frame
+	assert(item_deliveries.size() == 1 and item_deliveries[0].recipient == "person_one")
 	for sent: Dictionary in item_deliveries:
 		assert(int(sent.item.quantity) == 1 and not bool(sent.item.equipped)
 			and not (sent.definitions as Array).is_empty(),

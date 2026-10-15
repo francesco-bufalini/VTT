@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "vtt/**"
+      - "tests/test_mobile_chat_sync.gd"
+      - "tests/test_share_recipients.gd"
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_document_homebrew.gd"
       - "tests/test_document_delivery_ack.gd"
@@ -22,6 +24,8 @@ on:
   pull_request:
     paths:
       - "vtt/**"
+      - "tests/test_mobile_chat_sync.gd"
+      - "tests/test_share_recipients.gd"
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_charoptions_as_feats.gd"
       - "tests/test_origin_spell_editor.gd"
@@ -44,6 +48,8 @@ jobs:
           sparse-checkout: |
             /vtt/
             /network/
+            /tests/test_mobile_chat_sync.gd
+            /tests/test_share_recipients.gd
             /tests/test_origin_granted_spells.gd
             /tests/test_document_homebrew.gd
             /tests/test_document_delivery_ack.gd
@@ -76,6 +82,8 @@ jobs:
           mkdir -p /tmp/vtt-origin-test/tests
           cp -R vtt /tmp/vtt-origin-test/
           cp -R network /tmp/vtt-origin-test/
+          cp tests/test_mobile_chat_sync.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_share_recipients.gd /tmp/vtt-origin-test/tests/
           cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
           cp tests/test_document_homebrew.gd /tmp/vtt-origin-test/tests/
           cp tests/test_document_delivery_ack.gd /tmp/vtt-origin-test/tests/
@@ -89,7 +97,7 @@ jobs:
           cp tests/test_physics_layout.gd /tmp/vtt-origin-test/tests/
           cp tests/test_powers_tracker_layout.gd /tmp/vtt-origin-test/tests/
           cp tests/test_bonus_origin_highlight.gd /tmp/vtt-origin-test/tests/
-          printf 'config_version=5\n' > /tmp/vtt-origin-test/project.godot
+          printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > /tmp/vtt-origin-test/project.godot
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
             --path /tmp/vtt-origin-test --editor --import --quit
           for script in \
@@ -105,6 +113,8 @@ jobs:
               --path /tmp/vtt-origin-test --check-only --script "res://${script}"
           done
           for test in \
+            test_mobile_chat_sync \
+            test_share_recipients \
             test_document_homebrew \
             test_document_delivery_ack \
             test_powers_tracker_layout \

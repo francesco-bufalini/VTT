@@ -4961,24 +4961,12 @@ func _get_document_peers() -> Array[Dictionary]:
 	return presence.call("get_online_peers")
 
 
+# Shares are private; do not publish recipient names or titles to group chat.
 func _send_document_to_peer(recipient_id: String, document: Dictionary) -> String:
 	var presence: Node = board_root.get_node_or_null("CreaturePresence")
 	if presence == null:
 		return ""
-	var delivery_id: String = String(presence.call("send_document", recipient_id, document))
-	if not delivery_id.is_empty():
-		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
-		if roller != null and roller.has_method("log_action"):
-			var peer_label := recipient_id.substr(0, 8)
-			for peer: Dictionary in _get_document_peers():
-				if String(peer.get("id", "")) == recipient_id:
-					peer_label = String(peer.get("label", peer_label))
-					break
-			roller.call("log_action", "📜 Documento '%s' inviato a %s" % [
-				String(document.get("title", "Documento")), peer_label])
-	return delivery_id
-
-
+	return String(presence.call("send_document", recipient_id, document))
 
 
 func _send_item_to_peer(recipient_id: String, item: Dictionary,
@@ -4986,18 +4974,7 @@ func _send_item_to_peer(recipient_id: String, item: Dictionary,
 	var presence: Node = board_root.get_node_or_null("CreaturePresence")
 	if presence == null:
 		return ""
-	var delivery_id: String = String(presence.call("send_item", recipient_id, item, definitions))
-	if not delivery_id.is_empty():
-		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
-		if roller != null and roller.has_method("log_action"):
-			var peer_label := recipient_id.substr(0, 8)
-			for peer: Dictionary in _get_document_peers():
-				if String(peer.get("id", "")) == recipient_id:
-					peer_label = String(peer.get("label", peer_label))
-					break
-			roller.call("log_action", "📦 Oggetto '%s' inviato a %s" % [
-				String(item.get("name", "Oggetto")), peer_label])
-	return delivery_id
+	return String(presence.call("send_item", recipient_id, item, definitions))
 
 
 func receive_shared_item(transfer: Dictionary, sender_id: String) -> void:
