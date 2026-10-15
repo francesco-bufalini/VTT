@@ -3,6 +3,7 @@ extends RefCounted
 # The granted choices are explicit sheet state. 5etools data only suggests
 # origins; never infer proficiencies by parsing feature descriptions.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const LocalCatalog = preload("res://vtt/content_catalog.gd")
 const SourcePath := "res://vtt/data/proficiency_grants_5etools.json"
 const TYPES := ["weapon", "armor", "skill", "expertise", "save", "tool", "language"]
 const SKILLS := ["acrobatics", "animal handling", "arcana", "athletics", "deception",
@@ -392,6 +393,28 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 				"name": _origin_title(group, name, row_mode) + " · " + source,
 				"group": group, "data": row, "mode": row_mode
 			})
+	# Quick-created local backgrounds and feats contain typed fixed
+	# proficiency grants. Match only selected identities, never arbitrary
+	# catalog contents, so they work through the ordinary origin engine.
+	for group: String in ["background", "feat"]:
+		var category: String = "backgrounds" if group == "background" else "feats"
+		for row: Dictionary in LocalCatalog.home_entries(category):
+			if not String(row.get("id", "")).begins_with("homebrew:quick_local:"):
+				continue
+			var name: String = String(row.get("name", ""))
+			var source: String = String(row.get("source", ""))
+			if not _selected_source(record, group, name, source, row):
+				continue
+			var sid: String = group + "|" + normalized_key(source) + "|" + normalized_key(name)
+			var exists := false
+			for candidate: Dictionary in candidates:
+				if String(candidate.get("id", "")) == sid:
+					exists = true
+					break
+			if not exists:
+				candidates.append({"id": sid,
+					"name": _origin_title(group, name, "starting") + " · " + source,
+					"group": group, "data": row, "mode": "starting"})
 	return candidates
 
 
@@ -459,7 +482,8 @@ static func _grants_data(candidate: Dictionary, kind: String) -> Variant:
 	var field_names: Dictionary = {
 		"weapon": "weaponProficiencies", "armor": "armorProficiencies",
 		"skill": "skillProficiencies", "expertise": "expertise",
-		"tool": "toolProficiencies", "language": "languageProficiencies"
+		"tool": "toolProficiencies", "language": "languageProficiencies",
+		"save": "saveProficiencies"
 	}
 	var field_name: String = String(field_names.get(kind, ""))
 	return row.get(field_name, [])

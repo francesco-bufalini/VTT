@@ -4,6 +4,10 @@ const Player = preload("res://vtt/player_5etools_catalog.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Token = preload("res://token.tscn")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const Items = preload("res://vtt/item_instance.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -91,5 +95,58 @@ func run() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(folder.path_join(filename)))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(folder))
 	Catalog.reload_homebrew()
+
+	# Quick catalog entries use the same persistent homebrew path and
+	# become real 5etools-style fixed-grant origins for current characters.
+	var suffix := str(Time.get_ticks_usec())
+	var custom_background: Dictionary = QuickCustom.create("backgrounds", "Test Background " + suffix,
+		"Bibliotecario delle rune", [{"kind": "skill", "key": "arcana"},
+			{"kind": "language", "key": "draconic"}])
+	assert(not custom_background.is_empty() and QuickCustom.is_custom(custom_background))
+	var background_entries: Array[Dictionary] = Player.entries("backgrounds")
+	var found_background := false
+	for entry: Dictionary in background_entries:
+		if String(entry.get("id", "")) == String(custom_background.get("id", "")):
+			found_background = true
+	assert(found_background, "New custom backgrounds must appear immediately in catalog")
+	var background_record: Dictionary = {"kind": "character", "background": custom_background.name,
+		"background_source": "Personalizzato", "inventory": []}
+	var background_grants: Array[Dictionary] = Proficiencies.choices(background_record)
+	assert(Proficiencies.has_choice(background_grants, "skill", "arcana")
+		and Proficiencies.has_choice(background_grants, "language", "draconic"),
+		"Structured custom background competencies must grant from the selected origin")
+	var custom_feat: Dictionary = QuickCustom.create("feats", "Test Feat " + suffix,
+		"Talento locale", [{"kind": "tool", "key": "thieves' tools"}])
+	assert(not custom_feat.is_empty())
+	var feat_record: Dictionary = {"kind": "character", "feats_catalog": [{
+		"id": custom_feat.id, "name": custom_feat.name, "source": "Personalizzato",
+		"origin_id": "", "disabled": false
+	}]}
+	assert(Proficiencies.has_choice(Proficiencies.choices(feat_record), "tool", "thieves' tools"),
+		"Custom feat must grant its fixed competencies using normal origin logic")
+	var custom_item: Dictionary = QuickCustom.create("items", "Test Item " + suffix,
+		"Valore locale", [], {"type": "OTH", "custom_item_type": "magic",
+			"rarity": "rare", "value": 250})
+	assert(not custom_item.is_empty())
+	var item_definition: Dictionary = {}
+	for item: Dictionary in Player.entries("items"):
+		if String(item.get("id", "")) == String(custom_item.get("id", "")):
+			item_definition = item
+	assert(not item_definition.is_empty() and ItemRules.kind(item_definition) == "magic"
+		and int(item_definition.get("value", 0)) == 250)
+	var owned_item: Dictionary = Items.from_catalog(item_definition)
+	assert(String(owned_item.get("rarity", "")) == "rare"
+		and int(owned_item.get("value", 0)) == 250
+		and String(owned_item.get("custom_item_type", "")) == "magic")
+	assert(QuickCustom.remove(custom_background) and QuickCustom.remove(custom_feat)
+		and QuickCustom.remove(custom_item), "Only locally created entries may be deleted")
+	assert(not Player.entries("backgrounds").any(
+		func(row: Dictionary) -> bool: return String(row.get("id", "")) == String(custom_background.id)))
+	assert(not Player.entries("feats").any(
+		func(row: Dictionary) -> bool: return String(row.get("id", "")) == String(custom_feat.id)))
+	assert(not Player.entries("items").any(
+		func(row: Dictionary) -> bool: return String(row.get("id", "")) == String(custom_item.id)))
+	assert(not QuickCustom.remove(custom_item), "Repeated delete must not remove other catalog content")
+
 	print("PASS: unified catalogs, homebrew conflicts, descriptions, stable icons and unknown-effect preservation")
 	quit()

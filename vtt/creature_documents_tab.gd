@@ -7,6 +7,13 @@ const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _on_change: Callable
 var _on_status: Callable
+var _send_document: Callable
+var _online_peers: Callable
+var _share_menu: PopupMenu
+var _share_index := -1
+var _touch_start := Vector2.ZERO
+var _touch_held := false
+var _touch_generation := 0
 var _inventory: Array[Dictionary] = []
 var _indices: Array[int] = []
 var _loading := false
@@ -34,9 +41,12 @@ func _instance_key(item: Dictionary) -> String:
 	return String(item.get("instance_id", item.get("id", "")))
 
 
-func setup(on_change: Callable, on_status: Callable) -> void:
+func setup(on_change: Callable, on_status: Callable,
+		send_document: Callable = Callable(), online_peers: Callable = Callable()) -> void:
 	_on_change = on_change
 	_on_status = on_status
+	_send_document = send_document
+	_online_peers = online_peers
 	add_theme_constant_override("separation", 8)
 
 	var toolbar := HBoxContainer.new()
@@ -58,7 +68,12 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_list.item_selected.connect(_select_document)
 	_list.item_activated.connect(_open_document)
+	_list.gui_input.connect(_on_document_input)
 	add_child(_list)
+	_share_menu = PopupMenu.new()
+	_share_menu.add_item("Invia agli altri utenti online", 1)
+	_share_menu.id_pressed.connect(func(_id: int) -> void: _share_selected_document())
+	_list.add_child(_share_menu)
 
 	# Offscreen page canvas: a single live texture is shared with the viewer
 	# and remains active even while the Documents tab is not selected.
@@ -205,6 +220,81 @@ func _refresh_list() -> void:
 	else:
 		_active_id = ""
 	_remove_button.disabled = _selected_inventory_index() < 0
+
+
+func _on_document_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse: InputEventMouseButton = event
+		if mouse.button_index == MOUSE_BUTTON_RIGHT and mouse.pressed:
+			var index := _list.get_item_at_position(mouse.position, true)
+			if index >= 0:
+				_open_share_menu(index, mouse.position)
+	elif event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		_touch_generation += 1
+		_touch_held = touch.pressed
+		if touch.pressed:
+			_touch_start = touch.position
+			var generation := _touch_generation
+			var index := _list.get_item_at_position(touch.position, true)
+			if index >= 0:
+				get_tree().create_timer(0.55).timeout.connect(func() -> void:
+					if is_inside_tree() and _touch_held and generation == _touch_generation:
+						_touch_held = false
+						_open_share_menu(index, _touch_start)
+				)
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event
+		if drag.position.distance_to(_touch_start) > 18.0:
+			_touch_held = false
+
+
+func _open_share_menu(index: int, local_position: Vector2) -> void:
+	if index < 0 or index >= _indices.size():
+		return
+	_flush_edit()
+	_list.select(index)
+	_select_document(index)
+	_share_index = index
+	var peers: Array = _online_peers.call() if _online_peers.is_valid() else []
+	_share_menu.set_item_disabled(0, peers.is_empty() or not _send_document.is_valid())
+	_share_menu.position = Vector2i(_list.get_global_rect().position + local_position)
+	_share_menu.popup()
+
+
+func _share_selected_document() -> void:
+	if _share_index < 0 or _share_index >= _indices.size():
+		return
+	if not _send_document.is_valid() or not _online_peers.is_valid():
+		_status("La sincronizzazione dei documenti non è disponibile.")
+		return
+	var owned_index: int = _indices[_share_index]
+	if owned_index < 0 or owned_index >= _inventory.size():
+		return
+	var item: Dictionary = _inventory[owned_index]
+	var definition: Dictionary = DocumentStore.definition_for(item)
+	var title: String = String(definition.get("name", item.get("name", "")))
+	var body: String = String(definition.get("description", definition.get("text", "")))
+	var document: Dictionary = {
+		"id": String(item.get("id", "")),
+		"title": title, "text": body,
+		"style": String(item.get("display_style", "pergamena"))
+	}
+	var sent := 0
+	var peers: Array = _online_peers.call()
+	for peer: Variant in peers:
+		if not peer is Dictionary:
+			continue
+		var recipient: String = String((peer as Dictionary).get("id", ""))
+		if recipient.is_empty():
+			continue
+		var delivery: String = String(_send_document.call(recipient, document))
+		if not delivery.is_empty():
+			sent += 1
+	if sent == 0:
+		_status("Nessun destinatario raggiungibile: verifica partita e dimensioni del documento.")
+	else:
+		_status("Documento '%s' in consegna a %d utenti online." % [title, sent])
 
 
 func _selected_inventory_index() -> int:

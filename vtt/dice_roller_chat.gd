@@ -1180,7 +1180,9 @@ func _hide_quick_roll_result(generation: int) -> void:
 
 
 func _on_remote_event(event: Dictionary) -> void:
-	_append_event(event, false)
+	# Relay new events across mobile/desktop chat peers; _append_event
+	# suppresses already-seen IDs, so peers cannot create echo loops.
+	_append_event(event, true)
 
 
 func _on_sync_status(message: String) -> void:

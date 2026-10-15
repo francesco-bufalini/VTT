@@ -316,7 +316,7 @@ func _ready() -> void:
 		"setup",
 		self,
 		_share_session_key(),
-		Callable(board_sync, "get_session_peer_ipv4s")
+		Callable(board_sync, "get_session_chat_peer_ipv4s")
 	)
 	creature_presence = preload("res://network/creature_presence.gd").new()
 	creature_presence.name = "CreaturePresence"

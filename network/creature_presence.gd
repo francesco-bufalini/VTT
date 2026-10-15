@@ -9,6 +9,7 @@ signal document_delivered(delivery_id: String)
 # A LAN broadcast or a Tailscale peer IP alone does not prove a VTT user is online.
 # Only VTT instances responding to a session-scoped UDP heartbeat appear.
 const Owner = preload("res://vtt/creature_owner.gd")
+const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const PORT := 45456
 const MAGIC := "KRUPHIX_CREATURE_PRESENCE_V1"
 const HEARTBEAT_MS := 4500
@@ -211,13 +212,17 @@ func _accept_heartbeat(value: Dictionary, ip: String, sender_port: int = PORT) -
 		if String(note.get("title", "")).strip_edges().is_empty():
 			return
 		if not _seen_delivery_ids.has(delivery_id):
+			var received: Dictionary = (note as Dictionary).duplicate(true)
+			received["id"] = "received_" + delivery_id
+			received["sender_id"] = owner
+			# Acknowledge only after the delivery has been saved locally.
+			# A UI listener may be absent or may fail to open an inventory.
+			if not DocumentInbox.receive(received):
+				return
 			_seen_delivery_ids[delivery_id] = Time.get_ticks_msec()
 			if _seen_delivery_ids.size() > 500:
 				_seen_delivery_ids.clear()
 				_seen_delivery_ids[delivery_id] = Time.get_ticks_msec()
-			var received: Dictionary = (note as Dictionary).duplicate(true)
-			received["id"] = "received_" + delivery_id
-			received["sender_id"] = owner
 			document_received.emit(received, owner)
 		_udp.set_dest_address(ip, sender_port)
 		_udp.put_packet(JSON.stringify({
