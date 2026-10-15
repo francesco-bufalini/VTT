@@ -14,7 +14,7 @@ on:
 jobs:
   touch-regressions:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +55,7 @@ jobs:
           for test in test_share_recipients.gd test_document_homebrew.gd test_creature_gui_layout.gd; do
             echo "::group::$test"
             log=$(mktemp)
-            if ! timeout 170s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
+            if ! timeout 45s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
               failures+=("$test (crash/timeout)")
             elif grep -Eq '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '^PASS' "$log"; then
               failures+=("$test (Godot error)")
