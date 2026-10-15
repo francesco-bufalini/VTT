@@ -297,5 +297,32 @@ func run() -> void:
 	assert(String(short_counter.get("recharge", "")) == "short_rest")
 	assert(not Trackers.spent_after_recovery(short_rest_creature, "short_rest").has("fightclub:action:0"))
 
+
+	# Monster Manual 2014 supplements must be exported and loaded the same
+	# way as other books, without stealing priority from native 5etools.
+	var mm_dragon: Dictionary = {
+		"kind": "monster",
+		"stat_block": {
+			"source": "MM", "name": "Adult Black Dragon",
+			"trait": [{"name": "Legendary Resistance (3/Day)"}],
+			"action": [{"name": "Acid Breath {@recharge 5}"}],
+			"legendary": [{"name": "Detect"}]
+		}
+	}
+	var dragon_trackers: Array[Dictionary] = Trackers.for_creature(mm_dragon)
+	assert(int(_find_resource(dragon_trackers, "Legendary Resistance (3/Day)").get("max", 0)) == 3,
+		"MM 2014 legendary resistance should come from Fight Club structured recharge")
+	assert(String(_find_resource(dragon_trackers, "Legendary Resistance (3/Day)").get("recharge", "")) == "long_rest")
+	assert(String(_find_resource(dragon_trackers, "Acid Breath").get("id", "")) == "recharge:action:0",
+		"Keep native 5etools breath recharge instead of duplicating MM")
+	assert(int(_find_resource(dragon_trackers, "Azioni leggendarie").get("max", 0)) == 3,
+		"MM legendary pool count is used only when 5etools numeric count is absent")
+	assert(dragon_trackers.size() == 3, "MM supplementary counters must not duplicate native ones")
+	mm_dragon["stat_block"]["legendaryActions"] = 2
+	assert(int(_find_resource(Trackers.for_creature(mm_dragon), "Azioni leggendarie").get("max", 0)) == 2)
+	mm_dragon["stat_block"]["source"] = "XMM"
+	assert(_find_resource(Trackers.for_creature(mm_dragon), "Legendary Resistance (3/Day)").is_empty(),
+		"2024 Monster Manual must not borrow MM 2014 resources")
+
 	print("PASS: structured 5etools resource trackers")
 	quit()
