@@ -1,0 +1,88 @@
+name: VTT Extended Regression Audit (Godot)
+on:
+  pull_request:
+    paths:
+      - "vtt/**"
+      - "network/**"
+      - "dnd_base.gd"
+      - "token.gd"
+      - "tests/**"
+      - ".github/workflows/vtt-regression-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  extended-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /interaction/
+            /items/
+            /homebrew/
+            /tests/
+            /assets/items/
+            /assets/tokens/test/
+            /assets/spell_area_geometry.json
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Import and parse project
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
+      - name: Run extended functional matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          tests=(
+            test_creature_sheets.gd
+            test_creature_sheet_controller.gd
+            test_creature_modularization_audit.gd
+            test_creature_archive_revisions.gd
+            test_creature_equipment_regressions.gd
+            test_creature_sync.gd
+            test_mobile_map_actions.gd
+            test_mobile_board_commands.gd
+            test_map_data_controller.gd
+            test_mobile_action_limits.gd
+            test_document_homebrew.gd
+            test_document_delivery_ack.gd
+            test_share_recipients.gd
+            test_item_transport.gd
+            test_inventory_quantities.gd
+            test_race_subrace_selection.gd
+            test_proficiency_sources.gd
+            test_standalone_creatures.gd
+            test_creature_gui_layout.gd
+            test_creature_sheet_ui.gd
+          )
+          for test in "${tests[@]}"; do
+            echo "::group::$test"
+            log=$(mktemp)
+            limit=100
+            if [[ "$test" == "test_creature_sheet_ui.gd" ]]; then limit=320; fi
+            if ! timeout "${limit}s" "$GODOT" --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
+              cat "$log"; echo "FAILED: $test"; exit 1
+            fi
+            cat "$log"
+            if grep -E '^SCRIPT ERROR:|^ERROR:' "$log" || ! grep -Eq '(^PASS:|^PASS )' "$log"; then
+              echo "FAILED output: $test"; exit 1
+            fi
+            rm -f "$log"
+            echo "::endgroup::"
+          done
