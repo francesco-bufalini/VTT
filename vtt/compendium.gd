@@ -6,6 +6,8 @@ const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
+const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
+const QuickCustomDialog = preload("res://vtt/quick_custom_catalog_dialog.gd")
 
 const SECTIONS := {
 	"Bestiario": "monsters",
@@ -35,6 +37,7 @@ var _filter: LineEdit
 var _list: ItemList
 var _details: RichTextLabel
 var _status: Label
+var _delete_custom: Button
 var _client: Node
 var _monsters: Array[Dictionary] = []
 var _shown: Array[Dictionary] = []
@@ -85,6 +88,11 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
+	_delete_custom = Button.new()
+	_delete_custom.text = "Elimina personalizzato"
+	_delete_custom.hide()
+	_delete_custom.pressed.connect(_delete_selected_custom)
+	header.add_child(_delete_custom)
 	var reload := Button.new()
 	reload.text = "Aggiorna"
 	reload.pressed.connect(_reload)
@@ -229,7 +237,51 @@ func _entries_for(category: String) -> Array[Dictionary]:
 			if String(definition.get("category", "conditions")) == category:
 				found.append(definition)
 		return found
-	return PlayerCatalog.entries(category)
+	var result: Array[Dictionary] = PlayerCatalog.entries(category)
+	var custom_item_types: Dictionary = {
+		"magic_items": ["magic"], "mundane_items": ["other"],
+		"weapons": ["weapon"], "armor": ["armor", "shield"],
+		"tools": ["tool"]
+	}
+	if custom_item_types.has(category):
+		for entry: Dictionary in ContentCatalog.home_entries("items"):
+			if QuickCustom.is_custom(entry) and String(entry.get("custom_item_type", "other")) in custom_item_types[category]:
+				result.append(entry)
+	return result
+
+
+func _creation_category(category: String) -> String:
+	if category in ["magic_items", "mundane_items", "weapons", "armor", "tools"]:
+		return "items"
+	if category in ["backgrounds", "feats"]:
+		return category
+	return ""
+
+
+func _open_local_creation() -> void:
+	var section: String = _current_category()
+	var category: String = _creation_category(section)
+	if category.is_empty():
+		return
+	var initial_type: String = String({
+		"magic_items": "magic", "mundane_items": "other",
+		"weapons": "weapon", "armor": "armor", "tools": "tool"
+	}.get(section, ""))
+	QuickCustomDialog.create_popup(_panel, category, func(_created: Dictionary) -> void:
+		_filter.clear()
+		_refresh()
+	, initial_type)
+
+
+func _delete_selected_custom() -> void:
+	var indices: PackedInt32Array = _list.get_selected_items()
+	if indices.is_empty() or indices[0] >= _shown.size():
+		return
+	var entry: Dictionary = _shown[indices[0]]
+	if not QuickCustom.is_custom(entry):
+		return
+	QuickCustomDialog.delete_popup(_panel, entry, func() -> void: _refresh())
+
 
 func _refresh() -> void:
 	if _list == null:
@@ -237,8 +289,26 @@ func _refresh() -> void:
 	_list.clear()
 	_shown.clear()
 	_details.text = ""
+	_delete_custom.hide()
+	var create_category: String = _creation_category(_current_category())
+	if not create_category.is_empty():
+		_shown.append({"id": "__create_local_content__", "name": "＋ Crea personalizzato",
+			"category": create_category})
+		var create_label: String = {
+			"backgrounds": "＋ Crea background personalizzato",
+			"feats": "＋ Crea talento personalizzato",
+			"items": "＋ Crea oggetto personalizzato"
+		}[create_category]
+		_list.add_item(create_label)
 	var needle := _filter.text.strip_edges().to_lower()
+	var prioritized: Array[Dictionary] = []
 	for entry: Dictionary in _entries_for(_current_category()):
+		if QuickCustom.is_custom(entry):
+			prioritized.append(entry)
+	for entry: Dictionary in _entries_for(_current_category()):
+		if not QuickCustom.is_custom(entry):
+			prioritized.append(entry)
+	for entry: Dictionary in prioritized:
 		var label := String(entry.get("name", ""))
 		var source := String(entry.get("source", ""))
 		var searchable := (label + " " + source).to_lower()
@@ -254,6 +324,11 @@ func _show_selected(index: int) -> void:
 	if index < 0 or index >= _shown.size():
 		return
 	var entry: Dictionary = _shown[index]
+	if String(entry.get("id", "")) == "__create_local_content__":
+		_delete_custom.hide()
+		_open_local_creation()
+		return
+	_delete_custom.visible = QuickCustom.is_custom(entry)
 	if _current_category() == "monsters":
 		_details.text = "Caricamento stat block di %s..." % String(entry.get("name", ""))
 		if String(entry.get("origin", "")) == "homebrew":
