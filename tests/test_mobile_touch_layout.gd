@@ -20,7 +20,8 @@ func run() -> void:
 	var manager := root.get_node("CampaignManager")
 	var previous_campaign: String = manager.selected_campaign_group_id
 	var previous_scenario: String = manager.active_campaign_id
-	# Read an empty temporary scope; never write or delete real creature archives.
+	# Campaign selection must not affect the device-wide creature library.
+	# This test only reads the library and changes UI state.
 	manager.selected_campaign_group_id = "touch_layout_%d" % Time.get_ticks_usec()
 	manager.active_campaign_id = ""
 	var mobile := Mobile.instantiate()
@@ -31,7 +32,7 @@ func run() -> void:
 	var sheet: Node = mobile.creature_area
 	if not check(mobile.map_data_controller.source_name() == "offline", "Mobile must start without a network connection"):
 		return
-	if not check(mobile._archive_selector == null and manager.selected_campaign_group_id.is_empty() and manager.active_campaign_id.is_empty(), "Mobile must use the general archive without a picker"):
+	if not check(manager.selected_campaign_group_id.begins_with("touch_layout_") and manager.active_campaign_id.is_empty(), "Opening the global mobile library must preserve campaign selection"):
 		return
 	if not check(root.find_children("*", "Node3D", true, false).is_empty(), "Mobile must not instantiate a board"):
 		return

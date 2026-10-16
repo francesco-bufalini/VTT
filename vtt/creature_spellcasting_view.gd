@@ -131,7 +131,11 @@ func refresh() -> void:
 	_balance_lists.call_deferred()
 
 func _pair() -> Array[VBoxContainer]:
-	var row: BoxContainer = VBoxContainer.new() if _touch_layout else HBoxContainer.new()
+	var row: BoxContainer
+	if _touch_layout:
+		row = VBoxContainer.new()
+	else:
+		row = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	_table.add_child(row)
 	_rows.append(row)

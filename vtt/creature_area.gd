@@ -3263,7 +3263,11 @@ func _add_multiclass_row(
 ) -> void:
 	if not _loading and _class_name.selected <= 0:
 		return
-	var row: BoxContainer = VBoxContainer.new() if _touch_layout else HBoxContainer.new()
+	var row: BoxContainer
+	if _touch_layout:
+		row = VBoxContainer.new()
+	else:
+		row = HBoxContainer.new()
 	_multiclass_rows.add_child(row)
 	if _touch_layout:
 		_add_label(row, "Classe")
@@ -5976,7 +5980,11 @@ func _refresh_trackers(record: Dictionary) -> void:
 	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
 	var origin_enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
 	for tracker: Dictionary in trackers:
-		var row: Container = VBoxContainer.new() if _touch_layout else HFlowContainer.new()
+		var row: Container
+		if _touch_layout:
+			row = VBoxContainer.new()
+		else:
+			row = HFlowContainer.new()
 		if _touch_layout:
 			row.add_theme_constant_override("separation", 4)
 		else:

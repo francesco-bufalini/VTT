@@ -622,8 +622,7 @@ func _generate_texture_image(data: Array) -> ImageTexture:
 
 			image.set_pixel(row + 1, col + 1, color)
 
-	var texture: ImageTexture = ImageTexture.new()
-	return texture.create_from_image(image)
+	return ImageTexture.create_from_image(image)
 
 
 func _get_data_zigzag_positions() -> Array:
