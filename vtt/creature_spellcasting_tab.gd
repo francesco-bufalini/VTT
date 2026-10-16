@@ -1846,4 +1846,4 @@ func _show_cast_description(spell: Dictionary) -> void:
 	_cast_dialog.wrap_controls = true
 	_cast_dialog.child_controls_changed()
 	_cast_dialog.reset_size()
-	_cast_dialog.popup_centered_clamped(Vector2i(620, 420), 0.92)
+	DialogLayout.popup(_cast_dialog, Vector2i(620, 420), 0.92)

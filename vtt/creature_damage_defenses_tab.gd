@@ -1,5 +1,6 @@
 extends VBoxContainer
 const EditorUI = preload("res://vtt/origin_editor_ui.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 
@@ -282,7 +283,7 @@ func setup(on_change: Callable) -> void:
 	_add_panel.show()
 	var defense_dialog: AcceptDialog = EditorUI.popup_form(self, _add_panel, "+ Resistenza o immunità", confirm)
 	add_button.hide()
-	add_button.pressed.connect(func() -> void: defense_dialog.popup_centered(Vector2i(640, 300)))
+	add_button.pressed.connect(func() -> void: DialogLayout.popup(defense_dialog, Vector2i(640, 300)))
 	_type_picker.item_selected.connect(func(_index: int) -> void:
 		var is_condition: bool = _type_picker.selected >= DAMAGE_TYPES.size()
 		_rank_picker.disabled = is_condition

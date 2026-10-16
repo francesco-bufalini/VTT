@@ -115,7 +115,7 @@ func setup(on_change: Callable) -> void:
 	_feat_editor.show()
 	var feat_dialog: AcceptDialog = EditorUI.popup_form(self, _feat_editor, "+ Talento", confirm_feat)
 	add_feat.hide()
-	add_feat.pressed.connect(func() -> void: feat_dialog.popup_centered(Vector2i(640, 300)))
+	add_feat.pressed.connect(func() -> void: DialogLayout.popup(feat_dialog, Vector2i(640, 300)))
 
 	_remove_dialog = ConfirmationDialog.new()
 	_remove_dialog.title = "Rimuovi talento"

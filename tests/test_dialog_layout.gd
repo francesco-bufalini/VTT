@@ -8,8 +8,23 @@ func _initialize() -> void:
 
 
 func run() -> void:
-	root.size = Vector2i(800, 600)
-	root.gui_embed_subwindows = true
+	# The shipped desktop app must use viewport coordinates for ALL popups,
+	# not native screen coordinates. Earlier tests forced embedding only here.
+	assert(bool(ProjectSettings.get_setting(
+		"display/window/subwindows/embed_subwindows", false
+	)), "Project must embed desktop subwindows globally, not only in tests")
+	var main_position := Vector2i(460, 260)
+	var main_size := Vector2i(800, 600)
+	var popup_size := Vector2i(620, 430)
+	assert(DialogLayout._centered_popup_position(
+		main_position, main_size, popup_size, true
+	) == Vector2i(90, 85), "Embedded popup must use viewport-local coordinates")
+	assert(DialogLayout._centered_popup_position(
+		main_position, main_size, popup_size, false
+	) == Vector2i(550, 345), "Native popup must include the desktop window's screen offset")
+	root.size = main_size
+	assert(root.gui_embed_subwindows,
+		"The real project configuration should embed popups before any test overrides")
 	await process_frame
 	var dialog := ConfirmationDialog.new()
 	dialog.title = "Test primo avvio"
@@ -26,7 +41,8 @@ func run() -> void:
 	body.add_child(field)
 
 	DialogLayout.popup(dialog, Vector2i(430, 310), 0.92)
-	assert(dialog.visible, "The first opening must display the dialog")
+	assert(dialog.visible and dialog.is_embedded(),
+		"The first opening must display a popup embedded in the game window")
 	assert(dialog.wrap_controls, "Content must set the dialog minimum size")
 	assert(dialog.get_ok_button().visible, "Confirm must be visible on first open")
 	assert(dialog.get_cancel_button().visible, "Cancel must be visible on first open")
@@ -67,5 +83,56 @@ func run() -> void:
 	dialog.hide()
 	dialog.queue_free()
 	await process_frame
-	print("PASS: first-open dialog layout and native/custom confirmation buttons")
+
+	# Reproduce the long Tailscale/share dialog layout, including wrapped text.
+	var share := AcceptDialog.new()
+	share.title = "Mappa · rete locale e Tailscale"
+	root.add_child(share)
+	var share_body := VBoxContainer.new()
+	share.add_child(share_body)
+	var share_info := Label.new()
+	share_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	share_info.text = "Puoi salvare o caricare una copia locale della mappa, oppure " + (
+		"sincronizzarla con gli altri VTT sulla stessa rete locale o via Tailscale. "
+	).repeat(3)
+	share_body.add_child(share_info)
+	DialogLayout.popup(share, Vector2i(620, 430))
+	assert(share.is_embedded() and share.visible)
+	assert(share.position.x >= 0 and share.position.y >= 0
+		and share.position.x + share.size.x <= root.size.x
+		and share.position.y + share.size.y <= root.size.y,
+		"Tailscale/share popup must open fully within the desktop window")
+	await process_frame
+	assert(share.position.x >= 0 and share.position.y >= 0
+		and share.position.x + share.size.x <= root.size.x
+		and share.position.y + share.size.y <= root.size.y,
+		"Tailscale/share popup must stay inside after its content is measured")
+	DialogLayout.resize_visible(share, Vector2i(950, 660), 0.90)
+	assert(share.position.x >= 0 and share.position.y >= 0
+		and share.position.x + share.size.x <= root.size.x
+		and share.position.y + share.size.y <= root.size.y,
+		"Resizing an open document-style popup must not leave the window")
+	share.hide()
+	share.queue_free()
+	await process_frame
+
+	var menu := PopupMenu.new()
+	root.add_child(menu)
+	menu.add_item("Azione token")
+	menu.add_item("Elimina")
+	DialogLayout.popup_menu(menu, Vector2i(790, 595))
+	assert(menu.visible and menu.is_embedded())
+	assert(menu.position.x >= 0 and menu.position.y >= 0
+		and menu.position.x + menu.size.x <= root.size.x
+		and menu.position.y + menu.size.y <= root.size.y,
+		"Context menu near the screen edge must fit immediately")
+	await process_frame
+	assert(menu.position.x >= 0 and menu.position.y >= 0
+		and menu.position.x + menu.size.x <= root.size.x
+		and menu.position.y + menu.size.y <= root.size.y,
+		"Context menu must remain inside after contents are measured")
+	menu.hide()
+	menu.queue_free()
+	await process_frame
+	print("PASS: native/embedded positions, desktop dialogs, Tailscale, resize and edge menus")
 	quit()

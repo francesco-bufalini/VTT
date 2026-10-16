@@ -13,6 +13,7 @@ const PIRATE_SHIP_PRESET_PATH := (
 )
 const MenuBackdrop = preload("res://vtt/menu/menu_backdrop.gd")
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _status_label: Label
 var _cards_grid: GridContainer
@@ -401,8 +402,7 @@ func _populate_create_presets() -> void:
 func _request_create_scenario() -> void:
 	_create_name_input.clear()
 	_populate_create_presets()
-	_create_dialog.reset_size()
-	_create_dialog.popup_centered_clamped(Vector2i(500, 300), 0.92)
+	DialogLayout.popup(_create_dialog, Vector2i(500, 300), 0.92)
 	_create_name_input.call_deferred("grab_focus")
 
 
@@ -452,22 +452,14 @@ func _on_card_action(
 		ACTION_RENAME:
 			_rename_input.text = _pending_scenario_name
 			_rename_input.select_all()
-			_rename_dialog.reset_size()
-			_rename_dialog.popup_centered_clamped(
-				Vector2i(430, 200),
-				0.92
-			)
+			DialogLayout.popup(_rename_dialog, Vector2i(430, 200), 0.92)
 			_rename_input.call_deferred("grab_focus")
 		ACTION_DELETE:
 			_delete_dialog.dialog_text = (
 				"Vuoi eliminare definitivamente lo scenario \"%s\"?\n"
 				+ "Il salvataggio non potrà essere recuperato."
 			) % _pending_scenario_name
-			_delete_dialog.reset_size()
-			_delete_dialog.popup_centered_clamped(
-				Vector2i(460, 200),
-				0.92
-			)
+			DialogLayout.popup(_delete_dialog, Vector2i(460, 200), 0.92)
 
 
 func _confirm_rename() -> void:

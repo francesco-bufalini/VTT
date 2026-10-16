@@ -187,12 +187,10 @@ func _show_wall_orientation_menu(spell_data: Dictionary) -> void:
 		]
 	)
 
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	wall_orientation_menu.position = Vector2i(
-		int(viewport_size.x * 0.5 - 90.0),
-		int(viewport_size.y * 0.5 - 30.0)
+	var window_size: Vector2i = get_tree().root.size
+	DialogLayout.popup_menu(
+		wall_orientation_menu, (window_size - Vector2i(180, 60)) / 2
 	)
-	wall_orientation_menu.popup()
 
 
 func _on_wall_orientation_selected(id: int) -> void:
@@ -248,12 +246,10 @@ func _show_wall_mode_menu(spell_data: Dictionary) -> void:
 	_targeting_phase = "wall_mode"
 	board_root.set("_ui_owns_mouse", true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	wall_mode_menu.position = Vector2i(
-		int(viewport_size.x * 0.5 - 120.0),
-		int(viewport_size.y * 0.5 - 40.0)
+	var window_size: Vector2i = get_tree().root.size
+	DialogLayout.popup_menu(
+		wall_mode_menu, (window_size - Vector2i(240, 80)) / 2
 	)
-	wall_mode_menu.popup()
 
 
 func _on_wall_mode_selected(id: int) -> void:
@@ -910,12 +906,10 @@ func _begin_summon_count_or_point(spell_data: Dictionary) -> void:
 		% String(spell_data.get("name", "Evocazione"))
 	)
 
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	summon_count_menu.position = Vector2i(
-		int(viewport_size.x * 0.5 - 90.0),
-		int(viewport_size.y * 0.5 - 40.0)
+	var window_size: Vector2i = get_tree().root.size
+	DialogLayout.popup_menu(
+		summon_count_menu, (window_size - Vector2i(180, 80)) / 2
 	)
-	summon_count_menu.popup()
 
 
 func _on_summon_count_selected(id: int) -> void:

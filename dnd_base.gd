@@ -1387,12 +1387,10 @@ func open_token_resize_menu(
 	_ui_owns_mouse = true
 	_release_mouse()
 
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	token_resize_menu.position = Vector2i(
-		int(viewport_size.x * 0.5 - 70.0),
-		int(viewport_size.y * 0.5 - 90.0)
+	var window_size: Vector2i = get_tree().root.size
+	DialogLayout.popup_menu(
+		token_resize_menu, (window_size - Vector2i(140, 180)) / 2
 	)
-	token_resize_menu.popup()
 
 
 func _on_token_resize_selected(id: int) -> void:
@@ -3210,41 +3208,15 @@ func _on_place_creature_id_pressed(item_id: int) -> void:
 
 
 func _limit_popup_menu(menu: PopupMenu) -> void:
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	menu.max_size = Vector2i(
-		maxi(140, int(viewport_size.x) - 24),
-		maxi(140, int(viewport_size.y) - 24)
-	)
+	var window_size: Vector2i = get_tree().root.size
+	menu.max_size = (window_size - Vector2i(24, 24)).max(Vector2i(1, 1))
 
 
 func _popup_context_menu(screen_position: Vector2) -> void:
 	_limit_popup_menu(context_menu)
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	context_menu.position = Vector2i(
-		clampi(int(screen_position.x), 8, maxi(8, int(viewport_size.x) - 8)),
-		clampi(int(screen_position.y), 8, maxi(8, int(viewport_size.y) - 8))
-	)
-	context_menu.popup()
-	# Encounter subclasses append entries after super() returns. Reposition on
-	# the next idle step using the popup's final size so it stays fully visible.
-	call_deferred("_fit_context_menu_to_viewport", screen_position)
-
-
-func _fit_context_menu_to_viewport(screen_position: Vector2) -> void:
-	if context_menu == null or not is_instance_valid(context_menu):
-		return
-	if not context_menu.visible:
-		return
-	_limit_popup_menu(context_menu)
-	var viewport_size := Vector2i(get_viewport().get_visible_rect().size)
-	var popup_size := context_menu.size
-	var margin := 8
-	var max_x := maxi(margin, viewport_size.x - popup_size.x - margin)
-	var max_y := maxi(margin, viewport_size.y - popup_size.y - margin)
-	context_menu.position = Vector2i(
-		clampi(int(screen_position.x), margin, max_x),
-		clampi(int(screen_position.y), margin, max_y)
-	)
+	# The shared helper refits on the next frame too, after encounter
+	# subclasses finish adding their context-menu items.
+	DialogLayout.popup_menu(context_menu, Vector2i(screen_position))
 
 
 func _popup_dialog_safe(
