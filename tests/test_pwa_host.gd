@@ -70,7 +70,7 @@ func run() -> void:
 	assert((await http("GET", "/api/missing")).begins_with("HTTP/1.1 404"))
 	assert(FileAccess.file_exists("res://pwa/icon-192.png"))
 	assert(FileAccess.file_exists("res://pwa/icon-512.png"))
-		host.call("_stop_listener")
+	host.call("_stop_listener")
 	assert(not (host.get("_server") as TCPServer).is_listening(),
 		"PWA port must be closed on board shutdown")
 	print("PASS: desktop PWA static assets, status, API authorization, scene-scope shutdown and fixed-path routing")
