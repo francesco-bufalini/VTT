@@ -1,7 +1,7 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v3";
-const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
+const CACHE = "vtt-mobile-shell-v4";
+const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/tactical_view.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
   "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
