@@ -5,12 +5,14 @@ on:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "tests/test_pwa_host.gd"
       - "export_presets.cfg"
       - ".github/workflows/pwa-infrastructure.yml"
   pull_request:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "tests/test_pwa_host.gd"
       - "vtt/map_data_controller.gd"
       - "docs/pwa-architecture.md"
       - ".github/workflows/pwa-infrastructure.yml"
