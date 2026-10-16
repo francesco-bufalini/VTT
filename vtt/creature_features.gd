@@ -225,7 +225,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
 			_append_named_entries(result, detailed.get("entries", []),
 				"Oggetto · " + item_label, "item:" + item_id,
-				String(definition.get("source", "")), , inactive)
+				String(definition.get("source", "")), 4, inactive)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
