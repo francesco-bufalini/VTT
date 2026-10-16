@@ -350,7 +350,7 @@ export function calculateSheet(record={},catalogs={}){
       const legacy=record.stat_block?.save?.[key];
       if(kind==="monster"&&!hasProficiency(record,"save",key,proficiencies)&&legacy!==undefined&&
         /^[-+]?\d+$/.test(String(legacy)))return int(legacy);
-      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key)?resolve("proficiency",stack):0);
+      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0);
     }
     if(prefix==="skill"){
       const skill=SKILLS.find(row=>row[0]===key);

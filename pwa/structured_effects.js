@@ -25,23 +25,23 @@ function selectedSources(record,index={}){
       ["background","background","background_source"]]){
     if(!record[field])continue;
     for(const source of array(index[group]).filter(x=>match(x.name,record[field])&&
-        (!record[sourceField]||match(x.source,record[sourceField]))))
+        (group==="background"&&!record[sourceField]||match(x.source,record[sourceField]))))
       push(group,source,record[field]);
   }
   if(record.subrace)for(const source of array(index.subrace).filter(x=>
     match(x.raceName,record.species)&&match(x.name,record.subrace)&&
-    (!record.subrace_source||match(x.source,record.subrace_source))&&
-    (!record.species_source||!x.raceSource||match(x.raceSource,record.species_source))))
+    match(x.source,record.subrace_source)&&
+    match(x.raceSource,record.species_source)))
     push("subrace",source,record.subrace);
   for(const feat of array(record.feats_catalog)){
     if(!feat||feat.disabled)continue;
     for(const source of array(index.feat).filter(x=>match(x.name,feat.name)&&
-        (!feat.source||match(x.source,feat.source))))push("feat",source,feat.name);
+        match(x.source,feat.source)))push("feat",source,feat.name);
   }
   let first=true;
   for(const member of classMembers(record)){
     for(const source of array(index.class).filter(x=>match(x.name,member?.name)&&
-        (!member.source||match(x.source,member.source))))
+        match(x.source,member.source)))
       push("class",source,member.name,first?"starting":"multiclass");
     first=false;
   }

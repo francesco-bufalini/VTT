@@ -171,11 +171,11 @@ test("generic typed monster traits grant numeric effects without parsing entries
   const grants=structuredFeatureGrants(m);
   assert.equal(grants.length,1);
   assert.equal(grants[0].id,"auto|feature:monster|trait|shell|bonuses|ac|ac");
-  assert.equal(calculateSheet(m,catalogs).stats.armor_class,14);
+  assert.equal(calculateSheet(m,catalogs).stats.armor_class,12);
   const disabled=calculateSheet({...m,formula_bonuses:[
     {id:grants[0].id,automatic:true,disabled:true,target:"ac",expression:"2"}
   ]},catalogs);
-  assert.equal(disabled.stats.armor_class,12);
+  assert.equal(disabled.stats.armor_class,10);
 });
 test("typed feat sections and class feature thresholds use generic native eligibility",()=>{
   const feat={id:"localFeat",name:"Homebrew feat",source:"HB",
