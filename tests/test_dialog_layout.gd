@@ -43,7 +43,7 @@ func run() -> void:
 	DialogLayout.popup(dialog, Vector2i(430, 310), 0.92)
 	assert(dialog.visible and dialog.is_embedded(),
 		"The first opening must display a popup embedded in the game window")
-	assert(dialog.wrap_controls, "Content must set the dialog minimum size")
+	assert(not dialog.wrap_controls, "Desktop dialog must not resize itself beyond window bounds")
 	assert(dialog.get_ok_button().visible, "Confirm must be visible on first open")
 	assert(dialog.get_cancel_button().visible, "Cancel must be visible on first open")
 	await process_frame
@@ -134,5 +134,37 @@ func run() -> void:
 	menu.hide()
 	menu.queue_free()
 	await process_frame
-	print("PASS: native/embedded positions, desktop dialogs, Tailscale, resize and edge menus")
+
+	# Regression: a dynamically measured wide HBox/Label must not force
+	# an embedded desktop window beyond the viewport after being opened.
+	# This reproduces the Tailscale panel cut off at the right/bottom edge.
+	root.size = Vector2i(850, 560)
+	root.content_scale_factor = 1.5
+	await process_frame
+	var oversized := AcceptDialog.new()
+	oversized.title = "Condividi con Tailscale"
+	root.add_child(oversized)
+	var huge_content := VBoxContainer.new()
+	oversized.add_child(huge_content)
+	var very_wide := Label.new()
+	very_wide.text = "Testo che forza la larghezza minima del contenuto"
+	very_wide.custom_minimum_size = Vector2(1700, 850)
+	huge_content.add_child(very_wide)
+	DialogLayout.popup(oversized, Vector2i(680, 520), 0.90)
+	for frame in range(3):
+		await process_frame
+		assert(oversized.size.x <= root.size.x * 0.90
+			and oversized.size.y <= root.size.y * 0.90,
+			"A child minimum size must never expand a modal beyond viewport limits")
+		assert(oversized.position.x >= 0 and oversized.position.y >= 0
+			and oversized.position.x + oversized.size.x <= root.size.x
+			and oversized.position.y + oversized.size.y <= root.size.y,
+			"Scaled, oversized Tailscale-style modal must remain completely visible")
+	assert(huge_content.get_parent() is ScrollContainer,
+		"Too-large modal content must scroll rather than resize its window")
+	oversized.hide()
+	oversized.queue_free()
+	root.content_scale_factor = 1.0
+	await process_frame
+	print("PASS: native/embedded positions, modal max-size, scale, Tailscale and context menus")
 	quit()
