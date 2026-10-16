@@ -23,6 +23,7 @@ const FILES := {
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
 	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
 	"/catalog_data.js": ["res://pwa/catalog_data.js", "text/javascript; charset=utf-8"],
+	"/catalog/classes.json": ["res://pwa/catalog/classes.json", "application/json; charset=utf-8"],
 	"/catalog/player.json": ["res://vtt/data/player_5etools_catalog.json", "application/json; charset=utf-8"],
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
 	"/catalog/features.json": ["res://vtt/data/compendium_features_5etools.json", "application/json; charset=utf-8"],

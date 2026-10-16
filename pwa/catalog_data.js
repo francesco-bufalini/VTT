@@ -10,7 +10,7 @@ export const CATALOG_CATEGORIES = [
   ["species_traits","Tratti razziali"],["optional_features","Privilegi opzionali"]
 ];
 const GROUPS = {
-  backgrounds:"/catalog/backgrounds.json",
+  backgrounds:"/catalog/backgrounds.json",races:"/catalog/features.json",
   feats:"/catalog/features.json",optional_features:"/catalog/features.json",
   species_traits:"/catalog/features.json",class_features:"/catalog/features.json",
   items:"/catalog/items.json",magic_items:"/catalog/items.json",
@@ -30,6 +30,30 @@ export async function loadReferenceCatalog() {
   catalog=value;
   return catalog;
 }
+const supplementary = new Map();
+async function supplementalCatalog(category){
+  const path=(category==="classes"||category==="subclasses")?
+    "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";
+  if(!supplementary.has(path)){
+    const response=await fetch(path,{cache:"no-store"});
+    if(!response.ok)throw new Error("Riferimenti offline non disponibili: "+category);
+    supplementary.set(path,await response.json());
+  }
+  const data=supplementary.get(path);
+  if(category==="classes"||category==="subclasses"){
+    if(data?.version!==1||!Array.isArray(data[category]))throw Error("Indice classi non valido");
+    return data[category];
+  }
+  const rows=data?.[category];
+  if(!rows||typeof rows!=="object")return [];
+  if(Array.isArray(rows))return rows;
+  return Object.entries(rows).map(([key,record])=>{
+    const parts=key.split("|");
+    const original=String(record?.name||parts[0]);
+    const name=original.replace(/(^|[\\s-])([a-z])/g,(_m,p,c)=>p+c.toUpperCase());
+    return {name,source:String(record?.source||parts[1]||"").toUpperCase()};
+  });
+}
 let packagedSpells=null;
 async function spellCatalog(){
   if(packagedSpells)return packagedSpells;
@@ -48,12 +72,14 @@ export async function catalogEntries(category) {
       ...known.filter(record=>record.id?.split(":")[2]==="spells")
         .map(record=>({...record.data.data,...record.data,_category:"spells",_homebrew:true}))];
   }
-  const data=await loadReferenceCatalog();
+  const extra=["classes","subclasses","races","backgrounds"].includes(category);
+  const data=extra?null:await loadReferenceCatalog();
   const keys=category==="items"?
     ["weapons","armor","tools","mundane_items","magic_items"]:[category];
-  const rows=keys.flatMap(key=>Array.isArray(data[key])?data[key].map(row=>({
-    ...row, _category:key, _homebrew:false
-  })):[]);
+  const source=extra?await supplementalCatalog(category):keys.flatMap(key=>
+    Array.isArray(data[key])?data[key].map(row=>({...row,_category:key})):[]
+  );
+  const rows=source.map(row=>({...row,_category:row._category||category,_homebrew:false}));
   const homebrew=await listRecords("global","homebrew");
   for(const stored of homebrew){
     const value=stored.data;
