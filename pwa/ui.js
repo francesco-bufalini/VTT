@@ -1,7 +1,7 @@
 import { status, session, pair, unpair, map, action, subscribeMap } from "./client.js";
 import { listCreatures, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor } from "./creatures.js";
-import { exportBackup, importBackup, requestPersistentStorage, storageEstimate } from "./storage.js";
+import { exportBackup, importBackup } from "./storage.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -121,7 +121,7 @@ async function libraryView() {
     '<strong>Nessuna creatura salvata</strong><p>Crea una scheda o importa un JSON da VTT desktop o Android.</p></div>';
   return header("Archivio indipendente", "Le tue creature", "Le schede rimangono sul dispositivo e si aprono anche senza il desktop.")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
-    btn("import","Importa scheda")+btn("backup","Backup")+'</div>'+list+
+    btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+list+
     '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
 }
 async function editorView() {
@@ -286,7 +286,7 @@ function sessionView() {
       '<p class="hint">Muovi il token sulla griglia del desktop. Per alcune operazioni il desktop può richiedere il controllo della creatura.</p>'+
       '<div class="movement"><span></span><button class="btn" type="button" data-act="move" data-direction="north">↑</button><span></span>'+
       '<button class="btn" type="button" data-act="move" data-direction="west">←</button>'+
-      '<button class="btn" type="button" data-act="move" data-direction="down">↓</button>'+
+      '<span aria-hidden="true" class="pill" style="display:grid;place-items:center">•</span>'+
       '<button class="btn" type="button" data-act="move" data-direction="east">→</button>'+
       '<span></span><button class="btn" type="button" data-act="move" data-direction="south">↓</button><span></span></div>'+
       '<div class="actions">'+btn("move-up","Quota +") + btn("move-down","Quota −")+'</div>'+
@@ -464,6 +464,7 @@ async function handleAction(target){
     state.creatureId=row.id;state.editor=null;state.sheet="stats";await render();return;
   }
   if(act==="import"){creatureInput.click();return;}
+  if(act==="restore-backup"){backupInput.click();return;}
   if(act==="backup"){
     const blob=await exportBackup();download(blob,"vtt-pwa-backup-"+new Date().toISOString().slice(0,10)+".json");
     message("Backup esportato. Conservalo fuori dal browser.");
