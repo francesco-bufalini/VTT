@@ -15,6 +15,8 @@ const FILES := {
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/storage.js": ["res://pwa/storage.js", "text/javascript; charset=utf-8"],
+	"/creatures.js": ["res://pwa/creatures.js", "text/javascript; charset=utf-8"],
+	"/creature_format.js": ["res://pwa/creature_format.js", "text/javascript; charset=utf-8"],
 	"/sw.js": ["res://pwa/sw.js", "text/javascript; charset=utf-8"],
 	"/manifest.webmanifest": ["res://pwa/manifest.webmanifest", "application/manifest+json"],
 	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
