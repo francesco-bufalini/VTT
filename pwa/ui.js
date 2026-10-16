@@ -12,6 +12,9 @@ const connection = document.querySelector("#connection");
 const creatureInput = document.querySelector("#import-creature");
 const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
+const sheetSections = [["stats","Statistiche"],["origins","Origini"],["inventory","Inventario"],
+  ["magic","Incantesimi"],["resources","Risorse"],["notes","Note"],["json","JSON avanzato"]];
+const sectionMenu = document.querySelector("#section-menu");
 const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
@@ -84,6 +87,10 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 function syncNav() {
+  document.querySelector("#sheet-navigation").innerHTML = state.page === "library" && state.creatureId ?
+    '<p class="drawer-heading">Scheda creatura</p>'+sheetSections.map(([key,title]) =>
+      '<button type="button" class="btn" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
+      (state.sheet===key)+'">'+title+'</button>').join("") : "";
   for(const button of nav.querySelectorAll("[data-nav]")) {
     const current = button.dataset.nav === state.page;
     if(current) button.setAttribute("aria-current","page");
@@ -157,9 +164,11 @@ async function libraryView() {
       '" aria-label="Apri '+esc(c.name)+'">Apri →</button></article>').join("");
   if(!list) list = '<div class="empty"><div class="symbol">♜</div>'+
     '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
-  return header("Archivio indipendente", "Le tue creature", "Le schede rimangono sul dispositivo e si aprono anche senza il desktop.")+
+  return header("Archivio delle creature", "Le tue creature", "Personaggi e mostri salvati sul dispositivo.")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
-    btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+
+    btn("import","Importa JSON dal PC")+'</div>'+
+    '<details class="archive-tools"><summary>Backup dell’archivio</summary><div class="actions">'+
+    btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div></details>'+
     (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
       '<span id="library-selected-actions">'+(state.librarySelectedIds.size ?
         btn("library-select-none","Deseleziona")+
@@ -212,17 +221,14 @@ async function catalogView() {
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
-  const tabs = [["stats","Statistiche"],["origins","Origini"],["inventory","Inventario"],
-    ["magic","Incantesimi"],["resources","Risorse"],["notes","Note"],["json","JSON"]];
+  const tabs = sheetSections;
   const navigation = '<div class="editor-head">'+
     '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
     '<h1>'+esc(c.name)+'</h1></div>'+
     '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
-    '<div class="section-tabs" role="tablist" aria-label="Scheda creatura">'+tabs.map(([key,title]) =>
-      '<button role="tab" type="button" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
-      (state.sheet===key)+'">'+title+'</button>').join("")+'</div>';
+    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Statistiche")+'</div>';
   let body = "";
   switch(state.sheet){
   case "stats":
@@ -949,6 +955,12 @@ async function handleSubmit(form){
   }
 }
 function listen(){
+  document.addEventListener("keydown",e=>{
+    if(e.key === "Escape" && sectionMenu.open){sectionMenu.open=false;sectionMenu.querySelector("summary").focus();}
+  });
+  document.addEventListener("click",e=>{
+    if(!sectionMenu.contains(e.target))sectionMenu.open=false;
+  });
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button)return;
@@ -956,6 +968,7 @@ function listen(){
     button.disabled=true;
     try {
       await flushPendingFields();
+      sectionMenu.open=false;
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
     }catch(error){message(errorMessage(error),true);}

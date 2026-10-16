@@ -47,6 +47,12 @@ function change(selector,value){
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
   assert.match(document.querySelector("#app").textContent,/Le tue creature/);
+  const menu=document.querySelector("#section-menu");
+  assert.ok(menu,"Android-style sections menu is available");
+  menu.open=true;
+  document.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"Escape",bubbles:true}));
+  assert.equal(menu.open,false,"Escape closes the sections menu");
+  assert.equal(document.activeElement,menu.querySelector("summary"));
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Arcanista mobile");
@@ -55,8 +61,12 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.find(r=>r.creature.name==="Arcanista mobile"&&r.creature.current_hp===17);
   });
+  menu.open=true;
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="add-item"]'));
+  assert.equal(menu.open,false,"Selecting a sheet section dismisses the drawer");
+  assert.equal(document.querySelector(".current-section").textContent,"Inventario");
+  assert.equal(document.querySelector('[data-sheet="inventory"]').getAttribute("aria-pressed"),"true");
   click('[data-act="add-item"]');
   await until(()=>document.querySelector('[data-item-key="name"]'));
   change('[data-item-key="name"]',"Pozione");
