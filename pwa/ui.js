@@ -134,7 +134,7 @@ async function editorView() {
   const navigation = '<div class="editor-head">'+
     '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
     '<h1>'+esc(c.name)+'</h1></div>'+
-    '<div class="row between" style="margin-bottom:15px">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
+    '<div class="row between" class="editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
     '<div class="section-tabs" role="tablist" aria-label="Scheda creatura">'+tabs.map(([key,title]) =>
@@ -235,7 +235,7 @@ function diceView() {
       '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
       '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
         '<button class="btn" type="button" data-act="roll" data-sides="'+n+'">d'+n+'</button>').join("")+'</div>'+
-      (state.roll?'<div class="dice-result">'+esc(state.roll.total)+'</div><p class="hint" style="text-align:center">'+
+      (state.roll?'<div class="dice-result">'+esc(state.roll.total)+'</div><p class="hint" class="centered">'+
         esc(state.roll.detail)+'</p><div class="actions">'+btn("share-roll","Invia in chat",state.paired?"primary":"")+'</div>':""))+
     panel("Tiri recenti",state.rollHistory.length ? state.rollHistory.slice(0,12).map(r=>
       '<div class="combat-line"><span>'+esc(r.notation)+'</span><strong>'+esc(r.total)+'</strong></div>').join("") :
@@ -272,7 +272,7 @@ function sessionView() {
     '<input id="pair-secret" type="password" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" autocomplete="off" placeholder="Token di 64 caratteri" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda questo desktop sul dispositivo</label>'+
     '<button type="submit" class="btn primary full">Collega alla partita</button>'+
-    '<p class="hint">Apri la partita nel VTT desktop. Il codice si trova nel file locale <code>user://pwa_pairing_token.txt</code> del desktop; non è il numero 1–5 della partita.</p></form>';
+    '<p class="hint">Sul PC con VTT aperto premi <strong>Ctrl + Shift + P</strong>: compare il codice da copiare. Non è il numero 1–5 della partita.</p></form>';
   let html = header("Connessione", "La tua partita", "Il PC con VTT nativo aperto ospita la partita e aggiorna automaticamente questa PWA.")+
     panel("Desktop",statusMarkup+(state.paired?'<div class="actions">'+
       btn("disconnect","Dissocia desktop","danger")+'</div>':pairing));
@@ -288,7 +288,7 @@ function sessionView() {
       '<p class="hint">Muovi il token sulla griglia del desktop. Per alcune operazioni il desktop può richiedere il controllo della creatura.</p>'+
       '<div class="movement"><span></span><button class="btn" type="button" data-act="move" data-direction="north">↑</button><span></span>'+
       '<button class="btn" type="button" data-act="move" data-direction="west">←</button>'+
-      '<span aria-hidden="true" class="pill" style="display:grid;place-items:center">•</span>'+
+      '<span aria-hidden="true" class="pill" class="movement-center">•</span>'+
       '<button class="btn" type="button" data-act="move" data-direction="east">→</button>'+
       '<span></span><button class="btn" type="button" data-act="move" data-direction="south">↓</button><span></span></div>'+
       '<div class="actions">'+btn("move-up","Quota +") + btn("move-down","Quota −")+'</div>'+
