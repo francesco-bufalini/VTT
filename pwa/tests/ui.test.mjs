@@ -229,3 +229,33 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   click('[data-nav="library"]'); // Release chat polling timer.
   await until(()=>document.querySelector('[data-act="create"]'));
 });
+
+test("importing multiple creatures stays in library and exposes only selected bulk actions",async()=>{
+  const entry=(id,name)=>({format:"vtt_creature_export_v1",version:1,
+    creature:{id,kind:"character",name},homebrew_content:[]});
+  const packageFile={format:"vtt_creature_batch_export_v1",version:1,
+    entries:[entry("original_batch_a","Batch Hero A"),entry("original_batch_b","Batch Hero B")]};
+  const input=document.querySelector("#import-creature");
+  Object.defineProperty(input,"files",{configurable:true,
+    value:[new Blob([JSON.stringify(packageFile)],{type:"application/json"})]});
+  input.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(x=>x.creature.name==="Batch Hero A") &&
+      rows.some(x=>x.creature.name==="Batch Hero B");
+  });
+  await until(()=>document.querySelector("#app").textContent.includes("Batch Hero B"));
+  assert.match(document.querySelector("#toast").textContent,/Importate 2 creature/);
+  assert.ok(document.querySelector('[data-act="create"]'),"Import finishes in library view");
+  assert.equal(document.querySelector('[data-act="library-delete"]'),null,
+    "Destructive bulk actions must be hidden without selection");
+  const row=[...document.querySelectorAll(".creature-card")].find(x=>
+    x.textContent.includes("Batch Hero A"));
+  const checkbox=row.querySelector("[data-library-select]");
+  checkbox.checked=true;
+  checkbox.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
+  assert.ok(document.querySelector('[data-act="library-delete"]'));
+  assert.match(document.querySelector('[data-act="library-export"]').textContent,/1/);
+  click('[data-act="library-select-none"]');
+  await until(()=>!document.querySelector('[data-act="library-delete"]'));
+});
