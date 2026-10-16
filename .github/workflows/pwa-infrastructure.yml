@@ -1,0 +1,107 @@
+name: VTT PWA Infrastructure Audit
+on:
+  pull_request:
+    paths:
+      - "pwa/**"
+      - "network/pwa_host.gd"
+      - "vtt/map_data_controller.gd"
+      - "docs/pwa-architecture.md"
+      - ".github/workflows/pwa-infrastructure.yml"
+  workflow_dispatch:
+
+jobs:
+  browser-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pwa
+      - name: Parse browser ES modules and Service Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in pwa/main.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+            node --input-type=module --check < "$file"
+          done
+      - name: Test offline creature persistence with IndexedDB emulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          npm install --no-audit --no-fund --no-package-lock
+          npm test
+      - name: Verify install manifest, precache and PNG files
+        shell: python
+        run: |
+          import json, pathlib, struct, zlib
+          root = pathlib.Path("pwa")
+          manifest = json.loads((root / "manifest.webmanifest").read_text())
+          assert manifest["scope"] == "/" and manifest["start_url"] == "/"
+          required = {"/", "/index.html", "/main.js", "/client.js", "/storage.js",
+                      "/creatures.js", "/creature_format.js", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/icon-192.png", "/icon-512.png"}
+          served = (root / "sw.js").read_text()
+          for name in required - {"/sw.js"}:
+              assert name in served, f"{name} missing from app shell"
+          assert '/api/' in served and "indexedDB" not in served
+          for icon in manifest["icons"]:
+              path = root / icon["src"].lstrip("/")
+              data = path.read_bytes()
+              assert data.startswith(b"\x89PNG\r\n\x1a\n")
+              off = 8
+              compressed = b""
+              while off < len(data):
+                  size = struct.unpack(">I", data[off:off+4])[0]
+                  tag = data[off+4:off+8]
+                  content = data[off+8:off+8+size]
+                  checksum = struct.unpack(">I", data[off+8+size:off+12+size])[0]
+                  assert zlib.crc32(tag + content) & 0xffffffff == checksum
+                  if tag == b"IHDR":
+                      width, height = struct.unpack(">II", content[:8])
+                      assert f"{width}x{height}" == icon["sizes"]
+                  if tag == b"IDAT":
+                      compressed += content
+                  off += size + 12
+              assert zlib.decompress(compressed), f"invalid PNG: {path}"
+          print("PASS: PWA shell, ES modules, manifest and PNG integrity")
+
+  native-loopback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /pwa/
+            /tests/
+            /interaction/
+            /items/
+            /homebrew/
+            /encounter/*.gd
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/test_token_visual.tscn
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Run PWA localhost integration test
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
+          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
+          grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log

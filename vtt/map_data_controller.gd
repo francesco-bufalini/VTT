@@ -312,12 +312,19 @@ func _process_actions() -> void:
 			else:
 				_dispatch_action.call_deferred(item, message)
 
+## Common action boundary for TCP Android and browser clients.
+## The mobile allowlist remains authoritative here.
+func execute_local_action(action: String, payload: Dictionary) -> Dictionary:
+	if not _serving or not _action_provider.is_valid() or action not in ACTIONS:
+		return {"ok": false, "error": "Comando mobile non disponibile."}
+	var value: Variant = await _action_provider.call(action, payload)
+	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
+
+
 func _dispatch_action(item: Dictionary, message: Dictionary) -> void:
 	var result := {"ok": false, "error": "Il desktop non supporta questo comando. Aggiorna e riavvia anche il VTT sul computer."}
-	if _action_provider.is_valid() and message.get("action") in ACTIONS and message.get("payload") is Dictionary:
-		var value: Variant = await _action_provider.call(String(message.action), message.payload)
-		if value is Dictionary:
-			result = value
+	if message.get("action") is String and message.get("payload") is Dictionary:
+		result = await execute_local_action(String(message.action), message.payload)
 	if not _actions.has(item):
 		return
 	item.out = _action_frame({"magic": MAGIC, "session": _session,
