@@ -13,7 +13,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
 import { changeTrackerUses, recoveryPatch } from "./character_core.js";
 import { classSpellSections, assignClassSpell, revokeClassSpell } from "./class_spells.js";
-import { createQuickHomebrew, quickGrantPatch } from "./quick_homebrew.js";
+import { createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./quick_homebrew.js";
 import { localSheetView } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -216,6 +216,8 @@ async function catalogView() {
       esc(full.source||"Fonte sconosciuta")+'</p><p class="notable catalog-description">'+
       esc(description||"Descrizione non disponibile nell'archivio locale.")+'</p>'+
       (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
+      (chosen._homebrew&&String(chosen.id||"").startsWith("homebrew:quick_local:")?
+        btn("catalog-delete","Elimina contenuto personalizzato","danger"):"")+
       (assignable && (state.cachedCreatures||[]).length?
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
@@ -935,6 +937,15 @@ async function handleAction(target){
     state.catalogSelected=Number(target.dataset.index);
     await render();return;
   }
+  if(act==="catalog-delete"){
+    const selected=state.catalogRows[state.catalogSelected];
+    if(!selected||!String(selected.id||"").startsWith("homebrew:quick_local:"))
+      throw Error("Seleziona un contenuto locale.");
+    if(!window.confirm("Eliminare il contenuto personalizzato?"))return;
+    await deleteQuickHomebrew(selected.id);
+    state.catalogSelected=-1;await render();
+    message("Contenuto locale eliminato.");return;
+  }
   if(act==="catalog-assign"){
     const cId=document.querySelector("#catalog-creature")?.value;
     const entry=state.catalogRows[state.catalogSelected];
@@ -1196,7 +1207,7 @@ async function handleAction(target){
 }
 async function handleSubmit(form){
   if(form.id==="homebrew-form"){
-    const fields=new FormData(form),category=state.catalogCategory;
+    const fields=new window.FormData(form),category=state.catalogCategory;
     const grants=String(fields.get("proficiencies")||"").split(/\r?\n/).map(x=>x.trim())
       .filter(Boolean).map(x=>{
         const colon=x.indexOf(":");

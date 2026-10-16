@@ -1,7 +1,7 @@
 // Native quick_custom_catalog.gd equivalent. Save the exact portable
 // homebrew definition shape used by Godot, never modify packaged 5etools data.
-import {listRecords} from "./storage.js";
-import {saveHomebrewDefinition} from "./creatures.js";
+import {listRecords, getRecord, deleteRecordIfRevision} from "./storage.js";
+import {saveHomebrewDefinition, listCreatures} from "./creatures.js";
 const TYPES=new Set(["weapon","shield","armor","tool","magic","other"]);
 const ALLOWED=new Set(["items","feats","backgrounds"]);
 const FIELDS={skill:"skillProficiencies",tool:"toolProficiencies",
@@ -70,4 +70,20 @@ export function quickGrantPatch(creature,definition){
     }
   }
   return {proficiency_choices};
+}
+
+export async function deleteQuickHomebrew(id){
+  if(typeof id!=="string"||!/^homebrew:quick_local:(items|feats|backgrounds):local_[a-z0-9_-]+$/.test(id))
+    throw Error("Solo contenuti rapidi locali possono essere eliminati.");
+  const stored=await getRecord("global","homebrew",id);
+  if(!stored)return false;
+  const category=stored.data.category,characters=await listCreatures();
+  for(const {creature:c} of characters){
+    const used=(c.inventory||[]).some(row=>row?.id===id)||
+      (c.feats_catalog||[]).some(row=>row?.id===id)||
+      (category==="backgrounds"&&(c.background_id===id||
+        (c.background===stored.data.name&&c.background_source===stored.data.source)));
+    if(used)throw Error("Contenuto ancora in uso da una creatura: rimuovi prima il riferimento.");
+  }
+  return deleteRecordIfRevision("global","homebrew",id,stored.revision);
 }

@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/sheet_rules.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/sheet_rules.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/character_core.js pwa/class_spells.js pwa/quick_homebrew.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
@@ -63,7 +63,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/character_core.js", "/class_spells.js", "/quick_homebrew.js", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
