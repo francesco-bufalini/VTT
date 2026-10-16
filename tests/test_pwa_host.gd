@@ -167,7 +167,7 @@ func run() -> void:
 	assert(int(result["stats"]["armor_class"]) == 12, "Unarmored AC must use Dexterity")
 	assert(int(result["stats"]["initiative"]) == 2, "Initiative must use Dexterity")
 	assert(JSON.stringify(sample) == original, "Preview must not mutate any private creature fields")
-		assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
+	assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
 	assert((await http("POST", "/api/action", "{\"action\":\"chat_poll\",\"payload\":{}}")).begins_with("HTTP/1.1 401"))
 	assert((await http("GET", "/../project.godot")).begins_with("HTTP/1.1 404"))
 	assert((await http("GET", "/api/missing")).begins_with("HTTP/1.1 404"))
