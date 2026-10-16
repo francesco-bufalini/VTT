@@ -92,9 +92,25 @@ function muted(record,id){
   if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,id)&&!record.origin_enabled[id])return true;
   return array(record.proficiency_origins).some(x=>x.id===id&&x.disabled);
 }
+function liveSource(record,id){
+  if(!id)return true;
+  const parts=String(id).split("|"),group=parts[0],
+    source=parts[1]||"",name=parts.slice(2).join("|");
+  if(group==="race")return match(record.species,name)&&match(record.species_source,source);
+  if(group==="subrace")return match(record.subrace,name)&&match(record.subrace_source,source);
+  if(group==="background")return match(record.background,name)&&
+    (!record.background_source||match(record.background_source,source));
+  if(group==="class")return classMembers(record).some(c=>match(c.name,name)&&match(c.source,source));
+  if(group==="feat")return array(record.feats_catalog).some(f=>!f?.disabled&&(
+    match(f.id,parts.slice(1).join("|"))||
+    match(f.name,name)&&match(f.source,source)));
+  if(id.startsWith("item:"))return array(record.inventory).some(row=>
+    "item:"+row?.id===id&&Number(row.quantity??1)>0);
+  return true; // Saved custom origins are not automatically invalidated by changing class.
+}
 export function fixedProficiencies(record,index={}){
   const stored=array(record.proficiency_choices).filter(x=>x&&!x.disabled&&
-    !muted(record,String(x.origin_id||"")));
+    !muted(record,String(x.origin_id||""))&&liveSource(record,String(x.origin_id||"")));
   const result=new Map();
   const add=(kind,key)=>result.set(kind+":"+norm(key),true);
   for(const row of stored)if(kinds.includes(row.kind)&&row.key)add(row.kind,row.key);
