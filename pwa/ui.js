@@ -27,7 +27,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let toastTimer = null;
-let chatPollInFlight=false;
+let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
 let currentGameSession="";
 function acceptSession(info){
@@ -515,9 +515,9 @@ function startMap() {
   },2500);
 }
 async function fetchChat() {
-  if(!state.paired || chatPollInFlight)return;
-  chatPollInFlight=true;
+  if(!state.paired || chatPollGenerationInFlight===chatGeneration)return;
   const generation=chatGeneration;
+  chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
     if(generation!==chatGeneration || state.page!=="chat")return;
@@ -540,7 +540,9 @@ async function fetchChat() {
       render().catch(e=>message(errorMessage(e),true));
       message(errorMessage(error),true);
     }
-  }finally{chatPollInFlight=false;}
+  }finally{
+    if(chatPollGenerationInFlight===generation)chatPollGenerationInFlight=-1;
+  }
 }
 function startChat() {
   ++chatGeneration;
