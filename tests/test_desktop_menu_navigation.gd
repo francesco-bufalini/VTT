@@ -26,6 +26,21 @@ func _run() -> void:
 		"classes": [{"name": "Bard", "source": "PHB", "level": 3}],
 		"abilities": {"str": 10, "dex": 14, "con": 12, "int": 10, "wis": 12, "cha": 16}}
 	sheet._build_ui()
+	assert(not sheet._creature_batch_selection_row.visible
+		and not sheet._creature_batch_actions_row.visible,
+		"Bulk controls must not take space before any checkboxes are selected")
+	sheet._records = [{"id": "test-bulk", "kind": "character", "name": "Test"}]
+	sheet._creature_batch_ids["character:test-bulk"] = true
+	sheet._update_creature_batch_actions()
+	assert(sheet._creature_batch_selection_row.visible
+		and sheet._creature_batch_actions_row.visible,
+		"All four bulk controls must appear after selecting a creature")
+	sheet._creature_batch_ids.clear()
+	sheet._update_creature_batch_actions()
+	assert(not sheet._creature_batch_selection_row.visible
+		and not sheet._creature_batch_actions_row.visible,
+		"All four bulk controls must disappear when no creature remains selected")
+	sheet._records.clear()
 	assert(sheet._delete_dialog.get_parent() == ui,
 		"Creature deletion confirmation belongs to the UI canvas")
 	sheet._confirm_delete()
