@@ -12,10 +12,13 @@ const FILES := {
 	"/": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
+	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/storage.js": ["res://pwa/storage.js", "text/javascript; charset=utf-8"],
 	"/sw.js": ["res://pwa/sw.js", "text/javascript; charset=utf-8"],
 	"/manifest.webmanifest": ["res://pwa/manifest.webmanifest", "application/manifest+json"],
-	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"]
+	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
+	"/icon-192.png": ["res://pwa/icon-192.png", "image/png"],
+	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
 }
 
 var _server := TCPServer.new()
@@ -99,7 +102,9 @@ func _process(_delta: float) -> void:
 			if received[0] != OK:
 				_drop(i)
 				continue
-			client.buffer.append_array(received[1])
+			var incoming: PackedByteArray = client.buffer
+			incoming.append_array(received[1])
+			client.buffer = incoming
 		if (client.buffer as PackedByteArray).size() > BODY_LIMIT + HEADER_LIMIT:
 			_answer(client, 413, {"error": "request_too_large"})
 			continue
