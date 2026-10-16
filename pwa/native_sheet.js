@@ -139,7 +139,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
      (Math.floor((Number(c.abilities?.[key]??10)-10)/2)>=0?'+':'')+
      Math.floor((Number(c.abilities?.[key]??10)-10)/2)+'</span><span>'+
      (rowsFor(c,'proficiency_choices').some(r=>r.kind==='save'&&r.key===key&&!r.disabled)||list(c.saving_throw_proficiencies).includes(key)?'Competente':'—')+'</span>').join('')+'</div>'+nativeNote)+
-  panel('Riepilogo',summary([['Bonus competenza',c.proficiency_bonus],['Percezione passiva',c.passive_perception]]))+
+  // Effective proficiency and passive perception are rendered by the
+  // calculation panel; never present saved native mirrors as live values.
   panel('Abilità',summary(SKILLS.map(([id,label,ability])=>[label+' · '+ability.toUpperCase(),rowsFor(c,'proficiency_choices').some(r=>r.kind==='expertise'&&r.key===id&&!r.disabled)?'Maestria':rowsFor(c,'proficiency_choices').some(r=>r.kind==='skill'&&r.key===id&&!r.disabled)?'Competente':'—'])))+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],rowsFor(c,'proficiency_choices').filter(r=>r.kind===kind&&!r.disabled).map(r=>r.key).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';

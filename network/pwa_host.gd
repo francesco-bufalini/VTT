@@ -5,6 +5,8 @@ extends Node
 
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const NativeCalculations = preload("res://vtt/creature_web_calculations.gd")
+const EVALUATION_BODY_LIMIT := 512 * 1024
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -21,6 +23,7 @@ const FILES := {
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
+  "/derived_calculations.js": ["res://pwa/derived_calculations.js", "text/javascript; charset=utf-8"],
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
@@ -447,11 +450,11 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		_answer(client, 200, {"protocol": 1, "desktop_online": board != null
 			and bool(board.get("receiving")), "pairing_required": true})
 		return
-	if path not in ["/api/session", "/api/map", "/api/action"]:
+	if path not in ["/api/session", "/api/map", "/api/action", "/api/evaluate"]:
 		_answer(client, 404, {"error": "not_found"})
 		return
-	if (path == "/api/action" and method != "POST") or (
-		path != "/api/action" and method != "GET"
+	if (path in ["/api/action", "/api/evaluate"] and method != "POST") or (
+		path not in ["/api/action", "/api/evaluate"] and method != "GET"
 	):
 		_answer(client, 405, {"error": "method_not_allowed"})
 		return
@@ -468,6 +471,26 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			"mobile_protocol": 3})
 	elif path == "/api/map":
 		_answer(client, 200, controller.get_map_data())
+	elif path == "/api/evaluate":
+		# A paired browser explicitly opts in to sending its private creature
+		# record. No archive, map, chat or sync writer sees the submitted data.
+		if body.size() > EVALUATION_BODY_LIMIT:
+			_answer(client, 413, {"error": "creature_too_large_to_evaluate"})
+			return
+		if String(headers.get("content-type", "")).split(";")[0].strip_edges() != "application/json":
+			_answer(client, 415, {"error": "expected_json"})
+			return
+		var envelope: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if not envelope is Dictionary or not (envelope as Dictionary).get("creature", null) is Dictionary:
+			_answer(client, 400, {"error": "invalid_creature"})
+			return
+		var creature: Dictionary = (envelope as Dictionary)["creature"]
+		if String(creature.get("kind", "")) not in ["character", "monster"] or (
+			not creature.get("abilities", {}) is Dictionary
+		):
+			_answer(client, 400, {"error": "invalid_creature"})
+			return
+		_answer(client, 200, NativeCalculations.evaluate(creature))
 	else:
 		if String(headers.get("content-type", "")).split(";")[0].strip_edges() != "application/json":
 			_answer(client, 415, {"error": "expected_json"})

@@ -200,6 +200,16 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
     if(url==="/api/map")return new Response(JSON.stringify({version:1,mobile_protocol:3,
       tokens:[{id:"token_1",name:"Guardiano",free:false,conditions:[]}],
       combat:{active:true,round:2,active_index:0,entries:[{name:"Guardiano",token_id:"token_1",initiative:12}]}}),{status:200});
+    if(url==="/api/evaluate"){
+      const record=JSON.parse(options.body).creature;
+      const dex=Number(record.abilities?.dex??10);
+      const mod=Math.floor((dex-10)/2);
+      return new Response(JSON.stringify({ok:true,source:"godot",schema:1,
+        abilities:{dex:{score:dex,modifier:mod}},saves:{dex:mod},
+        skills:{perception:2},stats:{proficiency:2,initiative:mod,
+          armor_class:10+mod,max_hp:12,passive_perception:12,speeds:{walk:30}},
+        spell_slots:[],pact_slots:{total:0},attacks:[]}),{status:200});
+    }
     if(url==="/api/action"){
       const msg=JSON.parse(options.body);
       if(msg.action==="chat_poll")return new Response(JSON.stringify({ok:true,events:[]}),{status:200});
@@ -250,6 +260,29 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
   click('[data-nav="library"]'); // Release chat polling timer.
   await until(()=>document.querySelector('[data-act="create"]'));
+  const open=[...document.querySelectorAll('[data-act="open"]')]
+    .find(b=>b.closest(".creature-card")?.textContent.includes("Arcanista mobile"));
+  assert.ok(open);
+  open.click();
+  await until(()=>document.querySelector('[data-act="native-calc-on"]'));
+  assert.equal(calls.filter(c=>c.url==="/api/evaluate").length,0,
+    "Private sheet must never be transmitted before explicit consent");
+  click('[data-act="native-calc-on"]');
+  await until(()=>calls.some(c=>c.url==="/api/evaluate"));
+  const first=calls.find(c=>c.url==="/api/evaluate");
+  assert.match(String(first.options.headers.Authorization),/^Bearer a{64}$/);
+  assert.ok(JSON.parse(first.options.body).creature.inventory,
+    "Full sheet is sent only to the authenticated evaluation endpoint");
+  await until(()=>document.querySelector('#derived-calcs')?.textContent.includes("Calcolato da Godot"));
+  click('[data-sheet="stats"]');
+  await until(()=>document.querySelector('[data-ability="dex"]'));
+  change('[data-ability="dex"]',"16");
+  await until(()=>calls.filter(c=>c.url==="/api/evaluate").length>=2);
+  await until(()=>document.querySelector('#derived-calcs')?.textContent.includes("+3"));
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  assert.equal(document.querySelector('#derived-calcs'),null);
+
 });
 
 test("importing multiple creatures stays in library and exposes only selected bulk actions",async()=>{
