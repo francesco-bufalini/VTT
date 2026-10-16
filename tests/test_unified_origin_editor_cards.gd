@@ -74,16 +74,18 @@ func _run() -> void:
 	# Each editor keeps its own grant filtering and actions, but uses the
 	# identical card hierarchy (including defenses' manual source).
 	var sid := "custom|common"
+	var sources: Array[Dictionary] = [{
+		"id": sid, "name": "Origine test", "disabled": false
+	}]
 	var record := {"kind": "character", "classes": [], "inventory": [],
-		"proficiency_origins": [{"id": sid, "name": "Origine test",
-			"disabled": false}], "proficiency_choices": [],
+		"proficiency_origins": sources.duplicate(true), "proficiency_choices": [],
 		"feats_catalog": [], "formula_bonuses": []}
 
 	var bonus := Bonus.new()
 	root.add_child(bonus)
 	bonus.setup(Callable())
 	bonus._record = record.duplicate(true)
-	bonus._origins = (record["proficiency_origins"] as Array).duplicate(true)
+	bonus._origins = sources.duplicate(true)
 	bonus._rows = [{"id": "test-bonus", "origin_id": sid, "origin_name": "Origine test",
 		"target": "ac", "expression": "1"}]
 	bonus._refresh_origins()
@@ -93,7 +95,7 @@ func _run() -> void:
 	root.add_child(prof)
 	prof.setup(Callable())
 	prof._record = record.duplicate(true)
-	prof._origins = (record["proficiency_origins"] as Array).duplicate(true)
+	prof._origins = sources.duplicate(true)
 	prof._rows = [{"kind": "skill", "key": "athletics", "origin_id": sid}]
 	prof._refresh_origins()
 	_card(prof)
@@ -102,7 +104,7 @@ func _run() -> void:
 	root.add_child(feats)
 	feats.setup(Callable())
 	feats._record = record.duplicate(true)
-	feats._origins = (record["proficiency_origins"] as Array).duplicate(true)
+	feats._origins = sources.duplicate(true)
 	feats._feats = [{"name": "Alert", "source": "PHB", "origin_id": sid}]
 	feats._refresh_origins()
 	_card(feats)
@@ -111,7 +113,7 @@ func _run() -> void:
 	root.add_child(trackers)
 	trackers.setup(Callable())
 	trackers._record = record.duplicate(true)
-	trackers._origins = (record["proficiency_origins"] as Array).duplicate(true)
+	trackers._origins = sources.duplicate(true)
 	trackers._rows = [{"name": "Risorsa", "max": 2, "origin_id": sid}]
 	trackers._refresh_origins()
 	_card(trackers)
