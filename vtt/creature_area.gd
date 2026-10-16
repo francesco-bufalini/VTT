@@ -95,6 +95,13 @@ var _passive_perception: Label
 var _attacks_description: RichTextLabel
 var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
+var _creature_batch_checks: Array[CheckBox] = []
+var _creature_batch_ids: Dictionary = {}
+var _batch_export_button: Button
+var _batch_delete_button: Button
+var _batch_export_pending: Array[Dictionary] = []
+var _batch_delete_pending: Array[Dictionary] = []
+var _batch_delete_dialog: ConfirmationDialog
 var _creature_eye_buttons: Array[Button] = []
 var _creature_presence_elapsed := 0.0
 var _creature_language := "it"
@@ -259,6 +266,7 @@ func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = t
 	_build_transfer_dialog()
 	_build_transfer_request_dialog()
 	_build_export_dialog()
+	_build_batch_delete_dialog()
 	_reload()
 	_refresh_creature_language()
 	_load_bestiary_catalog(allow_remote_catalog and DisplayServer.get_name() != "headless")
@@ -713,6 +721,28 @@ func _build_ui() -> void:
 	_creature_filter.clear_button_enabled = true
 	_creature_filter.text_changed.connect(_filter_owned_creatures)
 	left.add_child(_creature_filter)
+	var choice_row := HBoxContainer.new()
+	left.add_child(choice_row)
+	var all_button := Button.new()
+	all_button.text = "Tutte"
+	all_button.pressed.connect(_mark_visible_creatures.bind(true))
+	choice_row.add_child(all_button)
+	var none_button := Button.new()
+	none_button.text = "Nessuna"
+	none_button.pressed.connect(_mark_visible_creatures.bind(false))
+	choice_row.add_child(none_button)
+	var actions := HBoxContainer.new()
+	left.add_child(actions)
+	_batch_export_button = Button.new()
+	_batch_export_button.text = "Esporta selezione"
+	_batch_export_button.disabled = true
+	_batch_export_button.pressed.connect(_export_selected_creatures)
+	actions.add_child(_batch_export_button)
+	_batch_delete_button = Button.new()
+	_batch_delete_button.text = "Elimina selezione"
+	_batch_delete_button.disabled = true
+	_batch_delete_button.pressed.connect(_confirm_batch_delete)
+	actions.add_child(_batch_delete_button)
 	_creature_empty = Label.new()
 	_creature_empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_creature_empty.add_theme_font_size_override("font_size", 13)
@@ -1943,7 +1973,9 @@ func _import_export_file(path: String) -> void:
 	if not payload is Dictionary:
 		_set_status("Seleziona un file JSON esportato da VTT sul PC.")
 		return
-	var error: Error = _archive.import_export_copy(payload)
+	var error: Error = (_archive.import_export_batch(payload)
+		if String(payload.get("format", "")) == "vtt_creature_batch_export_v1"
+		else _archive.import_export_copy(payload))
 	if error != OK:
 		_set_status("Importazione non riuscita: " + error_string(error))
 		return
@@ -2420,12 +2452,17 @@ func _export_current_creature() -> void:
 	var filename: String = String(record.get("name", "creatura")).strip_edges()
 	for forbidden: String in ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
 		filename = filename.replace(forbidden, "_")
+	_batch_export_pending.clear()
+	_export_dialog.title = "Scarica creatura"
 	_export_dialog.current_file = filename.substr(0, 75) + ".json"
 	_export_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
 	_export_dialog.popup_centered_clamped(Vector2i(820, 550), 0.9)
 
 
 func _save_exported_creature(path: String) -> void:
+	if not _batch_export_pending.is_empty():
+		_save_batch_export(path)
+		return
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
@@ -3294,7 +3331,14 @@ func _reload() -> void:
 		_creature_list.remove_child(child)
 		child.queue_free()
 	_creature_row_buttons.clear()
+	_creature_batch_checks.clear()
 	_creature_eye_buttons.clear()
+	var live_keys: Dictionary = {}
+	for record: Dictionary in _records:
+		live_keys[_creature_batch_key(record)] = true
+	for key: Variant in _creature_batch_ids.keys():
+		if not live_keys.has(key):
+			_creature_batch_ids.erase(key)
 
 	var selected_index := -1
 	for i: int in range(_records.size()):
@@ -3307,6 +3351,13 @@ func _reload() -> void:
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 3)
 		_creature_list.add_child(row)
+		var batch_check := CheckBox.new()
+		batch_check.tooltip_text = "Seleziona per esportazione o eliminazione multipla"
+		batch_check.custom_minimum_size.x = 24
+		batch_check.button_pressed = _creature_batch_ids.has(_creature_batch_key(item))
+		batch_check.toggled.connect(_on_creature_batch_toggled.bind(_creature_batch_key(item)))
+		row.add_child(batch_check)
+		_creature_batch_checks.append(batch_check)
 		var select_button := Button.new()
 		select_button.set_meta("creature_gui_data", true)
 		select_button.text = "%s %s" % [icon, String(item.get("name", ""))]
@@ -3337,6 +3388,7 @@ func _reload() -> void:
 			selected_index = i
 
 	_filter_owned_creatures(_creature_filter.text)
+	_update_creature_batch_actions()
 	_refresh_creature_eye_buttons()
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
