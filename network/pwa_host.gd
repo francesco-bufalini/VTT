@@ -3,6 +3,7 @@ extends Node
 ## or another trusted reverse proxy. No second application/server is required.
 ## An explicit random pairing secret protects the session-scoped game endpoints.
 
+const MapDataController = preload("res://vtt/map_data_controller.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -60,7 +61,9 @@ func _board_sync() -> Node:
 	if scene == null or scene.scene_file_path != "res://dnd_base.tscn":
 		return null
 	var value: Variant = scene.get("board_sync")
-	return value as Node if value is Node and is_instance_valid(value) else null
+	if value is Node and is_instance_valid(value):
+		return value as Node
+	return null
 
 
 func _process(_delta: float) -> void:
@@ -168,7 +171,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	if path == "/api/status" and method == "GET":
 		var board := _board_sync()
 		_answer(client, 200, {"protocol": 1, "desktop_online": board != null
-			and bool(board.receiving), "pairing_required": true})
+			and bool(board.get("receiving")), "pairing_required": true})
 		return
 	if path not in ["/api/session", "/api/map", "/api/action"]:
 		_answer(client, 404, {"error": "not_found"})
@@ -182,12 +185,12 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		_answer(client, 401, {"error": "pairing_required"})
 		return
 	var board := _board_sync()
-	if board == null or not bool(board.receiving) or board.map_data_controller == null:
+	if board == null or not bool(board.get("receiving")) or board.get("map_data_controller") == null:
 		_answer(client, 503, {"error": "no_active_desktop_session"})
 		return
-	var controller: Node = board.map_data_controller
+	var controller: MapDataController = board.get("map_data_controller") as MapDataController
 	if path == "/api/session":
-		_answer(client, 200, {"protocol": 1, "session": board.session_key,
+		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
 			"mobile_protocol": 3})
 	elif path == "/api/map":
 		_answer(client, 200, controller.get_map_data())
