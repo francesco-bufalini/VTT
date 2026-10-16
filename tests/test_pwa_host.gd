@@ -83,6 +83,24 @@ func run() -> void:
 	var status := await http("GET", "/api/status")
 	assert(status.begins_with("HTTP/1.1 200"))
 	assert(status.contains("\"pairing_required\":true"))
+	# One-time codes are short, random, single-use and never replace the
+	# strong desktop bearer used for authenticated game actions.
+	var short_code: String = host.call("_new_short_code")
+	assert(short_code.length() == 16 and short_code.is_valid_hex_number())
+	assert((await http("POST", "/api/pair", "{\"code\":\"0000000000000000\"}")).begins_with("HTTP/1.1 401"))
+	var reply := await http("POST", "/api/pair", JSON.stringify({"code":short_code}))
+	assert(reply.begins_with("HTTP/1.1 200"))
+	assert(reply.contains(String(host.get("_token"))))
+	assert((await http("POST", "/api/pair", JSON.stringify({"code":short_code}))).begins_with("HTTP/1.1 401"),
+		"The same code must not authorize two phones")
+	short_code = host.call("_new_short_code")
+	host.set("_short_code_expiry", Time.get_ticks_msec() - 1)
+	assert((await http("POST", "/api/pair", JSON.stringify({"code":short_code}))).begins_with("HTTP/1.1 401"),
+		"Expired code must be rejected")
+	var generator := load("res://vtt/qr/qr_code.gd").new()
+	var qr_texture: ImageTexture = generator.get_texture("https://example.ts.net/#pair=0123456789ABCDEF")
+	assert(qr_texture != null and qr_texture.get_width() > 20, "QR texture failed")
+	generator.free()
 	assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
 	assert((await http("POST", "/api/action", "{\"action\":\"chat_poll\",\"payload\":{}}")).begins_with("HTTP/1.1 401"))
 	assert((await http("GET", "/../project.godot")).begins_with("HTTP/1.1 404"))
