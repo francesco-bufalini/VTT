@@ -605,7 +605,7 @@ func _input(event: InputEvent) -> void:
 		or not event.pressed or event.echo or not event.ctrl_pressed
 	):
 		return
-	var redo := (
+	var redo: bool = (
 		event.keycode == KEY_Y
 		or (event.keycode == KEY_Z and event.shift_pressed)
 	)
