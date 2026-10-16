@@ -3,13 +3,15 @@ import assert from "node:assert/strict";
 import {offlineBasics,derivedContent} from "../derived_calculations.js";
 
 test("offline shows only deterministic base modifiers and class proficiency",()=>{
-  const record={kind:"character",level:5,abilities:{str:18,dex:9,wis:15,con:10}};
+  const record={kind:"character",class:"Wizard",level:5,abilities:{str:18,dex:9,wis:15,con:10}};
   const result=offlineBasics(record);
   assert.equal(result.source,"offline");
   assert.equal(result.abilities.str.modifier,4);
   assert.equal(result.abilities.dex.modifier,-1);
   assert.equal(result.abilities.wis.modifier,2);
   assert.equal(result.stats.proficiency,3);
+  assert.equal(offlineBasics({kind:"character",level:18}).stats.proficiency,2,
+    "A classless sheet must use Godot's minimum proficiency");
   assert.equal(result.stats.armor_class,undefined,"never invent effective armor class");
   assert.equal(result.stats.initiative,undefined,"never invent bonus-dependent initiative");
   const panel=derivedContent("battle",result);
