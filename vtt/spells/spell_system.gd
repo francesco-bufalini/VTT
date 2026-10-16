@@ -3011,46 +3011,54 @@ func _token_at_screen(screen_position: Vector2) -> Node3D:
 	return target as Node3D
 
 
+const RANGE_PREVIEW_PHASES := [
+	"point", "target_token", "multi_target_tokens",
+	"multi_target_points", "summon_point", "transform_target",
+	"transform_multi_targets", "resize_target", "teleport_passengers",
+	"teleport_destination", "chain_primary", "chain_secondary",
+	"direction_point", "wall_start", "wall_center"
+]
+
+
+# Single description of the visible reach. The 2D/3D HUD and range mesh
+# consume this; special constraints (passenger proximity, unique chain
+# victims, origin of a directional spell) remain independent cast rules.
+func targeting_range_info(spell_data: Dictionary) -> Dictionary:
+	if (
+		_pending_caster == null or not is_instance_valid(_pending_caster)
+		or _targeting_phase not in RANGE_PREVIEW_PHASES
+		or not bool(spell_data.get("show_range_preview", true))
+	):
+		return {}
+	var source: Node3D = _pending_caster
+	var feet: float = _effective_spell_range_feet(spell_data, source)
+	if _targeting_phase == "chain_secondary":
+		if _pending_chain_primary != null and is_instance_valid(_pending_chain_primary):
+			source = _pending_chain_primary
+			feet = float(spell_data.get("secondary_range_feet", 30.0))
+	elif _targeting_phase in ["teleport_destination", "teleport_passengers"]:
+		feet = float(spell_data.get("teleport_distance_feet", feet))
+	if feet <= 0.0:
+		return {}
+	var footprint: float = _cell_size() * 0.5
+	if source.has_method("get_footprint_cells"):
+		footprint *= maxf(0.5, float(source.call("get_footprint_cells")))
+	return {"source": source, "feet": feet, "footprint": footprint}
+
+
 func _update_spell_range_preview(spell_data: Dictionary) -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
 		return
-	if (
-		_pending_caster == null
-		or not is_instance_valid(_pending_caster)
-		or _targeting_phase not in [
-			"point", "target_token", "multi_target_tokens",
-			"multi_target_points", "summon_point", "transform_target",
-			"transform_multi_targets", "resize_target", "teleport_passengers",
-			"teleport_destination", "chain_primary", "chain_secondary",
-			"direction_point", "wall_start", "wall_center"
-		]
-		or not bool(spell_data.get("show_range_preview", true))
-	):
+	var info: Dictionary = targeting_range_info(spell_data)
+	if info.is_empty():
 		measurement_tool.call("hide_spell_range_preview")
 		return
-
-	var range_source: Node3D = _pending_caster
-	var range_feet: float = _effective_spell_range_feet(spell_data, _pending_caster)
-	if _targeting_phase == "chain_secondary":
-		if _pending_chain_primary != null and is_instance_valid(_pending_chain_primary):
-			range_source = _pending_chain_primary
-			range_feet = float(spell_data.get("secondary_range_feet", 30.0))
-	elif _targeting_phase in ["teleport_destination", "teleport_passengers"]:
-		# Passenger eligibility is independently limited to five feet.
-		range_feet = float(spell_data.get("teleport_distance_feet", range_feet))
-
-	if range_feet <= 0.0:
-		measurement_tool.call("hide_spell_range_preview")
-		return
-	var footprint: float = _cell_size() * 0.5
-	if range_source.has_method("get_footprint_cells"):
-		footprint *= maxf(0.5, float(range_source.call("get_footprint_cells")))
-	# MeasurementTool already owns the range sphere/equator and shares its
-	# mesh generation with the ordinary tactical range renderer.
-	measurement_tool.call("show_spell_range_preview",
-		range_source.global_position, _spell_range_world(range_feet), footprint)
-
+	var source: Node3D = info["source"] as Node3D
+	measurement_tool.call(
+		"show_spell_range_preview", source.global_position,
+		_spell_range_world(float(info["feet"])), float(info["footprint"])
+	)
 
 func _spell_range_world(range_feet: float) -> float:
 	# One conversion for spell range overlays and target validation.
@@ -3144,10 +3152,14 @@ func _target_or_point_data(
 	spell_data: Dictionary
 ) -> Dictionary:
 	var hovered: Node3D = _token_at_screen(screen_position)
+	if hovered != null or not bool(spell_data.get("allow_point_target", false)):
+		return _target_or_point_candidate(hovered, {}, spell_data)
+	var force_grid: bool = Input.is_key_pressed(KEY_SHIFT)
+	var air_distance: float = (
+		-1.0 if force_grid else _point_target_air_distance_world(spell_data)
+	)
 	return _target_or_point_candidate(
-		hovered, _raw_point_input(screen_position,
-			_point_target_air_distance_world(spell_data),
-			Input.is_key_pressed(KEY_SHIFT)) if hovered == null and bool(spell_data.get("allow_point_target", false)) else {},
+		null, _raw_point_input(screen_position, air_distance, force_grid),
 		spell_data
 	)
 
