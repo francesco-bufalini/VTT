@@ -1,6 +1,7 @@
 import { status, session, pair, unpair, map, action, subscribeMap } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
-  removeCreature, openCreatureEditor } from "./creatures.js";
+  removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
+import { TacticalViewer } from "./tactical_view.js";
 import { exportBackup, importBackup } from "./storage.js";
 
 const app = document.querySelector("#app");
@@ -17,8 +18,10 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  hostReachable:false,
+  hostReachable:false, castCreatureId:"", castSpellIndex:0, castLevel:1,
+  attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
+let tacticalViewer=null;
 let toastTimer = null;
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
   ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]); }
@@ -85,7 +88,7 @@ async function navigate(page, id=null) {
   }
   stopSubscriptions();
   state.page=page; state.creatureId=id; state.editor=null;
-  if (page==="chat" || page==="session") state.cachedCreatures=(await listCreatures()).map(row=>({id:row.creature.id,name:row.creature.name}));
+  if (page==="chat" || page==="session") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
 }
 async function render() {
@@ -288,7 +291,7 @@ function sessionView() {
       '<p class="hint">Muovi il token sulla griglia del desktop. Per alcune operazioni il desktop può richiedere il controllo della creatura.</p>'+
       '<div class="movement"><span></span><button class="btn" type="button" data-act="move" data-direction="north">↑</button><span></span>'+
       '<button class="btn" type="button" data-act="move" data-direction="west">←</button>'+
-      '<span aria-hidden="true" class="pill" class="movement-center">•</span>'+
+      '<span aria-hidden="true" class="pill movement-center">•</span>'+
       '<button class="btn" type="button" data-act="move" data-direction="east">→</button>'+
       '<span></span><button class="btn" type="button" data-act="move" data-direction="south">↓</button><span></span></div>'+
       '<div class="actions">'+btn("move-up","Quota +") + btn("move-down","Quota −")+'</div>'+
@@ -302,12 +305,46 @@ function sessionView() {
       '<div class="actions">'+btn("place-creature","Piazza vicino al token","primary")+
       (selected.free?btn("claim-creature","Associa al token libero"):"")+'</div>');
   }
+  if(selected) {
+    const selectedCaster = (state.cachedCreatures||[]).find(c=>c.id===state.castCreatureId)
+      || (state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===selected.id)
+      || (state.cachedCreatures||[])[0];
+    const allSpells=[...(selectedCaster?.prepared_spells||[]),...(selectedCaster?.spells||[]),
+      ...(selectedCaster?.origin_spell_grants||[])];
+    const spells=[],seen=new Set();
+    for(const raw of allSpells){
+      const item=typeof raw==="string"?{id:raw,name:raw}:raw;
+      if(!item||typeof item!=="object")continue;
+      const id=String(item.id||item.spell_id||"");
+      if(!id||seen.has(id))continue;
+      seen.add(id);spells.push({id,name:item.name||id,source:item.source||""});
+    }
+    state.visibleSpells=spells;
+    html+=panel("Mappa e bersagli",
+      '<p class="hint">Richiedi la vista 2D esistente: zoom con due dita, trascinamento e selezione dei token. Per attacchi e incantesimi la risoluzione resta sul desktop.</p>'+
+      '<div class="actions">'+btn("snapshot-map","Apri mappa 2D","primary")+'</div>'+
+      '<div class="columns three">'+field("Gittata (ft)","attack_range_ui",state.attackRange,"number",'min="0" max="10000"')+
+      field("Gittata lunga","attack_long_ui",state.attackLongRange,"number",'min="0" max="10000"')+
+      '<label class="check"><input type="checkbox" data-field="attack_melee_ui" '+
+      (state.attackMelee?'checked':'')+'>Mischia</label></div>'+
+      '<div class="actions">'+btn("attack-map","Mira attacco")+'</div>')+
+      panel("Lancia un incantesimo",
+      '<label>Creatura<select id="cast-creature">'+(state.cachedCreatures||[]).map(c=>
+        '<option value="'+esc(c.id)+'" '+(selectedCaster?.id===c.id?'selected':'')+'>'+
+        esc(c.name)+'</option>').join("")+'</select></label>'+
+      '<label>Incantesimo<select id="cast-spell">'+spells.map((sp,i)=>
+        '<option value="'+i+'">'+esc(sp.name)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
+      '</select></label><div class="columns">'+
+      field("Livello slot / 0 trucchetto","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
+      '</div><p class="hint">Puoi lanciare soltanto incantesimi già presenti nella scheda. Il desktop ne verifica l’effetto e il targeting.</p>'+
+      '<div class="actions">'+btn("begin-spell","Avvia incantesimo",spells.length?"primary":"")+'</div>');
+  }
   if(combat.active) html += panel("Iniziativa · Round "+(combat.round||1),
     (combat.entries||[]).map((entry,i)=>
       '<div class="combat-line '+(i===combat.active_index?"active":"")+'"><span>'+
       (i===combat.active_index?"▶ ":"")+esc(entry.name)+'</span><span>'+esc(entry.initiative)+'</span></div>').join(""));
   else html += panel("Iniziativa",'<p class="hint">Nessun combattimento attivo nella scena.</p>');
-  html += '<p class="hint">La proiezione del desktop espone nomi, condizioni e iniziativa, non una mappa 2D completa o i dettagli privati delle schede.</p>';
+  html += '<p class="hint">Lo snapshot mostra la vista ortografica acquisita dal desktop. Gittate ed effetti vengono calcolati da Godot, non nel browser.</p>';
   return html;
 }
 async function refreshConnection(quiet=false) {
@@ -468,6 +505,21 @@ async function refreshMapOnce() {
   state.map=await map();
   if(state.page==="session"){const scroll=window.scrollY;app.innerHTML=sessionView();window.scrollTo(0,scroll);}
 }
+async function consumeAcceptedSlot(level,spell) {
+  if(level<1)return; // Cantrip or free use does not expend a class slot.
+  const id=document.querySelector("#cast-creature")?.value;
+  // The modal is rendered outside the main session page, but the session
+  // selector remains mounted underneath.
+  if(!id)return;
+  const editor=await openCreatureEditor(id);
+  const saved=editor.read();
+  const slots=Array.isArray(saved.spell_slots_spent)?[...saved.spell_slots_spent]:[];
+  while(slots.length<10)slots.push(0);
+  slots[level]=Number(slots[level]||0)+1;
+  await editor.update({spell_slots_spent:slots});
+  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+}
+
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==="refresh"){await render();return;}
@@ -557,8 +609,41 @@ async function handleAction(target){
     const result=await action(act==="claim-creature"?"claim_free_token":"place_token",
       {token_id:state.tokenId,creature:visible});
     if(!result.ok)throw new Error(result.error||"Impossibile piazzare la creatura.");
+    const editor=await openCreatureEditor(selectedId);
+    await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
+    state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     message("Token aggiornato: "+(result.name||sheet.name));
     await refreshMapOnce();return;
+  }
+  if(act==="snapshot-map"||act==="attack-map"){
+    const isAttack=act==="attack-map";
+    const attack=isAttack?{range_feet:state.attackRange,
+      long_range_feet:state.attackLongRange,melee:state.attackMelee}:{};
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({
+      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
+    });
+    await tacticalViewer.open(state.tokenId,attack);
+    return;
+  }
+  if(act==="begin-spell"){
+    const casterId=document.querySelector("#cast-creature")?.value;
+    const caster=await loadCreature(casterId);
+    if(!caster)throw new Error("Scegli una scheda locale.");
+    if(caster.data.linked_token_sync_id!==state.tokenId)
+      throw new Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
+    const spell=state.visibleSpells?.[Number(document.querySelector("#cast-spell")?.value)];
+    if(!spell)throw new Error("Scegli un incantesimo della creatura.");
+    if(!Number.isInteger(state.castLevel)||state.castLevel<0||state.castLevel>9)
+      throw new Error("Livello di slot non valido.");
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({
+      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
+    });
+    await tacticalViewer.open(state.tokenId);
+    await tacticalViewer.beginSpell({spell,slotLevel:state.castLevel,
+      context:{spellcasting_ability:caster.data.spellcasting_ability||"",
+        spell_attack_bonus:caster.data.spell_attack_bonus||0,
+        spell_save_dc:caster.data.spell_save_dc||0}});
+    return;
   }
   if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
   if(act==="move"||act==="move-up"||act==="move-down"){
@@ -623,6 +708,26 @@ function listen(){
     },400));
   });
   app.addEventListener("change",e=>{
+    const target=e.target;
+    if(target?.id==="cast-creature"){
+      state.castCreatureId=target.value;state.castSpellIndex=0;
+      app.innerHTML=sessionView();return;
+    }
+    if(target?.id==="cast-spell"){
+      state.castSpellIndex=Number(target.value)||0;return;
+    }
+    if(target?.dataset?.field==="attack_range_ui"){
+      state.attackRange=Math.max(0,Math.min(10000,Number(target.value)||0));return;
+    }
+    if(target?.dataset?.field==="attack_long_ui"){
+      state.attackLongRange=Math.max(0,Math.min(10000,Number(target.value)||0));return;
+    }
+    if(target?.dataset?.field==="attack_melee_ui"){
+      state.attackMelee=target.checked;return;
+    }
+    if(target?.dataset?.field==="cast_slot_ui"){
+      state.castLevel=Number(target.value);return;
+    }
     if(!e.target?.matches(editable))return;
     clearTimeout(inputTimers.get(e.target));
     handleField(e.target).catch(error=>message(errorMessage(error),true));
