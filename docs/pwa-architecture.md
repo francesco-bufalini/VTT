@@ -53,8 +53,9 @@ origin later without changing the domain API.
    syntax may differ with client versions).
 4. Open the printed `https://<machine>.<tailnet>.ts.net/` URL on the phone.
    Use **Share → Add to Home Screen** on Safari/iPhone.
-5. In the **Partita** tab, enter the random **pairing secret** generated on
-   the desktop in `user://pwa_pairing_token.txt`. The browser sends it in
+5. With native VTT open on the desktop, press **Ctrl+Shift+P** to display
+   and copy the random **pairing secret** (also stored in
+   `user://pwa_pairing_token.txt`). Enter it in the PWA **Partita** tab. The browser sends it in
    an HTTPS bearer header and can remember it in IndexedDB if the user opts in.
    The desktop **must have an active game open** for `/api/session` to verify
    pairing. Never put the secret in a URL or the repository.
@@ -195,7 +196,7 @@ HTTPS, background/resume, quota pressure, import/export and parity with
 Android remain necessary.
 
 Next: close remaining Android parity gaps with structured catalog and rule-aware
-sheet controls, improve desktop presentation of the pairing secret (ideally QR),
+sheet controls, add QR pairing to the existing desktop-local code dialog,
 add reliable idempotent document/item transfer with versioned event IDs, and
 introduce 2D tactical map projection suitable for the browser. Do not rewrite the desktop's combat rules
 or duplicate the existing Android command handlers.
