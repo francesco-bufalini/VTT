@@ -104,6 +104,28 @@ func _show_pairing_dialog() -> void:
 	dialog.popup_centered()
 
 
+func public_spells_json() -> PackedByteArray:
+	# Public built-in references only; private desktop homebrew stays local.
+	if _public_spells_payload.is_empty():
+		var spells: Array[Dictionary] = []
+		for entry: Dictionary in SpellCatalog.all_spells():
+			var spell_id: String = String(entry.get("id", ""))
+			if spell_id.is_empty() or spell_id.begins_with("homebrew:") or String(entry.get("origin", "")) == "homebrew":
+				continue
+			spells.append({
+				"id": spell_id, "name": String(entry.get("name", "")),
+				"source": String(entry.get("source", "")),
+				"level": int(entry.get("level", 0)),
+				"school": String(entry.get("school", "")),
+				"classes": entry.get("classes", []),
+				"range": String(entry.get("range", "")),
+				"casting_time": String(entry.get("casting_time", "")),
+				"description": String(entry.get("description", ""))
+			})
+		_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
+	return _public_spells_payload
+
+
 func _board_sync() -> Node:
 	var scene := get_tree().current_scene
 	if scene == null or scene.scene_file_path != "res://dnd_base.tscn":
@@ -216,27 +238,9 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			return
 		_respond(client, 200, String(asset[1]), FileAccess.get_file_as_bytes(asset[0]))
 		return
-	# Read-only catalog of packaged spells. Never expose local private
-	# homebrew definitions through the unauthenticated app asset endpoint.
+	# This payload is also used to package the standalone offline prototype.
 	if path == "/catalog/spells.json" and method == "GET":
-		if _public_spells_payload.is_empty():
-			var spells: Array[Dictionary] = []
-			for entry: Dictionary in SpellCatalog.all_spells():
-				var spell_id: String = String(entry.get("id", ""))
-				if spell_id.is_empty() or spell_id.begins_with("homebrew:") or String(entry.get("origin", "")) == "homebrew":
-					continue
-				spells.append({
-					"id": spell_id, "name": String(entry.get("name", "")),
-					"source": String(entry.get("source", "")),
-					"level": int(entry.get("level", 0)),
-					"school": String(entry.get("school", "")),
-					"classes": entry.get("classes", []),
-					"range": String(entry.get("range", "")),
-					"casting_time": String(entry.get("casting_time", "")),
-					"description": String(entry.get("description", ""))
-				})
-			_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
-		_respond(client, 200, "application/json; charset=utf-8", _public_spells_payload)
+		_respond(client, 200, "application/json; charset=utf-8", public_spells_json())
 		return
 	if path == "/api/status" and method == "GET":
 		var board := _board_sync()
