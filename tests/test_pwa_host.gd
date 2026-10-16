@@ -34,6 +34,8 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 
 
 func run() -> void:
+	await process_frame
+	await process_frame
 	var host := root.get_node_or_null("/root/PwaHost")
 	assert(host != null, "Desktop PWA autoload missing")
 	# The bridge is intentionally disabled without a playable board scene.
