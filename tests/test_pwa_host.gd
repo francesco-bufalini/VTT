@@ -35,7 +35,7 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 
 func run() -> void:
 	var host := root.get_node_or_null("/root/PwaHost")
-	assert(host != null and host._server.is_listening(), "Desktop PWA autoload inactive")
+	assert(host != null and (host.get("_server") as TCPServer).is_listening(), "Desktop PWA autoload inactive")
 	var page := await http("GET", "/")
 	assert(page.begins_with("HTTP/1.1 200"))
 	assert(page.contains("VTT Mobile"))
