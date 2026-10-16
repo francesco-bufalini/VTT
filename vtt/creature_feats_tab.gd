@@ -320,9 +320,7 @@ func _refresh() -> void:
 
 
 func _refresh_origins() -> void:
-	for node: Node in _origin_cards.get_children():
-		_origin_cards.remove_child(node)
-		node.queue_free()
+	EditorUI.clear_origin_cards(_origin_cards)
 	var enabled: Dictionary = _enabled()
 	var sources: Array[Dictionary] = _origins.duplicate(true)
 	for granted: Dictionary in _feats:
@@ -342,38 +340,17 @@ func _refresh_origins() -> void:
 				count += 1
 		if count == 0:
 			continue
-		var panel := PanelContainer.new()
-		_origin_cards.add_child(panel)
-		var line := HBoxContainer.new()
-		panel.add_child(line)
-		var select := OriginButton.new()
-		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		select.toggle_mode = true
-		select.button_pressed = _selected_id == sid
-		select.clip_text = true
-		select.text = String(display_names.get(sid, _label(sid))) + " (%d)" % count
-		select.tooltip_text = _description(sid) + _origin_grants_tooltip(sid)
-		select.pressed.connect(_select_origin.bind(sid))
-		line.add_child(select)
-		EditorUI.origin_link(self, line, sid, _label(sid))
-		if not sid.is_empty():
-			var on := CheckButton.new()
-			on.text = "⏻"
-			on.button_pressed = bool(enabled.get(sid, false))
-			on.disabled = not on.button_pressed and not bool(origin.get("disabled", false))
-			on.tooltip_text = "Disattiva l'origine e tutti i talenti e benefici che dipendono da essa."
-			on.toggled.connect(_toggle_origin.bind(sid))
-			line.add_child(on)
-		if _selected_id == sid:
-			var border := StyleBoxFlat.new()
-			border.draw_center = false
-			border.border_color = Color(0.40, 0.72, 0.91)
-			border.set_border_width_all(2)
-			border.set_corner_radius_all(5)
-			panel.add_theme_stylebox_override("panel", border)
-		elif not bool(enabled.get(sid, true)):
-			panel.modulate.a = 0.58
+		var active: bool = bool(enabled.get(sid, false))
+		EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": _label(sid),
+			"text": String(display_names.get(sid, _label(sid))) + " (%d)" % count,
+			"tooltip": _description(sid) + _origin_grants_tooltip(sid),
+			"selected": _selected_id == sid, "active": active,
+			"on_select": _select_origin.bind(sid),
+			"on_toggle": _toggle_origin.bind(sid),
+			"toggle_disabled": not active and not bool(origin.get("disabled", false)),
+			"toggle_tooltip": "Disattiva l'origine e tutti i talenti e benefici che dipendono da essa."
+		})
 
 
 func _refresh_feats() -> void:
