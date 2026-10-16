@@ -4,7 +4,7 @@ extends RefCounted
 # No natural-language heuristics. Never treats "expanded" or plain prepared
 # leveled spells as freely castable; those still require ordinary spell slots.
 const PATH := "res://vtt/data/additional_spells_5etools.json"
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/spells/spell_catalog.gd")
 static var _entries: Array = []
@@ -243,7 +243,7 @@ static func for_creature(record: Dictionary) -> Dictionary:
 	var output: Dictionary = {"grants": [], "trackers": [], "choices": []}
 	if record.is_empty() or String(record.get("kind", "")) == "monster":
 		return output
-	var features: Array[Dictionary] = Traits.collect_features(record)
+	var features: Array[Dictionary] = Features.collect_features(record)
 	for raw: Variant in _entries:
 		if not raw is Dictionary:
 			continue

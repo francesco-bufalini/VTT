@@ -3,7 +3,7 @@ extends RefCounted
 # Spell entitlements belong to actual feature/item origins. Manual entries
 # may point at a tracker owned by a *different* origin.
 const Catalog = preload("res://vtt/spells/spell_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
@@ -30,7 +30,7 @@ static func _builtins(record: Dictionary) -> Array[Dictionary]:
 	# consumable resource. The tracker itself is derived from 5etools tables
 	# or structured Fight Club counters, never a number from feature prose.
 	var trackers: Array[Dictionary] = Trackers.for_creature(record)
-	var features: Array[Dictionary] = Traits.collect_features(record)
+	var features: Array[Dictionary] = Features.collect_features(record)
 	for raw: Variant in Catalog.SPELLS.values():
 		if not raw is Dictionary or not bool(raw.get("internal_grant", false)):
 			continue
@@ -108,7 +108,7 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 	var active_origins: Dictionary = {}
 	for source: Dictionary in Profs.origins(record):
 		active_origins[String(source.get("id", ""))] = true
-	for feature: Dictionary in Traits.collect_features(record):
+	for feature: Dictionary in Features.collect_features(record):
 		active_origins["feature:" + String(feature.get("key", ""))] = true
 	for raw: Variant in record.get("inventory", []):
 		if raw is Dictionary and int(raw.get("quantity", 1)) > 0:

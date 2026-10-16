@@ -7,7 +7,7 @@ const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 # none (0) -> resistance (1) -> immunity (2). Never stack the two.
 # A saved override is independent of the bestiary/species baseline.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
@@ -86,7 +86,7 @@ static func _add_source(
 	})
 
 
-# Derive from structured 5etools keys only. Traits.collect_features already
+# Derive from structured 5etools keys only. Features.collect_features already
 # filters class/subclass features by attained level, equipped inventory and
 # the selected species/feats. Preserve their source IDs for highlighting.
 static func _sources(record: Dictionary) -> Array[Dictionary]:
@@ -124,7 +124,7 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 	# Traits remain independently identifiable, but disabling a parent
 	# race/class/feat origin must also mute every child trait it grants.
 	var race_parent_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + String(record.get("species", "")).to_lower()
-	for feature: Dictionary in Traits.collect_features(record):
+	for feature: Dictionary in Features.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		var parent_id: String = String(feature.get("origin_key", ""))
 		var active: bool = (not bool(feature.get("inactive", false))

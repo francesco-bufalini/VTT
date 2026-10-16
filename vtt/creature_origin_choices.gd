@@ -5,7 +5,7 @@ extends RefCounted
 # source has no other benefit in the sheet.
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
@@ -103,7 +103,7 @@ static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) 
 			break
 	var feature_details: Dictionary = {}
 	if need_feature_fallback and not record.is_empty():
-		for feature: Dictionary in Traits.collect_features(record):
+		for feature: Dictionary in Features.collect_features(record):
 			feature_details["feature:" + String(feature.get("key", ""))] = feature
 	for source: Dictionary in sources:
 		var sid: String = String(source.get("id", ""))

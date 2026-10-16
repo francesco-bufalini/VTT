@@ -7,7 +7,7 @@ const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 # proficiencies on the right. Nothing is inferred from natural-language text.
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
@@ -304,7 +304,7 @@ func _origin_description(origin: Dictionary) -> String:
 					return Catalog.info_text(entry, Catalog.description_text(catalogue, entry))
 		return Catalog.info_text(data, Catalog.description_text(catalogue, data))
 	if sid.begins_with("feature:"):
-		for feature_entry: Dictionary in Traits.collect_features(_description_record):
+		for feature_entry: Dictionary in Features.collect_features(_description_record):
 			if sid == "feature:" + String(feature_entry.get("key", "")):
 				return Catalog.info_text(feature_entry, _source_description_text(feature_entry))
 	if sid.begins_with("item:"):

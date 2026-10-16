@@ -5,13 +5,8 @@ const CreatureFeatures = preload("res://vtt/creature_features.gd")
 
 # The traits sheet is a unified, level-ordered list. The data retains its
 # catalog identifiers and source books; the UI exposes only useful origins.
-const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
-const RaceRules = preload("res://vtt/creature_race_rules.gd")
-const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TraitText = preload("res://vtt/five_tools_rich_text.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
-const Items = preload("res://vtt/creature_item_rules.gd")
-const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
 signal section_requested(section: int)
 

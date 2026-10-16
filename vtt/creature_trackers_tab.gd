@@ -10,7 +10,7 @@ const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 
 var _changed: Callable
@@ -154,7 +154,7 @@ func _source_tooltip(sid: String) -> String:
 	if not _description_cache.has(sid):
 		var info: String = _source_name(sid)
 		if sid.begins_with("feature:"):
-			for feature: Dictionary in Traits.collect_features(_record):
+			for feature: Dictionary in Features.collect_features(_record):
 				if "feature:" + String(feature.get("key", "")) == sid:
 					info = Catalog.info_text(feature, Catalog.description_text("", feature))
 					break

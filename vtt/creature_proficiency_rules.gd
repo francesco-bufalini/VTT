@@ -722,7 +722,7 @@ static func _active_identity_sources(record: Dictionary) -> Dictionary:
 					if grant is Dictionary:
 						active[String((grant as Dictionary).get("origin_id", ""))] = true
 	if needs_features:
-		var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
+		var traits: Script = load("res://vtt/creature_features.gd") as Script
 		if traits != null:
 			var features: Variant = traits.call("collect_features", record)
 			if features is Array:
@@ -909,11 +909,11 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
-# Traits are the canonical live origin identities. No description text is
+# The headless feature projection defines canonical live trait origins. No description text is
 # interpreted as a grant: the explicit 5etools "feats" field is authoritative.
 static func trait_origins(record: Dictionary, only_feat_granters: bool = false) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
+	var traits: Script = load("res://vtt/creature_features.gd") as Script
 	if traits == null:
 		return result
 	var saved: Dictionary = {}

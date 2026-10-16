@@ -8,7 +8,7 @@ const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
@@ -44,7 +44,7 @@ func _refresh_description_sources() -> void:
 	_catalog_cache.clear()
 	var record: Dictionary = _effective_record()
 	_source_candidates = Rules.candidate_sources(record)
-	_feature_entries = Traits.collect_features(record)
+	_feature_entries = Features.collect_features(record)
 	_proficiency_choices = Rules.choices(record)
 
 

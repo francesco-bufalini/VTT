@@ -8,7 +8,7 @@ const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
@@ -355,7 +355,7 @@ func _origin_grants_tooltip(sid: String) -> String:
 func _resolve_origin_description(sid: String) -> String:
 	if sid.is_empty():
 		return "Bonus senza origine specifica."
-	for feature: Dictionary in Traits.collect_features(_record):
+	for feature: Dictionary in Features.collect_features(_record):
 		if sid == "feature:" + String(feature.get("key", "")):
 			return Catalog.info_text(feature, Catalog.description_text("", feature))
 	if sid.begins_with("item:"):

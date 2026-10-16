@@ -7,7 +7,7 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Structured = preload("res://vtt/creature_structured_bonuses.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 
@@ -68,7 +68,7 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 		results.append({"id": sid, "name": String(source.get("name", "")),
 			"disabled": bool(source.get("disabled", false)),
 			"inactive": not bool(effective.get(sid, false))})
-	for feature: Dictionary in Traits.collect_features(record):
+	for feature: Dictionary in Features.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		if sid == "feature:" or seen.has(sid):
 			continue

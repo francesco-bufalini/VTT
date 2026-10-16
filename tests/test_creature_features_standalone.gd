@@ -17,6 +17,22 @@ func run() -> void:
 	var tracker_source: String = FileAccess.get_file_as_string("res://vtt/structured_resource_trackers.gd")
 	assert(not tracker_source.contains("creature_traits_tab.gd"))
 
+	# UI modules may display feature descriptions, but no domain engine
+	# should depend on a VBoxContainer just to resolve a feature source.
+	for path: String in [
+		"res://vtt/creature_bonus_rules.gd",
+		"res://vtt/creature_structured_bonuses.gd",
+		"res://vtt/creature_proficiency_rules.gd",
+		"res://vtt/origin_spell_grants.gd",
+		"res://vtt/structured_origin_spells_5etools.gd",
+		"res://vtt/creature_origin_choices.gd"
+	]:
+		var domain_source: String = FileAccess.get_file_as_string(path)
+		assert(not domain_source.is_empty(), "Missing domain service: " + path)
+		assert(not domain_source.contains("creature_traits_tab.gd"),
+			"Domain service imports a visual trait tab: " + path)
+	
+
 	var fixtures: Array[Dictionary] = [
 		{},
 		{"kind": "monster", "stat_block": {"name": "Test Wyrm", "source": "MM",

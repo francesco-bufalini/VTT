@@ -6,7 +6,7 @@ extends RefCounted
 const ABILITY_GRANTS_PATH := "res://vtt/data/structured_ability_grants_5etools.json"
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Infusions = preload("res://vtt/creature_infusions.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 static var _cached_signature := ""
@@ -88,12 +88,9 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 		var sid: String = "item:" + item_id
 		var kind: String = Items.kind(entry)
 		var slots: Array = Items.slots(owned)
-		var active: bool = bool(owned.get("active", true))
-		if Items.requires_attunement(entry) and not bool(owned.get("attuned", false)):
-			active = false
-		if not active:
-			continue
-		if kind not in ["armor", "shield", "weapon"] and not bool(owned.get("equipped", false)):
+		# Respect exactly the same ownership/equipment/attunement rules
+		# used by feat, spell and other origin-backed benefits.
+		if not Items.origin_active(owned):
 			continue
 		var equipped: bool = (
 			(kind == "armor" and "body" in slots)
@@ -287,7 +284,7 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 	_catalog_origins(result, record)
 	# Custom/homebrew traits can expose the same structured numeric fields;
 	# prose-only class features are intentionally not guessed.
-	for feature: Dictionary in Traits.collect_features(record):
+	for feature: Dictionary in Features.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		var label: String = "Tratto · " + String(feature.get("name", ""))
 		var structured: Variant = feature.get("bonuses", [])
