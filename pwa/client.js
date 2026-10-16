@@ -65,9 +65,9 @@ export async function pair(code, { remember = true } = {}) {
 // URL fragments are not sent to the web server or Tailscale proxy.
 // Remove the one-time QR code from browser history immediately on opening.
 export function takeQrPairCode() {
-  const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const code = fragment.get("pair") || "";
-  if (code) history.replaceState(null, "", location.pathname + location.search);
+  if (code) window.history.replaceState(null, "", window.location.pathname + window.location.search);
   return /^[0-9a-fA-F]{16}$/.test(code) ? code.toUpperCase() : "";
 }
 
