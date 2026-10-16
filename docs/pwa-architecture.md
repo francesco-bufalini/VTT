@@ -327,3 +327,13 @@ root script inheritance chain. The board must still initialize
 a completely independent `Node3D` scene that does not derive from
 `dnd_base.gd`, the PWA server intentionally does **not** start.
 This prevents the web gateway from staying open in menus, tools or editors.
+
+### Browser domain modules (Android parity phase 2)
+
+`character_core.js` owns native-schema creation, resource use and explicit
+recovery events. `class_spells.js` owns source-qualified multiclass spell
+selections, using the packaged numeric progressions without interpreting prose.
+`quick_homebrew.js` owns portable quick-created item/feat/background
+definitions and explicit proficiency grants. All persistence remains in
+`creatures.js`/`storage.js` and all sheet calculations remain in
+`sheet_rules.js`. `network/pwa_host.gd` must allowlist every new module.

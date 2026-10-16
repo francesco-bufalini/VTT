@@ -55,3 +55,24 @@ solo la proiezione **pubblica** della creatura necessaria al token.
   tastiera virtuale, background/resume, pairing HTTPS, quota e persistenza.
 
 Non dichiarare «parità completa» finché non sono verificati i gap residui.
+
+## Funzioni di dominio aggiunte (seconda fase)
+
+- `pwa/character_core.js`: inizializzazione schede con lo schema di
+  `PlayerCharacterStore.create_character()`; variazione dei consumi e recuperi
+  pure, inclusi slot regolari al riposo lungo e magia del patto a entrambi i
+  riposi. Non recupera automaticamente PF/dadi vita né presume tracker
+  automatici che non sono stati ancora calcolati.
+- `pwa/class_spells.js`: progressioni delle classi ricavate dall'indice
+  5etools incluso nell'app; preparati/conosciuti/trucchetti, limite del livello
+  per ogni classe, `casting_classes` con le stesse identità di Godot.
+  La scelta della classe è esplicita; la PWA non inventa appartenenze mancanti
+  e non sostituisce le regole di preparazione più complesse.
+- `pwa/quick_homebrew.js`: creazione locale di oggetti, talenti e background
+  con la forma portatile nativa `homebrew:quick_local:...`, campi oggetto
+  strutturati e competenze esplicite; rifiuto della cancellazione se una
+  scheda utilizza la definizione. Le definizioni usate viaggiano con
+  l'esportazione della creatura.
+- `network/pwa_host.gd`: distribuisce questi moduli con gli altri asset,
+  verificati nel test HTTP reale. Il Service Worker li salva nella cache
+  dell'app senza toccare i dati IndexedDB.
