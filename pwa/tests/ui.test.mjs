@@ -19,6 +19,7 @@ let apiCalls=[];
 globalThis.fetch=async (url,options={})=>{
   apiCalls.push({url,options});
   if(url==="/api/status") return new Response(JSON.stringify({protocol:1,desktop_online:false}),{status:200});
+  if(url==="/catalog/player.json") return new Response(JSON.stringify({weapons:[{id:"weapon:longsword|phb",name:"Spada lunga",source:"PHB",type:"M",value:15}],feats:[],backgrounds:[]}),{status:200});
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
 const {mount,stopRealtime}=await import("../ui.js");
@@ -80,6 +81,21 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],2);
 });
+test("native reference catalog can add an item to an offline creature",async()=>{
+  click('[data-nav="catalog"]');
+  await until(()=>document.querySelector('[data-act="catalog-open"]'));
+  assert.match(document.querySelector("#app").textContent,/Spada lunga/);
+  click('[data-act="catalog-open"]');
+  await until(()=>document.querySelector('[data-act="catalog-assign"]'));
+  click('[data-act="catalog-assign"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(row=>row.creature.inventory?.some(item=>item.name==="Spada lunga"));
+  });
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test("dice roll is usable offline; session has functioning pairing form",async()=>{
   click('[data-nav="dice"]');
   await until(()=>document.querySelector('[data-act="roll"]'));
