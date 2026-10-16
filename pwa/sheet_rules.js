@@ -341,14 +341,29 @@ export function calculateSheet(record={},catalogs={}){
     return resolve(target,stack);
   }
   function sourceEnabled(row){
-    if(!row.origin_id)return true;
-    if(String(row.origin_id).startsWith("item:"))
-      return inventory.some(it=>"item:"+it.id===row.origin_id&&itemActive(it));
-    if(row.automatic)return true;
-    if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,row.origin_id))
-      return Boolean(record.origin_enabled[row.origin_id]);
-    // Manual grants with unknown origin must never be silently enabled.
-    warnings.add("Bonus di origine non verificabile: "+row.origin_id);
+    const sid=String(row?.origin_id||"");
+    if(!sid)return true;
+    const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
+    if(saved?.disabled)return false;
+    if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,sid))
+      return Boolean(record.origin_enabled[sid]);
+    if(sid.startsWith("item:"))
+      return inventory.some(it=>"item:"+it.id===sid&&itemActive(it));
+    const fragments=sid.split("|"),group=fragments[0],
+      source=fragments[1]||"",name=fragments.slice(2).join("|");
+    if(group==="race")return same(record.species,name)&&
+      (!source||!record.species_source||same(record.species_source,source));
+    if(group==="subrace")return same(record.subrace,name)&&
+      (!source||!record.subrace_source||same(record.subrace_source,source));
+    if(group==="background")return same(record.background,name)&&
+      (!source||!record.background_source||same(record.background_source,source));
+    if(group==="feat")return arr(record.feats_catalog).some(x=>
+      same(x.name,name)&&(!source||same(x.source,source)));
+    if(group==="class")return localClasses(record).some(x=>
+      same(x.name,name)&&(!source||!x.source||same(x.source,source)));
+    // Native custom origins can explicitly exist in saved proficiency_origins.
+    if(saved&&!saved.disabled)return true;
+    warnings.add("Bonus di origine non verificabile: "+sid);
     return false;
   }
   function sumGrants(target,stack){
