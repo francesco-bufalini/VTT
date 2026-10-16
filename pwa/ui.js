@@ -148,9 +148,11 @@ async function libraryView() {
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
     btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+
     (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
-      btn("library-select-none","Deseleziona")+
-      btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
-      btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger")+'</div>':'')+list+
+      '<span id="library-selected-actions">'+(state.librarySelectedIds.size ?
+        btn("library-select-none","Deseleziona")+
+        btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
+        btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
+      '</span></div>':'')+list+
     '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
 }
 function renderCatalogRows() {
@@ -924,11 +926,11 @@ function listen(){
     if(target?.dataset?.librarySelect){
       if(target.checked)state.librarySelectedIds.add(target.dataset.librarySelect);
       else state.librarySelectedIds.delete(target.dataset.librarySelect);
-      const buttons=app.querySelectorAll('[data-act="library-export"],[data-act="library-delete"]');
-      for(const button of buttons){
-        button.textContent=(button.dataset.act==="library-export"?"Esporta (":"Elimina (")+
-          state.librarySelectedIds.size+")";
-      }
+      const actions=app.querySelector("#library-selected-actions");
+      if(actions)actions.innerHTML=state.librarySelectedIds.size ?
+        btn("library-select-none","Deseleziona")+
+        btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
+        btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
     }
     if(target?.id==="catalog-category"){
@@ -961,8 +963,16 @@ function listen(){
   });
   creatureInput.addEventListener("change",async()=>{
     const file=creatureInput.files?.[0];if(!file)return;
-    try{const result=await importCreatureFile(file);state.page="library";state.creatureId=result.creature.id;
-      state.editor=null;state.sheet="stats";await render();message("Scheda importata e salvata offline.");}
+    try{
+      const result=await importCreatureFile(file);
+      const imported=Array.isArray(result)?result:[result];
+      state.page="library";state.creatureId=imported.length===1?imported[0].creature.id:null;
+      state.editor=null;state.sheet="stats";
+      state.librarySelectedIds.clear();
+      await render();
+      message(imported.length===1 ? "Scheda importata e salvata offline." :
+        "Importate "+imported.length+" creature e relativi contenuti homebrew.");
+    }
     catch(error){message(errorMessage(error),true);}finally{creatureInput.value="";}
   });
   backupInput.addEventListener("change",async()=>{
