@@ -27,7 +27,6 @@ const CONTEXT_CLEAR_AOES := 24
 const CONTEXT_SHARE_MAP := 25
 const CONTEXT_SAVE_MAP_LOCAL := 26
 const CONTEXT_LOAD_MAP_LOCAL := 27
-const CONTEXT_SAVE_CAMPAIGN_STATE := 28
 const CONTEXT_COMBAT_START := 29
 const CONTEXT_COMBAT_END := 30
 const CONTEXT_UNDO := 36
@@ -368,6 +367,7 @@ func _ready() -> void:
 	_build_selection_grid_highlight()
 	_build_affected_grid_highlight()
 	_capture_mouse()
+	call_deferred("_initialize_map_autosave")
 
 
 func _configure_token_volumetric_grid(node: Node) -> void:
@@ -1648,6 +1648,20 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# The creature sheet owns its own persisted undo history; never apply a
+	# tactical-map undo while the creature archive has keyboard focus.
+	if (
+		event is InputEventKey
+		and event.pressed
+		and event.ctrl_pressed
+		and event.keycode in [KEY_Z, KEY_Y]
+	):
+		var creature_sheet := get_node_or_null("CreatureArea")
+		if creature_sheet != null:
+			var sheet_panel: Control = creature_sheet.get("_panel") as Control
+			if sheet_panel != null and sheet_panel.visible:
+				return
+
 	# Undo/redo sono shortcut globali e devono essere gestite prima dei
 	# pannelli UI. In precedenza il pannello Incantesimi poteva lasciare
 	# passare un movimento via _unhandled_input() ma bloccare Ctrl+Z qui.
@@ -2896,23 +2910,15 @@ func start_combat_mode() -> void:
 	initiative_tracker.call("start_combat")
 
 
-func _save_active_runtime_state() -> Error:
-	var campaign_manager: Node = get_node_or_null("/root/CampaignManager")
-	if (
-		campaign_manager == null
-		or board_sync == null
-		or not is_instance_valid(board_sync)
-	):
-		return ERR_UNAVAILABLE
-	var snapshot_value: Variant = board_sync.call("create_snapshot")
-	if not snapshot_value is Dictionary:
-		return ERR_INVALID_DATA
-	var snapshot: Dictionary = snapshot_value as Dictionary
-	if snapshot.is_empty():
-		return ERR_BUSY
-	return int(
-		campaign_manager.call("save_active_runtime_state", snapshot)
-	) as Error
+func _initialize_map_autosave() -> void:
+	if board_sync == null or not is_instance_valid(board_sync):
+		return
+	# The campaign editor restores its own richer map state; avoid overriding
+	# grids, images and fog with a board-only autosave during initialization.
+	board_sync.call(
+		"initialize_map_autosave",
+		scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH
+	)
 
 
 func end_combat_mode() -> void:
@@ -3598,18 +3604,13 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_game_menu.get_item_index(CONTEXT_REDO),
 		_redo_stack.is_empty()
 	)
-	context_game_menu.add_separator("Salvataggi")
-	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_game_menu.add_item(
-			"Salva stato campagna",
-			CONTEXT_SAVE_CAMPAIGN_STATE
-		)
+	context_game_menu.add_separator("Copie locali")
 	context_game_menu.add_item(
-		"Salva mappa in locale…",
+		"Salva una copia della mappa…",
 		CONTEXT_SAVE_MAP_LOCAL
 	)
 	context_game_menu.add_item(
-		"Carica mappa locale…",
+		"Carica una copia della mappa…",
 		CONTEXT_LOAD_MAP_LOCAL
 	)
 	context_game_menu.add_separator()
@@ -3799,10 +3800,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 	if id == CONTEXT_LOAD_MAP_LOCAL:
 		context_menu.hide()
 		_open_map_load_dialog()
-		return
-	if id == CONTEXT_SAVE_CAMPAIGN_STATE:
-		_save_active_runtime_state()
-		_close_context_menu_to_game()
 		return
 	if id == CONTEXT_UNDO:
 		undo_last_action()
@@ -5817,11 +5814,10 @@ func _build_share_dialog() -> void:
 
 	var info := Label.new()
 	info.text = (
-		"Puoi salvare o caricare una copia locale della mappa, oppure "
-		+ "sincronizzarla con gli altri VTT sulla stessa rete locale o via Tailscale. La ricezione "
-		+ "di rete resta sempre attiva. Con la sincronizzazione automatica "
-		+ "ogni modifica della mappa viene inviata agli altri dispositivi; "
-		+ "dice roller e chat restano su un canale separato."
+		"La mappa viene salvata automaticamente in locale dopo ogni modifica, "
+		+ "anche senza altri giocatori connessi. Puoi esportare o caricare una "
+		+ "copia separata. La sincronizzazione invia gli aggiornamenti agli altri "
+		+ "VTT sulla stessa LAN o tramite Tailscale; dadi e chat sono separati."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -5868,13 +5864,13 @@ func _build_share_dialog() -> void:
 	layout.add_child(local_row)
 
 	var save_local := Button.new()
-	save_local.text = "Salva mappa in locale"
+	save_local.text = "Salva una copia della mappa"
 	save_local.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	local_row.add_child(save_local)
 	save_local.pressed.connect(_open_map_save_dialog)
 
 	var load_local := Button.new()
-	load_local.text = "Carica mappa locale"
+	load_local.text = "Carica una copia della mappa"
 	load_local.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	local_row.add_child(load_local)
 	load_local.pressed.connect(_open_map_load_dialog)
