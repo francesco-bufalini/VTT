@@ -45,7 +45,8 @@ export async function pair(token, { remember = true } = {}) {
   if (!/^[a-fA-F0-9]{64}$/.test(token)) throw new Error("Invalid pairing secret");
   const session = await exchange("/api/session", token);
   volatileToken = token;
-  if (remember) await setting(PAIRING_KEY, token);
+  // An explicit session-only choice must also clear any previously saved token.
+  await setting(PAIRING_KEY, remember ? token : "");
   return session;
 }
 
