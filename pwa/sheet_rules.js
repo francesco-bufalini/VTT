@@ -207,7 +207,11 @@ function classHitDice(record,classes,catalog){
   for(const cls of classes){
     const options=arr(catalog.classes).filter(r=>same(r.name,cls.name));
     let chosen=options.find(r=>same(r.source,cls.source));
-    if(!chosen&&options.length===1)chosen=options[0];
+    if(!chosen){
+      // Native ClassMechanics.class_row() prefers PHB, XPHB, TCE in this order.
+      chosen=["PHB","XPHB","TCE"].map(book=>options.find(r=>same(r.source,book)))
+        .find(Boolean)||options[0];
+    }
     if(!chosen){return {available:false,reason:"Classe non inclusa nei dadi vita locali: "+cls.name};}
     const hd=int(chosen.hit_die),count=clamp(int(cls.level,1),1,20);
     const subtotal={die:hd,count,name:cls.name};parts.push(subtotal);
