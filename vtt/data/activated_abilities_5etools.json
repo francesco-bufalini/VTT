@@ -6,7 +6,7 @@
   "abilities": [
     {
       "id": "ability:maneuver:phb:commander's_strike",
-      "name": "Commander'S Strike",
+      "name": "Commander's Strike",
       "source": "PHB",
       "kind": "ability",
       "ability_type": "maneuver",
@@ -306,7 +306,7 @@
     },
     {
       "id": "ability:maneuver:xphb:commander's_strike",
-      "name": "Commander'S Strike",
+      "name": "Commander's Strike",
       "source": "XPHB",
       "kind": "ability",
       "ability_type": "maneuver",
