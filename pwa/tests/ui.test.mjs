@@ -500,7 +500,14 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("sheet derived values update locally and never call a desktop calculation API",async()=>{
+test("sheet derived values update locally and never call a desktop calculation API",async(t)=>{
+  const previousFetch=globalThis.fetch;
+  const requests=[];
+  globalThis.fetch=async(url,options={})=>{
+    requests.push(url);
+    return previousFetch(url,options);
+  };
+  t.after(()=>{globalThis.fetch=previousFetch;});
   assert.ok(document.querySelector('[data-act="create"]'));
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]'));
@@ -513,7 +520,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("Classe armatura"));
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/13/);
-  assert.equal(apiCalls.filter(c=>c.url==="/api/evaluate").length,0,
+  assert.equal(requests.filter(url=>url==="/api/evaluate").length,0,
     "A private creature sheet must never be transmitted for derived calculations");
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
