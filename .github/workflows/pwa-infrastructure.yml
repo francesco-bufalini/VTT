@@ -68,8 +68,8 @@ jobs:
           print("PASS: PWA shell, ES modules, manifest and PNG integrity")
 
   native-loopback:
-    runs-on: [self-hosted, windows, x64, vtt-godot]
-    timeout-minutes: 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,17 +89,19 @@ jobs:
             /encounter/*.gd
             /assets/spell_area_geometry.json
             /assets/tokens/test/test_token_visual.tscn
-      - name: Reset checkout while preserving Godot imports
-        shell: powershell
+      - name: Install Godot 4.7.2
+        shell: bash
         run: |
-          git reset --hard HEAD
-          git clean -ffdx -e .godot/
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
       - name: Run PWA localhost integration test
-        shell: powershell
+        shell: bash
         run: |
-          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
-          $output = & $exe --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | Out-String
-          Write-Host $output
-          if ($LASTEXITCODE -ne 0 -or $output -match 'SCRIPT ERROR:|^ERROR:' -or $output -notmatch 'PASS: desktop PWA') {
-            throw "PWA Godot localhost integration test failed"
-          }
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
+          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
+          grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log
