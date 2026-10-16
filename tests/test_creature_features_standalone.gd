@@ -55,6 +55,28 @@ func run() -> void:
 		var derived: Array[Dictionary] = Trackers.for_creature(record)
 		assert(derived is Array)
 
+	# Every named trait of an inactive item must carry the same display
+	# state as its parent. Ownership keeps descriptions visible, equipping
+	# controls availability. Do not confuse this with removing an item.
+	var owned_item: Dictionary = {
+		"id": "test:domain:amulet", "name": "Amuleto",
+		"type": "RG", "quantity": 1, "active": true, "equipped": false,
+		"entries": [{"name": "Potere latente", "entries": ["Descrizione."]}]
+	}
+	var item_record: Dictionary = {"kind": "character", "inventory": [owned_item]}
+	var locked_found: bool = false
+	for feature: Dictionary in Features.collect_features(item_record):
+		if String(feature.get("name", "")) == "Potere latente":
+			locked_found = true
+			assert(bool(feature.get("inactive", false)),
+				"Inactive item's nested traits must be inactive too")
+	assert(locked_found, "An owned item must retain its nested trait description")
+	owned_item["equipped"] = true
+	for feature: Dictionary in Features.collect_features(item_record):
+		if String(feature.get("name", "")) == "Potere latente":
+			assert(not bool(feature.get("inactive", false)),
+				"Equipping restores nested traits without rebuilding saved grants")
+
 	var found := false
 	for feature: Dictionary in Features.collect_features(fixtures[1]):
 		if String(feature.get("name", "")) == "Claw":
