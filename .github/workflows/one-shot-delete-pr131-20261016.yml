@@ -1,0 +1,53 @@
+name: One-shot removal of obsolete PWA PR 131 branch
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-delete-pr131-20261016.yml"
+permissions:
+  contents: write
+jobs:
+  delete-branch:
+    if: github.repository == 'francesco-bufalini/VTT'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Preserve exact code ref and delete obsolete branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          base = "https://api.github.com/repos/francesco-bufalini/VTT"
+          old_sha = "ef65d344a9e400360444b6db95854618f141e727"
+          tag_ref = "refs/tags/archive/2026-10-16/pr-131-obsolete-pwa-prototype"
+          branch_ref = "heads/feature/mobile-pwa-foundation"
+          def api(method, endpoint, body=None):
+              data = json.dumps(body).encode() if body is not None else None
+              request = urllib.request.Request(
+                  base + endpoint, data=data, method=method,
+                  headers={"Accept":"application/vnd.github+json",
+                           "Authorization":"Bearer " + os.environ["GH_TOKEN"],
+                           "X-GitHub-Api-Version":"2022-11-28",
+                           "Content-Type":"application/json"})
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  blob = response.read()
+                  return json.loads(blob) if blob else None
+          pr = api("GET", "/pulls/131")
+          if pr["state"] != "closed" or pr.get("merged_at") is not None:
+              raise SystemExit("PR #131 is not closed-unmerged; refuse branch deletion")
+          existing = api("GET", "/git/ref/" + branch_ref)
+          if existing["object"]["sha"] != old_sha:
+              raise SystemExit("Branch SHA changed; refuse branch deletion")
+          try:
+              api("POST", "/git/refs", {"ref":tag_ref, "sha":old_sha})
+          except urllib.error.HTTPError as exc:
+              if exc.code != 422:
+                  raise
+              saved = api("GET", "/git/ref/" + tag_ref.removeprefix("refs/"))
+              if saved["object"]["sha"] != old_sha:
+                  raise SystemExit("Archive tag points to unexpected commit")
+          api("DELETE", "/git/refs/" + branch_ref)
+          print("Removed obsolete branch only, preserved", tag_ref, old_sha)
+          PY
