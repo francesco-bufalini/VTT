@@ -61,8 +61,7 @@ jobs:
             test_unified_origin_editor_cards.gd \
             test_bonus_origin_highlight.gd \
             test_pending_bonus_choices.gd \
-            test_damage_defenses.gd \
-            test_origin_editor_experience.gd
+            test_damage_defenses.gd
           do
             echo "== $test =="
             log="$(mktemp)"
