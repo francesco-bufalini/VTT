@@ -3,30 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#161e2c">
+  <meta name="theme-color" content="#221f1e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="VTT Mobile">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
-  <title>VTT · Compagno</title>
+  <title>VTT Mobile</title>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-icon" aria-hidden="true">✦</span><span>VTT <small>COMPAGNO</small></span></div>
+      <details class="section-menu" id="section-menu">
+        <summary aria-label="Apri le sezioni">☰ <span>Sezioni</span></summary>
+        <div class="sections-drawer">
+          <div id="sheet-navigation" class="drawer-sheet"></div>
+          <p class="drawer-heading">Archivio e strumenti</p>
+          <nav id="nav" aria-label="Sezioni principali">
+            <button type="button" class="btn" data-nav="library">Creature locali</button>
+            <button type="button" class="btn" data-nav="catalog">Catalogo</button>
+            <button type="button" class="btn" data-nav="dice">Dadi</button>
+            <button type="button" class="btn" data-nav="chat">Chat della partita</button>
+            <button type="button" class="btn" data-nav="session">Partita</button>
+          </nav>
+        </div>
+      </details>
+      <div class="brand"><span class="brand-icon" aria-hidden="true">✦</span><span>VTT <small>MOBILE</small></span></div>
       <div id="connection" class="connection" role="status" aria-live="polite">Archivio locale</div>
     </header>
     <main id="app" class="content" tabindex="-1" aria-label="Contenuto principale">
       <p class="muted">Apertura archivio locale…</p>
     </main>
-    <nav class="bottom-nav" id="nav" aria-label="Sezioni principali">
-      <button type="button" data-nav="library"><span aria-hidden="true">▤</span>Creature</button>
-      <button type="button" data-nav="catalog"><span aria-hidden="true">▦</span>Catalogo</button>
-      <button type="button" data-nav="dice"><span aria-hidden="true">⚄</span>Dadi</button>
-      <button type="button" data-nav="chat"><span aria-hidden="true">☷</span>Chat</button>
-      <button type="button" data-nav="session"><span aria-hidden="true">⌘</span>Partita</button>
-    </nav>
     <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   </div>
   <input type="file" id="import-creature" accept=".json,application/json" hidden>
