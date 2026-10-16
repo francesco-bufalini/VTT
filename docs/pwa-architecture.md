@@ -11,6 +11,7 @@ Godot 3D scene merely to display an archive or interact with the game.
 iPhone / Android (Safari/Chrome PWA)
   https://<desktop>.your-tailnet.ts.net/
     ├── /, /sw.js, /manifest.webmanifest, /client.js, /storage.js
+    ├── /creature_format.js, /creatures.js (offline archive)
     ├── GET  /api/status                 (public, no private game state)
     ├── GET  /api/session                (requires pairing)
     ├── GET  /api/map                    (requires pairing; public tactical projection)
@@ -110,9 +111,27 @@ before automatic retries are enabled.
 Record saves use an IndexedDB transaction and increment `revision`; callers
 may provide an `expectedRevision` to avoid overwriting another tab's
 changes. `putAttachment` atomically updates a binary Blob and its record.
-A record may contain a content-catalog JSON object compatible with existing
-portable VTT creature/homebrew formats; translation/import UI is a later
-phase. No native user:// path is available to the browser.
+The browser archive now exposes:
+- `importCreatureExport()` / `importCreatureFile()`: parse the **actual**
+  `vtt_creature_export_v1` JSON from VTT desktop/Android; keep unknown
+  fields, nested inventory and spells intact. Copies have a fresh ID and local
+  owner; old token/ownership links are cleared.
+- `saveCreature()` / `openCreatureEditor()`: local creature changes are
+  committed immediately with optimistic revision checks. A stale editor is
+  rejected rather than overwriting another tab.
+- `exportCreature()`: generate a desktop-readable portable creature with all
+  transitive referenced homebrew definitions; error if any dependency is missing.
+- `createCreature()` / `listCreatures()` / `loadCreature()` / `removeCreature()`:
+  basic owned offline archive operations, independent of the desktop server.
+- Homebrew definitions live under `[global,homebrew,id]`; importing a
+  second creature preserves the recipient's existing definition of the same ID.
+  Creature and new homebrew entries are installed atomically.
+
+The new editor/session **API** is ready for UI wiring, but the phase-1 PWA
+still has no mobile sheet editor. An edit made to the current native Android
+app does not automatically invoke this browser API; it is a separate client.
+
+No native `user://` path is available to the browser.
 
 `exportBackup()` produces an independent portable JSON Blob containing
 records, pending outbox events and base64-encoded attachments (not pairing
@@ -146,11 +165,14 @@ Run `godot --headless --path . --script res://tests/test_pwa_host.gd`
 against Godot 4.7.2. This exercises actual loopback HTTP, asset serving,
 status, unauthorized rejection and fixed-path routing. Also run
 `bash scripts/validate.sh` or `scripts/validate.ps1` to check import/parse.
-Browser device tests with HTTPS, background/resume, quota pressure, backup
-round-tripping and parity with Android remain necessary.
+`pwa/tests/creatures.test.mjs` covers imported native-format sheets, transitive
+homebrew, full-field persistence, conflicting tab edits, backup restoration
+and binary attachments in an IndexedDB emulator. Browser device tests with
+HTTPS, background/resume, quota pressure, import/export and parity with
+Android remain necessary.
 
-Next: connect the existing `CreatureSheetController` and portable content
-format to IndexedDB, implement real browser pairing, add reliable idempotent
+Next: connect the future mobile-first browser UI to the new `creatures.js`
+archive API, implement real browser pairing, add reliable idempotent
 document/item transfer and synchronization with versioned event IDs, and
 then build the mobile-first UI. Do not rewrite the desktop's combat rules
 or duplicate the existing Android command handlers.
