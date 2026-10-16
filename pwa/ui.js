@@ -17,6 +17,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
+  hostReachable:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
 let toastTimer = null;
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
@@ -60,7 +61,7 @@ function syncNav() {
     else button.removeAttribute("aria-current");
   }
   connection.textContent = state.paired && state.online ? "● Partita collegata" :
-    state.online ? "● Desktop raggiungibile" : "○ Archivio offline";
+    state.online ? "● Desktop in partita" : state.hostReachable ? "○ Nessuna partita aperta" : "○ Archivio offline";
   connection.classList.toggle("connected",state.paired && state.online);
 }
 function download(blob, filename) {
@@ -84,6 +85,7 @@ async function navigate(page, id=null) {
   }
   stopSubscriptions();
   state.page=page; state.creatureId=id; state.editor=null;
+  if (page==="chat") state.cachedCreatures=(await listCreatures()).map(row=>({id:row.creature.id,name:row.creature.name}));
   await render();
 }
 async function render() {
@@ -263,7 +265,7 @@ function sessionView() {
   const combat=state.map?.combat||{};
   const isActive=state.paired && state.online;
   const statusMarkup = '<div class="row between"><span>'+tag(isActive?"Partita connessa":
-    state.online?"Desktop online":"Desktop non raggiungibile")+'</span>'+
+    state.hostReachable?"Desktop attivo · nessuna partita":"Desktop non raggiungibile")+'</span>'+
     '<button type="button" class="btn small" data-act="check">Aggiorna</button></div>'+
     (state.session?'<p class="hint">Partita '+esc(state.session.session||"—")+'</p>':"");
   const pairing = '<form id="pair-form" class="stack"><label>Codice di associazione desktop'+
@@ -305,6 +307,7 @@ function sessionView() {
 async function refreshConnection(quiet=false) {
   try {
     const result = await status();
+    state.hostReachable=true;
     state.online=!!result.desktop_online;
     if(state.online){
       try {
@@ -314,7 +317,7 @@ async function refreshConnection(quiet=false) {
         if(error.status!==401 && error.status!==503 && !quiet) message(errorMessage(error),true);
       }
     } else { state.paired=false; state.session=null; }
-  } catch(error){ state.online=false; state.paired=false; state.session=null; }
+  } catch(error){ state.hostReachable=false; state.online=false; state.paired=false; state.session=null; }
   syncNav();
 }
 function startMap() {
@@ -574,9 +577,23 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
+  const inputTimers = new WeakMap();
+  const editable = "[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  app.addEventListener("input",e=>{
+    const target=e.target;
+    if(!target?.matches("[data-field],[data-item-index]"))return;
+    if(target.type==="number")return; // Partial numeric input is not valid until committed.
+    clearTimeout(inputTimers.get(target));
+    const editor=state.editor;
+    inputTimers.set(target,setTimeout(()=>{
+      if(target.isConnected && state.editor===editor)
+        handleField(target).catch(error=>message(errorMessage(error),true));
+    },400));
+  });
   app.addEventListener("change",e=>{
-    if(e.target?.matches("[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]"))
-      handleField(e.target).catch(error=>message(errorMessage(error),true));
+    if(!e.target?.matches(editable))return;
+    clearTimeout(inputTimers.get(e.target));
+    handleField(e.target).catch(error=>message(errorMessage(error),true));
   });
   creatureInput.addEventListener("change",async()=>{
     const file=creatureInput.files?.[0];if(!file)return;
@@ -589,7 +606,13 @@ function listen(){
     try{await importBackup(file);await render();message("Backup ripristinato senza sovrascrivere le schede esistenti.");}
     catch(error){message(errorMessage(error),true);}finally{backupInput.value="";}
   });
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden && state.page==="session"&&state.paired)refreshConnection(true);});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){
+      const active=document.activeElement;
+      if(active?.matches?.("[data-field],[data-item-index]"))
+        active.dispatchEvent(new Event("change",{bubbles:true}));
+    } else if(state.page==="session"&&state.paired) refreshConnection(true);
+  });
 }
 export async function mount(){
   listen();
