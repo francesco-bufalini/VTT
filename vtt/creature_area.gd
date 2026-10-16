@@ -4922,7 +4922,7 @@ func receive_shared_item(transfer: Dictionary, sender_id: String) -> void:
 
 func receive_shared_document(document: Dictionary, sender_id: String) -> void:
 	if not DocumentInbox.receive(document):
-		_set_status("Documento ricevuto ma non salvato: controlla i permessi dei file.")
+		_set_status("Documento non salvato: casella piena, file danneggiato o errore di scrittura.")
 		return
 	var current: Dictionary = _current()
 	if not current.is_empty() and _inventory_ui != null:
@@ -5088,6 +5088,10 @@ func _on_inventory_updated(inventory: Array) -> void:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
+	# Never acknowledge incoming documents before the owning record exists on disk.
+	# Failed inbox cleanup is safe to retry; the archived inventory is unchanged.
+	if not DocumentInbox.acknowledge_inventory(inventory):
+		_set_status("Inventario salvato, ma la casella dei documenti non è stata ripulita.")
 	_refresh_formula_dependents(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
