@@ -11,6 +11,8 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.gui_embed_subwindows = true
+	root.size = Vector2i(800, 600)
 	var board := Node3D.new()
 	root.add_child(board)
 	var ui := CanvasLayer.new()
@@ -24,6 +26,21 @@ func _run() -> void:
 		"classes": [{"name": "Bard", "source": "PHB", "level": 3}],
 		"abilities": {"str": 10, "dex": 14, "con": 12, "int": 10, "wis": 12, "cha": 16}}
 	sheet._build_ui()
+	assert(sheet._delete_dialog.get_parent() == ui,
+		"Creature deletion confirmation belongs to the UI canvas")
+	sheet._confirm_delete()
+	var deletion: ConfirmationDialog = sheet._delete_dialog
+	assert(deletion.visible, "Creature deletion must open a confirmation")
+	assert(deletion.position.x >= 0 and deletion.position.y >= 0
+		and deletion.position.x + deletion.size.x <= root.size.x
+		and deletion.position.y + deletion.size.y <= root.size.y,
+		"Deletion confirmation must fit immediately on desktop")
+	await process_frame
+	assert(deletion.position.x >= 0 and deletion.position.y >= 0
+		and deletion.position.x + deletion.size.x <= root.size.x
+		and deletion.position.y + deletion.size.y <= root.size.y,
+		"Deletion confirmation must remain on screen after layout")
+	deletion.hide()
 	var popup: PopupMenu = sheet._options_menu.get_popup()
 	for id: int in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
 		assert(not popup.get_item_tooltip(popup.get_item_index(id)).is_empty())
