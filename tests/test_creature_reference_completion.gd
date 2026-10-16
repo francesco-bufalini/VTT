@@ -70,7 +70,9 @@ func run() -> void:
 	var full_stat := {"name": "Ape", "source": "MM", "hp": {"average": 19}, "ac": [12]}
 	for bonus: int in [0, 5]:
 		var pending: Dictionary = area._archive.create_monster({"name": "Ape", "reference_pending": true})
-		pending["max_hp_bonus"] = bonus
+		if bonus > 0:
+			pending["formula_bonuses"] = [{"id": "test-hp-bonus", "target": "hp",
+				"expression": str(bonus), "origin_id": ""}]
 		check(area._archive.save(pending) == OK, "Pending sheet save failed")
 		area._complete_auto_reference(String(pending.id), full_stat)
 		var stored: Dictionary = area._archive._stored("monster", String(pending.id))
@@ -79,7 +81,8 @@ func run() -> void:
 		check(not stored.stat_block.has("reference_pending"), "Reference remains pending after completion")
 	var edited: Dictionary = area._archive.create_monster({"name": "Ape", "reference_pending": true})
 	edited["max_hp_base"] = 7
-	edited["max_hp_bonus"] = 3
+	edited["formula_bonuses"] = [{"id": "test-edited-hp-bonus", "target": "hp",
+		"expression": "3", "origin_id": ""}]
 	edited["current_hp"] = 5
 	check(area._archive.save(edited) == OK, "Edited sheet save failed")
 	area._complete_auto_reference(String(edited.id), full_stat)
