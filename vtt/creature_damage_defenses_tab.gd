@@ -244,17 +244,7 @@ func setup(on_change: Callable) -> void:
 	add_child(columns)
 	var left := _make_column(columns, "Origini delle difese", 190)
 	var right := _make_column(columns, "Resistenze, immunità e vulnerabilità", 255)
-	var ls := ScrollContainer.new()
-	ls.custom_minimum_size.y = 245
-	ls.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	ls.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(ls)
-	ls.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(ls)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	ls.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var rs := ScrollContainer.new()
 	rs.custom_minimum_size.y = 245
 	rs.mouse_force_pass_scroll_events = false
