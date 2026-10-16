@@ -65,6 +65,53 @@ func save_records(kind: String, records: Array[Dictionary], allow_transfer: bool
 	return _write(merged)
 
 
+# Atomic operations for the creature-facing API: do not replace an entire kind
+# when only a single sheet is edited, transferred, or removed.
+func upsert(record: Dictionary, allow_transfer: bool = false) -> Error:
+	var kind := String(record.get("kind", ""))
+	var id := String(record.get("id", "")).strip_edges()
+	if kind not in ["character", "monster"] or id.is_empty():
+		return ERR_INVALID_PARAMETER
+	if not allow_transfer and not Owner.is_owner(record):
+		return ERR_UNAUTHORIZED
+	var loaded := _load()
+	if loaded.error != OK:
+		return loaded.error
+	var records: Array[Dictionary] = loaded.records
+	for index: int in range(records.size()):
+		var old: Dictionary = records[index]
+		if String(old.get("kind", "")) != kind or String(old.get("id", "")) != id:
+			continue
+		if not allow_transfer and not Owner.can_edit(record, old):
+			return ERR_UNAUTHORIZED
+		records[index] = record.duplicate(true)
+		return _write(records)
+	records.append(record.duplicate(true))
+	return _write(records)
+
+
+func delete_record(record: Dictionary) -> Error:
+	var kind := String(record.get("kind", ""))
+	var id := String(record.get("id", "")).strip_edges()
+	if kind not in ["character", "monster"] or id.is_empty():
+		return ERR_INVALID_PARAMETER
+	if not Owner.is_owner(record):
+		return ERR_UNAUTHORIZED
+	var loaded := _load()
+	if loaded.error != OK:
+		return loaded.error
+	var records: Array[Dictionary] = loaded.records
+	for index: int in range(records.size()):
+		var old: Dictionary = records[index]
+		if String(old.get("kind", "")) != kind or String(old.get("id", "")) != id:
+			continue
+		if not Owner.can_edit(record, old):
+			return ERR_UNAUTHORIZED
+		records.remove_at(index)
+		return _write(records)
+	return ERR_DOES_NOT_EXIST
+
+
 func _load() -> Dictionary:
 	if FileAccess.file_exists(path):
 		var file := FileAccess.open(path, FileAccess.READ)
