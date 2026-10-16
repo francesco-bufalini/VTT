@@ -5,9 +5,10 @@ import {fileURLToPath} from "node:url";
 import {calculateSheet,parseArithmetic,spellProgression,requirementsAllow,localClasses}
   from "../sheet_rules.js";
 import {localSheetView} from "../sheet_rules_view.js";
+import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structured_effects.js";
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
-const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics")};
+const catalogs={abilityGrants:load("ability_grants"),classMechanics:load("class_mechanics"),proficiencyGrants:load("proficiency_grants")};
 const character=(overrides={})=>({kind:"character",level:1,abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:10},
   armor_class_base:10,max_hp_base:12,speed_base:30,inventory:[],...overrides});
 
@@ -123,4 +124,105 @@ test("disabling a saved origin withdraws its ability and skill bonuses offline",
   const enabled=calculateSheet({...c,proficiency_origins:[{id:origin,disabled:false}]},catalogs);
   assert.equal(enabled.abilities.dex.score,16);
   assert.equal(enabled.skills.perception,2);
+});
+
+test("automatic fixed proficiencies match native 5etools and do not auto-pick choices",()=>{
+  const c=character({class:"Fighter",class_source:"PHB",
+    species:"Aarakocra",species_source:"DMG",background:"Acolyte",background_source:"PHB"});
+  const computed=fixedProficiencies(c,catalogs.proficiencyGrants);
+  assert.equal(computed.has("save:str"),true);
+  assert.equal(computed.has("save:con"),true);
+  assert.equal(computed.has("skill:insight"),true);
+  assert.equal(computed.has("skill:religion"),true);
+  assert.equal(computed.has("skill:acrobatics"),false,
+    "Selectable class skills must not be granted without a choice");
+  const derived=calculateSheet(c,catalogs);
+  assert.equal(derived.saves.con,3);
+  assert.equal(derived.skills.insight,3,"WIS +1 and fixed proficiency +2");
+  assert.equal(derived.skills.religion,2,"INT +0 and fixed proficiency +2");
+  const suppressed=calculateSheet({...c,
+    proficiency_origins:[{id:"background|phb|acolyte",disabled:true}]},catalogs);
+  assert.equal(suppressed.skills.insight,1,"Muting an origin removes proficiency, not racial Wisdom");
+  assert.equal(fixedProficiencies({...c,
+    proficiency_origins:[{id:"background|phb|acolyte",disabled:true}]},
+    catalogs.proficiencyGrants).has("skill:insight"),false);
+});
+test("stable native bonus IDs allow disabling only one derived racial bonus",()=>{
+  const c=character({species:"Aarakocra",species_source:"EEPC"});
+  const before=calculateSheet(c,catalogs);
+  assert.equal(before.abilities.dex.score,16);
+  assert.equal(before.abilities.wis.score,11);
+  const target=automaticId("race|eepc|aarakocra","ability","ability:dex");
+  assert.equal(target,"auto|race|eepc|aarakocra|ability|ability:dex");
+  const after=calculateSheet({...c,formula_bonuses:[
+    {id:target,target:"ability:dex",expression:"2",automatic:true,disabled:true}
+  ]},catalogs);
+  assert.equal(after.abilities.dex.score,14);
+  assert.equal(after.abilities.wis.score,11);
+  assert.equal(before.abilities.dex.score,16,"Source data must not mutate");
+});
+test("generic typed monster traits grant numeric effects without parsing entries",()=>{
+  const m=character({kind:"monster",stat_block:{cr:"2",trait:[
+    {id:"shell",name:"Natural Shell",
+      entries:["Flavor only"],bonuses:[{target:"ac",expression:"2"}]},
+    {id:"bad",name:"Description only",
+      entries:["You gain +100 AC from a sentence."]}
+  ]}});
+  const grants=structuredFeatureGrants(m);
+  assert.equal(grants.length,1);
+  assert.equal(grants[0].id,"auto|feature:monster|trait|shell|bonuses|ac|ac");
+  assert.equal(calculateSheet(m,catalogs).stats.armor_class,12);
+  const disabled=calculateSheet({...m,formula_bonuses:[
+    {id:grants[0].id,automatic:true,disabled:true,target:"ac",expression:"2"}
+  ]},catalogs);
+  assert.equal(disabled.stats.armor_class,10);
+});
+test("typed feat sections and class feature thresholds use generic native eligibility",()=>{
+  const feat={id:"localFeat",name:"Homebrew feat",source:"HB",
+    feature_sections:[{id:"feat_armor",name:"Guarded",min_level:4,
+      bonuses:[{target:"ac",expression:"1"}]}]};
+  const klass={name:"Wizard",source:"PHB",level:5,features:[
+    {id:"class_defense",name:"Warding",level:5,
+      bonuses:[{target:"ac",expression:"2"}]}
+  ]};
+  const low=calculateSheet(character({level:3,classes:[{...klass,level:3}],
+    feats_catalog:[feat]}),catalogs);
+  const high=calculateSheet(character({level:5,classes:[klass],
+    feats_catalog:[feat]}),catalogs);
+  assert.equal(low.stats.armor_class,12);
+  assert.equal(high.stats.armor_class,15);
+  const muted=calculateSheet(character({level:5,classes:[klass],
+    feats_catalog:[{...feat,disabled:true}]}),catalogs);
+  assert.equal(muted.stats.armor_class,14);
+  const mutedOrigin=calculateSheet(character({level:5,classes:[klass],
+    feats_catalog:[feat],proficiency_origins:[{id:"class|phb|wizard",disabled:true}]}),catalogs);
+  assert.equal(mutedOrigin.stats.armor_class,13);
+});
+test("native item bonuses use stable per-item IDs, including attack and spell adjustments",()=>{
+  const item={id:"local_wand",name:"Test wand",quantity:1,
+    custom_item_type:"other",equipped:true,bonusSpellAttack:2,bonusSpellSaveDc:1,
+    bonusSavingThrowConcentration:3};
+  const rows=calculateSheet(character({inventory:[item]}),catalogs);
+  assert.equal(rows.stats.armor_class,12);
+  const weapon={id:"local_blade",name:"Blade",custom_item_type:"weapon",type:"M",
+    damage:"1d6",equipped_slots:["main"],quantity:1,bonusWeaponAttack:3};
+  const withWeapon=calculateSheet(character({inventory:[weapon]}),catalogs);
+  assert.equal(withWeapon.stats.armor_class,12);
+});
+
+test("switching origins withdraws saved proficiencies from a replaced background",()=>{
+  const characterWithLegacyOrigin=character({
+    background:"Noble",background_source:"PHB",
+    proficiency_choices:[{kind:"skill",key:"religion",origin_id:"background|phb|acolyte",
+      origin_name:"Acolyte",disabled:false}],
+    proficiency_origins:[{id:"background|phb|acolyte",disabled:false}]
+  });
+  const result=fixedProficiencies(characterWithLegacyOrigin,catalogs.proficiencyGrants);
+  assert.equal(result.has("skill:religion"),false,
+    "Former backgrounds cannot keep granting proficiencies after replacement");
+  const derived=calculateSheet(characterWithLegacyOrigin,catalogs);
+  assert.equal(derived.skills.religion,0);
+  const active=calculateSheet({...characterWithLegacyOrigin,
+    background:"Acolyte",background_source:"PHB"},catalogs);
+  assert.equal(active.skills.religion,2);
 });

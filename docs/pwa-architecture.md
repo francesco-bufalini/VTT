@@ -187,6 +187,26 @@ class hit-die index are bundled as local `pwa/catalog/ability_grants.json`
 and `pwa/catalog/class_mechanics.json`. They are pre-cached by the PWA
 service worker and shipped in the downloadable offline prototype.
 
+The generic structured-effects interpreter `pwa/structured_effects.js` now
+also consumes Godot's exact `proficiency_grants_5etools.json` index locally.
+It materializes *fixed* grants from classes, species, backgrounds and feats,
+while preserving explicit choices instead of choosing for the player; it also
+withdraws grants from muted/replaced origins. Automatic numeric grants use
+Godot-compatible `auto|...` IDs, allowing individual automatic bonuses to be
+disabled without deleting their source. Typed `bonuses` in monster traits and
+structured feature sections receive level/parent-source eligibility checks,
+including feats and available class/subclass feature blocks. Numeric item grant
+targets have the same IDs as native items.
+
+**Important data limit:** the built-in 5etools `class_features` catalog
+currently contains named/leveled features but no populated `bonuses` arrays
+in its entries. Therefore merely bundling it cannot make every feature
+mechanically executable. The JavaScript engine intentionally does *not*
+interpret natural-language descriptions as mechanics. Feature-specific behavior
+must first be encoded as structured numeric data (or as a generalized native
+rule) before it can be consistently supported in both runtimes. The additional
+index and JS interpreter are cached offline and do not contact Godot.
+
 When a character field changes, the browser immediately refreshes its derived
 values. No private character sheet leaves IndexedDB to compute them. This port
 is **not yet full parity**: custom/homebrew feature grants, all class/subclass
