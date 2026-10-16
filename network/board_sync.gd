@@ -85,6 +85,10 @@ func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	map_data_controller.use_board(get_tactical_map_data)
 	map_data_controller.set_action_provider(_handle_mobile_action)
 	_connect_token_pack_manager()
+	# Scene-authored tokens need the same recovery as restored snapshots.
+	if not tokens_root.child_entered_tree.is_connected(_on_scene_token_entered):
+		tokens_root.child_entered_tree.connect(_on_scene_token_entered)
+	call_deferred("_queue_scene_token_packs")
 	_request_tailscale_peer_refresh()
 
 
@@ -2096,6 +2100,26 @@ func _valid_token_visual_asset(
 	)
 
 
+func _on_scene_token_entered(_node: Node) -> void:
+	# Wait for group registration, exported properties and token setup.
+	call_deferred("_queue_scene_token_packs")
+
+
+func _queue_scene_token_packs() -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not board_root.is_ancestor_of(node):
+			continue
+		var pack_id := ""
+		if node.has_method("get_token_pack_id"):
+			pack_id = String(node.call("get_token_pack_id")).strip_edges()
+		if pack_id.is_empty() and node.has_method("get_visual_asset_path"):
+			pack_id = _pack_id_from_visual_asset(String(node.call("get_visual_asset_path")))
+		_queue_token_pack_id(pack_id)
+	_process_token_pack_queue()
+
+
 func _queue_snapshot_token_packs(snapshot: Dictionary) -> void:
 	for item_value: Variant in snapshot.get("objects", []):
 		if not item_value is Dictionary:
@@ -2218,7 +2242,8 @@ func _apply_mounted_pack_to_tokens(token_pack_id: String) -> void:
 
 
 func _on_token_pack_catalog_updated(_entries: Array[Dictionary]) -> void:
-	_process_token_pack_queue()
+	# Retry scene packs that failed before refreshed source metadata arrived.
+	_queue_scene_token_packs()
 
 
 func _on_token_pack_downloaded(token_pack_id: String, _cache_path: String) -> void:

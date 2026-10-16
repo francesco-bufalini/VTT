@@ -885,7 +885,14 @@ func set_token_pack_id(value: String) -> void:
 
 
 func get_token_pack_id() -> String:
-	return token_pack_id.strip_edges()
+	var pack_id := token_pack_id.strip_edges()
+	if pack_id.is_empty() and visual_asset_path.begins_with("res://remote_tokens/"):
+		# Old authored scenes can carry only the configured visual path.
+		# The loaded path is empty while its pack is missing from this device.
+		var candidate := visual_asset_path.get_base_dir().get_file()
+		if visual_asset_path == "res://remote_tokens/%s/%s_visual.res" % [candidate, candidate]:
+			pack_id = candidate
+	return pack_id
 
 
 func set_display_name(value: String) -> void:

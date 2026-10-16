@@ -35,6 +35,27 @@ func _run() -> void:
 	if String(dragon.get("sha256", "")) != "xyz" or String(dragon.get("release_tag", "")) != "MM-Dragons":
 		_fail("Updated remote miniature metadata is not retained or normalized")
 		return
+	# A cached legacy test entry has neither a source release nor the current
+	# checksum. Startup must retain the complete bundled download identity.
+	var legacy := JSON.stringify({"tokens": [{
+		"id": "dragon", "pck": "dragon.pck", "sha256": "obsolete"
+	}, {
+		"id": "knight", "pck": "knight.pck", "sha256": "obsolete",
+		"release_tag": "token-packs-test-001"
+	}]})
+	manager.call("_accept_catalog_text", legacy, false)
+	dragon = manager.call("get_entry", "dragon")
+	if String(dragon.get("sha256", "")) != "xyz":
+		_fail("Legacy cached catalog poisoned a known release identity")
+		return
+	var knight: Dictionary = manager.call("get_entry", "knight")
+	if String(knight.get("sha256", "")) != "def":
+		_fail("Legacy test release replaced a pack from its maintained release")
+		return
+	var url: String = manager.call("_download_url_for", dragon)
+	if not url.ends_with("/MM-Dragons/dragon-v2.pck"):
+		_fail("Download does not target the actual source release")
+		return
 	var merged: Dictionary = manager.call("get_catalog")
 	var token_array: Array = merged.get("tokens", [])
 	if token_array.size() != 3:

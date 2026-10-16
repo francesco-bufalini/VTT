@@ -140,7 +140,7 @@ func download_token(token_id: String) -> Error:
 	_download_token_id = id
 	_download_target_path = target_path
 	_download_request.download_file = target_path
-	print("TokenPackManager: downloading %s.pck via HTTP..." % id)
+	print("TokenPackManager: downloading %s.pck via HTTP: %s" % [id, url])
 	var headers := PackedStringArray([
 		"Accept: application/octet-stream",
 		"User-Agent: VTT-token-pack-manager",
@@ -385,8 +385,8 @@ func _download_token_via_gh(token_id: String, entry: Dictionary) -> bool:
 	)
 	if exit_code != 0:
 		push_warning(
-			"TokenPackManager: gh download failed for %s (exit %d): %s"
-			% [token_id, exit_code, "\n".join(output)]
+			"TokenPackManager: gh download failed for %s in release %s (exit %d): %s"
+			% [token_id, release_tag, exit_code, "\n".join(output)]
 		)
 		return false
 
@@ -508,11 +508,11 @@ func _save_catalog_cache(raw: String) -> Error:
 
 
 func _accept_catalog_text(raw: String, persist: bool) -> bool:
-	var parsed: Variant = JSON.parse_string(raw)
-	if not parsed is Dictionary:
+	var parser := JSON.new()
+	if parser.parse(raw) != OK or not parser.data is Dictionary:
 		return false
 
-	var catalog := parsed as Dictionary
+	var catalog := parser.data as Dictionary
 	var tokens_value: Variant = catalog.get("tokens", [])
 	if not tokens_value is Array:
 		return false
@@ -528,8 +528,18 @@ func _accept_catalog_text(raw: String, persist: bool) -> bool:
 		if token_id.is_empty():
 			continue
 		entry["id"] = token_id
-		if entry.has("release_tag"):
-			entry["release_tag"] = String(entry["release_tag"]).strip_edges()
+		var release_tag := String(entry.get("release_tag", "")).strip_edges()
+		var previous: Dictionary = entries.get(token_id, {})
+		# Legacy test catalogs omit the source release and contain obsolete
+		# hashes. They must not overwrite a known pack from another release.
+		var previous_release := String(previous.get("release_tag", "")).strip_edges()
+		if not previous_release.is_empty() and (
+			release_tag.is_empty()
+			or (release_tag == GITHUB_RELEASE_TAG and previous_release != GITHUB_RELEASE_TAG)
+		):
+			continue
+		if not release_tag.is_empty():
+			entry["release_tag"] = release_tag
 		entries[token_id] = entry
 
 	var merged_tokens: Array[Dictionary] = []
