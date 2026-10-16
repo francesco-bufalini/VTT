@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "VTT Mobile",
+  "short_name": "VTT",
+  "lang": "it",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#151b25",
+  "theme_color": "#151b25",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
