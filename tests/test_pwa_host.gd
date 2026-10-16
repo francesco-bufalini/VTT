@@ -36,6 +36,28 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 func run() -> void:
 	await process_frame
 	await process_frame
+	var serve_helper: Script = load("res://network/tailscale_serve.gd")
+	var empty_config: Dictionary = serve_helper.call("parse_serve_status", {})
+	assert(not bool(empty_config.active))
+	var ours: Dictionary = serve_helper.call("parse_serve_status", {
+		"Web": {"example.ts.net:443": {"Handlers": {
+			"/": {"Proxy": "http://127.0.0.1:8765"}
+		}}}
+	})
+	assert(bool(ours.active) and not bool(ours.other_rules))
+	var shared: Dictionary = serve_helper.call("parse_serve_status", {
+		"Web": {"example.ts.net:443": {"Handlers": {
+			"/": {"Proxy": "http://127.0.0.1:8765"},
+			"/another": {"Proxy": "http://127.0.0.1:9999"}
+		}}}
+	})
+	assert(bool(shared.active) and bool(shared.other_rules))
+	var foreign: Dictionary = serve_helper.call("parse_serve_status", {
+		"Web": {"example.ts.net:443": {"Handlers": {
+			"/": {"Proxy": "http://127.0.0.1:3000"}
+		}}}
+	})
+	assert(not bool(foreign.active) and bool(foreign.other_rules))
 	var host := root.get_node_or_null("/root/PwaHost")
 	assert(host != null, "Desktop PWA autoload missing")
 	# The bridge is intentionally disabled without a playable board scene.
