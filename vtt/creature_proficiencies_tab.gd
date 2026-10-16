@@ -10,7 +10,6 @@ const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
-const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 
 const GROUPS := [
