@@ -63,7 +63,7 @@ export function parseArithmetic(expression,variable){
     const t=tokens[i++];
     if(t==="+"||t==="-")return (t==="-"?-1:1)*atom();
     if(t==="("){const value=expr();if(tokens[i++]!==")")throw Error("Parentesi incompleta");return value;}
-    if(t&&/^\d|\^\.\d/.test(t)&&Number.isFinite(Number(t)))return Number(t);
+    if(t&&/^(?:\d|\.\d)/.test(t)&&Number.isFinite(Number(t)))return Number(t);
     if(t&&/^[a-z_]/.test(t))return Number(variable(t));
     throw Error("Termine non valido");
   };
