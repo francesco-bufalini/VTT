@@ -1,0 +1,2377 @@
+{
+  "repository": "francesco-bufalini/VTT",
+  "captured_at": "2026-10-16T16:24:06+02:00",
+  "stale_if_last_commit_before": "2026-10-12T14:24:06Z",
+  "explanation": "This file freezes the observed branch names and SHAs. The GitHub Action refuses to delete changed or unlisted branches and preserves main, open PR heads, and PR #118.",
+  "branches": [
+    {
+      "name": "agent/code-cleanup",
+      "sha": "a291e87d5cd2be1c440876fc4d88fa3720a59e10",
+      "protected": false
+    },
+    {
+      "name": "agent/runner-fast-fail",
+      "sha": "42f05b99861131eed6bf09af8b0e40defb6870d0",
+      "protected": false
+    },
+    {
+      "name": "audit/creature-modularization-regressions",
+      "sha": "aec0a38b35a5dc40343ed5c9e182fc781cd5517c",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-5etools-area-parser",
+      "sha": "b552a6aa1e1af84245307501335b1641943b16cf",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-backdrop-hand-fix-20261004",
+      "sha": "29ce11acbb09eb4f9be496cf95a5d821fe53e1f0",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-complete-5etools-catalog",
+      "sha": "7e8026d37b9b2ae5f7d88b522fb1967117d3e1a5",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-complete-5etools-catalog-v2",
+      "sha": "7e8026d37b9b2ae5f7d88b522fb1967117d3e1a5",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-condition-rings",
+      "sha": "475864606b8647d4ac600bf3259f22dd664c6d0a",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-context-menu-cleanup-20261004",
+      "sha": "0a82815e9098c8f1d32adc7591b78bc86d199a0e",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-creature-reach",
+      "sha": "e598d54647e103e46dc7eb298196b849119e6842",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-dynamic-spell-classes",
+      "sha": "b375fcd1dd2f22bd7c6176e06289c46df5efbfbe",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-full-spell-catalog-restore",
+      "sha": "df552bb18a75b75496796bc165ce6af2792fa1f1",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-grid-aoe-fixes",
+      "sha": "e321ea7ffd01eff93b9e9070015604af80fd594d",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-initiative",
+      "sha": "ce18937ac6934d28b57c4c435d72ba3fd7f1f6b5",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-main-merge",
+      "sha": "70315e3bb353c20650116ca897bcacbcd24dbd18",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-runtime-spell-area-catalog",
+      "sha": "ce949e700c2b91fc6030ba3a081cc9aaea21c942",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-target-metadata-vfx",
+      "sha": "331a3ea2829ba2458eacfd012929a3755a7ecc08",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-grounding-target-fallback",
+      "sha": "a99295d4796afaffeed4bca30ff112fa723cf263",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-list-camera-names",
+      "sha": "f1f1a230505b10e3b93e24ddf2e0a5795e9c351a",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-miniature-picker",
+      "sha": "22fc2c8653eba4b2f1387c3577ab64fe5b0677ef",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-names-statuses",
+      "sha": "1a6dac5567959d2d7e6120e47d2b4869b0f4dfbd",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-search-size-highlight",
+      "sha": "690a469ddfb5d2684892794b9e846d12cfe46391",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-token-search-size-highlight-v2",
+      "sha": "ec70d3460dacd04f4bbe4f9953a39356f5172803",
+      "protected": false
+    },
+    {
+      "name": "backup/campaign-hub-before-transient-hitbox-cleanup",
+      "sha": "e024d835ab14ae24669427845152e3f197ee30cb",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-campaign-hub-cosmic-20261004",
+      "sha": "deb0175899b536f3d93eb9f44ac8ccc1cb225411",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-campaign-hub-promotion",
+      "sha": "f73d6a365e3d04c6cf55a5a8ff51ca4aa857cb07",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-contextual-flanking-visuals-20261004",
+      "sha": "5ea3fc4955fdea0c92946714eb4b335dcd4949d1",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-dice-flank-visibility-20261004",
+      "sha": "fa0d0af3b72ebca3efbce225fbaff263e7067c6c",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-dice-flanking-20261004",
+      "sha": "28e54ad3e3f4949db4266f65bbaa2b88e3020195",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-dnd-base-restore-20261004",
+      "sha": "3fba318a61d1fe7cea5a18d963344c531999d148",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-flanking-arrows-20261004",
+      "sha": "e0cfdc78e79a095989fc289bb9930e960d52660f",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-flanking-base-reach-20261004",
+      "sha": "2d0bd9b611f43829e38deba199425262dc24af5d",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-flanking-ui-popup-20261004",
+      "sha": "22dc85008c62f8d35e5047a333bde2aa9f105cf5",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-flat-flanking-icons-flying-20261004",
+      "sha": "f8db7aee841f3c9fe54edbd9fd60cee5b602c737",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-kaos-ui-background-sync-20261004",
+      "sha": "5aadf9e73b8ef9f2ecc470fcb99af8d80c34eb04",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-mutual-adjacent-reach-marker-20261004",
+      "sha": "b940e8c0685742b8b0140d469b87671312d3868f",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-opportunity-flanking-rules-20261004",
+      "sha": "16e292776063d9d169e6c011a0f6baf1279ee776",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-opportunity-reach-view-20261004",
+      "sha": "22ee84a894f92f6e34cbf1375a89d82183883c61",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-party-aware-reach-flanking-20261004",
+      "sha": "29f9b6c7706d4a0c97cab1528eb07b737354da1a",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-perspective-status-badges-20261004",
+      "sha": "4ef42153bb1f9742e48c7bc9bcc5ffe0632244f1",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-reach-plane-fix-20261004",
+      "sha": "2246ebe970b2f095b08a0ba4832f13b7d59e1eff",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-remove-flying-kaos-spawn-20261004",
+      "sha": "0684f2c03518fa2126133929ff5c172c682107ff",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-status-visibility-reach-arrows-20261004",
+      "sha": "696f9567a50edc9e5e2fa9877401066b25d438de",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-token-lazy-20261004",
+      "sha": "277f3c0b484186951d0e18c765617138d4fa2b26",
+      "protected": false
+    },
+    {
+      "name": "backup/main-before-unified-token-editor-20261004",
+      "sha": "7347cb57fe2e1159fd199e9c389025c0527edca9",
+      "protected": false
+    },
+    {
+      "name": "build/ios-unsigned-godot-472-20261015",
+      "sha": "eb846ced2f55a029a60c15be7afcfe7293a8acfa",
+      "protected": false
+    },
+    {
+      "name": "build/slim-mobile-android-20261014",
+      "sha": "55e848be054729aa58c7878ff41fa1d99909ce7c",
+      "protected": false
+    },
+    {
+      "name": "ci/fast-validation-60s",
+      "sha": "881aa95c8baca4d12136b89134df174f25b000af",
+      "protected": false
+    },
+    {
+      "name": "cleanup/origin-only-formula-bonuses-20261011",
+      "sha": "c000ad0c17558918ec6ae16c538e27a69a370cb0",
+      "protected": false
+    },
+    {
+      "name": "cleanup/remove-unused-legacy-ui-20261010",
+      "sha": "27dea645b724e36eef50dfa3777786b174045d35",
+      "protected": false
+    },
+    {
+      "name": "cleanup/runtime-consolidation-20261010",
+      "sha": "28fefcfa782aa2a296378675dee9bde3d5984353",
+      "protected": false
+    },
+    {
+      "name": "codex/attack-range-ability-slot-layout",
+      "sha": "d2dc752678a12591f6601215c89ab5091bcfa1b3",
+      "protected": false
+    },
+    {
+      "name": "codex/automatic-creature-derived-values",
+      "sha": "07b9c2487301282dd9669172e6399b03c3de6f78",
+      "protected": false
+    },
+    {
+      "name": "codex/bestiary-reference-2d-tokens",
+      "sha": "a9fd6384ef7fa85cefdfbe014bf9deab7a202be2",
+      "protected": false
+    },
+    {
+      "name": "codex/compendium-descriptions-origin-hover",
+      "sha": "b6012593785fb581401716723b22e3dd73a62757",
+      "protected": false
+    },
+    {
+      "name": "codex/compendium-item-origin-hover-fix",
+      "sha": "f66ffc594ad9ad41bedd0450b4d8353740e65020",
+      "protected": false
+    },
+    {
+      "name": "codex/creature-spell-selection-bonus-layout",
+      "sha": "64baf367e00fa766e3b625646408a61a19f42b35",
+      "protected": false
+    },
+    {
+      "name": "codex/damage-defenses-statistics-20261012",
+      "sha": "a3bca6d7930c5313799a3669eef9e5a186dd289e",
+      "protected": false
+    },
+    {
+      "name": "codex/fix-2d-reach-spell-actions-20261010",
+      "sha": "2e10c919652cafbc9ffa9f730324498f0e24d85e",
+      "protected": false
+    },
+    {
+      "name": "codex/fix-race-speed-variant-compare",
+      "sha": "bc7ba3ae55c864591c485b928e3564bd936b11cc",
+      "protected": false
+    },
+    {
+      "name": "codex/free-token-assignment-and-auto-calcs",
+      "sha": "09518a616e454ad428f4f8049e61d7eb1f352e62",
+      "protected": false
+    },
+    {
+      "name": "codex/homebrew-save-reload-audit",
+      "sha": "f7d8d0efe3cf6256fa8978bccdfcccaa76fe79d8",
+      "protected": false
+    },
+    {
+      "name": "codex/restore-stats-two-columns",
+      "sha": "bc655c01a361ea33f58d2e26fd9334bd1ab355e0",
+      "protected": false
+    },
+    {
+      "name": "codex/spell-tab-layout-visibility",
+      "sha": "ac576dfea9ae42b7404b70fc2b0152dfea274cba",
+      "protected": false
+    },
+    {
+      "name": "codex/stats-compact-slots-document-preview",
+      "sha": "5d4035494a0b8dec8df6d7e573f27be9850580ff",
+      "protected": false
+    },
+    {
+      "name": "codex/stats-skills-document-inventory",
+      "sha": "d65ab83d849aa1b53ad7d5b8614492095b583116",
+      "protected": false
+    },
+    {
+      "name": "codex/vtt-casting-camera-overlay-20261010",
+      "sha": "479e958bbfe287a485f9cb1efa774edb71205da1",
+      "protected": false
+    },
+    {
+      "name": "codex/vtt-general-regression-audit",
+      "sha": "e1e3a02a58a4b790b1aa1c27e814a0603df51846",
+      "protected": false
+    },
+    {
+      "name": "codex/vtt-mobile-dialog-and-stats-audit",
+      "sha": "8cfec9441a99de06b2533ecc8b1c00abf66fc9cf",
+      "protected": false
+    },
+    {
+      "name": "feat/artificer-infusions-existing-mechanics",
+      "sha": "22806aa7f6b368a180dc5cba41c21c345253e76d",
+      "protected": false
+    },
+    {
+      "name": "feat/benefit-first-origins-and-trackers",
+      "sha": "c76f300c96c6c217ea99e785893d7ef11c8559ce",
+      "protected": false
+    },
+    {
+      "name": "feat/spell-concentration-target-effects-20261012",
+      "sha": "6eb0b9187a458cba13df5ee382589e392c844337",
+      "protected": false
+    },
+    {
+      "name": "feat/token-active-spell-badges-20261012",
+      "sha": "6cc3894106753cbd25ee7049fc662d4d2d8c7f03",
+      "protected": false
+    },
+    {
+      "name": "feat/token-linked-motion-20261013",
+      "sha": "540b11fe969e98cda986f2554b077255140d3e0d",
+      "protected": false
+    },
+    {
+      "name": "feature/5etools-2d-token-new-miniatures",
+      "sha": "aaa6e01304ee26264fbb047bba1e170fbd831a5f",
+      "protected": false
+    },
+    {
+      "name": "feature/5etools-charoptions-as-feats",
+      "sha": "9a5d700d26b7bef157280d1136effc0636c62908",
+      "protected": false
+    },
+    {
+      "name": "feature/campaign-hub",
+      "sha": "90f5b86a5cd4292d8845998050b1b1fdfb62a054",
+      "protected": false
+    },
+    {
+      "name": "feature/chat-actor-targeted-shares-20261015",
+      "sha": "0508815f4c97d38cd90cf8078f96553af666bd53",
+      "protected": false
+    },
+    {
+      "name": "feature/defenses-origin-editor-20261012",
+      "sha": "35c0af5af6875f3251f54141068d61787a7ffd65",
+      "protected": false
+    },
+    {
+      "name": "feature/equipment-hands-armor-2026",
+      "sha": "9cfa94a334a1b14d3b74075392f094bae06da517",
+      "protected": false
+    },
+    {
+      "name": "feature/fightclub-monster-recharge-enrichment-20261015",
+      "sha": "0c963011ac1dc1d89c3f10a94fc27467aea275b4",
+      "protected": false
+    },
+    {
+      "name": "feature/formula-origin-bonuses",
+      "sha": "e95bfa76ee6cd320090a1f6d26c1bd092047c0af",
+      "protected": false
+    },
+    {
+      "name": "feature/local-custom-background-feat-item-20261015",
+      "sha": "c4af80d40e8be3a75b51c778affbfa44d7bc9e57",
+      "protected": false
+    },
+    {
+      "name": "feature/manage-applied-spells-conditions",
+      "sha": "24f7ca7d2373166b4fb8229ebd54b009fbcbbc7f",
+      "protected": false
+    },
+    {
+      "name": "feature/mobile-pwa-foundation",
+      "sha": "ef65d344a9e400360444b6db95854618f141e727",
+      "protected": false
+    },
+    {
+      "name": "feature/mobile-pwa-transport-storage",
+      "sha": "424fa0abc58db1db537286accb8c0f5a2243fb8b",
+      "protected": false
+    },
+    {
+      "name": "feature/multiplayer-inventory-item-transfer-20261015",
+      "sha": "35798768233092cacf7aab817688cd4991251555",
+      "protected": false
+    },
+    {
+      "name": "feature/offline-fightclub-resource-trackers",
+      "sha": "95744dfd54a00806f6eb0b1ed766802188c85f69",
+      "protected": false
+    },
+    {
+      "name": "feature/origin-spells-dice-bonuses",
+      "sha": "3fdb1132c074fba0174f44c0e986bcd07c42d1ef",
+      "protected": false
+    },
+    {
+      "name": "feature/portable-custom-content-document-sharing-20261015",
+      "sha": "756a570188baf13a6326f65bb2a9473282014dc9",
+      "protected": false
+    },
+    {
+      "name": "feature/preview-attack-spell-ranges-target-list-20261012",
+      "sha": "747da0a10cf3248622ee0a4de126dfed776d9bd9",
+      "protected": false
+    },
+    {
+      "name": "feature/proficiency-source-panel",
+      "sha": "872c51d189c1095c973d222bb99691711e12a312",
+      "protected": false
+    },
+    {
+      "name": "feature/proficiency-ui-source-fixes",
+      "sha": "df95e94a18f05661f80a4dd29449fbb361c30f72",
+      "protected": false
+    },
+    {
+      "name": "feature/structured-creature-sheets",
+      "sha": "dccccdbd6628c60a555c5919d84ffc16c881e167",
+      "protected": false
+    },
+    {
+      "name": "feature/structured-proficiency-origins",
+      "sha": "4aeead9bbaa74b2dc7eede60a3fa8671fe460812",
+      "protected": false
+    },
+    {
+      "name": "feature/structured-weapon-equipment-2014",
+      "sha": "91824c59aef724050f8541404ad8a67afe84e1be",
+      "protected": false
+    },
+    {
+      "name": "feature/token-owned-creature-sheets",
+      "sha": "8ae068dbc439f9bbf79e0cb9a28606961de9ff25",
+      "protected": false
+    },
+    {
+      "name": "feature/tokens-lazy-load",
+      "sha": "5f9e03aabc3a15a9547d6bdefe8caa215fdc4999",
+      "protected": false
+    },
+    {
+      "name": "feature/unified-trait-origins-20261012",
+      "sha": "15ed1340c0bb2243c6ef4454e1af0e426e09c2ad",
+      "protected": false
+    },
+    {
+      "name": "feature/wizard-spellbook",
+      "sha": "b039821dc91d8b43a3e104d4e2b228f5478bf594",
+      "protected": false
+    },
+    {
+      "name": "fix-mobile-statistics-touch-help-20261014",
+      "sha": "8c126a3d65956fa45347ec87aa1bac8fa4465fd6",
+      "protected": false
+    },
+    {
+      "name": "fix/2d-spell-targeting-overlay",
+      "sha": "577e5f80820d9a1a1118fe05e6fc82aebc301eff",
+      "protected": false
+    },
+    {
+      "name": "fix/3d-shift-arrow-rotation-direction-20261014",
+      "sha": "9d3269c238cf55fb241ebd4fc8794f30b06f4c53",
+      "protected": false
+    },
+    {
+      "name": "fix/3d-weapon-reach-wire-spheres",
+      "sha": "85a9a63ca5a608852286370909bfab4e63ec0ed5",
+      "protected": false
+    },
+    {
+      "name": "fix/aoe-3d-target-list-feat-ability-choice",
+      "sha": "0c5cff3cd15008dadbf5e28d639a09360aa13bef",
+      "protected": false
+    },
+    {
+      "name": "fix/asi-origin-parser-reserved-name-20261012b",
+      "sha": "99edec5b2b01bab2ed51944c7b6438f464369c64",
+      "protected": false
+    },
+    {
+      "name": "fix/attack-cards-proficiency-toggles-20261010",
+      "sha": "b6be098a2d605685a58e460977511b306ec24e57",
+      "protected": false
+    },
+    {
+      "name": "fix/bestiary-cache-range-spell-tokens-20261012",
+      "sha": "a4ccfd60acaef58ccfe46bc4ef4560f2375f3bf5",
+      "protected": false
+    },
+    {
+      "name": "fix/bidirectional-linked-token-motion",
+      "sha": "fed80f03b520337ea145811107f3cd1ea5fc1d59",
+      "protected": false
+    },
+    {
+      "name": "fix/bonus-feat-choice-warnings",
+      "sha": "ed6f01c3f9f8c32e7aacea9bcf30c649866028e6",
+      "protected": false
+    },
+    {
+      "name": "fix/compact-creature-sheet-20261010",
+      "sha": "dce5882b994e1abfe74fd66e2f4b16a45f1df969",
+      "protected": false
+    },
+    {
+      "name": "fix/compact-player-focus-2d-camera-arrows-20261010",
+      "sha": "479c6a3461e1a4d6b532a86032cb8d141ebfa287",
+      "protected": false
+    },
+    {
+      "name": "fix/creature-appearance-restore-picker-layout-20261014",
+      "sha": "fc5ec17748a76412a45be9e8caef1ca264ca4d9d",
+      "protected": false
+    },
+    {
+      "name": "fix/creature-deletion-unified-classes",
+      "sha": "f11e1e9f6e960e7c020abc874748fff54a81be7f",
+      "protected": false
+    },
+    {
+      "name": "fix/creature-gui-localization-captions-20261012",
+      "sha": "00c483e3539b38dc0476462a8e7e54fa358cd224",
+      "protected": false
+    },
+    {
+      "name": "fix/creature-sheet-localization-coverage-20261012",
+      "sha": "2cecc7d77601f965f11af659c683243023a1cd82",
+      "protected": false
+    },
+    {
+      "name": "fix/creature-spells-2d-ui-20261009",
+      "sha": "272c6623ced72c6b4335b4fd505cffc03061342f",
+      "protected": false
+    },
+    {
+      "name": "fix/defenses-scroll-20261012",
+      "sha": "c94edaa458952a79dd41802cae00e8e830ab21a4",
+      "protected": false
+    },
+    {
+      "name": "fix/direct-content-catalog-preload",
+      "sha": "ed5876302cecc7d7c8de20750ba0690d0ff19b28",
+      "protected": false
+    },
+    {
+      "name": "fix/disable-vs-remove-proficiencies-uniform-cards-20261010",
+      "sha": "6a81f2f61548e46bdfc81c032a451d252bc76568",
+      "protected": false
+    },
+    {
+      "name": "fix/disambiguate-identically-named-origins-20261012",
+      "sha": "c7b150e635c19d5e770e4be8ba5b6205bc99f957",
+      "protected": false
+    },
+    {
+      "name": "fix/disambiguate-repeated-trait-origin-menu",
+      "sha": "ed6641d85b27042f9154293048b0b6cf3adf0518",
+      "protected": false
+    },
+    {
+      "name": "fix/duplicate-token-effect-dialog-20261012",
+      "sha": "d0b960a1fdce70ef26375ccae0559eb3b74f7c82",
+      "protected": false
+    },
+    {
+      "name": "fix/feat-origins-languages-20261011",
+      "sha": "a0202652372590df9ef2bdebe3bd6021c6e58351",
+      "protected": false
+    },
+    {
+      "name": "fix/global-scrollable-hover-tooltips-20261014",
+      "sha": "ee8e0595c52da39c28b8e1c8554389e9c6a927cf",
+      "protected": false
+    },
+    {
+      "name": "fix/inventory-search-equipment-attunement-20261012",
+      "sha": "b4c7202eb828075ca487795a3b0c5f84f92727e0",
+      "protected": false
+    },
+    {
+      "name": "fix/inventory-search-tooltip-compact-combat-20261012",
+      "sha": "fab6ff386efa4d00021a3d40e01abe7394d3e94a",
+      "protected": false
+    },
+    {
+      "name": "fix/lan-mobile-discovery-sync",
+      "sha": "e83bf54903fc8846c01c6fda8e084d9ae9d97ea1",
+      "protected": false
+    },
+    {
+      "name": "fix/master-creature-safe-id-string",
+      "sha": "9fe0c55aeb1f61ba5fa9aa7597a959e2eb6bebe9",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-compact-sheet-navigation",
+      "sha": "49a8764fa3da66dc1ae94c3d3d35290d310742a9",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-header-test-boundary-20261014",
+      "sha": "f9abf9fb2ecc74fd66df0072d0dec33c8581ef0d",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-inventory-document-editor-20261015",
+      "sha": "962b06118419f2a15b376c37e8331f63a88e16d9",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-statistics-origin-unified-sections-20261014",
+      "sha": "f965449ad72e56584bb01ad3b5aa75c5bb36202c",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-touch-sheet-layout-20261014",
+      "sha": "84665ea67b3ccc667f3ad14029ee4896e3af8885",
+      "protected": false
+    },
+    {
+      "name": "fix/mobile-touch-tap-test-target-20261014",
+      "sha": "28a788fef49baa105dec383de1e4330566cefd44",
+      "protected": false
+    },
+    {
+      "name": "fix/native-adapter-reserved-namespace",
+      "sha": "1838de5f8bd8f7cffd331e4dc78274e642cd64e9",
+      "protected": false
+    },
+    {
+      "name": "fix/origin-disambiguation-reserved-keyword-20261012",
+      "sha": "a912062131fcc65f382569a192d2e16a3f12e1cb",
+      "protected": false
+    },
+    {
+      "name": "fix/powers-origin-stats-cost-compact-physics-20261014",
+      "sha": "0b510a2141c45f43cf952850909a85d8f3977804",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiencies-documents-20261010",
+      "sha": "9bc774b500d0e535c3f49871b236e7a0fb755d5d",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiencies-reserved-trait-identifier",
+      "sha": "80809fe4b99e3c960cc3f394169c53db010045d9",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiency-background-origin-lifecycle-20261010",
+      "sha": "8e3b2bc7e67a12492cf0de1a172bcd46c2060aa2",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiency-choice-groups-feats-info-20261010",
+      "sha": "1add295f1159f85ebb7ed312e1ac33c098d82a98",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiency-layout-sources-background-20261010",
+      "sha": "dc9cd0dcf39cddbc2d71841806802af4caaeaa15",
+      "protected": false
+    },
+    {
+      "name": "fix/proficiency-picker-layout-20261010",
+      "sha": "18c1a97afe78ba58a58811f185a4b8d8718c6b3c",
+      "protected": false
+    },
+    {
+      "name": "fix/public-miniature-catalog-20261015",
+      "sha": "cddba62bb0105edc44dd02e1566d096f04398326",
+      "protected": false
+    },
+    {
+      "name": "fix/safe-sync-homebrew-documents",
+      "sha": "c16abc95aa1c4f741055b2f8ad95fc178fb2084b",
+      "protected": false
+    },
+    {
+      "name": "fix/scroll-boundary-and-combat-width-20261012",
+      "sha": "f8084c5026805618b8b8c18cecbd93bac3130d0e",
+      "protected": false
+    },
+    {
+      "name": "fix/spell-2d-hud-layer-target-names",
+      "sha": "923b77e4694d5c7d4a9c938ef7c801b3c4e33822",
+      "protected": false
+    },
+    {
+      "name": "fix/spell-counters-unified-hover-captions-20261013",
+      "sha": "2da8c4a7d24de82882db353a32eccf471e118d79",
+      "protected": false
+    },
+    {
+      "name": "fix/spell-origins-defense-picker",
+      "sha": "14f66a5d7de877de776a67dc091015cf0f2693b3",
+      "protected": false
+    },
+    {
+      "name": "fix/spell-target-red-highlight-and-condition-dialog-20261012",
+      "sha": "496c950c7ff6c4cdb161cc709d4180844b79768c",
+      "protected": false
+    },
+    {
+      "name": "fix/spellcasting-initial-slots",
+      "sha": "f5b7250b901c672b0322cb05043d28ad6b5dd8e2",
+      "protected": false
+    },
+    {
+      "name": "fix/structured-proficiency-render-types",
+      "sha": "86c353955ddb42a8c030c50e7340bc0239741305",
+      "protected": false
+    },
+    {
+      "name": "fix/structured-racial-defenses-20261012",
+      "sha": "f1a277cf4e752f4fadd052fd414bd3cd8f32b887",
+      "protected": false
+    },
+    {
+      "name": "fix/structured-resource-source-parity-20261012",
+      "sha": "779b8dc3a356c6ff7442ad9d77c5a3fe8076c41c",
+      "protected": false
+    },
+    {
+      "name": "fix/token-context-long-range-live-grants-20261012",
+      "sha": "6842b4c2f689c4b28a5ebff24b82335c064ce42e",
+      "protected": false
+    },
+    {
+      "name": "fix/token-transformation-hitbox-restore",
+      "sha": "a76ca3a1e6baa95681b939af782cfaedd24f1715",
+      "protected": false
+    },
+    {
+      "name": "fix/traits-reserved-keyword-20261012",
+      "sha": "44a52fe00119112267aef6569824bcdcc5d1cc43",
+      "protected": false
+    },
+    {
+      "name": "fix/typed-spell-range-list-20261012",
+      "sha": "8d08e2ece250bc4923f189ea6ea78157a0516867",
+      "protected": false
+    },
+    {
+      "name": "fix/vtt-visible-defenses-scroll-20261012",
+      "sha": "c701b12e0bece366d0dc1f1cc73e36cdd153dd13",
+      "protected": false
+    },
+    {
+      "name": "global-creature-archive-unified",
+      "sha": "8e6dfca6a642320129fa98ccf7a79ff2ae8565fa",
+      "protected": false
+    },
+    {
+      "name": "main",
+      "sha": "78402cf406a1b6dbdcc9b582721b6c4f8707d6e1",
+      "protected": false
+    },
+    {
+      "name": "mobile-touch-session-chat-placement-20261014",
+      "sha": "26b77644be0ad51eb25bb2a8c87254a0a148bb30",
+      "protected": false
+    },
+    {
+      "name": "refactor/compact-creature-core-20261013",
+      "sha": "80cc3fdbe17e99d2b370d69d22b78d38592fe2c7",
+      "protected": false
+    },
+    {
+      "name": "refactor/compendium-enrichment-instance-separation",
+      "sha": "73433cc2a6888cb83513227a260e2afb92d5b691",
+      "protected": false
+    },
+    {
+      "name": "refactor/creature-domain-controller",
+      "sha": "3fd8fc741de06409e143d3b4dae0cd5c9468e3b8",
+      "protected": false
+    },
+    {
+      "name": "refactor/global-creature-archive-20261016",
+      "sha": "4fa57ca87b2f53a37b585f04d9a804948233e728",
+      "protected": false
+    },
+    {
+      "name": "refactor/standalone-creatures-from-pr85",
+      "sha": "63c875ede98e0ab8f4ae58feb5dbd07f341917c3",
+      "protected": false
+    },
+    {
+      "name": "refactor/standalone-feature-catalog-offline",
+      "sha": "da8080356ff6df2c06ae6a93c33e1cc2f8703c24",
+      "protected": false
+    },
+    {
+      "name": "refactor/structured-class-mechanics-20261012",
+      "sha": "3cbf4e25f9a6cc2efed892659da576282856ab10",
+      "protected": false
+    },
+    {
+      "name": "refactor/structured-mechanics-class-tables-20261012",
+      "sha": "0c110f01cdefbf2fe86d4fa2575d25eda81564bb",
+      "protected": false
+    },
+    {
+      "name": "refactor/unified-origin-editor-cards-20261016",
+      "sha": "a2cd733ee461f707dc170152f54243d0eb25a8e8",
+      "protected": false
+    },
+    {
+      "name": "refactor/vtt-geometry-boundaries-20261009",
+      "sha": "2c217577c0fe9f30b3c906938ca3816c86acfdbd",
+      "protected": false
+    },
+    {
+      "name": "restore-scoped-creature-archives-oct14",
+      "sha": "ad1c0133d2ddd19fe06e1f5c480f28b3b4ad5730",
+      "protected": false
+    },
+    {
+      "name": "sheet-tabs-mobile-layout-oct14",
+      "sha": "271a241e4040bd5dc8165b248c34826c1d1f4cd6",
+      "protected": false
+    },
+    {
+      "name": "temp/complete-5etools-source",
+      "sha": "990a41a02e91500edf6adb9ebed0dd3831325d35",
+      "protected": false
+    },
+    {
+      "name": "test/bonus-cycle-performance-20261011",
+      "sha": "072c1767b5dfffcca1091bb92965c39f9b104b4b",
+      "protected": false
+    },
+    {
+      "name": "ui/compact-physics-aligned-fields-20261014",
+      "sha": "04cb31dccda90c063602011c8b36b2716a376555",
+      "protected": false
+    },
+    {
+      "name": "ui/compact-physics-movement-20261014",
+      "sha": "2ba356d6f10d36ea99d0a2c6d6e21bf89d2cafcc",
+      "protected": false
+    },
+    {
+      "name": "ui/compact-powers-trackers-and-costs-20261014",
+      "sha": "f235431509a3d6589f0347fd1571d9c49d816372",
+      "protected": false
+    },
+    {
+      "name": "ui/dnd5e-modern",
+      "sha": "3a35302aa42df08fc4daf04efc527f1717d8ee38",
+      "protected": false
+    },
+    {
+      "name": "ui/physics-miniatures-wide-movement-20261014",
+      "sha": "62a7c34378894d2304ce3f64fa763c9f5c3f576e",
+      "protected": false
+    },
+    {
+      "name": "ui/sheet-spellcasting-physics-20261013",
+      "sha": "68318692868ca1545f382314e1811e62d8fdb89c",
+      "protected": false
+    }
+  ],
+  "prs": [
+    {
+      "number": 3,
+      "title": "Port cosmic Kaos backdrop from campaign hub",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/campaign-hub",
+      "head_sha": "29ce11acbb09eb4f9be496cf95a5d821fe53e1f0",
+      "created_at": "2026-10-04T09:20:14Z",
+      "closed_at": "2026-10-04T09:20:35Z",
+      "merged_at": "2026-10-04T09:20:35Z"
+    },
+    {
+      "number": 4,
+      "title": "Port updated token lazy-load catalog merging to main",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/tokens-lazy-load",
+      "head_sha": "83991d2cf2c821ff032acdab257fdc1a7d5c2fea",
+      "created_at": "2026-10-04T09:23:28Z",
+      "closed_at": "2026-10-04T09:23:40Z",
+      "merged_at": "2026-10-04T09:23:40Z"
+    },
+    {
+      "number": 5,
+      "title": "Add bestiary references and token hats in 2D view",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/bestiary-reference-2d-tokens",
+      "head_sha": "a9fd6384ef7fa85cefdfbe014bf9deab7a202be2",
+      "created_at": "2026-10-09T12:50:29Z",
+      "closed_at": "2026-10-09T12:57:49Z",
+      "merged_at": "2026-10-09T12:57:49Z"
+    },
+    {
+      "number": 6,
+      "title": "Independent creature sheets, unified 5eTools effects and filesystem homebrew",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/structured-creature-sheets",
+      "head_sha": "dccccdbd6628c60a555c5919d84ffc16c881e167",
+      "created_at": "2026-10-09T14:08:34Z",
+      "closed_at": "2026-10-09T14:18:58Z",
+      "merged_at": "2026-10-09T14:18:58Z"
+    },
+    {
+      "number": 7,
+      "title": "Fix creature deletion and unify class choices across source books",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/creature-deletion-unified-classes",
+      "head_sha": "f11e1e9f6e960e7c020abc874748fff54a81be7f",
+      "created_at": "2026-10-09T14:43:55Z",
+      "closed_at": "2026-10-09T14:45:05Z",
+      "merged_at": "2026-10-09T14:45:05Z"
+    },
+    {
+      "number": 8,
+      "title": "Auto-assign ownership and creature sheets when spawning tokens",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/token-owned-creature-sheets",
+      "head_sha": "8ae068dbc439f9bbf79e0cb9a28606961de9ff25",
+      "created_at": "2026-10-09T15:01:23Z",
+      "closed_at": "2026-10-09T15:01:51Z",
+      "merged_at": "2026-10-09T15:01:51Z"
+    },
+    {
+      "number": 9,
+      "title": "Refactor VTT geometry helpers and remove superseded code (no behavior changes)",
+      "state": "closed",
+      "merged": false,
+      "head": "refactor/vtt-geometry-boundaries-20261009",
+      "head_sha": "2c217577c0fe9f30b3c906938ca3816c86acfdbd",
+      "created_at": "2026-10-09T19:03:07Z",
+      "closed_at": "2026-10-16T13:31:53Z",
+      "merged_at": null
+    },
+    {
+      "number": 10,
+      "title": "style(vtt): D&D-inspired modern theme and responsive UI",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/dnd5e-modern",
+      "head_sha": "3a35302aa42df08fc4daf04efc527f1717d8ee38",
+      "created_at": "2026-10-09T21:11:57Z",
+      "closed_at": "2026-10-09T21:12:09Z",
+      "merged_at": "2026-10-09T21:12:09Z"
+    },
+    {
+      "number": 11,
+      "title": "feat(spellcasting): persistent wizard spellbook with class/book switch",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/wizard-spellbook",
+      "head_sha": "b039821dc91d8b43a3e104d4e2b228f5478bf594",
+      "created_at": "2026-10-09T21:15:02Z",
+      "closed_at": "2026-10-09T21:15:15Z",
+      "merged_at": "2026-10-09T21:15:15Z"
+    },
+    {
+      "number": 12,
+      "title": "fix(vtt): creature access, spell-slot bonuses, dialogs and 2D controls",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/creature-spells-2d-ui-20261009",
+      "head_sha": "272c6623ced72c6b4335b4fd505cffc03061342f",
+      "created_at": "2026-10-09T21:50:20Z",
+      "closed_at": "2026-10-09T21:50:32Z",
+      "merged_at": "2026-10-09T21:50:32Z"
+    },
+    {
+      "number": 13,
+      "title": "fix(vtt): compact Player sheet, keyboard focus, 2D camera and engagement arrows",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/compact-player-focus-2d-camera-arrows-20261010",
+      "head_sha": "479c6a3461e1a4d6b532a86032cb8d141ebfa287",
+      "created_at": "2026-10-09T22:14:37Z",
+      "closed_at": "2026-10-09T22:14:48Z",
+      "merged_at": "2026-10-09T22:14:48Z"
+    },
+    {
+      "number": 14,
+      "title": "fix(vtt): compact the actual CreatureSheet layout and remove horizontal overflow",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/compact-creature-sheet-20261010",
+      "head_sha": "dce5882b994e1abfe74fd66e2f4b16a45f1df969",
+      "created_at": "2026-10-09T22:41:34Z",
+      "closed_at": "2026-10-09T22:41:42Z",
+      "merged_at": "2026-10-09T22:41:42Z"
+    },
+    {
+      "number": 15,
+      "title": "refactor(vtt): remove unreachable legacy panels and dead UI actions",
+      "state": "closed",
+      "merged": true,
+      "head": "cleanup/remove-unused-legacy-ui-20261010",
+      "head_sha": "27dea645b724e36eef50dfa3777786b174045d35",
+      "created_at": "2026-10-09T22:52:52Z",
+      "closed_at": "2026-10-09T22:53:04Z",
+      "merged_at": "2026-10-09T22:53:04Z"
+    },
+    {
+      "number": 16,
+      "title": "Semplifica la scheda Incantesimi e salva la visibilità delle risorse",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/spell-tab-layout-visibility",
+      "head_sha": "ac576dfea9ae42b7404b70fc2b0152dfea274cba",
+      "created_at": "2026-10-10T12:05:36Z",
+      "closed_at": "2026-10-10T12:05:54Z",
+      "merged_at": "2026-10-10T12:05:54Z"
+    },
+    {
+      "number": 17,
+      "title": "Correggi selezione incantesimi e uniforma i bonus della scheda creatura",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/creature-spell-selection-bonus-layout",
+      "head_sha": "64baf367e00fa766e3b625646408a61a19f42b35",
+      "created_at": "2026-10-10T13:17:40Z",
+      "closed_at": "2026-10-10T13:17:50Z",
+      "merged_at": "2026-10-10T13:17:50Z"
+    },
+    {
+      "number": 18,
+      "title": "VTT: 2D reach arrows, elevation camera, token menu and spell casting",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/vtt-casting-camera-overlay-20261010",
+      "head_sha": "479e958bbfe287a485f9cb1efa774edb71205da1",
+      "created_at": "2026-10-10T14:10:59Z",
+      "closed_at": "2026-10-10T14:11:16Z",
+      "merged_at": "2026-10-10T14:11:16Z"
+    },
+    {
+      "number": 19,
+      "title": "Statistiche a due colonne, competenze, oggetti illustrati e documenti condivisibili",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/stats-skills-document-inventory",
+      "head_sha": "d65ab83d849aa1b53ad7d5b8614492095b583116",
+      "created_at": "2026-10-10T14:12:21Z",
+      "closed_at": "2026-10-10T14:12:58Z",
+      "merged_at": "2026-10-10T14:12:58Z"
+    },
+    {
+      "number": 20,
+      "title": "Fix 2D reach indicators and keep spell actions beside search",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/fix-2d-reach-spell-actions-20261010",
+      "head_sha": "2e10c919652cafbc9ffa9f730324498f0e24d85e",
+      "created_at": "2026-10-10T14:44:01Z",
+      "closed_at": "2026-10-10T14:44:15Z",
+      "merged_at": "2026-10-10T14:44:14Z"
+    },
+    {
+      "number": 21,
+      "title": "Correggi larghezza Statistiche, slot come tracker e immagini documenti",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/stats-compact-slots-document-preview",
+      "head_sha": "5d4035494a0b8dec8df6d7e573f27be9850580ff",
+      "created_at": "2026-10-10T14:53:25Z",
+      "closed_at": "2026-10-10T14:53:38Z",
+      "merged_at": "2026-10-10T14:53:38Z"
+    },
+    {
+      "number": 22,
+      "title": "Slot su una riga, statistiche combat più larghe e attacchi individuali",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/attack-range-ability-slot-layout",
+      "head_sha": "d2dc752678a12591f6601215c89ab5091bcfa1b3",
+      "created_at": "2026-10-10T15:27:15Z",
+      "closed_at": "2026-10-10T15:27:25Z",
+      "merged_at": "2026-10-10T15:27:25Z"
+    },
+    {
+      "number": 23,
+      "title": "Ripristina due colonne fisse per Statistiche con proporzione 45/55",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/restore-stats-two-columns",
+      "head_sha": "bc655c01a361ea33f58d2e26fd9334bd1ab355e0",
+      "created_at": "2026-10-10T15:53:07Z",
+      "closed_at": "2026-10-10T15:53:25Z",
+      "merged_at": "2026-10-10T15:53:25Z"
+    },
+    {
+      "number": 24,
+      "title": "VTT: categorie oggetti e armi equipaggiate secondo proprietà 5etools 2014",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/structured-weapon-equipment-2014",
+      "head_sha": "91824c59aef724050f8541404ad8a67afe84e1be",
+      "created_at": "2026-10-10T16:14:05Z",
+      "closed_at": "2026-10-10T16:14:26Z",
+      "merged_at": "2026-10-10T16:14:26Z"
+    },
+    {
+      "number": 25,
+      "title": "Separate 5etools homebrew definitions, VTT enrichments and live inventory instances",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/compendium-enrichment-instance-separation",
+      "head_sha": "73433cc2a6888cb83513227a260e2afb92d5b691",
+      "created_at": "2026-10-10T16:39:58Z",
+      "closed_at": "2026-10-10T16:49:33Z",
+      "merged_at": "2026-10-10T16:49:33Z"
+    },
+    {
+      "number": 26,
+      "title": "Fix parser error: reference ContentCatalog directly from dnd_base",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/direct-content-catalog-preload",
+      "head_sha": "ed5876302cecc7d7c8de20750ba0690d0ff19b28",
+      "created_at": "2026-10-10T17:01:05Z",
+      "closed_at": "2026-10-10T17:01:18Z",
+      "merged_at": "2026-10-10T17:01:18Z"
+    },
+    {
+      "number": 27,
+      "title": "Creature-wide proficiencies with structured 5etools source associations and feats",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/structured-proficiency-origins",
+      "head_sha": "4aeead9bbaa74b2dc7eede60a3fa8671fe460812",
+      "created_at": "2026-10-10T17:11:19Z",
+      "closed_at": "2026-10-10T17:12:03Z",
+      "merged_at": "2026-10-10T17:12:03Z"
+    },
+    {
+      "number": 28,
+      "title": "Redesign creature proficiencies as a collapsible Statistics source panel",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/proficiency-source-panel",
+      "head_sha": "872c51d189c1095c973d222bb99691711e12a312",
+      "created_at": "2026-10-10T18:13:39Z",
+      "closed_at": "2026-10-10T18:16:10Z",
+      "merged_at": "2026-10-10T18:16:10Z"
+    },
+    {
+      "number": 29,
+      "title": "Fix Godot parser error in creature proficiency editor",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiencies-reserved-trait-identifier",
+      "head_sha": "80809fe4b99e3c960cc3f394169c53db010045d9",
+      "created_at": "2026-10-10T18:27:44Z",
+      "closed_at": "2026-10-10T18:27:56Z",
+      "merged_at": "2026-10-10T18:27:56Z"
+    },
+    {
+      "number": 30,
+      "title": "Fix proficiency sync called with String in master creature ID helper",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/master-creature-safe-id-string",
+      "head_sha": "9fe0c55aeb1f61ba5fa9aa7597a959e2eb6bebe9",
+      "created_at": "2026-10-10T18:30:21Z",
+      "closed_at": "2026-10-10T18:30:35Z",
+      "merged_at": "2026-10-10T18:30:34Z"
+    },
+    {
+      "number": 31,
+      "title": "Prevent spell-slot array out-of-bounds during creature sheet setup",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/spellcasting-initial-slots",
+      "head_sha": "f5b7250b901c672b0322cb05043d28ad6b5dd8e2",
+      "created_at": "2026-10-10T18:34:11Z",
+      "closed_at": "2026-10-10T18:34:26Z",
+      "merged_at": "2026-10-10T18:34:26Z"
+    },
+    {
+      "number": 32,
+      "title": "Fix nested 5etools grant dictionary runtime errors in Starting traits",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/structured-proficiency-render-types",
+      "head_sha": "86c353955ddb42a8c030c50e7340bc0239741305",
+      "created_at": "2026-10-10T18:38:20Z",
+      "closed_at": "2026-10-10T18:38:33Z",
+      "merged_at": "2026-10-10T18:38:33Z"
+    },
+    {
+      "number": 33,
+      "title": "Fix reserved namespace variable in native 5etools homebrew adapter",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/native-adapter-reserved-namespace",
+      "head_sha": "1838de5f8bd8f7cffd331e4dc78274e642cd64e9",
+      "created_at": "2026-10-10T18:41:19Z",
+      "closed_at": "2026-10-10T18:41:31Z",
+      "merged_at": "2026-10-10T18:41:31Z"
+    },
+    {
+      "number": 34,
+      "title": "Fix proficiency origin tooltips, multiclass grants, choice UI, saves and duplicates",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/proficiency-ui-source-fixes",
+      "head_sha": "df95e94a18f05661f80a4dd29449fbb361c30f72",
+      "created_at": "2026-10-10T19:21:20Z",
+      "closed_at": "2026-10-10T19:21:40Z",
+      "merged_at": "2026-10-10T19:21:40Z"
+    },
+    {
+      "number": 35,
+      "title": "Fix document reload crash and complete proficiency source behavior",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiencies-documents-20261010",
+      "head_sha": "9bc774b500d0e535c3f49871b236e7a0fb755d5d",
+      "created_at": "2026-10-10T19:34:09Z",
+      "closed_at": "2026-10-10T19:34:26Z",
+      "merged_at": "2026-10-10T19:34:26Z"
+    },
+    {
+      "number": 36,
+      "title": "Improve inline saving throws and structured proficiency choice UX",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiency-picker-layout-20261010",
+      "head_sha": "18c1a97afe78ba58a58811f185a4b8d8718c6b3c",
+      "created_at": "2026-10-10T19:50:43Z",
+      "closed_at": "2026-10-10T19:51:20Z",
+      "merged_at": "2026-10-10T19:51:20Z"
+    },
+    {
+      "number": 37,
+      "title": "Unify proficiency groups, add background sources and fix racial origin cleanup",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiency-layout-sources-background-20261010",
+      "head_sha": "dc9cd0dcf39cddbc2d71841806802af4caaeaa15",
+      "created_at": "2026-10-10T20:24:28Z",
+      "closed_at": "2026-10-10T20:24:52Z",
+      "merged_at": "2026-10-10T20:24:52Z"
+    },
+    {
+      "number": 38,
+      "title": "Fix background picker, provenance-safe proficiency removal and trait lifecycle",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiency-background-origin-lifecycle-20261010",
+      "head_sha": "8e3b2bc7e67a12492cf0de1a172bcd46c2060aa2",
+      "created_at": "2026-10-10T20:49:16Z",
+      "closed_at": "2026-10-10T20:49:26Z",
+      "merged_at": "2026-10-10T20:49:26Z"
+    },
+    {
+      "number": 39,
+      "title": "Keep proficiencies illuminated, separate multi-kind choices, move feats to Info",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/proficiency-choice-groups-feats-info-20261010",
+      "head_sha": "1add295f1159f85ebb7ed312e1ac33c098d82a98",
+      "created_at": "2026-10-10T21:11:26Z",
+      "closed_at": "2026-10-10T21:11:36Z",
+      "merged_at": "2026-10-10T21:11:36Z"
+    },
+    {
+      "number": 40,
+      "title": "Fix attack-card layout and protect mandatory proficiencies from disabling",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/attack-cards-proficiency-toggles-20261010",
+      "head_sha": "b6be098a2d605685a58e460977511b306ec24e57",
+      "created_at": "2026-10-10T21:29:17Z",
+      "closed_at": "2026-10-10T21:29:27Z",
+      "merged_at": "2026-10-10T21:29:27Z"
+    },
+    {
+      "number": 41,
+      "title": "Uniform proficiency rows and separate activation from mandatory-grant removal",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/disable-vs-remove-proficiencies-uniform-cards-20261010",
+      "head_sha": "6a81f2f61548e46bdfc81c032a451d252bc76568",
+      "created_at": "2026-10-10T21:45:45Z",
+      "closed_at": "2026-10-10T21:45:54Z",
+      "merged_at": "2026-10-10T21:45:54Z"
+    },
+    {
+      "number": 42,
+      "title": "VTT: bonus cumulabili con formule e origini per tutte le statistiche",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/formula-origin-bonuses",
+      "head_sha": "e95bfa76ee6cd320090a1f6d26c1bd092047c0af",
+      "created_at": "2026-10-10T22:00:32Z",
+      "closed_at": "2026-10-10T22:05:36Z",
+      "merged_at": "2026-10-10T22:05:36Z"
+    },
+    {
+      "number": 43,
+      "title": "Complete 5etools language selection and cascading feat origins",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/feat-origins-languages-20261011",
+      "head_sha": "a0202652372590df9ef2bdebe3bd6021c6e58351",
+      "created_at": "2026-10-11T21:01:18Z",
+      "closed_at": "2026-10-11T21:06:55Z",
+      "merged_at": "2026-10-11T21:06:55Z"
+    },
+    {
+      "number": 44,
+      "title": "VTT: descrizioni compendio, tratti background e hover origini",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/compendium-descriptions-origin-hover",
+      "head_sha": "b6012593785fb581401716723b22e3dd73a62757",
+      "created_at": "2026-10-11T21:26:22Z",
+      "closed_at": "2026-10-11T21:28:32Z",
+      "merged_at": "2026-10-11T21:28:32Z"
+    },
+    {
+      "number": 45,
+      "title": "Show complete descriptions for item origins",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/compendium-item-origin-hover-fix",
+      "head_sha": "f66ffc594ad9ad41bedd0450b4d8353740e65020",
+      "created_at": "2026-10-11T21:30:44Z",
+      "closed_at": "2026-10-11T21:30:50Z",
+      "merged_at": "2026-10-11T21:30:50Z"
+    },
+    {
+      "number": 46,
+      "title": "Unify creature traits and origin dependency graph",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/unified-trait-origins-20261012",
+      "head_sha": "15ed1340c0bb2243c6ef4454e1af0e426e09c2ad",
+      "created_at": "2026-10-11T22:23:51Z",
+      "closed_at": "2026-10-11T22:50:51Z",
+      "merged_at": "2026-10-11T22:50:51Z"
+    },
+    {
+      "number": 47,
+      "title": "Fix reserved GDScript identifier in traits and tests",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/traits-reserved-keyword-20261012",
+      "head_sha": "44a52fe00119112267aef6569824bcdcc5d1cc43",
+      "created_at": "2026-10-11T23:00:58Z",
+      "closed_at": "2026-10-11T23:01:08Z",
+      "merged_at": "2026-10-11T23:01:08Z"
+    },
+    {
+      "number": 48,
+      "title": "Benefit-first origins and tracker source editor; fix initial initiative DEX",
+      "state": "closed",
+      "merged": true,
+      "head": "feat/benefit-first-origins-and-trackers",
+      "head_sha": "c76f300c96c6c217ea99e785893d7ef11c8559ce",
+      "created_at": "2026-10-11T23:31:21Z",
+      "closed_at": "2026-10-11T23:41:30Z",
+      "merged_at": "2026-10-11T23:41:30Z"
+    },
+    {
+      "number": 49,
+      "title": "Refactor equipaggiamento: mani, armatura, oggetti e attacchi",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/equipment-hands-armor-2026",
+      "head_sha": "9cfa94a334a1b14d3b74075392f094bae06da517",
+      "created_at": "2026-10-12T01:56:28Z",
+      "closed_at": "2026-10-12T02:09:25Z",
+      "merged_at": "2026-10-12T02:09:25Z"
+    },
+    {
+      "number": 50,
+      "title": "Fix inventory search under English locale and equipment/attunement controls",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/inventory-search-equipment-attunement-20261012",
+      "head_sha": "b4c7202eb828075ca487795a3b0c5f84f92727e0",
+      "created_at": "2026-10-12T02:37:44Z",
+      "closed_at": "2026-10-12T02:38:08Z",
+      "merged_at": "2026-10-12T02:38:08Z"
+    },
+    {
+      "number": 51,
+      "title": "VTT: vulnerabilità strutturate, riepilogo difese e statistiche compatte",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/damage-defenses-statistics-20261012",
+      "head_sha": "a3bca6d7930c5313799a3669eef9e5a186dd289e",
+      "created_at": "2026-10-12T11:55:01Z",
+      "closed_at": "2026-10-12T12:04:01Z",
+      "merged_at": "2026-10-12T12:04:01Z"
+    },
+    {
+      "number": 52,
+      "title": "Derive class trackers and hit dice from upstream 5etools structured data",
+      "state": "closed",
+      "merged": false,
+      "head": "refactor/structured-mechanics-class-tables-20261012",
+      "head_sha": "0c110f01cdefbf2fe86d4fa2575d25eda81564bb",
+      "created_at": "2026-10-12T12:00:25Z",
+      "closed_at": "2026-10-12T13:33:53Z",
+      "merged_at": null
+    },
+    {
+      "number": 53,
+      "title": "Repair compact defense editor and stop nested scroll chaining",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/defenses-scroll-20261012",
+      "head_sha": "c94edaa458952a79dd41802cae00e8e830ab21a4",
+      "created_at": "2026-10-12T12:17:01Z",
+      "closed_at": "2026-10-12T12:17:24Z",
+      "merged_at": "2026-10-12T12:17:23Z"
+    },
+    {
+      "number": 54,
+      "title": "Rebuild defenses editor around origin-backed entries",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/defenses-origin-editor-20261012",
+      "head_sha": "35c0af5af6875f3251f54141068d61787a7ffd65",
+      "created_at": "2026-10-12T12:24:49Z",
+      "closed_at": "2026-10-12T12:25:26Z",
+      "merged_at": "2026-10-12T12:25:26Z"
+    },
+    {
+      "number": 55,
+      "title": "Fix nested scroll limits without blocking sheet; tighten combat column",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/scroll-boundary-and-combat-width-20261012",
+      "head_sha": "f8084c5026805618b8b8c18cecbd93bac3130d0e",
+      "created_at": "2026-10-12T12:40:41Z",
+      "closed_at": "2026-10-12T12:40:53Z",
+      "merged_at": "2026-10-12T12:40:53Z"
+    },
+    {
+      "number": 56,
+      "title": "Generate class trackers, hit dice and fixed ability grants from 5etools structured fields",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/structured-class-mechanics-20261012",
+      "head_sha": "3cbf4e25f9a6cc2efed892659da576282856ab10",
+      "created_at": "2026-10-12T12:46:03Z",
+      "closed_at": "2026-10-12T13:05:05Z",
+      "merged_at": "2026-10-12T13:05:05Z"
+    },
+    {
+      "number": 57,
+      "title": "Add spell-based origins and fix defense source selection",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/spell-origins-defense-picker",
+      "head_sha": "14f66a5d7de877de776a67dc091015cf0f2693b3",
+      "created_at": "2026-10-12T13:07:14Z",
+      "closed_at": "2026-10-12T13:07:59Z",
+      "merged_at": "2026-10-12T13:07:59Z"
+    },
+    {
+      "number": 58,
+      "title": "VTT: compact combat, proper AC hover, inventory search below title, dedupe Shields",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/inventory-search-tooltip-compact-combat-20261012",
+      "head_sha": "fab6ff386efa4d00021a3d40e01abe7394d3e94a",
+      "created_at": "2026-10-12T13:11:54Z",
+      "closed_at": "2026-10-12T13:12:20Z",
+      "merged_at": "2026-10-12T13:12:20Z"
+    },
+    {
+      "number": 59,
+      "title": "Fix legacy class resource IDs and validate all 10 structured progressions",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/structured-resource-source-parity-20261012",
+      "head_sha": "779b8dc3a356c6ff7442ad9d77c5a3fe8076c41c",
+      "created_at": "2026-10-12T13:32:54Z",
+      "closed_at": "2026-10-12T13:35:07Z",
+      "merged_at": "2026-10-12T13:35:07Z"
+    },
+    {
+      "number": 60,
+      "title": "Manage active spells directly from Conditions and reorder sections",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/manage-applied-spells-conditions",
+      "head_sha": "24f7ca7d2373166b4fb8229ebd54b009fbcbbc7f",
+      "created_at": "2026-10-12T13:35:42Z",
+      "closed_at": "2026-10-12T13:36:07Z",
+      "merged_at": "2026-10-12T13:36:07Z"
+    },
+    {
+      "number": 61,
+      "title": "Import structured 5etools racial resistances and persist defense grants",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/structured-racial-defenses-20261012",
+      "head_sha": "f1a277cf4e752f4fadd052fd414bd3cd8f32b887",
+      "created_at": "2026-10-12T14:24:14Z",
+      "closed_at": "2026-10-12T14:24:27Z",
+      "merged_at": "2026-10-12T14:24:27Z"
+    },
+    {
+      "number": 62,
+      "title": "Concentrazione, statistiche di lancio ed effetti persistenti sui token",
+      "state": "closed",
+      "merged": true,
+      "head": "feat/spell-concentration-target-effects-20261012",
+      "head_sha": "6eb0b9187a458cba13df5ee382589e392c844337",
+      "created_at": "2026-10-12T14:28:03Z",
+      "closed_at": "2026-10-12T14:49:28Z",
+      "merged_at": "2026-10-12T14:49:28Z"
+    },
+    {
+      "number": 63,
+      "title": "Localize remaining creature sheet UI, dialogs and formula tooltips",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/creature-sheet-localization-coverage-20261012",
+      "head_sha": "2cecc7d77601f965f11af659c683243023a1cd82",
+      "created_at": "2026-10-12T14:29:06Z",
+      "closed_at": "2026-10-12T14:29:26Z",
+      "merged_at": "2026-10-12T14:29:26Z"
+    },
+    {
+      "number": 64,
+      "title": "Translate creature GUI captions and improve formula/description readability",
+      "state": "closed",
+      "merged": false,
+      "head": "fix/creature-gui-localization-captions-20261012",
+      "head_sha": "00c483e3539b38dc0476462a8e7e54fa358cd224",
+      "created_at": "2026-10-12T15:06:02Z",
+      "closed_at": "2026-10-15T12:31:28Z",
+      "merged_at": null
+    },
+    {
+      "number": 65,
+      "title": "Corregge concentrazione, caratteristica magica e badge degli incantesimi sui token",
+      "state": "closed",
+      "merged": true,
+      "head": "feat/token-active-spell-badges-20261012",
+      "head_sha": "6cc3894106753cbd25ee7049fc662d4d2d8c7f03",
+      "created_at": "2026-10-12T15:20:23Z",
+      "closed_at": "2026-10-12T15:20:58Z",
+      "merged_at": "2026-10-12T15:20:58Z"
+    },
+    {
+      "number": 66,
+      "title": "Fix: hitbox rosse dopo i lanci e dialoghi condizioni dei token",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/spell-target-red-highlight-and-condition-dialog-20261012",
+      "head_sha": "496c950c7ff6c4cdb161cc709d4180844b79768c",
+      "created_at": "2026-10-12T15:33:27Z",
+      "closed_at": "2026-10-12T15:33:45Z",
+      "merged_at": "2026-10-12T15:33:45Z"
+    },
+    {
+      "number": 67,
+      "title": "Fix: doppia dichiarazione _token_effect_dialog in dnd_base.gd",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/duplicate-token-effect-dialog-20261012",
+      "head_sha": "d0b960a1fdce70ef26375ccae0559eb3b74f7c82",
+      "created_at": "2026-10-12T15:49:56Z",
+      "closed_at": "2026-10-12T15:50:10Z",
+      "merged_at": "2026-10-12T15:50:10Z"
+    },
+    {
+      "number": 68,
+      "title": "Fix: Duergar missing from creature creation search and inconsistent 5-ft spell range",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/bestiary-cache-range-spell-tokens-20261012",
+      "head_sha": "a4ccfd60acaef58ccfe46bc4ef4560f2375f3bf5",
+      "created_at": "2026-10-12T17:29:42Z",
+      "closed_at": "2026-10-12T17:29:54Z",
+      "merged_at": "2026-10-12T17:29:54Z"
+    },
+    {
+      "number": 69,
+      "title": "2D spell targeting and dual normal/long weapon range overlays",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/2d-spell-targeting-overlay",
+      "head_sha": "577e5f80820d9a1a1118fe05e6fc82aebc301eff",
+      "created_at": "2026-10-12T17:57:14Z",
+      "closed_at": "2026-10-12T18:09:56Z",
+      "merged_at": "2026-10-12T18:09:56Z"
+    },
+    {
+      "number": 70,
+      "title": "Fix spell AoE overlay stacking and affected creature names",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/spell-2d-hud-layer-target-names",
+      "head_sha": "923b77e4694d5c7d4a9c938ef7c801b3c4e33822",
+      "created_at": "2026-10-12T18:43:22Z",
+      "closed_at": "2026-10-12T18:43:35Z",
+      "merged_at": "2026-10-12T18:43:35Z"
+    },
+    {
+      "number": 71,
+      "title": "Show AoE affected targets in 3D and apply selectable feat ability increases",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/aoe-3d-target-list-feat-ability-choice",
+      "head_sha": "0c5cff3cd15008dadbf5e28d639a09360aa13bef",
+      "created_at": "2026-10-12T19:42:44Z",
+      "closed_at": "2026-10-12T19:42:58Z",
+      "merged_at": "2026-10-12T19:42:58Z"
+    },
+    {
+      "number": 72,
+      "title": "Complete feat ability choices in Bonus and warn for unfinished sheet choices",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/bonus-feat-choice-warnings",
+      "head_sha": "ed6f01c3f9f8c32e7aacea9bcf30c649866028e6",
+      "created_at": "2026-10-12T20:10:27Z",
+      "closed_at": "2026-10-12T20:10:46Z",
+      "merged_at": "2026-10-12T20:10:46Z"
+    },
+    {
+      "number": 73,
+      "title": "Fix token selection, dual weapon range formulas, instant grants and Info feat display",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/token-context-long-range-live-grants-20261012",
+      "head_sha": "6842b4c2f689c4b28a5ebff24b82335c064ce42e",
+      "created_at": "2026-10-12T20:16:37Z",
+      "closed_at": "2026-10-12T21:08:38Z",
+      "merged_at": "2026-10-12T21:08:38Z"
+    },
+    {
+      "number": 74,
+      "title": "Render 3D creature weapon reach as hollow concentric spheres",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/3d-weapon-reach-wire-spheres",
+      "head_sha": "85a9a63ca5a608852286370909bfab4e63ec0ed5",
+      "created_at": "2026-10-12T21:06:24Z",
+      "closed_at": "2026-10-12T21:06:36Z",
+      "merged_at": "2026-10-12T21:06:36Z"
+    },
+    {
+      "number": 75,
+      "title": "Distinguish repeated feat and trait origins by class and level",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/disambiguate-identically-named-origins-20261012",
+      "head_sha": "c7b150e635c19d5e770e4be8ba5b6205bc99f957",
+      "created_at": "2026-10-12T21:21:20Z",
+      "closed_at": "2026-10-12T21:21:37Z",
+      "merged_at": "2026-10-12T21:21:37Z"
+    },
+    {
+      "number": 76,
+      "title": "Unify spell range previews and add per-attack range inspector with target lists",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/preview-attack-spell-ranges-target-list-20261012",
+      "head_sha": "747da0a10cf3248622ee0a4de126dfed776d9bd9",
+      "created_at": "2026-10-12T21:44:11Z",
+      "closed_at": "2026-10-12T21:44:51Z",
+      "merged_at": "2026-10-12T21:44:51Z"
+    },
+    {
+      "number": 77,
+      "title": "Fix origin choice GDScript parser error: reserved class_name keyword",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/origin-disambiguation-reserved-keyword-20261012",
+      "head_sha": "a912062131fcc65f382569a192d2e16a3f12e1cb",
+      "created_at": "2026-10-12T21:48:01Z",
+      "closed_at": "2026-10-12T21:48:11Z",
+      "merged_at": "2026-10-12T21:48:11Z"
+    },
+    {
+      "number": 78,
+      "title": "Disambiguate repeated class traits in origin dropdown by class and level",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/disambiguate-repeated-trait-origin-menu",
+      "head_sha": "ed6641d85b27042f9154293048b0b6cf3adf0518",
+      "created_at": "2026-10-12T21:52:16Z",
+      "closed_at": "2026-10-12T21:52:30Z",
+      "merged_at": "2026-10-12T21:52:30Z"
+    },
+    {
+      "number": 79,
+      "title": "Fix typed spell range target list when preview is inactive",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/typed-spell-range-list-20261012",
+      "head_sha": "8d08e2ece250bc4923f189ea6ea78157a0516867",
+      "created_at": "2026-10-12T21:54:39Z",
+      "closed_at": "2026-10-12T21:54:50Z",
+      "merged_at": "2026-10-12T21:54:50Z"
+    },
+    {
+      "number": 80,
+      "title": "Fix GDScript reserved local reintroduced in ASI origin labels",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/asi-origin-parser-reserved-name-20261012b",
+      "head_sha": "99edec5b2b01bab2ed51944c7b6438f464369c64",
+      "created_at": "2026-10-12T21:57:20Z",
+      "closed_at": "2026-10-12T21:57:32Z",
+      "merged_at": "2026-10-12T21:57:32Z"
+    },
+    {
+      "number": 81,
+      "title": "Move linked tokens together while preserving formation and facing",
+      "state": "closed",
+      "merged": true,
+      "head": "feat/token-linked-motion-20261013",
+      "head_sha": "540b11fe969e98cda986f2554b077255140d3e0d",
+      "created_at": "2026-10-12T22:37:17Z",
+      "closed_at": "2026-10-12T22:39:06Z",
+      "merged_at": "2026-10-12T22:39:06Z"
+    },
+    {
+      "number": 82,
+      "title": "Associate new release miniature PCKs with 5etools 2D tokens",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/5etools-2d-token-new-miniatures",
+      "head_sha": "aaa6e01304ee26264fbb047bba1e170fbd831a5f",
+      "created_at": "2026-10-12T23:36:10Z",
+      "closed_at": "2026-10-12T23:36:26Z",
+      "merged_at": "2026-10-12T23:36:26Z"
+    },
+    {
+      "number": 83,
+      "title": "Offline Fight Club class resource counters, dynamic maxima and rest recharge",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/offline-fightclub-resource-trackers",
+      "head_sha": "95744dfd54a00806f6eb0b1ed766802188c85f69",
+      "created_at": "2026-10-12T23:47:27Z",
+      "closed_at": "2026-10-13T00:02:10Z",
+      "merged_at": "2026-10-13T00:02:10Z"
+    },
+    {
+      "number": 84,
+      "title": "Fix linked token groups: move or rotate from any member",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/bidirectional-linked-token-motion",
+      "head_sha": "fed80f03b520337ea145811107f3cd1ea5fc1d59",
+      "created_at": "2026-10-12T23:56:51Z",
+      "closed_at": "2026-10-12T23:57:30Z",
+      "merged_at": "2026-10-12T23:57:30Z"
+    },
+    {
+      "number": 85,
+      "title": "Origini: incantesimi e tracker automatici da 5etools/Fight Club, capacità homebrew e bonus con dadi",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/origin-spells-dice-bonuses",
+      "head_sha": "3fdb1132c074fba0174f44c0e986bcd07c42d1ef",
+      "created_at": "2026-10-13T01:12:01Z",
+      "closed_at": "2026-10-13T02:04:57Z",
+      "merged_at": "2026-10-13T02:04:56Z"
+    },
+    {
+      "number": 86,
+      "title": "Decouple creature, compendium and dice hosting from 3D board (based on #85)",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/standalone-creatures-from-pr85",
+      "head_sha": "63c875ede98e0ab8f4ae58feb5dbd07f341917c3",
+      "created_at": "2026-10-13T01:38:29Z",
+      "closed_at": "2026-10-13T02:07:18Z",
+      "merged_at": "2026-10-13T02:07:17Z"
+    },
+    {
+      "number": 87,
+      "title": "refactor: compact creature editor and store paths (-79 executable lines)",
+      "state": "closed",
+      "merged": false,
+      "head": "refactor/compact-creature-core-20261013",
+      "head_sha": "80cc3fdbe17e99d2b370d69d22b78d38592fe2c7",
+      "created_at": "2026-10-13T01:54:33Z",
+      "closed_at": "2026-10-16T13:31:50Z",
+      "merged_at": null
+    },
+    {
+      "number": 88,
+      "title": "Extract board-independent creature sheet mutation controller",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/creature-domain-controller",
+      "head_sha": "3fd8fc741de06409e143d3b4dae0cd5c9468e3b8",
+      "created_at": "2026-10-13T02:50:29Z",
+      "closed_at": "2026-10-13T02:57:07Z",
+      "merged_at": "2026-10-13T02:57:07Z"
+    },
+    {
+      "number": 89,
+      "title": "Audit regressions from creature modularization and preserve HP editor semantics",
+      "state": "closed",
+      "merged": true,
+      "head": "audit/creature-modularization-regressions",
+      "head_sha": "aec0a38b35a5dc40343ed5c9e182fc781cd5517c",
+      "created_at": "2026-10-13T12:48:28Z",
+      "closed_at": "2026-10-13T12:59:35Z",
+      "merged_at": "2026-10-13T12:59:35Z"
+    },
+    {
+      "number": 90,
+      "title": "Make creature feature catalog UI-independent and standalone boot strictly offline",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/standalone-feature-catalog-offline",
+      "head_sha": "da8080356ff6df2c06ae6a93c33e1cc2f8703c24",
+      "created_at": "2026-10-13T13:10:11Z",
+      "closed_at": "2026-10-13T13:22:37Z",
+      "merged_at": "2026-10-13T13:22:37Z"
+    },
+    {
+      "number": 91,
+      "title": "Unify spell counter controls and scrollable hover descriptions",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/spell-counters-unified-hover-captions-20261013",
+      "head_sha": "2da8c4a7d24de82882db353a32eccf471e118d79",
+      "created_at": "2026-10-13T21:19:48Z",
+      "closed_at": "2026-10-13T21:20:43Z",
+      "merged_at": "2026-10-13T21:20:43Z"
+    },
+    {
+      "number": 92,
+      "title": "Consolidate creature Physics and show casting stats per spell origin",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/sheet-spellcasting-physics-20261013",
+      "head_sha": "68318692868ca1545f382314e1811e62d8fdb89c",
+      "created_at": "2026-10-13T21:41:19Z",
+      "closed_at": "2026-10-13T21:44:34Z",
+      "merged_at": "2026-10-13T21:44:34Z"
+    },
+    {
+      "number": 93,
+      "title": "Powers: one caster ability per section, individual tracker costs and compact Physics",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/powers-origin-stats-cost-compact-physics-20261014",
+      "head_sha": "0b510a2141c45f43cf952850909a85d8f3977804",
+      "created_at": "2026-10-13T22:21:12Z",
+      "closed_at": "2026-10-13T22:33:27Z",
+      "merged_at": "2026-10-13T22:33:27Z"
+    },
+    {
+      "number": 94,
+      "title": "Import 5etools Character Creation Options as feats",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/5etools-charoptions-as-feats",
+      "head_sha": "9a5d700d26b7bef157280d1136effc0636c62908",
+      "created_at": "2026-10-13T22:28:08Z",
+      "closed_at": "2026-10-13T22:31:54Z",
+      "merged_at": "2026-10-13T22:31:54Z"
+    },
+    {
+      "number": 95,
+      "title": "Use one global scrollable hover-hint style across VTT",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/global-scrollable-hover-tooltips-20261014",
+      "head_sha": "ee8e0595c52da39c28b8e1c8554389e9c6a927cf",
+      "created_at": "2026-10-13T22:39:43Z",
+      "closed_at": "2026-10-13T22:40:54Z",
+      "merged_at": "2026-10-13T22:40:54Z"
+    },
+    {
+      "number": 96,
+      "title": "Compact and align creature Physics fields, miniatures and movement",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/compact-physics-aligned-fields-20261014",
+      "head_sha": "04cb31dccda90c063602011c8b36b2716a376555",
+      "created_at": "2026-10-13T22:52:18Z",
+      "closed_at": "2026-10-13T22:57:46Z",
+      "merged_at": "2026-10-13T22:57:46Z"
+    },
+    {
+      "number": 97,
+      "title": "Compact Powers trackers and move per-spell cost outside spell buttons",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/compact-powers-trackers-and-costs-20261014",
+      "head_sha": "f235431509a3d6589f0347fd1571d9c49d816372",
+      "created_at": "2026-10-13T23:01:09Z",
+      "closed_at": "2026-10-13T23:10:39Z",
+      "merged_at": "2026-10-13T23:10:39Z"
+    },
+    {
+      "number": 98,
+      "title": "Move miniature geometry into Miniatures and expand horizontal movement layout",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/physics-miniatures-wide-movement-20261014",
+      "head_sha": "62a7c34378894d2304ce3f64fa763c9f5c3f576e",
+      "created_at": "2026-10-13T23:20:29Z",
+      "closed_at": "2026-10-13T23:22:17Z",
+      "merged_at": "2026-10-13T23:22:17Z"
+    },
+    {
+      "number": 99,
+      "title": "Mobile: compact headers, side navigation and scrollable trait cards",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-compact-sheet-navigation",
+      "head_sha": "49a8764fa3da66dc1ae94c3d3d35290d310742a9",
+      "created_at": "2026-10-14T11:38:33Z",
+      "closed_at": "2026-10-14T11:44:48Z",
+      "merged_at": "2026-10-14T11:44:48Z"
+    },
+    {
+      "number": 100,
+      "title": "CI: reduce fast Godot validation to 60-second smoke tests",
+      "state": "closed",
+      "merged": true,
+      "head": "ci/fast-validation-60s",
+      "head_sha": "881aa95c8baca4d12136b89134df174f25b000af",
+      "created_at": "2026-10-14T11:58:41Z",
+      "closed_at": "2026-10-14T11:59:11Z",
+      "merged_at": "2026-10-14T11:59:11Z"
+    },
+    {
+      "number": 101,
+      "title": "Android: shrink mobile APK by 85% with isolated arm64 export",
+      "state": "closed",
+      "merged": true,
+      "head": "build/slim-mobile-android-20261014",
+      "head_sha": "55e848be054729aa58c7878ff41fa1d99909ce7c",
+      "created_at": "2026-10-14T12:31:10Z",
+      "closed_at": "2026-10-14T12:31:30Z",
+      "merged_at": "2026-10-14T12:31:30Z"
+    },
+    {
+      "number": 102,
+      "title": "Fix token collision shape when transforming and reverting appearance",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/token-transformation-hitbox-restore",
+      "head_sha": "a76ca3a1e6baa95681b939af782cfaedd24f1715",
+      "created_at": "2026-10-14T12:36:05Z",
+      "closed_at": "2026-10-14T13:35:05Z",
+      "merged_at": "2026-10-14T13:35:05Z"
+    },
+    {
+      "number": 103,
+      "title": "Compact and responsive movement layout in creature sheet",
+      "state": "closed",
+      "merged": true,
+      "head": "ui/compact-physics-movement-20261014",
+      "head_sha": "2ba356d6f10d36ea99d0a2c6d6e21bf89d2cafcc",
+      "created_at": "2026-10-14T13:17:10Z",
+      "closed_at": "2026-10-14T13:28:32Z",
+      "merged_at": "2026-10-14T13:28:31Z"
+    },
+    {
+      "number": 104,
+      "title": "Restore base creature size and improve miniature picker layout",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/creature-appearance-restore-picker-layout-20261014",
+      "head_sha": "fc5ec17748a76412a45be9e8caef1ca264ca4d9d",
+      "created_at": "2026-10-14T14:03:11Z",
+      "closed_at": "2026-10-14T14:03:48Z",
+      "merged_at": "2026-10-14T14:03:48Z"
+    },
+    {
+      "number": 105,
+      "title": "Correct Shift+arrow rotation direction in 3D",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/3d-shift-arrow-rotation-direction-20261014",
+      "head_sha": "9d3269c238cf55fb241ebd4fc8794f30b06f4c53",
+      "created_at": "2026-10-14T14:42:47Z",
+      "closed_at": "2026-10-14T14:43:09Z",
+      "merged_at": "2026-10-14T14:43:09Z"
+    },
+    {
+      "number": 106,
+      "title": "Improve Android creature sheet layout and compact tracker controls",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-touch-sheet-layout-20261014",
+      "head_sha": "84665ea67b3ccc667f3ad14029ee4896e3af8885",
+      "created_at": "2026-10-14T14:46:00Z",
+      "closed_at": "2026-10-14T14:49:22Z",
+      "merged_at": "2026-10-14T14:49:22Z"
+    },
+    {
+      "number": 107,
+      "title": "Fix mobile header boundary assertion blocking Android APK build",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-header-test-boundary-20261014",
+      "head_sha": "f9abf9fb2ecc74fd66df0072d0dec33c8581ef0d",
+      "created_at": "2026-10-14T14:53:31Z",
+      "closed_at": "2026-10-14T14:53:39Z",
+      "merged_at": "2026-10-14T14:53:38Z"
+    },
+    {
+      "number": 108,
+      "title": "Make mobile swipe/tap regression use a visible button's actual bounds",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-touch-tap-test-target-20261014",
+      "head_sha": "28a788fef49baa105dec383de1e4330566cefd44",
+      "created_at": "2026-10-14T14:59:00Z",
+      "closed_at": "2026-10-14T14:59:09Z",
+      "merged_at": "2026-10-14T14:59:09Z"
+    },
+    {
+      "number": 109,
+      "title": "Mobile statistics readability, inline origin grants and unified sections",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-statistics-origin-unified-sections-20261014",
+      "head_sha": "f965449ad72e56584bb01ad3b5aa75c5bb36202c",
+      "created_at": "2026-10-14T15:34:37Z",
+      "closed_at": "2026-10-14T15:36:37Z",
+      "merged_at": "2026-10-14T15:36:37Z"
+    },
+    {
+      "number": 110,
+      "title": "Unifica archivio creature globale e rimuove la selezione per ambito",
+      "state": "closed",
+      "merged": true,
+      "head": "global-creature-archive-unified",
+      "head_sha": "8e6dfca6a642320129fa98ccf7a79ff2ae8565fa",
+      "created_at": "2026-10-14T15:46:22Z",
+      "closed_at": "2026-10-14T15:48:56Z",
+      "merged_at": "2026-10-14T15:48:56Z"
+    },
+    {
+      "number": 111,
+      "title": "Correggi navigazione schede, condizioni mobile e contatori slot",
+      "state": "closed",
+      "merged": true,
+      "head": "sheet-tabs-mobile-layout-oct14",
+      "head_sha": "271a241e4040bd5dc8165b248c34826c1d1f4cd6",
+      "created_at": "2026-10-14T16:03:00Z",
+      "closed_at": "2026-10-14T16:09:04Z",
+      "merged_at": "2026-10-14T16:09:04Z"
+    },
+    {
+      "number": 112,
+      "title": "Ripristina archivi creature separati per generale, campagna e scenario",
+      "state": "closed",
+      "merged": true,
+      "head": "restore-scoped-creature-archives-oct14",
+      "head_sha": "ad1c0133d2ddd19fe06e1f5c480f28b3b4ad5730",
+      "created_at": "2026-10-14T16:14:19Z",
+      "closed_at": "2026-10-14T16:15:16Z",
+      "merged_at": "2026-10-14T16:15:16Z"
+    },
+    {
+      "number": 113,
+      "title": "Ripristina statistiche mobile e rendi utilizzabile il popup touch delle formule",
+      "state": "closed",
+      "merged": true,
+      "head": "fix-mobile-statistics-touch-help-20261014",
+      "head_sha": "8c126a3d65956fa45347ec87aa1bac8fa4465fd6",
+      "created_at": "2026-10-14T16:41:32Z",
+      "closed_at": "2026-10-14T16:42:33Z",
+      "merged_at": "2026-10-14T16:42:33Z"
+    },
+    {
+      "number": 114,
+      "title": "Support LAN discovery and Android emulator connections without Tailscale",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/lan-mobile-discovery-sync",
+      "head_sha": "e83bf54903fc8846c01c6fda8e084d9ae9d97ea1",
+      "created_at": "2026-10-14T17:42:24Z",
+      "closed_at": "2026-10-14T17:47:23Z",
+      "merged_at": "2026-10-14T17:47:23Z"
+    },
+    {
+      "number": 115,
+      "title": "Enrich 5etools monsters with Fight Club 2014 counters including Monster Manual",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/fightclub-monster-recharge-enrichment-20261015",
+      "head_sha": "0c963011ac1dc1d89c3f10a94fc27467aea275b4",
+      "created_at": "2026-10-15T00:40:34Z",
+      "closed_at": "2026-10-15T01:51:00Z",
+      "merged_at": "2026-10-15T01:51:00Z"
+    },
+    {
+      "number": 116,
+      "title": "Create and delete local backgrounds, feats and items from Compendium and sheet selectors",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/local-custom-background-feat-item-20261015",
+      "head_sha": "c4af80d40e8be3a75b51c778affbfa44d7bc9e57",
+      "created_at": "2026-10-15T01:18:02Z",
+      "closed_at": "2026-10-15T01:51:54Z",
+      "merged_at": "2026-10-15T01:51:54Z"
+    },
+    {
+      "number": 117,
+      "title": "Portable custom-content exports and multiplayer document sending (desktop/mobile)",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/portable-custom-content-document-sharing-20261015",
+      "head_sha": "756a570188baf13a6326f65bb2a9473282014dc9",
+      "created_at": "2026-10-15T01:32:57Z",
+      "closed_at": "2026-10-15T01:52:32Z",
+      "merged_at": "2026-10-15T01:52:32Z"
+    },
+    {
+      "number": 118,
+      "title": "Safely integrate local mobile changes and preserve homebrew/document data",
+      "state": "closed",
+      "merged": false,
+      "head": "fix/safe-sync-homebrew-documents",
+      "head_sha": "c16abc95aa1c4f741055b2f8ad95fc178fb2084b",
+      "created_at": "2026-10-15T10:03:43Z",
+      "closed_at": "2026-10-16T13:31:48Z",
+      "merged_at": null
+    },
+    {
+      "number": 119,
+      "title": "Share ordinary and homebrew inventory items with online VTT peers",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/multiplayer-inventory-item-transfer-20261015",
+      "head_sha": "35798768233092cacf7aab817688cd4991251555",
+      "created_at": "2026-10-15T11:12:55Z",
+      "closed_at": "2026-10-15T11:19:35Z",
+      "merged_at": "2026-10-15T11:19:35Z"
+    },
+    {
+      "number": 120,
+      "title": "Use selected creature for chat and choose item/document recipients",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/chat-actor-targeted-shares-20261015",
+      "head_sha": "0508815f4c97d38cd90cf8078f96553af666bd53",
+      "created_at": "2026-10-15T11:34:34Z",
+      "closed_at": "2026-10-15T12:03:07Z",
+      "merged_at": "2026-10-15T12:03:07Z"
+    },
+    {
+      "number": 121,
+      "title": "Automatic derived creature progression, CR, XP and racial speed",
+      "state": "closed",
+      "merged": false,
+      "head": "codex/automatic-creature-derived-values",
+      "head_sha": "07b9c2487301282dd9669172e6399b03c3de6f78",
+      "created_at": "2026-10-15T12:14:10Z",
+      "closed_at": "2026-10-15T13:03:26Z",
+      "merged_at": null
+    },
+    {
+      "number": 122,
+      "title": "Fix mobile inventory overflow and document edit/share popups",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/mobile-inventory-document-editor-20261015",
+      "head_sha": "962b06118419f2a15b376c37e8331f63a88e16d9",
+      "created_at": "2026-10-15T12:28:22Z",
+      "closed_at": "2026-10-15T12:34:22Z",
+      "merged_at": "2026-10-15T12:34:22Z"
+    },
+    {
+      "number": 123,
+      "title": "Attach free board tokens to creature sheets on desktop and mobile, plus automatic derived calculations",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/free-token-assignment-and-auto-calcs",
+      "head_sha": "09518a616e454ad428f4f8049e61d7eb1f352e62",
+      "created_at": "2026-10-15T12:54:42Z",
+      "closed_at": "2026-10-15T13:03:06Z",
+      "merged_at": "2026-10-15T13:03:06Z"
+    },
+    {
+      "number": 124,
+      "title": "General VTT regression audit: ownership, monster resources and race speed performance",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/vtt-general-regression-audit",
+      "head_sha": "e1e3a02a58a4b790b1aa1c27e814a0603df51846",
+      "created_at": "2026-10-15T13:17:00Z",
+      "closed_at": "2026-10-15T13:36:10Z",
+      "merged_at": "2026-10-15T13:36:10Z"
+    },
+    {
+      "number": 125,
+      "title": "Fix touchscreen popup clipping and saving throw icon layout",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/vtt-mobile-dialog-and-stats-audit",
+      "head_sha": "8cfec9441a99de06b2533ecc8b1c00abf66fc9cf",
+      "created_at": "2026-10-15T13:41:11Z",
+      "closed_at": "2026-10-15T14:05:42Z",
+      "merged_at": "2026-10-15T14:05:42Z"
+    },
+    {
+      "number": 126,
+      "title": "Fix float/dictionary racial speed crash during character normalization",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/fix-race-speed-variant-compare",
+      "head_sha": "bc7ba3ae55c864591c485b928e3564bd936b11cc",
+      "created_at": "2026-10-15T14:24:15Z",
+      "closed_at": "2026-10-15T14:25:28Z",
+      "merged_at": "2026-10-15T14:25:27Z"
+    },
+    {
+      "number": 127,
+      "title": "Preserve homebrew drafts on failed saves and fix overlay reload",
+      "state": "closed",
+      "merged": true,
+      "head": "codex/homebrew-save-reload-audit",
+      "head_sha": "f7d8d0efe3cf6256fa8978bccdfcccaa76fe79d8",
+      "created_at": "2026-10-15T14:53:35Z",
+      "closed_at": "2026-10-15T14:54:49Z",
+      "merged_at": "2026-10-15T14:54:49Z"
+    },
+    {
+      "number": 128,
+      "title": "Build an unsigned iOS IPA for VTT via free on-demand macOS Actions",
+      "state": "closed",
+      "merged": true,
+      "head": "build/ios-unsigned-godot-472-20261015",
+      "head_sha": "eb846ced2f55a029a60c15be7afcfe7293a8acfa",
+      "created_at": "2026-10-15T15:24:28Z",
+      "closed_at": "2026-10-15T15:26:00Z",
+      "merged_at": "2026-10-15T15:26:00Z"
+    },
+    {
+      "number": 129,
+      "title": "Fix missing miniature catalog after making VTT public",
+      "state": "closed",
+      "merged": true,
+      "head": "fix/public-miniature-catalog-20261015",
+      "head_sha": "cddba62bb0105edc44dd02e1566d096f04398326",
+      "created_at": "2026-10-15T16:00:01Z",
+      "closed_at": "2026-10-15T16:00:43Z",
+      "merged_at": "2026-10-15T16:00:43Z"
+    },
+    {
+      "number": 130,
+      "title": "Gestione infusioni Artefice tramite inventario e dati esistenti",
+      "state": "closed",
+      "merged": true,
+      "head": "feat/artificer-infusions-existing-mechanics",
+      "head_sha": "22806aa7f6b368a180dc5cba41c21c345253e76d",
+      "created_at": "2026-10-15T17:54:56Z",
+      "closed_at": "2026-10-16T13:31:30Z",
+      "merged_at": "2026-10-16T13:31:30Z"
+    },
+    {
+      "number": 131,
+      "title": "Mobile-first PWA: offline archive and desktop tactical gateway foundation",
+      "state": "open",
+      "merged": false,
+      "head": "feature/mobile-pwa-foundation",
+      "head_sha": "ef65d344a9e400360444b6db95854618f141e727",
+      "created_at": "2026-10-16T11:42:19Z",
+      "closed_at": null,
+      "merged_at": null
+    },
+    {
+      "number": 132,
+      "title": "PWA mobile phase 1: native desktop host, browser transport and IndexedDB archive",
+      "state": "closed",
+      "merged": true,
+      "head": "feature/mobile-pwa-transport-storage",
+      "head_sha": "424fa0abc58db1db537286accb8c0f5a2243fb8b",
+      "created_at": "2026-10-16T11:51:06Z",
+      "closed_at": "2026-10-16T12:29:36Z",
+      "merged_at": "2026-10-16T12:29:36Z"
+    },
+    {
+      "number": 133,
+      "title": "Use one global local creature archive with legacy migration and scene hook",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/global-creature-archive-20261016",
+      "head_sha": "4fa57ca87b2f53a37b585f04d9a804948233e728",
+      "created_at": "2026-10-16T12:02:00Z",
+      "closed_at": "2026-10-16T13:06:48Z",
+      "merged_at": "2026-10-16T13:06:48Z"
+    },
+    {
+      "number": 134,
+      "title": "Unify origin editor cards across bonuses, proficiencies, feats, trackers and defenses",
+      "state": "closed",
+      "merged": true,
+      "head": "refactor/unified-origin-editor-cards-20261016",
+      "head_sha": "a2cd733ee461f707dc170152f54243d0eb25a8e8",
+      "created_at": "2026-10-16T12:30:20Z",
+      "closed_at": "2026-10-16T12:59:50Z",
+      "merged_at": "2026-10-16T12:59:50Z"
+    }
+  ]
+}
