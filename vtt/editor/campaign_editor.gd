@@ -136,6 +136,7 @@ var _fog_last_world: Vector3 = Vector3.ZERO
 const EDITOR_AUTOSAVE_POLL_MS := 450
 const EDITOR_AUTOSAVE_DEBOUNCE_MS := 350
 var _editor_autosave_ready := false
+var _editor_autosave_blocked := false
 var _editor_autosave_last_signature := ""
 var _editor_autosave_candidate := ""
 var _editor_autosave_candidate_since := 0
@@ -254,7 +255,7 @@ func _initialize_editor() -> void:
 	# catturare/liberare il cursore tramite la logica gia' presente in dnd_base.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	await _load_active_campaign()
-	_editor_autosave_ready = true
+	_editor_autosave_ready = not _editor_autosave_blocked
 
 
 func _build_toolbar() -> void:
@@ -2072,6 +2073,14 @@ func _load_active_campaign() -> void:
 
 	var state: Dictionary = _load_active_state()
 	if state.is_empty():
+		var manager := _campaign_manager()
+		var saved_path := "user://campaigns".path_join(
+			String(manager.get("active_campaign_id"))
+		).path_join("state.json")
+		if FileAccess.file_exists(saved_path):
+			_editor_autosave_blocked = true
+			_set_status("Salvataggio campagna illeggibile: conservato senza sovrascriverlo.")
+			return
 		var initial_preset: String = _initial_element_preset()
 		if initial_preset == FOREST_MOUNTAINS_PRESET_ID:
 			active_element_preset = initial_preset
@@ -2086,7 +2095,8 @@ func _load_active_campaign() -> void:
 			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
 	if int(state.get("version", -1)) != SAVE_VERSION:
-		_set_status("Versione salvataggio non supportata")
+		_editor_autosave_blocked = true
+		_set_status("Versione salvataggio non supportata: file preservato.")
 		return
 
 	var primary: Variant = state.get("primary_grid", {})
