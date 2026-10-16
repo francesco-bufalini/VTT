@@ -73,5 +73,20 @@ func run() -> void:
 	host.call("_stop_listener")
 	assert(not (host.get("_server") as TCPServer).is_listening(),
 		"PWA port must be closed on board shutdown")
+	# Simulate F5/F6 starting and closing the native board without the heavy
+	# 3D assets. The scene-scoped autoload must bind and release automatically.
+	var board := Node3D.new()
+	board.name = "SceneLifecycleFixture"
+	board.scene_file_path = "res://dnd_base.tscn"
+	root.add_child(board)
+	current_scene = board
+	host.call("_refresh_scene_server")
+	assert((host.get("_server") as TCPServer).is_listening(),
+		"PWA must start automatically with the board scene")
+	board.queue_free()
+	await process_frame
+	assert(not (host.get("_server") as TCPServer).is_listening(),
+		"PWA must stop immediately when board scene exits")
+	current_scene = null
 	print("PASS: desktop PWA static assets, status, API authorization, scene-scope shutdown and fixed-path routing")
 	quit()
