@@ -36,6 +36,11 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 func run() -> void:
 	await process_frame
 	await process_frame
+	var creature_area_script: Script = load("res://vtt/creature_area.gd")
+	var creature_archive_script: Script = load("res://vtt/creature_archive.gd")
+	var token_list_script: Script = load("res://vtt/token_list.gd")
+	assert(creature_area_script != null and creature_archive_script != null and token_list_script != null,
+		"Creature archive and token-list batch UI scripts must compile")
 	var serve_helper: Script = load("res://network/tailscale_serve.gd")
 	var empty_config: Dictionary = serve_helper.call("parse_serve_status", {})
 	assert(not bool(empty_config.active))
