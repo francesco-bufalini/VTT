@@ -56,6 +56,7 @@ const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 const CreatureAttackData = preload("res://vtt/creature_attack_data.gd")
+const TailscaleServe = preload("res://network/tailscale_serve.gd")
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -142,6 +143,11 @@ var share_dialog: AcceptDialog
 var share_session: SpinBox
 var share_auto_sync: CheckBox
 var share_status: Label
+var tailscale_serve_label: Label
+var tailscale_serve_enable: Button
+var tailscale_serve_disable: Button
+var tailscale_serve_copy: Button
+var tailscale_serve_url: String = ""
 var map_save_dialog: FileDialog
 var map_load_dialog: FileDialog
 var camera_settings_dialog: AcceptDialog
@@ -3807,7 +3813,8 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 	if id == CONTEXT_SHARE_MAP:
 		_ui_owns_mouse = true
-		_popup_dialog_safe(share_dialog, Vector2i(620, 430))
+		_popup_dialog_safe(share_dialog, Vector2i(680, 565))
+		call_deferred("_refresh_tailscale_serve_ui")
 		_release_mouse()
 		return
 	if id == CONTEXT_SAVE_MAP_LOCAL:
@@ -5892,6 +5899,43 @@ func _build_share_dialog() -> void:
 		func(): board_sync.send_snapshot_to_tailnet(_share_session_key())
 	)
 
+	var tailscale_header := Label.new()
+	tailscale_header.text = "PWA mobile · Tailscale Serve (HTTPS)"
+	layout.add_child(tailscale_header)
+
+	tailscale_serve_label = Label.new()
+	tailscale_serve_label.text = "Premi Aggiorna per controllare Tailscale."
+	tailscale_serve_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(tailscale_serve_label)
+
+	var tailscale_row := HBoxContainer.new()
+	tailscale_row.add_theme_constant_override("separation", 8)
+	layout.add_child(tailscale_row)
+	tailscale_serve_enable = Button.new()
+	tailscale_serve_enable.text = "Attiva accesso telefono"
+	tailscale_serve_enable.pressed.connect(_change_tailscale_serve.bind(true))
+	tailscale_row.add_child(tailscale_serve_enable)
+	tailscale_serve_disable = Button.new()
+	tailscale_serve_disable.text = "Disattiva"
+	tailscale_serve_disable.pressed.connect(_change_tailscale_serve.bind(false))
+	tailscale_row.add_child(tailscale_serve_disable)
+	var tailscale_refresh := Button.new()
+	tailscale_refresh.text = "Aggiorna"
+	tailscale_refresh.pressed.connect(_refresh_tailscale_serve_ui)
+	tailscale_row.add_child(tailscale_refresh)
+	tailscale_serve_copy = Button.new()
+	tailscale_serve_copy.text = "Copia link telefono"
+	tailscale_serve_copy.disabled = true
+	tailscale_serve_copy.pressed.connect(func() -> void:
+		if not tailscale_serve_url.is_empty():
+			DisplayServer.clipboard_set(tailscale_serve_url)
+	)
+	layout.add_child(tailscale_serve_copy)
+	var tailscale_hint := Label.new()
+	tailscale_hint.text = "Attivazione una sola volta per PC. Per associare il telefono premi Ctrl+Shift+P. Serve è limitato alla tailnet, non è Funnel."
+	tailscale_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(tailscale_hint)
+
 	_build_map_file_dialogs()
 
 	share_status = Label.new()
@@ -5901,6 +5945,45 @@ func _build_share_dialog() -> void:
 	board_sync.status_changed.connect(
 		func(message): share_status.text = message
 	)
+
+
+func _refresh_tailscale_serve_ui() -> void:
+	if tailscale_serve_label == null or not is_instance_valid(tailscale_serve_label):
+		return
+	var result: Dictionary = TailscaleServe.get_status()
+	tailscale_serve_url = ""
+	if not bool(result.get("ok", false)):
+		tailscale_serve_label.text = "Tailscale non pronto: " + String(result.get("message", "Impossibile leggere lo stato."))
+	elif bool(result.get("active", false)):
+		var host: Node = get_node_or_null("/root/PwaHost")
+		if host != null and host.has_method("_tailscale_url"):
+			tailscale_serve_url = String(host.call("_tailscale_url"))
+		tailscale_serve_label.text = (
+			"Attivo · " + tailscale_serve_url
+			if not tailscale_serve_url.is_empty()
+			else "Attivo · controlla l'indirizzo HTTPS in Tailscale."
+		)
+	else:
+		tailscale_serve_label.text = "Disattivato. Attiva per accedere alla PWA da telefono."
+	var available := bool(result.get("ok", false))
+	var reserved := bool(result.get("other_rules", false))
+	tailscale_serve_enable.disabled = not available or reserved or bool(result.get("active", false))
+	tailscale_serve_disable.disabled = not available or reserved or not bool(result.get("active", false))
+	tailscale_serve_copy.disabled = tailscale_serve_url.is_empty()
+
+
+func _change_tailscale_serve(enabled: bool) -> void:
+	if tailscale_serve_label == null:
+		return
+	tailscale_serve_enable.disabled = true
+	tailscale_serve_disable.disabled = true
+	tailscale_serve_label.text = "Aggiornamento di Tailscale Serve…"
+	var result: Dictionary = TailscaleServe.set_enabled(enabled)
+	_refresh_tailscale_serve_ui()
+	if not bool(result.get("ok", false)):
+		tailscale_serve_label.text = "Operazione non riuscita: " + String(result.get("message", ""))
+
+
 
 
 func _build_map_file_dialogs() -> void:
