@@ -1,12 +1,14 @@
 extends SceneTree
 
+var _test_port := 0
+
 func _initialize() -> void:
 	call_deferred("run")
 
 
 func http(method: String, path: String, body: String = "", extra: String = "") -> String:
 	var peer := StreamPeerTCP.new()
-	assert(peer.connect_to_host("127.0.0.1", 8765) == OK)
+	assert(peer.connect_to_host("127.0.0.1", _test_port) == OK)
 	var end := Time.get_ticks_msec() + 5000
 	while peer.get_status() == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < end:
 		peer.poll()
@@ -92,8 +94,12 @@ func run() -> void:
 	assert(not host.call("_is_board_scene", unrelated),
 		"Unrelated scenes must not bind the PWA HTTP listener")
 	unrelated.free()
+	# Ask the OS for an unused loopback port; never compete with the live game.
+	host.set("_listen_port", 0)
 	assert(host.call("_start_listener") == OK, "Manual localhost test fixture could not bind")
 	assert((host.get("_server") as TCPServer).is_listening(), "HTTP fixture not listening")
+	_test_port = (host.get("_server") as TCPServer).get_local_port()
+	assert(_test_port > 0, "OS must allocate a real fixture port")
 	var page := await http("GET", "/")
 	assert(page.begins_with("HTTP/1.1 200"))
 	assert(page.contains("VTT Mobile"))

@@ -182,7 +182,10 @@ func _fit_touch_dialog(dialog: AcceptDialog) -> void:
 			button.clip_text = false
 			button.custom_minimum_size.x = 120
 	var viewport_size := get_viewport_rect().size
-	dialog.size = Vector2i(minf(dialog.size.x, viewport_size.x - 16), minf(dialog.size.y, viewport_size.y - 48))
+	dialog.size = Vector2i(Vector2(
+		minf(dialog.size.x, viewport_size.x - 16),
+		minf(dialog.size.y, viewport_size.y - 48)
+	).floor())
 
 func _configure_ui_scale() -> void:
 	if not OS.has_feature("mobile"):

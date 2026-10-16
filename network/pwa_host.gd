@@ -37,6 +37,8 @@ const FILES := {
 	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
 }
 
+# Keep fixtures independent from a running desktop session.
+var _listen_port: int = PORT
 var _server := TCPServer.new()
 var _clients: Array[Dictionary] = []
 var _token := ""
@@ -97,9 +99,9 @@ func _start_listener() -> Error:
 		return OK
 	if _token.is_empty():
 		return ERR_UNAUTHORIZED
-	var err := _server.listen(PORT, "127.0.0.1")
+	var err := _server.listen(_listen_port, "127.0.0.1")
 	if err != OK:
-		push_warning("PWA: localhost:%d non disponibile: %s" % [PORT, error_string(err)])
+		push_warning("PWA: localhost:%d non disponibile: %s" % [_listen_port, error_string(err)])
 		return err
 	set_process(true)
 	var board := get_tree().current_scene

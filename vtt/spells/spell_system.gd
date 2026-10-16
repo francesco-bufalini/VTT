@@ -5517,7 +5517,7 @@ func remote_targeting_status(caster: Node3D, owner: String) -> Dictionary:
 			selected.append(String(token.call("get_token_id")))
 	return {"active": is_targeting(), "phase": _targeting_phase, "outcome": _remote_outcome,
 		"instruction": ("Risolvi la scelta o il tiro salvezza sul desktop, poi premi Aggiorna." if _targeting_phase in ["saving_throw", "summon_count", "summon_token_dialog", "transform_token_dialog", "resize_token_dialog", "wall_mode", "wall_orientation"] else "Tocca un bersaglio o un punto sulla mappa. Selezioni: %d." % _pending_target_history.size()), "selected_ids": selected,
-		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0,
+		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0.0,
 		"area_shape": String(_pending_spell().get("aoe_shape", "")),
 		"area_radius_feet": _effective_aoe_radius_feet(_pending_spell()),
 		"area_side_feet": float(_pending_spell().get("aoe_side_feet", 10))}
