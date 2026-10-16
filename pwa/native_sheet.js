@@ -78,7 +78,7 @@ export function identityPatch(c,key,value){
  }
  return patch;
 }
-export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,details='overview',catalogs={}}){
+export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',details='overview',catalogs={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
@@ -145,9 +145,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle')return panel('Punti ferita',cols(number('Attuali','current_hp',c.current_hp??1)+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+number('Seconda forma · massimi','second_form_max_hp')))+
   resources+panel('CA e iniziativa',summary([['CA base (riferimento)',c.armor_class_base??c.armor_class??10],['Iniziativa salvata (riferimento)',c.initiative??0]])+
-      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
+      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+equipment+
   panel('Attacchi disponibili',select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
-   list(c.inventory).filter(i=>i.equipped).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+
+   list(c.inventory).filter(i=>Array.isArray(i.equipped_slots)&& (i.equipped_slots.includes('main')||i.equipped_slots.includes('off'))).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+
    '<button class="btn" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>');
  if(section==='traits')return panel('Tratti',summary([['Razza / Specie',c.species],['Sottorazza',c.subrace],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+feats+
   list(c.stat_block?.trait).map(t=>'<article class="list-item"><h3>'+esc(t.name)+'</h3><p>'+esc(list(t.entries).filter(x=>typeof x==='string').join(' '))+'</p></article>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));

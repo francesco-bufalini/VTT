@@ -1,4 +1,6 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
+import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -24,7 +26,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1,
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -236,23 +238,42 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),details:state.detail,catalogs:state.referenceCatalogs})||"";
+  if(state.sheet==="magic"&&!state.spellCatalog){
+    try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
+    catch(error){state.spellCatalogError=errorMessage(error);}
+  }
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory":
     body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
       (Array.isArray(c.inventory) ? c.inventory.map((item,index) => inventoryRow(item,index)).join("") : "")+
-      '<div class="actions">'+btn("add-item","＋ Aggiungi oggetto","primary")+'</div>');
+      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+btn("add-item","Crea oggetto locale")+'</div>');
     break;
   case "magic":
-    body = panel("Caratteristica degli incantesimi",'<p class="hint">'+esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
-      '<div class="columns three">'+Array.from({length:9},(_,i)=>{const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
-      return '<div class="ability-box"><label>Liv. '+level+'<input type="number" min="0" data-slot="'+level+
-        '" value="'+esc(spent)+'"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';}).join("")+'</div>')+
-      panel("Patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+' · slot totali '+esc(c.pact_slots_total??0)+'</p>'+
-      field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",spellList(c,"spells"))+
+    body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
+      esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
+      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus vengono calcolati da Godot.</p>'+
+        '<div class="columns three">'+Array.from({length:9},(_,i)=>{
+          const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
+          return '<div class="ability-box"><label>Liv. '+level+
+            '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
+            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
+        }).join("")+'</div>')+
+      panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
+        ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
+        field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
+      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono determinate dal motore Godot.</p>')+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
+      panel("Aggiungi dal catalogo",
+        '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
+        '<label>Destinazione<select id="spell-target">'+
+        '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
+        '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
+        '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+
+        esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
+        (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
+        '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
@@ -298,29 +319,74 @@ function resourceView(c,configure=false){
   }
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
+function equipmentView(c){
+  const rows=Array.isArray(c.inventory)?c.inventory:[];
+  const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
+  return panel("Equipaggiamento",
+    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per i calcoli di CA e attacchi di Godot. Le armi a due mani escludono la mano secondaria.</p>'+
+    '<div class="columns">'+labels.map(([slot,label])=>{
+      const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
+      const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
+      return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
+        '<option value="-1"'+(index<0?' selected':'')+'>Nessuno</option>'+
+        eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
+          esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
+    }).join('')+'</div>');
+}
 function inventoryRow(item,index) {
-  const obj = item && typeof item === "object" ? item : {name:String(item??"")};
-  return '<div class="list-item"><div class="row between"><strong>Oggetto '+(index+1)+'</strong>'+
-    '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
-    '<div class="columns">'+listField("Nome",index,"name",obj.name||obj.title)+
-    listField("Quantità",index,"quantity",obj.quantity??1,"number")+'</div>'+
+  const obj=item&&typeof item==="object"?item:{name:String(item??"")};
+  const kind=itemKind(obj),catalog=isCatalogItem(obj);
+  const checked=(key)=>obj[key]===true?' checked':'';
+  const enabled=(key,label)=>'<label class="check"><input type="checkbox" data-item-index="'+index+
+    '" data-item-key="'+key+'"'+checked(key)+'>'+label+'</label>';
+  const tags=[obj.source||"",obj.rarity||"",obj.type||""].filter(Boolean).join(" · ");
+  const quantity=kind==="document"?
+    '<span class="hint">Documento</span>':
+    listField("Quantità",index,"quantity",obj.quantity??1,"number");
+  const name=catalog?'<strong>'+esc(obj.name||"Oggetto")+'</strong>':
+    listField("Nome",index,"name",obj.name||"");
+  const desc=catalog?'<p class="hint">'+esc(typeof obj.description==="string"?obj.description:"")+'</p>':
     '<label>Descrizione<textarea data-item-index="'+index+'" data-item-key="description" rows="2">'+
-    esc(obj.description||"")+'</textarea></label></div>';
+    esc(obj.description||"")+'</textarea></label>';
+  return '<article class="list-item inventory-entry"><div class="row between">'+name+
+    '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
+    '<p class="hint">'+esc(tags||"Oggetto personale")+'</p>'+quantity+
+    '<div class="inventory-switches">'+
+    (!["weapon","shield","armor","document"].includes(kind)?enabled("equipped","Equipaggiato"):'')+
+    (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
+    enabled("active","Attivo")+'</div>'+
+    (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
+    '<details><summary>Dettagli oggetto</summary>'+desc+
+    '<p class="hint">Identificativo: '+esc(obj.id||"Locale")+'</p></details></article>';
 }
 function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
 function spellList(c,key) {
-  const rows=Array.isArray(c[key])?c[key]:[];
+  const rows=key==="prepared_spells"?availableSpells(c):
+    Array.isArray(c[key])?c[key]:[];
   return '<div class="stack">'+(rows.length?rows.map((spell,i)=>{
-    const name=typeof spell==="string" ? spell :
-      text(spell?.name || spell?.id || JSON.stringify(spell));
-    return '<div class="row between"><div class="grow">'+tag(name || "Incantesimo senza nome")+
-      '</div><button type="button" class="btn danger small" data-act="remove-spell" data-key="'+
-      key+'" data-index="'+i+'">Rimuovi</button></div>';
-  }).join(""):'<p class="hint">Nessun incantesimo.</p>')+
-    '<p class="hint">Aggiungi gli incantesimi dal Catalogo per mantenere gli identificativi compatibili con Godot.</p></div>';
+    const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
+    const meta=typeof spell==="object"&&spell?
+      ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
+    return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
+      '<span class="hint">'+meta+'</span></div><button type="button" class="btn danger small" '+
+      'data-act="remove-spell" data-key="'+key+'" data-index="'+i+'">Rimuovi</button></div>';
+  }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
+}
+function renderSpellResults(){
+  const rows=state.spellCatalog||[];
+  if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
+  const query=state.spellQuery.trim().toLocaleLowerCase();
+  if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
+  const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
+    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)).slice(0,40);
+  return found.length?found.map(({spell,index})=>
+    '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
+    '<span>'+esc(spell.name||"Incantesimo")+'</span><span class="tag">Liv. '+esc(spell.level??0)+
+    ' · '+esc(spell.source||"")+'</span></button>').join(""):
+    '<p class="hint">Nessun incantesimo corrispondente.</p>';
 }
 function diceView() {
   return header("Strumenti", "Lancia i dadi", "Tiri locali con generatore crittografico. Se collegato, puoi condividerli nella chat della partita.")+
@@ -600,6 +666,11 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.equipSlot){
+    const slot=target.dataset.equipSlot,index=Number(target.value);
+    await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
+    await render();return;
+  }
   if(target.dataset.reference){
     const category=target.dataset.reference,key=target.dataset.referenceKey;
     if(!['species','subrace','background','class','subclass'].includes(key))throw Error('Riferimento non valido');
@@ -662,12 +733,8 @@ async function handleField(target) {
     await patch({spell_slots_spent:array});
   } else if(target.dataset.itemIndex !== undefined){
     const index=Number(target.dataset.itemIndex),key=target.dataset.itemKey;
-    const items=structuredClone(creature.inventory||[]);
-    if(!items[index]||typeof items[index]!=="object") throw new Error("Oggetto non valido.");
-    items[index][key] = key==="quantity"?Number(target.value):target.value;
-    if(key==="quantity"&&(!Number.isInteger(items[index][key])||items[index][key]<0))
-      throw new Error("Quantità non valida.");
-    await patch({inventory:items});
+    const value=target.type==="checkbox"?target.checked:target.value;
+    await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
   } else if(target.dataset.condition){
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
@@ -730,18 +797,9 @@ async function handleAction(target){
     const editor=await openCreatureEditor(cId),sheet=editor.read();
     const category=entry._category;
     if(category==="spells"){
-      const spell={id:String(entry.id||""),name:entry.name,source:entry.source||"",
-        level:Number(entry.level)||0};
-      if(!spell.id)throw new Error("Incantesimo privo di identificativo VTT.");
-      const known=Array.isArray(sheet.spells)?sheet.spells:[];
-      if(known.some(row=>String(typeof row==="string"?row:row?.id)===spell.id))
-        throw new Error("Incantesimo già presente in questa scheda.");
-      await editor.update({spells:[...known,spell]});
+      await editor.update(addSelectedSpell(sheet,entry,"prepared_spells"));
     }else if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
-      const item=structuredClone(entry);
-      delete item._category;delete item._homebrew;
-      item.instance_id="pwa_"+crypto.randomUUID();
-      item.quantity=1;
+      const item=createOwnedItem(entry,"pwa_"+crypto.randomUUID());
       await editor.update({inventory:[...(sheet.inventory||[]),item]});
     }else if(category==="feats"){
       const feat={id:entry.id||"",name:entry.name,source:entry.source||""};
@@ -866,10 +924,12 @@ async function handleAction(target){
     }
     await patch({resource_tracker_spent:spent});await render();return;
   }
+  if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="add-item"){
     const c=state.editor.read();
     const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
-    inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:""});
+    inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:"",
+      source:"",custom_item_type:"other",equipped:false,equipped_slots:[],attuned:false,active:true});
     await patch({inventory});await render();return;
   }
   if(act==="remove-item"){
@@ -877,16 +937,16 @@ async function handleAction(target){
     inventory.splice(Number(target.dataset.index),1);
     await patch({inventory});await render();return;
   }
-  if(act==="add-spell"){
-    const key=target.dataset.key, input=document.getElementById("new-"+key),value=text(input?.value);
-    if(!value)throw new Error("Inserisci un nome o ID.");
-    const c=state.editor.read(),spells=[...(c[key]||[])];spells.push(value);
-    await patch({[key]:spells});await render();return;
+  if(act==="spell-pick"){
+    const index=Number(target.dataset.index);
+    const spell=state.spellCatalog?.[index];
+    if(!spell)throw Error("Seleziona un incantesimo valido.");
+    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget));
+    await render();return;
   }
   if(act==="remove-spell"){
-    const key=target.dataset.key,c=state.editor.read(),spells=[...(c[key]||[])];
-    spells.splice(Number(target.dataset.index),1);
-    await patch({[key]:spells});await render();return;
+    const key=target.dataset.key,index=Number(target.dataset.index);
+    await patch(removeSelectedSpell(state.editor.read(),key,index));await render();return;
   }
   if(act==="save-json"){
     const raw=document.getElementById("json-editor")?.value;
@@ -1019,9 +1079,15 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.id==="spell-search"){
+      state.spellQuery=target.value;
+      const matches=document.querySelector("#spell-results");
+      if(matches)matches.innerHTML=renderSpellResults();
+      return;
+    }
     if(target?.id==="catalog-search"){
       state.catalogQuery=target.value;
       const results=document.querySelector("#catalog-results");
@@ -1049,6 +1115,9 @@ function listen(){
         btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
         btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
+    }
+    if(target?.id==="spell-target"){
+      state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
     }
     if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
