@@ -10,6 +10,9 @@ const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
 const TIMEOUT_MS := 15000
 const TOKEN_PATH := "user://pwa_pairing_token.txt"
+const SHORT_CODE_LIFETIME_MS := 300000
+const MAX_PAIRING_ATTEMPTS := 8
+const QrEncoder = preload("res://vtt/qr/qr_code.gd")
 const FILES := {
 	"/": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
@@ -37,6 +40,9 @@ const FILES := {
 var _server := TCPServer.new()
 var _clients: Array[Dictionary] = []
 var _token := ""
+var _short_code := ""
+var _short_code_expiry := 0
+var _short_code_attempts := 0
 var _public_spells_payload := PackedByteArray()
 
 # PWA HTTP runs only while the native 3D board is open. A permanently
@@ -103,6 +109,9 @@ func _start_listener() -> Error:
 
 
 func _stop_listener() -> void:
+	_short_code = ""
+	_short_code_expiry = 0
+	_short_code_attempts = 0
 	set_process(false)
 	_server.stop()
 	for item: Dictionary in _clients:
@@ -128,11 +137,64 @@ func _pairing_token() -> String:
 
 
 
-# Open locally on the native desktop only. Never reveal this credential
-# through unauthenticated HTTP, query parameters or tactical snapshots.
-# Ctrl+Shift+P opens a pairing dialog without changing desktop game menus.
+# New phones exchange a short-lived 16-character desktop code for the
+# existing strong 256-bit bearer. The old bearer stays compatible with
+# previously installed clients. Never transmit it in a QR or URL.
+func _new_short_code() -> String:
+	_short_code = Crypto.new().generate_random_bytes(8).hex_encode().to_upper()
+	_short_code_expiry = Time.get_ticks_msec() + SHORT_CODE_LIFETIME_MS
+	_short_code_attempts = 0
+	return _short_code
+
+
+func _consume_short_code(value: String) -> bool:
+	if _short_code.is_empty() or Time.get_ticks_msec() > _short_code_expiry:
+		_short_code = ""
+		return false
+	_short_code_attempts += 1
+	if _short_code_attempts > MAX_PAIRING_ATTEMPTS:
+		_short_code = ""
+		return false
+	if value == _short_code:
+		_short_code = ""
+		_short_code_expiry = 0
+		return true
+	return false
+
+
+func _tailscale_url() -> String:
+	var commands := ["tailscale"]
+	if OS.get_name() == "Windows":
+		commands.append("C:\\Program Files\\Tailscale\\tailscale.exe")
+	for binary: String in commands:
+		var output: Array = []
+		if OS.execute(binary, PackedStringArray(["status", "--json"]), output, true) != 0:
+			continue
+		var data: Variant = JSON.parse_string("\n".join(output))
+		if not data is Dictionary:
+			continue
+		var me: Variant = (data as Dictionary).get("Self", {})
+		if not me is Dictionary:
+			continue
+		var domain := String((me as Dictionary).get("DNSName", "")).trim_suffix(".")
+		# Avoid accepting an unrelated URL supplied by external tools.
+		if domain.ends_with(".ts.net") and not domain.contains("/") and not domain.contains(":"):
+			return "https://" + domain
+	return ""
+
+
+func _pair_url(origin: String, code: String) -> String:
+	var normalized := origin.strip_edges().trim_suffix("/")
+	if normalized.begins_with("https://") and not normalized.contains("#") and not normalized.contains("?"):
+		return normalized + "/#pair=" + code
+	if normalized.begins_with("http://127.0.0.1:") and not normalized.contains("#") and not normalized.contains("?"):
+		return normalized + "/#pair=" + code
+	return ""
+
+
+# Ctrl+Shift+P is intentionally handled only on the desktop game viewport.
 func _input(event: InputEvent) -> void:
-	if _token.is_empty() or not event is InputEventKey:
+	if not _server.is_listening() or _token.is_empty() or not event is InputEventKey:
 		return
 	var key := event as InputEventKey
 	if not key.pressed or key.echo or not key.ctrl_pressed or not key.shift_pressed or key.keycode != KEY_P:
@@ -142,21 +204,75 @@ func _input(event: InputEvent) -> void:
 
 
 func _show_pairing_dialog() -> void:
-	for child: Node in get_tree().root.get_children():
-		if child is AcceptDialog and child.name == "VttPwaPairing":
-			(child as AcceptDialog).popup_centered()
-			return
+	for node: Node in get_tree().root.get_children():
+		if node.name == "VttPwaPairing" and node is AcceptDialog:
+			node.queue_free()
+	var code := _new_short_code()
 	var dialog := AcceptDialog.new()
 	dialog.name = "VttPwaPairing"
-	dialog.title = "Associa VTT Mobile PWA"
-	dialog.dialog_text = "1. Apri dal telefono l'indirizzo HTTPS di Tailscale Serve del PC.\n2. Apri Partita e inserisci il seguente codice:\n\n%s\n\nNon condividere il codice in chat pubbliche." % _token
-	dialog.min_size = Vector2i(570, 260)
-	get_tree().root.add_child(dialog)
-	dialog.add_button("Copia codice", true, "copy_code")
-	dialog.custom_action.connect(func(action: StringName) -> void:
-		if action == &"copy_code":
-			DisplayServer.clipboard_set(_token)
+	dialog.title = "Collega VTT Mobile"
+	dialog.min_size = Vector2i(480, 560)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
+	dialog.add_child(layout)
+	var intro := Label.new()
+	intro.text = "Inquadra il QR con la fotocamera oppure inserisci il codice in Partita.\nValido 5 minuti, per un solo dispositivo."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(intro)
+	var code_label := Label.new()
+	code_label.text = "Codice: %s-%s-%s-%s" % [code.substr(0, 4), code.substr(4, 4), code.substr(8, 4), code.substr(12, 4)]
+	code_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	code_label.add_theme_font_size_override("font_size", 24)
+	layout.add_child(code_label)
+	var address_label := Label.new()
+	address_label.text = "Indirizzo HTTPS Tailscale (modificabile):"
+	layout.add_child(address_label)
+	var url_edit := LineEdit.new()
+	url_edit.text = _tailscale_url()
+	url_edit.placeholder_text = "https://nome-pc.nome-tailnet.ts.net"
+	layout.add_child(url_edit)
+	var qr := TextureRect.new()
+	qr.custom_minimum_size = Vector2(240, 240)
+	qr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	qr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	qr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	layout.add_child(qr)
+	var feedback := Label.new()
+	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(feedback)
+	var controls := HBoxContainer.new()
+	controls.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_child(controls)
+	var copy_code := Button.new()
+	copy_code.text = "Copia codice"
+	controls.add_child(copy_code)
+	copy_code.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(code)
 	)
+	var copy_url := Button.new()
+	copy_url.text = "Copia link"
+	controls.add_child(copy_url)
+	var update_qr := func() -> void:
+		var link := _pair_url(url_edit.text, code)
+		if link.is_empty():
+			qr.texture = null
+			copy_url.disabled = true
+			feedback.text = "Inserisci l'URL HTTPS di Tailscale Serve per generare il QR.\nIl codice manuale funziona comunque."
+			return
+		var generator := QrEncoder.new()
+		generator.error_correct_level = QrEncoder.ErrorCorrectionLevel.MEDIUM
+		qr.texture = generator.get_texture(link)
+		generator.free()
+		feedback.text = "Scansiona per aprire VTT e associare il telefono."
+		copy_url.disabled = false
+		copy_url.pressed.connect(func() -> void:
+			DisplayServer.clipboard_set(link)
+		)
+	url_edit.text_submitted.connect(func(_value: String) -> void: update_qr.call())
+	url_edit.focus_exited.connect(func() -> void: update_qr.call())
+	update_qr.call()
+	get_tree().root.add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.close_requested.connect(dialog.queue_free)
 	dialog.popup_centered()
@@ -299,6 +415,25 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	# This payload is also used to package the standalone offline prototype.
 	if path == "/catalog/spells.json" and method == "GET":
 		_respond(client, 200, "application/json; charset=utf-8", public_spells_json())
+		return
+	# One-time pairing endpoint. No authentication is needed for this narrow
+	# exchange; wrong guesses are limited globally per displayed code.
+	if path == "/api/pair":
+		if method != "POST":
+			_answer(client, 405, {"error": "method_not_allowed"})
+			return
+		if body.size() > 128 or String(headers.get("content-type", "")).split(";")[0].strip_edges() != "application/json":
+			_answer(client, 415, {"error": "expected_small_json"})
+			return
+		var envelope: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if not envelope is Dictionary:
+			_answer(client, 400, {"error": "invalid_pair_code"})
+			return
+		var code: String = String((envelope as Dictionary).get("code", "")).replace("-", "").replace(" ", "").to_upper()
+		if code.length() != 16 or not code.is_valid_hex_number() or not _consume_short_code(code):
+			_answer(client, 401, {"error": "invalid_or_expired_pair_code"})
+			return
+		_answer(client, 200, {"token": _token})
 		return
 	if path == "/api/status" and method == "GET":
 		var board := _board_sync()
