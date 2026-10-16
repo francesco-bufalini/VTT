@@ -39,6 +39,7 @@ jobs:
             /tests/test_document_homebrew.gd
             /tests/test_document_inbox_safety.gd
             /tests/test_creature_gui_layout.gd
+            /tests/test_creature_statistics_alignment.gd
             /tests/test_dialog_layout.gd
             /tests/test_desktop_menu_navigation.gd
             /tests/test_creature_sheets.gd
@@ -62,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           failures=()
-          for test in test_creature_sheets.gd test_share_recipients.gd test_document_homebrew.gd test_document_inbox_safety.gd test_dialog_layout.gd test_desktop_menu_navigation.gd test_creature_gui_layout.gd; do
+          for test in test_creature_sheets.gd test_share_recipients.gd test_document_homebrew.gd test_document_inbox_safety.gd test_dialog_layout.gd test_desktop_menu_navigation.gd test_creature_gui_layout.gd test_creature_statistics_alignment.gd; do
             echo "::group::$test"
             log=$(mktemp)
             if ! timeout 45s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" >"$log" 2>&1; then
