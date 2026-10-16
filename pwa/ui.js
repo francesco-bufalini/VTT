@@ -344,7 +344,7 @@ async function editorView() {
           const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
           return '<div class="ability-box"><label>Liv. '+level+
             '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
-            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
+            '"></label><span class="hint">Usati / massimo salvato: '+esc(tot)+'</span></div>';
         }).join("")+'</div>')+
       panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
         ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
