@@ -86,6 +86,16 @@ export async function importCreatureFile(file, scope = "default") {
   } else {
     payload = file;
   }
+  if (payload?.format === "vtt_creature_batch_export_v1") {
+    const entries=payload.entries;
+    if(payload.version!==1 || !Array.isArray(entries) || entries.length<1 || entries.length>200)
+      throw new Error("Archivio creature multiplo non valido.");
+    // Validate the entire batch before beginning any import.
+    for(const entry of entries) parseCreatureExport(entry);
+    const imported=[];
+    for(const entry of entries) imported.push(await importCreatureExport(entry,scope));
+    return imported;
+  }
   return importCreatureExport(payload, scope);
 }
 
