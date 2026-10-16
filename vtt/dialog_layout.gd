@@ -5,8 +5,21 @@ extends RefCounted
 # embedded positions are viewport-local, native positions are screen-absolute.
 
 
+# In "Stretch to Fit", Window.size is the physical size of the host,
+# while embedded popups are positioned in the root viewport's *logical*
+# coordinates. They can differ dramatically after maximizing the editor's
+# floating Game workspace or on a high-DPI display.
+static func _bounds_for_coordinate_space(
+	physical_size: Vector2i, viewport_size: Vector2i, embedded: bool
+) -> Vector2i:
+	return viewport_size if embedded else physical_size
+
+
 static func _root_bounds(dialog: Window) -> Vector2i:
-	return dialog.get_tree().root.size
+	var root: Window = dialog.get_tree().root
+	return _bounds_for_coordinate_space(
+		root.size, Vector2i(root.get_visible_rect().size), dialog.is_embedded()
+	)
 
 
 static func _touch(dialog: Window) -> bool:
@@ -26,7 +39,7 @@ static func _centered_popup_position(
 
 static func _fit_window(dialog: Window, preferred_size: Vector2i, ratio: float, touch: bool) -> void:
 	var root: Window = dialog.get_tree().root
-	var available: Vector2i = root.size
+	var available: Vector2i = _root_bounds(dialog)
 	var margin: int = 12 if touch else 24
 	var allowed: Vector2i = Vector2i(Vector2(available) * clampf(ratio, 0.1, 1.0))
 	allowed = allowed.min(available - Vector2i(margin, margin)).max(Vector2i(1, 1))
@@ -80,8 +93,8 @@ static func popup(
 static func popup_menu(menu: PopupMenu, viewport_point: Vector2i) -> void:
 	if menu == null or not is_instance_valid(menu) or not menu.is_inside_tree():
 		return
-	var root: Window = menu.get_tree().root
-	menu.max_size = (root.size - Vector2i(16, 16)).max(Vector2i(1, 1))
+	var available: Vector2i = _root_bounds(menu)
+	menu.max_size = (available - Vector2i(16, 16)).max(Vector2i(1, 1))
 	menu.popup()
 	_fit_popup_menu(menu, viewport_point)
 	_refit_popup_menu(menu, viewport_point)
@@ -92,8 +105,9 @@ static func _fit_popup_menu(menu: PopupMenu, viewport_point: Vector2i) -> void:
 		return
 	var root: Window = menu.get_tree().root
 	var origin: Vector2i = Vector2i.ZERO if menu.is_embedded() else root.position
+	var available: Vector2i = _root_bounds(menu)
 	var minimum: Vector2i = origin + Vector2i(8, 8)
-	var maximum: Vector2i = origin + root.size - menu.size - Vector2i(8, 8)
+	var maximum: Vector2i = origin + available - menu.size - Vector2i(8, 8)
 	menu.position = Vector2i(
 		clampi(viewport_point.x + origin.x, minimum.x, maxi(minimum.x, maximum.x)),
 		clampi(viewport_point.y + origin.y, minimum.y, maxi(minimum.y, maximum.y))
