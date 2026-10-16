@@ -52,6 +52,16 @@ func run() -> void:
 		stored["kind"] = kind
 		stored["name"] = "Current owner edit"
 		check(archive.save(stored) == OK, "Current owner cannot edit the returned sheet: " + kind)
+		# Consecutive edits are grouped into one persisted undo checkpoint.
+		var later: Dictionary = archive._stored(kind, String(original.id))
+		later["name"] = "More current owner edits"
+		check(archive.save(later) == OK, "Second edit failed: " + kind)
+		check(archive.undo_owned(later) == OK, "Undo of saved edit failed: " + kind)
+		check(archive._stored(kind, String(original.id)).get("name") == "Returned sheet",
+			"Undo did not restore the older save: " + kind)
+		check(archive.redo_owned(later) == OK, "Redo of saved edit failed: " + kind)
+		check(archive._stored(kind, String(original.id)).get("name") == "More current owner edits",
+			"Redo did not restore newest save: " + kind)
 		check(archive.delete(stored) == OK, "Current owner cannot delete the returned sheet: " + kind)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	campaign.free()
