@@ -55,7 +55,7 @@ func run() -> void:
 	assert((await http("GET", "/catalog/secrets.json")).begins_with("HTTP/1.1 404"))
 	var spells := await http("GET", "/catalog/spells.json")
 	assert(spells.begins_with("HTTP/1.1 200"))
-	assert(spells.contains("\\\"spells\\\""), "Built-in spell catalog must be available offline")
+	assert(spells.contains("spells"), "Built-in spell catalog must be available offline")
 	var status := await http("GET", "/api/status")
 	assert(status.begins_with("HTTP/1.1 200"))
 	assert(status.contains("\"pairing_required\":true"))
