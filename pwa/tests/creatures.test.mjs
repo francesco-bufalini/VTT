@@ -81,6 +81,22 @@ test("offline import, durable edits, export and owner isolation", async () => {
   assert.equal((await listCreatures(scope)).length, 1);
 });
 
+test("multi-creature export package imports local copies with homebrew", async () => {
+  const scope="test_batch_"+Date.now();
+  const second={...exported,creature:{...creature,id:"character_second",name:"Paladino secondo"}};
+  const packageFile={format:"vtt_creature_batch_export_v1",version:1,entries:[exported,second]};
+  const imported=await importCreatureFile(new Blob([JSON.stringify(packageFile)]),scope);
+  assert.equal(imported.length,2);
+  const rows=await listCreatures(scope);
+  assert.equal(rows.length,2);
+  assert.deepEqual(rows.map(x=>x.creature.name).sort(),["Paladino","Paladino secondo"]);
+  assert.ok(rows.every(x=>x.creature.owner_id===imported[0].creature.owner_id));
+  assert.ok(rows.every(x=>x.creature.linked_token_sync_id===""));
+  const invalid={...packageFile,entries:[exported,{...second,version:2}]};
+  await assert.rejects(importCreatureFile(new Blob([JSON.stringify(invalid)]),scope));
+  assert.equal((await listCreatures(scope)).length,2,"An invalid batch must fail validation before importing");
+});
+
 test("import is atomic on invalid homebrew, backup keeps local edits", async () => {
   const scope = "test_import_" + Date.now();
   const before = (await listRecords("global", "homebrew")).length;
