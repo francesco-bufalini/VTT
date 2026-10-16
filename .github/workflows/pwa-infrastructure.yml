@@ -5,6 +5,10 @@ on:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "network/tailscale_serve.gd"
+      - "network/board_sync.gd"
+      - "dnd_base.gd"
+      - "vtt/token_list.gd"
       - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "export_presets.cfg"
@@ -13,6 +17,10 @@ on:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "network/tailscale_serve.gd"
+      - "network/board_sync.gd"
+      - "dnd_base.gd"
+      - "vtt/token_list.gd"
       - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "vtt/map_data_controller.gd"
