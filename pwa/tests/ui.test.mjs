@@ -13,7 +13,7 @@ globalThis.document=dom.window.document;
 Object.defineProperty(globalThis,"navigator",{value:dom.window.navigator,configurable:true});
 globalThis.HTMLFormElement=dom.window.HTMLFormElement;
 globalThis.self=dom.window;
-globalThis.crypto=webcrypto;
+Object.defineProperty(globalThis,"crypto",{value:webcrypto,configurable:true});
 let apiCalls=[];
 globalThis.fetch=async (url,options={})=>{
   apiCalls.push({url,options});
