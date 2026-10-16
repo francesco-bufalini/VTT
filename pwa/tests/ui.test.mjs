@@ -20,6 +20,10 @@ globalThis.fetch=async (url,options={})=>{
   apiCalls.push({url,options});
   if(url==="/api/status") return new Response(JSON.stringify({protocol:1,desktop_online:false}),{status:200});
   if(url==="/catalog/player.json") return new Response(JSON.stringify({weapons:[{id:"weapon:longsword|phb",name:"Spada lunga",source:"PHB",type:"M",value:15}],feats:[],backgrounds:[]}),{status:200});
+  if(url==="/catalog/spells.json") return new Response(JSON.stringify({version:1,spells:[
+    {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1},
+    {id:"spell:light|phb",name:"Light",source:"PHB",level:0}
+  ]}),{status:200});
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
 const {mount,stopRealtime}=await import("../ui.js");
@@ -386,4 +390,59 @@ test("native alignment options preserve imported nonstandard values",async()=>{
       area:()=>"",panel:(_title,html)=>html,resources:"",catalogs:{}});
   assert.ok(seen.includes('Lawful Neutral · importato'));
   assert.equal(ALIGNMENTS.length,9);
+});
+
+test("inline spell catalog adds available and spellbook choices without diverging legacy fields",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Incantatore PWA");
+  click('[data-sheet="magic"]');
+  await until(()=>document.querySelector('#spell-search'));
+  const search=document.querySelector('#spell-search');
+  search.value="Shield";
+  search.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
+  await until(()=>document.querySelector('[data-act="spell-pick"]'));
+  click('[data-act="spell-pick"]');
+  await until(async()=>{
+    const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
+    return current?.prepared_spells?.[0]?.id==="spell:shield|phb" &&
+      current?.spells?.[0]?.id==="spell:shield|phb";
+  });
+  change('#spell-target',"spellbook_spells");
+  click('[data-act="spell-pick"]');
+  await until(async()=>{
+    const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
+    return current?.spellbook_spells?.[0]?.id==="spell:shield|phb";
+  });
+  click('[data-act="remove-spell"][data-key="prepared_spells"]');
+  await until(async()=>{
+    const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
+    return current?.prepared_spells?.length===0 && current?.spells?.length===0 &&
+      current?.spellbook_spells?.length===1;
+  });
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("native-like inventory shows read-only catalog attributes and mutable custom item state",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="add-item"]'));
+  click('[data-act="add-item"]');
+  await until(()=>document.querySelector('[data-item-key="name"]'));
+  change('[data-item-key="name"]',"Test personalizzato");
+  change('[data-item-key="quantity"]',"3");
+  click('[data-item-key="equipped"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(r=>r.creature.inventory?.[0]?.name==="Test personalizzato" &&
+      r.creature.inventory[0].quantity===3 && r.creature.inventory[0].equipped===true);
+  });
+  assert.equal(document.querySelector('[data-item-key="attuned"]'),null);
+  click('[data-act="item-catalog"]');
+  await until(()=>document.querySelector('#catalog-category'));
+  assert.equal(document.querySelector('#catalog-category').value,"items");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
 });
