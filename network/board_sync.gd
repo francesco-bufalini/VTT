@@ -8,6 +8,7 @@ const SNAPSHOT_VERSION := 6
 const MAGIC := "DND_MAP_SYNC_V6"
 const LOCAL_SAVE_MAGIC := "DND_MAP_LOCAL_V1"
 const BACKUP_DIR := "user://map_sync_backups"
+const AUTOSAVE_DIR := "user://map_autosaves"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
 const BULK_SEND_TIMEOUT_MS := 3000
@@ -73,6 +74,13 @@ var _auto_sync_last_poll_msec := 0
 var _auto_sync_suppress_until_msec := 0
 var _auto_sync_retry_after_msec := 0
 var _applying_received_snapshot := false
+# Disk persistence is independent of peer availability and the network toggle.
+var _map_autosave_ready := false
+var _map_autosave_last_signature := ""
+var _map_autosave_candidate := ""
+var _map_autosave_candidate_since := 0
+var _map_autosave_last_poll := 0
+var _map_autosave_retry_after := 0
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
@@ -112,6 +120,105 @@ func _connect_token_pack_manager() -> void:
 		TokenPackManager.token_mount_failed.connect(mount_failed_callback)
 
 
+# Autosaves are scoped to a scene and, when present, a user campaign.
+# A corrupt/incompatible save is never overwritten automatically.
+func _map_autosave_path() -> String:
+	var campaign_id := ""
+	var manager := get_node_or_null("/root/CampaignManager")
+	if manager != null:
+		campaign_id = String(manager.get("active_campaign_id"))
+	var key := (campaign_id + "|" + board_root.scene_file_path).sha256_text()
+	return AUTOSAVE_DIR.path_join(key.substr(0, 32) + ".vttmap")
+
+
+func initialize_map_autosave(restore_existing: bool = true) -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	var path := _map_autosave_path()
+	if restore_existing and FileAccess.file_exists(path):
+		var file := FileAccess.open(path, FileAccess.READ)
+		if file == null:
+			push_warning("Autosave mappa non leggibile; il file originale resta intatto.")
+			return
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
+		file.close()
+		if not parsed is Dictionary or String(parsed.get("magic", "")) != LOCAL_SAVE_MAGIC:
+			push_warning("Autosave mappa danneggiato; non verrà sovrascritto.")
+			return
+		var snapshot: Variant = parsed.get("snapshot", {})
+		if not valid_snapshot(snapshot) or not apply_snapshot(snapshot):
+			push_warning("Autosave mappa incompatibile; non verrà sovrascritto.")
+			return
+		_accept_received_snapshot(snapshot)
+	_map_autosave_ready = true
+	# The first poll creates a baseline even when the user is offline.
+	_map_autosave_last_signature = ""
+	_map_autosave_candidate = ""
+	_map_autosave_retry_after = 0
+
+
+func _persist_map_autosave(snapshot: Dictionary, signature: String = "") -> Error:
+	if not _map_autosave_ready or snapshot.is_empty():
+		return ERR_UNAVAILABLE
+	var digest := signature if not signature.is_empty() else _snapshot_signature(snapshot)
+	if digest == _map_autosave_last_signature:
+		return OK
+	var path := _map_autosave_path()
+	var error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(AUTOSAVE_DIR))
+	if error != OK:
+		return error
+	var payload := JSON.stringify({
+		"magic": LOCAL_SAVE_MAGIC,
+		"saved_at": Time.get_datetime_string_from_system(),
+		"snapshot": snapshot
+	}, "  ")
+	var temporary := path + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+	file.store_string(payload)
+	error = file.get_error()
+	file.close()
+	if error != OK:
+		return error
+	error = DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(temporary),
+		ProjectSettings.globalize_path(path)
+	)
+	if error == OK:
+		_map_autosave_last_signature = digest
+	return error
+
+
+func _poll_map_autosave() -> void:
+	if not _map_autosave_ready or _applying_received_snapshot:
+		return
+	var now := Time.get_ticks_msec()
+	if now < _map_autosave_retry_after or now - _map_autosave_last_poll < AUTO_SYNC_POLL_MS:
+		return
+	_map_autosave_last_poll = now
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return
+	var signature := _snapshot_signature(snapshot)
+	if signature == _map_autosave_last_signature:
+		_map_autosave_candidate = ""
+		return
+	if signature != _map_autosave_candidate:
+		_map_autosave_candidate = signature
+		_map_autosave_candidate_since = now
+		return
+	if now - _map_autosave_candidate_since < AUTO_SYNC_DEBOUNCE_MS:
+		return
+	var error := _persist_map_autosave(snapshot, signature)
+	if error == OK:
+		_map_autosave_candidate = ""
+		_map_autosave_retry_after = 0
+	else:
+		_map_autosave_retry_after = now + AUTO_SYNC_RETRY_MS
+		push_warning("Autosave mappa fallito: " + error_string(error))
+
+
 func set_auto_sync_enabled(enabled: bool) -> void:
 	if auto_sync_enabled == enabled:
 		return
@@ -140,6 +247,7 @@ func sync_local_change_now() -> Error:
 	if snapshot.is_empty():
 		return ERR_BUSY
 	var signature := _snapshot_signature(snapshot)
+	_persist_map_autosave(snapshot, signature)
 
 	# Unlike the polling path, an explicit UI mutation must never become the
 	# initial baseline without being sent. This is important when a token is
@@ -167,6 +275,9 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		return OK
 	if session_key.is_empty():
 		return ERR_INVALID_PARAMETER
+	var snapshot := create_snapshot()
+	if not snapshot.is_empty():
+		_persist_map_autosave(snapshot)
 	var error := send_snapshot_to_tailnet(session_key, sync_event)
 	if error == OK:
 		var snapshot := create_snapshot()
@@ -238,6 +349,7 @@ func _snapshot_signature(snapshot: Dictionary) -> String:
 
 
 func _accept_received_snapshot(snapshot: Dictionary) -> void:
+	_persist_map_autosave(snapshot)
 	_auto_sync_initialized = true
 	var local_snapshot := create_snapshot()
 	_auto_sync_last_signature = _snapshot_signature(
@@ -713,6 +825,7 @@ func _mark_current_state_dirty_for_retry() -> void:
 
 func _process(_delta: float) -> void:
 	_poll_tailscale_peer_refresh()
+	_poll_map_autosave()
 	_poll_auto_sync()
 	if (
 		_tailscale_peer_refresh_thread == null
@@ -1593,6 +1706,7 @@ func load_snapshot_from_file(path: String) -> Error:
 		status_changed.emit("Applicazione della mappa locale fallita")
 		return ERR_INVALID_DATA
 
+	_persist_map_autosave(snapshot)
 	status_changed.emit("Mappa locale caricata: %s" % clean_path)
 	return OK
 
