@@ -23,6 +23,7 @@ const FILES := {
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
+  "/derived_calculations.js": ["res://pwa/derived_calculations.js", "text/javascript; charset=utf-8"],
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
