@@ -1,8 +1,8 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v20";
+const CACHE = "vtt-mobile-shell-v21";
 const CATALOGS = ["/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json"];
-const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/character_core.js", "/class_spells.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
+const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/character_core.js", "/class_spells.js", "/quick_homebrew.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
   "/catalog/classes.json", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/proficiency_grants.json", "/catalog/player.json", "/catalog/spells.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {

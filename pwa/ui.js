@@ -13,6 +13,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
 import { changeTrackerUses, recoveryPatch } from "./character_core.js";
 import { classSpellSections, assignClassSpell, revokeClassSpell } from "./class_spells.js";
+import { createQuickHomebrew, quickGrantPatch } from "./quick_homebrew.js";
 import { localSheetView } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -222,6 +223,20 @@ async function catalogView() {
       '<p class="hint">La PWA salva il riferimento; i bonus strutturati supportati delle origini vengono ricalcolati localmente.</p>':""));
   }
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
+    (["items","feats","backgrounds"].includes(state.catalogCategory)?
+      panel("Crea contenuto personalizzato",
+        '<form id="homebrew-form" class="stack">'+
+        '<label>Nome<input name="name" maxlength="120" required></label>'+
+        '<label>Descrizione<textarea name="description" rows="2"></textarea></label>'+
+        (state.catalogCategory==="items"?
+          '<div class="columns"><label>Tipo<select name="item_type">'+
+          [['other','Altro'],['weapon','Arma'],['shield','Scudo'],['armor','Armatura'],['tool','Strumento'],['magic','Magico']].map(([key,label])=>
+          '<option value="'+key+'">'+label+'</option>').join('')+
+          '</select></label><label>Rarità<input name="rarity" value="none"></label>'+
+          '<label>Valore (mo)<input type="number" min="0" max="100000000" name="value" value="0"></label></div>':
+          '<label>Competenze da concedere (una per riga: tipo: nome)'+
+          '<textarea name="proficiencies" rows="2" placeholder="skill: perception"></textarea></label>')+
+        '<button type="submit" class="btn primary">Crea nel catalogo locale</button></form>'):"")+
     panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
@@ -937,9 +952,12 @@ async function handleAction(target){
       const current=Array.isArray(sheet.feats_catalog)?sheet.feats_catalog:[];
       if(current.some(row=>row.id===feat.id&&row.name===feat.name&&row.source===feat.source))
         throw new Error("Talento già presente in questa scheda.");
-      await editor.update({feats_catalog:[...current,feat]});
+      await editor.update({feats_catalog:[...current,feat],
+        ...(entry._homebrew?quickGrantPatch(sheet,entry):{})});
     }else if(category==="backgrounds"){
-      await editor.update({background:entry.name,background_source:entry.source||""});
+      await editor.update({background:entry.name,background_id:entry.id||"",
+        background_source:entry.source||"",
+        ...(entry._homebrew?quickGrantPatch(sheet,entry):{})});
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
@@ -1177,6 +1195,24 @@ async function handleAction(target){
   if(act==="share-roll"){await shareRoll();return;}
 }
 async function handleSubmit(form){
+  if(form.id==="homebrew-form"){
+    const fields=new FormData(form),category=state.catalogCategory;
+    const grants=String(fields.get("proficiencies")||"").split(/\r?\n/).map(x=>x.trim())
+      .filter(Boolean).map(x=>{
+        const colon=x.indexOf(":");
+        if(colon<1)throw Error("Usa una riga per competenza: tipo: nome.");
+        return {kind:x.slice(0,colon).trim().toLowerCase(),
+          key:x.slice(colon+1).trim().toLowerCase()};
+      });
+    const detail={custom_item_type:String(fields.get("item_type")||"other"),
+      rarity:String(fields.get("rarity")||"none"),value:String(fields.get("value")||0)};
+    const created=await createQuickHomebrew(category,String(fields.get("name")||""),
+      String(fields.get("description")||""),grants,detail);
+    state.catalogSelected=-1;
+    state.catalogQuery=created.name;
+    await render();
+    message("Contenuto personalizzato salvato sul dispositivo.");return;
+  }
   if(form.id==="pair-form"){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
