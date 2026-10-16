@@ -378,3 +378,12 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
+
+test("native alignment options preserve imported nonstandard values",async()=>{
+  const {nativeSection,ALIGNMENTS}=await import("../native_sheet.js");
+  const seen=nativeSection({kind:"character",name:"Importato",alignment:"Lawful Neutral",abilities:{}},
+    "info",{field:(label,key,value)=>'<input data-field="'+key+'" value="'+value+'">',
+      area:()=>"",panel:(_title,html)=>html,resources:"",catalogs:{}});
+  assert.ok(seen.includes('Lawful Neutral · importato'));
+  assert.equal(ALIGNMENTS.length,9);
+});

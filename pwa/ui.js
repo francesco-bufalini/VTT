@@ -608,9 +608,15 @@ async function handleField(target) {
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
     if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
     const selected=selection||{};
-    await patch({...identityPatch(creature,key,String(selected.name||'')),
-      [key+'_id']:String(selected.id||''),[key+'_source']:String(selected.source||'')});
-    if(key==='species')await render();
+    const changes={...identityPatch(creature,key,String(selected.name||'')),
+      [key+'_id']:String(selected.id||''),[key+'_source']:String(selected.source||'')};
+    if(key==='class'&&String(creature.class||'')!==String(selected.name||'')){
+      Object.assign(changes,{subclass:'',subclass_id:'',subclass_source:''});
+      if(Array.isArray(changes.classes)&&changes.classes.length)
+        Object.assign(changes.classes[0],{subclass:'',subclass_id:'',subclass_source:''});
+    }
+    await patch(changes);
+    if(key==='species'||key==='class')await render();
     return;
   }
   if(target.dataset.nativeList){

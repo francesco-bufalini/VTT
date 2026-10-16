@@ -84,7 +84,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const reference=(label,key,category)=>{
    const rows=list(catalogs[category]).filter(r=>r?.name &&
      (key!=='subrace'||!!r.raceName&&r.raceName===c.species) &&
-     (key!=='subclass'||!r.class_name||r.class_name===c.class) &&
+     (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)) &&
      (key!=='class'||c.rules_version!=='2014'||r.source!=='XPHB') &&
      (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
    const current=c[key]||'', source=c[key+'_source']||'';
@@ -104,7 +104,10 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='info')return panel('Identità',cols(
     select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
     field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
-    select('Allineamento','alignment',ALIGNMENTS,c.alignment||'Completamente neutrale')))+
+    select('Allineamento','alignment',
+      c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
+        [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
+      c.alignment||'Completamente neutrale')))+
    panel('Fisico',
     (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
