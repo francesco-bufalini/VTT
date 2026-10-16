@@ -1,0 +1,26 @@
+name: One-time safe VTT branch cleanup
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/history/vtt-branch-history-2026-10-16.md
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prune-stale:
+    if: github.repository == 'francesco-bufalini/VTT'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check historical snapshot exists before deletion
+        shell: bash
+        run: |
+          test -s docs/history/vtt-branch-snapshot-2026-10-16.json
+          test -s docs/history/vtt-branch-history-2026-10-16.md
+      - name: Archive valuable unmerged work and prune SHA-verified old refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/prune_stale_branches_20261016.py
