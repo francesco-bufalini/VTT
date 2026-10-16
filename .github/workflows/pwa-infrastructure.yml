@@ -114,3 +114,67 @@ jobs:
           timeout 90s "$GODOT" --headless --path . --script res://tests/test_pwa_host.gd 2>&1 | tee /tmp/pwa-godot.log
           ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/pwa-godot.log
           grep -q 'PASS: desktop PWA' /tmp/pwa-godot.log
+      - name: Assemble standalone offline prototype
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from shutil import copy2
+          root = Path("pwa-prototype")
+          (root / "catalog").mkdir(parents=True, exist_ok=True)
+          for asset in Path("pwa").iterdir():
+              if asset.is_file() and asset.name != "package.json":
+                  copy2(asset, root / asset.name)
+          sources = {
+              "player_5etools_catalog.json": "player.json",
+              "compendium_backgrounds_5etools.json": "backgrounds.json",
+              "compendium_features_5etools.json": "features.json",
+              "compendium_items_5etools.json": "items.json",
+          }
+          for source, target in sources.items():
+              copy2(Path("vtt/data") / source, root / "catalog" / target)
+          (root / "start-preview.cmd").write_text(
+              '@echo off\ncd /d "%~dp0"\nstart "" "http://127.0.0.1:8766"\n'
+              'py -3 -m http.server 8766 --bind 127.0.0.1\npause\n')
+          (root / "start-preview.sh").write_text(
+              '#!/usr/bin/env sh\ncd "$(dirname "$0")" || exit 1\n'
+              'python3 -m http.server 8766 --bind 127.0.0.1\n')
+          (root / "README.txt").write_text(
+              "VTT MOBILE - PROTOTIPO PWA OFFLINE\n\n"
+              "1. Estrai la cartella prima di avviarla.\n"
+              "2. Su Windows, se Python e installato, fai doppio clic su "
+              "start-preview.cmd oppure esegui: py -3 -m http.server 8766\n"
+              "3. Apri http://127.0.0.1:8766 sullo stesso PC.\n"
+              "4. In Creature usa 'Prova personaggio demo' oppure Importa scheda.\n"
+              "5. Esplora statistiche, inventario, risorse, Catalogo e Dadi.\n"
+              "6. Il prototipo salva in IndexedDB sul browser: esporta backup!\n\n"
+              "Questa distribuzione STATICA non ospita partite multiplayer.\n"
+              "Le funzioni Partita e Chat richiedono VTT desktop avviato e\n"
+              "la PWA servita dal PC tramite il suo server Godot/Tailscale HTTPS.\n"
+              "Non aprire index.html con file://; usa sempre il server locale.\n"
+              "Per iPhone usa il vero server desktop e l'indirizzo Tailscale HTTPS.\n")
+          PY
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --script res://tests/export_pwa_catalog.gd 2>&1 | tee /tmp/export-pwa.log
+          ! grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/export-pwa.log
+          grep -q 'PASS: exported native built-in PWA spell index' /tmp/export-pwa.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("pwa-prototype")
+          for file in ["player", "backgrounds", "features", "items", "spells"]:
+              assert (root / "catalog" / (file + ".json")).exists(), file
+          spells = json.loads((root / "catalog" / "spells.json").read_text())
+          assert spells["version"] == 1 and len(spells["spells"]) > 50
+          assert (root / "demo.js").exists()
+          print("PASS: complete standalone offline prototype with built-in catalogs")
+          PY
+      - name: Publish downloadable mobile prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: VTT-PWA-prototipo-offline
+          path: pwa-prototype/
+          retention-days: 14
+          if-no-files-found: error
+
