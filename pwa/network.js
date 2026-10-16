@@ -32,6 +32,7 @@ export class GameTransport extends EventTarget {
     this.map = null;
     this.lastMapAt = 0;
     this.timer = null;
+    this.pendingRefresh = null;
   }
   async request(path, body, timeoutMs = 16000) {
     const controller = new AbortController();
@@ -51,10 +52,18 @@ export class GameTransport extends EventTarget {
     if (!/^[1-5]$/.test(String(session))) throw new TypeError("Invalid session");
     this.disconnect();
     this.session = String(session);
-    await this.refresh();
     this.timer = setInterval(() => { void this.refresh().catch(() => {}); }, 1500);
+    // Keep retrying even when the desktop is not reachable at connection time.
+    return this.refresh().catch(() => null);
   }
   async refresh() {
+    if (this.pendingRefresh) return this.pendingRefresh;
+    const pending = this._refreshOnce();
+    this.pendingRefresh = pending;
+    try { return await pending; }
+    finally { if (this.pendingRefresh === pending) this.pendingRefresh = null; }
+  }
+  async _refreshOnce() {
     if (this.session === null) return null;
     const session = this.session;
     try {
@@ -86,6 +95,7 @@ export class GameTransport extends EventTarget {
   disconnect() {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
+    this.pendingRefresh = null;
     this.session = null;
     this.map = null;
     this.lastMapAt = 0;
