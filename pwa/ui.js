@@ -177,7 +177,7 @@ async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
   const tabs = [["stats","Statistiche"],["origins","Origini"],["inventory","Inventario"],
-    ["magic","Incantesimi"],["notes","Note"],["json","JSON"]];
+    ["magic","Incantesimi"],["resources","Risorse"],["notes","Note"],["json","JSON"]];
   const navigation = '<div class="editor-head">'+
     '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
     '<h1>'+esc(c.name)+'</h1></div>'+
@@ -230,6 +230,32 @@ async function editorView() {
       panel("Incantesimi preparati",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"));
     break;
+  case "resources":{
+    const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
+    const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
+      c.resource_tracker_spent:{};
+    body=panel("Utilizzi e risorse",
+      '<p class="hint">Contatori salvati nella scheda con la struttura nativa di VTT. I tracker derivati automaticamente da classe o privilegi vengono calcolati solo da Godot.</p>'+
+      (trackers.length?trackers.map((t,i)=>{
+        const max=Math.max(0,Number(t.max)||0);
+        const used=Math.max(0,Number(spent[t.id])||0);
+        return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
+          '</strong><button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button></div>'+
+          '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
+          ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
+          '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
+          '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
+      }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
+      '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>')+
+      panel("Aggiungi tracker",'<div class="columns">'+
+      '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
+      '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
+      '<label>Ricarica<select id="tracker-recharge"><option value="manual">Manuale</option>'+
+      '<option value="turn">Inizio turno</option><option value="short_rest">Riposo breve</option>'+
+      '<option value="long_rest">Riposo lungo</option></select></label>'+
+      '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>');
+    break;
+  }
   case "notes":
     body = panel("Profilo",area("Descrizione fisica","appearance",c.appearance,5)+
       area("Storia","background_personality",c.background_personality,5)+
@@ -631,6 +657,43 @@ async function handleAction(target){
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
     state.creatureId=null;state.editor=null;await render();message("Scheda eliminata.");return;
+  }
+  if(act==="tracker-add"){
+    const name=text(document.querySelector("#tracker-name")?.value);
+    const maximum=Number(document.querySelector("#tracker-max")?.value);
+    const recharge=document.querySelector("#tracker-recharge")?.value||"manual";
+    if(!name||name.length>120||!Number.isInteger(maximum)||maximum<1||maximum>99999)
+      throw new Error("Specifica nome e massimo valido della risorsa.");
+    const record=state.editor.read();
+    const trackers=structuredClone(record.resource_trackers||[]);
+    trackers.push({id:"pwa_tracker_"+crypto.randomUUID(),name,max:maximum,
+      max_formula:"",origin_name:"Personalizzato",recharge});
+    await patch({resource_trackers:trackers});await render();return;
+  }
+  if(["tracker-more","tracker-less","tracker-delete"].includes(act)){
+    const record=state.editor.read(),trackers=structuredClone(record.resource_trackers||[]);
+    const index=Number(target.dataset.index),row=trackers[index];
+    if(!row)throw new Error("Tracker non disponibile.");
+    if(act==="tracker-delete"){
+      trackers.splice(index,1);
+      const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
+      await patch({resource_trackers:trackers,resource_tracker_spent:spent});
+    }else{
+      const maximum=Math.max(0,Number(row.max)||0);
+      const spent={...(record.resource_tracker_spent||{})};
+      const delta=act==="tracker-more"?1:-1;
+      spent[row.id]=Math.max(0,Math.min(maximum,(Number(spent[row.id])||0)+delta));
+      await patch({resource_tracker_spent:spent});
+    }
+    await render();return;
+  }
+  if(act==="tracker-short"||act==="tracker-long"){
+    const record=state.editor.read(),spent={...(record.resource_tracker_spent||{})};
+    for(const row of record.resource_trackers||[]){
+      if(row.recharge==="short_rest" ||
+        (act==="tracker-long"&&row.recharge==="long_rest")) delete spent[row.id];
+    }
+    await patch({resource_tracker_spent:spent});await render();return;
   }
   if(act==="add-item"){
     const c=state.editor.read();
