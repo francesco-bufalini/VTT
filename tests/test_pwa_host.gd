@@ -41,6 +41,17 @@ func run() -> void:
 	# The bridge is intentionally disabled without a playable board scene.
 	assert(not (host.get("_server") as TCPServer).is_listening(),
 		"PWA should not bind its HTTP port before opening the board")
+	# Scontro contro Kaos inherits the VTT board logic through
+	# final_encounter.gd; it must be recognized without matching dnd_base.tscn.
+	var kaos_board := Node3D.new()
+	kaos_board.set_script(load("res://encounter/scontro_contro_kaos.gd"))
+	assert(host.call("_is_board_scene", kaos_board),
+		"Derived Scontro contro Kaos must be a playable PWA host")
+	kaos_board.free()
+	var unrelated := Node3D.new()
+	assert(not host.call("_is_board_scene", unrelated),
+		"Unrelated scenes must not bind the PWA HTTP listener")
+	unrelated.free()
 	assert(host.call("_start_listener") == OK, "Manual localhost test fixture could not bind")
 	assert((host.get("_server") as TCPServer).is_listening(), "HTTP fixture not listening")
 	var page := await http("GET", "/")
