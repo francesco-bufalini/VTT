@@ -38,6 +38,12 @@ export function status() {
   return exchange("/api/status");
 }
 
+// A remembered bearer remains useful while the native board is temporarily
+// offline. This checks local possession only; /api/session validates authority.
+export async function hasPairingCredential() {
+  return /^[0-9a-fA-F]{64}$/.test(await currentToken());
+}
+
 // Short-lived 16-hex code from the desktop (or its one-time QR URL).
 // Exchange it for a strong 256-bit bearer; never save the short code.
 // Previously enrolled browsers keep using the original 64-hex bearer.
