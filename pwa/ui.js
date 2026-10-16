@@ -12,6 +12,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
 import { changeTrackerUses, recoveryPatch } from "./character_core.js";
+import { classSpellSections, assignClassSpell, revokeClassSpell } from "./class_spells.js";
 import { localSheetView } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -31,7 +32,7 @@ const state = { page:"library", creatureId:null, lastCreatureId:null, chatAuthor
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:"", spellSections:[], spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -258,6 +259,16 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
+  if(state.sheet==="magic"){
+    try {
+      const catalogs=await loadRuleCatalogs();
+      const calculated=calculateSheet(c,catalogs);
+      state.spellSections=classSpellSections(c,catalogs.classMechanics,
+        Object.fromEntries(Object.entries(calculated.abilities||{}).map(([key,row])=>[key,row.modifier])));
+    }catch{state.spellSections=[];}
+    if(state.spellClass&&!state.spellSections.some(s=>s.id===state.spellClass))
+      state.spellClass="";
+  }
   if(state.sheet==="magic"&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
@@ -296,11 +307,20 @@ async function editorView() {
       panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
         ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
         field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono calcolate localmente quando i dati strutturati sono disponibili.</p>')+
+      '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>'+
+      panel("Incantesimi di classe",state.spellSections.length?
+        state.spellSections.map(s=>'<p class="hint"><strong>'+esc(s.name)+' · '+esc(s.source)+
+          '</strong> · '+esc(s.mode)+': '+esc(s.limit<0?'Non specificato':s.limit)+
+          ' · livello massimo '+esc(s.max_level)+' · trucchetti '+esc(s.cantrips)+'</p>').join(''):
+        '<p class="hint">Nessuna progressione magica di classe disponibile.</p>')+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
         '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
+        '<label>Classe associata<select id="spell-class"><option value="">Nessuna classe (origine/talento)</option>'+
+        state.spellSections.map(s=>'<option value="'+esc(s.id)+'"'+
+          (state.spellClass===s.id?' selected':'')+'>'+esc(s.name)+' · '+esc(s.source)+'</option>').join('')+
+        '</select></label>'+
         '<label>Destinazione<select id="spell-target">'+
         '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
         '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
@@ -1069,12 +1089,12 @@ async function handleAction(target){
     const index=Number(target.dataset.index);
     const spell=state.spellCatalog?.[index];
     if(!spell)throw Error("Seleziona un incantesimo valido.");
-    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget));
+    await patch(assignClassSpell(state.editor.read(),spell,state.spellClass,state.spellTarget,state.spellSections));
     await render();return;
   }
   if(act==="remove-spell"){
     const key=target.dataset.key,index=Number(target.dataset.index);
-    await patch(removeSelectedSpell(state.editor.read(),key,index));await render();return;
+    await patch(revokeClassSpell(state.editor.read(),key,index));await render();return;
   }
   if(act==="save-json"){
     const raw=document.getElementById("json-editor")?.value;
@@ -1246,6 +1266,9 @@ function listen(){
     }
     if(target?.id==="chat-author"){
       state.chatAuthor=target.value;return;
+    }
+    if(target?.id==="spell-class"){
+      state.spellClass=target.value;return;
     }
     if(target?.id==="spell-target"){
       state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
