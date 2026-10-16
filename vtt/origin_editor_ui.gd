@@ -193,6 +193,22 @@ static func origin_card(owner: Control, parent: Control, config: Dictionary) -> 
 	return select
 
 
+# Keep caption headings and disabled-grant markers consistent. Editors still
+# decide which grants are selected, automatic or domain-specific.
+static func grants_tooltip(
+	selected: PackedStringArray, automatic: PackedStringArray,
+	extra: PackedStringArray, extra_title: String
+) -> String:
+	var sections := PackedStringArray()
+	if not selected.is_empty():
+		sections.append("Scelte già effettuate:\n" + "\n".join(selected))
+	if not automatic.is_empty():
+		sections.append("Concessioni automatiche:\n" + "\n".join(automatic))
+	if not extra.is_empty() and not extra_title.is_empty():
+		sections.append(extra_title + ":\n" + "\n".join(extra))
+	return "\n\n" + "\n\n".join(sections) if not sections.is_empty() else ""
+
+
 static func origin_card_state(panel: Control, selected: bool, active: bool) -> void:
 	# A selected, disabled origin is still legible and visually selected.
 	# Keep the same compact layout and selection border in every editor.
