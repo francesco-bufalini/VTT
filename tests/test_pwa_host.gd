@@ -41,10 +41,15 @@ func run() -> void:
 	assert(not bool(empty_config.active))
 	var ours: Dictionary = serve_helper.call("parse_serve_status", {
 		"Web": {"example.ts.net:443": {"Handlers": {
-			"/": {"Proxy": "http://127.0.0.1:8765"}
-		}}}
+			"/": {"Proxy": "http://127.0.0.1:8765/"}
+		}}},
+		"TCP": {"443": {"HTTPS": true}}
 	})
 	assert(bool(ours.active) and not bool(ours.other_rules))
+	var competitor: Dictionary = serve_helper.call("parse_serve_status", {
+		"TCP": {"443": {"HTTPS": true}, "9000": {"TCPForward": "127.0.0.1:9000"}}
+	})
+	assert(bool(competitor.other_rules), "Other TCP mappings are not managed by VTT")
 	var shared: Dictionary = serve_helper.call("parse_serve_status", {
 		"Web": {"example.ts.net:443": {"Handlers": {
 			"/": {"Proxy": "http://127.0.0.1:8765"},
