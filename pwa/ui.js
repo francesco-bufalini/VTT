@@ -10,6 +10,8 @@ import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription }
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
+import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
+import { localSheetView } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -224,6 +226,14 @@ async function catalogView() {
     detail;
 }
 
+async function computeLocalView(record,section){
+  if(!["info","stats","battle","magic"].includes(section))return "";
+  let catalogs={},loadError="";
+  try{catalogs=await loadRuleCatalogs();}
+  catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
+  const data=calculateSheet(record,catalogs);
+  return localSheetView(section,data,loadError);
+}
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
@@ -306,7 +316,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return navigation+(await computeLocalView(c,state.sheet))+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -315,7 +325,7 @@ function resourceView(c,configure=false){
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
     return panel("Utilizzi e risorse",
-      '<p class="hint">Contatori salvati nella scheda con la struttura nativa di VTT. I tracker derivati automaticamente da classe o privilegi vengono calcolati solo da Godot.</p>'+
+      '<p class="hint">Contatori manuali. I tracker automatici di classe e privilegi non sono ancora coperti integralmente dal motore locale.</p>'+
       (trackers.length?trackers.map((t,i)=>{
         const max=Math.max(0,Number(t.max)||0);
         const used=Math.max(0,Number(spent[t.id])||0);
@@ -686,6 +696,11 @@ async function patch(patchValue) {
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
     await state.editor.update(patchValue);
+    const oldProjection=app.querySelector(".derived-local");
+    if(oldProjection){
+      const fresh=await computeLocalView(state.editor.read(),state.sheet);
+      if(fresh)oldProjection.outerHTML=fresh;
+    }
     state.saveError="";
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
   }catch(error) {
