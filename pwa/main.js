@@ -1,30 +1,32 @@
-import { status } from "./client.js";
-import { openStorage, storageEstimate } from "./storage.js";
+import { mount } from "./ui.js";
+import { openStorage, requestPersistentStorage, storageEstimate } from "./storage.js";
 
-const message = document.querySelector("#state");
 async function boot() {
-  if ("serviceWorker" in navigator && isSecureContext) {
+  if ("serviceWorker" in navigator && self.isSecureContext) {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
-      // Check for new desktop-shipped assets on subsequent launches.
+      // Native desktop serves refreshed assets from the same stable HTTPS origin.
       await registration.update();
     } catch (error) {
       console.warn("VTT offline shell unavailable", error);
     }
   }
   try {
-    const db = await openStorage();
-    db.close();
-    const quota = await storageEstimate();
-    console.info("VTT local storage ready", quota);
-    const current = await status();
-    message.textContent = current.desktop_online
-      ? "Desktop in partita. Il collegamento richiederà l'associazione."
-      : "Archivio locale pronto. Nessuna partita desktop aperta.";
+    const database = await openStorage();
+    database.close();
+    // Browser may decline persistence, but requesting it can reduce eviction
+    // risk on supporting browsers. Explicit backups remain essential.
+    await requestPersistentStorage();
+    await mount();
+    console.info("VTT mobile storage ready", await storageEstimate());
   } catch (error) {
-    // The app shell and locally saved records do not depend on network reachability.
-    message.textContent = "Modalità offline. I dati salvati rimangono sul dispositivo.";
-    console.info("Desktop unavailable", error);
+    document.querySelector("#app").innerHTML =
+      '<div class="page-head"><p class="eyebrow">Archivio non disponibile</p>'+
+      '<h1>Impossibile aprire i dati locali</h1><p>Non cancellare i dati del sito. '+
+      'Controlla la modalità privata, lo spazio disponibile e riprova.</p></div>'+
+      '<p class="warning"></p>';
+    document.querySelector("#app .warning").textContent = error.message || String(error);
+    console.error(error);
   }
 }
 boot();
