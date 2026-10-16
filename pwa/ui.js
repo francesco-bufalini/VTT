@@ -26,7 +26,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1,
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -238,6 +238,10 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
+  if(state.sheet==="magic"&&!state.spellCatalog){
+    try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
+    catch(error){state.spellCatalogError=errorMessage(error);}
+  }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory":
@@ -246,15 +250,30 @@ async function editorView() {
       '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+btn("add-item","Crea oggetto locale")+'</div>');
     break;
   case "magic":
-    body = panel("Caratteristica degli incantesimi",'<p class="hint">'+esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
-      '<div class="columns three">'+Array.from({length:9},(_,i)=>{const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
-      return '<div class="ability-box"><label>Liv. '+level+'<input type="number" min="0" data-slot="'+level+
-        '" value="'+esc(spent)+'"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';}).join("")+'</div>')+
-      panel("Patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+' · slot totali '+esc(c.pact_slots_total??0)+'</p>'+
-      field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",spellList(c,"spells"))+
+    body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
+      esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
+      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus vengono calcolati da Godot.</p>'+
+        '<div class="columns three">'+Array.from({length:9},(_,i)=>{
+          const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
+          return '<div class="ability-box"><label>Liv. '+level+
+            '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
+            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
+        }).join("")+'</div>')+
+      panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
+        ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
+        field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
+      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono determinate dal motore Godot.</p>')+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
+      panel("Aggiungi dal catalogo",
+        '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
+        '<label>Destinazione<select id="spell-target">'+
+        '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
+        '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
+        '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+
+        esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
+        (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
+        '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
@@ -331,15 +350,29 @@ function listField(label,index,key,value,type="text") {
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
 function spellList(c,key) {
-  const rows=Array.isArray(c[key])?c[key]:[];
+  const rows=key==="prepared_spells"?availableSpells(c):
+    Array.isArray(c[key])?c[key]:[];
   return '<div class="stack">'+(rows.length?rows.map((spell,i)=>{
-    const name=typeof spell==="string" ? spell :
-      text(spell?.name || spell?.id || JSON.stringify(spell));
-    return '<div class="row between"><div class="grow">'+tag(name || "Incantesimo senza nome")+
-      '</div><button type="button" class="btn danger small" data-act="remove-spell" data-key="'+
-      key+'" data-index="'+i+'">Rimuovi</button></div>';
-  }).join(""):'<p class="hint">Nessun incantesimo.</p>')+
-    '<p class="hint">Aggiungi gli incantesimi dal Catalogo per mantenere gli identificativi compatibili con Godot.</p></div>';
+    const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
+    const meta=typeof spell==="object"&&spell?
+      ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
+    return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
+      '<span class="hint">'+meta+'</span></div><button type="button" class="btn danger small" '+
+      'data-act="remove-spell" data-key="'+key+'" data-index="'+i+'">Rimuovi</button></div>';
+  }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
+}
+function renderSpellResults(){
+  const rows=state.spellCatalog||[];
+  if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
+  const query=state.spellQuery.trim().toLocaleLowerCase();
+  if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
+  const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
+    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)).slice(0,40);
+  return found.length?found.map(({spell,index})=>
+    '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
+    '<span>'+esc(spell.name||"Incantesimo")+'</span><span class="tag">Liv. '+esc(spell.level??0)+
+    ' · '+esc(spell.source||"")+'</span></button>').join(""):
+    '<p class="hint">Nessun incantesimo corrispondente.</p>';
 }
 function diceView() {
   return header("Strumenti", "Lancia i dadi", "Tiri locali con generatore crittografico. Se collegato, puoi condividerli nella chat della partita.")+
@@ -745,13 +778,7 @@ async function handleAction(target){
     const editor=await openCreatureEditor(cId),sheet=editor.read();
     const category=entry._category;
     if(category==="spells"){
-      const spell={id:String(entry.id||""),name:entry.name,source:entry.source||"",
-        level:Number(entry.level)||0};
-      if(!spell.id)throw new Error("Incantesimo privo di identificativo VTT.");
-      const known=Array.isArray(sheet.spells)?sheet.spells:[];
-      if(known.some(row=>String(typeof row==="string"?row:row?.id)===spell.id))
-        throw new Error("Incantesimo già presente in questa scheda.");
-      await editor.update({spells:[...known,spell]});
+      await editor.update(addSelectedSpell(sheet,entry,"prepared_spells"));
     }else if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
       const item=createOwnedItem(entry,"pwa_"+crypto.randomUUID());
       await editor.update({inventory:[...(sheet.inventory||[]),item]});
@@ -891,16 +918,16 @@ async function handleAction(target){
     inventory.splice(Number(target.dataset.index),1);
     await patch({inventory});await render();return;
   }
-  if(act==="add-spell"){
-    const key=target.dataset.key, input=document.getElementById("new-"+key),value=text(input?.value);
-    if(!value)throw new Error("Inserisci un nome o ID.");
-    const c=state.editor.read(),spells=[...(c[key]||[])];spells.push(value);
-    await patch({[key]:spells});await render();return;
+  if(act==="spell-pick"){
+    const index=Number(target.dataset.index);
+    const spell=state.spellCatalog?.[index];
+    if(!spell)throw Error("Seleziona un incantesimo valido.");
+    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget));
+    await render();return;
   }
   if(act==="remove-spell"){
-    const key=target.dataset.key,c=state.editor.read(),spells=[...(c[key]||[])];
-    spells.splice(Number(target.dataset.index),1);
-    await patch({[key]:spells});await render();return;
+    const key=target.dataset.key,index=Number(target.dataset.index);
+    await patch(removeSelectedSpell(state.editor.read(),key,index));await render();return;
   }
   if(act==="save-json"){
     const raw=document.getElementById("json-editor")?.value;
@@ -1036,6 +1063,12 @@ function listen(){
   const editable = "[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.id==="spell-search"){
+      state.spellQuery=target.value;
+      const matches=document.querySelector("#spell-results");
+      if(matches)matches.innerHTML=renderSpellResults();
+      return;
+    }
     if(target?.id==="catalog-search"){
       state.catalogQuery=target.value;
       const results=document.querySelector("#catalog-results");
@@ -1063,6 +1096,9 @@ function listen(){
         btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
         btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
+    }
+    if(target?.id==="spell-target"){
+      state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
     }
     if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
