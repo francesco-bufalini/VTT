@@ -111,3 +111,16 @@ test("all derived output stays on device and UI marks unsupported features",()=>
   assert.match(localSheetView("magic",out),/Slot livello/);
   assert.equal(localSheetView("inventory",out),"");
 });
+
+test("disabling a saved origin withdraws its ability and skill bonuses offline",()=>{
+  const origin="race|eepc|aarakocra";
+  const c=character({species:"Aarakocra",species_source:"EEPC",
+    proficiency_origins:[{id:origin,disabled:true}],
+    proficiency_choices:[{kind:"skill",key:"perception",origin_id:origin,disabled:false}]});
+  const out=calculateSheet(c,catalogs);
+  assert.equal(out.abilities.dex.score,14);
+  assert.equal(out.skills.perception,0);
+  const enabled=calculateSheet({...c,proficiency_origins:[{id:origin,disabled:false}]},catalogs);
+  assert.equal(enabled.abilities.dex.score,16);
+  assert.equal(enabled.skills.perception,2);
+});
