@@ -92,3 +92,54 @@ test("dice roll is usable offline; session has functioning pairing form",async()
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"Token di 64 caratteri");
   assert.equal(document.querySelectorAll("#nav button").length,4);
 });
+
+
+test("pairing connects tactical tokens and shared chat through desktop API",async()=>{
+  Object.defineProperty(globalThis.self,"isSecureContext",{value:true,configurable:true});
+  const calls=[];
+  globalThis.fetch=async (url,options={})=>{
+    calls.push({url,options});
+    if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true}),{status:200});
+    if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
+    if(url==="/api/map")return new Response(JSON.stringify({version:1,mobile_protocol:3,
+      tokens:[{id:"token_1",name:"Guardiano",free:false,conditions:[]}],
+      combat:{active:true,round:2,active_index:0,entries:[{name:"Guardiano",token_id:"token_1",initiative:12}]}}),{status:200});
+    if(url==="/api/action"){
+      const msg=JSON.parse(options.body);
+      if(msg.action==="chat_poll")return new Response(JSON.stringify({ok:true,events:[]}),{status:200});
+      return new Response(JSON.stringify({ok:true,moved:true}),{status:200});
+    }
+    return new Response(JSON.stringify({error:"not_found"}),{status:404});
+  };
+  const token=document.querySelector("#pair-secret");
+  assert.ok(token);
+  token.value="a".repeat(64);
+  const form=document.querySelector("#pair-form");
+  form.dispatchEvent(new dom.window.Event("submit",{bubbles:true,cancelable:true}));
+  await until(()=>document.querySelector('[data-act="select-token"]'));
+  assert.match(document.querySelector("#app").textContent,/Guardiano/);
+  assert.match(document.querySelector("#app").textContent,/Round 2/);
+  click('[data-act="move"][data-direction="north"]');
+  await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token"));
+  const moves=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token");
+  assert.equal(JSON.parse(moves[0].options.body).payload.token_id,"token_1");
+  const condition=document.querySelector('[data-token-condition="prone"]');
+  condition.checked=true;
+  condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
+  await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
+  click('[data-nav="chat"]');
+  await until(()=>document.querySelector("#chat-form"));
+  const input=document.querySelector("#chat-message");
+  input.value="Messaggio dal browser";
+  document.querySelector("#chat-form").dispatchEvent(
+    new dom.window.Event("submit",{bubbles:true,cancelable:true}));
+  await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send"));
+  const sent=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
+  const msg=JSON.parse(sent.options.body).payload.event;
+  assert.equal(msg.kind,"chat");
+  assert.equal(msg.text,"Messaggio dal browser");
+  assert.ok(msg.id.startsWith("pwa_"));
+  assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
+  click('[data-nav="library"]'); // Release chat polling timer.
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
