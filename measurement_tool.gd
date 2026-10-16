@@ -37,6 +37,8 @@ var _movable_aoe_drag_index: int = -1
 var _movable_aoe_drag_root_origin: Vector3 = Vector3.ZERO
 var _movable_aoe_drag_delta: Vector3 = Vector3.ZERO
 var _movable_aoe_drag_was_captured: bool = false
+var _movable_aoe_drag_unrestricted: bool = false
+var _held_aoe_drag_root: Node3D = null
 var _spell_preview: MeshInstance3D
 var _spell_preview_start: Vector3 = Vector3.INF
 var _spell_preview_end: Vector3 = Vector3.INF
@@ -771,22 +773,42 @@ func _next_aoe_color(shape: String, preferred: Color) -> Color:
 	return preferred
 
 
+func _format_area_dimension_value(value: float) -> String:
+	if is_equal_approx(value, roundf(value)):
+		return str(roundi(value))
+	return ("%.2f" % value).rstrip("0").rstrip(".").replace(".", ",")
+
+
+func _format_area_dimension(distance_world: float) -> String:
+	var cells: float = distance_world / maxf(cell_size, 0.0001)
+	return "%s ft · %s m · %s quadretti" % [
+		_format_area_dimension_value(cells * 5.0),
+		_format_area_dimension_value(cells * meters_per_cell),
+		_format_area_dimension_value(cells)
+	]
+
+
 func aoe_dimensions_description(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0) -> String:
 	var geometry: Dictionary = _aoe_geometry(start, end, shape, style, width)
-	var unit: float = 5.0 / maxf(cell_size, 0.001)
 	if shape in ["sphere", "cylinder"]:
-		var label: String = "Raggio %.1f ft" % (float(geometry.get("radius", 0.5)) * unit)
+		var label: String = "Raggio " + _format_area_dimension(float(geometry.get("radius", 0.5)))
 		if shape == "cylinder":
-			label += " · altezza %.1f ft" % (float(geometry.get("height", 1.0)) * unit)
+			label += "\nAltezza " + _format_area_dimension(float(geometry.get("height", 1.0)))
 		return label
 	if shape in ["cube", "flat_square"]:
 		var side: Vector3 = geometry.get("size", Vector3.ONE)
-		return "Lato %.1f ft · semilato %.1f ft" % [side.x * unit, side.x * unit * 0.5]
-	return "Lunghezza %.1f ft · %s %.1f ft" % [
-		float(geometry.get("height", 1.0)) * unit,
-		"raggio base" if shape == "cone" else "larghezza",
-		float(geometry.get("radius", 0.5)) * unit * (1.0 if shape == "cone" else 2.0)]
-
+		return "Lato %s\nSemilato %s" % [
+			_format_area_dimension(side.x),
+			_format_area_dimension(side.x * 0.5)
+		]
+	return "Lunghezza %s\n%s %s" % [
+		_format_area_dimension(float(geometry.get("height", 1.0))),
+		"Raggio base" if shape == "cone" else "Larghezza",
+		_format_area_dimension(
+			float(geometry.get("radius", 0.5))
+			* (1.0 if shape == "cone" else 2.0)
+		)
+	]
 
 func _current_aoe_color() -> Color:
 	return AOE_COLORS[_aoe_color_index]
@@ -1858,6 +1880,8 @@ func _remove_post_cast_spell_root(root: Node3D) -> bool:
 
 	var held_index: int = _held_spell_aoes.find(root)
 	if held_index >= 0:
+		if _held_aoe_drag_root == root:
+			finish_movable_aoe_drag(false)
 		_held_spell_aoes.remove_at(held_index)
 		root.hide()
 		root.queue_free()
@@ -2999,19 +3023,45 @@ func is_movable_aoe(index: int) -> bool:
 
 
 func is_movable_aoe_dragging() -> bool:
-	return _movable_aoe_drag_index >= 0
+	return _movable_aoe_drag_index >= 0 or (
+		_held_aoe_drag_root != null and is_instance_valid(_held_aoe_drag_root)
+	)
 
 
-func begin_movable_aoe_drag(index: int) -> bool:
-	if not is_movable_aoe(index):
+func begin_movable_aoe_drag(index: int, allow_static: bool = false) -> bool:
+	if is_movable_aoe_dragging():
 		return false
-	if index >= _aoe_nodes.size():
+	if not is_movable_aoe(index) and not allow_static:
+		return false
+	if index < 0 or index >= _aoe_nodes.size():
 		return false
 	var root: Node3D = _aoe_nodes[index]
 	if root == null or not is_instance_valid(root):
 		return false
 
 	_movable_aoe_drag_index = index
+	_held_aoe_drag_root = null
+	_movable_aoe_drag_unrestricted = not is_movable_aoe(index)
+	_movable_aoe_drag_root_origin = root.global_position
+	_movable_aoe_drag_delta = Vector3.ZERO
+	_movable_aoe_drag_was_captured = (
+		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	return true
+
+
+func begin_held_aoe_drag(root: Node3D) -> bool:
+	if is_movable_aoe_dragging():
+		return false
+	if root == null or not is_instance_valid(root) or not _held_spell_aoes.has(root):
+		return false
+	if not root.has_meta("spell_overlay_2d"):
+		return false
+
+	_movable_aoe_drag_index = -1
+	_held_aoe_drag_root = root
+	_movable_aoe_drag_unrestricted = true
 	_movable_aoe_drag_root_origin = root.global_position
 	_movable_aoe_drag_delta = Vector3.ZERO
 	_movable_aoe_drag_was_captured = (
@@ -3022,26 +3072,41 @@ func begin_movable_aoe_drag(index: int) -> bool:
 
 
 func _movable_aoe_drag_target(screen_position: Vector2) -> Dictionary:
-	if _movable_aoe_drag_index < 0:
-		return {"valid": false}
-	if _movable_aoe_drag_index >= persistent_aoes.size():
+	if not is_movable_aoe_dragging():
 		return {"valid": false}
 
 	var point_data: Dictionary = get_spell_target_point(screen_position)
 	if not bool(point_data.get("valid", false)):
 		return {"valid": false}
 
-	var data: Dictionary = persistent_aoes[_movable_aoe_drag_index]
-	var start_data: Array = data.get("start", [])
-	if start_data.size() != 3:
-		return {"valid": false}
-	var start: Vector3 = Vector3(
-		float(start_data[0]),
-		float(start_data[1]),
-		float(start_data[2])
-	)
+	var data: Dictionary
+	var start: Vector3
+	if _movable_aoe_drag_index >= 0:
+		if _movable_aoe_drag_index >= persistent_aoes.size():
+			return {"valid": false}
+		data = persistent_aoes[_movable_aoe_drag_index]
+		var start_data: Array = data.get("start", [])
+		if start_data.size() != 3:
+			return {"valid": false}
+		start = Vector3(
+			float(start_data[0]),
+			float(start_data[1]),
+			float(start_data[2])
+		)
+	else:
+		var held_data: Variant = _held_aoe_drag_root.get_meta("spell_overlay_2d", {})
+		if not held_data is Dictionary:
+			return {"valid": false}
+		data = held_data as Dictionary
+		var held_start: Variant = data.get("start", Vector3.ZERO)
+		if not held_start is Vector3:
+			return {"valid": false}
+		start = held_start
+
 	var target: Vector3 = point_data.get("point", start)
 	var desired_delta: Vector3 = target - start
+	if _movable_aoe_drag_unrestricted:
+		return {"valid": true, "delta": desired_delta}
 
 	var max_feet: float = float(data.get("movable_aoe_feet", 0.0))
 	var max_world: float = max_feet / 5.0 * cell_size
@@ -3070,36 +3135,27 @@ func _movable_aoe_drag_target(screen_position: Vector2) -> Dictionary:
 		if desired_delta.length() > max_world:
 			desired_delta = desired_delta.normalized() * max_world
 
-	return {
-		"valid": true,
-		"delta": desired_delta
-	}
+	return {"valid": true, "delta": desired_delta}
 
 
 func update_movable_aoe_drag(screen_position: Vector2) -> bool:
 	if not is_movable_aoe_dragging():
 		return false
-	if _movable_aoe_drag_index >= _aoe_nodes.size():
-		return false
 
-	var target_data: Dictionary = _movable_aoe_drag_target(
-		screen_position
-	)
-	if not bool(target_data.get("valid", false)):
-		return false
-
-	var root: Node3D = _aoe_nodes[_movable_aoe_drag_index]
+	var root: Node3D = _held_aoe_drag_root
+	if _movable_aoe_drag_index >= 0:
+		if _movable_aoe_drag_index >= _aoe_nodes.size():
+			return false
+		root = _aoe_nodes[_movable_aoe_drag_index]
 	if root == null or not is_instance_valid(root):
 		return false
 
-	_movable_aoe_drag_delta = target_data.get(
-		"delta",
-		Vector3.ZERO
-	)
-	root.global_position = (
-		_movable_aoe_drag_root_origin
-		+ _movable_aoe_drag_delta
-	)
+	var target_data: Dictionary = _movable_aoe_drag_target(screen_position)
+	if not bool(target_data.get("valid", false)):
+		return false
+
+	_movable_aoe_drag_delta = target_data.get("delta", Vector3.ZERO)
+	root.global_position = _movable_aoe_drag_root_origin + _movable_aoe_drag_delta
 	return true
 
 
@@ -3108,45 +3164,53 @@ func finish_movable_aoe_drag(commit: bool) -> bool:
 		return false
 
 	var index: int = _movable_aoe_drag_index
-	var changed: bool = _movable_aoe_drag_delta.length_squared() > 0.000001
+	var root: Node3D = _held_aoe_drag_root
 	if index >= 0 and index < _aoe_nodes.size():
-		var root: Node3D = _aoe_nodes[index]
-		if root != null and is_instance_valid(root):
-			if not commit:
-				root.global_position = _movable_aoe_drag_root_origin
+		root = _aoe_nodes[index]
+	var changed: bool = _movable_aoe_drag_delta.length_squared() > 0.000001
+	if root != null and is_instance_valid(root):
+		if not commit:
+			root.global_position = _movable_aoe_drag_root_origin
 
-	if (
-		commit
-		and changed
-		and index >= 0
-		and index < persistent_aoes.size()
-	):
-		_record_undo_state()
-		var data: Dictionary = persistent_aoes[index]
-		for key: String in ["start", "end"]:
-			var point_data: Array = data.get(key, [])
-			if point_data.size() == 3:
-				var point: Vector3 = Vector3(
-					float(point_data[0]),
-					float(point_data[1]),
-					float(point_data[2])
-				) + _movable_aoe_drag_delta
-				data[key] = [point.x, point.y, point.z]
-		persistent_aoes[index] = data
+	if commit and changed:
+		if index >= 0 and index < persistent_aoes.size():
+			_record_undo_state()
+			var data: Dictionary = persistent_aoes[index]
+			for key: String in ["start", "end"]:
+				var point_data: Array = data.get(key, [])
+				if point_data.size() == 3:
+					var point: Vector3 = Vector3(
+						float(point_data[0]),
+						float(point_data[1]),
+						float(point_data[2])
+					) + _movable_aoe_drag_delta
+					data[key] = [point.x, point.y, point.z]
+			persistent_aoes[index] = data
+		elif root != null and is_instance_valid(root):
+			var held_data: Dictionary = root.get_meta("spell_overlay_2d", {}).duplicate()
+			for key: String in ["start", "end"]:
+				var held_point: Variant = held_data.get(key)
+				if held_point is Vector3:
+					held_data[key] = Vector3(held_point) + _movable_aoe_drag_delta
+			root.set_meta("spell_overlay_2d", held_data)
 
 	_movable_aoe_drag_index = -1
+	_held_aoe_drag_root = null
 	_movable_aoe_drag_delta = Vector3.ZERO
+	_movable_aoe_drag_unrestricted = false
 	if _movable_aoe_drag_was_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_movable_aoe_drag_was_captured = false
+	_affected_tokens_signature = ""
 	return commit and changed
-
 
 func dissolve_aoe(index: int) -> bool:
 	if index < 0 or index >= _aoe_nodes.size():
 		return false
 	if index >= persistent_aoes.size():
 		return false
+	if is_movable_aoe_dragging():
+		finish_movable_aoe_drag(false)
 
 	_record_undo_state()
 	var root: Node3D = _aoe_nodes[index]
