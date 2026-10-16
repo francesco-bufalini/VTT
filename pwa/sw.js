@@ -1,8 +1,9 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v4";
-const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/tactical_view.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
-  "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "vtt-mobile-shell-v5";
+const CATALOGS = ["/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json"];
+const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
+  "/catalog/player.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
@@ -22,7 +23,7 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin ||
       url.pathname.startsWith("/api/")) return; // Never cache game state/credentials.
-  if (!SHELL.includes(url.pathname)) return;
+  if (!SHELL.includes(url.pathname) && !CATALOGS.includes(url.pathname)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     // Prefer new assets from the current native desktop installation.
