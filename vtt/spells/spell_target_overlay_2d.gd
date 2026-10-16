@@ -549,6 +549,14 @@ func _build_area_sidebar() -> void:
 	_area_sidebar.hide()
 
 
+func is_pointer_over_area_sidebar(screen_position: Vector2) -> bool:
+	return (
+		_area_sidebar != null
+		and _area_sidebar.visible
+		and _area_sidebar.get_global_rect().has_point(screen_position)
+	)
+
+
 func _area_color(data: Dictionary) -> Color:
 	var tint: Color = data.get("color", Color(0, 0, 0, -1))
 	if tint.a < 0.0:
