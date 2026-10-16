@@ -133,6 +133,15 @@ var fog_mask_asset_path: String = ""
 var fog_brush_radius_cells: float = FOG_DEFAULT_BRUSH_RADIUS_CELLS
 var _fog_painting: bool = false
 var _fog_last_world: Vector3 = Vector3.ZERO
+const EDITOR_AUTOSAVE_POLL_MS := 450
+const EDITOR_AUTOSAVE_DEBOUNCE_MS := 350
+var _editor_autosave_ready := false
+var _editor_autosave_last_signature := ""
+var _editor_autosave_candidate := ""
+var _editor_autosave_candidate_since := 0
+var _editor_autosave_last_poll := 0
+var _editor_autosave_retry_after := 0
+var _fog_change_revision := 0
 
 var add_grid_dialog: ConfirmationDialog
 var add_x: SpinBox
@@ -192,6 +201,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_poll_editor_autosave()
 	_sync_edit_layers_with_2d_view()
 	_update_map_transform_overlay()
 
@@ -243,7 +253,8 @@ func _initialize_editor() -> void:
 	# L'editor deve essere utilizzabile subito con il mouse. ESC continua a
 	# catturare/liberare il cursore tramite la logica gia' presente in dnd_base.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_load_active_campaign()
+	await _load_active_campaign()
+	_editor_autosave_ready = true
 
 
 func _build_toolbar() -> void:
@@ -347,13 +358,6 @@ func _build_toolbar() -> void:
 	status_label.clip_text = true
 	status_label.add_theme_font_size_override("font_size", 12)
 	row.add_child(status_label)
-
-	var save_button := Button.new()
-	save_button.text = "Salva"
-	save_button.custom_minimum_size = Vector2(64, 28)
-	save_button.add_theme_font_size_override("font_size", 13)
-	save_button.pressed.connect(_save_campaign)
-	row.add_child(save_button)
 
 	var menu_button := Button.new()
 	menu_button.text = "Menu"
@@ -1545,6 +1549,7 @@ func _reset_fog_mask() -> void:
 	if fog_mask_image == null:
 		return
 	fog_mask_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	_fog_change_revision += 1
 	_update_fog_texture()
 	if fog_enabled:
 		_ensure_fog_overlay()
@@ -1639,6 +1644,7 @@ func _paint_fog_at_world(
 					py,
 					Color(0.0, 0.0, 0.0, 0.0)
 				)
+	_fog_change_revision += 1
 
 	if update_texture:
 		_update_fog_texture()
@@ -1994,14 +2000,10 @@ func _serialize_extra_grids() -> Array:
 	return result
 
 
-func _save_campaign() -> void:
-	if not _is_active_user_campaign():
-		_set_status("Questa scena non e' una campagna utente salvabile")
-		return
-
-	_save_fog_mask_asset()
-
-	var state := {
+# The complete editor save includes image/fog/grids absent from tactical
+# network snapshots. Debounce the same live changes without a Save button.
+func _editor_state() -> Dictionary:
+	return {
 		"version": SAVE_VERSION,
 		"primary_grid": {
 			"width": primary_width_cells,
@@ -2015,13 +2017,44 @@ func _save_campaign() -> void:
 		"board_snapshot": _create_board_snapshot()
 	}
 
-	var error: Error = int(_campaign_manager().call("save_active_state", state))
+
+func _poll_editor_autosave() -> void:
+	if not _editor_autosave_ready or not _is_active_user_campaign():
+		return
+	var now := Time.get_ticks_msec()
+	if now < _editor_autosave_retry_after or now - _editor_autosave_last_poll < EDITOR_AUTOSAVE_POLL_MS:
+		return
+	_editor_autosave_last_poll = now
+	var signature := JSON.stringify({
+		"state": _editor_state(), "fog_revision": _fog_change_revision
+	}).sha256_text()
+	if signature == _editor_autosave_last_signature:
+		_editor_autosave_candidate = ""
+		return
+	if signature != _editor_autosave_candidate:
+		_editor_autosave_candidate = signature
+		_editor_autosave_candidate_since = now
+		return
+	if now - _editor_autosave_candidate_since < EDITOR_AUTOSAVE_DEBOUNCE_MS:
+		return
+	var error := _save_campaign()
 	if error == OK:
-		_set_status(
-			"Salvato · %s" % Time.get_time_string_from_system()
-		)
+		_editor_autosave_last_signature = signature
+		_editor_autosave_candidate = ""
+		_editor_autosave_retry_after = 0
 	else:
+		_editor_autosave_retry_after = now + 2000
+		push_warning("Autosave campagna non riuscito: " + error_string(error))
+
+
+func _save_campaign() -> Error:
+	if not _is_active_user_campaign():
+		return ERR_UNAVAILABLE
+	_save_fog_mask_asset()
+	var error: Error = int(_campaign_manager().call("save_active_state", _editor_state()))
+	if error != OK:
 		_set_status("Errore salvataggio: %s" % error_string(error))
+	return error
 
 
 func _load_active_campaign() -> void:
