@@ -99,6 +99,28 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],2);
 });
+test("prototype sample creature is editable, private and persists offline",async()=>{
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  // Demo is offered on first-run empty archive; exercise the same action
+  // directly after other tests have populated their local archive.
+  const demoButton=document.createElement("button");
+  demoButton.type="button";demoButton.dataset.act="demo";
+  document.body.append(demoButton);
+  demoButton.click();
+  demoButton.remove();
+  await until(()=>document.querySelector('[data-field="name"]')?.value==="Eroe di prova");
+  const rows=await listCreatures();
+  const saved=rows.find(r=>r.creature.name==="Eroe di prova");
+  assert.ok(saved);
+  assert.equal(saved.creature.current_hp,24);
+  assert.equal(saved.creature.resource_trackers[0].name,"Second Wind");
+  assert.equal(saved.creature.inventory.length,3);
+  assert.equal(saved.creature.linked_token_sync_id,"");
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test("native reference catalog can add an item to an offline creature",async()=>{
   click('[data-nav="catalog"]');
   await until(()=>document.querySelector('[data-act="catalog-open"]'));
