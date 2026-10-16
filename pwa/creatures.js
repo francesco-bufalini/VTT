@@ -90,11 +90,33 @@ export async function importCreatureFile(file, scope = "default") {
     const entries=payload.entries;
     if(payload.version!==1 || !Array.isArray(entries) || entries.length<1 || entries.length>200)
       throw new Error("Archivio creature multiplo non valido.");
-    // Validate the entire batch before beginning any import.
-    for(const entry of entries) parseCreatureExport(entry);
+    // Import one portable package in ONE IndexedDB transaction. A failure
+    // (quota, collision, malformed dependency) must not leave half the
+    // selected characters behind on the phone.
+    const parsed=entries.map(parseCreatureExport);
+    const owner=await ownerId();
+    const definitions=new Map();
     const imported=[];
-    for(const entry of entries) imported.push(await importCreatureExport(entry,scope));
-    return imported;
+    for(const {creature,homebrew} of parsed){
+      for(const definition of homebrew){
+        const prior=definitions.get(definition.id);
+        if(prior && JSON.stringify(prior)!==JSON.stringify(definition))
+          throw new Error("Definizioni homebrew in conflitto nel pacchetto: "+definition.id);
+        definitions.set(definition.id,definition);
+      }
+      imported.push(makeOwnedCopy(creature,owner,"import_"+localId()));
+    }
+    const batch=[
+      ...[...definitions.values()].map(definition=>({
+        scope:HOMEBREW_SCOPE,type:HOMEBREW_TYPE,id:definition.id,
+        data:definition,ifAbsent:true
+      })),
+      ...imported.map(creature=>({
+        scope:requiredScope(scope),type:CREATURE_TYPE,id:creature.id,data:creature
+      }))
+    ];
+    await insertRecords(batch);
+    return imported.map(creature=>({creature,revision:1}));
   }
   return importCreatureExport(payload, scope);
 }

@@ -1,4 +1,4 @@
-import { status, session, pair, unpair, map, action, subscribeMap, takeQrPairCode } from "./client.js";
+import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -27,6 +27,18 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let toastTimer = null;
+let chatPollGenerationInFlight=-1;
+let chatGeneration=0;
+let currentGameSession="";
+function acceptSession(info){
+  const next=String(info?.session??"");
+  if(currentGameSession && next && next!==currentGameSession){
+    // A different desktop game must not inherit the old chat cursor.
+    state.messages=[];state.after="";state.map=null;state.tokenId="";
+  }
+  if(next)currentGameSession=next;
+  state.session=info;
+}
 const pendingFieldTimers = new Map();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
@@ -91,6 +103,7 @@ function download(blob, filename) {
 function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,60) || "creatura"; }
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
 function stopSubscriptions() {
+  ++chatGeneration;
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -148,9 +161,11 @@ async function libraryView() {
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
     btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+
     (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
-      btn("library-select-none","Deseleziona")+
-      btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
-      btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger")+'</div>':'')+list+
+      '<span id="library-selected-actions">'+(state.librarySelectedIds.size ?
+        btn("library-select-none","Deseleziona")+
+        btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
+        btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
+      '</span></div>':'')+list+
     '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
 }
 function renderCatalogRows() {
@@ -439,26 +454,45 @@ function sessionView() {
   return html;
 }
 async function refreshConnection(quiet=false) {
+  // Offline does not mean unpaired: a stored credential can be validated again
+  // when the host comes back, without requiring another single-use QR.
+  state.paired=await hasPairingCredential();
   try {
-    const result = await status();
+    const result=await status();
     state.hostReachable=true;
     state.online=!!result.desktop_online;
     if(state.online){
       try {
-        state.session=await session(); state.paired=true;
-      } catch(error) {
-        state.paired=false; state.session=null;
-        if(error.status!==401 && error.status!==503 && !quiet) message(errorMessage(error),true);
+        acceptSession(await session());state.paired=true;
+      }catch(error){
+        state.online=false;state.session=null;
+        if(error.status===401){
+          await unpair();state.paired=false;
+        }else if(error.status!==503 && !quiet)message(errorMessage(error),true);
       }
-    } else { state.paired=false; state.session=null; }
-  } catch(error){ state.hostReachable=false; state.online=false; state.paired=false; state.session=null; }
+    }else state.session=null;
+  }catch(error){
+    state.hostReachable=false;state.online=false;state.session=null;
+  }
+  if(!state.online){state.map=null;state.tokenId="";}
   syncNav();
 }
 function startMap() {
   state.stopMap?.();
   state.stopMap = subscribeMap(data=>{
     if(state.page!=="session") return;
+    const recovered=!state.online;
     state.map = data;
+    state.online=true;
+    state.hostReachable=true;
+    if(recovered){
+      syncNav();
+      // The native board can restart while the PWA is open. Refresh its
+      // session label without interrupting the recovered tactical view.
+      session().then(info=>{
+        if(state.page==="session"&&state.paired)acceptSession(info);
+      }).catch(()=>{});
+    }
     const entries=data?.tokens||[];
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
@@ -469,16 +503,33 @@ function startMap() {
       window.scrollTo(0,scrollY);
     }
   },error=>{
-    state.online=false; syncNav();
-    // Stale map must not allow actions when the host is lost.
-    state.map=null; state.stopMap?.(); state.stopMap=null;
-    if(state.page==="session") { app.innerHTML=sessionView(); message(errorMessage(error),true); }
+    if(state.page!=="session")return;
+    const wasOnline=state.online;
+    state.online=false;
+    state.hostReachable=!!error?.status;
+    // Never leave stale token controls on screen. A temporary 503 or
+    // network loss is recoverable: subscribeMap continues retrying.
+    state.map=null;
+    state.tokenId="";
+    if(error?.status===401){
+      state.paired=false;state.session=null;
+      state.stopMap?.();state.stopMap=null;
+      unpair().catch(()=>{}).finally(()=>
+        render().catch(e=>message(errorMessage(e),true)));
+      return;
+    }
+    syncNav();
+    app.innerHTML=sessionView();
+    if(wasOnline)message("Connessione persa. Riconnessione automatica in corso.");
   },2500);
 }
 async function fetchChat() {
-  if(!state.paired) return;
+  if(!state.paired || chatPollGenerationInFlight===chatGeneration)return;
+  const generation=chatGeneration;
+  chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
+    if(generation!==chatGeneration || state.page!=="chat")return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
@@ -491,9 +542,19 @@ async function fetchChat() {
       const container=document.querySelector("#events");
       if(state.page==="chat"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
-  }catch(error){ if(state.page==="chat"&&error.status===401) message(errorMessage(error),true); }
+  }catch(error){
+    if(generation===chatGeneration && state.page==="chat" && error.status===401){
+      state.paired=false;
+      stopSubscriptions();
+      render().catch(e=>message(errorMessage(e),true));
+      message(errorMessage(error),true);
+    }
+  }finally{
+    if(chatPollGenerationInFlight===generation)chatPollGenerationInFlight=-1;
+  }
 }
 function startChat() {
+  ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
   state.pollChat=setInterval(()=>{ if(state.page==="chat") fetchChat(); },2500);
@@ -792,7 +853,9 @@ async function handleAction(target){
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
-    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;await render();return;
+    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
+    state.messages=[];state.after="";state.tokenId="";currentGameSession="";
+    await render();return;
   }
   if(act==="place-creature"||act==="claim-creature"){
     const selectedId=document.querySelector("#place-creature")?.value;
@@ -864,8 +927,13 @@ async function handleAction(target){
 async function handleSubmit(form){
   if(form.id==="pair-form"){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
-    state.session=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
-    state.paired=true;state.online=true;state.map=await map();
+    const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
+    acceptSession(pairedSession);
+    state.paired=true;state.online=true;
+    state.messages=[];state.after="";state.tokenId="";
+    // Pairing codes are one-time. A momentary map failure must not turn a
+    // successful enrollment into a visible failure or require a new QR.
+    try{state.map=await map();}catch{state.map=null;}
     await render();message("Desktop associato.");return;
   }
   if(form.id==="chat-form"){
@@ -924,11 +992,11 @@ function listen(){
     if(target?.dataset?.librarySelect){
       if(target.checked)state.librarySelectedIds.add(target.dataset.librarySelect);
       else state.librarySelectedIds.delete(target.dataset.librarySelect);
-      const buttons=app.querySelectorAll('[data-act="library-export"],[data-act="library-delete"]');
-      for(const button of buttons){
-        button.textContent=(button.dataset.act==="library-export"?"Esporta (":"Elimina (")+
-          state.librarySelectedIds.size+")";
-      }
+      const actions=app.querySelector("#library-selected-actions");
+      if(actions)actions.innerHTML=state.librarySelectedIds.size ?
+        btn("library-select-none","Deseleziona")+
+        btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
+        btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
     }
     if(target?.id==="catalog-category"){
@@ -961,8 +1029,16 @@ function listen(){
   });
   creatureInput.addEventListener("change",async()=>{
     const file=creatureInput.files?.[0];if(!file)return;
-    try{const result=await importCreatureFile(file);state.page="library";state.creatureId=result.creature.id;
-      state.editor=null;state.sheet="stats";await render();message("Scheda importata e salvata offline.");}
+    try{
+      const result=await importCreatureFile(file);
+      const imported=Array.isArray(result)?result:[result];
+      state.page="library";state.creatureId=imported.length===1?imported[0].creature.id:null;
+      state.editor=null;state.sheet="stats";
+      state.librarySelectedIds.clear();
+      await render();
+      message(imported.length===1 ? "Scheda importata e salvata offline." :
+        "Importate "+imported.length+" creature e relativi contenuti homebrew.");
+    }
     catch(error){message(errorMessage(error),true);}finally{creatureInput.value="";}
   });
   backupInput.addEventListener("change",async()=>{
@@ -975,7 +1051,13 @@ function listen(){
       const active=document.activeElement;
       if(active?.matches?.("[data-field],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
-    } else if(state.page==="session"&&state.paired) refreshConnection(true);
+    } else if(state.page==="session") {
+      refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
+    }
+  });
+  window.addEventListener("online",()=>{
+    if(state.page==="session")
+      refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
@@ -989,8 +1071,9 @@ export async function mount(){
   await refreshConnection(true);
   if(qrCode){
     try {
-      state.session=await pair(qrCode,{remember:true});
+      acceptSession(await pair(qrCode,{remember:true}));
       state.paired=true;state.online=true;state.page="session";
+      state.messages=[];state.after="";state.tokenId="";
       message("Telefono associato tramite QR.");
     }catch(error){
       state.page="session";state.qrCode=qrCode;

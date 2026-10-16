@@ -20,3 +20,6 @@ body.tactical-open{overflow:hidden}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:12px;margin:5px 0;overflow-wrap:anywhere}.catalog-entry span:first-child{min-width:0}.catalog-entry .tag{flex:none}.catalog-results{margin-top:12px;max-height:min(44vh,440px);overflow-y:auto;overscroll-behavior:contain}.catalog-description{white-space:pre-wrap;overflow-wrap:anywhere;max-height:42vh;overflow-y:auto}
 
 .library-batch-check{display:flex;align-items:center;justify-content:center;flex:none;min-width:30px;min-height:44px}.library-batch-check input{width:19px;height:19px;accent-color:var(--accent)}
+
+/* Bulk buttons remain flex siblings when JS updates the selection slot. */
+#library-selected-actions{display:contents}
