@@ -11,6 +11,7 @@ import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
+import { changeTrackerUses, recoveryPatch } from "./character_core.js";
 import { localSheetView } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -341,7 +342,7 @@ function resourceView(c,configure=false){
           '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
           '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
       }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
-      (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>':'') )+
+      (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+btn("tracker-turn","Nuovo turno")+'</div>':'') )+
       (configure?panel("Aggiungi tracker",'<div class="columns">'+
       '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
       '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
@@ -1024,21 +1025,14 @@ async function handleAction(target){
       const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
       await patch({resource_trackers:trackers,resource_tracker_spent:spent});
     }else{
-      const maximum=Math.max(0,Number(row.max)||0);
-      const spent={...(record.resource_tracker_spent||{})};
-      const delta=act==="tracker-more"?1:-1;
-      spent[row.id]=Math.max(0,Math.min(maximum,(Number(spent[row.id])||0)+delta));
-      await patch({resource_tracker_spent:spent});
+      await patch(changeTrackerUses(record,row.id,act==="tracker-more"?1:-1));
     }
     await render();return;
   }
-  if(act==="tracker-short"||act==="tracker-long"){
-    const record=state.editor.read(),spent={...(record.resource_tracker_spent||{})};
-    for(const row of record.resource_trackers||[]){
-      if(row.recharge==="short_rest" ||
-        (act==="tracker-long"&&row.recharge==="long_rest")) delete spent[row.id];
-    }
-    await patch({resource_tracker_spent:spent});await render();return;
+  if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
+    const event=act==="tracker-short"?"short_rest":act==="tracker-long"?"long_rest":"turn";
+    await patch(recoveryPatch(state.editor.read(),event));
+    await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
