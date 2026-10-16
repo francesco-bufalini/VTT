@@ -60,6 +60,41 @@ func _pairing_token() -> String:
 	return secret
 
 
+
+# Open locally on the native desktop only. Never reveal this credential
+# through unauthenticated HTTP, query parameters or tactical snapshots.
+# Ctrl+Shift+P opens a pairing dialog without changing desktop game menus.
+func _input(event: InputEvent) -> void:
+	if _token.is_empty() or not event is InputEventKey:
+		return
+	var key := event as InputEventKey
+	if not key.pressed or key.echo or not key.ctrl_pressed or not key.shift_pressed or key.keycode != KEY_P:
+		return
+	get_viewport().set_input_as_handled()
+	_show_pairing_dialog()
+
+
+func _show_pairing_dialog() -> void:
+	for child: Node in get_tree().root.get_children():
+		if child is AcceptDialog and child.name == "VttPwaPairing":
+			(child as AcceptDialog).popup_centered()
+			return
+	var dialog := AcceptDialog.new()
+	dialog.name = "VttPwaPairing"
+	dialog.title = "Associa VTT Mobile PWA"
+	dialog.dialog_text = "1. Apri dal telefono l'indirizzo HTTPS di Tailscale Serve del PC.\n2. Apri Partita e inserisci il seguente codice:\n\n%s\n\nNon condividere il codice in chat pubbliche." % _token
+	dialog.min_size = Vector2i(570, 260)
+	get_tree().root.add_child(dialog)
+	dialog.add_button("Copia codice", true, "copy_code")
+	dialog.custom_action.connect(func(action: StringName) -> void:
+		if action == &"copy_code":
+			DisplayServer.clipboard_set(_token)
+	)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+	dialog.popup_centered()
+
+
 func _board_sync() -> Node:
 	var scene := get_tree().current_scene
 	if scene == null or scene.scene_file_path != "res://dnd_base.tscn":
