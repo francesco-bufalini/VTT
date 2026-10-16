@@ -598,6 +598,35 @@ func hide_panel() -> void:
 		board_root.call("capture_camera_control")
 
 
+func _input(event: InputEvent) -> void:
+	if (
+		_panel == null or not _panel.visible
+		or not event is InputEventKey
+		or not event.pressed or event.echo or not event.ctrl_pressed
+	):
+		return
+	var redo := (
+		event.keycode == KEY_Y
+		or (event.keycode == KEY_Z and event.shift_pressed)
+	)
+	if event.keycode != KEY_Z and event.keycode != KEY_Y:
+		return
+	# Native TextEdit undo would diverge from the saved sheet: use the
+	# persisted creature revisions even when a field currently has focus.
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var result: Error = (
+		_archive.redo_owned(record) if redo else _archive.undo_owned(record)
+	)
+	if result == OK:
+		_reload()
+		_set_status("Modifica ripristinata." if not redo else "Modifica ripetuta.")
+	elif result != ERR_DOES_NOT_EXIST:
+		_set_status("Cronologia non disponibile: " + error_string(result))
+	get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _panel.visible and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE and not (
