@@ -89,6 +89,6 @@ test("dice roll is usable offline; session has functioning pairing form",async()
   click('[data-nav="session"]');
   await until(()=>document.querySelector("#pair-form"));
   assert.match(document.querySelector("#app").textContent,/Codice di associazione/);
-  assert.match(document.querySelector("#app").textContent,/Token di 64 caratteri/);
+  assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"Token di 64 caratteri");
   assert.equal(document.querySelectorAll("#nav button").length,4);
 });
