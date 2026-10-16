@@ -118,6 +118,8 @@ $fastTests = @(
     "test_mobile_touch_layout.gd",
     "test_mobile_sheet_navigation.gd",
     "test_initiative_tracker.gd",
+    "test_activated_abilities.gd",
+    "test_artificer_infusions.gd",
     "test_spell_catalog_smoke.gd",
     "test_spell_selection_and_multiclass.gd",
     "test_spellcasting_initial_resources.gd",
@@ -188,6 +190,7 @@ $fastTests = @(
 # remain available for broader regression coverage outside the 60s CI gate.
 $ciSmokeTestNames = @(
     "test_spell_catalog_smoke.gd",
+    "test_activated_abilities.gd",
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
     "test_creature_sheet_controller.gd",
