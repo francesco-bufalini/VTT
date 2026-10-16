@@ -5,6 +5,7 @@ on:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "export_presets.cfg"
       - ".github/workflows/pwa-infrastructure.yml"
@@ -12,6 +13,7 @@ on:
     paths:
       - "pwa/**"
       - "network/pwa_host.gd"
+      - "vtt/qr/**"
       - "tests/test_pwa_host.gd"
       - "vtt/map_data_controller.gd"
       - "docs/pwa-architecture.md"
