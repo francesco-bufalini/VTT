@@ -92,7 +92,7 @@ func create_character() -> Dictionary:
 		"subtype_is_custom": false,
 		"background": "",
 		"background_source": "",
-		"alignment": "",
+		"alignment": "Completamente neutrale",
 		"sex": "",
 		"inspiration": false,
 		"abilities": {

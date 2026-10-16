@@ -42,6 +42,7 @@ const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const CreaturePublicStatus = preload("res://vtt/creature_public_status.gd")
 const SheetController = preload("res://vtt/creature_sheet_controller.gd")
+const ALIGNMENT_OPTIONS = ["Legale buono","Neutrale buono","Caotico buono","Legale neutrale","Completamente neutrale","Caotico neutrale","Legale malvagio","Neutrale malvagio","Caotico malvagio"]
 
 var board_root: Node
 var ui_root: CanvasLayer
@@ -168,6 +169,7 @@ var _attack_range_labels: Dictionary = {}
 var _attack_long_range_labels: Dictionary = {}
 var _front: OptionButton
 var _party: LineEdit
+var _alignment: OptionButton
 var _tabs: TabContainer
 var _spellcasting_ui: Node
 var _inventory_ui: Node
@@ -991,6 +993,18 @@ func _build_ui() -> void:
 	_party.placeholder_text = "Default"
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
+	var alignment_row := HBoxContainer.new()
+	alignment_row.add_theme_constant_override("separation", 8)
+	identity_box.add_child(alignment_row)
+	_add_label(alignment_row, "Allineamento")
+	_alignment = OptionButton.new()
+	_alignment.custom_minimum_size.x = 210
+	_alignment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for option_label: String in ALIGNMENT_OPTIONS:
+		_alignment.add_item(option_label)
+	_alignment.select(4)
+	_alignment.item_selected.connect(func(_index: int) -> void: _save())
+	alignment_row.add_child(_alignment)
 	var physics_box := _info_panel(form, "FISICO")
 	physics_box.add_theme_constant_override("separation", 7)
 	# A field is always a label + control; never wrap those independently.
@@ -3854,6 +3868,17 @@ func _load_form(record: Dictionary) -> void:
 	_select_sheet_size(String(record.get("size_name", "Medium")))
 	_front.select(clampi(int(record.get("visual_front_quarter_turns", 0)), 0, 3))
 	_party.text = String(record.get("party_id", ""))
+	while _alignment.item_count > ALIGNMENT_OPTIONS.size():
+		_alignment.remove_item(_alignment.item_count - 1)
+	var saved_alignment: String = String(record.get("alignment", "")).strip_edges()
+	if saved_alignment.is_empty():
+		saved_alignment = "Completamente neutrale"
+	var alignment_index: int = ALIGNMENT_OPTIONS.find(saved_alignment)
+	if alignment_index < 0:
+		# Preserve imported homebrew alignments until explicitly changed.
+		_alignment.add_item(saved_alignment)
+		alignment_index = _alignment.item_count - 1
+	_alignment.select(alignment_index)
 	_default_miniature.tooltip_text = (
 		"ID catalogo: " + _default_miniature_id
 		if not _default_miniature_id.is_empty()
@@ -5408,6 +5433,7 @@ func _save() -> void:
 	record["footprint"] = _selected_size_footprint()
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
+	record["alignment"] = _alignment.get_item_text(_alignment.selected)
 	record["armor_class_base"] = int(_ac.value)
 	if _natural_ac_formula != null:
 		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()

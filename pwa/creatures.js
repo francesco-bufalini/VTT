@@ -61,7 +61,7 @@ export async function createCreature(kind = "character", name = "Nuova creatura"
   if (!["character", "monster"].includes(kind)) throw new TypeError("Invalid creature kind");
   const creature = { id: "creature_" + localId(), owner_id: await ownerId(),
     transfer_revision: 0, linked_token_sync_id: "", linked_token_name: "",
-    kind, name, inventory: [], documents: [] };
+    kind, name, alignment: "Completamente neutrale", inventory: [], documents: [] };
   const saved = await saveCreature(creature, scope, 0);
   return saved;
 }

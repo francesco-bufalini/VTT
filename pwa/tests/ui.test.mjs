@@ -85,6 +85,11 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
   });
   click('[data-sheet="battle"]');
+  await until(()=>document.querySelector('.current-section')?.textContent==="Battaglia");
+  assert.equal(document.querySelector('#tracker-name'),null);
+  click('[data-sheet="origins"]');
+  await until(()=>document.querySelector('#native-details'));
+  change('#native-details','resources');
   await until(()=>document.querySelector("#tracker-name"));
   change("#tracker-name","Impulsi");
   change("#tracker-max","3");
@@ -103,9 +108,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
   });
   click('[data-sheet="info"]');
-  await until(()=>document.querySelector('[data-field="notes"]'));
-  document.querySelector('[data-field="notes"]').closest('details').open=true;
-  const pendingNote=document.querySelector('[data-field="notes"]');
+  await until(()=>document.querySelector('[data-field="background_personality"]'));
+  const pendingNote=document.querySelector('[data-field="background_personality"]');
   pendingNote.value="Nota digitata e subito chiusa";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   // No change/blur or delay: a fast mobile tap must flush the debounce.
@@ -118,7 +122,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],2);
-  assert.equal(persisted.data.notes,"Nota digitata e subito chiusa");
+  assert.equal(persisted.data.background_personality,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
   click('[data-nav="library"]');
@@ -325,8 +329,11 @@ test("native Android section order and editable sheet data",async()=>{
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
   assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
-  change('[data-field="player_name"]',"Giocatore locale");
-  change('[data-field="speed_base"]',"35");
+  change('[data-field="alignment"]',"Caotico buono");
+  assert.equal(document.querySelector('[data-field="speed_base"]'),null);
+  assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
+  assert.equal(document.querySelector('[data-field="current_miniature_id"]'),null);
+  assert.equal(document.querySelector('[data-field="type"]'),null);
   click('[data-sheet="stats"]');
   await until(()=>document.querySelector('[data-ability="str"]'));
   change('[data-ability="str"]',"14");
@@ -334,8 +341,8 @@ test("native Android section order and editable sheet data",async()=>{
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   document.querySelector('[data-condition="poisoned"]').click();
   await until(async()=>{
-    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.player_name==="Giocatore locale");
-    return c?.abilities?.str===14 && c.speed_base===35 && c.conditions?.includes("poisoned");
+    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
+    return c?.abilities?.str===14 && c.conditions?.includes("poisoned");
   });
   click('[data-sheet="origins"]');
   await until(()=>document.querySelector('#native-details'));
@@ -345,9 +352,38 @@ test("native Android section order and editable sheet data",async()=>{
   await until(()=>document.querySelector('[data-native-list="proficiency_choices"]'));
   change('[data-native-list="proficiency_choices"][data-key="key"]',"athletics");
   await until(async()=>{
-    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.player_name==="Giocatore locale");
+    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
     return c?.proficiency_choices?.some(row=>row.key==="athletics");
   });
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("alignment defaults to true neutral and derived fields are non-editable",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="alignment"]'));
+  const picker=document.querySelector('[data-field="alignment"]');
+  assert.equal(picker.tagName,"SELECT");
+  assert.equal(picker.value,"Completamente neutrale");
+  assert.equal(picker.options.length,9);
+  for(const key of ['type','default_miniature_id','current_miniature_id','speed_base','player_name']){
+    assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' must not be freely editable');
+  }
+  click('[data-sheet="battle"]');
+  await until(()=>document.querySelector('[data-field="current_hp"]'));
+  for(const key of ['armor_class_base','initiative']){
+    assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' is not freely editable');
+  }
+  assert.equal(document.querySelector('#tracker-name'),null,'Tracker configuration belongs in character editor');
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("native alignment options preserve imported nonstandard values",async()=>{
+  const {nativeSection,ALIGNMENTS}=await import("../native_sheet.js");
+  const seen=nativeSection({kind:"character",name:"Importato",alignment:"Lawful Neutral",abilities:{}},
+    "info",{field:(label,key,value)=>'<input data-field="'+key+'" value="'+value+'">',
+      area:()=>"",panel:(_title,html)=>html,resources:"",catalogs:{}});
+  assert.ok(seen.includes('Lawful Neutral · importato'));
+  assert.equal(ALIGNMENTS.length,9);
 });
