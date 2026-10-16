@@ -111,6 +111,11 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
+	for module: String in ["character_core", "class_spells", "quick_homebrew"]:
+		var source := await http("GET", "/" + module + ".js")
+		assert(source.begins_with("HTTP/1.1 200") and not source.contains("text/html"),
+			"PWA domain module must be accessible through the desktop HTTPS bridge: " + module)
+
 	var stylesheet := await http("GET", "/styles.css")
 	assert(stylesheet.begins_with("HTTP/1.1 200") and stylesheet.contains(".bottom-nav"))
 	var rules_module := await http("GET", "/sheet_rules.js")

@@ -126,7 +126,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
   const persisted=await loadCreature(creature.creature.id);
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
-  assert.equal(persisted.data.spell_slots_spent[1],2);
+  assert.equal(persisted.data.spell_slots_spent[1],0,
+    "A long rest in the resources panel restores class spell slots");
   assert.equal(persisted.data.background_personality,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
@@ -571,5 +572,35 @@ test("Android-style drawer restores the selected character and edits multiclass 
   assert.equal(document.querySelector('[data-native-list="classes"][data-key="name"]').value,"Mago");
   assert.equal(document.querySelector('[data-native-list="classes"][data-key="level"]').value,"3");
   click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("quick homebrew creates an offline feat and applies explicit grants",async()=>{
+  click('[data-nav="catalog"]');
+  await until(()=>document.querySelector("#catalog-category"));
+  change("#catalog-category","feats");
+  await until(()=>document.querySelector("#homebrew-form"));
+  const form=document.querySelector("#homebrew-form");
+  form.querySelector('[name="name"]').value="Osservatore PWA";
+  form.querySelector('[name="description"]').value="Talento creato offline";
+  form.querySelector('[name="proficiencies"]').value="skill: perception";
+  form.dispatchEvent(new dom.window.Event("submit",{bubbles:true,cancelable:true}));
+  await until(()=>document.querySelector('[data-act="catalog-open"]')?.textContent.includes("Osservatore PWA"));
+  click('[data-act="catalog-open"]');
+  await until(()=>document.querySelector('[data-act="catalog-assign"]'));
+  const creature=document.querySelector("#catalog-creature");
+  assert.ok(creature?.value,"Owned local creatures remain selectable for homebrew grants");
+  const selectedId=creature.value;
+  click('[data-act="catalog-assign"]');
+  await until(async()=>{
+    const c=(await loadCreature(selectedId))?.data;
+    return c?.feats_catalog?.some(row=>row.name==="Osservatore PWA");
+  });
+  const edited=(await loadCreature(selectedId)).data;
+  assert.ok(edited.proficiency_choices.some(row=>row.key==="perception"&&row.kind==="skill"));
+  const exported=JSON.parse(await (await exportCreature(selectedId)).text());
+  assert.ok(exported.homebrew_content.some(row=>row.name==="Osservatore PWA"),
+    "Quick homebrew must be portable with the character");
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
