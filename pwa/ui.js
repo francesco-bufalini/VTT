@@ -416,6 +416,14 @@ async function patch(patchValue) {
   }
 }
 async function handleField(target) {
+  // Tactical controls are independent from an open local creature editor.
+  if(target.dataset.tokenCondition){
+    const result=await action("set_condition",{token_id:state.tokenId,
+      condition_id:target.dataset.tokenCondition,enabled:target.checked});
+    if(!result.ok){target.checked=!target.checked;throw new Error(result.error||"Condizione non applicata");}
+    await refreshMapOnce();
+    return;
+  }
   if(!state.editor) return;
   const creature=state.editor.read();
   if(target.dataset.field){
@@ -454,11 +462,6 @@ async function handleField(target) {
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
     await patch({conditions:[...entries]});
-  } else if(target.dataset.tokenCondition){
-    const result=await action("set_condition",{token_id:state.tokenId,
-      condition_id:target.dataset.tokenCondition,enabled:target.checked});
-    if(!result.ok){target.checked=!target.checked;throw new Error(result.error||"Condizione non applicata");}
-    await refreshMapOnce();
   }
 }
 async function refreshMapOnce() {
