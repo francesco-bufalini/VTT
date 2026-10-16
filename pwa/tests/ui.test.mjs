@@ -10,7 +10,7 @@ const html = readFileSync(fileURLToPath(new URL("../index.html",import.meta.url)
 const dom = new JSDOM(html,{url:"https://desktop.test/",pretendToBeVisual:true});
 globalThis.window=dom.window;
 globalThis.document=dom.window.document;
-globalThis.navigator=dom.window.navigator;
+Object.defineProperty(globalThis,"navigator",{value:dom.window.navigator,configurable:true});
 globalThis.HTMLFormElement=dom.window.HTMLFormElement;
 globalThis.self=dom.window;
 globalThis.crypto=webcrypto;
