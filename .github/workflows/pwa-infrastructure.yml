@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
@@ -63,7 +63,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
@@ -148,6 +148,7 @@ jobs:
           }
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
+          copy2(Path("pwa/catalog/classes.json"), root / "catalog/classes.json")
           (root / "start-preview.cmd").write_text(
               '@echo off\ncd /d "%~dp0"\necho Apri http://127.0.0.1:8766 nel browser\n'
               'py -3 -m http.server 8766 --bind 127.0.0.1\npause\n')
@@ -177,8 +178,11 @@ jobs:
           import json
           from pathlib import Path
           root = Path("pwa-prototype")
-          for file in ["player", "backgrounds", "features", "items", "spells"]:
+          for file in ["player", "backgrounds", "features", "items", "spells", "classes"]:
               assert (root / "catalog" / (file + ".json")).exists(), file
+          choices = json.loads((root / "catalog/classes.json").read_text())
+          assert choices["version"] == 1 and len(choices["classes"]) >= 12
+          assert len(choices["subclasses"]) >= 100
           spells = json.loads((root / "catalog" / "spells.json").read_text())
           assert spells["version"] == 1 and len(spells["spells"]) > 50
           assert (root / "demo.js").exists()

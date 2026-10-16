@@ -50,7 +50,7 @@ async function supplementalCatalog(category){
   return Object.entries(rows).map(([key,record])=>{
     const parts=key.split("|");
     const original=String(record?.name||parts[0]);
-    const name=original.replace(/(^|[\\s-])([a-z])/g,(_m,p,c)=>p+c.toUpperCase());
+    const name=original.replace(/(^|[\s-])([a-z])/g,(_m,p,c)=>p+c.toUpperCase());
     return {name,source:String(record?.source||parts[1]||"").toUpperCase()};
   });
 }
