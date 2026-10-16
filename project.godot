@@ -22,6 +22,7 @@ CampaignManager="*res://vtt/campaign_manager.gd"
 EncounterEvents="*res://encounter/encounter_events.gd"
 MenuAudioManager="*res://vtt/menu/menu_audio_manager.gd"
 TokenPackManager="*res://vtt/token_pack_manager.gd"
+PwaHost="*res://network/pwa_host.gd"
 
 [display]
 
