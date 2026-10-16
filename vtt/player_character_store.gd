@@ -21,7 +21,7 @@ func setup(_campaign_manager: Node = null) -> void:
 	pass
 
 
-func _storage() -> RefCounted:
+func _storage() -> Variant:
 	var storage := Storage.new()
 	storage.path = archive_path
 	return storage
