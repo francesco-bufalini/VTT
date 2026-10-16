@@ -261,14 +261,17 @@ func _show_pairing_dialog() -> void:
 			feedback.text = "Inserisci l'URL HTTPS di Tailscale Serve per generare il QR.\nIl codice manuale funziona comunque."
 			return
 		var generator: Node = QrEncoder.new()
-		generator.error_correct_level = QrEncoder.ErrorCorrectionLevel.MEDIUM
+		generator.set("error_correct_level", 1)
 		qr.texture = generator.call("get_texture", link)
 		generator.free()
 		feedback.text = "Scansiona per aprire VTT e associare il telefono."
 		copy_url.disabled = false
-		copy_url.pressed.connect(func() -> void:
+
+	copy_url.pressed.connect(func() -> void:
+		var link := _pair_url(url_edit.text, code)
+		if not link.is_empty():
 			DisplayServer.clipboard_set(link)
-		)
+	)
 	url_edit.text_submitted.connect(func(_value: String) -> void: update_qr.call())
 	url_edit.focus_exited.connect(func() -> void: update_qr.call())
 	update_qr.call()
