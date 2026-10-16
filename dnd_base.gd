@@ -2911,6 +2911,9 @@ func start_combat_mode() -> void:
 
 
 func _initialize_map_autosave() -> void:
+	# Test scenes must not reuse or mutate the player's real automatic saves.
+	if DisplayServer.get_name() == "headless":
+		return
 	if board_sync == null or not is_instance_valid(board_sync):
 		return
 	# The campaign editor restores its own richer map state; avoid overriding
