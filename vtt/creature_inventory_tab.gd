@@ -451,28 +451,31 @@ func _documents_changed(inventory: Array) -> void:
 
 
 func receive_document() -> void:
-	# Compatibility for incoming documents from older peers. The new editor
-	# does not expose sending; this migrates any pre-existing inbox deliveries.
-	var incoming: Array[Dictionary] = DocumentInbox.take_all()
+	# The inbox remains authoritative until the archive explicitly confirms
+	# the inventory save. Never take_all()/clear it before persisting the sheet.
+	var incoming: Array[Dictionary] = DocumentInbox.pending()
 	var changed := false
 	for note: Dictionary in incoming:
-		var item: Dictionary = DocumentStore.from_legacy(note)
-		if item.is_empty():
-			# Preserve failed deliveries in the inbox rather than losing them.
-			DocumentInbox.receive(note)
-			continue
+		var received_id: String = DocumentStore.legacy_id(note)
 		var already_owned := false
 		for saved: Dictionary in _inventory:
-			if String(saved.get("id", "")) == String(item.get("id", "")):
+			if String(saved.get("id", "")) == received_id:
 				already_owned = true
 				break
-		if not already_owned:
-			_inventory.append(item)
-			changed = true
+		if already_owned:
+			continue
+		var item: Dictionary = DocumentStore.from_legacy(note)
+		if item.is_empty():
+			continue # Retry next time rather than acknowledging an invalid import.
+		_inventory.append(item)
+		changed = true
 	if changed:
 		reload_catalog()
 		_refresh_inventory()
 		_documents_tab.call("load_inventory", _inventory)
+	# Also re-save when a prior attempt already placed the document in memory:
+	# only CreatureArea may acknowledge the inbox after successful persistence.
+	if not incoming.is_empty():
 		_publish()
 
 
@@ -695,7 +698,7 @@ func load_record(record: Dictionary) -> void:
 			migrated = true
 	# Retain the previous inbox import behavior for deliveries received when
 	# no creature was selected. There is no document-only sending UI.
-	for note: Dictionary in DocumentInbox.take_all():
+	for note: Dictionary in DocumentInbox.pending():
 		var received_id: String = DocumentStore.legacy_id(note)
 		var already_owned := false
 		for owned: Dictionary in _inventory:
@@ -703,11 +706,11 @@ func load_record(record: Dictionary) -> void:
 				already_owned = true
 				break
 		if already_owned:
+			migrated = true # Acknowledge only when a subsequent archive save succeeds.
 			continue
 		var received: Dictionary = DocumentStore.from_legacy(note)
 		if received.is_empty():
-			DocumentInbox.receive(note)
-			continue
+			continue # Keep original inbox record for retry.
 		_inventory.append(received)
 		migrated = true
 	_sanitize_equipment()

@@ -19,6 +19,14 @@ static func pending() -> Array[Dictionary]:
 
 
 static func receive(document: Dictionary) -> bool:
+	# Do not turn a corrupt existing inbox into an empty queue and overwrite it.
+	if FileAccess.file_exists(PATH):
+		var parser := JSON.new()
+		if parser.parse(FileAccess.get_file_as_string(PATH)) != OK or not parser.data is Array:
+			return false
+		for entry: Variant in parser.data:
+			if not entry is Dictionary:
+				return false
 	var rows: Array[Dictionary] = pending()
 	var id: String = String(document.get("id", ""))
 	if id.is_empty():
@@ -26,10 +34,26 @@ static func receive(document: Dictionary) -> bool:
 	for row: Dictionary in rows:
 		if String(row.get("id", "")) == id:
 			return true
+	if rows.size() >= MAX_DOCUMENTS:
+		return false # Do not evict a previously acknowledged delivery.
 	rows.append(document.duplicate(true))
-	while rows.size() > MAX_DOCUMENTS:
-		rows.remove_at(0)
 	return _write(rows)
+
+
+# Invoke only after CreatureArea confirms that the owning creature was saved.
+# The inbox remains durable while an inventory save or a homebrew import fails.
+static func acknowledge_inventory(inventory: Array) -> bool:
+	var owned: Dictionary = {}
+	for raw: Variant in inventory:
+		if raw is Dictionary:
+			owned[String((raw as Dictionary).get("id", ""))] = true
+	var documents = load("res://vtt/document_homebrew.gd")
+	var rows: Array[Dictionary] = pending()
+	var retained: Array[Dictionary] = []
+	for note: Dictionary in rows:
+		if not owned.has(documents.legacy_id(note)):
+			retained.append(note)
+	return retained.size() == rows.size() or _write(retained)
 
 
 static func take_all() -> Array[Dictionary]:
@@ -47,9 +71,11 @@ static func _write(documents: Array[Dictionary]) -> bool:
 	if file == null:
 		return false
 	file.store_string(JSON.stringify(documents, "  "))
+	file.flush()
 	var error: Error = file.get_error()
 	file.close()
 	if error != OK:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary))
 		return false
 	var temp_path: String = ProjectSettings.globalize_path(temporary)
 	var final_path: String = ProjectSettings.globalize_path(PATH)

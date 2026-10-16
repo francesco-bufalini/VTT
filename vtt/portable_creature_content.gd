@@ -130,8 +130,27 @@ static func install(raw: Variant) -> Error:
 			return ERR_INVALID_DATA
 		var entry: Dictionary = item as Dictionary
 		var identifier: String = String(entry["id"])
-		if known.has(identifier) or new_entries.has(identifier):
-			continue # Recipient's existing content wins, no duplicates.
+		if known.has(identifier):
+			# Same stable ID is safe only when the definition is actually identical.
+			# Otherwise a silent skip would change the meaning of the imported sheet.
+			var local: Dictionary = known[identifier].duplicate(true)
+			for field: String in ["id", "name", "source", "category", "origin",
+				"asset_dir", "overrides", "icon", "icon_id"]:
+				local.erase(field)
+			if local != entry["data"]:
+				return ERR_ALREADY_EXISTS
+			for field: String in ["name", "source", "overrides", "icon", "icon_id"]:
+				if String(known[identifier].get(field, "")) != String(entry.get(field, "")):
+					return ERR_ALREADY_EXISTS
+			continue
+		if new_entries.has(identifier):
+			if new_entries[identifier] != entry:
+				return ERR_ALREADY_EXISTS
+			continue
+		var parts := identifier.split(":")
+		var path := IMPORT_DIR.path_join(parts[1]).path_join(parts[2] + "_" + parts[3] + ".json")
+		if FileAccess.file_exists(path):
+			return ERR_ALREADY_EXISTS # Preserve an unloaded or damaged local package.
 		new_entries[identifier] = entry
 	# Check all entries before writing anything.
 	for identifier: String in new_entries.keys():
@@ -155,7 +174,7 @@ static func install(raw: Variant) -> Error:
 		var path: String = folder.path_join(parts[2] + "_" + parts[3] + ".json")
 		# An existing file with a conflicting definition is never replaced.
 		if FileAccess.file_exists(path):
-			continue
+			return ERR_ALREADY_EXISTS
 		var file := FileAccess.open(path, FileAccess.WRITE)
 		if file == null:
 			return FileAccess.get_open_error()

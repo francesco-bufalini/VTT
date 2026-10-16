@@ -188,8 +188,13 @@ func _run() -> void:
 		ids.append(String(entry.get("id", "")))
 	assert(identifier in ids and String(local_background.id) in ids
 		and bundled.size() == 2, "Only directly used homebrew records must travel")
+	var conflicting_bundle: Array[Dictionary] = bundled.duplicate(true)
+	var conflicting_data: Dictionary = conflicting_bundle[0]["data"]
+	conflicting_data["description"] = "A DIFFERENT DEFINITION FOR THE SAME STABLE ID"
+	assert(PortableContent.install(conflicting_bundle) == ERR_ALREADY_EXISTS,
+		"Import must refuse an existing ID with conflicting homebrew content")
 	assert(PortableContent.install(bundled) == OK,
-		"Import must skip existing definitions without creating duplicates")
+		"Import must accept identical definitions without creating duplicates")
 	assert(QuickCustom.remove(local_background))
 	assert(PortableContent.install(bundled) == OK,
 		"On a second device, import must restore missing homebrew by its stable ID")

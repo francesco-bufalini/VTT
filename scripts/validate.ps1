@@ -158,6 +158,7 @@ $fastTests = @(
     "test_tactical_overlay.gd",
     "test_creature_presence.gd",
     "test_document_delivery_ack.gd",
+    "test_document_inbox_safety.gd",
     "test_document_homebrew.gd",
     "test_content_layer_separation.gd",
     "test_camera_2d_height.gd",
