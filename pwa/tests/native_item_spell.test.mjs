@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {itemKind,requiresAttunement,isCatalogItem,createOwnedItem,changeOwnedItem}
+import {itemKind,requiresAttunement,isCatalogItem,createOwnedItem,changeOwnedItem,validSlot,equipSlot}
   from "../item_controls.js";
 import {spellId,availableSpells,addSelectedSpell,removeSelectedSpell}
   from "../spell_selection.js";
@@ -52,4 +52,31 @@ test("class available spells merge legacy duplicates and stay mirrored on add/re
 test("spell catalog rejects missing IDs or unsupported levels",()=>{
   assert.throws(()=>addSelectedSpell({},"A"),/non valido/);
   assert.throws(()=>addSelectedSpell({},{id:"spell:z",name:"Z",level:10}),/non valido/);
+});
+
+test("equipping weapons, shields and armor uses native slots and two-hand conflicts",()=>{
+  const longsword={id:"w1",name:"Sword",type:"M",damage:"1d8",quantity:1,equipped_slots:[]};
+  const greatsword={id:"w2",name:"Greatsword",type:"M",damage:"2d6",properties:["2H"],quantity:1,equipped_slots:[]};
+  const shield={id:"s1",name:"Shield",type:"S",quantity:1,equipped_slots:[]};
+  const armor={id:"a1",name:"Chain",type:"HA",quantity:1,equipped_slots:[]};
+  const initial=[longsword,greatsword,shield,armor];
+  assert.equal(validSlot(greatsword,"off"),false);
+  assert.equal(validSlot(shield,"off"),true);
+  assert.equal(validSlot(armor,"main"),false);
+  let rows=equipSlot(initial,"main",0);
+  rows=equipSlot(rows,"off",2);
+  assert.deepEqual(rows[0].equipped_slots,["main"]);
+  assert.deepEqual(rows[2].equipped_slots,["off"]);
+  rows=equipSlot(rows,"main",1);
+  assert.deepEqual(rows[0].equipped_slots,[]);
+  assert.deepEqual(rows[1].equipped_slots,["main"]);
+  assert.deepEqual(rows[2].equipped_slots,[],"two-handed main weapon clears offhand");
+  rows=equipSlot(rows,"body",3);
+  assert.deepEqual(rows[3].equipped_slots,["body"]);
+  rows=equipSlot(rows,"main",-1);
+  assert.deepEqual(rows[1].equipped_slots,[]);
+  assert.deepEqual(rows[3].equipped_slots,["body"]);
+  assert.deepEqual(initial[0].equipped_slots,[],"input never mutated");
+  assert.throws(()=>equipSlot(initial,"off",1),/incompatibile/);
+  assert.throws(()=>equipSlot(initial,"head",1),/Slot/);
 });
