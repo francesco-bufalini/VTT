@@ -23,6 +23,7 @@ globalThis.fetch=async (url,options={})=>{
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
 const {mount,stopRealtime}=await import("../ui.js");
+const {takeQrPairCode}=await import("../client.js");
 const {listCreatures,loadCreature}=await import("../creatures.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
@@ -158,6 +159,13 @@ test("dice roll is usable offline; session has functioning pairing form",async()
 });
 
 
+test("QR fragment is removed from browser history before any fetch",()=>{
+  window.history.replaceState(null,"","/#pair=AB12CD34EF56AB78");
+  assert.equal(takeQrPairCode(),"AB12CD34EF56AB78");
+  assert.equal(window.location.hash,"");
+  assert.equal(takeQrPairCode(),"");
+});
+
 test("pairing connects tactical tokens and shared chat through desktop API",async(t)=>{
   t.after(stopRealtime);
   Object.defineProperty(globalThis.self,"isSecureContext",{value:true,configurable:true});
@@ -165,6 +173,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   globalThis.fetch=async (url,options={})=>{
     calls.push({url,options});
     if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true}),{status:200});
+    if(url==="/api/pair")return new Response(JSON.stringify({token:"a".repeat(64)}),{status:200});
     if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
     if(url==="/api/map")return new Response(JSON.stringify({version:1,mobile_protocol:3,
       tokens:[{id:"token_1",name:"Guardiano",free:false,conditions:[]}],
@@ -178,10 +187,13 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   };
   const token=document.querySelector("#pair-secret");
   assert.ok(token);
-  token.value="a".repeat(64);
+  token.value="AB12-CD34-EF56-AB78";
   const form=document.querySelector("#pair-form");
   form.dispatchEvent(new dom.window.Event("submit",{bubbles:true,cancelable:true}));
   await until(()=>document.querySelector('[data-act="select-token"]'));
+  const enrollment=calls.find(c=>c.url==="/api/pair");
+  assert.ok(enrollment,"Short code was not exchanged for bearer");
+  assert.equal(JSON.parse(enrollment.options.body).code,"AB12CD34EF56AB78");
   assert.match(document.querySelector("#app").textContent,/Guardiano/);
   assert.match(document.querySelector("#app").textContent,/Round 2/);
   click('[data-act="move"][data-direction="north"]');
