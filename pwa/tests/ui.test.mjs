@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 const html = readFileSync(fileURLToPath(new URL("../index.html",import.meta.url)),"utf8");
 const dom = new JSDOM(html,{url:"https://desktop.test/",pretendToBeVisual:true});
 globalThis.window=dom.window;
+dom.window.scrollTo=()=>{};
 globalThis.document=dom.window.document;
 Object.defineProperty(globalThis,"navigator",{value:dom.window.navigator,configurable:true});
 globalThis.HTMLFormElement=dom.window.HTMLFormElement;
