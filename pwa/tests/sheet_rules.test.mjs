@@ -138,11 +138,11 @@ test("automatic fixed proficiencies match native 5etools and do not auto-pick ch
     "Selectable class skills must not be granted without a choice");
   const derived=calculateSheet(c,catalogs);
   assert.equal(derived.saves.con,3);
-  assert.equal(derived.skills.insight,0);
-  assert.equal(derived.skills.religion,0);
+  assert.equal(derived.skills.insight,3,"WIS +1 and fixed proficiency +2");
+  assert.equal(derived.skills.religion,2,"INT +0 and fixed proficiency +2");
   const suppressed=calculateSheet({...c,
     proficiency_origins:[{id:"background|phb|acolyte",disabled:true}]},catalogs);
-  assert.equal(suppressed.skills.insight,0);
+  assert.equal(suppressed.skills.insight,1,"Muting an origin removes proficiency, not racial Wisdom");
   assert.equal(fixedProficiencies({...c,
     proficiency_origins:[{id:"background|phb|acolyte",disabled:true}]},
     catalogs.proficiencyGrants).has("skill:insight"),false);
