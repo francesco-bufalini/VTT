@@ -14,6 +14,10 @@ func run() -> void:
 	board.add_child(area)
 	area.setup(board)
 	area._archive.setup(campaign)
+	var isolated_path := "user://tests/creature_perf_%d/creatures.json" % Time.get_ticks_usec()
+	area._archive._storage.path = isolated_path
+	area._archive._characters.archive_path = isolated_path
+	area._archive._monsters.archive_path = isolated_path
 	var record: Dictionary = area._archive.create_character()
 	record["class"] = "Wizard"
 	record["class_source"] = "PHB"
@@ -76,6 +80,7 @@ func run() -> void:
 	traits.ContentCatalog.reload_enrichment()
 	assert(traits.collect_features(context) == traits._collect_features(context))
 	assert(area._archive.delete(area._current()) == OK)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	board.queue_free()
 	campaign.queue_free()
 	await process_frame

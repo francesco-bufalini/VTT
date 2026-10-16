@@ -45,7 +45,6 @@ var _page_menu_button: Button
 var _page_header_row: HBoxContainer
 var _page_header: PanelContainer
 var _page_header_contents: VBoxContainer
-var _archive_selector: OptionButton
 var _active_page := -1
 
 # Embedded windows own their input viewport. Forward raw touch back to the
@@ -87,9 +86,7 @@ func _ready() -> void:
 	map_data_controller = MapController.new()
 	map_data_controller.name = "MapDataController"
 	add_child(map_data_controller)
-	var manager := get_node("/root/CampaignManager")
-	manager.selected_campaign_group_id = ""
-	manager.active_campaign_id = ""
+	# Mobile and desktop share the same global local creature archive.
 	super._ready()
 	var sheet := creature_area as CreatureSheet
 	var book := compendium as Compendium
@@ -104,7 +101,6 @@ func _ready() -> void:
 	roller.configure_mobile_connection(map_data_controller, Callable(sheet, "get_mobile_roll_creatures"), Callable(sheet, "_current"))
 
 	_build_page_header()
-	_build_archive_selector()
 	_install_unified_sections(sheet)
 	TouchLayout.scroll_body(_session_panel)
 	TouchLayout.style_tree(_session_panel)
@@ -703,12 +699,6 @@ func _show_map_data(data: Dictionary) -> void:
 	_map_summary.add_text("\nToken sulla mappa\n")
 	for token: Dictionary in data.get("tokens", []):
 		_map_summary.add_text("%s: %s\n" % [token.name, ", ".join(token.conditions)])
-# The storage selector belongs to the sheet header, on its own line.
-# It does not overlap the sheet or crowd the permanent navigation buttons.
-func _build_archive_selector() -> void:
-	pass
-
-
 func _discovery_hosts() -> Array[String]:
 	var known: Array[String] = []
 	if _host_input != null:

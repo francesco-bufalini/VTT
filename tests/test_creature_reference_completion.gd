@@ -46,6 +46,10 @@ func run() -> void:
 	board.add_child(area)
 	area.setup(board)
 	area._archive.setup(campaign)
+	var isolated_path := "user://tests/reference_completion_%d/creatures.json" % Time.get_ticks_usec()
+	area._archive._storage.path = isolated_path
+	area._archive._characters.archive_path = isolated_path
+	area._archive._monsters.archive_path = isolated_path
 
 	var cached_client := InstantCachedBestiary.new()
 	board.add_child(cached_client)
@@ -66,7 +70,9 @@ func run() -> void:
 	var full_stat := {"name": "Ape", "source": "MM", "hp": {"average": 19}, "ac": [12]}
 	for bonus: int in [0, 5]:
 		var pending: Dictionary = area._archive.create_monster({"name": "Ape", "reference_pending": true})
-		pending["max_hp_bonus"] = bonus
+		if bonus > 0:
+			pending["formula_bonuses"] = [{"id": "test-hp-bonus", "target": "hp",
+				"expression": str(bonus), "origin_id": ""}]
 		check(area._archive.save(pending) == OK, "Pending sheet save failed")
 		area._complete_auto_reference(String(pending.id), full_stat)
 		var stored: Dictionary = area._archive._stored("monster", String(pending.id))
@@ -75,15 +81,14 @@ func run() -> void:
 		check(not stored.stat_block.has("reference_pending"), "Reference remains pending after completion")
 	var edited: Dictionary = area._archive.create_monster({"name": "Ape", "reference_pending": true})
 	edited["max_hp_base"] = 7
-	edited["max_hp_bonus"] = 3
+	edited["formula_bonuses"] = [{"id": "test-edited-hp-bonus", "target": "hp",
+		"expression": "3", "origin_id": ""}]
 	edited["current_hp"] = 5
 	check(area._archive.save(edited) == OK, "Edited sheet save failed")
 	area._complete_auto_reference(String(edited.id), full_stat)
 	var preserved: Dictionary = area._archive._stored("monster", String(edited.id))
 	check(preserved.max_hp_base == 7 and preserved.max_hp == 10 and preserved.current_hp == 5, "Reference overwrote explicit HP edits")
-	for store in [area._archive._characters, area._archive._monsters]:
-		if FileAccess.file_exists(store._file_path()):
-			DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	board.queue_free()
 	campaign.queue_free()
 	await process_frame

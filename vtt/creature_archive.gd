@@ -1,39 +1,71 @@
 extends RefCounted
 
-# One creature-facing API for every user and creature origin. The two legacy
-# files remain storage adapters so existing characters/monsters are not lost.
+# One creature-facing API for all locally stored characters and monsters.
+# Embedded scene definitions use a separate read-only hook.
 const CharacterStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
+const Storage = preload("res://vtt/creature_local_storage.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const PortableContent = preload("res://vtt/portable_creature_content.gd")
 
 var _characters
 var _monsters
+var _storage
 
 
-func setup(campaign_manager: Node) -> void:
+func setup(_campaign_manager: Node = null) -> void:
+	# Campaign selection never changes the creature collection.
 	_characters = CharacterStore.new()
-	_characters.setup(campaign_manager)
 	_monsters = MonsterStore.new()
-	_monsters.setup(campaign_manager)
+	_storage = Storage.new()
 
 
 func list_owned() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for item: Dictionary in _characters.list_characters():
-		var row := item.duplicate(true)
-		row["kind"] = "character"
-		result.append(row)
-	for item: Dictionary in _monsters.list_creatures():
-		var row := item.duplicate(true)
-		row["kind"] = "monster"
-		result.append(row)
+	for raw: Dictionary in _storage.list_records():
+		if not CreatureOwner.is_owner(raw):
+			continue
+		result.append(_normalize(raw))
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
 			return String(a.get("name", "")).naturalnocasecmp_to(
 				String(b.get("name", ""))
 			) < 0
 	)
+	return result
+
+
+# Scene authors may expose get_embedded_creature_records() on their scene root.
+# This never persists to user://, joins the private player archive or
+# automatically displays anything to connected players. It is opt-in.
+func scene_records_from(scene_root: Node) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if scene_root == null or not is_instance_valid(scene_root):
+		return result
+	if not scene_root.has_method("get_embedded_creature_records"):
+		return result
+	var raw_records: Variant = scene_root.call("get_embedded_creature_records")
+	if not raw_records is Array:
+		return result
+	for raw: Variant in raw_records:
+		if not raw is Dictionary:
+			continue
+		var kind := String((raw as Dictionary).get("kind", ""))
+		if kind not in ["character", "monster"]:
+			continue
+		var record: Dictionary = _normalize(raw as Dictionary)
+		record["_storage_origin"] = "scene"
+		result.append(record)
+	return result
+
+
+func _normalize(record: Dictionary) -> Dictionary:
+	var result: Dictionary = (
+		_monsters.normalize_creature(record)
+		if String(record.get("kind", "")) == "monster"
+		else _characters.normalize_character(record)
+	)
+	result["kind"] = String(record.get("kind", ""))
 	return result
 
 
@@ -50,100 +82,38 @@ func create_monster(stat: Dictionary, side: String = "ally") -> Dictionary:
 
 
 func save(record: Dictionary) -> Error:
+	if String(record.get("_storage_origin", "")) == "scene":
+		# Embedded sheets belong to the scene author, not the device archive.
+		return ERR_UNAUTHORIZED
 	if not CreatureOwner.is_owner(record):
 		return ERR_UNAUTHORIZED
-	var kind := String(record.get("kind", ""))
-	var id := String(record.get("id", "")).strip_edges()
-	if id.is_empty():
+	if String(record.get("kind", "")) not in ["character", "monster"]:
 		return ERR_INVALID_PARAMETER
-	# One read/normalization pass per edit. Previously _stored() normalized
-	# the entire archive, then list_*() normalized it all over again.
-	# Preserve transferred records in the backing store and enforce the same
-	# owner/revision checks against the latest persisted sheet.
-	if kind == "monster":
-		var all_monsters: Array[Dictionary] = _monsters.list_creatures(true)
-		var persisted: Dictionary = {}
-		var monsters: Array[Dictionary] = []
-		for entry: Dictionary in all_monsters:
-			if String(entry.get("id", "")) == id:
-				persisted = entry
-			if CreatureOwner.is_owner(entry):
-				monsters.append(entry)
-		if not CreatureOwner.can_edit(record, persisted):
-			return ERR_UNAUTHORIZED
-		_upsert(monsters, _monsters.normalize_creature(record))
-		return _monsters.save_creatures(monsters)
-	if kind == "character":
-		var all_characters: Array[Dictionary] = _characters.list_characters(true)
-		var persisted: Dictionary = {}
-		var characters: Array[Dictionary] = []
-		for entry: Dictionary in all_characters:
-			if String(entry.get("id", "")) == id:
-				persisted = entry
-			if CreatureOwner.is_owner(entry):
-				characters.append(entry)
-		if not CreatureOwner.can_edit(record, persisted):
-			return ERR_UNAUTHORIZED
-		_upsert(characters, _characters.normalize_character(record))
-		return _characters.save_characters(characters)
-	return ERR_INVALID_PARAMETER
+	if String(record.get("id", "")).strip_edges().is_empty():
+		return ERR_INVALID_PARAMETER
+	return _storage.upsert(_normalize(record))
 
 
 func delete(record: Dictionary) -> Error:
-	# Delete only the locally owned sheet. Source bestiary entries are immutable.
-	var kind := String(record.get("kind", ""))
-	var id := String(record.get("id", "")).strip_edges()
-	if id.is_empty() or kind not in ["character", "monster"]:
-		return ERR_INVALID_PARAMETER
-	if not CreatureOwner.is_owner(record):
+	if String(record.get("_storage_origin", "")) == "scene":
 		return ERR_UNAUTHORIZED
-	var persisted := _stored(kind, id)
-	if persisted.is_empty():
-		return ERR_DOES_NOT_EXIST
-	if not CreatureOwner.can_edit(record, persisted):
-		return ERR_UNAUTHORIZED
-	if kind == "monster":
-		var monsters: Array[Dictionary] = _monsters.list_creatures()
-		for index: int in range(monsters.size()):
-			if String(monsters[index].get("id", "")) == id:
-				monsters.remove_at(index)
-				return _monsters.save_creatures(monsters)
-	else:
-		var characters: Array[Dictionary] = _characters.list_characters()
-		for index: int in range(characters.size()):
-			if String(characters[index].get("id", "")) == id:
-				characters.remove_at(index)
-				return _characters.save_characters(characters)
-	return ERR_DOES_NOT_EXIST
+	return _storage.delete_record(record)
 
 
 func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
-	# The transfer is a code, not a multiplayer board snapshot: other
-	# participants never receive the private sheet from automatic map sync.
-	if not CreatureOwner.is_owner(record):
+	if not CreatureOwner.is_owner(record) or String(record.get("_storage_origin", "")) == "scene":
 		return {}
 	var target := new_owner.strip_edges()
 	if target.length() < 16 or target == CreatureOwner.local_id():
 		return {}
-	var transferred := record.duplicate(true)
 	var persisted := _stored(String(record.get("kind", "")), String(record.get("id", "")))
 	if persisted.is_empty() or not CreatureOwner.can_edit(record, persisted):
 		return {}
+	var transferred := record.duplicate(true)
 	transferred["owner_id"] = target
 	transferred["transfer_revision"] = int(persisted.get("transfer_revision", 0)) + 1
-	var record_kind := String(transferred.get("kind", ""))
-	var error: Error = ERR_INVALID_DATA
-	# Save through the originating store: permissions now belong to another
-	# user, so save() intentionally refuses this write.
-	if record_kind == "monster":
-		var monsters: Array[Dictionary] = _monsters.list_creatures()
-		_upsert(monsters, _monsters.normalize_creature(transferred))
-		error = _monsters.save_creatures(monsters, true)
-	elif record_kind == "character":
-		var characters: Array[Dictionary] = _characters.list_characters()
-		_upsert(characters, _characters.normalize_character(transferred))
-		error = _characters.save_characters(characters, true)
-	if error != OK:
+	# This intentional ownership transfer bypasses normal local-owner checks.
+	if _storage.upsert(_normalize(transferred), true) != OK:
 		return {}
 	return {
 		"format": "vtt_creature_transfer_v1",
@@ -160,7 +130,7 @@ func import_transfer(payload: Dictionary) -> Error:
 	var raw: Variant = payload.get("creature", {})
 	if not raw is Dictionary:
 		return ERR_INVALID_DATA
-	var record: Dictionary = raw as Dictionary
+	var record: Dictionary = raw
 	if String(record.get("owner_id", "")) != CreatureOwner.local_id():
 		return ERR_UNAUTHORIZED
 	var kind := String(record.get("kind", ""))
@@ -170,30 +140,15 @@ func import_transfer(payload: Dictionary) -> Error:
 	var persisted := _stored(kind, id)
 	if not persisted.is_empty() and int(record.get("transfer_revision", 0)) <= int(persisted.get("transfer_revision", 0)):
 		return ERR_ALREADY_EXISTS
-	if kind == "monster":
-		var records: Array[Dictionary] = _monsters.list_creatures()
-		_upsert(records, _monsters.normalize_creature(record))
-		return _monsters.save_creatures(records, true)
-	var records: Array[Dictionary] = _characters.list_characters()
-	_upsert(records, _characters.normalize_character(record))
-	return _characters.save_characters(records, true)
+	return _storage.upsert(_normalize(record), true)
 
 
 func _stored(kind: String, id: String) -> Dictionary:
-	var rows: Array[Dictionary] = _monsters.list_creatures(true) if kind == "monster" else _characters.list_characters(true)
-	for row: Dictionary in rows:
+	for row: Dictionary in _storage.list_records(kind):
 		if String(row.get("id", "")) == id:
-			return row
+			return _normalize(row)
 	return {}
 
-
-func _upsert(collection: Array[Dictionary], entry: Dictionary) -> void:
-	var id := String(entry.get("id", ""))
-	for index: int in range(collection.size()):
-		if String(collection[index].get("id", "")) == id:
-			collection[index] = entry.duplicate(true)
-			return
-	collection.append(entry.duplicate(true))
 
 # Portable exports create an independent local copy, never an ownership transfer.
 func import_export_copy(payload: Dictionary) -> Error:

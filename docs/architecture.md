@@ -32,6 +32,8 @@ dnd_base.gd is currently the composition root. New reusable gameplay logic shoul
 | Initiative | vtt/initiative_tracker.gd | Token links use stable IDs. |
 | Synchronization / snapshots | network/board_sync.gd | Snapshot schema must preserve all gameplay state. |
 | Campaign persistence | vtt/campaign_manager.gd | Campaign-level persistence, not live board interaction. |
+| Local creature persistence | vtt/creature_local_storage.gd | One device archive for characters and monsters; no campaign/scenario scoping. |
+| Scene-authored creature records | vtt/creature_archive.gd | Opt-in read-only scene hook; no player browser or automatic sync. |
 | Encounter-specific mechanics | encounter/ | Must not leak into generic VTT code. |
 
 ## Important invariants
@@ -41,6 +43,7 @@ dnd_base.gd is currently the composition root. New reusable gameplay logic shoul
 - Undo/redo records completed user actions; token movement snapshots are committed after movement finishes.
 - Initiative references tokens by stable ID, while displayed names may change.
 - Network snapshots preserve token metadata, conditions, transformations, initiative and persistent board effects.
+- Owned creature sheets live independently of campaigns at user://creatures/creatures.json; original scoped archives are read only for migration. See docs/creature-archive.md.
 - Spell previews are transient. Persistent AoEs are serialized board state.
 - Generated 5etools catalog files are data artifacts; runtime mechanics live outside generated output.
 

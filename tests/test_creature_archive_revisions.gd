@@ -23,6 +23,11 @@ func run() -> void:
 	root.add_child(campaign)
 	var archive := Archive.new()
 	archive.setup(campaign)
+	# Never touch a real user's unified archive during the regression.
+	var isolated_path := "user://tests/archive_revision_%d/creatures.json" % Time.get_ticks_usec()
+	archive._storage.path = isolated_path
+	archive._characters.archive_path = isolated_path
+	archive._monsters.archive_path = isolated_path
 	for kind: String in ["character", "monster"]:
 		var original: Dictionary = archive.create_character() if kind == "character" else archive.create_monster({"name": "Audit monster"})
 		check(archive.save(original) == OK, "Initial sheet save failed")
@@ -48,8 +53,7 @@ func run() -> void:
 		stored["name"] = "Current owner edit"
 		check(archive.save(stored) == OK, "Current owner cannot edit the returned sheet: " + kind)
 		check(archive.delete(stored) == OK, "Current owner cannot delete the returned sheet: " + kind)
-	for store in [archive._characters, archive._monsters]:
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	campaign.free()
 	if not failed:
 		print("PASS: returned creature sheets reject stale saves, transfers, deletions and replay")
