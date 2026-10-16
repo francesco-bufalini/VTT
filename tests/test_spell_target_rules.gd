@@ -89,6 +89,18 @@ func _run() -> void:
 	assert(spell._point_target_data(Vector2(1000, 1000), line_spell).get("point") == Vector3.RIGHT)
 	spell._remote_input_active = false
 
+	# Remote selection calls the logical dispatcher directly: no screen-space
+	# coordinate or fabricated InputEventMouseButton is required.
+	var hint := Label.new()
+	board.add_child(hint)
+	spell.instruction_label = hint
+	spell._remote_input_active = true
+	spell._remote_pick_token = distant
+	assert(spell._confirm_targeting_selection(Vector2.ZERO))
+	assert("fuori range" in hint.text,
+		"Remote target choice must use the same range validation as desktop")
+	spell._remote_input_active = false
+
 	# Chain secondary originates at its primary, not the caster.
 	spell._pending_chain_primary = nearby
 	spell._targeting_phase = "chain_secondary"
