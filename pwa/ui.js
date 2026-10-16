@@ -27,6 +27,18 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let toastTimer = null;
+let chatPollInFlight=false;
+let chatGeneration=0;
+let currentGameSession="";
+function acceptSession(info){
+  const next=String(info?.session??"");
+  if(currentGameSession && next && next!==currentGameSession){
+    // A different desktop game must not inherit the old chat cursor.
+    state.messages=[];state.after="";state.map=null;state.tokenId="";
+  }
+  if(next)currentGameSession=next;
+  state.session=info;
+}
 const pendingFieldTimers = new Map();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
@@ -91,6 +103,7 @@ function download(blob, filename) {
 function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,60) || "creatura"; }
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
 function stopSubscriptions() {
+  ++chatGeneration;
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -447,7 +460,7 @@ async function refreshConnection(quiet=false) {
     state.online=!!result.desktop_online;
     if(state.online){
       try {
-        state.session=await session(); state.paired=true;
+        acceptSession(await session()); state.paired=true;
       } catch(error) {
         state.paired=false; state.session=null;
         if(error.status!==401 && error.status!==503 && !quiet) message(errorMessage(error),true);
@@ -469,7 +482,7 @@ function startMap() {
       // The native board can restart while the PWA is open. Refresh its
       // session label without interrupting the recovered tactical view.
       session().then(info=>{
-        if(state.page==="session"&&state.paired)state.session=info;
+        if(state.page==="session"&&state.paired)acceptSession(info);
       }).catch(()=>{});
     }
     const entries=data?.tokens||[];
@@ -502,9 +515,12 @@ function startMap() {
   },2500);
 }
 async function fetchChat() {
-  if(!state.paired) return;
+  if(!state.paired || chatPollInFlight)return;
+  chatPollInFlight=true;
+  const generation=chatGeneration;
   try {
     const reply=await action("chat_poll",{after:state.after});
+    if(generation!==chatGeneration || state.page!=="chat")return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
@@ -517,9 +533,17 @@ async function fetchChat() {
       const container=document.querySelector("#events");
       if(state.page==="chat"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
-  }catch(error){ if(state.page==="chat"&&error.status===401) message(errorMessage(error),true); }
+  }catch(error){
+    if(generation===chatGeneration && state.page==="chat" && error.status===401){
+      state.paired=false;
+      stopSubscriptions();
+      render().catch(e=>message(errorMessage(e),true));
+      message(errorMessage(error),true);
+    }
+  }finally{chatPollInFlight=false;}
 }
 function startChat() {
+  ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
   state.pollChat=setInterval(()=>{ if(state.page==="chat") fetchChat(); },2500);
@@ -818,7 +842,9 @@ async function handleAction(target){
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
-    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;await render();return;
+    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
+    state.messages=[];state.after="";state.tokenId="";currentGameSession="";
+    await render();return;
   }
   if(act==="place-creature"||act==="claim-creature"){
     const selectedId=document.querySelector("#place-creature")?.value;
@@ -890,8 +916,13 @@ async function handleAction(target){
 async function handleSubmit(form){
   if(form.id==="pair-form"){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
-    state.session=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
-    state.paired=true;state.online=true;state.map=await map();
+    const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
+    acceptSession(pairedSession);
+    state.paired=true;state.online=true;
+    state.messages=[];state.after="";state.tokenId="";
+    // Pairing codes are one-time. A momentary map failure must not turn a
+    // successful enrollment into a visible failure or require a new QR.
+    try{state.map=await map();}catch{state.map=null;}
     await render();message("Desktop associato.");return;
   }
   if(form.id==="chat-form"){
@@ -1029,8 +1060,9 @@ export async function mount(){
   await refreshConnection(true);
   if(qrCode){
     try {
-      state.session=await pair(qrCode,{remember:true});
+      acceptSession(await pair(qrCode,{remember:true}));
       state.paired=true;state.online=true;state.page="session";
+      state.messages=[];state.after="";state.tokenId="";
       message("Telefono associato tramite QR.");
     }catch(error){
       state.page="session";state.qrCode=qrCode;
