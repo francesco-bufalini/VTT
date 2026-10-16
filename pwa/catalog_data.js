@@ -3,7 +3,7 @@
 import { listRecords } from "./storage.js";
 
 export const CATALOG_CATEGORIES = [
-  ["items","Oggetti"],["magic_items","Oggetti magici"],["weapons","Armi"],
+  ["spells","Incantesimi"],["items","Oggetti"],["magic_items","Oggetti magici"],["weapons","Armi"],
   ["armor","Armature"],["tools","Strumenti"],["mundane_items","Oggetti mondani"],
   ["races","Specie"],["classes","Classi"],["feats","Talenti"],
   ["backgrounds","Background"],["class_features","Privilegi di classe"],
@@ -30,7 +30,24 @@ export async function loadReferenceCatalog() {
   catalog=value;
   return catalog;
 }
+let packagedSpells=null;
+async function spellCatalog(){
+  if(packagedSpells)return packagedSpells;
+  const response=await fetch("/catalog/spells.json",{cache:"no-store"});
+  if(!response.ok)throw new Error("Catalogo incantesimi non disponibile offline.");
+  const data=await response.json();
+  if(data?.version!==1||!Array.isArray(data.spells))throw new Error("Catalogo incantesimi non valido.");
+  packagedSpells=data.spells;
+  return packagedSpells;
+}
 export async function catalogEntries(category) {
+  if(category==="spells"){
+    const spells=await spellCatalog();
+    const known=await listRecords("global","homebrew");
+    return [...spells.map(spell=>({...spell,_category:"spells",_homebrew:false})),
+      ...known.filter(record=>record.id?.split(":")[2]==="spells")
+        .map(record=>({...record.data.data,...record.data,_category:"spells",_homebrew:true}))];
+  }
   const data=await loadReferenceCatalog();
   const keys=category==="items"?
     ["weapons","armor","tools","mundane_items","magic_items"]:[category];
