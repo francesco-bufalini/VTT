@@ -75,6 +75,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   await until(()=>document.querySelector("#tracker-name"));
   change("#tracker-name","Impulsi");
   change("#tracker-max","3");
+  change("#tracker-recharge","short_rest");
   click('[data-act="tracker-add"]');
   await until(()=>document.querySelector('[data-act="tracker-more"]'));
   click('[data-act="tracker-more"]');
