@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/client.js pwa/storage.js pwa/sw.js; do
+          for file in pwa/main.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Verify install manifest, precache and PNG files
@@ -33,7 +33,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/client.js", "/storage.js",
-                      "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
