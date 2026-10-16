@@ -103,7 +103,7 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 			if String(feature.get("key", "")) == reference:
 				return feature
 		return {}
-	var class_name: String = String(row.get("origin_class", ""))
+	var klass_name: String = String(row.get("origin_class", ""))
 	var source: String = String(row.get("origin_class_source", ""))
 	var subclass: String = String(row.get("origin_subclass", ""))
 	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower()
@@ -111,8 +111,8 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 		return {}
 	var found: Dictionary = {}
 	for feature: Dictionary in features:
-		if not class_name.is_empty():
-			if String(feature.get("class_name", "")).nocasecmp_to(class_name) != 0:
+		if not klass_name.is_empty():
+			if String(feature.get("class_name", "")).nocasecmp_to(klass_name) != 0:
 				continue
 			if not source.is_empty() and String(feature.get("class_source", "")).nocasecmp_to(source) != 0:
 				continue
