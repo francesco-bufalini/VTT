@@ -611,6 +611,12 @@ func _input(event: InputEvent) -> void:
 	)
 	if event.keycode != KEY_Z and event.keycode != KEY_Y:
 		return
+	# Complete GUI input dispatch before reloading widgets and losing focus.
+	get_viewport().set_input_as_handled()
+	call_deferred("_apply_creature_history", redo)
+
+
+func _apply_creature_history(redo: bool) -> void:
 	# Native TextEdit undo would diverge from the saved sheet: use the
 	# persisted creature revisions even when a field currently has focus.
 	var record: Dictionary = _current()
@@ -624,7 +630,6 @@ func _input(event: InputEvent) -> void:
 		_set_status("Modifica ripristinata." if not redo else "Modifica ripetuta.")
 	elif result != ERR_DOES_NOT_EXIST:
 		_set_status("Cronologia non disponibile: " + error_string(result))
-	get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
