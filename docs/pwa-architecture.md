@@ -72,12 +72,18 @@ origin later without changing the domain API.
    These commands depend on Tailscale being installed and HTTPS enabled.
 4. Open the printed `https://<machine>.<tailnet>.ts.net/` URL on the phone.
    Use **Share → Add to Home Screen** on Safari/iPhone.
-5. With native VTT open on the desktop, press **Ctrl+Shift+P** to display
-   and copy the random **pairing secret** (also stored in
-   `user://pwa_pairing_token.txt`). Enter it in the PWA **Partita** tab. The browser sends it in
-   an HTTPS bearer header and can remember it in IndexedDB if the user opts in.
-   The desktop **must have an active game open** for `/api/session` to verify
-   pairing. Never put the secret in a URL or the repository.
+5. With native VTT open on the desktop, press **Ctrl+Shift+P**.
+   A local Godot dialog displays a **16-hex-character code**, valid for
+   **five minutes, eight guesses maximum, single use**. Enter this code on
+   the PWA **Partita** tab, or **scan the QR with the phone camera**.
+   The QR encodes the HTTPS Tailscale URL and a code in the `#pair=` fragment,
+   not a permanent authentication secret. The PWA clears the fragment from
+   browser history immediately and exchanges the temporary code for the strong
+   256-bit bearer stored only on the device when "Ricorda" is checked.
+   Previously connected phones do not have to pair again each game.
+   The QR URL is filled from `tailscale status --json` if Tailscale CLI is
+   available; otherwise enter your HTTPS Tailscale Serve URL in the desktop
+   dialog and press Enter to generate the QR.
    The 1–5 session number is not a password.
 
 While the board is open, native `PwaHost` binds to **127.0.0.1:8765 only**, not the public LAN or
@@ -95,7 +101,7 @@ Keep a single stable URL or export/import a backup before changing origins.
 
 ## Auth and transport contract
 
-- Unauthenticated routes: static app assets and `GET /api/status`
+- Unauthenticated routes: static app assets, `GET /api/status` and **limited** `POST /api/pair` (16-hex one-time enrollment code)
   (`{ protocol:1, desktop_online, pairing_required:true }`).
 - Authenticated routes require `Authorization: Bearer <64-hex-secret>`.
   There is no CORS opt-in; the browser module calls same-origin routes.
@@ -116,15 +122,13 @@ Keep a single stable URL or export/import a backup before changing origins.
 
 Native Android still uses `CreaturePresence` UDP broadcast/discovery
 (`45456`) and the shared **session number 1–5**, unchanged by the PWA.
-Browsers cannot run the same arbitrary UDP discovery and the digits 1–5
-are not strong HTTP API authentication. The PWA currently uses a **random
-256-bit bearer**, shown on the trusted desktop with **Ctrl+Shift+P** and
-optionally remembered by the browser; it is **not required again every
-time a new scene opens**. Opening the game's known HTTPS address is the
-browser's equivalent to selecting a discovered host, and the native board
-chooses the current session. Any shorter first-use enrollment must still
-issue a strong token and enforce limited attempts; the game PIN must not
-be used as a web authorization password.
+Browsers cannot run UDP broadcast or treat guessable session numbers as API
+authentication. New browsers enter a short-lived 16-character code or open
+the desktop-generated QR URL; the HTTP `/api/pair` endpoint exchanges the
+single-use code for the **unchanged random 256-bit bearer**. No game action
+accepts the short code directly. The PWA removes `#pair=` from history as
+soon as it loads. One authorization can be remembered across scenes, and
+old 64-hex bearer credentials remain compatible.
 
 The bridge does not yet offer WebSocket push, binary file transfer endpoints,
 recipient-addressed inventory/document delivery, or automatic conflict-safe
@@ -243,7 +247,7 @@ HTTPS, background/resume, quota pressure, import/export and parity with
 Android remain necessary.
 
 Next: implement native-aligned class/origin/feat and tracker rules, support
-advanced attack/spell workflows, improve QR pairing, and implement idempotent
+advanced attack/spell workflows, and implement idempotent
 recipient-addressed document/item sharing. Do not rewrite the desktop's combat rules
 or duplicate the existing Android command handlers.
 
@@ -254,3 +258,20 @@ stat/inventory/spell-slot/resource edits, catalog assignment, dice rolls,
 token placement, shared chat and pairing under jsdom. `pwa/tests/tactical.test.mjs`
 checks pixel transforms and native targeting request formats. Pushes to `main` that modify PWA assets run the browser and native
 loopback checks in `.github/workflows/pwa-infrastructure.yml`.
+
+## Future gameplay scenes (Godot editor)
+
+No new PWA server should be added to a campaign scene. To inherit browser
+support automatically, use **Scene → New Inherited Scene** on
+`res://dnd_base.tscn` and save the new `.tscn` under a unique scene path.
+You can attach a script extending `res://dnd_base.gd` and override
+`_ready()` with `super._ready()` **before** custom scene setup. Multi-level
+inheritance works, such as `scontro_contro_kaos.gd` →
+`final_encounter.gd` → `dnd_base.gd`.
+
+The native PWA host identifies the `dnd_base.gd` base script anywhere in the
+root script inheritance chain. The board must still initialize
+`board_sync` via the base `_ready()` for live actions to work. If you build
+a completely independent `Node3D` scene that does not derive from
+`dnd_base.gd`, the PWA server intentionally does **not** start.
+This prevents the web gateway from staying open in menus, tools or editors.
