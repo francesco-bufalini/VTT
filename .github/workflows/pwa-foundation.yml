@@ -1,0 +1,29 @@
+name: PWA foundation checks
+on:
+  push:
+    branches: ["feature/mobile-pwa-foundation"]
+    paths:
+      - "pwa/**"
+      - "tools/pwa_gateway.py"
+      - "tests/test_pwa_gateway.py"
+      - ".github/workflows/pwa-foundation.yml"
+  pull_request:
+    paths:
+      - "pwa/**"
+      - "tools/pwa_gateway.py"
+      - "tests/test_pwa_gateway.py"
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax
+        run: python3 -m py_compile tools/pwa_gateway.py tests/test_pwa_gateway.py
+      - name: Test native wire protocol and HTTP pairing
+        run: python3 -m unittest discover -s tests -p test_pwa_gateway.py -v
+      - name: Check browser JavaScript modules
+        run: |
+          for file in pwa/*.js; do
+            node --input-type=module --check < "$file"
+          done
