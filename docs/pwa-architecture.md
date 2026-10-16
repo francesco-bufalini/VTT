@@ -14,6 +14,8 @@ iPhone / Android (Safari/Chrome PWA)
   https://<desktop>.your-tailnet.ts.net/
     ├── /, /sw.js, /manifest.webmanifest, /client.js, /storage.js
     ├── /creature_format.js, /creatures.js (offline archive)
+    ├── /tactical_view.js, /catalog_data.js (mobile UI)
+    ├── /catalog/player.json, /catalog/spells.json (built-in references)
     ├── GET  /api/status                 (public, no private game state)
     ├── GET  /api/session                (requires pairing)
     ├── GET  /api/map                    (requires pairing; public tactical projection)
@@ -134,23 +136,35 @@ The browser **GUI** (`pwa/index.html`, `pwa/styles.css`, `pwa/ui.js`) now calls
 the local archive directly:
 - **Creature**: list, create/import/export/delete, edit abilities, HP and base
   stats, names, origins, character notes, personal conditions, inventory
-  name/quantity/description, spell IDs and expended slots. Also provides an
-  advanced JSON edit view without dropping unrelated record fields.
+  name/quantity/description, spell IDs and expended slots, plus native-schema
+  manual resource trackers, usage counters and short/long rest recovery. Also
+  provides an advanced JSON editor without dropping unrelated record fields.
 - **Dadi**: local Web Crypto dice rolls and optional chat sharing through
   the existing native `chat_send` action.
 - **Chat**: send text and poll existing native shared chat events while paired.
 - **Partita**: HTTPS bearer pairing, visible tactical tokens, movement and
   condition actions, native-compatible placement next to an existing token or
   claim of a free scene token, combat initiative. Placement uploads only a
-  public subset of the local creature (never private HP, inventory or spells). No fabricated geometry: the tactical
+  public subset of the local creature (never private HP, inventory or spells).
+  The **2D tactical snapshot viewer** uses native Godot WebP captures, marker
+  coordinates, pinch zoom/pan and range contours. Attacks and spell targeting
+  (token/point selection, area preview, confirmation/cancellation) use the same
+  native mobile commands as Android, not duplicate game rules. No fabricated geometry: the tactical
   projection does not yet include map coordinates or terrain images.
+- **Catalogo**: packaged structured 5etools reference assets shared with the
+  native application. Browse equipment, feats, species, backgrounds and spells,
+  assign references to local sheets. The desktop assembles the built-in spell
+  catalog from native `SpellCatalog.all_spells()`, excluding private desktop
+  homebrew, and the phone caches it for offline access. Full descriptions of
+  nonspell entries are cached as accessed.
 - **Backup**: download or restore complete IndexedDB JSON backup with binary
   attachments, as well as individual VTT portable creature files.
 
 The GUI is useful but **not yet at full Android feature parity**: it does not
-implement the Godot origin/class bonus calculators, spellbook catalog picker,
-cast/attack workflows, 3D/2D tactical image rendering or the directed transfer
-of items/documents. A browser field edit is stored locally, not automatically
+implement the Godot origin/class bonus calculators, complex class spell
+preparation and granted spell tracker rules, full attack weapon configuration,
+or recipient-addressed transfer of inventory/documents. Advanced native spell
+stages such as dialogs for summoning can still require desktop input. A browser field edit is stored locally, not automatically
 executed as an action on the desktop. Keep game rules authoritative in native
 Godot rather than duplicate the engine in JavaScript.
 
@@ -197,15 +211,15 @@ and binary attachments in an IndexedDB emulator. Browser device tests with
 HTTPS, background/resume, quota pressure, import/export and parity with
 Android remain necessary.
 
-Next: close remaining Android parity gaps with structured catalog and rule-aware
-sheet controls, add QR pairing to the existing desktop-local code dialog,
-add reliable idempotent document/item transfer with versioned event IDs, and
-introduce 2D tactical map projection suitable for the browser. Do not rewrite the desktop's combat rules
+Next: implement native-aligned class/origin/feat and tracker rules, support
+advanced attack/spell workflows, improve QR pairing, and implement idempotent
+recipient-addressed document/item sharing. Do not rewrite the desktop's combat rules
 or duplicate the existing Android command handlers.
 
 ## Interface tests
 
-`pwa/tests/ui.test.mjs` exercises library navigation, real IndexedDB-backed
-stat/inventory/spell-slot edits, dice rolls and the HTTPS pairing form under
-jsdom. Pushes to `main` that modify PWA assets run the browser and native
+`pwa/tests/ui.test.mjs` exercises library navigation, IndexedDB-backed
+stat/inventory/spell-slot/resource edits, catalog assignment, dice rolls,
+token placement, shared chat and pairing under jsdom. `pwa/tests/tactical.test.mjs`
+checks pixel transforms and native targeting request formats. Pushes to `main` that modify PWA assets run the browser and native
 loopback checks in `.github/workflows/pwa-infrastructure.yml`.
