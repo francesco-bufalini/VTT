@@ -151,6 +151,29 @@ export async function putRecord(scope, type, id, data, expectedRevision = null) 
   }
 }
 
+export async function deleteRecordIfRevision(scope, type, id, expectedRevision) {
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 1)
+    throw new TypeError("Expected revision is required");
+  const key = [requiredString(scope, "scope"), requiredString(type, "type"),
+    requiredString(id, "id")];
+  const db = await openStorage();
+  try {
+    const tx = db.transaction("records", "readwrite");
+    const store = tx.objectStore("records");
+    const check = store.get(key);
+    let deleted = false;
+    check.onsuccess = () => {
+      if (check.result && check.result.revision === expectedRevision) {
+        store.delete(key);
+        deleted = true;
+      } else tx.abort();
+    };
+    return await completed(tx, () => deleted);
+  } finally {
+    db.close();
+  }
+}
+
 export async function deleteRecord(scope, type, id) {
   const db = await openStorage();
   try {
