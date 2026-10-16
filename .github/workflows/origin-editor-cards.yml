@@ -14,6 +14,10 @@ on:
       - ".github/workflows/origin-editor-cards.yml"
   workflow_dispatch:
 
+concurrency:
+  group: shared-origin-editor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   origin-cards:
     runs-on: ubuntu-latest
@@ -61,7 +65,7 @@ jobs:
           do
             echo "== $test =="
             log="$(mktemp)"
-            if ! "$GODOT" --headless --path . --script "res://tests/$test" > "$log" 2>&1; then
+            if ! timeout 100s "$GODOT" --headless --path . --script "res://tests/$test" > "$log" 2>&1; then
               cat "$log"
               exit 1
             fi
