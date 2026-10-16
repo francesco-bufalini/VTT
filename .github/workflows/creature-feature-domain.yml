@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
     paths:
+      - "vtt/benefit_requirements.gd"
+      - "vtt/class_resource_overrides.gd"
+      - "vtt/structured_resource_trackers.gd"
+      - "vtt/creature_infusions.gd"
       - "vtt/creature_features.gd"
       - "vtt/creature_traits_tab.gd"
       - "vtt/creature_proficiency_rules.gd"
@@ -19,6 +23,7 @@ on:
       - "vtt/creature_trackers_tab.gd"
       - "vtt/creature_item_rules.gd"
       - "tests/test_creature_features_standalone.gd"
+      - "tests/test_benefit_requirements.gd"
       - ".github/workflows/creature-feature-domain.yml"
   workflow_dispatch:
 
@@ -57,6 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           for test in \
+            test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
             test_trait_origins.gd \
             test_structured_numeric_bonuses.gd \

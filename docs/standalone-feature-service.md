@@ -33,3 +33,26 @@ resolved separately by the numeric bonus engine.
 Future refactors should preserve stable `feature:` / `item:` origin IDs,
 independent occurrence keys for repeated level-up traits, and the distinction
 between selected/manual grants and automatically derived structured grants.
+
+## Canonical benefit requirements (October 2026)
+
+`vtt/benefit_requirements.gd` is the read-only eligibility resolver used by
+the existing feature, numeric bonus, origin-spell, class-resource and infusion
+systems. It declares `requirements: {scope: "character", min_level: 5}` or
+`requirements: {scope: "class", class_name: "Druid", class_source: "PHB",
+min_level: 2}`. The optional `max_level` is an explicit upper bound, not
+an implied replacement. Class thresholds do not use total multiclass level.
+
+Old 5etools `min_level`, numbered innate/known/prepared spell stages, class
+resource `steps[].level` and infusion `upgrade_level` are still accepted
+through adapters. Slot stages like `s1` are NOT character-level thresholds.
+Per-benefit `requirements` also work for nested item traits, manual resource
+trackers, manual formula bonuses and manual origin spells. Missing metadata
+does not invent requirements; legacy saves are left intact.
+
+Resource counters use unmodified IDs/spent-use keys. Automatic class counters
+are matched to traits by explicit `origin_feature_key` when present, then
+by a unique name match WITHIN their class/edition/subclass. Ambiguous matches
+fall back to a stable `tracker:auto:` identity, never an unrelated trait.
+The engines that consume/spend resources, evaluate numeric formulas, grant
+spells, and activate items remain intentionally independent.
