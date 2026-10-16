@@ -82,7 +82,11 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
-   const rows=list(catalogs[category]).filter(r=>r?.name&&(key!=='subrace'||!r.raceName||r.raceName===c.species));
+   const rows=list(catalogs[category]).filter(r=>r?.name &&
+     (key!=='subrace'||!!r.raceName&&r.raceName===c.species) &&
+     (key!=='subclass'||!r.class_name||r.class_name===c.class) &&
+     (key!=='class'||c.rules_version!=='2014'||r.source!=='XPHB') &&
+     (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
    const current=c[key]||'', source=c[key+'_source']||'';
    const active=rows.find(r=>r.name===current&&(!source||r.source===source));
    const options=[['','Nessuno'],...(!active&&current?[['__current__',current+' · importato']]:[]),
@@ -111,15 +115,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<p class="hint">Le miniature si scelgono dal catalogo della versione nativa.</p>'+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
-    '<h3>Movimento</h3>'+summary([['Camminata (ft)',c.speed_base??c.speed??30],
+    '<h3>Movimento</h3>'+summary([['Camminata base salvata (ft)',c.speed_base??c.speed??30],
       ...['climb','swim','fly','burrow'].map((mode,i)=>[['Scalata','Nuoto','Volo','Scavo'][i]+' (ft)',c.species_speed?.[mode]??c.stat_block?.speed?.[mode]??0])])+
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
        '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
-   panel('Background',c.kind==='monster'?summary([['Background',c.background]]):
-     reference('Background','background','backgrounds'))+
+   panel('Background',reference('Background','background','backgrounds'))+
    panel('Classi e progressione',cols(number('XP','xp')+
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
-      number('Livello totale','level',c.level??1,1,20))+
+      (c.class?number('Livello totale','level',c.level??1,1,20):
+        '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
       (list(c.classes).length>1?'<details><summary>Multiclasse (riepilogo)</summary>'+
         summary(c.classes.map((r,i)=>['Classe '+(i+1),r.name+' · livello '+r.level]))+
         '<p class="hint">Per modificare le classi aggiuntive usa la scheda nativa.</p></details>':''))+
@@ -128,7 +132,10 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
       summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
         ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
- if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio base</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label><span>'+ (rowsFor(c,'proficiency_choices').some(r=>r.kind==='save'&&r.key===key&&!r.disabled)||list(c.saving_throw_proficiencies).includes(key)?'Competente':'—')+'</span>').join('')+'</div>'+nativeNote)+
+ if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio base</strong><strong>Mod. base</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label><span class="native-derived">'+
+     (Math.floor((Number(c.abilities?.[key]??10)-10)/2)>=0?'+':'')+
+     Math.floor((Number(c.abilities?.[key]??10)-10)/2)+'</span><span>'+
+     (rowsFor(c,'proficiency_choices').some(r=>r.kind==='save'&&r.key===key&&!r.disabled)||list(c.saving_throw_proficiencies).includes(key)?'Competente':'—')+'</span>').join('')+'</div>'+nativeNote)+
   panel('Riepilogo',summary([['Bonus competenza',c.proficiency_bonus],['Percezione passiva',c.passive_perception]]))+
   panel('Abilità',summary(SKILLS.map(([id,label,ability])=>[label+' · '+ability.toUpperCase(),rowsFor(c,'proficiency_choices').some(r=>r.kind==='expertise'&&r.key===id&&!r.disabled)?'Maestria':rowsFor(c,'proficiency_choices').some(r=>r.kind==='skill'&&r.key===id&&!r.disabled)?'Competente':'—'])))+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],rowsFor(c,'proficiency_choices').filter(r=>r.kind===kind&&!r.disabled).map(r=>r.key).join(', ')||'Nessuno'])))+
