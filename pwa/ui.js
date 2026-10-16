@@ -1,5 +1,5 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
@@ -242,7 +242,7 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),details:state.detail,catalogs:state.referenceCatalogs})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory":
     body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
@@ -319,6 +319,20 @@ function resourceView(c,configure=false){
   }
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
+function equipmentView(c){
+  const rows=Array.isArray(c.inventory)?c.inventory:[];
+  const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
+  return panel("Equipaggiamento",
+    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per i calcoli di CA e attacchi di Godot. Le armi a due mani escludono la mano secondaria.</p>'+
+    '<div class="columns">'+labels.map(([slot,label])=>{
+      const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
+      const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
+      return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
+        '<option value="-1"'+(index<0?' selected':'')+'>Nessuno</option>'+
+        eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
+          esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
+    }).join('')+'</div>');
+}
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
   const kind=itemKind(obj),catalog=isCatalogItem(obj);
@@ -652,6 +666,11 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.equipSlot){
+    const slot=target.dataset.equipSlot,index=Number(target.value);
+    await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
+    await render();return;
+  }
   if(target.dataset.reference){
     const category=target.dataset.reference,key=target.dataset.referenceKey;
     if(!['species','subrace','background','class','subclass'].includes(key))throw Error('Riferimento non valido');
@@ -1060,7 +1079,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){
