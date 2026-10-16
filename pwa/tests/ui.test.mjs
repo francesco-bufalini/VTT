@@ -579,7 +579,7 @@ test("quick homebrew creates an offline feat and applies explicit grants",async(
   click('[data-nav="catalog"]');
   await until(()=>document.querySelector("#catalog-category"));
   change("#catalog-category","feats");
-  await until(()=>document.querySelector("#homebrew-form"));
+  await until(()=>document.querySelector("#homebrew-form textarea[name=proficiencies]"));
   const form=document.querySelector("#homebrew-form");
   form.querySelector('[name="name"]').value="Osservatore PWA";
   form.querySelector('[name="description"]').value="Talento creato offline";
