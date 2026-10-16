@@ -488,13 +488,16 @@ func _refresh_origins() -> void:
 				(" (%d)" % count if count > 0 else " · da completare"),
 			"tooltip": tooltip, "selected": _selected_origin == sid,
 			"active": active, "actions": actions,
-			"on_select": func() -> void:
-				_selected_origin = sid
-				_refresh(),
+			"on_select": _select_origin.bind(sid),
 			"on_toggle": _toggle_origin.bind(sid),
 			"toggle_disabled": not active and not bool(origin.get("disabled", false)),
 			"toggle_tooltip": "Attiva o disattiva l'intera origine senza perdere i bonus."
 		})
+
+
+func _select_origin(sid: String) -> void:
+	_selected_origin = sid
+	_refresh()
 
 
 func _refresh_bonuses() -> void:
