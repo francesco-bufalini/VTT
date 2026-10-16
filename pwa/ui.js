@@ -26,7 +26,7 @@ const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
-const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
+const state = { page:"library", creatureId:null, lastCreatureId:null, chatAuthor:"", editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
@@ -95,10 +95,13 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 function syncNav() {
-  document.querySelector("#sheet-navigation").innerHTML = state.page === "library" && state.creatureId ?
-    '<p class="drawer-heading">Scheda creatura</p>'+sheetSections.map(([key,title]) =>
+  const currentCreature=state.creatureId || state.lastCreatureId;
+  const currentName=(state.cachedCreatures||[]).find(c=>c.id===currentCreature)?.name;
+  document.querySelector("#sheet-navigation").innerHTML = currentCreature ?
+    '<p class="drawer-heading">Scheda creatura'+(currentName?' · '+esc(currentName):'')+'</p>'+
+    sheetSections.map(([key,title]) =>
       '<button type="button" class="btn" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
-      (state.sheet===key)+'">'+title+'</button>').join("") : "";
+      (state.page==="library"&&state.creatureId===currentCreature&&state.sheet===key)+'">'+title+'</button>').join("") : "";
   for(const button of nav.querySelectorAll("[data-nav]")) {
     const current = button.dataset.nav === state.page;
     if(current) button.setAttribute("aria-current","page");
@@ -128,6 +131,7 @@ async function navigate(page, id=null) {
     try { await flushPendingFields(); }
     catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
   }
+  if(state.page==="library" && state.creatureId)state.lastCreatureId=state.creatureId;
   stopSubscriptions();
   state.page=page; state.creatureId=id; state.editor=null;
   if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
@@ -146,7 +150,7 @@ async function render() {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
     if(state.page === "session" && state.paired) startMap();
-    if(state.page === "chat" && state.paired) startChat();
+    if((state.page === "dice" || state.page === "chat") && state.paired) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
@@ -213,7 +217,7 @@ async function catalogView() {
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
       '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
-      '<p class="hint">La PWA salva il riferimento; i bonus delle origini vengono calcolati solo nel motore Godot.</p>':""));
+      '<p class="hint">La PWA salva il riferimento; i bonus strutturati supportati delle origini vengono ricalcolati localmente.</p>':""));
   }
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
     panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
@@ -237,6 +241,7 @@ async function computeLocalView(record,section){
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
+  state.lastCreatureId=c.id;
   const tabs = sheetSections;
   const navigation = '<div class="editor-head">'+
     '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
@@ -280,7 +285,7 @@ async function editorView() {
   case "magic":
     body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
       esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
-      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus vengono calcolati da Godot.</p>'+
+      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus supportati vengono calcolati localmente.</p>'+
         '<div class="columns three">'+Array.from({length:9},(_,i)=>{
           const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
           return '<div class="ability-box"><label>Liv. '+level+
@@ -290,7 +295,7 @@ async function editorView() {
       panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
         ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
         field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono determinate dal motore Godot.</p>')+
+      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono calcolate localmente quando i dati strutturati sono disponibili.</p>')+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
@@ -351,7 +356,7 @@ function equipmentView(c){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
   const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
   return panel("Equipaggiamento",
-    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per i calcoli di CA e attacchi di Godot. Le armi a due mani escludono la mano secondaria.</p>'+
+    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per la CA locale e per gli attacchi nella versione nativa. Le armi a due mani escludono la mano secondaria.</p>'+
     '<div class="columns">'+labels.map(([slot,label])=>{
       const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
       const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
@@ -448,18 +453,22 @@ function diceView() {
         esc(state.roll.detail)+'</p><div class="actions">'+btn("share-roll","Invia in chat",state.paired?"primary":"")+'</div>':""))+
     panel("Tiri recenti",state.rollHistory.length ? state.rollHistory.slice(0,12).map(r=>
       '<div class="combat-line"><span>'+esc(r.notation)+'</span><strong>'+esc(r.total)+'</strong></div>').join("") :
-      '<p class="muted">Non hai ancora effettuato tiri.</p>');
+      '<p class="muted">Non hai ancora effettuato tiri.</p>')+chatPanel();
+}
+function chatPanel() {
+  return !state.paired ?
+    panel("Chat della partita",'<p>Collega prima il desktop nella sezione Partita per condividere messaggi e tiri.</p>'+
+      '<button type="button" class="btn primary" data-nav="session">Vai alla partita</button>') :
+    panel("Chat della partita",'<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
+      '<form id="chat-form" class="stack" autocomplete="off">'+
+      '<label>Creatura che tira e scrive <select id="chat-author"><option value="">Giocatore</option>'+
+      (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+
+        (state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join("")+
+      '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
+      '<button type="submit" class="btn primary full">Invia messaggio</button></form>');
 }
 function chatView() {
-  return header("Comunicazione", "Chat della partita", "Messaggi e tiri condivisi col desktop. Non vengono memorizzati nell’archivio delle schede.")+
-    (!state.paired?'<div class="empty"><p>Collega prima il desktop nella sezione Partita.</p>'+
-      '<button type="button" class="btn primary" data-nav="session">Vai alla partita</button></div>':
-    panel("Messaggi",'<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
-      '<form id="chat-form" class="stack" autocomplete="off">'+
-      '<label>Scrivi come <select id="chat-author"><option value="">Giocatore</option>'+
-      (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join("")+
-      '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
-      '<button type="submit" class="btn primary full">Invia messaggio</button></form>'));
+  return header("Comunicazione","Chat della partita","Messaggi e tiri condivisi col desktop.")+chatPanel();
 }
 function renderEvents() {
   return state.messages.length ? state.messages.slice(-80).map(e=>
@@ -629,7 +638,7 @@ async function fetchChat() {
   chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
-    if(generation!==chatGeneration || state.page!=="chat")return;
+    if(generation!==chatGeneration || !["dice","chat"].includes(state.page))return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
@@ -640,10 +649,10 @@ async function fetchChat() {
       }
       state.messages=state.messages.slice(-100);
       const container=document.querySelector("#events");
-      if(state.page==="chat"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
+      if(["dice","chat"].includes(state.page)&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
   }catch(error){
-    if(generation===chatGeneration && state.page==="chat" && error.status===401){
+    if(generation===chatGeneration && ["dice","chat"].includes(state.page) && error.status===401){
       state.paired=false;
       stopSubscriptions();
       render().catch(e=>message(errorMessage(e),true));
@@ -657,7 +666,7 @@ function startChat() {
   ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
-  state.pollChat=setInterval(()=>{ if(state.page==="chat") fetchChat(); },2500);
+  state.pollChat=setInterval(()=>{ if(["dice","chat"].includes(state.page)) fetchChat(); },2500);
 }
 function randomDie(sides) {
   const range=0x100000000;
@@ -683,7 +692,7 @@ async function shareRoll() {
   if(!state.roll) return;
   if(!state.paired) throw new Error("Collega prima una partita.");
   const r=state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:"Giocatore",
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:state.chatAuthor||"Giocatore",
     timestamp:Math.floor(Date.now()/1000),label:r.notation,die:"d"+r.sides,
     count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total};
   const result=await action("chat_send",{event});
@@ -970,6 +979,11 @@ async function handleAction(target){
   }
   if(act==="sheet"){
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
+    const id=state.creatureId || state.lastCreatureId;
+    if(!id)throw Error("Apri prima una creatura dall'archivio.");
+    if(!await loadCreature(id)){state.lastCreatureId=null;throw Error("Scheda non più presente nell'archivio.");}
+    if(state.page!=="library")stopSubscriptions();
+    state.page="library";state.creatureId=id;state.editor=null;
     state.sheet=target.dataset.sheet;await render();return;
   }
   if(act==="export"){
@@ -983,6 +997,7 @@ async function handleAction(target){
     if(!confirm('Eliminare "'+record.name+'"? Questa operazione non è reversibile.'))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
+    if(state.lastCreatureId===record.id)state.lastCreatureId=null;
     state.creatureId=null;state.editor=null;await render();message("Scheda eliminata.");return;
   }
   if(act==="tracker-add"){
@@ -1159,7 +1174,7 @@ async function handleSubmit(form){
   if(form.id==="chat-form"){
     const body=text(document.querySelector("#chat-message")?.value);
     if(!body||body.length>1000)throw new Error("Messaggio vuoto o troppo lungo.");
-    const author=text(document.querySelector("#chat-author")?.value)||"Giocatore";
+    const author=state.chatAuthor||text(document.querySelector("#chat-author")?.value)||"Giocatore";
     const event={id:"pwa_"+crypto.randomUUID(),kind:"chat",author:author.slice(0,80),
       timestamp:Math.floor(Date.now()/1000),text:body};
     const result=await action("chat_send",{event});
@@ -1231,6 +1246,9 @@ function listen(){
         btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
         btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
+    }
+    if(target?.id==="chat-author"){
+      state.chatAuthor=target.value;return;
     }
     if(target?.id==="spell-target"){
       state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;

@@ -3,7 +3,7 @@ export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abili
  ["battle","Battaglia"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
-export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Competenze"],
+export const DETAILS = [["overview","Panoramica"],["classes","Classi e multiclasse"],["proficiency_choices","Competenze"],
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
@@ -100,7 +100,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const number=(label,key,value=c[key]??0,min=0,max=99999)=>field(label,key,value,'number','min="'+min+'" max="'+max+'"');
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
- const nativeNote='<p class="hint">I valori derivati e i benefici delle origini vengono ricalcolati dalla versione nativa quando importa la scheda.</p>';
+ const nativeNote='<p class="hint">I valori derivati supportati vengono calcolati direttamente sul dispositivo, anche offline. Le eccezioni non ancora implementate sono indicate nel riepilogo.</p>';
  if(section==='info')return panel('Identità',cols(
     select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
     field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
@@ -129,12 +129,14 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
       (list(c.classes).length>1?'<details><summary>Multiclasse (riepilogo)</summary>'+
         summary(c.classes.map((r,i)=>['Classe '+(i+1),r.name+' · livello '+r.level]))+
-        '<p class="hint">Per modificare le classi aggiuntive usa la scheda nativa.</p></details>':''))+
-   panel('Talenti',feats)+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
-     (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
-      '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
-      summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
-        ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
+        '<p class="hint">Modifica le classi aggiuntive in Modifica personaggio → Classi e multiclasse.</p></details>':''))+
+   panel('Talenti',feats)+panel('Storia e personalità',
+     area('Personalità e background','background_personality',c.background_personality,4)+
+     '<details><summary>Appunti e interpretazione</summary>'+
+     area('Appunti','notes',c.notes,4)+area('Descrizione fisica','appearance',c.appearance,3)+
+     area('Tratti della personalità','personality_traits',c.personality_traits,3)+
+     area('Ideali','ideals',c.ideals,2)+area('Legami','bonds',c.bonds,2)+
+     area('Difetti','flaws',c.flaws,2)+'</details>');
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio base</strong><strong>Mod. base</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label><span class="native-derived">'+
      (Math.floor((Number(c.abilities?.[key]??10)-10)/2)>=0?'+':'')+
      Math.floor((Number(c.abilities?.[key]??10)-10)/2)+'</span><span>'+
