@@ -37,6 +37,7 @@ jobs:
             /vtt/
             /network/
             /homebrew/
+            /encounter/encounter_events.gd
             /tests/
             /assets/items/
             /assets/spell_area_geometry.json
@@ -72,6 +73,6 @@ jobs:
               exit 1
             }
             cat /tmp/feature-test.log
-            grep -q "PASS:" /tmp/feature-test.log
+            grep -Eq "\\bPASS(:|[[:space:]])" /tmp/feature-test.log
             if grep -Eq "SCRIPT ERROR:|ERROR: Failed to load script" /tmp/feature-test.log; then exit 1; fi
           done
