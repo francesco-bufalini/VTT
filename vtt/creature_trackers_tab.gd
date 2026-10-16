@@ -202,9 +202,7 @@ func _refresh() -> void:
 
 
 func _refresh_origins() -> void:
-	for node: Node in _origin_cards.get_children():
-		_origin_cards.remove_child(node)
-		node.queue_free()
+	EditorUI.clear_origin_cards(_origin_cards)
 	var counts: Dictionary = {}
 	for row: Dictionary in _rows:
 		var sid: String = String(row.get("origin_id", ""))
@@ -212,37 +210,16 @@ func _refresh_origins() -> void:
 	var enabled: Dictionary = Rules.origin_enabled_map(_effective_record())
 	var display_names: Dictionary = OriginChoices.display_labels(_origins, _effective_record())
 	for sid: String in counts.keys():
-		var panel := PanelContainer.new()
-		_origin_cards.add_child(panel)
-		var line := HBoxContainer.new()
-		panel.add_child(line)
-		var select := OriginButton.new()
-		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		select.clip_text = true
-		select.toggle_mode = true
-		select.button_pressed = _selected_origin == sid
-		select.text = String(display_names.get(sid, _source_name(sid))) + " (%d)" % int(counts[sid])
-		select.tooltip_text = _source_tooltip(sid)
-		select.pressed.connect(_select_origin.bind(sid))
-		line.add_child(select)
-		EditorUI.origin_link(self, line, sid, _source_name(sid))
-		if not sid.is_empty():
-			var toggle := CheckButton.new()
-			toggle.text = "⏻"
-			toggle.button_pressed = bool(enabled.get(sid, true))
-			toggle.tooltip_text = "Attiva/disattiva le risorse con questa origine, senza eliminarle"
-			toggle.toggled.connect(_toggle_origin.bind(sid))
-			line.add_child(toggle)
-		if _selected_origin == sid:
-			var border := StyleBoxFlat.new()
-			border.draw_center = false
-			border.border_color = Color(0.40, 0.72, 0.91)
-			border.set_border_width_all(2)
-			border.set_corner_radius_all(5)
-			panel.add_theme_stylebox_override("panel", border)
-		elif not bool(enabled.get(sid, true)):
-			panel.modulate.a = 0.58
+		EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": _source_name(sid),
+			"text": String(display_names.get(sid, _source_name(sid))) + " (%d)" % int(counts[sid]),
+			"tooltip": _source_tooltip(sid),
+			"selected": _selected_origin == sid,
+			"active": bool(enabled.get(sid, true)),
+			"on_select": _select_origin.bind(sid),
+			"on_toggle": _toggle_origin.bind(sid),
+			"toggle_tooltip": "Attiva/disattiva le risorse con questa origine, senza eliminarle"
+		})
 
 
 func _refresh_trackers() -> void:
