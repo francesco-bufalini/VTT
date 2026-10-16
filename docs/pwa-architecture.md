@@ -132,12 +132,13 @@ in the eventual UI, and do not imply that offline records can never vanish.
 ## App updates
 
 The web `Service Worker` precaches a small allowlisted app shell, icons and
-JS, not API calls, user files or IndexedDB. Bump `CACHE` in `pwa/sw.js`
-on every web-shell change. A desktop replacement changes the served script,
-the browser checks for new service-worker code, and the next controlled
-activation switches shell caches **without deleting any local records**.
-Users need a new connection to the desktop for new app bits, but their
-already installed shell and IndexedDB can operate offline.
+JS, not API calls, user files or IndexedDB. Shell requests are **network-first**:
+each time the installed app reaches the native desktop, it obtains refreshed
+assets and replaces the cached copies; offline it falls back to the saved
+shell. Bump `CACHE` in `pwa/sw.js` when the shell structure changes to
+clean up old app-cache entries. Updating the app never deletes IndexedDB.
+Individual resource updates are not yet an atomic release swap: avoid
+replacing the desktop application while a client page is mid-load.
 
 ## Verification and next integration
 
