@@ -127,8 +127,11 @@ function structuredFeatures(record){
   const append=(row,originKey,gate={},fallbackId="")=>{
     if(!row||typeof row!=="object"||!Array.isArray(row.bonuses)||!row.bonuses.length)return;
     if(row.inactive)return;
-    const id=String(row.id||fallbackId||"").trim()||
-      (originKey+"|"+String(gate.min_level??0)+"|"+norm(row.name));
+    // Features._append() has a *nested* fallback key: origin|origin|level|name.
+    // Preserve that identity so persisted auto|... disabled grants still work.
+    const level=Number(gate.min_level??0);
+    const id=String(row.id||"").trim()||
+      (originKey+"|"+level+"|"+norm(row.name));
     const featureKey=originKey+"|"+id;
     collected.push({key:featureKey,originKey,source:row,requirements:{
       scope:gate.scope||"character",min_level:Number(gate.min_level??row.min_level??0),
@@ -146,7 +149,7 @@ function structuredFeatures(record){
     if(feat?.disabled)continue;
     const featId=String(feat.id||norm(feat.name)+"|"+norm(feat.source));
     const originKey="feat|"+featId;
-    append(feat,originKey,{min_level:1},"overview");
+    // Native feat overview does not copy the owned feat's 'bonuses' field.
     for(const [i,row] of array(feat.feature_sections).entries())
       append(row,originKey,{min_level:Number(row.min_level??1)},String(i));
   }
