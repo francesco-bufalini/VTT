@@ -188,7 +188,7 @@ func undo_owned(record: Dictionary, redo: bool = false) -> Error:
 	if (
 		not expected is Dictionary or not replacement is Dictionary
 		or records[record_index] != expected
-		or not Owner.can_edit(replacement, records[record_index])
+		or not Owner.can_edit(replacement as Dictionary, records[record_index])
 	):
 		return ERR_UNAUTHORIZED
 	records[record_index] = (replacement as Dictionary).duplicate(true)
