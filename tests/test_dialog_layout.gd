@@ -30,6 +30,10 @@ func run() -> void:
 	assert(DialogLayout._bounds_for_coordinate_space(
 		Vector2i(1696, 948), Vector2i(1152, 648), false
 	) == Vector2i(1696, 948), "Native popup bounds must use physical pixels")
+	assert(DialogLayout._bounds_for_coordinate_space(
+		Vector2i(360, 640), Vector2i(1152, 648), true
+	) == Vector2i(360, 640),
+		"Mobile/compact windows must clamp to their smaller physical surface")
 	root.size = main_size
 	assert(root.gui_embed_subwindows,
 		"The real project configuration should embed popups before any test overrides")
