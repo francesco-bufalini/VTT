@@ -20,6 +20,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
+  librarySelectedIds:new Set(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1,
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -127,8 +128,13 @@ async function render() {
 async function libraryView() {
   if(state.creatureId) return editorView();
   const rows = await listCreatures();
+  const availableIds=new Set(rows.map(row=>row.creature.id));
+  for(const id of state.librarySelectedIds)if(!availableIds.has(id))state.librarySelectedIds.delete(id);
   let list = rows.map(({creature:c}) =>
-    '<article class="creature-card"><div class="creature-avatar" aria-hidden="true">'+
+    '<article class="creature-card"><label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
+      '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+
+      (state.librarySelectedIds.has(c.id)?'checked':'')+'></label>'+
+      '<div class="creature-avatar" aria-hidden="true">'+
       (c.kind === "monster" ? "◆" : "♜")+'</div><div class="creature-info"><div class="creature-name">'+
       esc(c.name)+'</div><div class="creature-details">'+
       esc(c.kind === "monster" ? "Mostro" : "Personaggio")+' · '+
@@ -140,7 +146,11 @@ async function libraryView() {
     '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
   return header("Archivio indipendente", "Le tue creature", "Le schede rimangono sul dispositivo e si aprono anche senza il desktop.")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
-    btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+list+
+    btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+
+    (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
+      btn("library-select-none","Deseleziona")+
+      btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
+      btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger")+'</div>':'')+list+
     '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
 }
 function renderCatalogRows() {
@@ -648,6 +658,39 @@ async function handleAction(target){
     state.creatureId=await createDemoCreature();state.editor=null;state.sheet="stats";
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
+  if(act==="library-select-all"){
+    state.librarySelectedIds=new Set((await listCreatures()).map(row=>row.creature.id));
+    await render();return;
+  }
+  if(act==="library-select-none"){
+    state.librarySelectedIds.clear();await render();return;
+  }
+  if(act==="library-export"||act==="library-delete"){
+    const rows=(await listCreatures()).filter(row=>state.librarySelectedIds.has(row.creature.id));
+    if(!rows.length)throw new Error("Seleziona almeno una creatura.");
+    if(act==="library-export"){
+      if(rows.length>200)throw new Error("Puoi esportare fino a 200 creature in un file.");
+      const entries=[];
+      for(const row of rows){
+        const blob=await exportCreature(row.creature.id);
+        entries.push(JSON.parse(await blob.text()));
+      }
+      const data=JSON.stringify({format:"vtt_creature_batch_export_v1",version:1,entries},null,2);
+      if(new TextEncoder().encode(data).length>16*1024*1024)
+        throw new Error("Esportazione troppo grande per il formato portatile.");
+      download(new Blob([data],{type:"application/json"}),"vtt-creature-selezionate.json");
+      message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");return;
+    }
+    if(!window.confirm("Eliminare definitivamente "+rows.length+
+        " creature da questo dispositivo? L'operazione non può essere annullata."))return;
+    let deleted=0;
+    for(const row of rows){
+      if(await removeCreature(row.creature.id,"default",row.revision)){
+        state.librarySelectedIds.delete(row.creature.id);deleted++;
+      }
+    }
+    await render();message("Eliminate "+deleted+" creature dall'archivio locale.");return;
+  }
   if(act==="create"){
     const row=await createCreature("character","Nuovo personaggio");
     state.creatureId=row.id;state.editor=null;state.sheet="stats";await render();return;
@@ -878,6 +921,16 @@ function listen(){
   });
   app.addEventListener("change",e=>{
     const target=e.target;
+    if(target?.dataset?.librarySelect){
+      if(target.checked)state.librarySelectedIds.add(target.dataset.librarySelect);
+      else state.librarySelectedIds.delete(target.dataset.librarySelect);
+      const buttons=app.querySelectorAll('[data-act="library-export"],[data-act="library-delete"]');
+      for(const button of buttons){
+        button.textContent=(button.dataset.act==="library-export"?"Esporta (":"Elimina (")+
+          state.librarySelectedIds.size+")";
+      }
+      return;
+    }
     if(target?.id==="catalog-category"){
       state.catalogCategory=target.value;state.catalogSelected=-1;
       render().catch(error=>message(errorMessage(error),true));return;
