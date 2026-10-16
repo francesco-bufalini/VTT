@@ -71,16 +71,7 @@ func setup(on_change: Callable) -> void:
 	var left := _make_column(columns, "Origini dei talenti", 190)
 	var right := _make_column(columns, "Talenti posseduti", 225)
 
-	var origin_scroll := ScrollContainer.new()
-	origin_scroll.mouse_force_pass_scroll_events = false
-	origin_scroll.custom_minimum_size.y = 245
-	origin_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(origin_scroll)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	origin_scroll.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 
 	var feat_scroll := ScrollContainer.new()
 	feat_scroll.mouse_force_pass_scroll_events = false
