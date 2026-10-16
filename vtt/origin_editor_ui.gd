@@ -172,6 +172,9 @@ static func origin_card(owner: Control, parent: Control, config: Dictionary) -> 
 	line.add_child(select)
 	if bool(config.get("link", true)):
 		origin_link(owner, line, sid, String(config.get("name", sid)))
+	# The overview has more room; origin cards must fit narrow editor columns.
+	# Long names are clipped on the button and readable in the full tooltip.
+	select.custom_minimum_size.x = 105
 
 	# Domain editors can add completion and editing actions without having to
 	# recreate a card. They appear before the origin activation control.
