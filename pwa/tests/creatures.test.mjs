@@ -97,6 +97,18 @@ test("multi-creature export package imports local copies with homebrew", async (
   assert.equal((await listCreatures(scope)).length,2,"An invalid batch must fail validation before importing");
 });
 
+test("batch import rejects conflicting homebrew without writing any creature", async () => {
+  const scope="test_batch_conflict_"+Date.now();
+  const altered={...feat,data:{description:"Contradictory feat definition"}};
+  const second={...exported,creature:{...creature,id:"different_character"},
+    homebrew_content:[altered,item]};
+  const file={format:"vtt_creature_batch_export_v1",version:1,entries:[exported,second]};
+  await assert.rejects(importCreatureFile(new Blob([JSON.stringify(file)]),scope),
+    /homebrew in conflitto/);
+  assert.equal((await listCreatures(scope)).length,0,
+    "A conflict in any entry must leave the entire archive untouched");
+});
+
 test("import is atomic on invalid homebrew, backup keeps local edits", async () => {
   const scope = "test_import_" + Date.now();
   const before = (await listRecords("global", "homebrew")).length;
