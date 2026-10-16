@@ -666,14 +666,20 @@ func _ensure_campaigns_directory() -> void:
 
 
 func _write_json(path: String, data: Dictionary) -> Error:
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	# Preserve the previous valid state if a write is interrupted.
+	var temporary := path + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
-
 	file.store_string(JSON.stringify(data, "  "))
 	var error := file.get_error()
 	file.close()
-	return error
+	if error != OK:
+		return error
+	return DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(temporary),
+		ProjectSettings.globalize_path(path)
+	)
 
 
 func _read_json(path: String) -> Variant:
