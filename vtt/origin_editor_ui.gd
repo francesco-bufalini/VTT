@@ -1,5 +1,6 @@
 extends RefCounted
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 # Stateless presentation helpers for origin editors.
 
 static func popup_form(owner: Control, form: Control, caption: String, submit: Button = null) -> AcceptDialog:
@@ -121,6 +122,22 @@ static func _capture_fields(node: Control, values: Array[Dictionary]) -> void:
 # Shared origin card used by bonus, proficiency, feat, tracker and defense
 # editors. The caller decides visibility, counts, grants, warnings and
 # whether an origin can be toggled; only its presentation lives here.
+# Identical scroll spacing, sizing and wheel handoff in every origin column.
+static func origin_list(parent: Control) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.y = 245
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.mouse_force_pass_scroll_events = false
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	ScrollBoundaryGuard.install(scroll)
+	parent.add_child(scroll)
+	var cards := VBoxContainer.new()
+	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards.add_theme_constant_override("separation", 5)
+	scroll.add_child(cards)
+	return cards
+
+
 static func clear_origin_cards(parent: Control) -> void:
 	for child: Node in parent.get_children():
 		parent.remove_child(child)
