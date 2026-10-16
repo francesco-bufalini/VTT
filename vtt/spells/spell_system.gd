@@ -6,6 +6,7 @@ const SpellTargetOverlay2D = preload("res://vtt/spells/spell_target_overlay_2d.g
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ReachGeometry = preload("res://vtt/flanking_system.gd")
 const TargetRules = preload("res://vtt/spells/spell_target_rules.gd")
+const TargetInput = preload("res://vtt/spells/spell_target_input.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
@@ -2978,37 +2979,11 @@ func _direction_preview(geometry: Dictionary, spell_data: Dictionary,
 
 func _token_at_screen(screen_position: Vector2) -> Node3D:
 	if _remote_input_active:
+		# Remote selection is already a token reference, not a map position.
 		return _remote_pick_token
-	var hit_value: Variant
-	if _is_2d_view() and board_root.has_method("_raycast_token_from_screen"):
-		hit_value = board_root.call("_raycast_token_from_screen", screen_position, true)
-	else:
-		hit_value = board_root.call(
-			"_raycast_from_screen",
-			screen_position,
-			TOKEN_PICK_COLLISION_MASK,
-			true
-		)
-	if not hit_value is Dictionary:
-		return null
-
-	var hit: Dictionary = hit_value as Dictionary
-	var collider: Node = hit.get("collider") as Node
-	if collider == null:
-		return null
-
-	var target_value: Variant = board_root.call(
-		"_find_interaction_target",
-		collider
+	return TargetInput.token_from_screen(
+		board_root, screen_position, _is_2d_view(), TOKEN_PICK_COLLISION_MASK
 	)
-	if not target_value is Node:
-		return null
-
-	var target: Node = target_value as Node
-	if not target.is_in_group("dnd_token") or not target is Node3D:
-		return null
-
-	return target as Node3D
 
 
 const RANGE_PREVIEW_PHASES := [
@@ -3020,9 +2995,8 @@ const RANGE_PREVIEW_PHASES := [
 ]
 
 
-# Single description of the visible reach. The 2D/3D HUD and range mesh
-# consume this; special constraints (passenger proximity, unique chain
-# victims, origin of a directional spell) remain independent cast rules.
+# The 2D HUD and 3D range mesh share one description of visible reach.
+# Cast-specific constraints such as passenger proximity stay independent.
 func targeting_range_info(spell_data: Dictionary) -> Dictionary:
 	if (
 		_pending_caster == null or not is_instance_valid(_pending_caster)
@@ -3044,7 +3018,6 @@ func targeting_range_info(spell_data: Dictionary) -> Dictionary:
 	if source.has_method("get_footprint_cells"):
 		footprint *= maxf(0.5, float(source.call("get_footprint_cells")))
 	return {"source": source, "feet": feet, "footprint": footprint}
-
 
 func _update_spell_range_preview(spell_data: Dictionary) -> void:
 	var measurement_tool: Node = _measurement_tool()
@@ -3203,26 +3176,7 @@ func _is_2d_view() -> bool:
 
 
 func _screen_2d_point_data(screen_position: Vector2) -> Dictionary:
-	# Use the currently visible 2D floor plane instead of a physics ray:
-	# token/building colliders must not block moving a point AoE with the mouse.
-	var view_camera: Camera3D = board_root.get_node_or_null("Camera3D") as Camera3D
-	if view_camera == null or not view_camera.has_method("get_top_down_level"):
-		return {"valid": false}
-	var plane_y: float = float(view_camera.call("get_top_down_level"))
-	var origin: Vector3 = view_camera.project_ray_origin(screen_position)
-	var direction: Vector3 = view_camera.project_ray_normal(screen_position)
-	if absf(direction.y) < 0.00001:
-		return {"valid": false}
-	var distance: float = (plane_y - origin.y) / direction.y
-	if distance < 0.0:
-		return {"valid": false}
-	return {
-		"valid": true,
-		"point": origin + direction * distance,
-		"in_air": false,
-		"normal": Vector3.UP
-	}
-
+	return TargetInput.top_down_point(board_root, screen_position)
 
 func _point_target_already_selected(point: Vector3) -> bool:
 	var tolerance: float = _cell_size() * 0.05
@@ -3237,21 +3191,12 @@ func _raw_point_input(
 	preferred_air_distance_world: float = -1.0,
 	force_grid_target: bool = false
 ) -> Dictionary:
-	# This adapter is the only viewport-dependent part of point targeting.
-	# Remote clients provide an already projected world point directly.
 	if _remote_input_active:
 		return _remote_pick_point.duplicate()
-	if _is_2d_view():
-		return _screen_2d_point_data(screen_position)
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return {"valid": false}
-	var value: Variant = measurement_tool.call(
-		"get_spell_target_point", screen_position,
+	return TargetInput.point_from_screen(
+		board_root, _measurement_tool(), screen_position, _is_2d_view(),
 		preferred_air_distance_world, force_grid_target
 	)
-	return value if value is Dictionary else {"valid": false}
-
 
 func _point_target_data(
 	screen_position: Vector2,
