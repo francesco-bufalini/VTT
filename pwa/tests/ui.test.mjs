@@ -85,7 +85,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
   });
   click('[data-sheet="battle"]');
-  await until(()=>document.querySelector('[data-act="tracker-more"]')||document.querySelector('#native-details'));
+  await until(()=>document.querySelector('.current-section')?.textContent==="Battaglia");
+  assert.equal(document.querySelector('#tracker-name'),null);
   click('[data-sheet="origins"]');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','resources');
