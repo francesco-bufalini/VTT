@@ -56,6 +56,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Arcanista mobile");
+  click('[data-sheet="battle"]');
+  await until(()=>document.querySelector('[data-field="current_hp"]'));
   change('[data-field="current_hp"]',"17");
   await until(async()=>{
     const rows=await listCreatures();
@@ -82,7 +84,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
   });
-  click('[data-sheet="resources"]');
+  click('[data-sheet="battle"]');
   await until(()=>document.querySelector("#tracker-name"));
   change("#tracker-name","Impulsi");
   change("#tracker-max","3");
@@ -100,8 +102,9 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
   });
-  click('[data-sheet="notes"]');
+  click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-field="notes"]'));
+  document.querySelector('[data-field="notes"]').closest('details').open=true;
   const pendingNote=document.querySelector('[data-field="notes"]');
   pendingNote.value="Nota digitata e subito chiusa";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
@@ -314,5 +317,37 @@ test("successful one-time pairing survives an initial transient map error",async
   await until(()=>document.querySelector("#connection").textContent.includes("Partita collegata"));
   assert.equal(pairRequests,1,"Resuming the game must not require re-pairing");
   click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("native Android section order and editable sheet data",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
+  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
+  change('[data-field="player_name"]',"Giocatore locale");
+  change('[data-field="speed_base"]',"35");
+  click('[data-sheet="stats"]');
+  await until(()=>document.querySelector('[data-ability="str"]'));
+  change('[data-ability="str"]',"14");
+  click('[data-sheet="conditions"]');
+  await until(()=>document.querySelector('[data-condition="poisoned"]'));
+  document.querySelector('[data-condition="poisoned"]').click();
+  await until(async()=>{
+    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.player_name==="Giocatore locale");
+    return c?.abilities?.str===14 && c.speed_base===35 && c.conditions?.includes("poisoned");
+  });
+  click('[data-sheet="origins"]');
+  await until(()=>document.querySelector('#native-details'));
+  change('#native-details','proficiency_choices');
+  await until(()=>document.querySelector('[data-act="native-add"]'));
+  click('[data-act="native-add"]');
+  await until(()=>document.querySelector('[data-native-list="proficiency_choices"]'));
+  change('[data-native-list="proficiency_choices"][data-key="key"]',"athletics");
+  await until(async()=>{
+    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.player_name==="Giocatore locale");
+    return c?.proficiency_choices?.some(row=>row.key==="athletics");
+  });
+  click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });

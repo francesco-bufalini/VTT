@@ -21,7 +21,6 @@ export function rowsFor(c,key){
  return [['skill','skill_proficiencies'],['expertise','skill_expertise'],['save','saving_throw_proficiencies']].flatMap(([kind,field])=>list(c[field]).map(key=>({kind,key,origin_id:'',origin_name:'',disabled:false})));
 }
 function control(label,attrs,value,type='text',min,max){
- const disabled=attrs.includes(' disabled');
  if(Array.isArray(type)){
   const options=type.some(([v])=>String(v)===String(value??''))?type:[[value??'',value||'Non selezionato'],...type];
   return '<label>'+esc(label)+'<select '+attrs+'>'+options.map(([v,t])=>'<option value="'+esc(v)+'" '+(String(v)===String(value??'')?'selected':'')+'>'+esc(t)+'</option>').join('')+'</select></label>';
@@ -85,13 +84,13 @@ export function nativeSection(c,section,{field,area,panel,resources,details='ove
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
  const nativeNote='<p class="hint">I valori derivati e i benefici delle origini vengono ricalcolati dalla versione nativa quando importa la scheda.</p>';
- if(section==='info')return panel('Identità',cols(select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')))+
+ if(section==='info')return panel('Identità',cols(select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+field('Giocatore','player_name',c.player_name||'')+field('Allineamento','alignment',c.alignment||'')))+
   panel('Fisico',cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races')+field('Tipo','type',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||''))+
    (c.kind==='monster'?'<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':'')+
    cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
    '<h3>Miniature</h3>'+cols(field('Miniatura base','default_miniature_id',c.default_miniature_id)+field('Forma attuale','current_miniature_id',c.current_miniature_id))+
    '<h3>Movimento</h3>'+summary([['Camminata (ft)',c.speed_base??c.speed??30],...['climb','swim','fly','burrow'].map((mode,i)=>[['Scalata','Nuoto','Volo','Scavo'][i]+' (ft)',c.species_speed?.[mode]??c.stat_block?.speed?.[mode]??0])])+
-   (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??30):''))+
+   number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30))+
   panel('Background',reference('Background','background','backgrounds'))+
   panel('Classi e progressione',cols(number('XP','xp')+reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+number('Livello totale','level',c.level??1,1,20))+
    '<details><summary>Progressione e multiclasse</summary>'+nativeRows({...c,classes:list(c.classes).length?c.classes:c.class?[{name:c.class,source:c.class_source||'',subclass:c.subclass||'',level:c.level||1}]:[]},'classes')+'</details>')+
@@ -103,7 +102,7 @@ export function nativeSection(c,section,{field,area,panel,resources,details='ove
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],rowsFor(c,'proficiency_choices').filter(r=>r.kind===kind&&!r.disabled).map(r=>r.key).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle')return panel('Punti ferita',cols(number('Attuali','current_hp',c.current_hp??1)+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+number('Seconda forma · massimi','second_form_max_hp')))+
-  resources+panel('CA e iniziativa',cols(number('CA base','armor_class_base',c.armor_class_base??10)+field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
+  resources+panel('CA e iniziativa',cols(number('CA base','armor_class_base',c.armor_class_base??10)+field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula)+number('Iniziativa base','initiative',c.initiative??0,-99,99))+nativeNote)+
   panel('Attacchi disponibili',select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
    list(c.inventory).filter(i=>i.equipped).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+
    '<button class="btn" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>');
