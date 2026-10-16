@@ -5824,6 +5824,7 @@ func _build_share_dialog() -> void:
 		+ "dice roller e chat restano su un canale separato."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(info)
 
 	var session_row := HBoxContainer.new()
@@ -5860,8 +5861,10 @@ func _build_share_dialog() -> void:
 	share_auto_sync.toggled.connect(_on_auto_sync_toggled)
 	layout.add_child(share_auto_sync)
 
-	var local_row := HBoxContainer.new()
-	local_row.add_theme_constant_override("separation", 8)
+	# Wrap buttons instead of letting an HBox dictate the modal width.
+	var local_row := HFlowContainer.new()
+	local_row.add_theme_constant_override("h_separation", 8)
+	local_row.add_theme_constant_override("v_separation", 6)
 	layout.add_child(local_row)
 
 	var save_local := Button.new()
@@ -5890,10 +5893,12 @@ func _build_share_dialog() -> void:
 	tailscale_serve_label = Label.new()
 	tailscale_serve_label.text = "Premi Aggiorna per controllare Tailscale."
 	tailscale_serve_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tailscale_serve_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(tailscale_serve_label)
 
-	var tailscale_row := HBoxContainer.new()
-	tailscale_row.add_theme_constant_override("separation", 8)
+	var tailscale_row := HFlowContainer.new()
+	tailscale_row.add_theme_constant_override("h_separation", 8)
+	tailscale_row.add_theme_constant_override("v_separation", 6)
 	layout.add_child(tailscale_row)
 	tailscale_serve_enable = Button.new()
 	tailscale_serve_enable.text = "Attiva accesso telefono"
@@ -5918,6 +5923,7 @@ func _build_share_dialog() -> void:
 	var tailscale_hint := Label.new()
 	tailscale_hint.text = "Attivazione una sola volta per PC. Per associare il telefono premi Ctrl+Shift+P. Serve è limitato alla tailnet, non è Funnel."
 	tailscale_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tailscale_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(tailscale_hint)
 
 	_build_map_file_dialogs()
@@ -5925,6 +5931,7 @@ func _build_share_dialog() -> void:
 	share_status = Label.new()
 	share_status.text = "Ricezione e sincronizzazione automatica · Partita 1"
 	share_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	share_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(share_status)
 	board_sync.status_changed.connect(
 		func(message): share_status.text = message
