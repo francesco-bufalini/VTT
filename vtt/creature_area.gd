@@ -3409,6 +3409,134 @@ func _reload() -> void:
 		_loading = false
 
 
+# Archive multi-selection is independent from the open sheet and the scene.
+static func _creature_batch_key(record: Dictionary) -> String:
+	return String(record.get("kind", "")) + ":" + String(record.get("id", ""))
+
+
+func _on_creature_batch_toggled(checked: bool, key: String) -> void:
+	if checked:
+		_creature_batch_ids[key] = true
+	else:
+		_creature_batch_ids.erase(key)
+	_update_creature_batch_actions()
+
+
+func _mark_visible_creatures(checked: bool) -> void:
+	for index: int in range(_creature_batch_checks.size()):
+		var checkbox: CheckBox = _creature_batch_checks[index]
+		if checked and not checkbox.get_parent().visible:
+			continue
+		var key := _creature_batch_key(_records[index])
+		if checked:
+			_creature_batch_ids[key] = true
+		else:
+			_creature_batch_ids.erase(key)
+		checkbox.set_pressed_no_signal(_creature_batch_ids.has(key))
+	_update_creature_batch_actions()
+
+
+func _selected_creature_batch() -> Array[Dictionary]:
+	var batch: Array[Dictionary] = []
+	for record: Dictionary in _records:
+		if _creature_batch_ids.has(_creature_batch_key(record)):
+			batch.append(record.duplicate(true))
+	return batch
+
+
+func _update_creature_batch_actions() -> void:
+	if _batch_export_button == null:
+		return
+	var count := _selected_creature_batch().size()
+	_batch_export_button.disabled = count == 0
+	_batch_delete_button.disabled = count == 0
+	_batch_export_button.text = "Esporta (%d)" % count if count > 0 else "Esporta selezione"
+	_batch_delete_button.text = "Elimina (%d)" % count if count > 0 else "Elimina selezione"
+
+
+func _export_selected_creatures() -> void:
+	_save()
+	_batch_export_pending = _selected_creature_batch()
+	if _batch_export_pending.is_empty():
+		return
+	_export_dialog.title = "Esporta creature selezionate"
+	_export_dialog.current_file = "creature_selezionate.json"
+	_export_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
+	_export_dialog.popup_centered_clamped(Vector2i(820, 550), 0.9)
+
+
+func _save_batch_export(path: String) -> void:
+	var entries: Array[Dictionary] = []
+	for record: Dictionary in _batch_export_pending:
+		var missing: Array[String] = PortableContent.unresolved(record)
+		if not missing.is_empty():
+			_set_status("Esportazione annullata: homebrew mancante in %s." % String(record.get("name", "")))
+			_batch_export_pending.clear()
+			return
+		var companions: Array[Dictionary] = PortableContent.bundle(record)
+		if companions.size() > PortableContent.MAX_ENTRIES or JSON.stringify(companions).to_utf8_buffer().size() > PortableContent.MAX_BYTES:
+			_set_status("Esportazione annullata: homebrew troppo voluminoso in %s." % String(record.get("name", "")))
+			_batch_export_pending.clear()
+			return
+		entries.append({"format": "vtt_creature_export_v1", "version": 1,
+			"creature": record, "homebrew_content": companions})
+	var export_text := JSON.stringify({"format": "vtt_creature_batch_export_v1",
+		"version": 1, "entries": entries}, "  ")
+	_batch_export_pending.clear()
+	if export_text.to_utf8_buffer().size() > 16 * 1024 * 1024:
+		_set_status("Esportazione annullata: il file supera 16 MB.")
+		return
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		_set_status("Esportazione non riuscita: " + error_string(FileAccess.get_open_error()))
+		return
+	file.store_string(export_text)
+	var error := file.get_error()
+	file.close()
+	_set_status("Esportate %d creature: %s" % [entries.size(), path] if error == OK
+		else "Esportazione fallita: " + error_string(error))
+
+
+func _build_batch_delete_dialog() -> void:
+	_batch_delete_dialog = ConfirmationDialog.new()
+	_batch_delete_dialog.title = "Elimina più creature"
+	_batch_delete_dialog.confirmed.connect(_delete_creature_batch)
+	ui_root.add_child(_batch_delete_dialog)
+
+
+func _confirm_batch_delete() -> void:
+	_save()
+	_batch_delete_pending = _selected_creature_batch()
+	if _batch_delete_pending.is_empty():
+		return
+	_batch_delete_dialog.dialog_text = (
+		"Eliminare definitivamente %d creature dal tuo archivio?\n"
+		+ "Verranno rimossi anche i relativi token in scena.\n"
+		+ "Questa operazione non può essere annullata."
+	) % _batch_delete_pending.size()
+	_popup_sheet_dialog(_batch_delete_dialog, Vector2i(520, 285), 0.92)
+
+
+func _delete_creature_batch() -> void:
+	var batch := _batch_delete_pending.duplicate(true)
+	_batch_delete_pending.clear()
+	var completed := 0
+	var failed := 0
+	for record: Dictionary in batch:
+		var result: Error = _archive.delete(record)
+		if result != OK:
+			failed += 1
+			continue
+		_remove_deleted_creature_tokens(record)
+		_creature_batch_ids.erase(_creature_batch_key(record))
+		completed += 1
+		if _selected_id == String(record.get("id", "")) and _selected_kind == String(record.get("kind", "")):
+			_selected_id = ""
+			_selected_kind = ""
+	_reload()
+	_set_status("Eliminate %d creature e i loro token. Errori: %d." % [completed, failed])
+
+
 func _current() -> Dictionary:
 	for item: Dictionary in _records:
 		if (
