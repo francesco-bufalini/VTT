@@ -1,8 +1,7 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
-import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, evaluateCreature } from "./client.js";
-import { offlineBasics, derivedContent } from "./derived_calculations.js";
+import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -32,8 +31,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  saving:false, saveError:"", pendingActions:0, busy:false,
-  calculationConsentId:null, nativeProjection:null, calculationError:"", calculationRequested:"" };
+  saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
@@ -49,7 +47,6 @@ function acceptSession(info){
   state.session=info;
 }
 const pendingFieldTimers = new Map();
-let derivedTimer=null,derivedGeneration=0;
 let pendingDocumentWrites=Promise.resolve();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
@@ -118,70 +115,6 @@ function download(blob, filename) {
 }
 function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,60) || "creatura"; }
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
-function resetNativeCalculations(){
-  ++derivedGeneration;clearTimeout(derivedTimer);derivedTimer=null;
-  state.calculationConsentId=null;state.nativeProjection=null;
-  state.calculationRequested="";state.calculationError="";
-}
-function calculationPanel(creature){
-  if(!["info","stats","battle","magic"].includes(state.sheet))return "";
-  const fingerprint=JSON.stringify(creature);
-  const fresh=state.nativeProjection?.fingerprint===fingerprint;
-  const projection=fresh?state.nativeProjection.value:offlineBasics(creature);
-  const consent=state.calculationConsentId===creature.id;
-  const ready=state.paired&&state.online;
-  const origin=fresh?"Calcolato da Godot · valori effettivi":
-    consent&&ready?"In attesa di Godot · riepilogo di base provvisorio":
-    "Calcolo base offline · bonus e origini non inclusi";
-  const actions=consent?
-    '<button type="button" class="btn small" data-act="native-calc-off">Non inviare più questa scheda</button>'+
-      (!fresh?'<button type="button" class="btn small" data-act="native-calc-retry">Riprova</button>':''):
-    (ready?'<button type="button" class="btn small primary" data-act="native-calc-on">'+
-      'Calcola con Godot sul desktop</button>':'');
-  const warning=consent&&state.calculationError?
-    '<p class="warning">'+esc(state.calculationError)+'</p>':'';
-  return panel("Valori calcolati",'<div id="derived-calcs"><p class="hint">'+origin+'</p>'+
-    derivedContent(state.sheet,projection)+
-    (ready&&!consent?'<p class="hint">Il calcolo completo invia questa scheda privata al desktop associato, solo su tua richiesta. Il desktop la elabora in memoria, senza salvarla nella partita.</p>':'')+
-    (!ready?'<p class="hint">Per i valori completi apri una partita sul desktop e associa la PWA.</p>':'')+
-    warning+'<div class="actions">'+actions+'</div></div>');
-}
-function scheduleNativeEvaluation(delay=250){
-  clearTimeout(derivedTimer);derivedTimer=null;
-  ++derivedGeneration;
-  if(!state.editor||state.page!=="library"||!state.creatureId)return;
-  const creature=state.editor.read(),target=app.querySelector("#derived-calcs");
-  if(!target)return;
-  const fingerprint=JSON.stringify(creature);
-  // No private sheet is sent without explicit opt-in on this editing session.
-  const consent=state.calculationConsentId===creature.id;
-  if(!consent||!state.paired||!state.online)return;
-  if(state.nativeProjection?.fingerprint===fingerprint)return;
-  // Rendering another sheet may cancel the previously scheduled callback.
-  // Always reschedule; otherwise its stale request fingerprint would block
-  // evaluation forever without any visible error.
-  state.calculationRequested=fingerprint;
-  const generation=derivedGeneration,activeEditor=state.editor,creatureId=state.creatureId;
-  derivedTimer=setTimeout(async()=>{
-    try{
-      const result=await evaluateCreature(creature);
-      if(generation!==derivedGeneration||state.editor!==activeEditor||
-          state.creatureId!==creatureId)return;
-      state.nativeProjection={fingerprint,value:result};
-      state.calculationError="";
-    }catch(error){
-      if(generation!==derivedGeneration||state.editor!==activeEditor)return;
-      state.nativeProjection=null;
-      state.calculationError="Calcolo Godot non disponibile: "+errorMessage(error);
-    }
-    const region=app.querySelector("#derived-calcs");
-    if(region){
-      const replacement=calculationPanel(state.editor.read());
-      const wrapper=document.createElement("div");wrapper.innerHTML=replacement;
-      region.innerHTML=wrapper.querySelector("#derived-calcs")?.innerHTML||"";
-    }
-  },delay);
-}
 function stopSubscriptions() {
   ++chatGeneration;
   state.stopMap?.(); state.stopMap = null;
@@ -194,7 +127,6 @@ async function navigate(page, id=null) {
     catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
   }
   stopSubscriptions();
-  resetNativeCalculations();
   state.page=page; state.creatureId=id; state.editor=null;
   if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
@@ -211,7 +143,6 @@ async function render() {
     else if (state.page === "session") html = sessionView();
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
-    if(state.page === "library" && state.creatureId) scheduleNativeEvaluation();
     if(state.page === "session" && state.paired) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
@@ -344,7 +275,7 @@ async function editorView() {
           const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
           return '<div class="ability-box"><label>Liv. '+level+
             '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
-            '"></label><span class="hint">Usati / massimo salvato: '+esc(tot)+'</span></div>';
+            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
         }).join("")+'</div>')+
       panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
         ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
@@ -375,7 +306,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+calculationPanel(c)+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return navigation+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -755,16 +686,6 @@ async function patch(patchValue) {
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
     await state.editor.update(patchValue);
-    if(state.calculationConsentId){
-      state.nativeProjection=null;state.calculationRequested="";state.calculationError="";
-      const region=app.querySelector("#derived-calcs");
-      if(region){
-        const wrapper=document.createElement("div");
-        wrapper.innerHTML=calculationPanel(state.editor.read());
-        region.innerHTML=wrapper.querySelector("#derived-calcs")?.innerHTML||"";
-      }
-      scheduleNativeEvaluation();
-    }
     state.saveError="";
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
   }catch(error) {
@@ -978,20 +899,6 @@ async function handleAction(target){
     message("Contenuto aggiunto. Eventuali bonus vengono elaborati dalla versione Godot.");
     return;
   }
-  if(act==="native-calc-on"){
-    if(!state.editor||!state.paired||!state.online)
-      throw Error("Associa prima questa PWA a una partita attiva sul desktop.");
-    state.calculationConsentId=state.editor.read().id;
-    state.calculationRequested="";state.calculationError="";
-    await render();return;
-  }
-  if(act==="native-calc-off"){
-    resetNativeCalculations();await render();return;
-  }
-  if(act==="native-calc-retry"){
-    state.calculationRequested="";state.calculationError="";
-    scheduleNativeEvaluation(0);return;
-  }
   if(act==="refresh"){await render();return;}
   if(act==="demo"){
     state.creatureId=await createDemoCreature();state.editor=null;state.sheet="info";
@@ -1031,7 +938,6 @@ async function handleAction(target){
     await render();message("Eliminate "+deleted+" creature dall'archivio locale.");return;
   }
   if(act==="create"){
-    resetNativeCalculations();
     const row=await createCreature("character","Nuovo personaggio");
     state.creatureId=row.id;state.editor=null;state.sheet="info";await render();return;
   }
@@ -1042,10 +948,10 @@ async function handleAction(target){
     message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){resetNativeCalculations();state.creatureId=target.dataset.id;state.sheet="info";state.editor=null;await render();return;}
+  if(act==="open"){state.creatureId=target.dataset.id;state.sheet="info";state.editor=null;await render();return;}
   if(act==="back"){
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
-    resetNativeCalculations();state.editor=null;state.creatureId=null;await render();return;
+    state.editor=null;state.creatureId=null;await render();return;
   }
   if(act==="sheet"){
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
@@ -1062,7 +968,7 @@ async function handleAction(target){
     if(!confirm('Eliminare "'+record.name+'"? Questa operazione non è reversibile.'))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
-    resetNativeCalculations();state.creatureId=null;state.editor=null;await render();message("Scheda eliminata.");return;
+    state.creatureId=null;state.editor=null;await render();message("Scheda eliminata.");return;
   }
   if(act==="tracker-add"){
     const name=text(document.querySelector("#tracker-name")?.value);
@@ -1152,7 +1058,7 @@ async function handleAction(target){
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
-    await unpair();stopSubscriptions();resetNativeCalculations();state.paired=false;state.session=null;state.map=null;
+    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
     state.messages=[];state.after="";state.tokenId="";currentGameSession="";
     await render();return;
   }

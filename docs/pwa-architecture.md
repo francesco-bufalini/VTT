@@ -19,8 +19,7 @@ iPhone / Android (Safari/Chrome PWA)
     ├── GET  /api/status                 (public, no private game state)
     ├── GET  /api/session                (requires pairing)
     ├── GET  /api/map                    (requires pairing; public tactical projection)
-    ├── POST /api/action                 (requires pairing; existing mobile allowlist)
-    └── POST /api/evaluate               (requires pairing + explicit browser opt-in)
+    └── POST /api/action                 (requires pairing; existing mobile allowlist)
                 |
           Tailscale Serve (TLS termination; tailnet only)
                 |
@@ -113,22 +112,6 @@ Keep a single stable URL or export/import a backup before changing origins.
 - `POST /api/action`: JSON `{ action, payload }`; returns the exact
   `MapDataController`-provided `{ok,...}` result. Command names must
   appear in the shared `MapDataController.ACTIONS` allowlist.
-- `POST /api/evaluate`: JSON `{creature: {...}}`, maximum 512 KiB;
-  **read-only derived projection** computed with Godot's existing
-  `CreatureSheetController`, `CreatureBonusRules` and
-  `CreatureAttackData` against a detached in-memory copy. Returns
-  `{ok:true,source:"godot",schema:1,abilities,saves,skills,stats,spell_slots,pact_slots,attacks,explanations}`.
-  It does not mutate the desktop archive, map, chat, ownership or
-  synchronization. It does receive the **complete private sheet**:
-  the browser therefore does *not* call this endpoint unless the user
-  explicitly selects "Calcola con Godot sul desktop" within an open sheet.
-  Consent lasts only until leaving that sheet. Calculations refresh after
-  local edits; rapid tab changes discard out-of-date responses.
-  The offline PWA never silently replaces authoritative derived statistics:
-  only ordinary score modifiers and baseline class proficiency are computed
-  in portable JavaScript, prominently marked as incomplete. Full rules
-  (equipment, origins, structured bonuses, conditions, attacks and slots)
-  require the running paired desktop. Use a trusted HTTPS origin for transport.
 - HTTP parser rejects duplicate headers, transfer encoding, oversized
   requests, unknown routes and unauthorized commands. Responses opt out of
   browser HTTP caching and carry basic defensive headers.
