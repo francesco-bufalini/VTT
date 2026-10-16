@@ -1387,7 +1387,7 @@ func open_token_resize_menu(
 	_ui_owns_mouse = true
 	_release_mouse()
 
-	var window_size: Vector2i = get_tree().root.size
+	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	DialogLayout.popup_menu(
 		token_resize_menu, (window_size - Vector2i(140, 180)) / 2
 	)
@@ -3208,7 +3208,7 @@ func _on_place_creature_id_pressed(item_id: int) -> void:
 
 
 func _limit_popup_menu(menu: PopupMenu) -> void:
-	var window_size: Vector2i = get_tree().root.size
+	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	menu.max_size = (window_size - Vector2i(24, 24)).max(Vector2i(1, 1))
 
 

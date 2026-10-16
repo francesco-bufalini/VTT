@@ -187,7 +187,7 @@ func _show_wall_orientation_menu(spell_data: Dictionary) -> void:
 		]
 	)
 
-	var window_size: Vector2i = get_tree().root.size
+	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	DialogLayout.popup_menu(
 		wall_orientation_menu, (window_size - Vector2i(180, 60)) / 2
 	)
@@ -246,7 +246,7 @@ func _show_wall_mode_menu(spell_data: Dictionary) -> void:
 	_targeting_phase = "wall_mode"
 	board_root.set("_ui_owns_mouse", true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	var window_size: Vector2i = get_tree().root.size
+	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	DialogLayout.popup_menu(
 		wall_mode_menu, (window_size - Vector2i(240, 80)) / 2
 	)
@@ -906,7 +906,7 @@ func _begin_summon_count_or_point(spell_data: Dictionary) -> void:
 		% String(spell_data.get("name", "Evocazione"))
 	)
 
-	var window_size: Vector2i = get_tree().root.size
+	var window_size: Vector2i = Vector2i(get_tree().root.get_visible_rect().size)
 	DialogLayout.popup_menu(
 		summon_count_menu, (window_size - Vector2i(180, 80)) / 2
 	)

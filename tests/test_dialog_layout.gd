@@ -22,6 +22,18 @@ func run() -> void:
 	assert(DialogLayout._centered_popup_position(
 		main_position, main_size, popup_size, false
 	) == Vector2i(550, 345), "Native popup must include the desktop window's screen offset")
+	# Unlike the host window's physical pixels, embedded popup coordinates
+	# always belong to the logical viewport (which may be much smaller).
+	assert(DialogLayout._bounds_for_coordinate_space(
+		Vector2i(1696, 948), Vector2i(1152, 648), true
+	) == Vector2i(1152, 648), "Embedded popup bounds must use logical pixels")
+	assert(DialogLayout._bounds_for_coordinate_space(
+		Vector2i(1696, 948), Vector2i(1152, 648), false
+	) == Vector2i(1696, 948), "Native popup bounds must use physical pixels")
+	assert(DialogLayout._bounds_for_coordinate_space(
+		Vector2i(360, 640), Vector2i(1152, 648), true
+	) == Vector2i(360, 640),
+		"Mobile/compact windows must clamp to their smaller physical surface")
 	root.size = main_size
 	assert(root.gui_embed_subwindows,
 		"The real project configuration should embed popups before any test overrides")
@@ -166,5 +178,39 @@ func run() -> void:
 	oversized.queue_free()
 	root.content_scale_factor = 1.0
 	await process_frame
-	print("PASS: native/embedded positions, modal max-size, scale, Tailscale and context menus")
+
+	# The user maximizes Godot's floating Game Workspace with Stretch to Fit.
+	# Emulate a physical 1696x948 host displaying a smaller logical canvas.
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	root.content_scale_size = Vector2i(1152, 648)
+	root.size = Vector2i(1696, 948)
+	await process_frame
+	await process_frame
+	var logical: Vector2i = Vector2i(root.get_visible_rect().size)
+	print("Stretch-to-fit diagnostic: physical=%s logical=%s factor=%.2f" % [
+		root.size, logical, root.content_scale_factor
+	])
+	var maximized := AcceptDialog.new()
+	maximized.title = "Mappa · rete locale e Tailscale"
+	root.add_child(maximized)
+	var large_body := VBoxContainer.new()
+	maximized.add_child(large_body)
+	var large_row := HBoxContainer.new()
+	large_body.add_child(large_row)
+	for title in ["Attiva accesso telefono", "Disattiva", "Aggiorna", "Copia link telefono"]:
+		var button := Button.new()
+		button.text = title
+		large_row.add_child(button)
+	DialogLayout.popup(maximized, Vector2i(680, 565), 0.92)
+	for step in range(3):
+		await process_frame
+		var rect := Rect2(Vector2(maximized.position), Vector2(maximized.size))
+		assert(Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size)).encloses(rect),
+			"Maximized/stretch-to-fit modal must fit inside LOGICAL viewport")
+	maximized.hide()
+	maximized.queue_free()
+	root.content_scale_size = Vector2i.ZERO
+	await process_frame
+	print("PASS: native/embedded positions, modal max-size, stretch-to-fit, Tailscale and context menus")
 	quit()
