@@ -9,7 +9,6 @@ const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
-const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
@@ -46,16 +45,7 @@ func setup(on_change: Callable) -> void:
 	add_child(columns)
 	var left := _column(columns, "Origini dei tracker", 190)
 	var right := _column(columns, "Risorse e utilizzi", 260)
-	var origin_scroll := ScrollContainer.new()
-	origin_scroll.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(origin_scroll)
-	origin_scroll.custom_minimum_size.y = 245
-	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(origin_scroll)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	origin_scroll.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var tracker_scroll := ScrollContainer.new()
 	tracker_scroll.mouse_force_pass_scroll_events = false
 	ScrollBoundaryGuard.install(tracker_scroll)
@@ -202,9 +192,7 @@ func _refresh() -> void:
 
 
 func _refresh_origins() -> void:
-	for node: Node in _origin_cards.get_children():
-		_origin_cards.remove_child(node)
-		node.queue_free()
+	EditorUI.clear_origin_cards(_origin_cards)
 	var counts: Dictionary = {}
 	for row: Dictionary in _rows:
 		var sid: String = String(row.get("origin_id", ""))
@@ -212,37 +200,16 @@ func _refresh_origins() -> void:
 	var enabled: Dictionary = Rules.origin_enabled_map(_effective_record())
 	var display_names: Dictionary = OriginChoices.display_labels(_origins, _effective_record())
 	for sid: String in counts.keys():
-		var panel := PanelContainer.new()
-		_origin_cards.add_child(panel)
-		var line := HBoxContainer.new()
-		panel.add_child(line)
-		var select := OriginButton.new()
-		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		select.clip_text = true
-		select.toggle_mode = true
-		select.button_pressed = _selected_origin == sid
-		select.text = String(display_names.get(sid, _source_name(sid))) + " (%d)" % int(counts[sid])
-		select.tooltip_text = _source_tooltip(sid)
-		select.pressed.connect(_select_origin.bind(sid))
-		line.add_child(select)
-		EditorUI.origin_link(self, line, sid, _source_name(sid))
-		if not sid.is_empty():
-			var toggle := CheckButton.new()
-			toggle.text = "⏻"
-			toggle.button_pressed = bool(enabled.get(sid, true))
-			toggle.tooltip_text = "Attiva/disattiva le risorse con questa origine, senza eliminarle"
-			toggle.toggled.connect(_toggle_origin.bind(sid))
-			line.add_child(toggle)
-		if _selected_origin == sid:
-			var border := StyleBoxFlat.new()
-			border.draw_center = false
-			border.border_color = Color(0.40, 0.72, 0.91)
-			border.set_border_width_all(2)
-			border.set_corner_radius_all(5)
-			panel.add_theme_stylebox_override("panel", border)
-		elif not bool(enabled.get(sid, true)):
-			panel.modulate.a = 0.58
+		EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": _source_name(sid),
+			"text": String(display_names.get(sid, _source_name(sid))) + " (%d)" % int(counts[sid]),
+			"tooltip": _source_tooltip(sid),
+			"selected": _selected_origin == sid,
+			"active": bool(enabled.get(sid, true)),
+			"on_select": _select_origin.bind(sid),
+			"on_toggle": _toggle_origin.bind(sid),
+			"toggle_tooltip": "Attiva/disattiva le risorse con questa origine, senza eliminarle"
+		})
 
 
 func _refresh_trackers() -> void:

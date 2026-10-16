@@ -10,7 +10,6 @@ const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
-const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 
 const GROUPS := [
@@ -71,17 +70,7 @@ func setup(on_change: Callable) -> void:
 	var left := _create_column(columns, "Origini delle competenze", 190)
 	var right := _create_column(columns, "Singole competenze", 225)
 
-	var origin_scroller := ScrollContainer.new()
-	origin_scroller.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(origin_scroller)
-	origin_scroller.custom_minimum_size.y = 245
-	origin_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	origin_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(origin_scroller)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	origin_scroller.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var competence_scroller := ScrollContainer.new()
 	competence_scroller.mouse_force_pass_scroll_events = false
 	ScrollBoundaryGuard.install(competence_scroller)
@@ -233,9 +222,7 @@ func _refresh_origins() -> void:
 	_description_record = _effective_record()
 	_description_candidates = Rules.candidate_sources(_description_record)
 	_description_catalogs.clear()
-	for node: Node in _origin_cards.get_children():
-		node.queue_free()
-		_origin_cards.remove_child(node)
+	EditorUI.clear_origin_cards(_origin_cards)
 	var enabled: Dictionary = _enabled_map()
 	var all: Array[Dictionary] = _origins.duplicate(true)
 	var has_unassigned := false
@@ -256,51 +243,26 @@ func _refresh_origins() -> void:
 		# when its structured choices have not yet been completed.
 		if matching == 0 and missing.is_empty():
 			continue
-		var card := PanelContainer.new()
-		_origin_cards.add_child(card)
-		var line := HBoxContainer.new()
-		card.add_child(line)
-		var select := OriginButton.new()
-		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var selected := _selected_id == sid
-		select.toggle_mode = true
-		select.button_pressed = selected
-		select.clip_text = true
-		select.text = String(display_names.get(sid, item.get("name", ""))) + " (%d)" % matching
-		var description: String = _origin_description(item)
-		select.tooltip_text = description + _origin_grants_tooltip(sid) + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
-		select.pressed.connect(_select_origin.bind(sid))
-		line.add_child(select)
-		EditorUI.origin_link(self, line, sid, String(item.get("name", "")))
-		# The warning has its own button: long source names must not clip it.
+		var actions: Array[Dictionary] = []
 		if not missing.is_empty() and not sid.is_empty():
-			var warning := Button.new()
-			warning.text = "⚠"
-			warning.flat = true
-			warning.custom_minimum_size.x = 32
-			warning.add_theme_color_override("font_color", Color(1.0, 0.80, 0.33))
-			warning.tooltip_text = "Completa le scelte: " + ", ".join(missing)
-			warning.pressed.connect(_open_missing_choices.bind(sid))
-			line.add_child(warning)
-		if not sid.is_empty():
-			var active := CheckButton.new()
-			active.text = "⏻"
-			active.tooltip_text = "Disattiva temporaneamente tutti i benefici di questa origine, anche quelli obbligatori. Non elimina le concessioni."
-			active.button_pressed = bool(enabled.get(sid, false))
-			# A child origin cannot be enabled while its granting feat is muted.
-			active.disabled = not bool(enabled.get(sid, false)) and not bool(item.get("disabled", false))
-			active.toggled.connect(_toggle_origin.bind(sid))
-			line.add_child(active)
-		if selected:
-			var highlight := StyleBoxFlat.new()
-			highlight.draw_center = false
-			highlight.border_color = Color(0.40, 0.72, 0.91)
-			highlight.set_border_width_all(2)
-			highlight.set_corner_radius_all(5)
-			card.add_theme_stylebox_override("panel", highlight)
-		elif not bool(enabled.get(sid, false)):
-			card.modulate.a = 0.58
+			actions.append({
+				"text": "⚠", "warning": true,
+				"tooltip": "Completa le scelte: " + ", ".join(missing),
+				"callback": _open_missing_choices.bind(sid)
+			})
+		var active: bool = bool(enabled.get(sid, false))
+		EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": String(item.get("name", "")),
+			"text": String(display_names.get(sid, item.get("name", ""))) + " (%d)" % matching,
+			"tooltip": _origin_description(item) + _origin_grants_tooltip(sid) +
+				("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else ""),
+			"selected": _selected_id == sid, "active": active,
+			"actions": actions,
+			"on_select": _select_origin.bind(sid),
+			"on_toggle": _toggle_origin.bind(sid),
+			"toggle_disabled": not active and not bool(item.get("disabled", false)),
+			"toggle_tooltip": "Disattiva temporaneamente tutti i benefici di questa origine, anche quelli obbligatori. Non elimina le concessioni."
+		})
 
 
 func _origin_grants_tooltip(sid: String) -> String:
@@ -321,13 +283,7 @@ func _origin_grants_tooltip(sid: String) -> String:
 	for feat: Dictionary in _feats:
 		if String(feat.get("origin_id", "")) == sid:
 			chosen.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
-	var lines: PackedStringArray = []
-	if not chosen.is_empty():
-		lines.append("Scelte già effettuate:\n" + "\n".join(chosen))
-	if not automatic.is_empty():
-		lines.append("Concessioni automatiche:\n" + "\n".join(automatic))
-	return "\n\n" + "\n\n".join(lines) if not lines.is_empty() else ""
-
+	return EditorUI.grants_tooltip(chosen, automatic, PackedStringArray(), "")
 
 func _origin_description(origin: Dictionary) -> String:
 	var sid: String = String(origin.get("id", ""))

@@ -240,18 +240,11 @@ func setup(on_change: Callable) -> void:
 	var columns := HBoxContainer.new()
 	columns.name = "EditorColumns"
 	columns.add_theme_constant_override("separation", 9)
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
-	var left := _make_column(columns, "Origini", 190)
+	var left := _make_column(columns, "Origini delle difese", 190)
 	var right := _make_column(columns, "Resistenze, immunità e vulnerabilità", 255)
-	var ls := ScrollContainer.new()
-	ls.custom_minimum_size.y = 245
-	ls.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(ls)
-	ls.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(ls)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ls.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var rs := ScrollContainer.new()
 	rs.custom_minimum_size.y = 245
 	rs.mouse_force_pass_scroll_events = false
@@ -373,12 +366,13 @@ func _refresh() -> void:
 	for entry: Dictionary in _record.get("damage_defense_entries", []):
 		var sid: String = String(entry.get("origin_id", ""))
 		counts[sid] = int(counts.get(sid, 0)) + 1
-	var manual := Button.new()
-	manual.text = "Senza origine (%d)" % int(counts.get("", 0))
-	manual.toggle_mode = true
-	manual.pressed.connect(_select_origin.bind("__manual__"))
-	_origin_cards.add_child(manual)
-	_origin_buttons["__manual__"] = manual
+	_origin_buttons["__manual__"] = EditorUI.origin_card(self, _origin_cards, {
+		"id": "__manual__", "name": "Senza origine",
+		"text": "Senza origine (%d)" % int(counts.get("", 0)),
+		"tooltip": "Difese aggiunte senza un'origine specifica.",
+		"selected": _selected_origin == "__manual__", "active": true,
+		"link": false, "on_select": _select_origin.bind("__manual__")
+	})
 	OriginChoices.populate(_source_picker, _record)
 	var candidates: Array[Dictionary] = OriginChoices.available(_record)
 	var known: Dictionary = {}
@@ -394,19 +388,16 @@ func _refresh() -> void:
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or sid == OriginChoices.SPELL_PICKER_ID or not counts.has(sid):
 			continue
-		var button := Button.new()
-		button.toggle_mode = true
-		button.clip_text = true
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = "%s (%d)" % [String(display_names.get(sid, source.get("name", sid))), int(counts[sid])]
-		button.modulate.a = 1.0 if bool(source.get("active", true)) and bool(effective_origins.get(sid, true)) else 0.5
-		button.pressed.connect(_select_origin.bind(sid))
-		var origin_row := HBoxContainer.new()
-		_origin_cards.add_child(origin_row)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		origin_row.add_child(button)
-		EditorUI.origin_link(self, origin_row, sid, String(source.get("name", sid)))
-		_origin_buttons[sid] = button
+		var active: bool = bool(source.get("active", true)) and bool(effective_origins.get(sid, true))
+		_origin_buttons[sid] = EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": String(source.get("name", sid)),
+			"text": "%s (%d)" % [
+				String(display_names.get(sid, source.get("name", sid))), int(counts[sid])
+			],
+			"tooltip": String(source.get("name", sid)),
+			"selected": _selected_origin == sid, "active": active,
+			"on_select": _select_origin.bind(sid)
+		})
 	var entries: Array = _record.get("damage_defense_entries", [])
 	for i: int in range(entries.size()):
 		var entry: Dictionary = entries[i]
@@ -458,7 +449,13 @@ func _select_origin(sid: String) -> void:
 
 func _refresh_highlights() -> void:
 	for sid: String in _origin_buttons:
-		(_origin_buttons[sid] as Button).set_pressed_no_signal(sid == _selected_origin)
+		var button: Button = _origin_buttons[sid]
+		var selected: bool = sid == _selected_origin
+		button.set_pressed_no_signal(selected)
+		var panel: PanelContainer = button.get_parent().get_parent() as PanelContainer
+		if panel != null:
+			EditorUI.origin_card_state(panel, selected,
+				bool(button.get_meta("origin_active", true)))
 	var entries: Array = _record.get("damage_defense_entries", [])
 	for index: int in _entry_cards:
 		var source_id: String = String(entries[index].get("origin_id", ""))

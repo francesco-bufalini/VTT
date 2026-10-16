@@ -1,0 +1,76 @@
+name: Shared Origin Editor Cards (Godot)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "vtt/origin_editor_ui.gd"
+      - "vtt/creature_bonus_tab.gd"
+      - "vtt/creature_proficiencies_tab.gd"
+      - "vtt/creature_feats_tab.gd"
+      - "vtt/creature_trackers_tab.gd"
+      - "vtt/creature_damage_defenses_tab.gd"
+      - "tests/test_unified_origin_editor_cards.gd"
+      - ".github/workflows/origin-editor-cards.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: shared-origin-editor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  origin-cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /encounter/*.gd
+            /interaction/
+            /items/
+            /homebrew/
+            /tests/
+            /assets/items/
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Import and parse
+        shell: bash
+        run: |
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
+      - name: Run origin presentation and domain regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          for test in \
+            test_unified_origin_editor_cards.gd \
+            test_bonus_origin_highlight.gd \
+            test_pending_bonus_choices.gd \
+            test_damage_defenses.gd
+          do
+            echo "== $test =="
+            log="$(mktemp)"
+            if ! timeout 100s "$GODOT" --headless --path . --script "res://tests/$test" > "$log" 2>&1; then
+              cat "$log"
+              exit 1
+            fi
+            cat "$log"
+            grep -q "PASS:" "$log"
+            if grep -q "SCRIPT ERROR:" "$log"; then exit 1; fi
+            rm -f "$log"
+          done
