@@ -70,13 +70,13 @@ func connect_remote(host: String, session: String) -> Error:
 	return OK
 
 func disconnect_remote() -> void:
-	_close_actions()
 	_udp.close()
 	_host = ""
 	_session = ""
 	_serving = false
 	_pending_id = ""
 	_data.clear()
+	_close_actions()
 	data_changed.emit({})
 
 func get_map_data() -> Dictionary:
@@ -233,11 +233,13 @@ static func _action_frame(message: Dictionary) -> PackedByteArray:
 
 func _close_actions() -> void:
 	_action_server.stop()
-	for item: Dictionary in _actions:
-		if bool(item.client) and not bool(item.get("done", false)):
-			action_completed.emit(item.id, item.action, {"ok": false, "error": "Connessione alla partita chiusa."})
-		item.peer.disconnect_from_host()
+	var closing := _actions.duplicate()
 	_actions.clear()
+	for item: Dictionary in closing:
+		item.peer.disconnect_from_host()
+		if bool(item.client) and not bool(item.get("done", false)):
+			item.done = true
+			action_completed.emit(item.id, item.action, {"ok": false, "error": "Connessione alla partita chiusa."})
 
 func _process_actions() -> void:
 	while _action_server.is_connection_available():
@@ -248,15 +250,19 @@ func _process_actions() -> void:
 		_actions.append({"peer": peer, "client": false, "buffer": PackedByteArray(),
 			"size": -1, "sent": 0, "out": PackedByteArray(),
 			"deadline": Time.get_ticks_msec() + ACTION_TIMEOUT_MS})
-	for index: int in range(_actions.size() - 1, -1, -1):
-		var item: Dictionary = _actions[index]
+	var processing := _actions.duplicate()
+	processing.reverse()
+	for item: Dictionary in processing:
+		# Completion callbacks can close/reconnect and replace the live queue.
+		if not _actions.has(item):
+			continue
 		var peer: StreamPeerTCP = item.peer
 		peer.poll()
 		if Time.get_ticks_msec() > int(item.deadline) or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
 			if bool(item.client) and not bool(item.get("done", false)):
 				action_completed.emit(item.id, item.action, {"ok": false, "error": "Il desktop non ha risposto. Aggiorna anche VTT sul PC."})
 			peer.disconnect_from_host()
-			_actions.remove_at(index)
+			_actions.erase(item)
 			continue
 		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
 			continue
