@@ -135,7 +135,7 @@ jobs:
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
           (root / "start-preview.cmd").write_text(
-              '@echo off\ncd /d "%~dp0"\nstart "" "http://127.0.0.1:8766"\n'
+              '@echo off\ncd /d "%~dp0"\necho Apri http://127.0.0.1:8766 nel browser\n'
               'py -3 -m http.server 8766 --bind 127.0.0.1\npause\n')
           (root / "start-preview.sh").write_text(
               '#!/usr/bin/env sh\ncd "$(dirname "$0")" || exit 1\n'
