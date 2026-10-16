@@ -18,6 +18,7 @@ const FILES := {
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
+	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
 	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
