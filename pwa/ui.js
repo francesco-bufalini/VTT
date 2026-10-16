@@ -2,6 +2,7 @@ import { status, session, pair, unpair, map, action, subscribeMap } from "./clie
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
+import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
 import { exportBackup, importBackup } from "./storage.js";
 
 const app = document.querySelector("#app");
@@ -10,7 +11,7 @@ const connection = document.querySelector("#connection");
 const creatureInput = document.querySelector("#import-creature");
 const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
-const sections = new Set(["library", "dice", "chat", "session"]);
+const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
@@ -18,7 +19,8 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  hostReachable:false, castCreatureId:"", castSpellIndex:0, castLevel:1,
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1,
+  castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
@@ -88,7 +90,7 @@ async function navigate(page, id=null) {
   }
   stopSubscriptions();
   state.page=page; state.creatureId=id; state.editor=null;
-  if (page==="chat" || page==="session") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+  if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
 }
 async function render() {
@@ -97,6 +99,7 @@ async function render() {
   try {
     let html = "";
     if (state.page === "library") html = await libraryView();
+    else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "dice") html = diceView();
     else if (state.page === "chat") html = chatView();
     else if (state.page === "session") html = sessionView();
@@ -129,6 +132,47 @@ async function libraryView() {
     btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+list+
     '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
 }
+function renderCatalogRows() {
+  const filter=state.catalogQuery.trim().toLocaleLowerCase();
+  const matches=state.catalogRows.map((row,i)=>({row,i})).filter(({row})=>{
+    const string=String(row.name||"")+" "+String(row.source||"");
+    return !filter || string.toLocaleLowerCase().includes(filter);
+  }).slice(0,90);
+  return matches.length?matches.map(({row,i})=>
+    '<button type="button" class="btn full catalog-entry" data-act="catalog-open" data-index="'+i+'">'+
+    '<span>'+esc(row.name||"Senza nome")+'</span><span class="tag">'+esc(row.source||row._category||"")+'</span></button>').join("") :
+    '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>';
+}
+async function catalogView() {
+  state.catalogRows=await catalogEntries(state.catalogCategory);
+  const chosen=state.catalogRows[state.catalogSelected];
+  let detail="";
+  if(chosen){
+    const full=await detailedEntry(state.catalogCategory,chosen);
+    const description=flattenDescription(full);
+    const assignable=["feats","backgrounds","races","weapons","armor","tools",
+      "mundane_items","magic_items","items"].includes(chosen._category||state.catalogCategory);
+    detail=panel("Dettagli · "+String(full.name||""),'<p class="hint">'+
+      esc(full.source||"Fonte sconosciuta")+'</p><p class="notable catalog-description">'+
+      esc(description||"Descrizione non disponibile nell'archivio locale.")+'</p>'+
+      (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
+      (assignable && (state.cachedCreatures||[]).length?
+      '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
+      state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
+      '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
+      '<p class="hint">La PWA salva il riferimento; i bonus delle origini vengono calcolati solo nel motore Godot.</p>':""));
+  }
+  return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
+    panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
+      CATALOG_CATEGORIES.map(([id,label])=>
+      '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
+      '</select></label><label>Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
+      '" placeholder="Nome o fonte"></label></div><p class="hint">'+
+      state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
+      '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
+    detail;
+}
+
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
@@ -522,6 +566,38 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==="catalog-open"){
+    state.catalogSelected=Number(target.dataset.index);
+    await render();return;
+  }
+  if(act==="catalog-assign"){
+    const cId=document.querySelector("#catalog-creature")?.value;
+    const entry=state.catalogRows[state.catalogSelected];
+    const stored=await loadCreature(cId);
+    if(!stored||!entry)throw new Error("Seleziona contenuto e creatura.");
+    const editor=await openCreatureEditor(cId),sheet=editor.read();
+    const category=entry._category;
+    if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
+      const item=structuredClone(entry);
+      delete item._category;delete item._homebrew;
+      item.instance_id="pwa_"+crypto.randomUUID();
+      item.quantity=1;
+      await editor.update({inventory:[...(sheet.inventory||[]),item]});
+    }else if(category==="feats"){
+      const feat={id:entry.id||"",name:entry.name,source:entry.source||""};
+      const current=Array.isArray(sheet.feats_catalog)?sheet.feats_catalog:[];
+      if(current.some(row=>row.id===feat.id&&row.name===feat.name&&row.source===feat.source))
+        throw new Error("Talento già presente in questa scheda.");
+      await editor.update({feats_catalog:[...current,feat]});
+    }else if(category==="backgrounds"){
+      await editor.update({background:entry.name,background_source:entry.source||""});
+    }else if(category==="races"){
+      await editor.update({species:entry.name,species_source:entry.source||""});
+    }else throw new Error("Categoria non assegnabile alla scheda.");
+    state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    message("Contenuto aggiunto. Eventuali bonus vengono elaborati dalla versione Godot.");
+    return;
+  }
   if(act==="refresh"){await render();return;}
   if(act==="create"){
     const row=await createCreature("character","Nuovo personaggio");
@@ -698,6 +774,12 @@ function listen(){
   const editable = "[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.id==="catalog-search"){
+      state.catalogQuery=target.value;
+      const results=document.querySelector("#catalog-results");
+      if(results)results.innerHTML=renderCatalogRows();
+      return;
+    }
     if(!target?.matches("[data-field],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(inputTimers.get(target));
@@ -709,6 +791,10 @@ function listen(){
   });
   app.addEventListener("change",e=>{
     const target=e.target;
+    if(target?.id==="catalog-category"){
+      state.catalogCategory=target.value;state.catalogSelected=-1;
+      render().catch(error=>message(errorMessage(error),true));return;
+    }
     if(target?.id==="cast-creature"){
       state.castCreatureId=target.value;state.castSpellIndex=0;
       app.innerHTML=sessionView();return;
