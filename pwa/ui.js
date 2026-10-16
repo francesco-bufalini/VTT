@@ -460,7 +460,18 @@ function startMap() {
   state.stopMap?.();
   state.stopMap = subscribeMap(data=>{
     if(state.page!=="session") return;
+    const recovered=!state.online;
     state.map = data;
+    state.online=true;
+    state.hostReachable=true;
+    if(recovered){
+      syncNav();
+      // The native board can restart while the PWA is open. Refresh its
+      // session label without interrupting the recovered tactical view.
+      session().then(info=>{
+        if(state.page==="session"&&state.paired)state.session=info;
+      }).catch(()=>{});
+    }
     const entries=data?.tokens||[];
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
@@ -471,10 +482,23 @@ function startMap() {
       window.scrollTo(0,scrollY);
     }
   },error=>{
-    state.online=false; syncNav();
-    // Stale map must not allow actions when the host is lost.
-    state.map=null; state.stopMap?.(); state.stopMap=null;
-    if(state.page==="session") { app.innerHTML=sessionView(); message(errorMessage(error),true); }
+    if(state.page!=="session")return;
+    const wasOnline=state.online;
+    state.online=false;
+    state.hostReachable=!!error?.status;
+    // Never leave stale token controls on screen. A temporary 503 or
+    // network loss is recoverable: subscribeMap continues retrying.
+    state.map=null;
+    state.tokenId="";
+    if(error?.status===401){
+      state.paired=false;state.session=null;
+      state.stopMap?.();state.stopMap=null;
+      render().catch(e=>message(errorMessage(e),true));
+      return;
+    }
+    syncNav();
+    app.innerHTML=sessionView();
+    if(wasOnline)message("Connessione persa. Riconnessione automatica in corso.");
   },2500);
 }
 async function fetchChat() {
@@ -985,7 +1009,13 @@ function listen(){
       const active=document.activeElement;
       if(active?.matches?.("[data-field],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
-    } else if(state.page==="session"&&state.paired) refreshConnection(true);
+    } else if(state.page==="session") {
+      refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
+    }
+  });
+  window.addEventListener("online",()=>{
+    if(state.page==="session")
+      refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
