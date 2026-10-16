@@ -1630,7 +1630,8 @@ func _build_ui() -> void:
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Elimina creatura"
 	_delete_dialog.confirmed.connect(_delete_selected_creature)
-	add_child(_delete_dialog)
+	# Keep modal deletion within the board UI, not the sheet node.
+	ui_root.add_child(_delete_dialog)
 	_build_automatic_dialog()
 	_build_hp_delta_dialog()
 	_build_second_form_dialogs()
