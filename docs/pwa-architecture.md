@@ -31,7 +31,9 @@ iPhone / Android (Safari/Chrome PWA)
 ```
 
 The native desktop **automatically starts** the PWA HTTP listener on
-`127.0.0.1:8765` **when `dnd_base.tscn` opens**, and **closes the socket**
+`127.0.0.1:8765` **when a VTT tactical board opens**, including
+`dnd_base.tscn` and derived encounters such as
+`encounter/scontro_contro_kaos.tscn`, and **closes the socket**
 as the scene exits (including switching away from it). `PwaHost` remains an
 autoload to watch the scene lifecycle, but does not expose the HTTP server
 outside the board. This works in exported desktop VTT and when running
