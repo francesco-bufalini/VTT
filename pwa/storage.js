@@ -98,7 +98,10 @@ export class LocalArchive {
     const done = complete(tx);
     const store = tx.objectStore("creatures");
     const previous = await result(store.get(key));
-    if (previous && Number(previous.transfer_revision || 0) !== Number(creature.transfer_revision || 0)) {
+    if (previous && (
+      (previous.owner_id && previous.owner_id !== owner) ||
+      Number(previous.transfer_revision || 0) !== Number(creature.transfer_revision || 0)
+    )) {
       tx.abort(); await done.catch(() => {});
       throw new Error("Stale transfer revision");
     }
@@ -192,26 +195,35 @@ export class LocalArchive {
   async importBackup(backup, { overwrite = false } = {}) {
     if (backup?.format !== "vtt_pwa_backup_v1" || backup.version !== 1 ||
         !backup.stores || typeof backup.stores !== "object") throw new TypeError("Invalid backup");
-    const tx = this.db.transaction(STORES, "readwrite");
-    const done = complete(tx);
+    // Validate/decode everything before opening the write transaction:
+    // failed base64 or malformed entries must never leave a partial recovery.
+    const prepared = {};
     for (const name of STORES) {
+      prepared[name] = [];
       const rows = backup.stores[name] || [];
-      if (!Array.isArray(rows) || rows.length > 50000) {
-        tx.abort(); await done.catch(() => {}); throw new TypeError("Invalid backup entries");
-      }
-      const store = tx.objectStore(name);
+      if (!Array.isArray(rows) || rows.length > 50000)
+        throw new TypeError("Invalid backup entries");
       for (const row of rows) {
-        if (!valid(row?.key)) {
-          tx.abort(); await done.catch(() => {}); throw new TypeError("Invalid backup key");
-        }
-        if (!overwrite && await result(store.get(row.key)) !== undefined) continue;
+        if (!valid(row?.key) || (!Object.hasOwn(row, "value") && typeof row.base64 !== "string"))
+          throw new TypeError("Invalid backup row");
         let value = row.value;
         if (typeof row.base64 === "string") {
           const binary = atob(row.base64);
           value = new Blob([Uint8Array.from(binary, c => c.charCodeAt(0))],
             { type: row.mime || "application/octet-stream" });
         }
-        store.put(value, row.key);
+        if (name === "creatures") checkCreature(value);
+        if (name === "homebrew") checkDefinition(value);
+        prepared[name].push({ key: row.key, value });
+      }
+    }
+    const tx = this.db.transaction(STORES, "readwrite");
+    const done = complete(tx);
+    for (const name of STORES) {
+      const store = tx.objectStore(name);
+      for (const row of prepared[name]) {
+        if (!overwrite && await result(store.get(row.key)) !== undefined) continue;
+        store.put(row.value, row.key);
       }
     }
     await done;
