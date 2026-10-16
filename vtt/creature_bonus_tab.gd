@@ -405,9 +405,7 @@ func _refresh() -> void:
 
 
 func _refresh_origins() -> void:
-	for child: Node in _origin_cards.get_children():
-		_origin_cards.remove_child(child)
-		child.queue_free()
+	EditorUI.clear_origin_cards(_origin_cards)
 	var origins: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
 	origins.append_array(_origins)
 	var pending: Dictionary = {}
@@ -464,64 +462,39 @@ func _refresh_origins() -> void:
 				count += 1
 		if count == 0 and not pending.has(sid):
 			continue
-		var cell := PanelContainer.new()
-		_origin_cards.add_child(cell)
-		var line := HBoxContainer.new()
-		cell.add_child(line)
-		var select := OriginButton.new()
-		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		select.toggle_mode = true
-		select.button_pressed = _selected_origin == sid
-		select.clip_text = true
 		var origin_title: String = String(origin.get("name", _origin_label(sid)))
-		select.text = String(display_names.get(sid, origin_title)) + (" (%d)" % count if count > 0 else " · da completare")
-		select.tooltip_text = _origin_description(sid)
+		var tooltip: String = _origin_description(sid)
+		var actions: Array[Dictionary] = []
 		if pending.has(sid):
-			select.tooltip_text += "\n\n⚠ Scegli la caratteristica da aumentare"
-		select.pressed.connect(func() -> void:
-			_selected_origin = sid
-			_refresh()
-		)
-		line.add_child(select)
-		EditorUI.origin_link(self, line, sid, origin_title)
-		if pending.has(sid):
-			var warning := Button.new()
-			warning.text = "⚠"
-			warning.flat = true
-			warning.custom_minimum_size.x = 32
-			warning.add_theme_color_override("font_color", Color(1.0, 0.80, 0.33))
-			warning.tooltip_text = "Scegli la caratteristica per il bonus +%d di %s" % [
-				int((pending[sid] as Dictionary).get("amount", 1)),
-				String((pending[sid] as Dictionary).get("name", "Talento"))
-			]
-			warning.pressed.connect(_open_feat_ability_choice.bind(sid))
-			line.add_child(warning)
+			tooltip += "\n\n⚠ Scegli la caratteristica da aumentare"
+			actions.append({
+				"text": "⚠", "warning": true,
+				"tooltip": "Scegli la caratteristica per il bonus +%d di %s" % [
+					int((pending[sid] as Dictionary).get("amount", 1)),
+					String((pending[sid] as Dictionary).get("name", "Talento"))
+				],
+				"callback": _open_feat_ability_choice.bind(sid)
+			})
 		elif editable_choices.has(sid):
-			var change_choice := Button.new()
-			change_choice.text = "✎"
-			change_choice.flat = true
-			change_choice.custom_minimum_size.x = 30
-			change_choice.tooltip_text = "Modifica la caratteristica che riceve il bonus del talento."
-			change_choice.pressed.connect(_open_feat_ability_choice.bind(sid))
-			line.add_child(change_choice)
-		if not sid.is_empty():
-			var enable := CheckButton.new()
-			enable.text = "⏻"
-			enable.button_pressed = bool(enabled.get(sid, not bool(origin.get("disabled", false))))
-			enable.disabled = not enable.button_pressed and not bool(origin.get("disabled", false))
-			enable.tooltip_text = "Attiva o disattiva l'intera origine senza perdere i bonus."
-			enable.toggled.connect(_toggle_origin.bind(sid))
-			line.add_child(enable)
-		if _selected_origin == sid:
-			var border := StyleBoxFlat.new()
-			border.draw_center = false
-			border.border_color = Color(0.40, 0.72, 0.91)
-			border.set_border_width_all(2)
-			border.set_corner_radius_all(5)
-			cell.add_theme_stylebox_override("panel", border)
-		elif not bool(enabled.get(sid, not bool(origin.get("disabled", false)))):
-			cell.modulate.a = 0.58
+			actions.append({
+				"text": "✎",
+				"tooltip": "Modifica la caratteristica che riceve il bonus del talento.",
+				"callback": _open_feat_ability_choice.bind(sid)
+			})
+		var active: bool = bool(enabled.get(sid, not bool(origin.get("disabled", false))))
+		EditorUI.origin_card(self, _origin_cards, {
+			"id": sid, "name": origin_title,
+			"text": String(display_names.get(sid, origin_title)) +
+				(" (%d)" % count if count > 0 else " · da completare"),
+			"tooltip": tooltip, "selected": _selected_origin == sid,
+			"active": active, "actions": actions,
+			"on_select": func() -> void:
+				_selected_origin = sid
+				_refresh(),
+			"on_toggle": _toggle_origin.bind(sid),
+			"toggle_disabled": not active and not bool(origin.get("disabled", false)),
+			"toggle_tooltip": "Attiva o disattiva l'intera origine senza perdere i bonus."
+		})
 
 
 func _refresh_bonuses() -> void:
