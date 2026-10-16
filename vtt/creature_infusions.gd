@@ -3,6 +3,7 @@ extends RefCounted
 # Artificer infusions use the existing optional_features_catalog, owned item
 # instances, attunement and structured item-bonus pipeline.
 # Eligibility comes from 5etools' typed optional-feature prerequisites.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const INDEX_PATH := "res://vtt/data/artificer_infusions_5etools.json"
@@ -147,7 +148,9 @@ static func replicable(option: Dictionary, item: Dictionary, level: int) -> bool
 		return false
 	var name: String = String(item.get("name", "")).strip_edges()
 	for raw: Variant in option.get("replicable_items", []):
-		if raw is Dictionary and String(raw.get("name", "")).nocasecmp_to(name) == 0 and level >= int(raw.get("level", 99)):
+		if raw is Dictionary and String(raw.get("name", "")).nocasecmp_to(name) == 0 and BenefitRequirements.allows({},
+			BenefitRequirements.level_gate(int(raw.get("level", 99)), "class",
+				"Artificer", "TCE"), level):
 			return true
 	return String(item.get("rarity", "")).to_lower() == "common" and String(item.get("type", "")).to_upper() not in ["P", "SC"]
 
@@ -166,10 +169,12 @@ static func numeric_bonuses(record: Dictionary, owned: Dictionary) -> Dictionary
 	var level: int = int(infusion.get("level", 2))
 	if String(infusion.get("creator_id", "")) == String(record.get("id", "")) and artificer_level(record) >= 2:
 		level = artificer_level(record)
-	if level < int(option.get("min_level", 2)):
+	if not BenefitRequirements.accepts(record, option, "class",
+		"Artificer", "TCE", "min_level", 2, level):
 		return {}
-	var upgrade: int = int((bonus as Dictionary).get("upgrade_level", 99))
-	var multiplier := 2 if level >= upgrade else 1
+	var multiplier := 2 if BenefitRequirements.accepts(record,
+		bonus as Dictionary, "class", "Artificer", "TCE",
+		"upgrade_level", 99, level) else 1
 	var result: Dictionary = {}
 	for key: String in ["bonus_ac", "bonus_weapon", "bonus_spell_attack"]:
 		if (bonus as Dictionary).has(key):

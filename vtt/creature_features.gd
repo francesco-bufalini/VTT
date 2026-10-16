@@ -2,6 +2,7 @@ extends RefCounted
 
 # UI- and board-independent trait projection from 5etools/homebrew records.
 # Both the desktop traits view and tracker derivation use this one service.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
@@ -158,9 +159,11 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 					if not raw_section is Dictionary:
 						continue
 					var section: Dictionary = raw_section
-					var threshold: int = maxi(1, int(section.get("min_level", 1)))
-					if threshold > int(record.get("level", 1)):
+					var gate: Dictionary = BenefitRequirements.normalize(section,
+						"character", "", "", "min_level", 1)
+					if not BenefitRequirements.allows(record, gate):
 						continue
+					var threshold: int = maxi(1, int(gate.get("min_level", 1)))
 					var detail: Dictionary = section.duplicate(true)
 					detail["inactive"] = bool(owned.get("disabled", false))
 					detail["source"] = feat_source
@@ -225,7 +228,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
 			_append_named_entries(result, detailed.get("entries", []),
 				"Oggetto · " + item_label, "item:" + item_id,
-				String(definition.get("source", "")), 4, inactive)
+				String(definition.get("source", "")), 4, inactive, record)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
@@ -282,7 +285,9 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			if not class_book.is_empty() and String(feature.get("class_source", "")) != class_book:
 				continue
 			var level: int = int(feature.get("level", 0))
-			if level < 1 or level > class_level:
+			if level < 1 or not BenefitRequirements.allows(record,
+				BenefitRequirements.level_gate(level, "class", class_label, class_book),
+				class_level):
 				continue
 			_append(result, feature, level, class_origin, class_key, class_label, class_book)
 		var subclass_name: String = String(definition.get("subclass", ""))
@@ -316,7 +321,9 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			if not subclass_book.is_empty() and String(feature.get("subclass_source", "")) != subclass_book:
 				continue
 			var level: int = int(feature.get("level", 0))
-			if level < 1 or level > class_level:
+			if level < 1 or not BenefitRequirements.allows(record,
+				BenefitRequirements.level_gate(level, "class", class_label, class_book),
+				class_level):
 				continue
 			_append(result, feature, level, subclass_origin, subclass_key, class_label, class_book)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
@@ -341,7 +348,8 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 # structured bonus/feat fields independently from the parent description.
 static func _append_named_entries(
 	output: Array[Dictionary], value: Variant, origin: String, origin_key: String,
-	book: String, rank: int = 2, inactive: bool = false
+	book: String, rank: int = 2, inactive: bool = false,
+	record: Dictionary = {}
 ) -> void:
 	if not value is Array:
 		return
@@ -356,11 +364,19 @@ static func _append_named_entries(
 			index += 1
 			continue
 		var feature_data: Dictionary = data.duplicate(true)
+		# Optional typed thresholds let item subtraits become available later,
+		# without hiding the parent item or interpreting prose as a mechanic.
+		var gate: Dictionary = BenefitRequirements.normalize(data)
+		if not record.is_empty() and not BenefitRequirements.allows(record, gate):
+			index += 1
+			continue
+		feature_data["requirements"] = gate
 		feature_data["id"] = String(data.get("id", "section-%d" % index))
 		feature_data["entries"] = data.get("entries", data.get("entry", ""))
 		feature_data["source"] = book
 		feature_data["inactive"] = inactive or bool(data.get("inactive", false))
-		_append(output, feature_data, 1, origin, origin_key, "", "", rank)
+		_append(output, feature_data, maxi(1, int(gate.get("min_level", 0))),
+			origin, origin_key, "", "", rank)
 		index += 1
 
 
@@ -395,8 +411,13 @@ static func _append(
 		category = "incantesimi"
 	elif origin_key.begins_with("monster|"):
 		category = "mostro"
+	var gate_scope: String = "class" if origin_key.begins_with("class|") else "character"
+	var gate: Dictionary = BenefitRequirements.normalize(
+		feature, gate_scope, class_label, class_book, "min_level", level
+	)
 	output.append({
 		"key": key, "name": name, "level": level, "rank": rank, "category": category,
+		"requirements": gate,
 		"inactive": bool(feature.get("inactive", false)),
 		"feats": feature.get("feats", []),
 		"origin": origin, "origin_key": origin_key,

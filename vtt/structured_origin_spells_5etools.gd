@@ -4,6 +4,7 @@ extends RefCounted
 # No natural-language heuristics. Never treats "expanded" or plain prepared
 # leveled spells as freely castable; those still require ordinary spell slots.
 const PATH := "res://vtt/data/additional_spells_5etools.json"
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -232,7 +233,10 @@ static func _append_block(output: Dictionary, origin: Dictionary, raw: Variant, 
 			var threshold: int = _stage_level(stage)
 			if stage.begins_with("s") or (stage != "_" and not stage.is_valid_int()):
 				continue
-			if int(origin.get("level", 0)) < threshold:
+			# A numeric 5etools stage is a character-level requirement.
+			# Slot-stage keys (s1, s2...) are excluded above.
+			if not BenefitRequirements.allows(record,
+				BenefitRequirements.level_gate(threshold, "character")):
 				continue
 			_walk_usage(output, source, (progression as Dictionary)[stage], mode, stage, block_index,
 				String(record.get("rules_version", "2014")))

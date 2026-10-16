@@ -1,6 +1,7 @@
 extends RefCounted
 # Curated, build-time Fight Club XML supplement. No runtime network access.
 # Complements vtt/data/class_mechanics_5etools.json; never replaces 5etools.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const PATH := "res://vtt/data/class_resource_overrides.json"
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 static var _loaded := false
@@ -79,11 +80,10 @@ static func for_class(
 			var required_subclass: String = String(entry.get("subclass", ""))
 			if not required_subclass.is_empty() and _subclass_key(required_subclass) != _subclass_key(subclass_name):
 				continue
-			var chosen: Dictionary = {}
-			for raw_step: Variant in entry.get("steps", []):
-				if raw_step is Dictionary and int(raw_step.get("level", 0)) <= class_level:
-					if chosen.is_empty() or int(raw_step.get("level", 0)) >= int(chosen.get("level", 0)):
-						chosen = raw_step
+			var chosen: Dictionary = BenefitRequirements.highest_step(
+				record, entry.get("steps", []), "class",
+				klass_name, class_source, class_level
+			)
 			if chosen.is_empty():
 				continue
 			var computed: Dictionary = evaluate_max(
@@ -97,6 +97,7 @@ static func for_class(
 			computed["column"] = String(entry.get("column", name))
 			computed["origin"] = String(entry.get("origin_feature", name))
 			computed["subclass"] = required_subclass
+			computed["origin_feature_key"] = String(entry.get("origin_feature_key", ""))
 			computed["recharge"] = String(chosen.get("reset", "manual"))
 			result.append(computed)
 	return result
