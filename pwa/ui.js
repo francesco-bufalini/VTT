@@ -1,4 +1,4 @@
-import { status, session, pair, unpair, map, action, subscribeMap } from "./client.js";
+import { status, session, pair, unpair, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -352,11 +352,11 @@ function sessionView() {
     state.hostReachable?"Desktop attivo · nessuna partita":"Desktop non raggiungibile")+'</span>'+
     '<button type="button" class="btn small" data-act="check">Aggiorna</button></div>'+
     (state.session?'<p class="hint">Partita '+esc(state.session.session||"—")+'</p>':"");
-  const pairing = '<form id="pair-form" class="stack"><label>Codice di associazione desktop'+
-    '<input id="pair-secret" type="password" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" autocomplete="off" placeholder="Token di 64 caratteri" required></label>'+
+  const pairing = '<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
+    '<input id="pair-secret" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda questo desktop sul dispositivo</label>'+
     '<button type="submit" class="btn primary full">Collega alla partita</button>'+
-    '<p class="hint">Sul PC con VTT aperto premi <strong>Ctrl + Shift + P</strong>: compare il codice da copiare. Non è il numero 1–5 della partita.</p></form>';
+    '<p class="hint">Sul PC con VTT aperto premi <strong>Ctrl + Shift + P</strong>: inquadra il QR con la fotocamera del telefono oppure inserisci i 16 caratteri mostrati. Il codice vale 5 minuti e si usa una sola volta.</p></form>';
   let html = header("Connessione", "La tua partita", "Il PC con VTT nativo aperto ospita la partita e aggiorna automaticamente questa PWA.")+
     panel("Desktop",statusMarkup+(state.paired?'<div class="actions">'+
       btn("disconnect","Dissocia desktop","danger")+'</div>':pairing));
@@ -932,7 +932,23 @@ export async function mount(){
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
+  const qrCode = takeQrPairCode();
   await refreshConnection(true);
+  if(qrCode){
+    try {
+      state.session=await pair(qrCode,{remember:true});
+      state.paired=true;state.online=true;state.page="session";
+      message("Telefono associato tramite QR.");
+    }catch(error){
+      state.page="session";state.qrCode=qrCode;
+      message("QR non valido o scaduto: "+errorMessage(error),true);
+    }
+  }
   state.cachedCreatures=(await listCreatures()).map(row=>({name:row.creature.name,id:row.creature.id}));
   await render();
+  if(state.qrCode && state.page==="session"){
+    const input=document.querySelector("#pair-secret");
+    if(input)input.value=state.qrCode;
+    state.qrCode="";
+  }
 }
