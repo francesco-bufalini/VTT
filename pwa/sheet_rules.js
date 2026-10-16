@@ -54,7 +54,7 @@ export function requirementsAllow(record,row){
 }
 export function parseArithmetic(expression,variable){
   const raw=String(expression??"").trim().toLowerCase();
-  if(!raw||/\bd\d+\b/.test(raw)||!/^[a-z0-9_ .+*/()-]+$/.test(raw))
+  if(!raw||/\d*d\d+\b/.test(raw)||!/^[a-z0-9_ .+*/()-]+$/.test(raw))
     throw Error("Formula aritmetica non valida");
   const tokens=raw.match(/(?:\d+(?:\.\d*)?|\.\d+)|[a-z_][a-z_0-9]*|[()+*/-]/g)||[];
   if(tokens.join("").toLowerCase()!==raw.replace(/\s+/g,""))throw Error("Espressione non valida");
