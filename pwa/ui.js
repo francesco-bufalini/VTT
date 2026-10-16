@@ -19,7 +19,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1,
+  hostReachable:false, catalogCategory:"spells", catalogQuery:"", catalogRows:[], catalogSelected:-1,
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -150,7 +150,7 @@ async function catalogView() {
   if(chosen){
     const full=await detailedEntry(state.catalogCategory,chosen);
     const description=flattenDescription(full);
-    const assignable=["feats","backgrounds","races","weapons","armor","tools",
+    const assignable=["spells","feats","backgrounds","races","weapons","armor","tools",
       "mundane_items","magic_items","items"].includes(chosen._category||state.catalogCategory);
     detail=panel("Dettagli · "+String(full.name||""),'<p class="hint">'+
       esc(full.source||"Fonte sconosciuta")+'</p><p class="notable catalog-description">'+
@@ -603,7 +603,15 @@ async function handleAction(target){
     if(!stored||!entry)throw new Error("Seleziona contenuto e creatura.");
     const editor=await openCreatureEditor(cId),sheet=editor.read();
     const category=entry._category;
-    if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
+    if(category==="spells"){
+      const spell={id:String(entry.id||""),name:entry.name,source:entry.source||"",
+        level:Number(entry.level)||0};
+      if(!spell.id)throw new Error("Incantesimo privo di identificativo VTT.");
+      const known=Array.isArray(sheet.spells)?sheet.spells:[];
+      if(known.some(row=>String(typeof row==="string"?row:row?.id)===spell.id))
+        throw new Error("Incantesimo già presente in questa scheda.");
+      await editor.update({spells:[...known,spell]});
+    }else if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
       const item=structuredClone(entry);
       delete item._category;delete item._homebrew;
       item.instance_id="pwa_"+crypto.randomUUID();
