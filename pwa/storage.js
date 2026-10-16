@@ -19,10 +19,20 @@ function checkCreature(creature) {
   if (!creature || !["character", "monster"].includes(creature.kind) ||
       !valid(creature.id) || !valid(creature.name)) throw new TypeError("Invalid creature");
 }
+// Keep these names synchronized with content_catalog.gd CATEGORIES.
+const HOME_CATEGORIES = new Set(["items", "documents", "subclasses", "subclass_features",
+  "monsters", "races", "classes", "spells", "conditions", "diseases", "effects",
+  "class_features", "species_traits", "feats", "backgrounds", "optional_features"]);
 function checkDefinition(definition) {
-  if (!definition || !/^homebrew:[a-z0-9_-]+:[a-z0-9_-]+:[a-z0-9_-]+$/.test(definition.id) ||
-      !valid(definition.name) || !definition.data ||
-      typeof definition.data !== "object" || Array.isArray(definition.data)) {
+  const parts = typeof definition?.id === "string" ? definition.id.split(":") : [];
+  if (parts.length !== 4 || parts[0] !== "homebrew" ||
+      !/^[a-z0-9][a-z0-9_-]{0,47}$/.test(parts[1]) ||
+      !HOME_CATEGORIES.has(parts[2]) ||
+      !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(parts[3]) ||
+      !valid(definition.name) || definition.name.length > 160 ||
+      !definition.data || typeof definition.data !== "object" ||
+      Array.isArray(definition.data) ||
+      new Blob([JSON.stringify(definition)]).size > 2 * 1024 * 1024 - 512) {
     throw new TypeError("Invalid homebrew definition");
   }
 }
