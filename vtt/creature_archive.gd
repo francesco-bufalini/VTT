@@ -150,6 +150,33 @@ func _stored(kind: String, id: String) -> Dictionary:
 	return {}
 
 
+# A batch is a collection of the existing portable single-creature envelopes.
+# Validate every member before mutating the local archive, then import each
+# as an independently owned copy (matching desktop single-sheet semantics).
+func import_export_batch(payload: Dictionary) -> Error:
+	if payload.get("format") != "vtt_creature_batch_export_v1" or payload.get("version") != 1:
+		return ERR_INVALID_DATA
+	var entries: Variant = payload.get("entries", [])
+	if not entries is Array or entries.is_empty() or entries.size() > 200:
+		return ERR_INVALID_DATA
+	for item: Variant in entries:
+		if not item is Dictionary:
+			return ERR_INVALID_DATA
+		var value: Dictionary = item as Dictionary
+		if value.get("format") != "vtt_creature_export_v1" or value.get("version") != 1:
+			return ERR_INVALID_DATA
+		if not value.get("creature") is Dictionary:
+			return ERR_INVALID_DATA
+		var creature: Dictionary = value.creature
+		if String(creature.get("name", "")).is_empty() or creature.get("kind") not in ["character", "monster"]:
+			return ERR_INVALID_DATA
+	for item: Variant in entries:
+		var result := import_export_copy(item as Dictionary)
+		if result != OK:
+			return result
+	return OK
+
+
 # Portable exports create an independent local copy, never an ownership transfer.
 func import_export_copy(payload: Dictionary) -> Error:
 	if payload.get("format") != "vtt_creature_export_v1" or payload.get("version") != 1 or not payload.get("creature") is Dictionary:
