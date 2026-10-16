@@ -251,7 +251,9 @@ export async function exportBackup() {
 }
 
 // Validate the whole backup (including attachment checksums) BEFORE writing anything.
-export async function importBackup(file) {
+// Default merge adds missing IDs and preserves existing edits.
+// Explicit overwrite is only for deliberate restoration.
+export async function importBackup(file, { overwrite = false } = {}) {
   if (!(file instanceof Blob) || file.size > MAX_IMPORT_BYTES) {
     throw new Error("Invalid or oversized VTT backup");
   }
@@ -268,10 +270,14 @@ export async function importBackup(file) {
     if (await sha256(blob) !== item.digest) throw new Error("Attachment checksum mismatch");
     attachments.push({ digest: item.digest, blob, mime: blob.type, bytes: blob.size });
   }
+  const archivedDigests = new Set(attachments.map(entry => entry.digest));
   for (const item of content.records) {
     requiredString(item.scope, "scope");
     requiredString(item.type, "type");
     requiredString(item.id, "id");
+    if (item.digest && !archivedDigests.has(item.digest)) {
+      throw new Error("Backup contains a missing attachment reference");
+    }
   }
   for (const item of content.outbox) {
     requiredString(item.id, "id");
@@ -282,8 +288,24 @@ export async function importBackup(file) {
   try {
     const tx = db.transaction(["records", "blobs", "outbox"], "readwrite");
     for (const entry of attachments) tx.objectStore("blobs").put(entry);
-    for (const record of content.records) tx.objectStore("records").put(record);
-    for (const event of content.outbox) tx.objectStore("outbox").put(event);
+    const records = tx.objectStore("records");
+    const outbox = tx.objectStore("outbox");
+    for (const record of content.records) {
+      if (overwrite) {
+        records.put(record);
+      } else {
+        const check = records.get([record.scope, record.type, record.id]);
+        check.onsuccess = () => { if (!check.result) records.put(record); };
+      }
+    }
+    for (const event of content.outbox) {
+      if (overwrite) {
+        outbox.put(event);
+      } else {
+        const check = outbox.get(event.id);
+        check.onsuccess = () => { if (!check.result) outbox.put(event); };
+      }
+    }
     await completed(tx);
   } finally {
     db.close();
