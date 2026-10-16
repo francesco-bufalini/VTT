@@ -35,7 +35,12 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 
 func run() -> void:
 	var host := root.get_node_or_null("/root/PwaHost")
-	assert(host != null and (host.get("_server") as TCPServer).is_listening(), "Desktop PWA autoload inactive")
+	assert(host != null, "Desktop PWA autoload missing")
+	# The bridge is intentionally disabled without a playable board scene.
+	assert(not (host.get("_server") as TCPServer).is_listening(),
+		"PWA should not bind its HTTP port before opening the board")
+	assert(host.call("_start_listener") == OK, "Manual localhost test fixture could not bind")
+	assert((host.get("_server") as TCPServer).is_listening(), "HTTP fixture not listening")
 	var page := await http("GET", "/")
 	assert(page.begins_with("HTTP/1.1 200"))
 	assert(page.contains("VTT Mobile"))
@@ -65,5 +70,8 @@ func run() -> void:
 	assert((await http("GET", "/api/missing")).begins_with("HTTP/1.1 404"))
 	assert(FileAccess.file_exists("res://pwa/icon-192.png"))
 	assert(FileAccess.file_exists("res://pwa/icon-512.png"))
-	print("PASS: desktop PWA static assets, status, API authorization and fixed-path routing")
+		host.call("_stop_listener")
+	assert(not (host.get("_server") as TCPServer).is_listening(),
+		"PWA port must be closed on board shutdown")
+	print("PASS: desktop PWA static assets, status, API authorization, scene-scope shutdown and fixed-path routing")
 	quit()
