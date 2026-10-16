@@ -293,13 +293,7 @@ func _origin_grants_tooltip(sid: String) -> String:
 	for feat: Dictionary in _feats:
 		if String(feat.get("origin_id", "")) == sid:
 			chosen.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
-	var lines: PackedStringArray = []
-	if not chosen.is_empty():
-		lines.append("Scelte già effettuate:\n" + "\n".join(chosen))
-	if not automatic.is_empty():
-		lines.append("Concessioni automatiche:\n" + "\n".join(automatic))
-	return "\n\n" + "\n\n".join(lines) if not lines.is_empty() else ""
-
+	return EditorUI.grants_tooltip(chosen, automatic, PackedStringArray(), "")
 
 func _origin_description(origin: Dictionary) -> String:
 	var sid: String = String(origin.get("id", ""))
