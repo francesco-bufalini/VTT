@@ -7,7 +7,9 @@ import { listCreatures, loadCreature, createCreature, importCreatureFile, export
 import { TacticalViewer } from "./tactical_view.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
-import { exportBackup, importBackup } from "./storage.js";
+import { exportBackup, importBackup, getRecord } from "./storage.js";
+import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
+import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -26,7 +28,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -45,6 +47,7 @@ function acceptSession(info){
   state.session=info;
 }
 const pendingFieldTimers = new Map();
+let pendingDocumentWrites=Promise.resolve();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
   for (const target of targets) {
@@ -52,6 +55,7 @@ async function flushPendingFields() {
     pendingFieldTimers.delete(target);
     if (target.isConnected && state.editor) await handleField(target);
   }
+  await pendingDocumentWrites;
   if (state.editor) await state.editor.flush();
 }
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
@@ -244,11 +248,25 @@ async function editorView() {
   }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
-  case "inventory":
-    body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
-      (Array.isArray(c.inventory) ? c.inventory.map((item,index) => inventoryRow(item,index)).join("") : "")+
-      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+btn("add-item","Crea oggetto locale")+'</div>');
+  case "inventory": {
+    const inventory=Array.isArray(c.inventory)?c.inventory:[];
+    const ordinary=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+    const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
+    const definitions=await Promise.all(documents.map(({item})=>
+      getRecord("global","homebrew",String(item.id||""))));
+    body=panel("Oggetti nell’inventario",
+      '<p class="hint">Gli oggetti di catalogo mantengono le loro definizioni; le copie hanno quantità ed equipaggiamento propri.</p>'+
+      (ordinary.length?ordinary.map(({item,index})=>inventoryRow(item,index)).join(""):
+        '<p class="hint">Nessun oggetto.</p>')+
+      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
+      btn("add-item","Crea oggetto locale")+'</div>')+
+      panel("Documenti",'<p class="hint">Documenti homebrew condivisi fra le copie della scheda. Stile e data appartengono alla singola copia.</p>'+
+      (documents.length?documents.map(({item,index},i)=>
+        documentRow(item,index,definitions[i])).join(""):
+        '<p class="hint">Nessun documento.</p>')+
+      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>');
     break;
+  }
   case "magic":
     body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
       esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
@@ -332,6 +350,26 @@ function equipmentView(c){
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
     }).join('')+'</div>');
+}
+function documentRow(item,index,stored){
+  const {title,body,style,addedAt}=documentInfo(item,stored?.data);
+  const editable=!!stored;
+  const selected=state.openDocumentInstance===String(item.instance_id||item.id);
+  return '<details class="document-entry"'+(selected?' open':'')+' data-document-card="'+index+'">'+
+    '<summary>'+esc(title)+' <span class="hint">'+(style==="lettera"?"Lettera":"Pergamena")+'</span></summary>'+
+    '<div class="document-body">'+
+    (addedAt?'<p class="hint">Aggiunto il '+esc(new Date(addedAt*1000).toLocaleDateString("it-IT"))+'</p>':'')+
+    '<label>Visualizzazione<select data-document-index="'+index+'" data-document-part="style">'+
+      '<option value="pergamena"'+(style==="pergamena"?' selected':'')+'>Pergamena</option>'+
+      '<option value="lettera"'+(style==="lettera"?' selected':'')+'>Lettera</option></select></label>'+
+    (editable?
+      '<label>Titolo<input maxlength="160" data-document-index="'+index+'" data-document-part="title" value="'+esc(title)+'"></label>'+
+      '<label>Testo<textarea maxlength="3500" rows="10" data-document-index="'+index+'" data-document-part="body">'+esc(body)+'</textarea></label>'+
+      '<p class="hint">Salvataggio automatico. La definizione viaggia con la creatura esportata.</p>':
+      '<p class="warning">Definizione homebrew non installata: documento visibile ma non modificabile.</p>'+
+      '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>')+
+    '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
+    '</div></details>';
 }
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
