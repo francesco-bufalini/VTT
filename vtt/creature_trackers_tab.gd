@@ -45,16 +45,7 @@ func setup(on_change: Callable) -> void:
 	add_child(columns)
 	var left := _column(columns, "Origini dei tracker", 190)
 	var right := _column(columns, "Risorse e utilizzi", 260)
-	var origin_scroll := ScrollContainer.new()
-	origin_scroll.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(origin_scroll)
-	origin_scroll.custom_minimum_size.y = 245
-	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(origin_scroll)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	origin_scroll.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var tracker_scroll := ScrollContainer.new()
 	tracker_scroll.mouse_force_pass_scroll_events = false
 	ScrollBoundaryGuard.install(tracker_scroll)
