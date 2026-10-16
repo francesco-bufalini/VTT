@@ -46,6 +46,10 @@ func run() -> void:
 	board.add_child(area)
 	area.setup(board)
 	area._archive.setup(campaign)
+	var isolated_path := "user://tests/reference_completion_%d/creatures.json" % Time.get_ticks_usec()
+	area._archive._storage.path = isolated_path
+	area._archive._characters.archive_path = isolated_path
+	area._archive._monsters.archive_path = isolated_path
 
 	var cached_client := InstantCachedBestiary.new()
 	board.add_child(cached_client)
@@ -81,9 +85,7 @@ func run() -> void:
 	area._complete_auto_reference(String(edited.id), full_stat)
 	var preserved: Dictionary = area._archive._stored("monster", String(edited.id))
 	check(preserved.max_hp_base == 7 and preserved.max_hp == 10 and preserved.current_hp == 5, "Reference overwrote explicit HP edits")
-	for store in [area._archive._characters, area._archive._monsters]:
-		if FileAccess.file_exists(store._file_path()):
-			DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	board.queue_free()
 	campaign.queue_free()
 	await process_frame
