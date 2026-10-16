@@ -4,6 +4,7 @@ const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const CONTEXT_CREATE_TOKEN := 1
 const CONTEXT_DELETE_SELECTED := 2
+const CONTEXT_EXPORT_SELECTED := 46
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_REACH_SPHERES := 7
@@ -3519,6 +3520,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		var selection_suffix: String = (
 			"" if selection_count == 1 else " (%d)" % selection_count
 		)
+		context_token_menu.add_item("Esporta token selezionati…" + selection_suffix, CONTEXT_EXPORT_SELECTED)
 		context_token_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
 		context_token_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
 		context_token_menu.add_separator()
@@ -3531,6 +3533,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
 	var token_help: Dictionary = {
 		CONTEXT_DELETE_SELECTED: "Rimuove i token selezionati dalla mappa. Le schede nell'archivio restano disponibili.",
+		CONTEXT_EXPORT_SELECTED: "Salva i token selezionati con aspetto e condizioni in un file .vtttokens.",
 		CONTEXT_FLYING: "Applica una caduta temporanea ai token selezionati.",
 		CONTEXT_CREATE_TOKEN: "Crea un nuovo token nella posizione del clic.",
 		CONTEXT_REPOSITION_SELECTED: "Sposta la creatura selezionata nella posizione del clic.",
@@ -3892,9 +3895,18 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_token_generation_place_on_surface = _token_generation_exact_position
 			_open_token_generation_dialog()
 
+		CONTEXT_EXPORT_SELECTED:
+			context_menu.hide()
+			if token_list != null and is_instance_valid(token_list):
+				token_list.call_deferred("open_export_dialog")
+			return
 		CONTEXT_DELETE_SELECTED:
-			_delete_selected()
-			_close_context_menu_to_game()
+			context_menu.hide()
+			if token_list != null and is_instance_valid(token_list):
+				token_list.call_deferred("_confirm_delete")
+			else:
+				_delete_selected()
+			return
 
 
 func _get_camera_speed() -> float:
