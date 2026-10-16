@@ -1,6 +1,8 @@
-# VTT Mobile PWA — transport and local archive (phase 1)
+# VTT Mobile PWA — desktop transport, local archive and mobile interface
 
-This branch adds a **technical substrate**, NOT yet a replacement for the Android GUI.
+The browser now includes a dedicated **mobile-first HTML/CSS/JavaScript GUI**.
+Godot Android controls cannot be reused directly in Safari/Chrome without exporting
+Godot to Web, which would introduce the heavier runtime and 3D dependencies.
 Desktop Godot remains the authoritative game process; the browser client stores
 independent personal sheets and assets offline. The mobile PWA must never load a
 Godot 3D scene merely to display an archive or interact with the game.
@@ -51,11 +53,11 @@ origin later without changing the domain API.
    syntax may differ with client versions).
 4. Open the printed `https://<machine>.<tailnet>.ts.net/` URL on the phone.
    Use **Share → Add to Home Screen** on Safari/iPhone.
-5. Pairing is intentionally not exposed in a GUI in phase 1. The **random
-   pairing secret** is generated on the desktop in
-   `user://pwa_pairing_token.txt` and is submitted using
-   `pair(token)` from `pwa/client.js` when the pairing UI is implemented.
-   Never put it in URL query strings or commit it to the repository.
+5. In the **Partita** tab, enter the random **pairing secret** generated on
+   the desktop in `user://pwa_pairing_token.txt`. The browser sends it in
+   an HTTPS bearer header and can remember it in IndexedDB if the user opts in.
+   The desktop **must have an active game open** for `/api/session` to verify
+   pairing. Never put the secret in a URL or the repository.
    The 1–5 session number is not a password.
 
 Native `PwaHost` binds to **127.0.0.1:8765 only**, not the public LAN or
@@ -90,9 +92,9 @@ Keep a single stable URL or export/import a backup before changing origins.
 - Existing Android/native TCP/UDP services are unchanged; the two mobile
   clients can coexist.
 
-The phase-1 bridge does not yet offer a browser pairing UI, WebSocket push,
-binary file transfer endpoints, recipient-addressed inventory/document
-delivery, or automatic conflict-safe server replay of offline mutations.
+The bridge does not yet offer WebSocket push, binary file transfer endpoints,
+recipient-addressed inventory/document delivery, or automatic conflict-safe
+server replay of offline mutations.
 Never interpret an outbox item as permission to execute an action repeatedly:
 commands such as item transfer require unique event IDs and deduplication
 before automatic retries are enabled.
@@ -127,9 +129,30 @@ The browser archive now exposes:
   second creature preserves the recipient's existing definition of the same ID.
   Creature and new homebrew entries are installed atomically.
 
-The new editor/session **API** is ready for UI wiring, but the phase-1 PWA
-still has no mobile sheet editor. An edit made to the current native Android
-app does not automatically invoke this browser API; it is a separate client.
+The browser **GUI** (`pwa/index.html`, `pwa/styles.css`, `pwa/ui.js`) now calls
+the local archive directly:
+- **Creature**: list, create/import/export/delete, edit abilities, HP and base
+  stats, names, origins, character notes, personal conditions, inventory
+  name/quantity/description, spell IDs and expended slots. Also provides an
+  advanced JSON edit view without dropping unrelated record fields.
+- **Dadi**: local Web Crypto dice rolls and optional chat sharing through
+  the existing native `chat_send` action.
+- **Chat**: send text and poll existing native shared chat events while paired.
+- **Partita**: HTTPS bearer pairing, visible tactical tokens, movement and
+  condition actions, combat initiative. No fabricated geometry: the tactical
+  projection does not yet include map coordinates or terrain images.
+- **Backup**: download or restore complete IndexedDB JSON backup with binary
+  attachments, as well as individual VTT portable creature files.
+
+The GUI is useful but **not yet at full Android feature parity**: it does not
+implement the Godot origin/class bonus calculators, spellbook catalog picker,
+cast/attack workflows, 3D/2D tactical image rendering or the directed transfer
+of items/documents. A browser field edit is stored locally, not automatically
+executed as an action on the desktop. Keep game rules authoritative in native
+Godot rather than duplicate the engine in JavaScript.
+
+An edit made to the current native Android app does not automatically invoke
+this browser API; they are separate clients.
 
 No native `user://` path is available to the browser.
 
@@ -171,8 +194,15 @@ and binary attachments in an IndexedDB emulator. Browser device tests with
 HTTPS, background/resume, quota pressure, import/export and parity with
 Android remain necessary.
 
-Next: connect the future mobile-first browser UI to the new `creatures.js`
-archive API, implement real browser pairing, add reliable idempotent
-document/item transfer and synchronization with versioned event IDs, and
-then build the mobile-first UI. Do not rewrite the desktop's combat rules
+Next: close remaining Android parity gaps with structured catalog and rule-aware
+sheet controls, improve desktop presentation of the pairing secret (ideally QR),
+add reliable idempotent document/item transfer with versioned event IDs, and
+introduce 2D tactical map projection suitable for the browser. Do not rewrite the desktop's combat rules
 or duplicate the existing Android command handlers.
+
+## Interface tests
+
+`pwa/tests/ui.test.mjs` exercises library navigation, real IndexedDB-backed
+stat/inventory/spell-slot edits, dice rolls and the HTTPS pairing form under
+jsdom. Pushes to `main` that modify PWA assets run the browser and native
+loopback checks in `.github/workflows/pwa-infrastructure.yml`.
