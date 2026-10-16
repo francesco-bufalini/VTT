@@ -62,7 +62,13 @@ static func evaluate(original: Dictionary) -> Dictionary:
 		slots.append({"level": level, "total": maximum, "spent": clampi(used, 0, maximum)})
 	var pact_total: int = maxi(0, Bonuses.add(record, "pact_slot", int(record.get("pact_slots_total", 0))))
 	var pact_spent: int = clampi(int(record.get("pact_slots_spent", 0)), 0, pact_total)
-	var automatic_hp: Dictionary = Rules.automatic_hit_points(record) if String(record.get("kind", "character")) == "character" else {}
+	var automatic_hp: Dictionary = {}
+	if String(record.get("kind", "character")) == "character":
+		# Native HP progression needs the post-bonus CON modifier, not merely
+		# the raw ability score saved on the creature.
+		var hp_context: Dictionary = record.duplicate(false)
+		hp_context["effective_con_modifier"] = Bonuses.value(record, "ability_mod:con")
+		automatic_hp = Rules.automatic_hit_points(hp_context)
 	return {
 		"ok": true,
 		"source": "godot",
