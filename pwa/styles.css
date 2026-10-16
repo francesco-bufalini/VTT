@@ -74,3 +74,12 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .document-paper.parchment{background:#ddc49a;color:#342917}
 .document-paper.letter{background:#f7f1e3;color:#302c27}
 .document-paper p{white-space:pre-wrap}
+
+/* Pure local derived character-sheet statistics: narrow phone layouts. */
+.derived-local .derived-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr));gap:8px;margin:12px 0}
+.derived-metric{padding:9px;border:1px solid var(--line);border-radius:8px;display:grid;gap:3px;min-width:0}
+.derived-metric span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.derived-metric strong{font-size:19px;font-variant-numeric:tabular-nums}
+.derived-warnings{border:1px solid var(--line);border-radius:8px;padding:10px;margin:12px 0}
+.derived-warnings summary{cursor:pointer;font-size:12px;color:var(--accent)}
+.derived-warnings li{font-size:12px;line-height:1.4;margin:5px 0}

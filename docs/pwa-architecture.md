@@ -170,6 +170,32 @@ The browser archive now exposes:
   second creature preserves the recipient's existing definition of the same ID.
   Creature and new homebrew entries are installed atomically.
 
+## Character-sheet rules are local, even offline
+
+All character-sheet calculations run **inside the browser**, never through a
+desktop-calculation API. PR #149's `POST /api/evaluate` experiment was fully
+reverted in PR #150. Desktop Godot remains the authority for **tactical map
+and scene actions**, not a source of character-sheet computations.
+
+`pwa/sheet_rules.js` is an explicit, testable JavaScript port of the core
+`CreatureRules`, `CreatureBonusRules` and armor rules. It computes ability
+scores/modifiers, class/CR proficiency, armor and shield AC, initiative, HP,
+walking/special speeds, saves, skills, passive perception, level-gated arithmetic
+grants, class hit dice, and multiclass/pact spell-slot progression, including
+2014/2024 distinctions. The native numeric 5etools race/feat bonus index and
+class hit-die index are bundled as local `pwa/catalog/ability_grants.json`
+and `pwa/catalog/class_mechanics.json`. They are pre-cached by the PWA
+service worker and shipped in the downloadable offline prototype.
+
+When a character field changes, the browser immediately refreshes its derived
+values. No private character sheet leaves IndexedDB to compute them. This port
+is **not yet full parity**: custom/homebrew feature grants, all class/subclass
+features, advanced infusions, and individual attack formula generation need
+further migration. The UI flags unsupported cases rather than inventing totals.
+The local archive remains the source of truth; computed values are projections,
+not new data fields persisted into native JSON. Tests cover math, origin
+suppression, armor, saves, multiclass slots, and offline GUI updates.
+
 The browser **GUI** (`pwa/index.html`, `pwa/styles.css`, `pwa/ui.js`) now calls
 the local archive directly:
 - **Creature**: list, create/import/export/delete (including bulk import/export
