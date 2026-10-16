@@ -259,10 +259,11 @@ func _process_actions() -> void:
 		var peer: StreamPeerTCP = item.peer
 		peer.poll()
 		if Time.get_ticks_msec() > int(item.deadline) or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
-			if bool(item.client) and not bool(item.get("done", false)):
-				action_completed.emit(item.id, item.action, {"ok": false, "error": "Il desktop non ha risposto. Aggiorna anche VTT sul PC."})
-			peer.disconnect_from_host()
 			_actions.erase(item)
+			peer.disconnect_from_host()
+			if bool(item.client) and not bool(item.get("done", false)):
+				item.done = true
+				action_completed.emit(item.id, item.action, {"ok": false, "error": "Il desktop non ha risposto. Aggiorna anche VTT sul PC."})
 			continue
 		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
 			continue

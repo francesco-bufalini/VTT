@@ -57,6 +57,20 @@ func run() -> void:
 	closing.disconnect_remote()
 	assert(cancellations == ["closing"] and closing._actions.is_empty(),
 		"Recursive disconnect must not notify or process the same request twice")
+	var timing := Controller.new()
+	root.add_child(timing)
+	timing.set_process(false)
+	for index: int in range(2):
+		timing._actions.append({"peer": StreamPeerTCP.new(), "client": true,
+			"id": "expired-" + str(index), "action": "snapshot", "deadline": 0})
+	var failures: Array[String] = []
+	timing.action_completed.connect(func(id: String, _a: String, _r: Dictionary) -> void:
+		assert(not failures.has(id), "Closing after a timeout must not cancel the expired request twice")
+		failures.append(id)
+		timing.disconnect_remote())
+	timing._process_actions()
+	assert(failures.size() == 2 and timing._actions.is_empty())
+	timing.queue_free()
 	client.disconnect_remote()
 	server.serve(false, "callbacks")
 	client.queue_free()
