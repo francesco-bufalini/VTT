@@ -67,7 +67,8 @@ func _run() -> void:
 	# Stale revisions must fail even when another creature kind shares the file.
 	var current: Dictionary = reloaded.list_records("character")[0]
 	current["transfer_revision"] = 2
-	assert(reloaded.upsert(current) == OK)
+	# Revision increments are only authorized through explicit transfer writes.
+	assert(reloaded.upsert(current, true) == OK)
 	var stale := current.duplicate(true)
 	stale["transfer_revision"] = 0
 	assert(reloaded.upsert(stale) == ERR_UNAUTHORIZED)
