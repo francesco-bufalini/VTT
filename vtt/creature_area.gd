@@ -1952,7 +1952,7 @@ func _configure_touch_statistics() -> void:
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var point_header := _abilities_grid.get_child(1) as Label
 	point_header.text = "Punt."
-	for heading_index: int in range(5):
+	for heading_index: int in range(4):
 		(_abilities_grid.get_child(heading_index) as Label).autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	var combat := right_view.get_child(0) as VBoxContainer
@@ -3690,8 +3690,11 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	# Keep the ability grid in the same columns in every window size.
-	_abilities_grid.columns = 5
+	# Header and each ability consist of four cells (ability, score, modifier,
+	# saving throw). Forcing five here misaligns all rows and inflates the
+	# column minimum width, causing unnecessary horizontal scrolling.
+	if _abilities_grid.columns != 4:
+		_abilities_grid.columns = 4
 
 
 func _on_selected(index: int) -> void:
