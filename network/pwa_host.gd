@@ -4,6 +4,7 @@ extends Node
 ## An explicit random pairing secret protects the session-scoped game endpoints.
 
 const MapDataController = preload("res://vtt/map_data_controller.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -35,6 +36,7 @@ const FILES := {
 var _server := TCPServer.new()
 var _clients: Array[Dictionary] = []
 var _token := ""
+var _public_spells_payload := PackedByteArray()
 
 func _ready() -> void:
 	if OS.has_feature("mobile") or OS.has_feature("web") or OS.has_feature("vtt_mobile"):
@@ -212,6 +214,28 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			_answer(client, 500, {"error": "missing_pwa_asset"})
 			return
 		_respond(client, 200, String(asset[1]), FileAccess.get_file_as_bytes(asset[0]))
+		return
+	# Read-only catalog of packaged spells. Never expose local private
+	# homebrew definitions through the unauthenticated app asset endpoint.
+	if path == "/catalog/spells.json" and method == "GET":
+		if _public_spells_payload.is_empty():
+			var spells: Array[Dictionary] = []
+			for entry: Dictionary in SpellCatalog.all_spells():
+				var spell_id: String = String(entry.get("id", ""))
+				if spell_id.is_empty() or spell_id.begins_with("homebrew:") or String(entry.get("origin", "")) == "homebrew":
+					continue
+				spells.append({
+					"id": spell_id, "name": String(entry.get("name", "")),
+					"source": String(entry.get("source", "")),
+					"level": int(entry.get("level", 0)),
+					"school": String(entry.get("school", "")),
+					"classes": entry.get("classes", []),
+					"range": String(entry.get("range", "")),
+					"casting_time": String(entry.get("casting_time", "")),
+					"description": String(entry.get("description", ""))
+				})
+			_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
+		_respond(client, 200, "application/json; charset=utf-8", _public_spells_payload)
 		return
 	if path == "/api/status" and method == "GET":
 		var board := _board_sync()
