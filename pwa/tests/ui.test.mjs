@@ -123,6 +123,15 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token"));
   const moves=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token");
   assert.equal(JSON.parse(moves[0].options.body).payload.token_id,"token_1");
+  const pick=document.querySelector("#place-creature");
+  assert.ok(pick, "Existing local characters should appear for token placement");
+  click('[data-act="place-creature"]');
+  await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="place_token"));
+  const place=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="place_token");
+  const publicSheet=JSON.parse(place.options.body).payload.creature;
+  assert.equal(publicSheet.name,"Arcanista mobile");
+  assert.equal(publicSheet.inventory,undefined,"Never send private inventory to game host");
+  assert.equal(publicSheet.current_hp,undefined,"Never send private HP to game host");
   const condition=document.querySelector('[data-token-condition="prone"]');
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
