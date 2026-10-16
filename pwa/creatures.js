@@ -1,15 +1,14 @@
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
-import { getRecord, listRecords, putRecord, deleteRecord, insertRecords,
+import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
   getOrCreateSetting } from "./storage.js";
-import { validateCreature, parseCreatureExport, makeOwnedCopy,
+import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
 
 const CREATURE_TYPE = "creature";
 const HOMEBREW_SCOPE = "global";
 const HOMEBREW_TYPE = "homebrew";
 const OWNER_SETTING = "local-creature-owner-id";
-const encoder = new TextEncoder();
 
 function requiredScope(scope) {
   if (typeof scope !== "string" || !scope.trim() || scope.length > 256)
@@ -76,13 +75,7 @@ export async function removeCreature(id, scope = "default", expectedRevision) {
   }
   // For deletion the revision must be checked IN the write transaction.
   // Do not use deleteRecord (unconditional) for owned creature sheets.
-  return deleteOwnedCreature(requiredScope(scope), id, expectedRevision);
-}
-
-// Delete with CAS (compare-and-swap), so a concurrent tab cannot lose edits.
-async function deleteOwnedCreature(scope, id, expectedRevision) {
-  const { deleteRecordIfRevision } = await import("./storage.js");
-  return deleteRecordIfRevision(scope, CREATURE_TYPE, id, expectedRevision);
+  return deleteRecordIfRevision(requiredScope(scope), CREATURE_TYPE, id, expectedRevision);
 }
 
 export async function importCreatureFile(file, scope = "default") {
@@ -123,7 +116,6 @@ export async function exportCreature(id, scope = "default") {
 }
 
 export async function saveHomebrewDefinition(definition) {
-  const { validDefinition } = await import("./creature_format.js");
   if (!validDefinition(definition)) throw new Error("Invalid portable definition");
   const old = await getRecord(HOMEBREW_SCOPE, HOMEBREW_TYPE, definition.id);
   // Keep existing content unless a caller explicitly edits it with its revision.
