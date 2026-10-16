@@ -293,6 +293,16 @@ test("successful one-time pairing survives an initial transient map error",async
   assert.equal(pairRequests,1,"A transient map failure must not consume another code");
   assert.ok(mapRequests>=2,"Polling recovers the game after a temporary 503");
   assert.equal(document.querySelector("#pair-form"),null,"Enrollment remains valid");
+  const availableFetch=globalThis.fetch;
+  globalThis.fetch=async()=>{throw new TypeError("Desktop temporarily unreachable");};
+  document.dispatchEvent(new dom.window.Event("visibilitychange"));
+  await until(()=>document.querySelector("#connection").textContent.includes("Archivio offline"));
+  assert.equal(document.querySelector("#pair-form"),null,
+    "A temporary disconnect must retain the saved pairing");
+  globalThis.fetch=availableFetch;
+  window.dispatchEvent(new dom.window.Event("online"));
+  await until(()=>document.querySelector("#connection").textContent.includes("Partita collegata"));
+  assert.equal(pairRequests,1,"Resuming the game must not require re-pairing");
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
