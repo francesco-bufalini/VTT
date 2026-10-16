@@ -1,4 +1,5 @@
 extends RefCounted
+const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 # Stateless presentation helpers for origin editors.
 
 static func popup_form(owner: Control, form: Control, caption: String, submit: Button = null) -> AcceptDialog:
@@ -114,6 +115,95 @@ static func _capture_fields(node: Control, values: Array[Dictionary]) -> void:
 	for child: Node in node.get_children():
 		if child is Control:
 			_capture_fields(child, values)
+
+
+
+# Shared origin card used by bonus, proficiency, feat, tracker and defense
+# editors. The caller decides visibility, counts, grants, warnings and
+# whether an origin can be toggled; only its presentation lives here.
+static func clear_origin_cards(parent: Control) -> void:
+	for child: Node in parent.get_children():
+		parent.remove_child(child)
+		child.queue_free()
+
+
+static func origin_card(owner: Control, parent: Control, config: Dictionary) -> Button:
+	var sid: String = String(config.get("id", ""))
+	var selected: bool = bool(config.get("selected", false))
+	var active: bool = bool(config.get("active", true))
+	var panel := PanelContainer.new()
+	panel.name = "OriginCard"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(panel)
+	var line := HBoxContainer.new()
+	line.name = "OriginCardActions"
+	line.add_theme_constant_override("separation", 4)
+	panel.add_child(line)
+
+	var select := OriginButton.new()
+	select.name = "OriginSelect"
+	select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	select.toggle_mode = true
+	select.button_pressed = selected
+	select.clip_text = true
+	select.text = String(config.get("text", config.get("name", sid)))
+	select.tooltip_text = String(config.get("tooltip", ""))
+	var on_select: Callable = config.get("on_select", Callable())
+	if on_select.is_valid():
+		select.pressed.connect(on_select)
+	line.add_child(select)
+	if bool(config.get("link", true)):
+		origin_link(owner, line, sid, String(config.get("name", sid)))
+
+	# Domain editors can add completion and editing actions without having to
+	# recreate a card. They appear before the origin activation control.
+	var actions: Array = config.get("actions", [])
+	for entry: Variant in actions:
+		if not entry is Dictionary:
+			continue
+		var action: Dictionary = entry
+		var callback: Callable = action.get("callback", Callable())
+		if not callback.is_valid():
+			continue
+		var extra := Button.new()
+		extra.flat = true
+		extra.text = String(action.get("text", "⚠"))
+		extra.custom_minimum_size.x = 32
+		extra.tooltip_text = String(action.get("tooltip", ""))
+		if bool(action.get("warning", false)):
+			extra.add_theme_color_override("font_color", Color(1.0, 0.80, 0.33))
+		extra.pressed.connect(callback)
+		line.add_child(extra)
+
+	var on_toggle: Callable = config.get("on_toggle", Callable())
+	if not sid.is_empty() and on_toggle.is_valid():
+		var toggle := CheckButton.new()
+		toggle.name = "OriginActive"
+		toggle.text = "⏻"
+		toggle.button_pressed = active
+		toggle.disabled = bool(config.get("toggle_disabled", false))
+		toggle.tooltip_text = String(config.get("toggle_tooltip",
+			"Attiva o disattiva questa origine senza eliminare i benefici."))
+		toggle.toggled.connect(on_toggle)
+		line.add_child(toggle)
+
+	select.set_meta("origin_active", active)
+	origin_card_state(panel, selected, active)
+	return select
+
+
+static func origin_card_state(panel: Control, selected: bool, active: bool) -> void:
+	# A selected, disabled origin is still legible and visually selected.
+	# Keep the same compact layout and selection border in every editor.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
+	style.border_color = Color(0.40, 0.72, 0.91) if selected else Color(0.36, 0.31, 0.27, 0.75)
+	style.set_border_width_all(2 if selected else 1)
+	style.set_corner_radius_all(5)
+	style.set_content_margin_all(5)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.modulate.a = 1.0 if selected or active else 0.58
 
 
 static func highlight(card: Control, selected: bool) -> void:
