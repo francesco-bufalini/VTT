@@ -12,7 +12,10 @@ extends RefCounted
 static func _bounds_for_coordinate_space(
 	physical_size: Vector2i, viewport_size: Vector2i, embedded: bool
 ) -> Vector2i:
-	return viewport_size if embedded else physical_size
+	# The viewport may be larger than the physical surface on compact
+	# windows. Use whichever bounds are stricter, so both upscaling and
+	# downscaling keep popups fully visible.
+	return physical_size.min(viewport_size) if embedded else physical_size
 
 
 static func _root_bounds(dialog: Window) -> Vector2i:
