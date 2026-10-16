@@ -43,6 +43,8 @@ dnd_base.gd is currently the composition root. New reusable gameplay logic shoul
 - Undo/redo records completed user actions; token movement snapshots are committed after movement finishes.
 - Initiative references tokens by stable ID, while displayed names may change.
 - Network snapshots preserve token metadata, conditions, transformations, initiative and persistent board effects.
+- Tactical map state is automatically saved to `user://map_autosaves/` after the same debounce as network sync, even offline; it is restored for the same scene/campaign at startup. Manual save/load controls only export or import independent `.vttmap` copies.
+- Campaign-editor state (grid geometry, fog, image, and board snapshot) is autosaved separately in `user://campaigns/<id>/state.json` after edits and is not overwritten when an incompatible existing save is detected.
 - Owned creature sheets live independently of campaigns at user://creatures/creatures.json; original scoped archives are read only for migration. See docs/creature-archive.md.
 - Spell previews are transient. Persistent AoEs are serialized board state.
 - Generated 5etools catalog files are data artifacts; runtime mechanics live outside generated output.

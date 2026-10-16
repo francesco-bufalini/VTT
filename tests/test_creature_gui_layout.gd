@@ -81,6 +81,11 @@ func run() -> void:
 	assert(area._archive.save(init_record) == OK)
 	area._replace_current_record(init_record)
 	area._load_form(init_record)
+	# A normal sheet refresh used to reset the four-cell ability table to
+	# five columns, breaking headers and forcing horizontal scrolling.
+	area._update_sheet_layout()
+	assert(area._abilities_grid.columns == 4,
+		"Ability headers and each score/modifier/saving throw row must use four columns")
 	assert(area._show_offhand_all.button_pressed
 		and area._show_offhand_all.text in ["Only if finesse", "Solo se accurata"]
 		and area._show_offhand_all.get_parent() == area._hand_off_picker.get_parent(),

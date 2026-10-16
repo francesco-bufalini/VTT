@@ -94,6 +94,19 @@ func save(record: Dictionary) -> Error:
 	return _storage.upsert(_normalize(record))
 
 
+# Undo/redo only edit existing locally owned sheets; never transfer ownership.
+func undo_owned(record: Dictionary) -> Error:
+	if String(record.get("_storage_origin", "")) == "scene":
+		return ERR_UNAUTHORIZED
+	return _storage.undo_owned(record)
+
+
+func redo_owned(record: Dictionary) -> Error:
+	if String(record.get("_storage_origin", "")) == "scene":
+		return ERR_UNAUTHORIZED
+	return _storage.undo_owned(record, true)
+
+
 func delete(record: Dictionary) -> Error:
 	if String(record.get("_storage_origin", "")) == "scene":
 		return ERR_UNAUTHORIZED

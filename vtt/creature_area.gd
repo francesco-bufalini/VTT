@@ -598,6 +598,40 @@ func hide_panel() -> void:
 		board_root.call("capture_camera_control")
 
 
+func _input(event: InputEvent) -> void:
+	if (
+		_panel == null or not _panel.visible
+		or not event is InputEventKey
+		or not event.pressed or event.echo or not event.ctrl_pressed
+	):
+		return
+	var redo: bool = (
+		event.keycode == KEY_Y
+		or (event.keycode == KEY_Z and event.shift_pressed)
+	)
+	if event.keycode != KEY_Z and event.keycode != KEY_Y:
+		return
+	# Complete GUI input dispatch before reloading widgets and losing focus.
+	get_viewport().set_input_as_handled()
+	call_deferred("_apply_creature_history", redo)
+
+
+func _apply_creature_history(redo: bool) -> void:
+	# Native TextEdit undo would diverge from the saved sheet: use the
+	# persisted creature revisions even when a field currently has focus.
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var result: Error = (
+		_archive.redo_owned(record) if redo else _archive.undo_owned(record)
+	)
+	if result == OK:
+		_reload()
+		_set_status("Modifica ripristinata." if not redo else "Modifica ripetuta.")
+	elif result != ERR_DOES_NOT_EXIST:
+		_set_status("Cronologia non disponibile: " + error_string(result))
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _panel.visible and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE and not (
@@ -1918,7 +1952,7 @@ func _configure_touch_statistics() -> void:
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var point_header := _abilities_grid.get_child(1) as Label
 	point_header.text = "Punt."
-	for heading_index: int in range(5):
+	for heading_index: int in range(4):
 		(_abilities_grid.get_child(heading_index) as Label).autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	var combat := right_view.get_child(0) as VBoxContainer
@@ -3656,8 +3690,11 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	# Keep the ability grid in the same columns in every window size.
-	_abilities_grid.columns = 5
+	# Header and each ability consist of four cells (ability, score, modifier,
+	# saving throw). Forcing five here misaligns all rows and inflates the
+	# column minimum width, causing unnecessary horizontal scrolling.
+	if _abilities_grid.columns != 4:
+		_abilities_grid.columns = 4
 
 
 func _on_selected(index: int) -> void:

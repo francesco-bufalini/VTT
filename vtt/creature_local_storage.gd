@@ -5,6 +5,9 @@ extends RefCounted
 const Owner = preload("res://vtt/creature_owner.gd")
 const FILE_PATH := "user://creatures/creatures.json"
 const FILE_VERSION := 1
+const HISTORY_LIMIT := 30
+const HISTORY_MAX_BYTES := 2 * 1024 * 1024
+const HISTORY_COALESCE_MS := 800
 const LEGACY_SOURCES := [
 	{"dir": "user://player_characters", "key": "characters", "kind": "character"},
 	{"dir": "user://master_creatures", "key": "creatures", "kind": "monster"},
@@ -65,7 +68,8 @@ func save_records(kind: String, records: Array[Dictionary], allow_transfer: bool
 		var row := record.duplicate(true)
 		row["kind"] = kind
 		merged.append(row)
-	return _write(merged)
+	return _write(merged, _without_history_kind(loaded.get("undo", []), kind),
+		_without_history_kind(loaded.get("redo", []), kind))
 
 
 # Atomic operations for the creature-facing API: do not replace an entire kind
@@ -89,10 +93,40 @@ func upsert(record: Dictionary, allow_transfer: bool = false) -> Error:
 			return ERR_ALREADY_EXISTS
 		if not allow_transfer and not Owner.can_edit(record, old):
 			return ERR_UNAUTHORIZED
+		if old == record:
+			return OK
+		var undo_entries: Array = loaded.get("undo", []).duplicate(true)
+		var redo_entries: Array = loaded.get("redo", []).duplicate(true)
+		redo_entries = _without_history(redo_entries, kind, id)
+		if allow_transfer:
+			undo_entries = _without_history(undo_entries, kind, id)
+		else:
+			var now := int(Time.get_unix_time_from_system() * 1000)
+			var coalesced := false
+			if not undo_entries.is_empty():
+				var last: Dictionary = undo_entries.back()
+				if (
+					String(last.get("kind", "")) == kind
+					and String(last.get("id", "")) == id
+					and last.get("after", {}) == old
+					and now >= int(last.get("at", 0))
+					and now - int(last.get("at", 0)) <= HISTORY_COALESCE_MS
+				):
+					last["after"] = record.duplicate(true)
+					last["at"] = now
+					undo_entries[undo_entries.size() - 1] = last
+					coalesced = true
+			if not coalesced:
+				undo_entries.append({
+					"kind": kind, "id": id,
+					"before": old.duplicate(true), "after": record.duplicate(true),
+					"at": now
+				})
 		records[index] = record.duplicate(true)
-		return _write(records)
+		_limit_history(undo_entries, redo_entries)
+		return _write(records, undo_entries, redo_entries)
 	records.append(record.duplicate(true))
-	return _write(records)
+	return _write(records, loaded.get("undo", []), loaded.get("redo", []))
 
 
 func delete_record(record: Dictionary) -> Error:
@@ -113,8 +147,93 @@ func delete_record(record: Dictionary) -> Error:
 		if not Owner.can_edit(record, old):
 			return ERR_UNAUTHORIZED
 		records.remove_at(index)
-		return _write(records)
+		return _write(records,
+			_without_history(loaded.get("undo", []), kind, id),
+			_without_history(loaded.get("redo", []), kind, id))
 	return ERR_DOES_NOT_EXIST
+
+
+# Undo is derived from the actual preceding persisted record, not UI widgets.
+# The history stays in the same atomically replaced JSON as the creature.
+func undo_owned(record: Dictionary, redo: bool = false) -> Error:
+	var kind := String(record.get("kind", ""))
+	var id := String(record.get("id", ""))
+	if not Owner.is_owner(record):
+		return ERR_UNAUTHORIZED
+	var loaded := _load()
+	if loaded.error != OK:
+		return loaded.error
+	var records: Array[Dictionary] = loaded.records
+	var record_index := -1
+	for index: int in range(records.size()):
+		if String(records[index].get("id", "")) == id and String(records[index].get("kind", "")) == kind:
+			record_index = index
+			break
+	if record_index < 0 or not Owner.is_owner(records[record_index]):
+		return ERR_UNAUTHORIZED
+	var undo_entries: Array = loaded.get("undo", []).duplicate(true)
+	var redo_entries: Array = loaded.get("redo", []).duplicate(true)
+	var source: Array = redo_entries if redo else undo_entries
+	var source_index := -1
+	for index: int in range(source.size() - 1, -1, -1):
+		var entry: Dictionary = source[index]
+		if String(entry.get("kind", "")) == kind and String(entry.get("id", "")) == id:
+			source_index = index
+			break
+	if source_index < 0:
+		return ERR_DOES_NOT_EXIST
+	var entry: Dictionary = source[source_index]
+	var expected: Variant = entry.get("before" if redo else "after", {})
+	var replacement: Variant = entry.get("after" if redo else "before", {})
+	if (
+		not expected is Dictionary or not replacement is Dictionary
+		or records[record_index] != expected
+		or not Owner.can_edit(replacement as Dictionary, records[record_index])
+	):
+		return ERR_UNAUTHORIZED
+	records[record_index] = (replacement as Dictionary).duplicate(true)
+	source.remove_at(source_index)
+	# Never coalesce a new edit into a history entry just restored by undo/redo.
+	entry["at"] = 0
+	if redo:
+		undo_entries.append(entry)
+	else:
+		redo_entries.append(entry)
+	_limit_history(undo_entries, redo_entries)
+	return _write(records, undo_entries, redo_entries)
+
+
+static func _without_history(entries: Array, kind: String, id: String) -> Array:
+	var result: Array = []
+	for value: Variant in entries:
+		if not value is Dictionary:
+			continue
+		if String(value.get("kind", "")) == kind and String(value.get("id", "")) == id:
+			continue
+		result.append(value)
+	return result
+
+
+static func _without_history_kind(entries: Array, kind: String) -> Array:
+	var result: Array = []
+	for value: Variant in entries:
+		if value is Dictionary and String(value.get("kind", "")) != kind:
+			result.append(value)
+	return result
+
+
+static func _limit_history(undo_entries: Array, redo_entries: Array) -> void:
+	while undo_entries.size() > HISTORY_LIMIT:
+		undo_entries.pop_front()
+	while redo_entries.size() > HISTORY_LIMIT:
+		redo_entries.pop_front()
+	while (
+		not undo_entries.is_empty() or not redo_entries.is_empty()
+	) and JSON.stringify({"undo": undo_entries, "redo": redo_entries}).to_utf8_buffer().size() > HISTORY_MAX_BYTES:
+		if not undo_entries.is_empty():
+			undo_entries.pop_front()
+		else:
+			redo_entries.pop_front()
 
 
 func _load() -> Dictionary:
@@ -141,7 +260,10 @@ func _load() -> Dictionary:
 				return {"error": ERR_FILE_CORRUPT, "records": []}
 			seen_ids[id] = true
 			records.append(record.duplicate(true))
-		return {"error": OK, "records": records}
+		if not parsed.get("undo", []) is Array or not parsed.get("redo", []) is Array:
+			return {"error": ERR_FILE_CORRUPT, "records": []}
+		return {"error": OK, "records": records,
+			"undo": parsed.get("undo", []), "redo": parsed.get("redo", [])}
 	# Migration happens only when the global file does not exist. Its existence
 	# becomes the migration marker: deleting a creature never resurrects it.
 	var legacy: Array[Dictionary] = []
@@ -205,7 +327,7 @@ func _load() -> Dictionary:
 	return {"error": error, "records": legacy if error == OK else []}
 
 
-func _write(records: Array[Dictionary]) -> Error:
+func _write(records: Array[Dictionary], undo_entries: Array = [], redo_entries: Array = []) -> Error:
 	var folder := path.get_base_dir()
 	var error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
 	if error != OK:
@@ -214,7 +336,10 @@ func _write(records: Array[Dictionary]) -> Error:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
-	file.store_string(JSON.stringify({"version": FILE_VERSION, "creatures": records}, "  "))
+	file.store_string(JSON.stringify({
+		"version": FILE_VERSION, "creatures": records,
+		"undo": undo_entries, "redo": redo_entries
+	}, "  "))
 	error = file.get_error()
 	file.close()
 	if error != OK:
