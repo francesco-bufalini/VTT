@@ -275,9 +275,9 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		return OK
 	if session_key.is_empty():
 		return ERR_INVALID_PARAMETER
-	var snapshot := create_snapshot()
-	if not snapshot.is_empty():
-		_persist_map_autosave(snapshot)
+	var outgoing_snapshot := create_snapshot()
+	if not outgoing_snapshot.is_empty():
+		_persist_map_autosave(outgoing_snapshot)
 	var error := send_snapshot_to_tailnet(session_key, sync_event)
 	if error == OK:
 		var snapshot := create_snapshot()
