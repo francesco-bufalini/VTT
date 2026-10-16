@@ -360,15 +360,7 @@ func _origin_grants_tooltip(sid: String) -> String:
 	for row: Dictionary in _rows:
 		if String(row.get("origin_id", "")) == sid:
 			bonuses.append(("○ " if bool(row.get("disabled", false)) else "✓ ") + String(row.get("target", "")) + " = " + String(row.get("expression", "")))
-	var parts: PackedStringArray = []
-	if not selections.is_empty():
-		parts.append("Scelte già effettuate:\n" + "\n".join(selections))
-	if not automatic.is_empty():
-		parts.append("Concessioni automatiche:\n" + "\n".join(automatic))
-	if not bonuses.is_empty():
-		parts.append("Bonus assegnati:\n" + "\n".join(bonuses))
-	return "\n\n" + "\n\n".join(parts) if not parts.is_empty() else ""
-
+	return EditorUI.grants_tooltip(selections, automatic, bonuses, "Bonus assegnati")
 
 func _resolve_origin_description(sid: String) -> String:
 	if sid.is_empty():
