@@ -2,6 +2,7 @@ extends RefCounted
 
 # Every numeric formula target may receive several independent, additive grants.
 # "expression" is deliberately arithmetic only: no dice and no method calls.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
@@ -26,6 +27,7 @@ static func _saved_grants(record: Dictionary) -> Array[Dictionary]:
 				"id": String(row.get("id", "")),
 				"target": String(row.get("target", "")),
 				"expression": String(row.get("expression", "0")),
+				"requirements": BenefitRequirements.normalize(row),
 				"origin_id": String(row.get("origin_id", "")),
 				"origin_name": String(row.get("origin_name", "Senza origine")),
 				"disabled": bool(row.get("disabled", false)),
@@ -386,13 +388,15 @@ static func _sum(record: Dictionary, target: String, stack: Dictionary) -> Dicti
 	var target_grants: Array[Dictionary] = []
 	var all_grants: Array[Dictionary] = grants(record)
 	for row: Dictionary in all_grants:
-		if String(row.get("target", "")) == target and not bool(row.get("disabled", false)):
+		if String(row.get("target", "")) == target and not bool(row.get("disabled", false)) and (
+			BenefitRequirements.allows(record, BenefitRequirements.normalize(row))):
 			target_grants.append(row)
 	if target_grants.is_empty():
 		return {"value": 0, "details": details, "errors": errors}
 	var enabled: Dictionary = _source_map(record)
 	for row: Dictionary in target_grants:
-		if String(row.get("target", "")) != target or bool(row.get("disabled", false)):
+		if String(row.get("target", "")) != target or bool(row.get("disabled", false)) or (
+			not BenefitRequirements.allows(record, BenefitRequirements.normalize(row))):
 			continue
 		var sid: String = String(row.get("origin_id", ""))
 		if not _origin_active(sid, enabled):

@@ -2,6 +2,7 @@ extends RefCounted
 
 # Spell entitlements belong to actual feature/item origins. Manual entries
 # may point at a tracker owned by a *different* origin.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const Catalog = preload("res://vtt/spells/spell_catalog.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
@@ -85,6 +86,8 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 		var spell_id: String = String(item.get("spell_id", ""))
 		if sid.is_empty() or spell_id.is_empty() or Catalog.catalog_spell(spell_id).is_empty():
 			continue
+		if not BenefitRequirements.allows(record, BenefitRequirements.normalize(item)):
+			continue
 		var key: String = sid + "|" + spell_id
 		if dedupe.has(key):
 			continue
@@ -119,6 +122,8 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 				active_origins[String((value as Dictionary).get("origin_id", ""))] = true
 	var configs: Dictionary = record.get("origin_spell_configs", {})
 	for grant: Dictionary in grants:
+		if not BenefitRequirements.allows(record, BenefitRequirements.normalize(grant)):
+			continue
 		var origin_id: String = String(grant.get("origin_id", ""))
 		if not active_origins.has(origin_id) or not bool(enabled.get(origin_id, true)):
 			continue
