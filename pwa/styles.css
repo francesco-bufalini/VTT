@@ -54,3 +54,12 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .native-abilities{grid-template-columns:32px minmax(84px,1.45fr) minmax(54px,.7fr) minmax(58px,.85fr);gap:7px}
 .native-derived{text-align:center;font-variant-numeric:tabular-nums}
 @media(max-width:360px){.native-abilities{grid-template-columns:28px minmax(74px,1.45fr) minmax(46px,.7fr) minmax(52px,.85fr);gap:5px}}
+
+/* Native inventory instances: only their mutable ownership flags are controls. */
+.inventory-entry{display:grid;gap:8px}
+.inventory-entry>.row{align-items:start}
+.inventory-entry>.row strong{overflow-wrap:anywhere;min-width:0}
+.inventory-switches{display:flex;flex-wrap:wrap;gap:7px 18px}
+.inventory-switches .check{margin:0;min-height:44px}
+.inventory-entry details>summary{cursor:pointer;padding:7px 0}
+.inventory-entry .hint{overflow-wrap:anywhere}
