@@ -9,7 +9,6 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
-const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const QuickCustom = preload("res://vtt/quick_custom_catalog.gd")
