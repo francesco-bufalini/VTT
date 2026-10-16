@@ -27,3 +27,5 @@ jobs:
           for file in pwa/*.js; do
             node --input-type=module --check < "$file"
           done
+      - name: Test PWA reconnect and polling behavior
+        run: node tests/test_pwa_network.mjs
