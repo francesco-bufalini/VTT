@@ -20,6 +20,8 @@ func http(method: String, path: String, body: String = "", extra: String = "") -
 	var result := PackedByteArray()
 	while Time.get_ticks_msec() < end:
 		peer.poll()
+		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			break
 		var size := peer.get_available_bytes()
 		if size > 0:
 			var read := peer.get_data(size)

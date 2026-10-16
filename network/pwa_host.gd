@@ -163,21 +163,15 @@ func _consume_short_code(value: String) -> bool:
 
 
 func _tailscale_url() -> String:
-	var commands := ["tailscale"]
-	if OS.get_name() == "Windows":
-		commands.append("C:\\Program Files\\Tailscale\\tailscale.exe")
-	for binary: String in commands:
-		var output: Array = []
-		if OS.execute(binary, PackedStringArray(["status", "--json"]), output, true) != 0:
-			continue
-		var data: Variant = JSON.parse_string("\n".join(output))
+	var result: Dictionary = await preload("res://network/tailscale_serve.gd")._command(PackedStringArray(["status", "--json"]))
+	if result.ok:
+		var data: Variant = JSON.parse_string(String(result.message))
 		if not data is Dictionary:
-			continue
+			return ""
 		var me: Variant = (data as Dictionary).get("Self", {})
 		if not me is Dictionary:
-			continue
+			return ""
 		var domain := String((me as Dictionary).get("DNSName", "")).trim_suffix(".")
-		# Avoid accepting an unrelated URL supplied by external tools.
 		if domain.ends_with(".ts.net") and not domain.contains("/") and not domain.contains(":"):
 			return "https://" + domain
 	return ""
@@ -228,7 +222,6 @@ func _show_pairing_dialog() -> void:
 	address_label.text = "Indirizzo HTTPS Tailscale (modificabile):"
 	layout.add_child(address_label)
 	var url_edit := LineEdit.new()
-	url_edit.text = _tailscale_url()
 	url_edit.placeholder_text = "https://nome-pc.nome-tailnet.ts.net"
 	layout.add_child(url_edit)
 	var qr := TextureRect.new()
@@ -279,6 +272,10 @@ func _show_pairing_dialog() -> void:
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.close_requested.connect(dialog.queue_free)
 	dialog.popup_centered()
+	var detected_url := await _tailscale_url()
+	if is_instance_valid(url_edit) and url_edit.text.is_empty():
+		url_edit.text = detected_url
+		update_qr.call()
 
 
 func public_spells_json() -> PackedByteArray:

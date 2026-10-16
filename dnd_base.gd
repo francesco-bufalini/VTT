@@ -149,6 +149,7 @@ var tailscale_serve_enable: Button
 var tailscale_serve_disable: Button
 var tailscale_serve_copy: Button
 var tailscale_serve_url: String = ""
+var _tailscale_serve_busy := false
 var map_save_dialog: FileDialog
 var map_load_dialog: FileDialog
 var camera_settings_dialog: AcceptDialog
@@ -5939,16 +5940,29 @@ func _build_share_dialog() -> void:
 
 
 func _refresh_tailscale_serve_ui() -> void:
+	if _tailscale_serve_busy:
+		return
+	_tailscale_serve_busy = true
+	await _load_tailscale_serve_ui()
+	_tailscale_serve_busy = false
+
+
+func _load_tailscale_serve_ui() -> void:
 	if tailscale_serve_label == null or not is_instance_valid(tailscale_serve_label):
 		return
-	var result: Dictionary = TailscaleServe.get_status()
+	tailscale_serve_enable.disabled = true
+	tailscale_serve_disable.disabled = true
+	tailscale_serve_copy.disabled = true
+	var result: Dictionary = await TailscaleServe.get_status()
+	if not is_instance_valid(tailscale_serve_label):
+		return
 	tailscale_serve_url = ""
 	if not bool(result.get("ok", false)):
 		tailscale_serve_label.text = "Tailscale non pronto: " + String(result.get("message", "Impossibile leggere lo stato."))
 	elif bool(result.get("active", false)):
 		var host: Node = get_node_or_null("/root/PwaHost")
 		if host != null and host.has_method("_tailscale_url"):
-			tailscale_serve_url = String(host.call("_tailscale_url"))
+			tailscale_serve_url = String(await host.call("_tailscale_url"))
 		tailscale_serve_label.text = (
 			"Attivo · " + tailscale_serve_url
 			if not tailscale_serve_url.is_empty()
@@ -5964,13 +5978,18 @@ func _refresh_tailscale_serve_ui() -> void:
 
 
 func _change_tailscale_serve(enabled: bool) -> void:
-	if tailscale_serve_label == null:
+	if not is_instance_valid(tailscale_serve_label) or _tailscale_serve_busy:
 		return
+	_tailscale_serve_busy = true
+	tailscale_serve_copy.disabled = true
 	tailscale_serve_enable.disabled = true
 	tailscale_serve_disable.disabled = true
 	tailscale_serve_label.text = "Aggiornamento di Tailscale Serve…"
-	var result: Dictionary = TailscaleServe.set_enabled(enabled)
-	_refresh_tailscale_serve_ui()
+	var result: Dictionary = await TailscaleServe.set_enabled(enabled)
+	await _load_tailscale_serve_ui()
+	_tailscale_serve_busy = false
+	if not is_instance_valid(tailscale_serve_label):
+		return
 	if not bool(result.get("ok", false)):
 		tailscale_serve_label.text = "Operazione non riuscita: " + String(result.get("message", ""))
 
