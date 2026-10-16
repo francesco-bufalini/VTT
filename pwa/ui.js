@@ -2,6 +2,7 @@ import { status, session, pair, unpair, map, action, subscribeMap } from "./clie
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
+import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
 import { exportBackup, importBackup } from "./storage.js";
 
@@ -126,7 +127,7 @@ async function libraryView() {
       '<button type="button" class="btn small" data-act="open" data-id="'+esc(c.id)+
       '" aria-label="Apri '+esc(c.name)+'">Apri →</button></article>').join("");
   if(!list) list = '<div class="empty"><div class="symbol">♜</div>'+
-    '<strong>Nessuna creatura salvata</strong><p>Crea una scheda o importa un JSON da VTT desktop o Android.</p></div>';
+    '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
   return header("Archivio indipendente", "Le tue creature", "Le schede rimangono sul dispositivo e si aprono anche senza il desktop.")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
     btn("import","Importa scheda")+btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div>'+list+
@@ -181,7 +182,7 @@ async function editorView() {
   const navigation = '<div class="editor-head">'+
     '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
     '<h1>'+esc(c.name)+'</h1></div>'+
-    '<div class="row between" class="editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
+    '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
     '<div class="section-tabs" role="tablist" aria-label="Scheda creatura">'+tabs.map(([key,title]) =>
@@ -222,7 +223,7 @@ async function editorView() {
       '<div class="actions">'+btn("add-item","＋ Aggiungi oggetto","primary")+'</div>');
     break;
   case "magic":
-    body = panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I cast e i privilegi speciali devono ancora essere collegati alle regole Godot.</p>'+
+    body = panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
       '<div class="columns three">'+Array.from({length:9},(_,i)=>{const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
       return '<div class="ability-box"><label>Liv. '+level+'<input type="number" min="0" data-slot="'+level+
         '" value="'+esc(spent)+'"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';}).join("")+'</div>')+
@@ -633,6 +634,10 @@ async function handleAction(target){
     return;
   }
   if(act==="refresh"){await render();return;}
+  if(act==="demo"){
+    state.creatureId=await createDemoCreature();state.editor=null;state.sheet="stats";
+    await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
+  }
   if(act==="create"){
     const row=await createCreature("character","Nuovo personaggio");
     state.creatureId=row.id;state.editor=null;state.sheet="stats";await render();return;
