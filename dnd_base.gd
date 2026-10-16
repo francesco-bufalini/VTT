@@ -4773,6 +4773,10 @@ func _on_token_dialog_confirmed() -> void:
 					push_warning(
 						"DnDBase: scarica prima il token remoto: %s" % pack_id
 					)
+					if spawning_sheet_token:
+						_cancel_sheet_spawn_with_notice(
+							"Piazzamento annullato: miniatura non scaricata: %s" % pack_id
+						)
 					return
 				mount_error = TokenPackManager.mount_token(pack_id)
 			if mount_error != OK:
@@ -4780,6 +4784,10 @@ func _on_token_dialog_confirmed() -> void:
 					pack_id,
 					"Mount non riuscito: %s" % error_string(mount_error)
 				)
+				if spawning_sheet_token:
+					_cancel_sheet_spawn_with_notice(
+						"Piazzamento annullato: impossibile montare %s" % pack_id
+					)
 				return
 		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
