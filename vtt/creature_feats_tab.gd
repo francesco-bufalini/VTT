@@ -295,13 +295,7 @@ func _origin_grants_tooltip(sid: String) -> String:
 	for feat: Dictionary in _feats:
 		if String(feat.get("origin_id", "")) == sid:
 			chosen.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
-	var sections: PackedStringArray = []
-	if not chosen.is_empty():
-		sections.append("Scelte già effettuate:\n" + "\n".join(chosen))
-	if not fixed.is_empty():
-		sections.append("Concessioni automatiche:\n" + "\n".join(fixed))
-	return "\n\n" + "\n\n".join(sections) if not sections.is_empty() else ""
-
+	return EditorUI.grants_tooltip(chosen, fixed, PackedStringArray(), "")
 
 func _feat_description(feat: Dictionary) -> String:
 	for entry: Dictionary in _catalog_entries("feats"):
