@@ -55,7 +55,19 @@ func _ready() -> void:
 
 
 func _is_board_scene(scene: Node) -> bool:
-	return scene != null and is_instance_valid(scene) and scene.scene_file_path == "res://dnd_base.tscn"
+	if scene == null or not is_instance_valid(scene):
+		return false
+	if scene.scene_file_path == "res://dnd_base.tscn":
+		return true
+	# Campaigns such as Scontro contro Kaos inherit from the tactical
+	# board script but have their own .tscn path. Accept all legitimate
+	# board-script descendants, not just the original scene filename.
+	var board_script: Script = scene.get_script() as Script
+	while board_script != null:
+		if board_script.resource_path == "res://dnd_base.gd":
+			return true
+		board_script = board_script.get_base_script()
+	return false
 
 
 func _on_scene_changed(_scene: Node) -> void:
@@ -174,7 +186,7 @@ func public_spells_json() -> PackedByteArray:
 
 func _board_sync() -> Node:
 	var scene := get_tree().current_scene
-	if scene == null or scene.scene_file_path != "res://dnd_base.tscn":
+	if not _is_board_scene(scene):
 		return null
 	var value: Variant = scene.get("board_sync")
 	if value is Node and is_instance_valid(value):
