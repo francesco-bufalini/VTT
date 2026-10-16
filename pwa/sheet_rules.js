@@ -2,6 +2,7 @@
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement} from "./item_controls.js";
+import {automaticId,numericGrant,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -113,7 +114,8 @@ function indexRows(record,index,warnings){
   const rows=[];
   const append=(sid,name,amounts)=>{
     for(const [ability,value] of Object.entries(amounts)){
-      rows.push({target:"ability:"+ability,expression:String(value),origin_id:sid,origin_name:name,automatic:true});
+      const grant=numericGrant(sid,name,"ability","ability:"+ability,value);
+      if(grant)rows.push(grant);
     }
   };
   const categories=[["race","species","species_source"],["background","background","background_source"]];
@@ -143,11 +145,12 @@ function indexRows(record,index,warnings){
       const sid="feat|"+String(row.source).toLowerCase()+"|"+String(row.name).toLowerCase();
       append(sid,row.name,fixedAbilities(row));
       const choice=String(feat.ability_choice||"").toLowerCase();
-      const variants=arr(row.ability);
-      if(variants.length===1&&variants[0]?.choose?.count===1&&
-        arr(variants[0].choose.from).includes(choice)){
-        rows.push({target:"ability:"+choice,expression:String(variants[0].choose.amount||1),
-          origin_id:sid,origin_name:row.name,automatic:true});
+      const variants=arr(row.ability_choices);
+      if(variants.length===1&&Number(variants[0]?.choose?.count??1)===1&&
+        arr(variants[0]?.choose?.from).includes(choice)){
+        const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice,
+          Number(variants[0].choose.amount??1));
+        if(grant)rows.push(grant);
       }
     }
   }
@@ -163,28 +166,61 @@ function itemActive(item){
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
 function itemRows(record,warnings){
-  const rows=[],seen=new Set();
+  const rows=[],seen=new Set(),seenAttacks=new Set();
   for(const item of arr(record.inventory)){
     if(!item||!item.id||!itemActive(item))continue;
-    if(!item.id.startsWith("local_")&&item.instance_overrides&&Object.keys(item.instance_overrides).length)
+    if(!String(item.id).startsWith("local_")&&item.instance_overrides&&
+        Object.keys(item.instance_overrides).length)
       warnings.add("Override di oggetti di catalogo: verifica le proprietà non ancora risolte");
-    const sid="item:"+item.id,kind=itemKind(item);
-    const add=(target,field)=>{if(field!==""&&Number.isFinite(Number(field)))
-      rows.push({target,expression:String(field),origin_id:sid,origin_name:item.name,automatic:true});};
-    if(["armor","shield"].includes(kind))add("ac",numericField(item,"bonus_ac","bonusAc"));
-    if(!seen.has(sid)){
-      for(const stat of ABILITIES)add("save:"+stat,numericField(item,"bonus_saving_throw","bonusSavingThrow"));
-      for(const [skill] of SKILLS)add("skill:"+skill,numericField(item,"bonus_ability_check","bonusAbilityCheck"));
-      add("proficiency",numericField(item,"bonus_proficiency_bonus","bonusProficiencyBonus"));
-      const bonuses=item.bonus_ability??item.bonusAbility;
-      if(bonuses&&typeof bonuses==="object")for(const [stat,value] of Object.entries(bonuses))
-        if(ABILITIES.includes(stat))add("ability:"+stat,String(value));
+    if(item.infusion&&Object.keys(item.infusion).length)
+      warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
+    const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
+    const add=(target,field,snake,camel)=>{
+      const raw=item?.[snake]??item?.[camel];
+      const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw);
+      if(grant)rows.push(grant);
+    };
+    if(["armor","shield"].includes(kind)&&!seen.has(sid))
+      add("ac","bonus_ac","bonus_ac","bonusAc");
+    if(kind==="weapon"){
+      const targets=[];
+      if(slots.includes("main"))targets.push("item:"+item.id,"item:throw:main:"+item.id);
+      if(slots.includes("off"))targets.push("item:off:"+item.id,"item:throw:off:"+item.id);
+      for(const attack of targets){
+        if(seenAttacks.has(sid+"|"+attack))continue;
+        seenAttacks.add(sid+"|"+attack);
+        for(const [field,snake,camel,target] of [
+          ["bonus_weapon","bonus_weapon","bonusWeapon","attack_hit:"+attack],
+          ["bonus_weapon","bonus_weapon","bonusWeapon","attack_damage:"+attack],
+          ["bonus_weapon_attack","bonus_weapon_attack","bonusWeaponAttack","attack_hit:"+attack],
+          ["bonus_weapon_damage","bonus_weapon_damage","bonusWeaponDamage","attack_damage:"+attack]
+        ])add(target,field,snake,camel);
+      }
     }
+    if(seen.has(sid))continue;
     seen.add(sid);
+    for(const a of ABILITIES)add("save:"+a,"bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
+    for(const [id] of SKILLS)add("skill:"+id,"bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
+    for(const [field,camel,target] of [
+      ["bonus_spell_attack","bonusSpellAttack","spell_attack"],
+      ["bonus_spell_save_dc","bonusSpellSaveDc","spell_dc"],
+      ["bonus_spell_damage","bonusSpellDamage","spell_damage"],
+      ["bonus_proficiency_bonus","bonusProficiencyBonus","proficiency"],
+      ["bonus_saving_throw_concentration","bonusSavingThrowConcentration","save_concentration"]
+    ])add(target,field,field,camel);
+    const abilities=item.bonus_ability??item.bonusAbility;
+    if(abilities&&typeof abilities==="object")
+      for(const [stat,value] of Object.entries(abilities))
+        if(ABILITIES.includes(stat)){
+          const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),
+            "ability","ability:"+stat,value);
+          if(grant)rows.push(grant);
+        }
   }
   return rows;
 }
-function hasProficiency(record,type,id){
+function hasProficiency(record,type,id,computed){
+  if(computed)return computed.has(type+":"+String(id).toLowerCase());
   const rows=arr(record.proficiency_choices);
   const matches=rows.filter(row=>row?.kind===type&&same(row.key,id));
   if(matches.length)return matches.some(row=>!row.disabled&&
@@ -247,7 +283,8 @@ export function calculateSheet(record={},catalogs={}){
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"));
-  const automatic=[...(index?indexRows(record,index,warnings):[]),...itemRows(record,warnings)];
+  const automatic=[...(index?indexRows(record,index,warnings):[]),
+    ...itemRows(record,warnings),...structuredFeatureGrants(record)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id))];
@@ -255,8 +292,10 @@ export function calculateSheet(record={},catalogs={}){
   if(classes.length)warnings.add("Privilegi di classe e sottoclasse: non tutti i bonus strutturati sono ancora supportati");
   if(record.additional_traits||arr(record.stat_block?.trait).length)
     warnings.add("Tratti personalizzati: verificare i bonus non strutturati");
-  if(record.origin_enabled&&Object.keys(record.origin_enabled).length)
-    warnings.add("Alcune origini disattivate richiedono verifica del catalogo nativo");
+  // Disabled sources are handled by their identities and the parent-feature hierarchy.
+  const proficiencies=fixedProficiencies(record,catalogs.proficiencyGrants);
+  if(!catalogs.proficiencyGrants)
+    warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
   const inventory=arr(record.inventory);
   const equipped=slot=>inventory.find(it=>int(it?.quantity,0)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
@@ -309,14 +348,14 @@ export function calculateSheet(record={},catalogs={}){
     if(target==="second_max")return int(record.second_form_max_hp);
     if(prefix==="save"&&ABILITIES.includes(key)){
       const legacy=record.stat_block?.save?.[key];
-      if(kind==="monster"&&!hasProficiency(record,"save",key)&&legacy!==undefined&&
+      if(kind==="monster"&&!hasProficiency(record,"save",key,proficiencies)&&legacy!==undefined&&
         /^[-+]?\d+$/.test(String(legacy)))return int(legacy);
       return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key)?resolve("proficiency",stack):0);
     }
     if(prefix==="skill"){
       const skill=SKILLS.find(row=>row[0]===key);
       if(!skill)return 0;
-      let rank=hasProficiency(record,"expertise",key)?2:hasProficiency(record,"skill",key)?1:0;
+      let rank=hasProficiency(record,"expertise",key,proficiencies)?2:hasProficiency(record,"skill",key,proficiencies)?1:0;
       if(kind==="monster"&&!record.skill_ranks_custom){
         const old=record.stat_block?.skill?.[key];
         if(old!==undefined&&/^[-+]?\d+$/.test(String(old))){
@@ -348,6 +387,24 @@ export function calculateSheet(record={},catalogs={}){
     if(saved?.disabled)return false;
     if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,sid))
       return Boolean(record.origin_enabled[sid]);
+    if(row.parent_origin){
+      if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,row.parent_origin)&&
+          !record.origin_enabled[row.parent_origin])return false;
+      if(arr(record.proficiency_origins).some(x=>x.id===row.parent_origin&&x.disabled))
+        return false;
+      if(row.parent_origin.startsWith("feat|")){
+        const featKey=row.parent_origin.slice(5);
+        if(!arr(record.feats_catalog).some(x=>!x.disabled&&
+          (String(x.id||"")===featKey||
+           norm(x.name)+"|"+norm(x.source)===featKey)))return false;
+      }
+      if(row.parent_origin.startsWith("class|")){
+        const chunks=row.parent_origin.split("|"),source=chunks[1],name=chunks[2];
+        if(!localClasses(record).some(x=>same(x.name,name)&&
+           (!source||!x.source||same(x.source,source))))return false;
+      }
+    }
+    if(sid.startsWith("feature:"))return true;
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it));
     const fragments=sid.split("|"),group=fragments[0],
@@ -358,7 +415,7 @@ export function calculateSheet(record={},catalogs={}){
       (!source||!record.subrace_source||same(record.subrace_source,source));
     if(group==="background")return same(record.background,name)&&
       (!source||!record.background_source||same(record.background_source,source));
-    if(group==="feat")return arr(record.feats_catalog).some(x=>
+    if(group==="feat")return arr(record.feats_catalog).some(x=>!x.disabled&&
       same(x.name,name)&&(!source||same(x.source,source)));
     if(group==="class")return localClasses(record).some(x=>
       same(x.name,name)&&(!source||!x.source||same(x.source,source)));
@@ -432,8 +489,9 @@ let catalogPromise;
 export function loadRuleCatalogs(){
   if(!catalogPromise)catalogPromise=Promise.all([
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
-    fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();})
-  ]).then(([abilityGrants,classMechanics])=>({abilityGrants,classMechanics}))
+    fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
+    fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();})
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants])=>({abilityGrants,classMechanics,proficiencyGrants}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
 }
