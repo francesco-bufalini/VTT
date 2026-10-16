@@ -61,6 +61,8 @@ jobs:
       - name: Feature projection, origin and equipment regressions
         run: |
           set -euo pipefail
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --check-only --script res://vtt/benefit_requirements.gd
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
