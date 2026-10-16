@@ -4,6 +4,7 @@ import { setting } from "./storage.js";
 
 const PAIRING_KEY = "paired-desktop-secret";
 const TIMEOUT_MS = 20000;
+let volatileToken = "";
 
 async function exchange(path, token = "", action = null) {
   const controller = new AbortController();
@@ -30,7 +31,7 @@ async function exchange(path, token = "", action = null) {
 }
 
 async function currentToken() {
-  return (await setting(PAIRING_KEY)) || "";
+  return volatileToken || (await setting(PAIRING_KEY)) || "";
 }
 
 export function status() {
@@ -43,11 +44,13 @@ export async function pair(token, { remember = true } = {}) {
   if (!self.isSecureContext) throw new Error("HTTPS is required to pair the PWA");
   if (!/^[a-fA-F0-9]{64}$/.test(token)) throw new Error("Invalid pairing secret");
   const session = await exchange("/api/session", token);
+  volatileToken = token;
   if (remember) await setting(PAIRING_KEY, token);
   return session;
 }
 
 export async function unpair() {
+  volatileToken = "";
   await setting(PAIRING_KEY, "");
 }
 
