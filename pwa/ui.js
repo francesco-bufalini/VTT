@@ -1,4 +1,4 @@
-import { status, session, pair, unpair, map, action, subscribeMap, takeQrPairCode } from "./client.js";
+import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -454,19 +454,27 @@ function sessionView() {
   return html;
 }
 async function refreshConnection(quiet=false) {
+  // Offline does not mean unpaired: a stored credential can be validated again
+  // when the host comes back, without requiring another single-use QR.
+  state.paired=await hasPairingCredential();
   try {
-    const result = await status();
+    const result=await status();
     state.hostReachable=true;
     state.online=!!result.desktop_online;
     if(state.online){
       try {
-        acceptSession(await session()); state.paired=true;
-      } catch(error) {
-        state.paired=false; state.session=null;
-        if(error.status!==401 && error.status!==503 && !quiet) message(errorMessage(error),true);
+        acceptSession(await session());state.paired=true;
+      }catch(error){
+        state.online=false;state.session=null;
+        if(error.status===401){
+          await unpair();state.paired=false;
+        }else if(error.status!==503 && !quiet)message(errorMessage(error),true);
       }
-    } else { state.paired=false; state.session=null; }
-  } catch(error){ state.hostReachable=false; state.online=false; state.paired=false; state.session=null; }
+    }else state.session=null;
+  }catch(error){
+    state.hostReachable=false;state.online=false;state.session=null;
+  }
+  if(!state.online){state.map=null;state.tokenId="";}
   syncNav();
 }
 function startMap() {
@@ -506,7 +514,8 @@ function startMap() {
     if(error?.status===401){
       state.paired=false;state.session=null;
       state.stopMap?.();state.stopMap=null;
-      render().catch(e=>message(errorMessage(e),true));
+      unpair().catch(()=>{}).finally(()=>
+        render().catch(e=>message(errorMessage(e),true)));
       return;
     }
     syncNav();
