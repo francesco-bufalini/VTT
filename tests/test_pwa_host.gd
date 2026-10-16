@@ -97,6 +97,16 @@ func run() -> void:
 	host.set("_short_code_expiry", Time.get_ticks_msec() - 1)
 	assert((await http("POST", "/api/pair", JSON.stringify({"code":short_code}))).begins_with("HTTP/1.1 401"),
 		"Expired code must be rejected")
+	# A code is safe to place in a QR URL fragment, unlike the strong bearer.
+	var link: String = host.call("_pair_url", "https://my-pc.tailnet.ts.net", "ABCDEF1234567890")
+	assert(link == "https://my-pc.tailnet.ts.net/#pair=ABCDEF1234567890")
+	assert(host.call("_pair_url", "http://untrusted.example", "ABCDEF1234567890") == "")
+	# Eight bad submissions exhaust the displayed code.
+	short_code = host.call("_new_short_code")
+	for _attempt in range(8):
+		assert(not host.call("_consume_short_code", "0000000000000000"))
+	assert(not host.call("_consume_short_code", short_code),
+		"Exhausted pairing code must never be accepted")
 	var generator: Node = load("res://vtt/qr/qr_code.gd").new()
 	var qr_texture: Texture2D = generator.call("get_texture", "https://example.ts.net/#pair=0123456789ABCDEF")
 	assert(qr_texture != null and qr_texture.get_width() > 20, "QR texture failed")
