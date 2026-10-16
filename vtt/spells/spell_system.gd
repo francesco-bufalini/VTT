@@ -3147,6 +3147,19 @@ func _target_token_candidate(candidate: Node3D, spell_data: Dictionary) -> Dicti
 	)
 
 
+# Spell HUDs use precisely the same tactical-footprint test as token picks.
+# Measurement tools intentionally do not inherit this spell policy.
+func _token_within_spell_range(
+	source: Node3D,
+	candidate: Node3D,
+	range_feet: float,
+	exclude_source: bool = true
+) -> bool:
+	return bool(TargetRules.token_in_range(
+		source, candidate, range_feet, _cell_size(), exclude_source
+	).get("valid", false))
+
+
 func _target_or_point_data(
 	screen_position: Vector2,
 	spell_data: Dictionary
@@ -5607,7 +5620,17 @@ func remote_preview_input(caster: Node3D, owner: String, point: Dictionary, proj
 	var affected: Array[String] = []
 	var measure: Node = _measurement_tool()
 	if contour.size() >= 3:
-		for token: Node3D in measure.area_affected_tokens(measure.get("_spell_preview_start"), measure.get("_spell_preview_end"), String(measure.get("_spell_preview_shape")), String(measure.get("_spell_preview_style")), float(measure.get("_spell_preview_line_width"))):
+		var touched: Array = measure.call(
+			"spell_geometry_affected_tokens",
+			measure.get("_spell_preview_start"),
+			measure.get("_spell_preview_end"),
+			String(measure.get("_spell_preview_shape")),
+			String(measure.get("_spell_preview_style")),
+			float(measure.get("_spell_preview_line_width"))
+		)
+		for token: Node3D in _filter_spell_affected_targets(
+			touched, _pending_spell(), _pending_caster
+		):
 			if board_root.is_ancestor_of(token) and token.is_visible_in_tree() and token.has_method("get_token_id"):
 				affected.append(String(token.call("get_token_id")))
 	return {"ok": true, "preview": {"points": contour, "valid": not contour.is_empty(), "affected_ids": affected}}
