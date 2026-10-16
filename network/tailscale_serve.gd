@@ -39,7 +39,7 @@ static func parse_serve_status(value: Variant) -> Dictionary:
 				var handler: Variant = (handlers as Dictionary)[path_value]
 				var proxy := ""
 				if handler is Dictionary:
-					proxy = String((handler as Dictionary).get("Proxy", ""))
+					proxy = String((handler as Dictionary).get("Proxy", "")).trim_suffix("/")
 				if path_name == "/" and proxy in [
 					"http://127.0.0.1:8765",
 					"http://localhost:8765"
@@ -48,7 +48,16 @@ static func parse_serve_status(value: Variant) -> Dictionary:
 				else:
 					occupied = true
 	var tcp: Variant = (value as Dictionary).get("TCP", {})
-	if tcp is Dictionary and not (tcp as Dictionary).is_empty():
+	if tcp is Dictionary:
+		for port_value: Variant in (tcp as Dictionary).keys():
+			var port := String(port_value)
+			var config: Variant = (tcp as Dictionary)[port_value]
+			# Tailscale creates a TCP:443 HTTPS listener alongside Web:443.
+			# It belongs to our web Serve, not a competing service.
+			if port != "443" or not config is Dictionary or not bool((config as Dictionary).get("HTTPS", false)):
+				occupied = true
+	var services: Variant = (value as Dictionary).get("Services", {})
+	if services is Dictionary and not (services as Dictionary).is_empty():
 		occupied = true
 	return {"active": current, "other_rules": occupied}
 
@@ -62,6 +71,8 @@ static func get_status() -> Dictionary:
 	if raw.find("No serve config") >= 0 or raw.is_empty():
 		return {"ok": true, "active": false, "other_rules": false, "message": ""}
 	var parsed: Variant = JSON.parse_string(raw)
+	if parsed == null:
+		return {"ok": true, "active": false, "other_rules": false, "message": ""}
 	if not parsed is Dictionary:
 		return {"ok": false, "active": false, "other_rules": false, "message": "Impossibile leggere lo stato di Tailscale Serve."}
 	var state := parse_serve_status(parsed)
@@ -81,7 +92,7 @@ static func set_enabled(enabled: bool) -> Dictionary:
 			"message": "Tailscale Serve contiene altre condivisioni: modifica manualmente la configurazione per non sovrascriverle."}
 	# The explicit HTTPS port makes teardown avoid the blanket 'serve off'.
 	var arguments := PackedStringArray(
-		["serve", "--bg", "--https=443", str(LOCAL_PORT)]
+		["serve", "--bg", "--yes", "--https=443", str(LOCAL_PORT)]
 		if enabled else
 		["serve", "--https=443", "off"]
 	)
