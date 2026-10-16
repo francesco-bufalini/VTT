@@ -90,16 +90,6 @@ export async function map() {
   return exchange("/api/map", await currentToken());
 }
 
-// The whole private sheet goes only to the *paired* desktop after the user
-// explicitly enables native calculations for this editing session.
-export async function evaluateCreature(creature) {
-  if(!creature||typeof creature!=="object"||Array.isArray(creature))
-    throw new TypeError("Invalid creature payload");
-  const result=await exchange("/api/evaluate",await currentToken(),{creature});
-  if(result?.ok!==true||result?.source!=="godot"||result?.schema!==1)
-    throw new Error(result?.error||"Risultati nativi non disponibili");
-  return result;
-}
 export async function action(name, payload = {}) {
   if (typeof name !== "string" || !name) throw new TypeError("Missing action name");
   return exchange("/api/action", await currentToken(), { action: name, payload });

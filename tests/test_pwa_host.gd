@@ -151,22 +151,6 @@ func run() -> void:
 	var qr_texture: Texture2D = generator.call("get_texture", "https://example.ts.net/#pair=0123456789ABCDEF")
 	assert(qr_texture != null and qr_texture.get_width() > 20, "QR texture failed")
 	generator.free()
-	assert((await http("POST", "/api/evaluate", JSON.stringify({"creature": {"kind":"character","abilities":{"dex":14}}}))).begins_with("HTTP/1.1 401"),
-		"Native calculation endpoint must be authenticated")
-	assert((await http("GET", "/api/evaluate")).begins_with("HTTP/1.1 405"),
-		"Native calculation endpoint only accepts POST")
-	var sample := {"kind": "character", "name": "Web Test",
-		"abilities": {"str": 12, "dex": 14, "con": 10, "int": 10, "wis": 10, "cha": 10},
-		"level": 1, "inventory": [], "max_hp_base": 10}
-	var original: String = JSON.stringify(sample)
-	var result: Dictionary = load("res://vtt/creature_web_calculations.gd").evaluate(sample)
-	assert(bool(result.get("ok", false)), "Read-only native calculation must succeed")
-	assert(result.get("source", "") == "godot")
-	assert(int(result["abilities"]["dex"]["modifier"]) == 2, "Dexterity modifier must be +2")
-	assert(int(result["stats"]["proficiency"]) == 2, "Level 1 proficiency must be +2")
-	assert(int(result["stats"]["armor_class"]) == 12, "Unarmored AC must use Dexterity")
-	assert(int(result["stats"]["initiative"]) == 2, "Initiative must use Dexterity")
-	assert(JSON.stringify(sample) == original, "Preview must not mutate any private creature fields")
 	assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
 	assert((await http("POST", "/api/action", "{\"action\":\"chat_poll\",\"payload\":{}}")).begins_with("HTTP/1.1 401"))
 	assert((await http("GET", "/../project.godot")).begins_with("HTTP/1.1 404"))

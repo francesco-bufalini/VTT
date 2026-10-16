@@ -74,12 +74,3 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .document-paper.parchment{background:#ddc49a;color:#342917}
 .document-paper.letter{background:#f7f1e3;color:#302c27}
 .document-paper p{white-space:pre-wrap}
-
-/* Explicitly distinguish authoritative Godot values from offline basics. */
-.derived-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(125px,100%),1fr));gap:9px;margin:10px 0}
-.derived-metric{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;min-width:0}
-.derived-metric>span{font-size:.83rem;opacity:.8;overflow-wrap:anywhere}
-.derived-metric>strong{font-size:1.2rem;font-variant-numeric:tabular-nums}
-.derived-metric>small{font-size:.75rem;opacity:.8;overflow-wrap:anywhere}
-#derived-calcs details{margin:10px 0}
-.derived-attack{border-bottom:1px solid var(--line);padding:9px 0;overflow-wrap:anywhere}
