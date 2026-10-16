@@ -466,7 +466,10 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
     return stored?.data?.name==="Messaggio segreto"&&
       stored?.data?.data?.description==="Un testo lungo e modificabile.";
   });
+  assert.match(document.querySelector(".document-paper").textContent,/Messaggio segreto/);
+  assert.match(document.querySelector(".document-paper").textContent,/Un testo lungo e modificabile/);
   change('[data-document-part="style"]',"lettera");
+  await until(()=>document.querySelector(".document-paper.letter"));
   await until(async()=> {
     const creature=(await listCreatures()).find(x=>x.creature.name==="Scriba locale")?.creature;
     return creature?.inventory?.some(x=>x.category==="documents"&&x.display_style==="lettera");
