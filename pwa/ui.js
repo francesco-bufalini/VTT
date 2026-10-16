@@ -131,6 +131,7 @@ function calculationPanel(creature){
   const consent=state.calculationConsentId===creature.id;
   const ready=state.paired&&state.online;
   const origin=fresh?"Calcolato da Godot · valori effettivi":
+    consent&&ready?"In attesa di Godot · riepilogo di base provvisorio":
     "Calcolo base offline · bonus e origini non inclusi";
   const actions=consent?
     '<button type="button" class="btn small" data-act="native-calc-off">Non inviare più questa scheda</button>'+
@@ -156,7 +157,9 @@ function scheduleNativeEvaluation(delay=250){
   const consent=state.calculationConsentId===creature.id;
   if(!consent||!state.paired||!state.online)return;
   if(state.nativeProjection?.fingerprint===fingerprint)return;
-  if(state.calculationRequested===fingerprint)return;
+  // Rendering another sheet may cancel the previously scheduled callback.
+  // Always reschedule; otherwise its stale request fingerprint would block
+  // evaluation forever without any visible error.
   state.calculationRequested=fingerprint;
   const generation=derivedGeneration,activeEditor=state.editor,creatureId=state.creatureId;
   derivedTimer=setTimeout(async()=>{
