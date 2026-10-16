@@ -187,7 +187,8 @@ function itemRows(record,warnings){
 function hasProficiency(record,type,id){
   const rows=arr(record.proficiency_choices);
   const matches=rows.filter(row=>row?.kind===type&&same(row.key,id));
-  if(matches.length)return matches.some(row=>!row.disabled);
+  if(matches.length)return matches.some(row=>!row.disabled&&
+    !arr(record.proficiency_origins).some(origin=>origin.id===row.origin_id&&origin.disabled));
   const fields={skill:"skill_proficiencies",expertise:"skill_expertise",save:"saving_throw_proficiencies"};
   const legacy=record[fields[type]];
   // Native restores legacy ranks only while the new origin choice model is absent.
