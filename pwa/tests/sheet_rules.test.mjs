@@ -209,3 +209,20 @@ test("native item bonuses use stable per-item IDs, including attack and spell ad
   const withWeapon=calculateSheet(character({inventory:[weapon]}),catalogs);
   assert.equal(withWeapon.stats.armor_class,12);
 });
+
+test("switching origins withdraws saved proficiencies from a replaced background",()=>{
+  const characterWithLegacyOrigin=character({
+    background:"Noble",background_source:"PHB",
+    proficiency_choices:[{kind:"skill",key:"religion",origin_id:"background|phb|acolyte",
+      origin_name:"Acolyte",disabled:false}],
+    proficiency_origins:[{id:"background|phb|acolyte",disabled:false}]
+  });
+  const result=fixedProficiencies(characterWithLegacyOrigin,catalogs.proficiencyGrants);
+  assert.equal(result.has("skill:religion"),false,
+    "Former backgrounds cannot keep granting proficiencies after replacement");
+  const derived=calculateSheet(characterWithLegacyOrigin,catalogs);
+  assert.equal(derived.skills.religion,0);
+  const active=calculateSheet({...characterWithLegacyOrigin,
+    background:"Acolyte",background_source:"PHB"},catalogs);
+  assert.equal(active.skills.religion,2);
+});
