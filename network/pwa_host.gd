@@ -225,8 +225,9 @@ func _respond(client: Dictionary, status: int, mime: String,
 	head += "Connection: close\r\nCache-Control: no-store\r\n"
 	head += "X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n"
 	head += "Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"
-	client.out = head.to_utf8_buffer()
-	client.out.append_array(payload)
+	var response := head.to_utf8_buffer()
+	response.append_array(payload)
+	client.out = response
 	client.sent = 0
 
 
