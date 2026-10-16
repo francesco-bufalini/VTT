@@ -643,6 +643,9 @@ function listen(){
     } else if(state.page==="session"&&state.paired) refreshConnection(true);
   });
 }
+// Allows tests and future app lifecycle handlers to release polling resources.
+export function stopRealtime() { stopSubscriptions(); }
+
 export async function mount(){
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
