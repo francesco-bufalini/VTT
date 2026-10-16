@@ -594,6 +594,40 @@ func _area_target_names(data: Dictionary) -> Array[String]:
 	return result
 
 
+func _sidebar_persistent_area_index(root: Node3D) -> int:
+	if root == null or not is_instance_valid(root):
+		return -1
+	var roots_value: Variant = measure.get("_aoe_nodes")
+	if roots_value is Array:
+		return (roots_value as Array).find(root)
+	return -1
+
+
+func _delete_sidebar_area(root: Node3D) -> void:
+	if root == null or not is_instance_valid(root):
+		return
+	var index: int = _sidebar_persistent_area_index(root)
+	if index >= 0:
+		measure.call("dissolve_aoe", index)
+	elif root.has_meta("spell_overlay_2d"):
+		measure.call("_remove_post_cast_spell_root", root)
+	_collect_post_cast_areas()
+	_sidebar_signature = ""
+	_refresh_area_sidebar()
+
+
+func _move_sidebar_area(root: Node3D) -> void:
+	if root == null or not is_instance_valid(root):
+		return
+	var index: int = _sidebar_persistent_area_index(root)
+	if index >= 0:
+		# Manual templates are static by default; this explicit command
+		# enables repositioning without changing their spell-specific limits.
+		measure.call("begin_movable_aoe_drag", index, true)
+	elif root.has_meta("spell_overlay_2d"):
+		measure.call("begin_held_aoe_drag", root)
+
+
 func _refresh_area_sidebar() -> void:
 	if _area_sidebar == null:
 		return
@@ -622,12 +656,33 @@ func _refresh_area_sidebar() -> void:
 	for data: Dictionary in entries:
 		var shape: String = String(data["shape"])
 		counts[shape] = int(counts.get(shape, 0)) + 1
+		var header := HBoxContainer.new()
+		header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_area_rows.add_child(header)
 		var title := Label.new()
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var shape_name: String = {"sphere": "Sfera", "cube": "Cubo", "cone": "Cono",
 			"line": "Linea", "cylinder": "Cilindro", "flat_square": "Quadrato"}.get(shape, shape)
 		title.text = "● %s %d%s" % [shape_name, counts[shape], " · anteprima" if bool(data.get("preview", false)) else ""]
 		title.add_theme_color_override("font_color", _area_color(data))
-		_area_rows.add_child(title)
+		header.add_child(title)
+		var root_value: Variant = data.get("root")
+		if root_value is Node3D and is_instance_valid(root_value):
+			var area_root: Node3D = root_value as Node3D
+			var move_button := Button.new()
+			move_button.name = "MoveAreaButton"
+			move_button.text = "Sposta"
+			move_button.tooltip_text = "Sposta la figura sulla mappa: clic sinistro conferma, destro o Esc annulla"
+			move_button.focus_mode = Control.FOCUS_NONE
+			move_button.pressed.connect(_move_sidebar_area.bind(area_root))
+			header.add_child(move_button)
+			var delete_button := Button.new()
+			delete_button.name = "DeleteAreaButton"
+			delete_button.text = "×"
+			delete_button.tooltip_text = "Elimina questa figura"
+			delete_button.focus_mode = Control.FOCUS_NONE
+			delete_button.pressed.connect(_delete_sidebar_area.bind(area_root))
+			header.add_child(delete_button)
 		var dimensions := Label.new()
 		dimensions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		dimensions.text = measure.call("aoe_dimensions_description", data["start"], data["end"],
