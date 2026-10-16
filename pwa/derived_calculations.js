@@ -19,9 +19,11 @@ export function offlineBasics(record={}){
     abilities[id]={score,modifier:Math.floor((score-10)/2)};
   }
   const classes=Array.isArray(record.classes)?record.classes:[];
-  const classLevels=classes.reduce((sum,row)=>sum+
+  const classLevels=classes.filter(row=>String(row?.name||"").trim()).reduce((sum,row)=>sum+
     Math.max(0,Math.min(20,Number(row?.level)||0)),0);
-  const level=Math.max(1,Math.min(20,classLevels||Number(record.level)||1));
+  // Godot disregards the 'level' field when no class is actually selected.
+  const level=Math.max(1,Math.min(20,classLevels||
+    (record.class?Number(record.level)||1:1)));
   const proficiency=record.kind==="monster"?null:2+Math.floor((level-1)/4);
   return {source:"offline",schema:1,abilities,
     stats:{proficiency,level},saves:{},skills:{},spell_slots:[],attacks:[]};
