@@ -221,7 +221,16 @@ static func delete_popup(parent: Control, entry: Dictionary, on_removed: Callabl
 	dialog.ok_button_text = "Elimina"
 	dialog.cancel_button_text = "Annulla"
 	dialog.dialog_text = "Eliminare '%s' dal catalogo locale?\nLe schede che lo usano potrebbero perdere i benefici automatici.\nGli oggetti già nell'inventario rimangono." % String(entry.get("name", ""))
-	parent.add_child(dialog)
+	# Popups nested inside a scrolling editor may be offset off screen.
+	# Prefer the owning canvas while preserving callers without a CanvasLayer.
+	var host: Node = parent
+	var ancestor: Node = parent
+	while ancestor != null:
+		if ancestor is CanvasLayer:
+			host = ancestor
+			break
+		ancestor = ancestor.get_parent()
+	host.add_child(dialog)
 	dialog.confirmed.connect(func() -> void:
 		if Store.remove(entry) and on_removed.is_valid():
 			on_removed.call()

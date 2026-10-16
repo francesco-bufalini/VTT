@@ -114,6 +114,7 @@ var _sheet_spawn_pending_record: Dictionary = {}
 var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
+var _identity_placement_notice_generation: int = 0
 var identity_free_tokens_panel: PanelContainer
 var identity_free_tokens_rows: VBoxContainer
 var token_resize_menu: PopupMenu
@@ -770,6 +771,7 @@ func _claim_free_token_from_placement(token: CharacterBody3D) -> bool:
 
 
 func _set_identity_placement_hint(text: String) -> void:
+	_identity_placement_notice_generation += 1
 	if identity_placement_panel == null or identity_placement_label == null:
 		return
 	identity_placement_label.text = text
@@ -777,10 +779,26 @@ func _set_identity_placement_hint(text: String) -> void:
 
 
 func _hide_identity_placement_hint() -> void:
+	_identity_placement_notice_generation += 1
 	if identity_placement_panel != null:
 		identity_placement_panel.hide()
 	if identity_free_tokens_panel != null:
 		identity_free_tokens_panel.hide()
+
+
+# An unsuccessful placement is not an ongoing placement command. Clear the
+# pending world point and show a non-modal notice that dismisses itself.
+func _cancel_sheet_spawn_with_notice(message: String) -> void:
+	_sheet_spawn_picking = false
+	_sheet_spawn_record.clear()
+	_sheet_spawn_pending_record.clear()
+	_reset_token_generation_state()
+	_hide_identity_placement_hint()
+	_set_identity_placement_hint(message)
+	var notice_generation: int = _identity_placement_notice_generation
+	await get_tree().create_timer(3.0).timeout
+	if is_inside_tree() and _identity_placement_notice_generation == notice_generation:
+		_hide_identity_placement_hint()
 
 
 func _connect_token_pack_manager() -> void:
@@ -866,8 +884,7 @@ func _on_remote_token_download_failed(
 	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
 		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
 	)) == token_id:
-		_sheet_spawn_pending_record.clear()
-		_set_identity_placement_hint("Download fallito: " + message)
+		_cancel_sheet_spawn_with_notice("Piazzamento annullato: download fallito: " + message)
 
 	if String(_selected_token_profile.get("id", "")) == token_id:
 		var ok_button := color_dialog.get_ok_button()
@@ -1868,8 +1885,8 @@ func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
 		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
 	var profile := _identity_profile_by_id(miniature_id)
 	if profile.is_empty():
-		_set_identity_placement_hint(
-			"Miniatura non disponibile nel catalogo: %s. Apri la scheda e scegli un altro aspetto." % miniature_id
+		_cancel_sheet_spawn_with_notice(
+			"Piazzamento annullato: miniatura %s non disponibile. Scegli un altro aspetto nella scheda." % miniature_id
 		)
 		return
 	_sheet_spawn_pending_record = record.duplicate(true)
@@ -1878,8 +1895,7 @@ func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
 		_set_identity_placement_hint("Download dell'aspetto attuale in corso: %s" % miniature_id)
 		var error: Error = TokenPackManager.download_token(miniature_id)
 		if error != OK:
-			_sheet_spawn_pending_record.clear()
-			_set_identity_placement_hint("Download della miniatura non riuscito: %s" % error_string(error))
+			_cancel_sheet_spawn_with_notice("Piazzamento annullato: download della miniatura non riuscito (%s)." % error_string(error))
 		return
 	_finish_sheet_spawn_without_dialog()
 
@@ -1895,26 +1911,23 @@ func _finish_sheet_spawn_without_dialog() -> void:
 		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
 	var profile := _identity_profile_by_id(miniature_id)
 	if profile.is_empty():
-		_sheet_spawn_pending_record.clear()
-		_set_identity_placement_hint("La miniatura non è più disponibile: %s" % miniature_id)
+		_cancel_sheet_spawn_with_notice("Piazzamento annullato: miniatura non più disponibile: %s" % miniature_id)
 		return
 	var origin := String(profile.get("_pack_origin", ""))
 	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
 		if TokenPackManager.mount_token(miniature_id) != OK:
-			_sheet_spawn_pending_record.clear()
-			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile montare %s" % miniature_id)
 			return
 	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
 		var err: Error = TokenPackManager.mount_local_token(
 			miniature_id, profile, String(profile.get("_local_pck_path", ""))
 		)
 		if err != OK:
-			_sheet_spawn_pending_record.clear()
-			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile montare %s" % miniature_id)
 			return
 	var area := get_node_or_null("CreatureArea")
 	if area == null:
-		_sheet_spawn_pending_record.clear()
+		_cancel_sheet_spawn_with_notice("Piazzamento annullato: archivio creature non disponibile.")
 		return
 	_creature_spawn_sheet_id = String(record.get("id", ""))
 	_token_generation_confirmed_callback = Callable(
@@ -1927,9 +1940,7 @@ func _finish_sheet_spawn_without_dialog() -> void:
 	_token_name_is_auto = false
 	_refresh_token_miniature_filter("", miniature_id)
 	if String(_selected_token_profile.get("id", "")) != miniature_id:
-		_sheet_spawn_pending_record.clear()
-		_reset_token_generation_state()
-		_set_identity_placement_hint("Selezione miniatura non riuscita: %s" % miniature_id)
+		_cancel_sheet_spawn_with_notice("Piazzamento annullato: selezione miniatura non riuscita: %s" % miniature_id)
 		return
 	_prepare_shared_token_editor()
 	_set_token_name_input(
@@ -4741,6 +4752,7 @@ func _reset_token_generation_state() -> void:
 
 
 func _on_token_dialog_confirmed() -> void:
+	var spawning_sheet_token: bool = not _creature_spawn_sheet_id.is_empty()
 	var selected_origin := String(
 		_selected_token_profile.get("_pack_origin", "")
 	)
@@ -4761,6 +4773,10 @@ func _on_token_dialog_confirmed() -> void:
 					push_warning(
 						"DnDBase: scarica prima il token remoto: %s" % pack_id
 					)
+					if spawning_sheet_token:
+						_cancel_sheet_spawn_with_notice(
+							"Piazzamento annullato: miniatura non scaricata: %s" % pack_id
+						)
 					return
 				mount_error = TokenPackManager.mount_token(pack_id)
 			if mount_error != OK:
@@ -4768,6 +4784,10 @@ func _on_token_dialog_confirmed() -> void:
 					pack_id,
 					"Mount non riuscito: %s" % error_string(mount_error)
 				)
+				if spawning_sheet_token:
+					_cancel_sheet_spawn_with_notice(
+						"Piazzamento annullato: impossibile montare %s" % pack_id
+					)
 				return
 		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
@@ -4930,6 +4950,10 @@ func _on_token_dialog_confirmed() -> void:
 		_token_generation_canceled_callback
 	)
 	_reset_token_generation_state()
+	if spawning_sheet_token and (created_token == null or not is_instance_valid(created_token)):
+		_cancel_sheet_spawn_with_notice(
+			"Piazzamento annullato: impossibile caricare la miniatura della creatura."
+		)
 
 	if (
 		created_token != null
@@ -5021,9 +5045,11 @@ func _spawn_token(
 				visual_native_footprint
 			)
 		):
-			push_warning(
-				"DnDBase: miniatura non caricata: %s" % visual_asset
-			)
+			push_warning("DnDBase: miniatura non caricata: %s" % visual_asset)
+			if not _creature_spawn_sheet_id.is_empty():
+				# Never leave a linked creature represented by a dummy token.
+				token.queue_free()
+				return null
 	if token.has_method("set_visual_front_quarter_turns"):
 		token.call(
 			"set_visual_front_quarter_turns",

@@ -45,7 +45,9 @@ static func popup(
 	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
 	if touch:
 		_fit_touch_window(dialog, preferred_size)
-	_check_first_frame_layout(dialog, preferred_size)
+	else:
+		_fit_desktop_window(dialog, fallback_ratio)
+	_check_first_frame_layout(dialog, preferred_size, fallback_ratio)
 
 
 static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> void:
@@ -72,7 +74,20 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
-static func _check_first_frame_layout(dialog: Window, preferred_size: Vector2i) -> void:
+# Correct the initial frame too: popup_centered_clamped may use an embedded
+# viewport larger than the desktop window, especially for nested sheet dialogs.
+static func _fit_desktop_window(dialog: Window, ratio: float) -> void:
+	var available: Vector2i = _root_bounds(dialog)
+	var allowed: Vector2i = Vector2i(Vector2(available) * clampf(ratio, 0.1, 1.0))
+	allowed = allowed.min(available - Vector2i(24, 24)).max(Vector2i(1, 1))
+	dialog.min_size = Vector2i.ZERO
+	dialog.size = dialog.size.min(allowed)
+	dialog.position = (available - dialog.size) / 2
+
+
+static func _check_first_frame_layout(
+	dialog: Window, preferred_size: Vector2i, fallback_ratio: float
+) -> void:
 	var tree: SceneTree = dialog.get_tree()
 	await tree.process_frame
 	if not is_instance_valid(dialog) or not dialog.visible:
@@ -84,8 +99,4 @@ static func _check_first_frame_layout(dialog: Window, preferred_size: Vector2i) 
 			_fit_touch_window(dialog, preferred_size)
 		return
 	# Desktop windows can measure their contents on the next frame.
-	var available: Vector2i = _root_bounds(dialog)
-	var allowed: Vector2i = (available - Vector2i(24, 24)).max(Vector2i(1, 1))
-	dialog.min_size = Vector2i.ZERO
-	dialog.size = dialog.size.min(allowed)
-	dialog.position = (available - dialog.size) / 2
+	_fit_desktop_window(dialog, fallback_ratio)

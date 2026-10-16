@@ -64,6 +64,22 @@ func run() -> void:
 	deletion.close_requested.emit()
 	await process_frame
 	assert(not is_instance_valid(deletion))
+	# Even when invoked from a sheet nested under a canvas, delete popups
+	# must open in the canvas instead of inheriting panel offsets.
+	var canvas := CanvasLayer.new()
+	root.add_child(canvas)
+	var nested := Control.new()
+	nested.position = Vector2(90, 75)
+	canvas.add_child(nested)
+	Dialogs.delete_popup(nested, {"id": "homebrew:" + Store.NAMESPACE + ":regression", "name": "Synthetic"}, Callable())
+	var canvas_deletion := canvas.get_child(1) as ConfirmationDialog
+	assert(canvas_deletion != null and canvas_deletion.visible
+		and canvas_deletion.get_parent() == canvas,
+		"Nested delete dialog must be hosted by the owning canvas")
+	canvas_deletion.close_requested.emit()
+	await process_frame
+	assert(not is_instance_valid(canvas_deletion))
+	canvas.queue_free()
 	var warning := AcceptDialog.new()
 	parent.add_child(warning)
 	Dialogs._free_on_close(warning)
