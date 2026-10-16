@@ -48,6 +48,9 @@ func save_records(kind: String, records: Array[Dictionary], allow_transfer: bool
 	var merged: Array[Dictionary] = []
 	for old: Dictionary in loaded.records:
 		if String(old.get("kind", "")) != kind:
+			# Token links address creature IDs globally, not kind-qualified IDs.
+			if incoming_ids.has(String(old.get("id", ""))):
+				return ERR_ALREADY_EXISTS
 			merged.append(old.duplicate(true))
 			continue
 		var old_id := String(old.get("id", ""))
@@ -80,8 +83,10 @@ func upsert(record: Dictionary, allow_transfer: bool = false) -> Error:
 	var records: Array[Dictionary] = loaded.records
 	for index: int in range(records.size()):
 		var old: Dictionary = records[index]
-		if String(old.get("kind", "")) != kind or String(old.get("id", "")) != id:
+		if String(old.get("id", "")) != id:
 			continue
+		if String(old.get("kind", "")) != kind:
+			return ERR_ALREADY_EXISTS
 		if not allow_transfer and not Owner.can_edit(record, old):
 			return ERR_UNAUTHORIZED
 		records[index] = record.duplicate(true)
@@ -124,14 +129,17 @@ func _load() -> Dictionary:
 		if int(parsed.get("version", -1)) != FILE_VERSION or not parsed.get("creatures") is Array:
 			return {"error": ERR_FILE_CORRUPT, "records": []}
 		var records: Array[Dictionary] = []
+		var seen_ids: Dictionary = {}
 		for entry: Variant in parsed["creatures"]:
 			if not entry is Dictionary:
 				return {"error": ERR_FILE_CORRUPT, "records": []}
 			var record: Dictionary = entry
 			if String(record.get("kind", "")) not in ["character", "monster"]:
 				return {"error": ERR_FILE_CORRUPT, "records": []}
-			if String(record.get("id", "")).strip_edges().is_empty():
+			var id := String(record.get("id", "")).strip_edges()
+			if id.is_empty() or seen_ids.has(id):
 				return {"error": ERR_FILE_CORRUPT, "records": []}
+			seen_ids[id] = true
 			records.append(record.duplicate(true))
 		return {"error": OK, "records": records}
 	# Migration happens only when the global file does not exist. Its existence
@@ -181,7 +189,7 @@ func _load() -> Dictionary:
 					record["id"] = id
 				var duplicate := false
 				for existing: Dictionary in legacy:
-					if String(existing.get("kind", "")) != record["kind"] or String(existing.get("id", "")) != id:
+					if String(existing.get("id", "")) != id:
 						continue
 					if existing == record:
 						duplicate = true
