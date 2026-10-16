@@ -44,10 +44,16 @@ func run() -> void:
 	# Scontro contro Kaos inherits the VTT board logic through
 	# final_encounter.gd; it must be recognized without matching dnd_base.tscn.
 	var kaos_board := Node3D.new()
-	kaos_board.set_script(load("res://encounter/scontro_contro_kaos.gd"))
+	kaos_board.set_script(load("res://tests/fixtures/pwa_board_descendant.gd"))
 	assert(host.call("_is_board_scene", kaos_board),
 		"Derived Scontro contro Kaos must be a playable PWA host")
 	kaos_board.free()
+	# Verify the named encounter really inherits the same board script.
+	# Reading the .gd source avoids loading optional large models absent in CI.
+	var kaos_source := FileAccess.get_file_as_string("res://encounter/scontro_contro_kaos.gd")
+	var encounter_source := FileAccess.get_file_as_string("res://encounter/final_encounter.gd")
+	assert(kaos_source.begins_with("extends \"res://encounter/final_encounter.gd\""))
+	assert(encounter_source.begins_with("extends \"res://dnd_base.gd\""))
 	var unrelated := Node3D.new()
 	assert(not host.call("_is_board_scene", unrelated),
 		"Unrelated scenes must not bind the PWA HTTP listener")
