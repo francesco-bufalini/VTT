@@ -155,7 +155,10 @@ The browser archive now exposes:
 - `importCreatureExport()` / `importCreatureFile()`: parse the **actual**
   `vtt_creature_export_v1` JSON from VTT desktop/Android; keep unknown
   fields, nested inventory and spells intact. Copies have a fresh ID and local
-  owner; old token/ownership links are cleared.
+  owner; old token/ownership links are cleared. Multi-creature packages are
+  committed in a **single** IndexedDB transaction, after validating every
+  entry and checking conflicting homebrew definitions; failures leave no
+  partially imported batch.
 - `saveCreature()` / `openCreatureEditor()`: local creature changes are
   committed immediately with optimistic revision checks. A stale editor is
   rejected rather than overwriting another tab.
@@ -169,7 +172,8 @@ The browser archive now exposes:
 
 The browser **GUI** (`pwa/index.html`, `pwa/styles.css`, `pwa/ui.js`) now calls
 the local archive directly:
-- **Creature**: list, create/import/export/delete, edit abilities, HP and base
+- **Creature**: list, create/import/export/delete (including bulk import/export
+  with selection-only actions), edit abilities, HP and base
   stats, names, origins, character notes, personal conditions, inventory
   name/quantity/description, spell IDs and expended slots, plus native-schema
   manual resource trackers, usage counters and short/long rest recovery. Also
@@ -177,7 +181,8 @@ the local archive directly:
 - **Dadi**: local Web Crypto dice rolls and optional chat sharing through
   the existing native `chat_send` action.
 - **Chat**: send text and poll existing native shared chat events while paired.
-- **Partita**: HTTPS bearer pairing, visible tactical tokens, movement and
+- **Partita**: HTTPS bearer pairing, automatic tactical-map retries after
+  temporary desktop loss and resume/online reconnect, visible tactical tokens, movement and
   condition actions, native-compatible placement next to an existing token or
   claim of a free scene token, combat initiative. Placement uploads only a
   public subset of the local creature (never private HP, inventory or spells).
