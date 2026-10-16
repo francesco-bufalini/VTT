@@ -97,8 +97,8 @@ func run() -> void:
 	host.set("_short_code_expiry", Time.get_ticks_msec() - 1)
 	assert((await http("POST", "/api/pair", JSON.stringify({"code":short_code}))).begins_with("HTTP/1.1 401"),
 		"Expired code must be rejected")
-	var generator := load("res://vtt/qr/qr_code.gd").new()
-	var qr_texture: ImageTexture = generator.get_texture("https://example.ts.net/#pair=0123456789ABCDEF")
+	var generator: Node = load("res://vtt/qr/qr_code.gd").new()
+	var qr_texture: Texture2D = generator.call("get_texture", "https://example.ts.net/#pair=0123456789ABCDEF")
 	assert(qr_texture != null and qr_texture.get_width() > 20, "QR texture failed")
 	generator.free()
 	assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
