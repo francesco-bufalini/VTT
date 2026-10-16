@@ -2,6 +2,7 @@ extends RefCounted
 
 # Resource counters backed by numeric 5etools JSON fields or formal 5etools
 # {@recharge ...} markup. This module never interprets feature prose.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Features = preload("res://vtt/creature_features.gd")
@@ -64,6 +65,11 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 		if tracker_id.is_empty() or title.is_empty() or seen.has(tracker_id):
 			continue
 		seen[tracker_id] = true
+		# An unmet requirement hides a manual resource without deleting its
+		# stable ID or the saved count of spent uses.
+		var gate: Dictionary = BenefitRequirements.normalize(data)
+		if not BenefitRequirements.allows(record, gate):
+			continue
 		var formula: String = String(data.get("max_formula", "")).strip_edges()
 		var maximum: int = maxi(0, int(data.get("max", 0)))
 		if not formula.is_empty():
@@ -73,7 +79,7 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 		output.append({
 			"id": tracker_id, "name": title,
 			"max": maximum,
-			"max_formula": formula,
+			"max_formula": formula, "requirements": gate,
 			"origin": String(data.get("origin_name", "Senza origine")),
 			"origin_id": String(data.get("origin_id", "")),
 			"origin_name": String(data.get("origin_name", "Senza origine")),
@@ -85,6 +91,46 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 
 # Connect automatic counters to a real trait whenever possible. Only
 # otherwise use a stable internal counter identity, not an invented feat.
+# Prefer an explicit structured feature reference. A name is only an
+# unambiguous fallback within the same class, edition and subclass.
+# Never attach a counter to an unrelated equally named trait.
+static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) -> Dictionary:
+	var reference: String = String(row.get("origin_feature_key", ""))
+	if reference.begins_with("feature:"):
+		reference = reference.substr(8)
+	if not reference.is_empty():
+		for feature: Dictionary in features:
+			if String(feature.get("key", "")) == reference:
+				return feature
+		return {}
+	var class_name: String = String(row.get("origin_class", ""))
+	var source: String = String(row.get("origin_class_source", ""))
+	var subclass: String = String(row.get("origin_subclass", ""))
+	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower()
+	if wanted.is_empty():
+		return {}
+	var found: Dictionary = {}
+	for feature: Dictionary in features:
+		if not class_name.is_empty():
+			if String(feature.get("class_name", "")).nocasecmp_to(class_name) != 0:
+				continue
+			if not source.is_empty() and String(feature.get("class_source", "")).nocasecmp_to(source) != 0:
+				continue
+			var origin_key: String = String(feature.get("origin_key", ""))
+			var is_subclass: bool = "|subclass|" in origin_key
+			if is_subclass != (not subclass.is_empty()):
+				continue
+			if is_subclass and ("|subclass|" + subclass.to_lower() + "|") not in origin_key:
+				continue
+		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower()
+		if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
+			continue
+		if not found.is_empty():
+			return {} # Ambiguous, do not arbitrarily borrow the first feature.
+		found = feature
+	return found
+
+
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
 	if output.is_empty():
 		return
@@ -93,20 +139,15 @@ static func _assign_automatic_origins(record: Dictionary, output: Array[Dictiona
 		row["automatic"] = true
 		row["disabled"] = false
 		var label: String = String(row.get("origin", row.get("name", "")))
-		var origin_id := ""
-		var wanted: String = label.strip_edges().to_lower()
-		for feature: Dictionary in features:
-			var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower()
-			if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
-				continue
+		var origin_id: String = ""
+		var feature: Dictionary = _find_tracker_feature(row, features)
+		if not feature.is_empty():
 			origin_id = "feature:" + String(feature.get("key", ""))
 			label = "Tratto · " + String(feature.get("name", ""))
-			break
 		if origin_id.is_empty():
 			origin_id = "tracker:auto:" + String(row.get("id", ""))
 		row["origin_id"] = origin_id
 		row["origin_name"] = label
-
 
 static func _append_monster_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
 	var raw: Variant = record.get("stat_block", {})
@@ -301,6 +342,9 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				"name": column,
 				"max": int(maximum),
 				"origin": String(definition.get("origin_feature", column)),
+				"origin_feature_key": String(definition.get("origin_feature_key", "")),
+				"origin_class": String(class_data.get("name", "")),
+				"origin_class_source": resolved_source,
 				"recharge": "manual",
 				"source_label": "%s · %s" % [
 					String(class_data.get("name", "")), resolved_source
@@ -337,6 +381,10 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				"max": int(supplement.get("max", 0)),
 				"max_formula": String(supplement.get("max_formula", "")),
 				"origin": String(supplement.get("origin", supplement_column)),
+				"origin_feature_key": String(supplement.get("origin_feature_key", "")),
+				"origin_class": String(class_data.get("name", "")),
+				"origin_class_source": resolved_source,
+				"origin_subclass": String(supplement.get("subclass", "")),
 				"recharge": String(supplement.get("recharge", "manual")),
 				"source_label": "%s · %s" % [String(class_data.get("name", "")), resolved_source]
 			})
