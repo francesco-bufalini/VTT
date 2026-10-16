@@ -5,6 +5,7 @@ const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 const SpellTargetOverlay2D = preload("res://vtt/spells/spell_target_overlay_2d.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ReachGeometry = preload("res://vtt/flanking_system.gd")
+const TargetRules = preload("res://vtt/spells/spell_target_rules.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
@@ -2507,15 +2508,7 @@ func _wall_point_data(
 	if measurement_tool == null:
 		return {"valid": false}
 
-	var point_value: Variant = _remote_pick_point if _remote_input_active else (
-		_screen_2d_point_data(screen_position)
-		if _is_2d_view()
-		else measurement_tool.call("get_spell_target_point", screen_position)
-	)
-	if not point_value is Dictionary:
-		return {"valid": false}
-
-	var point_data: Dictionary = point_value as Dictionary
+	var point_data: Dictionary = _raw_point_input(screen_position)
 	if not bool(point_data.get("valid", false)):
 		return {"valid": false}
 
@@ -2530,14 +2523,12 @@ func _wall_point_data(
 	if require_range:
 		if _pending_caster == null or not is_instance_valid(_pending_caster):
 			return {"valid": false}
-		var max_distance: float = _spell_range_world(
-			_effective_spell_range_feet(spell_data, _pending_caster)
+		var range_result: Dictionary = TargetRules.point_in_range(
+			_pending_caster.global_position, point,
+			_effective_spell_range_feet(spell_data, _pending_caster), _cell_size()
 		)
-		if (
-			_pending_caster.global_position.distance_to(point)
-			> max_distance + _cell_size() * 0.01
-		):
-			return {"valid": false, "out_of_range": true}
+		if not bool(range_result.get("valid", false)):
+			return range_result
 
 	return {
 		"valid": true,
@@ -3081,18 +3072,7 @@ func _direction_target_data(
 			spell_data
 		)
 
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return {"valid": false}
-
-	var point_value: Variant = _remote_pick_point if _remote_input_active else measurement_tool.call(
-		"get_spell_target_point",
-		screen_position
-	)
-	if not point_value is Dictionary:
-		return {"valid": false}
-
-	var point_data: Dictionary = point_value as Dictionary
+	var point_data: Dictionary = _raw_point_input(screen_position)
 	if not bool(point_data.get("valid", false)):
 		return {"valid": false}
 
@@ -3109,21 +3089,12 @@ func _validate_direction_point(
 	if _pending_caster == null or not is_instance_valid(_pending_caster):
 		return {"valid": false}
 
-	var cell_size: float = _cell_size()
-	var range_feet: float = _direction_limit_feet(spell_data)
-	var max_world_distance: float = _spell_range_world(range_feet)
-	var actual_world_distance: float = (
-		_pending_caster.global_position.distance_to(point)
+	var validated: Dictionary = TargetRules.point_in_range(
+		_pending_caster.global_position, point,
+		_direction_limit_feet(spell_data), _cell_size()
 	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
-		return {
-			"valid": false,
-			"out_of_range": true,
-			"point": point,
-			"distance_feet": int(
-				round(actual_world_distance / cell_size * 5.0)
-			)
-		}
+	if not bool(validated.get("valid", false)):
+		return validated
 
 	var origin: Vector3 = _token_spell_origin(_pending_caster)
 	if origin.distance_squared_to(point) < 0.0001:
@@ -3139,87 +3110,63 @@ func _chain_secondary_target_data(
 	screen_position: Vector2,
 	spell_data: Dictionary
 ) -> Dictionary:
-	if (
-		_pending_chain_primary == null
-		or not is_instance_valid(_pending_chain_primary)
-	):
-		return {"valid": false}
+	return _chain_secondary_candidate(_token_at_screen(screen_position), spell_data)
 
-	var target: Node3D = _token_at_screen(screen_position)
-	if (
-		target == null
-		or target == _pending_chain_primary
-		or target in _pending_targets
-	):
-		return {"valid": false}
 
-	var range_feet: float = float(
-		spell_data.get("secondary_range_feet", 30.0)
+func _chain_secondary_candidate(candidate: Node3D, spell_data: Dictionary) -> Dictionary:
+	if candidate in _pending_targets:
+		return {"valid": false}
+	# A secondary bolt originates from the primary victim, not the caster.
+	return TargetRules.token_in_range(
+		_pending_chain_primary, candidate,
+		float(spell_data.get("secondary_range_feet", 30.0)), _cell_size()
 	)
-	var actual_distance_feet: float = _token_target_distance_feet(_pending_chain_primary, target)
-	if actual_distance_feet > range_feet + 0.001:
-		return {
-			"valid": false,
-			"out_of_range": true,
-			"target": target
-		}
-
-	return {"valid": true, "target": target}
 
 
+# Input adapters provide candidates; eligibility does not depend on which
+# projection (2D, 3D, remote phone) supplied the token.
 func _target_token_data(
 	screen_position: Vector2,
 	spell_data: Dictionary
 ) -> Dictionary:
-	if _pending_caster == null or not is_instance_valid(_pending_caster):
-		return {"valid": false}
+	return _target_token_candidate(_token_at_screen(screen_position), spell_data)
 
-	var target: Node3D = _token_at_screen(screen_position)
-	if target == null or target == _pending_caster:
-		return {"valid": false}
 
-	var range_feet: float = _effective_spell_range_feet(
-		spell_data,
-		_pending_caster
+func _target_token_candidate(candidate: Node3D, spell_data: Dictionary) -> Dictionary:
+	return TargetRules.token_in_range(
+		_pending_caster, candidate,
+		_effective_spell_range_feet(spell_data, _pending_caster), _cell_size()
 	)
-	var actual_distance_feet: float = _token_target_distance_feet(_pending_caster, target)
-	if actual_distance_feet > range_feet + 0.001:
-		return {
-			"valid": false,
-			"out_of_range": true,
-			"target": target,
-			"distance_feet": int(round(actual_distance_feet))
-		}
-
-	return {
-		"valid": true,
-		"target": target
-	}
 
 
 func _target_or_point_data(
 	screen_position: Vector2,
 	spell_data: Dictionary
 ) -> Dictionary:
-	var hovered_token: Node3D = _token_at_screen(screen_position)
-	if hovered_token != null:
-		var token_data: Dictionary = _target_token_data(
-			screen_position,
-			spell_data
-		)
-		token_data["kind"] = "token"
-		return token_data
-
-	if not bool(spell_data.get("allow_point_target", false)):
-		return {"valid": false}
-
-	var point_data: Dictionary = _point_target_data(
-		screen_position,
+	var hovered: Node3D = _token_at_screen(screen_position)
+	return _target_or_point_candidate(
+		hovered, _raw_point_input(screen_position,
+			_point_target_air_distance_world(spell_data),
+			Input.is_key_pressed(KEY_SHIFT)) if hovered == null and bool(spell_data.get("allow_point_target", false)) else {},
 		spell_data
 	)
-	point_data["kind"] = "point"
-	return point_data
 
+
+func _target_or_point_candidate(
+	candidate: Node3D,
+	point_input: Dictionary,
+	spell_data: Dictionary
+) -> Dictionary:
+	if candidate != null:
+		# A token rejected by the rules must not silently become a point.
+		var target_result: Dictionary = _target_token_candidate(candidate, spell_data)
+		target_result["kind"] = "token"
+		return target_result
+	if not bool(spell_data.get("allow_point_target", false)):
+		return {"valid": false}
+	var point_result: Dictionary = _validate_spell_point(point_input, spell_data)
+	point_result["kind"] = "point"
+	return point_result
 
 func _is_2d_view() -> bool:
 	return (
@@ -3260,78 +3207,66 @@ func _point_target_already_selected(point: Vector3) -> bool:
 	return false
 
 
+func _raw_point_input(
+	screen_position: Vector2,
+	preferred_air_distance_world: float = -1.0,
+	force_grid_target: bool = false
+) -> Dictionary:
+	# This adapter is the only viewport-dependent part of point targeting.
+	# Remote clients provide an already projected world point directly.
+	if _remote_input_active:
+		return _remote_pick_point.duplicate()
+	if _is_2d_view():
+		return _screen_2d_point_data(screen_position)
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return {"valid": false}
+	var value: Variant = measurement_tool.call(
+		"get_spell_target_point", screen_position,
+		preferred_air_distance_world, force_grid_target
+	)
+	return value if value is Dictionary else {"valid": false}
+
+
 func _point_target_data(
 	screen_position: Vector2,
 	spell_data: Dictionary
 ) -> Dictionary:
+	var force_grid_target: bool = Input.is_key_pressed(KEY_SHIFT)
+	var air_distance: float = (
+		-1.0 if force_grid_target
+		else _point_target_air_distance_world(spell_data)
+	)
+	return _validate_spell_point(
+		_raw_point_input(screen_position, air_distance, force_grid_target),
+		spell_data
+	)
+
+
+func _validate_spell_point(
+	point_input: Dictionary,
+	spell_data: Dictionary
+) -> Dictionary:
 	if _pending_caster == null or not is_instance_valid(_pending_caster):
 		return {"valid": false}
-
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
+	if not bool(point_input.get("valid", false)):
 		return {"valid": false}
-
-	var force_grid_target: bool = Input.is_key_pressed(KEY_SHIFT)
-	var preferred_air_distance_world: float = -1.0
-	if not force_grid_target:
-		preferred_air_distance_world = _point_target_air_distance_world(
-			spell_data
-		)
-
-	var point_value: Variant = _remote_pick_point if _remote_input_active else (
-		_screen_2d_point_data(screen_position)
-		if _is_2d_view()
-		else measurement_tool.call(
-			"get_spell_target_point",
-			screen_position,
-			preferred_air_distance_world,
-			force_grid_target
-		)
-	)
-	if not point_value is Dictionary:
-		return {"valid": false}
-
-	var point_data: Dictionary = point_value as Dictionary
-	if not bool(point_data.get("valid", false)):
-		return {"valid": false}
-
 	if bool(spell_data.get("requires_ground", false)):
-		if bool(point_data.get("in_air", true)):
+		if bool(point_input.get("in_air", true)):
 			return {"valid": false}
-		var surface_normal: Vector3 = point_data.get(
-			"normal",
-			Vector3.ZERO
-		)
-		if surface_normal.dot(Vector3.UP) < 0.5:
+		var normal: Vector3 = point_input.get("normal", Vector3.ZERO)
+		if normal.dot(Vector3.UP) < 0.5:
 			return {"valid": false}
-
-	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
-	var cell_size: float = _cell_size()
-	var range_feet: float = _effective_spell_range_feet(
-		spell_data,
-		_pending_caster
+	var target_point: Vector3 = point_input.get("point", Vector3.ZERO)
+	var validated: Dictionary = TargetRules.point_in_range(
+		_pending_caster.global_position, target_point,
+		_effective_spell_range_feet(spell_data, _pending_caster), _cell_size()
 	)
-	var max_world_distance: float = range_feet / 5.0 * cell_size
-	var actual_world_distance: float = (
-		_pending_caster.global_position.distance_to(target_point)
-	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
-		return {
-			"valid": false,
-			"out_of_range": true,
-			"point": target_point,
-			"distance_feet": int(
-				round(actual_world_distance / cell_size * 5.0)
-			)
-		}
-
-	return {
-		"valid": true,
-		"point": target_point,
-		"in_air": bool(point_data.get("in_air", false)),
-		"normal": point_data.get("normal", Vector3.ZERO)
-	}
-
+	if not bool(validated.get("valid", false)):
+		return validated
+	validated["in_air"] = bool(point_input.get("in_air", false))
+	validated["normal"] = point_input.get("normal", Vector3.ZERO)
+	return validated
 
 func _point_target_air_distance_feet(
 	spell_data: Dictionary
@@ -4816,18 +4751,7 @@ func _spell_targets_in_geometry(
 	var shape: String = String(
 		spell_data.get("aoe_shape", "sphere")
 	)
-	var description: String = String(
-		spell_data.get("description", "")
-	).to_lower()
-	var target_mode: String = String(
-		spell_data.get("target_mode", "")
-	)
-	var exclude_caster: bool = (
-		target_mode in ["self_token", "token_then_direction"]
-		or "other than you" in description
-		or "other than yourself" in description
-		or "excluding you" in description
-	)
+	var exclude_caster: bool = TargetRules.excludes_caster(spell_data)
 
 	var measurement_tool: Node = _measurement_tool()
 	if (
@@ -4845,22 +4769,9 @@ func _spell_targets_in_geometry(
 			_spell_line_width_world(spell_data)
 		)
 		if affected_value is Array:
-			for value: Variant in affected_value:
-				if not value is Node3D:
-					continue
-				var token: Node3D = value as Node3D
-				if (
-					token == null
-					or not is_instance_valid(token)
-					or (
-						exclude_caster
-						and caster != null
-						and token == caster
-					)
-				):
-					continue
-				targets.append(token)
-			return targets
+			return TargetRules.filter_affected(
+				affected_value, caster, spell_data
+			)
 
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not node is Node3D:
@@ -4879,6 +4790,16 @@ func _spell_targets_in_geometry(
 		):
 			targets.append(token)
 	return targets
+
+
+# The same policy is applied to an active casting HUD, but the general
+# measurement/creature-intersection list deliberately remains inclusive.
+func _filter_spell_affected_targets(
+	candidates: Array,
+	spell_data: Dictionary,
+	caster: Node3D
+) -> Array[Node3D]:
+	return TargetRules.filter_affected(candidates, caster, spell_data)
 
 
 func _token_inside_spell_geometry(
