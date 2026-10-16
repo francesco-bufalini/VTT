@@ -8,6 +8,7 @@ const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const Infusions = preload("res://vtt/creature_infusions.gd")
 
 # Formula/proficiency evaluation requests the same traits many times per edit.
 # Compare complete snapshots so every field (including nested homebrew data)
@@ -169,6 +170,19 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				_append_named_entries(result, feat_entry.get("entries", []),
 					"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
 					bool(owned.get("disabled", false)))
+
+	# Known artificer infusions are already optional class features; display
+	# their existing 5etools descriptions among ordinary class traits.
+	for known: Dictionary in Infusions.known(record):
+		var option: Dictionary = PlayerCatalog.detailed_entry("optional_features", known)
+		var display_name: String = String(known.get("name", ""))
+		var plan: String = String(known.get("plan_item_name", ""))
+		if not plan.is_empty():
+			display_name += " · " + plan
+		_append(result, {"id": String(known.get("id", "")) + "|" + plan.to_lower(),
+			"name": "Infusione · " + display_name,
+			"source": "TCE", "entries": PlayerCatalog.description_text("optional_features", option)},
+			int(known.get("min_level", 2)), "Classe · Artificer", "class|tce|artificer", "Artificer", "TCE", 3)
 
 	# Inventory entries remain visible as traits while owned. Equipment
 	# controls only their effective origins, not whether the item exists.

@@ -1,0 +1,383 @@
+{
+  "meta": {
+    "primary": "5etools-src/data/optionalfeatures.json (featureType AI, TCE)",
+    "secondary": "vidalvanbergen/fightclub5exml optionalfeatures-tce.xml (Infusion spell tags)",
+    "notes": "Catalog mechanics and eligibility; descriptions remain in the existing 5etools compendium. Numeric mappings transcribed from unambiguous item benefits and exposed through VTT's native item bonus fields."
+  },
+  "infusions": [
+    {
+      "id": "infusion|tce|arcane propulsion armor",
+      "name": "Arcane Propulsion Armor",
+      "source": "TCE",
+      "min_level": 14,
+      "item_prerequisite": "A suit of armor (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Arcane Propulsion Armor (Level 14)"
+    },
+    {
+      "id": "infusion|tce|armor of magical strength",
+      "name": "Armor of Magical Strength",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A suit of armor (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Armor of Magical Strength"
+    },
+    {
+      "id": "infusion|tce|boots of the winding path",
+      "name": "Boots of the Winding Path",
+      "source": "TCE",
+      "min_level": 6,
+      "item_prerequisite": "A pair of boots (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Boots of the Winding Path (Level 6)"
+    },
+    {
+      "id": "infusion|tce|enhanced arcane focus",
+      "name": "Enhanced Arcane Focus",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A rod, staff, or wand (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Enhanced Arcane Focus",
+      "numeric_item_bonuses": {
+        "bonus_spell_attack": 1,
+        "upgrade_level": 10
+      }
+    },
+    {
+      "id": "infusion|tce|enhanced defense",
+      "name": "Enhanced Defense",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A suit of armor or a shield",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Enhanced Defense",
+      "numeric_item_bonuses": {
+        "bonus_ac": 1,
+        "upgrade_level": 10
+      }
+    },
+    {
+      "id": "infusion|tce|enhanced weapon",
+      "name": "Enhanced Weapon",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A simple or martial weapon",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Enhanced Weapon",
+      "numeric_item_bonuses": {
+        "bonus_weapon": 1,
+        "upgrade_level": 10
+      }
+    },
+    {
+      "id": "infusion|tce|helm of awareness",
+      "name": "Helm of Awareness",
+      "source": "TCE",
+      "min_level": 10,
+      "item_prerequisite": "A helmet (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Helm of Awareness (Level 10)"
+    },
+    {
+      "id": "infusion|tce|homunculus servant",
+      "name": "Homunculus Servant",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A gem or crystal worth at least 100 gp",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Homunculus Servant"
+    },
+    {
+      "id": "infusion|tce|mind sharpener",
+      "name": "Mind Sharpener",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A suit of armor or robes",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Mind Sharpener"
+    },
+    {
+      "id": "infusion|tce|radiant weapon",
+      "name": "Radiant Weapon",
+      "source": "TCE",
+      "min_level": 6,
+      "item_prerequisite": "A simple or martial weapon (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Radiant Weapon (Level 6)",
+      "numeric_item_bonuses": {
+        "bonus_weapon": 1
+      }
+    },
+    {
+      "id": "infusion|tce|repeating shot",
+      "name": "Repeating Shot",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A simple or martial weapon with the ammunition property (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Repeating Shot",
+      "numeric_item_bonuses": {
+        "bonus_weapon": 1
+      }
+    },
+    {
+      "id": "infusion|tce|replicate magic item",
+      "name": "Replicate Magic Item",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Replicate Magic Item",
+      "replicable_items": [
+        {
+          "name": "Alchemy jug",
+          "level": 2
+        },
+        {
+          "name": "Bag of holding",
+          "level": 2
+        },
+        {
+          "name": "Cap of water breathing",
+          "level": 2
+        },
+        {
+          "name": "Goggles of night",
+          "level": 2
+        },
+        {
+          "name": "Rope of climbing",
+          "level": 2
+        },
+        {
+          "name": "Sending stones",
+          "level": 2
+        },
+        {
+          "name": "Wand of magic detection",
+          "level": 2
+        },
+        {
+          "name": "Wand of secrets",
+          "level": 2
+        },
+        {
+          "name": "Boots of elvenkind",
+          "level": 6
+        },
+        {
+          "name": "Cloak of elvenkind",
+          "level": 6
+        },
+        {
+          "name": "Cloak of the manta ray",
+          "level": 6
+        },
+        {
+          "name": "Eyes of charming",
+          "level": 6
+        },
+        {
+          "name": "Gloves of thievery",
+          "level": 6
+        },
+        {
+          "name": "Lantern of revealing",
+          "level": 6
+        },
+        {
+          "name": "Pipes of haunting",
+          "level": 6
+        },
+        {
+          "name": "Ring of water walking",
+          "level": 6
+        },
+        {
+          "name": "Boots of striding and springing",
+          "level": 10
+        },
+        {
+          "name": "Boots of the Winterlands",
+          "level": 10
+        },
+        {
+          "name": "Bracers of archery",
+          "level": 10
+        },
+        {
+          "name": "Brooch of shielding",
+          "level": 10
+        },
+        {
+          "name": "Cloak of protection",
+          "level": 10
+        },
+        {
+          "name": "Eyes of the eagle",
+          "level": 10
+        },
+        {
+          "name": "Gauntlets of ogre power",
+          "level": 10
+        },
+        {
+          "name": "Gloves of missile snaring",
+          "level": 10
+        },
+        {
+          "name": "Gloves of swimming and climbing",
+          "level": 10
+        },
+        {
+          "name": "Hat of disguise",
+          "level": 10
+        },
+        {
+          "name": "Headband of intellect",
+          "level": 10
+        },
+        {
+          "name": "Helm of telepathy",
+          "level": 10
+        },
+        {
+          "name": "Medallion of thoughts",
+          "level": 10
+        },
+        {
+          "name": "Necklace of adaptation",
+          "level": 10
+        },
+        {
+          "name": "Periapt of wound closure",
+          "level": 10
+        },
+        {
+          "name": "Pipes of the sewers",
+          "level": 10
+        },
+        {
+          "name": "Quiver of Ehlonna",
+          "level": 10
+        },
+        {
+          "name": "Ring of jumping",
+          "level": 10
+        },
+        {
+          "name": "Ring of mind shielding",
+          "level": 10
+        },
+        {
+          "name": "Slippers of spider climbing",
+          "level": 10
+        },
+        {
+          "name": "Ventilating lungs",
+          "level": 10
+        },
+        {
+          "name": "Winged boots",
+          "level": 10
+        },
+        {
+          "name": "Amulet of health",
+          "level": 14
+        },
+        {
+          "name": "Arcane propulsion arm",
+          "level": 14
+        },
+        {
+          "name": "Belt of hill giant strength",
+          "level": 14
+        },
+        {
+          "name": "Boots of levitation",
+          "level": 14
+        },
+        {
+          "name": "Boots of speed",
+          "level": 14
+        },
+        {
+          "name": "Bracers of defense",
+          "level": 14
+        },
+        {
+          "name": "Cloak of the bat",
+          "level": 14
+        },
+        {
+          "name": "Dimensional shackles",
+          "level": 14
+        },
+        {
+          "name": "Gem of seeing",
+          "level": 14
+        },
+        {
+          "name": "Horn of blasting",
+          "level": 14
+        },
+        {
+          "name": "Ring of free action",
+          "level": 14
+        },
+        {
+          "name": "Ring of protection",
+          "level": 14
+        },
+        {
+          "name": "Ring of the ram",
+          "level": 14
+        }
+      ]
+    },
+    {
+      "id": "infusion|tce|repulsion shield",
+      "name": "Repulsion Shield",
+      "source": "TCE",
+      "min_level": 6,
+      "item_prerequisite": "A shield (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Repulsion Shield (Level 6)",
+      "numeric_item_bonuses": {
+        "bonus_ac": 1
+      }
+    },
+    {
+      "id": "infusion|tce|resistant armor",
+      "name": "Resistant Armor",
+      "source": "TCE",
+      "min_level": 6,
+      "item_prerequisite": "A suit of armor (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Resistant Armor (Level 6)"
+    },
+    {
+      "id": "infusion|tce|returning weapon",
+      "name": "Returning Weapon",
+      "source": "TCE",
+      "min_level": 2,
+      "item_prerequisite": "A simple or martial weapon with the thrown property",
+      "requires_attunement": false,
+      "fightclub_name": "Infusion: Returning Weapon",
+      "numeric_item_bonuses": {
+        "bonus_weapon": 1
+      }
+    },
+    {
+      "id": "infusion|tce|spell-refueling ring",
+      "name": "Spell-Refueling Ring",
+      "source": "TCE",
+      "min_level": 6,
+      "item_prerequisite": "A ring (requires attunement)",
+      "requires_attunement": true,
+      "fightclub_name": "Infusion: Spell-Refueling Ring (Level 6)"
+    }
+  ]
+}
