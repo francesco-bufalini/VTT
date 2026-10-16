@@ -269,10 +269,27 @@ func _target_display_name(token: Node3D) -> String:
 	return "Creatura senza nome"
 
 
-func _target_names(start: Vector3, end: Vector3, shape: String, width: float, style: String = "") -> Array[String]:
-	var signature: String = "%s|%s|%s|%s|%s" % [str(start), str(end), shape, str(width), style]
-	# Include display names as well as positions in the cache key: renaming a
-	# token must immediately refresh the affected list without moving it.
+func _target_names(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	width: float,
+	style: String = "",
+	cast_filter: bool = false
+) -> Array[String]:
+	var signature: String = "%s|%s|%s|%s|%s|%s" % [
+		str(start), str(end), shape, str(width), style, str(cast_filter)
+	]
+	if cast_filter and spell != null and is_instance_valid(spell):
+		var caster: Node3D = spell.get("_pending_caster") as Node3D
+		var data: Dictionary = spell.call("_pending_spell")
+		signature += "|%s:%s:%s" % [
+			str(caster.get_instance_id()) if is_instance_valid(caster) else "",
+			String(data.get("target_mode", "")),
+			String(data.get("description", ""))
+		]
+	# Names as well as positions belong in the cache: renaming without moving
+	# a token must update the displayed target list.
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if node is Node3D and is_instance_valid(node):
 			var token: Node3D = node as Node3D
@@ -288,15 +305,22 @@ func _target_names(start: Vector3, end: Vector3, shape: String, width: float, st
 		return _cached_targets
 	_cached_signature = signature
 	_cached_targets.clear()
-	# Query the same measurement geometry used by the actual red token
-	# highlights; do not approximate the game's geometry from the drawing.
+	# Geometry is shared with measurement, but the casting target window
+	# applies spell-specific exclusions (e.g. omit the line's caster).
+	# An ordinary measurement remains inclusive by design.
 	var values: Variant = measure.call(
 		"spell_geometry_affected_tokens", start, end, shape, style, width
 	)
 	if values is Array:
-		for item: Variant in values:
+		var affected: Array = values as Array
+		if cast_filter and spell != null and is_instance_valid(spell):
+			affected = spell.call(
+				"_filter_spell_affected_targets",
+				affected, spell.call("_pending_spell"),
+				spell.get("_pending_caster") as Node3D
+			)
+		for item: Variant in affected:
 			if item is Node3D and is_instance_valid(item):
-				# Do not deduplicate by name: two goblins are still two targets.
 				_cached_targets.append(_target_display_name(item as Node3D))
 	return _cached_targets
 
@@ -306,30 +330,24 @@ func _range_target_names() -> Array[String]:
 	var names: Array[String] = []
 	if spell == null or not is_instance_valid(spell) or not bool(spell.call("is_targeting")):
 		return names
-	var caster: Node3D = spell.get("_pending_caster") as Node3D
-	if caster == null or not is_instance_valid(caster):
-		return names
 	var spell_data: Dictionary = spell.call("_pending_spell")
-	var range_feet: float = float(spell.call("_effective_spell_range_feet", spell_data, caster))
-	var origin: Node3D = caster
-	if String(spell.get("_targeting_phase")) == "chain_secondary":
-		var primary: Node3D = spell.get("_pending_chain_primary") as Node3D
-		if primary != null and is_instance_valid(primary):
-			origin = primary
-			range_feet = float(spell_data.get("secondary_range_feet", 30.0))
-	elif String(spell.get("_targeting_phase")) in ["teleport_destination", "teleport_passengers"]:
-		range_feet = float(spell_data.get("teleport_distance_feet", range_feet))
+	var info: Dictionary = spell.call("targeting_range_info", spell_data)
+	if info.is_empty():
+		return names
+	var origin: Node3D = info.get("source") as Node3D
+	if origin == null or not is_instance_valid(origin):
+		return names
+	var feet: float = float(info.get("feet", 0.0))
 	var self_target: bool = String(spell_data.get("range", "")).strip_edges().to_lower().begins_with("self")
 	for raw: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not raw is Node3D or not is_instance_valid(raw):
 			continue
 		var token: Node3D = raw as Node3D
-		if not board.is_ancestor_of(token) or (token == origin and not self_target):
+		if not board.is_ancestor_of(token):
 			continue
-		if float(spell.call("_token_target_distance_feet", origin, token)) <= range_feet + 0.001:
+		if bool(spell.call("_token_within_spell_range", origin, token, feet, not self_target)):
 			names.append(_target_display_name(token))
 	return names
-
 
 func _draw_spell_range(center: Vector3, radius: float) -> void:
 	var scale: float = maxf(0.001, float(board.get("cell_size")))
@@ -435,7 +453,7 @@ func _draw() -> void:
 			_draw_area(_shape_polygon(start, end, shape, width, style), preview_color)
 			_draw_dimension_radii(start, end, shape, preview_color, width, style)
 		if shape != "line" or String(spell.call("_pending_spell").get("aoe_shape", "")) == "line":
-			var next_y: float = _draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
+			var next_y: float = _draw_target_list(_target_names(start, end, shape, width, style, true), "Nell'area")
 			if active_range:
 				_draw_target_list(range_list, "A gittata", next_y)
 			return
