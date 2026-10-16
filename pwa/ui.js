@@ -1,3 +1,4 @@
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -12,15 +13,14 @@ const connection = document.querySelector("#connection");
 const creatureInput = document.querySelector("#import-creature");
 const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
-const sheetSections = [["stats","Statistiche"],["origins","Origini"],["inventory","Inventario"],
-  ["magic","Incantesimi"],["resources","Risorse"],["notes","Note"],["json","JSON avanzato"]];
+const sheetSections = SHEET_SECTIONS;
 const sectionMenu = document.querySelector("#section-menu");
 const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
-const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map:null,
+const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
@@ -228,55 +228,53 @@ async function editorView() {
     '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
-    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Statistiche")+'</div>';
+    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
   let body = "";
+  if(state.sheet==="info"){
+    await Promise.all(["races","classes","subclasses","backgrounds"].map(async key=>{
+      if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
+      catch{ /* References stay editable offline. */ }
+    }));
+  }
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
-  case "stats":
-    body = panel("Identità",'<div class="columns">'+field("Nome","name",c.name)+
-      field("Giocatore","player_name",c.player_name)+field("Classe","class",c.class)+
-      field("Livello","level",c.level??1,"number",'min="1" max="20"')+'</div>')+
-      panel("Combattimento",'<div class="columns three">'+
-      field("PF attuali","current_hp",c.current_hp??1,"number")+
-      field("PF massimi","max_hp_base",c.max_hp_base??c.max_hp??1,"number",'min="0"')+
-      field("PF temporanei","temporary_hp",c.temporary_hp??0,"number",'min="0"')+
-      field("CA base","armor_class_base",c.armor_class_base??c.armor_class??10,"number",'min="0"')+
-      field("Iniziativa","initiative",c.initiative??0,"number")+
-      field("Velocità (ft)","speed_base",c.speed_base??c.speed??30,"number",'min="0"')+'</div>'+
-      '<p class="hint">I valori derivati (CA, iniziativa e velocità effettive) vengono calcolati dalla versione nativa di VTT; la PWA modifica i valori base.</p>')+
-      panel("Caratteristiche",'<div class="columns three">'+Object.entries(abilities).map(([k,label])=>
-        '<div class="ability-box"><label>'+label+'<input data-ability="'+k+
-        '" type="number" min="1" max="30" value="'+esc(c.abilities?.[k]??10)+'"></label></div>').join("")+'</div>');
-    break;
-  case "origins":
-    body = '<p class="warning">Modifica i riferimenti alle origini qui; il calcolo di privilegi, competenze e bonus rimane affidato alle regole della versione nativa.</p>'+
-      panel("Origini",'<div class="columns">'+field("Specie","species",c.species)+
-      field("Fonte specie","species_source",c.species_source)+
-      field("Background","background",c.background)+
-      field("Sottoclasse","subclass",c.subclass)+
-      field("Allineamento","alignment",c.alignment)+
-      field("Edizione","rules_version",c.rules_version||"2014")+'</div>')+
-      panel("Tratti e personalità",area("Tratti del personaggio","personality_traits",c.personality_traits)+
-        area("Ideali","ideals",c.ideals)+area("Legami","bonds",c.bonds)+area("Difetti","flaws",c.flaws));
-    break;
   case "inventory":
     body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
       (Array.isArray(c.inventory) ? c.inventory.map((item,index) => inventoryRow(item,index)).join("") : "")+
       '<div class="actions">'+btn("add-item","＋ Aggiungi oggetto","primary")+'</div>');
     break;
   case "magic":
-    body = panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
+    body = panel("Caratteristica degli incantesimi",'<label>Caratteristica<select data-field="spellcasting_ability">'+[['','Automatica'],...Object.entries(abilities)].map(([key,label])=>'<option value="'+key+'" '+((c.spellcasting_ability||'')===key?'selected':'')+'>'+label+'</option>').join('')+'</select></label>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
       '<div class="columns three">'+Array.from({length:9},(_,i)=>{const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
       return '<div class="ability-box"><label>Liv. '+level+'<input type="number" min="0" data-slot="'+level+
         '" value="'+esc(spent)+'"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';}).join("")+'</div>')+
-      panel("Incantesimi conosciuti",spellList(c,"spells"))+
-      panel("Incantesimi preparati",spellList(c,"prepared_spells"))+
-      panel("Libro degli incantesimi",spellList(c,"spellbook_spells"));
+      panel("Patto",'<div class="columns">'+field('Livello slot','pact_slot_level',c.pact_slot_level??1,'number','min="1" max="5"')+field('Slot massimi','pact_slots_total',c.pact_slots_total??0,'number','min="0"')+field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"')+'</div>')+
+      panel("Incantesimi di classe",spellList(c,"spells"))+
+      panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
+      panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
+      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
-  case "resources":{
+  case "conditions":
+    body=panel("Condizioni",'<div class="condition-list">'+conditions.map(id=>
+      '<label class="check"><input type="checkbox" data-condition="'+id+'" '+
+      ((c.conditions||[]).includes(id)?'checked':'')+'>'+esc(conditionLabel(id))+'</label>').join('')+'</div>');
+    break;
+  case "json":
+    body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
+      '<label>Documento completo<textarea id="json-editor" rows="18" spellcheck="false" class="inline-code">'+
+        esc(JSON.stringify(c,null,2))+'</textarea></label><div class="actions">'+
+      btn("save-json","Salva modifiche JSON","primary")+'</div>');
+    break;
+  }
+  return navigation+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+    '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
+    btn("delete","Elimina scheda","danger")+'</div></details>';
+}
+function resourceView(c){
     const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
-    body=panel("Utilizzi e risorse",
+    return panel("Utilizzi e risorse",
       '<p class="hint">Contatori salvati nella scheda con la struttura nativa di VTT. I tracker derivati automaticamente da classe o privilegi vengono calcolati solo da Godot.</p>'+
       (trackers.length?trackers.map((t,i)=>{
         const max=Math.max(0,Number(t.max)||0);
@@ -296,27 +294,9 @@ async function editorView() {
       '<option value="turn">Inizio turno</option><option value="short_rest">Riposo breve</option>'+
       '<option value="long_rest">Riposo lungo</option></select></label>'+
       '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>');
-    break;
   }
-  case "notes":
-    body = panel("Profilo",area("Descrizione fisica","appearance",c.appearance,5)+
-      area("Storia","background_personality",c.background_personality,5)+
-      area("Tratti aggiuntivi","additional_traits",c.additional_traits,5)+
-      area("Appunti","notes",c.notes,5))+
-      panel("Condizioni personali",'<div class="pillbox">'+conditions.map(id=>
-        '<label class="check pill"><input type="checkbox" data-condition="'+id+'" '+
-        ((c.conditions||[]).includes(id)?"checked":"")+'>'+esc(id)+'</label>').join("")+'</div>');
-    break;
-  case "json":
-    body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
-      '<label>Documento completo<textarea id="json-editor" rows="18" spellcheck="false" class="inline-code">'+
-        esc(JSON.stringify(c,null,2))+'</textarea></label><div class="actions">'+
-      btn("save-json","Salva modifiche JSON","primary")+'</div>');
-    break;
-  }
-  return navigation+body+'<div class="actions">'+btn("export","Esporta JSON")+
-    btn("delete","Elimina scheda","danger")+'</div>';
-}
+
+function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
 function inventoryRow(item,index) {
   const obj = item && typeof item === "object" ? item : {name:String(item??"")};
   return '<div class="list-item"><div class="row between"><strong>Oggetto '+(index+1)+'</strong>'+
@@ -621,6 +601,17 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.nativeList){
+    await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
+    return;
+  }
+  if(target.hasAttribute("data-native-cr")){
+    const value=target.value.trim();
+    if(!/^(?:\d+(?:\.\d+)?|\d+\/[1-9]\d*)$/.test(value))throw Error("GS non valido");
+    const stat=structuredClone(creature.stat_block||{});
+    stat.cr=stat.cr&&typeof stat.cr==="object"?{...stat.cr,cr:value}:value;
+    await patch({stat_block:stat});return;
+  }
   if(target.dataset.field){
     const key=target.dataset.field;
     let value=target.type==="checkbox"?target.checked:target.value;
@@ -628,7 +619,14 @@ async function handleField(target) {
       value=Number(value);
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
-    await patch({[key]:value});
+    if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    const changes=identityPatch(creature,key,value);
+    const category=({species:"races",subrace:"races",class:"classes",subclass:"subclasses",background:"backgrounds"})[key];
+    if(category){
+      const matches=(state.referenceCatalogs[category]||[]).filter(r=>r.name===value);
+      if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
+    }
+    await patch(changes);
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -680,6 +678,28 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==="sheet-details"){
+    if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
+    state.sheet="origins";state.detail=target.dataset.detail;await render();return;
+  }
+  if(act==="native-add"||act==="native-remove"){
+    const key=target.dataset.list;if(!ROW_FIELDS[key])throw Error("Elenco non valido");
+    const c=state.editor.read(),rows=rowsFor(c,key);
+    if(act==="native-remove"){
+      const index=Number(target.dataset.index);
+      if(!rows[index]||rows[index].automatic)throw Error("Voce non rimovibile");
+      rows.splice(index,1);
+    }else{
+      const defaults={classes:{name:"",source:"",level:1},
+        proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
+        feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
+        formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
+        damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
+        origin_spell_grants:{origin_id:"",origin_name:"",disabled:false}};
+      rows.push(defaults[key]);
+    }
+    await patch(collectionPatch(c,key,rows));await render();return;
+  }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
     await render();return;
@@ -722,7 +742,7 @@ async function handleAction(target){
   }
   if(act==="refresh"){await render();return;}
   if(act==="demo"){
-    state.creatureId=await createDemoCreature();state.editor=null;state.sheet="stats";
+    state.creatureId=await createDemoCreature();state.editor=null;state.sheet="info";
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
   if(act==="library-select-all"){
@@ -760,7 +780,7 @@ async function handleAction(target){
   }
   if(act==="create"){
     const row=await createCreature("character","Nuovo personaggio");
-    state.creatureId=row.id;state.editor=null;state.sheet="stats";await render();return;
+    state.creatureId=row.id;state.editor=null;state.sheet="info";await render();return;
   }
   if(act==="import"){creatureInput.click();return;}
   if(act==="restore-backup"){backupInput.click();return;}
@@ -769,7 +789,7 @@ async function handleAction(target){
     message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){state.creatureId=target.dataset.id;state.sheet="stats";state.editor=null;await render();return;}
+  if(act==="open"){state.creatureId=target.dataset.id;state.sheet="info";state.editor=null;await render();return;}
   if(act==="back"){
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     state.editor=null;state.creatureId=null;await render();return;
@@ -981,7 +1001,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="catalog-search"){
@@ -990,7 +1010,7 @@ function listen(){
       if(results)results.innerHTML=renderCatalogRows();
       return;
     }
-    if(!target?.matches("[data-field],[data-item-index]"))return;
+    if(!target?.matches("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
@@ -1011,6 +1031,11 @@ function listen(){
         btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
         btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
+    }
+    if(target?.id==="native-details"){
+      if(!DETAILS.some(([key])=>key===target.value))return;
+      flushPendingFields().then(()=>{state.detail=target.value;return render();})
+        .catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="catalog-category"){
       state.catalogCategory=target.value;state.catalogSelected=-1;
@@ -1046,7 +1071,7 @@ function listen(){
       const result=await importCreatureFile(file);
       const imported=Array.isArray(result)?result:[result];
       state.page="library";state.creatureId=imported.length===1?imported[0].creature.id:null;
-      state.editor=null;state.sheet="stats";
+      state.editor=null;state.sheet="info";
       state.librarySelectedIds.clear();
       await render();
       message(imported.length===1 ? "Scheda importata e salvata offline." :
@@ -1062,7 +1087,7 @@ function listen(){
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){
       const active=document.activeElement;
-      if(active?.matches?.("[data-field],[data-item-index]"))
+      if(active?.matches?.("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
     } else if(state.page==="session") {
       refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
