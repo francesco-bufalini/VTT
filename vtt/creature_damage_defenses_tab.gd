@@ -145,7 +145,7 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 				continue
 			_add_source(sources, seen, Items.entry_for(owned), "item:" + id,
 				"Oggetto · " + String(owned.get("name", id)),
-				Items.origin_active(owned) and not bool(disabled.get("item:" + id, false)))
+				Items.origin_active(owned, record) and not bool(disabled.get("item:" + id, false)))
 	return sources
 
 static func _base_rank_from_sources(sources: Array[Dictionary], damage_type: String) -> int:

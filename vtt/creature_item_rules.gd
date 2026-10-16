@@ -2,6 +2,7 @@ extends RefCounted
 
 # 5etools item semantics shared by inventory, attack calculations and saves.
 # The compact item catalog stores type M/R/S, damage, range and properties.
+const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const ItemInstance = preload("res://vtt/item_instance.gd")
 
@@ -108,10 +109,16 @@ static func slots(saved: Dictionary) -> Array:
 
 # Item ownership is distinct from activation. Equipment-dependent traits
 # remain visible in the sheet but grant nothing until actually equipped.
-static func origin_active(saved: Dictionary) -> bool:
+static func origin_active(saved: Dictionary, record: Dictionary = {}) -> bool:
 	if int(saved.get("quantity", 1)) <= 0 or not bool(saved.get("active", true)):
 		return false
 	var entry: Dictionary = entry_for(saved)
+	# The equipped flag is physical state; eligibility is a separate
+	# opt-in gate. No legacy catalog item acquires a new threshold.
+	var raw_gate: Variant = entry.get("requirements", null)
+	if not record.is_empty() and raw_gate is Dictionary and (
+		not BenefitRequirements.allows(record, BenefitRequirements.normalize(entry))):
+		return false
 	if requires_attunement(entry) and not bool(saved.get("attuned", false)):
 		return false
 	var category: String = kind(entry)

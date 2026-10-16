@@ -133,5 +133,23 @@ func _run() -> void:
 		names.append(String(feature.get("name", "")))
 	assert("Basic" in names and "Advanced" in names)
 
+	# A whole-item requirement gates numeric effects and dependent feat/
+	# spell origins, without hiding the item from inventory or erasing it.
+	var relic: Dictionary = {
+		"id": "custom:threshold:ring", "name": "Threshold Ring",
+		"type": "RG", "quantity": 1, "active": true, "equipped": true,
+		"bonus_saving_throw": 2,
+		"requirements": {"scope": "character", "min_level": 5}
+	}
+	var item_bonus_record: Dictionary = bonus_record.duplicate(true)
+	item_bonus_record["level"] = 3
+	item_bonus_record["inventory"] = [relic]
+	assert(Bonuses.bonus(item_bonus_record, "save:wis") == 0)
+	assert(not bool(preload("res://vtt/creature_item_rules.gd").origin_active(
+		relic, item_bonus_record)))
+	item_bonus_record["level"] = 5
+	assert(Bonuses.bonus(item_bonus_record, "save:wis") == 2)
+	assert(bool(preload("res://vtt/creature_item_rules.gd").origin_active(
+		relic, item_bonus_record)))
 	print("PASS: canonical benefit thresholds, class scope, origin identities and item sections")
 	quit()

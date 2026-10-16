@@ -204,7 +204,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			if not owned_groups.has(item_id):
 				owned_groups[item_id] = {"owned": owned, "active": false, "quantity": 0}
 			var group: Dictionary = owned_groups[item_id]
-			group["active"] = bool(group.get("active", false)) or Items.origin_active(owned)
+			group["active"] = bool(group.get("active", false)) or Items.origin_active(owned, record)
 			group["quantity"] = int(group.get("quantity", 0)) + int(owned.get("quantity", 1))
 		for item_id: String in owned_groups.keys():
 			var group: Dictionary = owned_groups[item_id]

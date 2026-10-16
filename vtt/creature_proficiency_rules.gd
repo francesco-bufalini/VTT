@@ -1178,7 +1178,7 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 				continue
 			# Several physical copies can share the same catalog ID. Only
 			# one of them needs to be equipped to keep that origin active.
-			item_sources[item_id] = bool(item_sources.get(item_id, false)) or bool(item_rules.call("origin_active", raw_item))
+			item_sources[item_id] = bool(item_sources.get(item_id, false)) or bool(item_rules.call("origin_active", raw_item, record))
 		for item_id: String in item_sources.keys():
 			own[item_id] = bool(own.get(item_id, true)) and bool(item_sources[item_id])
 	var feat_grants: Dictionary = {}

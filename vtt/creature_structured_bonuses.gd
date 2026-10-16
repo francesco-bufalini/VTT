@@ -90,7 +90,7 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 		var slots: Array = Items.slots(owned)
 		# Respect exactly the same ownership/equipment/attunement rules
 		# used by feat, spell and other origin-backed benefits.
-		if not Items.origin_active(owned):
+		if not Items.origin_active(owned, record):
 			continue
 		var equipped: bool = (
 			(kind == "armor" and "body" in slots)
