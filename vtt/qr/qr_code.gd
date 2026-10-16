@@ -2,6 +2,11 @@
 class_name VttQrCode
 extends Node
 
+# Explicit dependencies are required for headless Godot --script execution,
+# which may not have scanned class_name registrations yet.
+const VttQrUtils = preload("res://vtt/qr/utils.gd")
+const VttQrReedSolomon = preload("res://vtt/qr/reed_solomon_generator.gd")
+
 
 enum Encodings {NUMERIC, ALPHANUMERIC, KANJI, BYTES}
 
