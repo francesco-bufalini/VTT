@@ -25,10 +25,16 @@ self.addEventListener("fetch", event => {
   if (!SHELL.includes(url.pathname)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(event.request);
-    if (cached) return cached;
-    const response = await fetch(event.request);
-    if (response.ok) await cache.put(event.request, response.clone());
-    return response;
+    // Prefer new assets from the current native desktop installation.
+    // The cached version is used only when offline. Never touch IndexedDB.
+    try {
+      const response = await fetch(event.request, { cache: "no-store" });
+      if (response.ok) {
+        await cache.put(event.request, response.clone());
+        return response;
+      }
+      if (response.status !== 503) return response;
+    } catch (_) { /* Desktop is offline. */ }
+    return (await cache.match(event.request)) || Response.error();
   })());
 });
