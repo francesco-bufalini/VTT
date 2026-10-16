@@ -38,6 +38,8 @@ those inputs are never merged again, including after a user deletes a sheet.
 To recover from an archived backup, make a separate copy before changing
 the unified file.
 
+The unified archive also stores bounded `undo` and `redo` arrays of previous and next locally owned creature revisions. Repeated edits within 800 ms to the same sheet form one checkpoint. On desktop, Ctrl+Z and Ctrl+Y/Ctrl+Shift+Z restore these saved revisions in the creature editor; changes are written atomically with history. Deletion and ownership transfer invalidate prior revisions for that creature rather than restoring deleted or transferred sheets. PWA browser storage is a separate implementation.
+
 Ownership and transfer revision protections remain in force for local saves,
 deletes, exports/imports and ownership transfer. Private sheets never go into
 automatic board snapshots.
