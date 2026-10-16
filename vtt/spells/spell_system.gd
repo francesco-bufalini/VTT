@@ -737,70 +737,78 @@ func handle_input(event: InputEvent) -> bool:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			screen_position = get_viewport().get_visible_rect().size * 0.5
 
-		match _targeting_phase:
-			"caster":
-				_try_select_caster(screen_position)
-				return true
-			"point":
-				_try_select_point(screen_position)
-				return true
-			"target_token":
-				_try_select_target_token(screen_position)
-				return true
-			"teleport_passengers":
-				_try_select_teleport_passenger(screen_position)
-				return true
-			"teleport_destination":
-				_try_select_teleport_destination(screen_position)
-				return true
-			"multi_target_tokens":
-				_try_select_multi_target(screen_position)
-				return true
-			"multi_target_points":
-				_try_select_multi_point(screen_position)
-				return true
-			"summon_point":
-				_try_select_summon_point(screen_position)
-				return true
-			"transform_target":
-				_try_select_transformation_target(screen_position)
-				return true
-			"transform_multi_targets":
-				_try_select_transformation_multi_target(screen_position)
-				return true
-			"resize_target":
-				_try_select_resize_target(screen_position)
-				return true
-			"chain_primary":
-				_try_select_chain_primary(screen_position)
-				return true
-			"chain_secondary":
-				_try_select_chain_secondary(screen_position)
-				return true
-			"direction_point":
-				_try_select_direction_point(screen_position)
-				return true
-			"wall_start":
-				_try_wall_start(screen_position)
-				return true
-			"wall_segment":
-				_try_wall_segment(screen_position)
-				return true
-			"wall_center":
-				_try_wall_center(screen_position)
-				return true
-			"wall_radius":
-				_try_wall_radius(screen_position)
-				return true
-			"wall_arc_start":
-				_try_wall_arc_start(screen_position)
-				return true
-			"wall_arc_end":
-				_try_wall_arc_end(screen_position)
-				return true
+		return _confirm_targeting_selection(screen_position)
 
 	return false
 
+
+# A logical selection action works with either screen-projected candidates
+# or token/world-point input already resolved by a remote mobile client.
+# Keep phase-specific side effects explicit: spells, walls and teleports
+# require different transitions and must not share a generic commit handler.
+func _confirm_targeting_selection(screen_position: Vector2) -> bool:
+	match _targeting_phase:
+		"caster":
+			_try_select_caster(screen_position)
+			return true
+		"point":
+			_try_select_point(screen_position)
+			return true
+		"target_token":
+			_try_select_target_token(screen_position)
+			return true
+		"teleport_passengers":
+			_try_select_teleport_passenger(screen_position)
+			return true
+		"teleport_destination":
+			_try_select_teleport_destination(screen_position)
+			return true
+		"multi_target_tokens":
+			_try_select_multi_target(screen_position)
+			return true
+		"multi_target_points":
+			_try_select_multi_point(screen_position)
+			return true
+		"summon_point":
+			_try_select_summon_point(screen_position)
+			return true
+		"transform_target":
+			_try_select_transformation_target(screen_position)
+			return true
+		"transform_multi_targets":
+			_try_select_transformation_multi_target(screen_position)
+			return true
+		"resize_target":
+			_try_select_resize_target(screen_position)
+			return true
+		"chain_primary":
+			_try_select_chain_primary(screen_position)
+			return true
+		"chain_secondary":
+			_try_select_chain_secondary(screen_position)
+			return true
+		"direction_point":
+			_try_select_direction_point(screen_position)
+			return true
+		"wall_start":
+			_try_wall_start(screen_position)
+			return true
+		"wall_segment":
+			_try_wall_segment(screen_position)
+			return true
+		"wall_center":
+			_try_wall_center(screen_position)
+			return true
+		"wall_radius":
+			_try_wall_radius(screen_position)
+			return true
+		"wall_arc_start":
+			_try_wall_arc_start(screen_position)
+			return true
+		"wall_arc_end":
+			_try_wall_arc_end(screen_position)
+			return true
+	return false
 
 func _summon_count_choices(spell_data: Dictionary) -> Array[int]:
 	var choices: Array[int] = []
@@ -5539,11 +5547,8 @@ func remote_target_input(caster: Node3D, owner: String, target: Node3D, point: D
 		key.keycode = KEY_ENTER
 		handle_input(key)
 	else:
-		var click := InputEventMouseButton.new()
-		click.pressed = true
-		click.button_index = MOUSE_BUTTON_LEFT
 		_update_spell_preview()
-		handle_input(click)
+		_confirm_targeting_selection(Vector2.ZERO)
 	_remote_input_active = false
 	_remote_pick_token = null
 	_remote_pick_point = {}
