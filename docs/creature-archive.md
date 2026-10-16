@@ -25,8 +25,8 @@ It also reads `user://creatures/characters.json` and
 experiment. All scopes are merged; no campaign is favored.
 
 Identical records with the same ID and kind are deduplicated. Distinct records
-with the same ID and kind survive with a deterministic migration suffix on the
-later entry. References to colliding legacy IDs may require manual re-linking
+with the same ID survive with a deterministic migration suffix on the later
+entry, including collisions between characters and monsters. References to colliding legacy IDs may require manual re-linking
 to a board token. Records transferred to other owners are retained in storage,
 but are not shown as locally owned.
 
