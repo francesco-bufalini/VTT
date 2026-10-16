@@ -38,16 +38,37 @@ export function status() {
   return exchange("/api/status");
 }
 
-// Pair using the secret stored on the desktop at user://pwa_pairing_token.txt.
-// Deliberately no session number as password: session IDs 1-5 are guessable.
-export async function pair(token, { remember = true } = {}) {
-  if (!self.isSecureContext) throw new Error("HTTPS is required to pair the PWA");
-  if (!/^[a-fA-F0-9]{64}$/.test(token)) throw new Error("Invalid pairing secret");
+// Short-lived 16-hex code from the desktop (or its one-time QR URL).
+// Exchange it for a strong 256-bit bearer; never save the short code.
+// Previously enrolled browsers keep using the original 64-hex bearer.
+export async function pair(code, { remember = true } = {}) {
+  if (!self.isSecureContext) throw new Error("HTTPS necessario per associare VTT");
+  const input = String(code || "").replace(/[\s-]/g, "").toUpperCase();
+  let token;
+  if (/^[0-9A-F]{16}$/.test(input)) {
+    const result = await exchange("/api/pair", "", {code:input});
+    token = result.token;
+  } else if (/^[0-9A-F]{64}$/.test(input)) {
+    token = input.toLowerCase();
+  } else {
+    throw new Error("Inserisci i 16 caratteri mostrati sul desktop.");
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(token || "")) {
+    throw new Error("Credenziale restituita dal desktop non valida.");
+  }
   const session = await exchange("/api/session", token);
   volatileToken = token;
-  // An explicit session-only choice must also clear any previously saved token.
   await setting(PAIRING_KEY, remember ? token : "");
   return session;
+}
+
+// URL fragments are not sent to the web server or Tailscale proxy.
+// Remove the one-time QR code from browser history immediately on opening.
+export function takeQrPairCode() {
+  const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const code = fragment.get("pair") || "";
+  if (code) history.replaceState(null, "", location.pathname + location.search);
+  return /^[0-9a-fA-F]{16}$/.test(code) ? code.toUpperCase() : "";
 }
 
 export async function unpair() {
