@@ -80,6 +80,21 @@ func _run() -> void:
 		var key: String = JSON.stringify(data.color)
 		assert(not colors.has(key), "Repeated same-shape areas need different colours beyond the initial palette")
 		colors[key] = true
+	var sphere_dimensions: String = measure.aoe_dimensions_description(
+		Vector3.ZERO, Vector3(3, 0, 0), "sphere"
+	)
+	assert("15 ft · 4,5 m · 3 quadretti" in sphere_dimensions,
+		"Area sidebar measurements must include feet, metres and squares")
+	var cube_dimensions: String = measure.aoe_dimensions_description(
+		Vector3.ZERO, Vector3(3, 0, 0), "cube"
+	)
+	assert("Lato 30 ft · 9 m · 6 quadretti" in cube_dimensions,
+		"A cube must report its full side length in every unit")
+	var cone_dimensions: String = measure.aoe_dimensions_description(
+		Vector3.ZERO, Vector3(3, 0, 0), "cone"
+	)
+	assert("Raggio base 7,5 ft · 2,25 m · 1,5 quadretti" in cone_dimensions,
+		"Fractional base radii must keep their precision")
 	var saved: Array = measure.serialize_persistent_aoes()
 	measure.apply_persistent_aoes(saved)
 	assert(JSON.stringify(saved) == JSON.stringify(measure.serialize_persistent_aoes()))
@@ -130,6 +145,10 @@ func _run() -> void:
 	overlay._collect_post_cast_areas()
 	assert(overlay._sidebar_entries().size() == 5, "Fixed multi-point previews also belong in the figure list")
 	measure.clear_spell_fixed_previews()
+	overlay._collect_post_cast_areas()
+	overlay._refresh_area_sidebar()
+	assert(overlay._area_rows.find_child("MoveAreaButton", true, false) != null)
+	assert(overlay._area_rows.find_child("DeleteAreaButton", true, false) != null)
 	if "--capture" in OS.get_cmdline_user_args() and DisplayServer.get_name() != "headless":
 		target.position.z = 4
 		overlay._collect_post_cast_areas()
@@ -139,7 +158,43 @@ func _run() -> void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://area_dimensions_review.png")
 		print("CAPTURE: ", ProjectSettings.globalize_path("user://area_dimensions_review.png"))
+	# Sidebar actions must address the selected root rather than a stale row
+	# index: the held area precedes persistent areas in the sidebar.
+	var static_root: Node3D = measure._aoe_nodes[0]
+	# The static area was created at the origin.
+	assert(measure.persistent_aoes[0].start == [0.0, 1.0, 0.0])
+	overlay._move_sidebar_area(static_root)
+	assert(measure.is_movable_aoe_dragging())
+	assert(measure._movable_aoe_drag_unrestricted)
+	measure._movable_aoe_drag_delta = Vector3(2, 0, 1)
+	static_root.global_position = measure._movable_aoe_drag_root_origin + Vector3(2, 0, 1)
+	assert(measure.finish_movable_aoe_drag(true))
+	assert(measure.persistent_aoes[0].start == [2.0, 1.0, 1.0])
+	var remaining: int = measure.persistent_aoes.size()
+	overlay._delete_sidebar_area(static_root)
+	assert(measure.persistent_aoes.size() == remaining - 1)
+	assert(not is_instance_valid(static_root) or static_root.is_queued_for_deletion())
+
+	var held_root: Node3D = measure._held_spell_aoes[0]
+	var held_start: Vector3 = held_root.get_meta("spell_overlay_2d").start
+	overlay._move_sidebar_area(held_root)
+	assert(measure.is_movable_aoe_dragging())
+	measure._movable_aoe_drag_delta = Vector3(1, 0, 2)
+	held_root.global_position = measure._movable_aoe_drag_root_origin + Vector3(1, 0, 2)
+	assert(measure.finish_movable_aoe_drag(true))
+	assert(held_root.get_meta("spell_overlay_2d").start == held_start + Vector3(1, 0, 2))
+	overlay._delete_sidebar_area(held_root)
+	assert(measure._held_spell_aoes.is_empty())
+
+	measure.add_aoe(Vector3(2, 0, 2), Vector3(6, 0, 2), "sphere",
+		"cloudkill", Color(1, 0, 0), -1.0, 10.0, "away_from_caster", Vector3.ZERO)
+	var mobile_root: Node3D = measure._aoe_nodes[-1]
+	overlay._move_sidebar_area(mobile_root)
+	assert(measure.is_movable_aoe_dragging())
+	assert(not measure._movable_aoe_drag_unrestricted,
+		"Sidebar movement must retain existing spell-defined movement restrictions")
+	assert(not measure.finish_movable_aoe_drag(false))
 	board.queue_free()
 	await process_frame
-	print("PASS: 3D dimensional radii, instance colours, round-trip, manual AoE sidebar and crossed line creatures")
+	print("PASS: area radii, metric/grid units, per-figure sidebar actions, spell movement limits and round-trip")
 	quit()
