@@ -48,8 +48,8 @@ func _run() -> void:
 	assert(rows.size() == 3, "All old scopes and kinds must migrate, without losing conflicts")
 	var ids := {}
 	for row: Dictionary in rows:
-		assert(not ids.has(String(row["kind"]) + ":" + String(row["id"])))
-		ids[String(row["kind"]) + ":" + String(row["id"]] = true
+		assert(not ids.has(String(row["id"])), "IDs must be globally unique")
+		ids[String(row["id"])] = true
 	assert(FileAccess.file_exists(unified), "First access must materialize the global archive")
 	var originals := FileAccess.get_file_as_string(old_characters.path_join("default.json"))
 	assert(not originals.is_empty(), "Migration must keep original files")
