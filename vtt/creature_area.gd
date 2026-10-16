@@ -97,6 +97,8 @@ var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
 var _creature_batch_checks: Array[CheckBox] = []
 var _creature_batch_ids: Dictionary = {}
+var _creature_batch_selection_row: HBoxContainer
+var _creature_batch_actions_row: HBoxContainer
 var _batch_export_button: Button
 var _batch_delete_button: Button
 var _batch_export_pending: Array[Dictionary] = []
@@ -721,28 +723,30 @@ func _build_ui() -> void:
 	_creature_filter.clear_button_enabled = true
 	_creature_filter.text_changed.connect(_filter_owned_creatures)
 	left.add_child(_creature_filter)
-	var choice_row := HBoxContainer.new()
-	left.add_child(choice_row)
+	_creature_batch_selection_row = HBoxContainer.new()
+	left.add_child(_creature_batch_selection_row)
+	_creature_batch_selection_row.hide()
 	var all_button := Button.new()
 	all_button.text = "Tutte"
 	all_button.pressed.connect(_mark_visible_creatures.bind(true))
-	choice_row.add_child(all_button)
+	_creature_batch_selection_row.add_child(all_button)
 	var none_button := Button.new()
 	none_button.text = "Nessuna"
 	none_button.pressed.connect(_mark_visible_creatures.bind(false))
-	choice_row.add_child(none_button)
-	var actions := HBoxContainer.new()
-	left.add_child(actions)
+	_creature_batch_selection_row.add_child(none_button)
+	_creature_batch_actions_row = HBoxContainer.new()
+	left.add_child(_creature_batch_actions_row)
+	_creature_batch_actions_row.hide()
 	_batch_export_button = Button.new()
 	_batch_export_button.text = "Esporta selezione"
 	_batch_export_button.disabled = true
 	_batch_export_button.pressed.connect(_export_selected_creatures)
-	actions.add_child(_batch_export_button)
+	_creature_batch_actions_row.add_child(_batch_export_button)
 	_batch_delete_button = Button.new()
 	_batch_delete_button.text = "Elimina selezione"
 	_batch_delete_button.disabled = true
 	_batch_delete_button.pressed.connect(_confirm_batch_delete)
-	actions.add_child(_batch_delete_button)
+	_creature_batch_actions_row.add_child(_batch_delete_button)
 	_creature_empty = Label.new()
 	_creature_empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_creature_empty.add_theme_font_size_override("font_size", 13)
@@ -3448,6 +3452,9 @@ func _update_creature_batch_actions() -> void:
 	if _batch_export_button == null:
 		return
 	var count := _selected_creature_batch().size()
+	# Bulk actions only occupy space after a checkbox is selected.
+	_creature_batch_selection_row.visible = count > 0
+	_creature_batch_actions_row.visible = count > 0
 	_batch_export_button.disabled = count == 0
 	_batch_delete_button.disabled = count == 0
 	_batch_export_button.text = "Esporta (%d)" % count if count > 0 else "Esporta selezione"
