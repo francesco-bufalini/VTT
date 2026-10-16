@@ -89,6 +89,12 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
   });
+  click('[data-sheet="notes"]');
+  await until(()=>document.querySelector('[data-field="notes"]'));
+  const pendingNote=document.querySelector('[data-field="notes"]');
+  pendingNote.value="Nota digitata e subito chiusa";
+  pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
+  // No change/blur or delay: a fast mobile tap must flush the debounce.
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   assert.match(document.querySelector("#app").textContent,/Arcanista mobile/);
@@ -98,6 +104,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],2);
+  assert.equal(persisted.data.notes,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
   click('[data-nav="library"]');
