@@ -32,10 +32,10 @@ static func _fit_window(dialog: Window, preferred_size: Vector2i, ratio: float, 
 	allowed = allowed.min(available - Vector2i(margin, margin)).max(Vector2i(1, 1))
 	dialog.min_size = Vector2i.ZERO
 	dialog.max_size = allowed
-	if touch:
-		dialog.size = preferred_size.min(allowed).max(Vector2i(1, 1))
-	else:
-		dialog.size = dialog.size.min(allowed).max(Vector2i(1, 1))
+	# Setting an upper bound alone is not sufficient: wrap_controls and the
+	# controls' minimum sizes can silently expand an embedded Window again.
+	# All modal contents are scrollable and the window size is authoritative.
+	dialog.size = preferred_size.min(allowed).max(Vector2i(1, 1))
 	dialog.position = _centered_popup_position(
 		root.position, available, dialog.size, dialog.is_embedded()
 	)
@@ -52,14 +52,22 @@ static func popup(
 		var accept: AcceptDialog = dialog as AcceptDialog
 		accept.add_theme_constant_override("buttons_min_width", 100)
 		accept.add_theme_constant_override("buttons_min_height", 34)
+		accept.get_label().autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_keep_body_within_viewport(accept, fallback_ratio)
 	var touch: bool = _touch(dialog)
 	if touch:
 		preload("res://vtt/mobile/touch_layout.gd").fit_dialog(dialog)
-	dialog.wrap_controls = not touch
+	# Desktop previously re-enabled wrap_controls, letting a late Label/HBox
+	# minimum size override max_size and push the modal off the screen.
+	dialog.wrap_controls = false
 	dialog.child_controls_changed()
-	dialog.reset_size()
-	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
+	var window_bounds: Vector2i = _root_bounds(dialog)
+	var allowed: Vector2i = Vector2i(Vector2(window_bounds) * clampf(fallback_ratio, 0.1, 1.0))
+	allowed = allowed.min(window_bounds - Vector2i(24, 24)).max(Vector2i(1, 1))
+	dialog.min_size = Vector2i.ZERO
+	dialog.max_size = allowed
+	var popup_size: Vector2i = preferred_size.min(allowed).max(Vector2i(1, 1))
+	dialog.popup_centered_clamped(popup_size, fallback_ratio)
 	_fit_window(dialog, preferred_size, fallback_ratio, touch)
 	_check_first_frame_layout(dialog, preferred_size, fallback_ratio)
 
@@ -123,7 +131,12 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	scroll.mouse_force_pass_scroll_events = false
 	scroll.name = "DialogScrollBody"
 	scroll.follow_focus = true
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# AUTO avoids propagating a wide child's minimum width to the window,
+	# while giving narrow displays a fallback for non-wrappable controls.
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.custom_minimum_size = Vector2.ZERO
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dialog.remove_child(body)
 	dialog.add_child(scroll)
