@@ -39,19 +39,65 @@ var _clients: Array[Dictionary] = []
 var _token := ""
 var _public_spells_payload := PackedByteArray()
 
+# PWA HTTP runs only while the native 3D board is open. A permanently
+# installed autoload tracks the scene, but does not keep a listening socket
+# outside the board. Godot F5/F6 launches include autoloads too.
 func _ready() -> void:
+	set_process(false)
 	if OS.has_feature("mobile") or OS.has_feature("web") or OS.has_feature("vtt_mobile"):
-		set_process(false)
 		return
 	_token = _pairing_token()
 	if _token.is_empty():
 		push_error("PWA: impossibile creare la credenziale di associazione")
-		set_process(false)
 		return
-	var error := _server.listen(PORT, "127.0.0.1")
-	if error != OK:
-		push_warning("PWA: server localhost non disponibile: " + error_string(error))
-		set_process(false)
+	get_tree().scene_changed.connect(_on_scene_changed)
+	call_deferred("_refresh_scene_server")
+
+
+func _is_board_scene(scene: Node) -> bool:
+	return scene != null and is_instance_valid(scene) and scene.scene_file_path == "res://dnd_base.tscn"
+
+
+func _on_scene_changed(_scene: Node) -> void:
+	_refresh_scene_server()
+
+
+func _refresh_scene_server() -> void:
+	if _is_board_scene(get_tree().current_scene):
+		_start_listener()
+	else:
+		_stop_listener()
+
+
+func _on_board_exiting() -> void:
+	# Called on tree_exiting even if the board is freed without a scene change.
+	_stop_listener()
+
+
+func _start_listener() -> Error:
+	if _server.is_listening():
+		return OK
+	if _token.is_empty():
+		return ERR_UNAUTHORIZED
+	var err := _server.listen(PORT, "127.0.0.1")
+	if err != OK:
+		push_warning("PWA: localhost:%d non disponibile: %s" % [PORT, error_string(err)])
+		return err
+	set_process(true)
+	var board := get_tree().current_scene
+	if _is_board_scene(board) and not board.tree_exiting.is_connected(_on_board_exiting):
+		board.tree_exiting.connect(_on_board_exiting)
+	return OK
+
+
+func _stop_listener() -> void:
+	set_process(false)
+	_server.stop()
+	for item: Dictionary in _clients:
+		var peer: StreamPeerTCP = item.get("peer") as StreamPeerTCP
+		if peer != null:
+			peer.disconnect_from_host()
+	_clients.clear()
 
 
 func _pairing_token() -> String:
@@ -311,7 +357,4 @@ func _drop(index: int) -> void:
 
 
 func _exit_tree() -> void:
-	_server.stop()
-	for item in _clients:
-		(item.peer as StreamPeerTCP).disconnect_from_host()
-	_clients.clear()
+	_stop_listener()
