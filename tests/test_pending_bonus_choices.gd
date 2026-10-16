@@ -62,7 +62,7 @@ func _run() -> void:
 	root.add_child(ui)
 	var bonuses := BonusTab.new()
 	ui.add_child(bonuses)
-	bonuses.setup(func(rows: Array, origins: Array, feats: Array = []) -> void:
+	bonuses.setup(func(rows: Array, origins: Array, feats: Array = [], _dice: Array = []) -> void:
 		captures.append({"rows": rows, "origins": origins, "feats": feats})
 	)
 	bonuses.load_record(record)
