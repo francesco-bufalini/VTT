@@ -49,3 +49,8 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 /* Keep native-derived values as summaries rather than editable free-text fields. */
 .native-summary dd{white-space:pre-wrap;overflow-wrap:anywhere}
 .native-entry .columns select{min-width:0}
+
+/* Native sheet keeps the modifier visible but read-only. */
+.native-abilities{grid-template-columns:32px minmax(84px,1.45fr) minmax(54px,.7fr) minmax(58px,.85fr);gap:7px}
+.native-derived{text-align:center;font-variant-numeric:tabular-nums}
+@media(max-width:360px){.native-abilities{grid-template-columns:28px minmax(74px,1.45fr) minmax(46px,.7fr) minmax(52px,.85fr);gap:5px}}
