@@ -299,6 +299,10 @@ func run() -> void:
 	root.add_child(campaign)
 	var archive := Archive.new()
 	archive.setup(campaign)
+	var isolated_path := "user://tests/creature_sheets_%d/creatures.json" % Time.get_ticks_usec()
+	archive._storage.path = isolated_path
+	archive._characters.archive_path = isolated_path
+	archive._monsters.archive_path = isolated_path
 	creature["kind"] = "monster"
 	character["kind"] = "character"
 	assert(archive.save(creature) == OK)
@@ -356,14 +360,7 @@ func run() -> void:
 	assert(archive.delete(returned.creature) == OK)
 	assert(archive.delete(returned.creature) == ERR_DOES_NOT_EXIST)
 
-	var folder := ProjectSettings.globalize_path("user://master_creatures")
-	var filename := folder.path_join("campaign_test_creature_sheet_temp.json")
-	if FileAccess.file_exists(filename):
-		DirAccess.remove_absolute(filename)
-	folder = ProjectSettings.globalize_path("user://player_characters")
-	filename = folder.path_join("campaign_test_creature_sheet_temp.json")
-	if FileAccess.file_exists(filename):
-		DirAccess.remove_absolute(filename)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_path))
 	campaign.queue_free()
 	print("PASS: creature sheets, sorted references, retired trackers and local ownership")
 	quit()
