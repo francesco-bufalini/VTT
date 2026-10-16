@@ -1,6 +1,7 @@
 extends Node
 
 const EYE_ICON := preload("res://vtt/icons/eye.svg")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var board_root: Node3D
 var ui_root: CanvasLayer
@@ -285,7 +286,7 @@ func open_export_dialog() -> void:
 	if chosen.is_empty():
 		return
 	export_dialog.current_file = "token_selezionati.vtttokens"
-	export_dialog.popup_centered_clamped(Vector2i(800, 560), 0.92)
+	DialogLayout.popup(export_dialog, Vector2i(800, 560), 0.92)
 
 
 func _export_selection_to_path(path: String) -> void:
@@ -299,7 +300,7 @@ func _confirm_delete() -> void:
 	if selected.is_empty():
 		return
 	delete_dialog.dialog_text = "Eliminare %d token dalla mappa?\nLe schede creature nell'archivio non vengono cancellate.\nPuoi usare Annulla (Ctrl+Z) per ripristinare." % selected.size()
-	delete_dialog.popup_centered_clamped(Vector2i(470, 260), 0.92)
+	DialogLayout.popup(delete_dialog, Vector2i(470, 260), 0.92)
 
 
 func _delete_confirmed() -> void:

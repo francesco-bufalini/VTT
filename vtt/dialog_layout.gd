@@ -1,8 +1,8 @@
 extends RefCounted
 
-# Share one layout policy for all native AcceptDialog/ConfirmationDialog popups.
-# An embedded subwindow can have a scaled Viewport visible_rect that is much
-# larger than the actual physical Root Window. The latter is the usable area.
+# Share one layout policy for all Godot dialogs, including native desktop
+# windows and embedded game subwindows. Coordinates differ between modes:
+# embedded positions are viewport-local, native positions are screen-absolute.
 
 
 static func _root_bounds(dialog: Window) -> Vector2i:
@@ -13,15 +13,32 @@ static func _touch(dialog: Window) -> bool:
 	return OS.has_feature("mobile") or dialog.get_tree().root.has_meta("vtt_touch_layout")
 
 
-static func _fit_touch_window(dialog: Window, preferred_size: Vector2i) -> void:
-	var available: Vector2i = _root_bounds(dialog)
-	var allowed: Vector2i = (available - Vector2i(12, 12)).max(Vector2i(1, 1))
+# The root is the actual VTT window, not a stretched in-game viewport.
+# In native mode Window.position is measured from the desktop origin; for
+# embedded windows it is relative to the enclosing viewport.
+static func _centered_popup_position(
+	root_position: Vector2i, root_size: Vector2i,
+	popup_size: Vector2i, embedded: bool
+) -> Vector2i:
+	var origin: Vector2i = Vector2i.ZERO if embedded else root_position
+	return origin + (root_size - popup_size) / 2
+
+
+static func _fit_window(dialog: Window, preferred_size: Vector2i, ratio: float, touch: bool) -> void:
+	var root: Window = dialog.get_tree().root
+	var available: Vector2i = root.size
+	var margin: int = 12 if touch else 24
+	var allowed: Vector2i = Vector2i(Vector2(available) * clampf(ratio, 0.1, 1.0))
+	allowed = allowed.min(available - Vector2i(margin, margin)).max(Vector2i(1, 1))
 	dialog.min_size = Vector2i.ZERO
 	dialog.max_size = allowed
-	# popup_centered_clamped() centers relative to the *scaled* viewport on
-	# embedded mobile clients. Apply the real device/window bounds explicitly.
-	dialog.size = preferred_size.min(allowed).max(Vector2i(1, 1))
-	dialog.position = (available - dialog.size) / 2
+	if touch:
+		dialog.size = preferred_size.min(allowed).max(Vector2i(1, 1))
+	else:
+		dialog.size = dialog.size.min(allowed).max(Vector2i(1, 1))
+	dialog.position = _centered_popup_position(
+		root.position, available, dialog.size, dialog.is_embedded()
+	)
 
 
 static func popup(
@@ -43,11 +60,51 @@ static func popup(
 	dialog.child_controls_changed()
 	dialog.reset_size()
 	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
-	if touch:
-		_fit_touch_window(dialog, preferred_size)
-	else:
-		_fit_desktop_window(dialog, fallback_ratio)
+	_fit_window(dialog, preferred_size, fallback_ratio, touch)
 	_check_first_frame_layout(dialog, preferred_size, fallback_ratio)
+
+
+# Resize an already open modal (e.g. toggling document edit mode) without
+# closing it or stealing keyboard focus.
+# Context menus use a cursor position, not a centered position. Clamp the
+# opened menu after Godot knows its true size, in the same coordinates as
+# native/embedded dialogs (including near the right and bottom edges).
+static func popup_menu(menu: PopupMenu, viewport_point: Vector2i) -> void:
+	if menu == null or not is_instance_valid(menu) or not menu.is_inside_tree():
+		return
+	var root: Window = menu.get_tree().root
+	menu.max_size = (root.size - Vector2i(16, 16)).max(Vector2i(1, 1))
+	menu.popup()
+	_fit_popup_menu(menu, viewport_point)
+	_refit_popup_menu(menu, viewport_point)
+
+
+static func _fit_popup_menu(menu: PopupMenu, viewport_point: Vector2i) -> void:
+	if not is_instance_valid(menu) or not menu.visible:
+		return
+	var root: Window = menu.get_tree().root
+	var origin: Vector2i = Vector2i.ZERO if menu.is_embedded() else root.position
+	var minimum: Vector2i = origin + Vector2i(8, 8)
+	var maximum: Vector2i = origin + root.size - menu.size - Vector2i(8, 8)
+	menu.position = Vector2i(
+		clampi(viewport_point.x + origin.x, minimum.x, maxi(minimum.x, maximum.x)),
+		clampi(viewport_point.y + origin.y, minimum.y, maxi(minimum.y, maximum.y))
+	)
+
+
+static func _refit_popup_menu(menu: PopupMenu, viewport_point: Vector2i) -> void:
+	await menu.get_tree().process_frame
+	if is_instance_valid(menu) and menu.visible:
+		_fit_popup_menu(menu, viewport_point)
+
+
+static func resize_visible(
+	dialog: Window, preferred_size: Vector2i, fallback_ratio: float = 0.92
+) -> void:
+	if dialog == null or not is_instance_valid(dialog) or not dialog.visible:
+		return
+	dialog.size = preferred_size
+	_fit_window(dialog, preferred_size, fallback_ratio, _touch(dialog))
 
 
 static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> void:
@@ -74,17 +131,8 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
-# Correct the initial frame too: popup_centered_clamped may use an embedded
-# viewport larger than the desktop window, especially for nested sheet dialogs.
-static func _fit_desktop_window(dialog: Window, ratio: float) -> void:
-	var available: Vector2i = _root_bounds(dialog)
-	var allowed: Vector2i = Vector2i(Vector2(available) * clampf(ratio, 0.1, 1.0))
-	allowed = allowed.min(available - Vector2i(24, 24)).max(Vector2i(1, 1))
-	dialog.min_size = Vector2i.ZERO
-	dialog.size = dialog.size.min(allowed)
-	dialog.position = (available - dialog.size) / 2
-
-
+# A new dialog's text and footer may not have their final size at first popup.
+# Re-clamp on subsequent frames with the SAME coordinate system as the opener.
 static func _check_first_frame_layout(
 	dialog: Window, preferred_size: Vector2i, fallback_ratio: float
 ) -> void:
@@ -92,11 +140,9 @@ static func _check_first_frame_layout(
 	await tree.process_frame
 	if not is_instance_valid(dialog) or not dialog.visible:
 		return
-	if _touch(dialog):
-		_fit_touch_window(dialog, preferred_size)
+	var touch: bool = _touch(dialog)
+	_fit_window(dialog, preferred_size, fallback_ratio, touch)
+	if touch:
 		await tree.process_frame
 		if is_instance_valid(dialog) and dialog.visible:
-			_fit_touch_window(dialog, preferred_size)
-		return
-	# Desktop windows can measure their contents on the next frame.
-	_fit_desktop_window(dialog, fallback_ratio)
+			_fit_window(dialog, preferred_size, fallback_ratio, touch)

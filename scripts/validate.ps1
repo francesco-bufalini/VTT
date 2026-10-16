@@ -191,7 +191,8 @@ $ciSmokeTestNames = @(
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
     "test_creature_sheet_controller.gd",
-    "test_board_smoke.gd"
+    "test_board_smoke.gd",
+    "test_dialog_layout.gd"
 )
 
 if ($FullTests) {

@@ -1,4 +1,5 @@
 extends VBoxContainer
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 # Private creature inventory. These are catalog references, not scene items:
 # placing or deleting physical objects on the board never changes a sheet.
@@ -517,8 +518,9 @@ func _open_item_share_menu(index: int, local_position: Vector2) -> void:
 	_on_inventory_selected(index)
 	var peers: Array = _peer_provider.call() if _peer_provider.is_valid() else []
 	_item_share_menu.set_item_disabled(0, peers.is_empty() or not _send_item.is_valid())
-	_item_share_menu.position = Vector2i(_inventory_list.get_global_rect().position + local_position)
-	_item_share_menu.popup()
+	DialogLayout.popup_menu(
+		_item_share_menu, Vector2i(_inventory_list.get_global_rect().position + local_position)
+	)
 
 
 func _share_current_item() -> void:

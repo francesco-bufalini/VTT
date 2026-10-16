@@ -1,5 +1,6 @@
 extends VBoxContainer
 const EditorUI = preload("res://vtt/origin_editor_ui.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 # Spell entitlements are edited with the same origin -> benefits pattern as
 # proficiencies/trackers. Class spell preparation is NOT edited here.
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
@@ -458,7 +459,7 @@ func _choose(choice: Dictionary) -> void:
 			break
 	_update_payment_fields()
 	_add_dialog.title = "Scegli · " + String(choice.get("origin_name", ""))
-	_add_dialog.popup_centered(Vector2i(640, 480))
+	DialogLayout.popup(_add_dialog, Vector2i(640, 480))
 
 
 func _add_single(publish_now: bool = true) -> void:
@@ -577,7 +578,7 @@ func open_for_origin(origin_id: String, choice: Dictionary = {}) -> void:
 				_origin_picker.select(index)
 		_spell_search.clear()
 		_refresh_spell_picker("")
-		_add_dialog.popup_centered(Vector2i(640, 480))
+		DialogLayout.popup(_add_dialog, Vector2i(640, 480))
 	_open_shared_picker()
 
 func _open_shared_picker() -> void:
@@ -605,7 +606,7 @@ func _open_shared_picker() -> void:
 			if _picked_ids.size() > 1:
 				_choose_spell_button.text = "%d incantesimi selezionati · Cambia" % _picked_ids.size()
 			_update_payment_fields()
-			_add_dialog.popup_centered(Vector2i(640, 480))
+			DialogLayout.popup(_add_dialog, Vector2i(640, 480))
 	)
 
 

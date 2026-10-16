@@ -1871,7 +1871,7 @@ func configure_touch_layout() -> void:
 	file_picker.add_filter("*.json", "Scheda VTT esportata")
 	ui_root.add_child(file_picker)
 	file_picker.file_selected.connect(_import_export_file)
-	import_button.pressed.connect(func() -> void: file_picker.popup_centered_clamped(Vector2i(680, 600), 0.9))
+	import_button.pressed.connect(func() -> void: DialogLayout.popup(file_picker, Vector2i(680, 600), 0.9))
 	touch.style_control(import_button)
 	# Initial sheets may have been populated before mobile mode was enabled.
 	# Rebuild their dynamic multiclass/tracker rows with the touch layout too.
@@ -2050,7 +2050,7 @@ func _open_touch_creature_actions(index: int, button: Button) -> void:
 	if _touch_layout and board_root.has_method("show_touch_popup"):
 		board_root.show_touch_popup(_creature_context_menu)
 	else:
-		_creature_context_menu.popup()
+		DialogLayout.popup_menu(_creature_context_menu, _creature_context_menu.position)
 
 
 func _open_touch_sheet() -> void:
@@ -2124,7 +2124,7 @@ func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
 	if _touch_layout and board_root.has_method("show_touch_popup"):
 		board_root.show_touch_popup(_creature_context_menu)
 	else:
-		_creature_context_menu.popup()
+		DialogLayout.popup_menu(_creature_context_menu, _creature_context_menu.position)
 	get_viewport().set_input_as_handled()
 
 
@@ -2456,7 +2456,7 @@ func _export_current_creature() -> void:
 	_export_dialog.title = "Scarica creatura"
 	_export_dialog.current_file = filename.substr(0, 75) + ".json"
 	_export_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
-	_export_dialog.popup_centered_clamped(Vector2i(820, 550), 0.9)
+	DialogLayout.popup(_export_dialog, Vector2i(820, 550), 0.9)
 
 
 func _save_exported_creature(path: String) -> void:
@@ -2827,7 +2827,7 @@ func _roll_with_optional_dice(label: String, expression: String, key: String, re
 		choices.append({"check": checkbox, "entry": entry.duplicate(true)})
 	dialog.confirmed.connect(_confirm_roll_with_dice.bind(label, base_result, key, choices, dialog))
 	dialog.canceled.connect(func() -> void: dialog.queue_free())
-	dialog.popup_centered(Vector2i(480, maxi(175, 110 + choices.size() * 38)))
+	DialogLayout.popup(dialog, Vector2i(480, maxi(175, 110 + choices.size() * 38)))
 
 
 func _confirm_roll_with_dice(label: String, base_result: int, key: String, choices: Array[Dictionary], dialog: ConfirmationDialog) -> void:
@@ -3462,7 +3462,7 @@ func _export_selected_creatures() -> void:
 	_export_dialog.title = "Esporta creature selezionate"
 	_export_dialog.current_file = "creature_selezionate.json"
 	_export_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
-	_export_dialog.popup_centered_clamped(Vector2i(820, 550), 0.9)
+	DialogLayout.popup(_export_dialog, Vector2i(820, 550), 0.9)
 
 
 func _save_batch_export(path: String) -> void:

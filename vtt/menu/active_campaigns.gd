@@ -3,6 +3,7 @@ extends Control
 const MAIN_MENU_SCENE_PATH := "res://vtt/menu/main_menu.tscn"
 const MenuBackdrop = preload("res://vtt/menu/menu_backdrop.gd")
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _status_label: Label
 var _cards_grid: GridContainer
@@ -267,8 +268,7 @@ func _request_edit_campaign(campaign: Dictionary) -> void:
 		campaign.get("description", "")
 	)
 
-	_edit_dialog.reset_size()
-	_edit_dialog.popup_centered_clamped(Vector2i(560, 390), 0.92)
+	DialogLayout.popup(_edit_dialog, Vector2i(560, 390), 0.92)
 	_edit_name_input.call_deferred("grab_focus")
 	_edit_name_input.call_deferred("select_all")
 

@@ -1,5 +1,6 @@
 extends RefCounted
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 # Stateless presentation helpers for origin editors.
 
@@ -22,7 +23,7 @@ static func popup_form(owner: Control, form: Control, caption: String, submit: B
 	open.text = caption
 	parent.add_child(open)
 	parent.move_child(open, index)
-	open.pressed.connect(func() -> void: dialog.popup_centered(Vector2i(640, 400)))
+	open.pressed.connect(func() -> void: DialogLayout.popup(dialog, Vector2i(640, 400)))
 	if submit != null:
 		submit.pressed.connect(dialog.hide)
 	return dialog
@@ -65,7 +66,7 @@ static func edit_fields(owner: Control, parent: Control, fields: Array[Control],
 			elif control is LineEdit:
 				control.text = String(item["value"])
 	)
-	open.pressed.connect(func() -> void: dialog.popup_centered(Vector2i(560, 230)))
+	open.pressed.connect(func() -> void: DialogLayout.popup(dialog, Vector2i(560, 230)))
 
 static func origin_link(owner: Control, row: Control, sid: String, title: String) -> void:
 	if sid.is_empty():

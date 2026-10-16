@@ -285,8 +285,9 @@ func _open_share_menu(index: int, local_position: Vector2) -> void:
 	_share_index = index
 	var peers: Array = _online_peers.call() if _online_peers.is_valid() else []
 	_share_menu.set_item_disabled(0, peers.is_empty() or not _send_document.is_valid())
-	_share_menu.position = Vector2i(_list.get_global_rect().position + local_position)
-	_share_menu.popup()
+	DialogLayout.popup_menu(
+		_share_menu, Vector2i(_list.get_global_rect().position + local_position)
+	)
 
 
 func _share_current_document() -> void:
@@ -428,10 +429,8 @@ func _toggle_editor(enabled: bool) -> void:
 	# Do not re-open an active dialog on edit-mode changes: that steals
 	# keyboard focus and can make its controls expand off-screen.
 	if _dialog.visible:
-		var screen_size := get_tree().root.size
 		var target := Vector2i(950, 660) if enabled else Vector2i(640, 620)
-		_dialog.size = target.min(screen_size - Vector2i(20, 32))
-		_dialog.position = (screen_size - _dialog.size) / 2
+		DialogLayout.resize_visible(_dialog, target, 0.90)
 
 
 func _apply_dialog_layout(editing: bool) -> void:

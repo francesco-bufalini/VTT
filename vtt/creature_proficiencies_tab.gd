@@ -110,7 +110,7 @@ func setup(on_change: Callable) -> void:
 	_competence_editor.show()
 	var competence_dialog: AcceptDialog = EditorUI.popup_form(self, _competence_editor, "+ Competenza", competence_confirm)
 	_add_competence_button.hide()
-	_add_competence_button.pressed.connect(func() -> void: competence_dialog.popup_centered(Vector2i(640, 300)))
+	_add_competence_button.pressed.connect(func() -> void: DialogLayout.popup(competence_dialog, Vector2i(640, 300)))
 	_choice_dialog = ConfirmationDialog.new()
 	_choice_dialog.title = "Completa le competenze"
 	_choice_dialog.ok_button_text = "Applica"
