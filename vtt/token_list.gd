@@ -7,6 +7,12 @@ var ui_root: CanvasLayer
 var panel: PanelContainer
 var list_box: VBoxContainer
 var count_label: Label
+var export_dialog: FileDialog
+var delete_dialog: ConfirmationDialog
+var bulk_export: Button
+var bulk_delete: Button
+var select_all_button: Button
+var clear_button: Button
 var _row_checks: Dictionary = {}
 var _signature: String = ""
 var _refresh_accumulator: float = 0.0
@@ -84,6 +90,44 @@ func _build_panel() -> void:
 	help.add_theme_font_size_override("font_size", 11)
 	column.add_child(help)
 
+	var select_row := HBoxContainer.new()
+	column.add_child(select_row)
+	select_all_button = Button.new()
+	select_all_button.text = "Seleziona tutti"
+	select_all_button.pressed.connect(_select_all_tokens.bind(true))
+	select_row.add_child(select_all_button)
+	clear_button = Button.new()
+	clear_button.text = "Deseleziona tutti"
+	clear_button.pressed.connect(_select_all_tokens.bind(false))
+	select_row.add_child(clear_button)
+
+	var operations := HBoxContainer.new()
+	column.add_child(operations)
+	bulk_export = Button.new()
+	bulk_export.text = "Esporta selezionati…"
+	bulk_export.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bulk_export.pressed.connect(open_export_dialog)
+	operations.add_child(bulk_export)
+	bulk_delete = Button.new()
+	bulk_delete.text = "Elimina selezionati…"
+	bulk_delete.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bulk_delete.pressed.connect(_confirm_delete)
+	operations.add_child(bulk_delete)
+
+	export_dialog = FileDialog.new()
+	export_dialog.title = "Esporta token selezionati"
+	export_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	export_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	export_dialog.filters = PackedStringArray(["*.vtttokens ; Gruppo token VTT"])
+	export_dialog.current_file = "token_selezionati.vtttokens"
+	export_dialog.file_selected.connect(_export_selection_to_path)
+	ui_root.add_child(export_dialog)
+
+	delete_dialog = ConfirmationDialog.new()
+	delete_dialog.title = "Elimina i token selezionati?"
+	delete_dialog.confirmed.connect(_delete_confirmed)
+	ui_root.add_child(delete_dialog)
+
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -143,6 +187,17 @@ func _process(delta: float) -> void:
 		_refresh_accumulator = 0.0
 		_refresh_rows_if_needed(false)
 	_sync_selection_checks()
+	_update_bulk_buttons()
+
+
+func _update_bulk_buttons() -> void:
+	if bulk_export == null:
+		return
+	var count := _selection().size()
+	bulk_export.disabled = count == 0
+	bulk_delete.disabled = count == 0
+	select_all_button.disabled = _tokens().is_empty()
+	clear_button.disabled = count == 0
 
 
 func _refresh_rows_if_needed(force: bool) -> void:
@@ -206,12 +261,60 @@ func _add_token_row(token: CharacterBody3D) -> void:
 	row.add_child(focus_button)
 
 
+func _selection() -> Array[CharacterBody3D]:
+	if board_root == null or not is_instance_valid(board_root):
+		return []
+	if board_root.has_method("get_selected_tokens_for_creatures"):
+		return board_root.call("get_selected_tokens_for_creatures")
+	return []
+
+
+func _select_all_tokens(selected: bool) -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	if not selected:
+		board_root.call("clear_token_selection")
+	else:
+		for token: CharacterBody3D in _tokens():
+			board_root.call("set_token_selected_from_ui", token, true)
+	_sync_selection_checks()
+
+
+func open_export_dialog() -> void:
+	var chosen := _selection()
+	if chosen.is_empty():
+		return
+	export_dialog.current_file = "token_selezionati.vtttokens"
+	export_dialog.popup_centered_clamped(Vector2i(800, 560), 0.92)
+
+
+func _export_selection_to_path(path: String) -> void:
+	var sync: Node = board_root.get("board_sync") as Node
+	if sync != null and sync.has_method("export_selected_tokens_to_file"):
+		sync.call("export_selected_tokens_to_file", path, _selection())
+
+
+func _confirm_delete() -> void:
+	var selected := _selection()
+	if selected.is_empty():
+		return
+	delete_dialog.dialog_text = "Eliminare %d token dalla mappa?\nLe schede creature nell'archivio non vengono cancellate.\nPuoi usare Annulla (Ctrl+Z) per ripristinare." % selected.size()
+	delete_dialog.popup_centered_clamped(Vector2i(470, 260), 0.92)
+
+
+func _delete_confirmed() -> void:
+	if board_root != null and is_instance_valid(board_root):
+		board_root.call("_delete_selected")
+		call_deferred("refresh")
+
+
 func _on_token_toggled(selected: bool, token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		refresh()
 		return
 	if board_root.has_method("set_token_selected_from_ui"):
 		board_root.call("set_token_selected_from_ui", token, selected)
+	_update_bulk_buttons()
 
 
 func _focus_token(token: CharacterBody3D) -> void:
