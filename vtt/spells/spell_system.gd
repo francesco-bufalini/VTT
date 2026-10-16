@@ -2805,11 +2805,9 @@ func _update_spell_preview() -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
 		return
-
 	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
-		# Never leave the VTT trapped in targeting mode if runtime spell data
-		# disappears or becomes invalid between activation and targeting.
+		# Invalidated runtime spells must exit the full targeting lifecycle.
 		_cancel_pending_cast()
 		return
 
@@ -2818,356 +2816,173 @@ func _update_spell_preview() -> void:
 		if _is_2d_view()
 		else get_viewport().get_visible_rect().size * 0.5
 	)
-
 	_update_spell_range_preview(spell_data)
-
 	if _targeting_phase.begins_with("wall_"):
 		_set_spell_affected_targets([], true)
 		_hide_spell_preview()
 		_update_wall_preview(screen_position, spell_data)
 		return
 
+	# Only these phases retain highlights independent of the moving preview.
+	# In particular, a rejected multi-target candidate must not erase the
+	# already selected targets. Saving throws have their own held targets.
+	if _targeting_phase == "multi_target_tokens":
+		_set_spell_affected_targets(_pending_targets, true)
+	elif _targeting_phase == "saving_throw":
+		_set_spell_affected_targets(_saving_throw_targets, true)
+	else:
+		_set_spell_affected_targets([], true)
+
+	var preview: Dictionary = _resolve_spell_preview(screen_position, spell_data)
+	if not bool(preview.get("valid", false)):
+		_hide_spell_preview()
+		return
+
+	var start: Vector3 = preview.get("start", Vector3.ZERO)
+	var end: Vector3 = preview.get("end", Vector3.ZERO)
+	var shape: String = String(preview.get("shape", "line"))
+	var style: String = String(preview.get("style", _spell_style(spell_data)))
+	if preview.has("width"):
+		measurement_tool.call("show_spell_preview", start, end, shape, style,
+			float(preview["width"]))
+	else:
+		measurement_tool.call("show_spell_preview", start, end, shape, style)
+	if bool(preview.get("highlight_geometry", false)):
+		_set_spell_geometry_highlight(start, end, spell_data,
+			preview.get("caster", _pending_caster) as Node3D)
+
+
+# Every active targeting phase resolves its own input and rules; the renderer
+# only sees an ephemeral, normalized geometry result. Committed AoEs, walls,
+# teleportation, chained targets and saving throws remain separate states.
+func _resolve_spell_preview(screen_position: Vector2, spell_data: Dictionary) -> Dictionary:
 	match _targeting_phase:
 		"caster":
-			var hovered_caster: Node3D = _token_at_screen(screen_position)
-			if hovered_caster == null:
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
-
-			var caster_mode: String = String(
-				spell_data.get("target_mode", "")
-			)
-			if (
-				caster_mode == "self_token"
-				or (
-					caster_mode == "token_then_direction"
-					and String(spell_data.get("aoe_shape", "")) == "cone"
-				)
+			var hovered: Node3D = _token_at_screen(screen_position)
+			if hovered == null:
+				return {}
+			var mode: String = String(spell_data.get("target_mode", ""))
+			if mode == "self_token" or (
+				mode == "token_then_direction"
+				and String(spell_data.get("aoe_shape", "")) == "cone"
 			):
-				var geometry: Dictionary = _directional_spell_geometry(
-					hovered_caster,
-					spell_data
+				return _direction_preview(
+					_directional_spell_geometry(hovered, spell_data),
+					spell_data, hovered, "cone"
 				)
-				if geometry.is_empty():
-					_set_spell_affected_targets([], true)
-					_hide_spell_preview()
-					return
-				var geometry_start: Vector3 = geometry.get(
-					"start",
-					Vector3.ZERO
-				)
-				var geometry_end: Vector3 = geometry.get(
-					"end",
-					Vector3.ZERO
-				)
-				measurement_tool.call(
-					"show_spell_preview",
-					geometry_start,
-					geometry_end,
-					String(spell_data.get("aoe_shape", "cone")),
-					_spell_style(spell_data),
-					_spell_line_width_world(spell_data)
-				)
-				_set_spell_geometry_highlight(
-					geometry_start,
-					geometry_end,
-					spell_data,
-					hovered_caster
-				)
-			elif caster_mode == "self_emanation":
-				var center: Vector3 = hovered_caster.global_position
-				var emanation_end: Vector3 = _area_endpoint(
-					center,
-					spell_data
-				)
-				measurement_tool.call(
-					"show_spell_preview",
-					center,
-					emanation_end,
-					String(spell_data.get("aoe_shape", "sphere")),
-					_spell_style(spell_data),
-					_spell_line_width_world(spell_data)
-				)
-				_set_spell_geometry_highlight(
-					center,
-					emanation_end,
-					spell_data,
-					hovered_caster
-				)
-			else:
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-
-		"point":
+			if mode == "self_emanation":
+				return _area_preview(hovered.global_position, spell_data, hovered)
+		"point", "multi_target_points":
 			if _pending_caster == null or not is_instance_valid(_pending_caster):
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
-
-			var point_data: Dictionary = _point_target_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(point_data.get("valid", false)):
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
-
-			var target_point: Vector3 = point_data.get(
-				"point",
-				Vector3.ZERO
-			)
-			var endpoint: Vector3 = _area_endpoint(
-				target_point,
-				spell_data
-			)
-			measurement_tool.call(
-				"show_spell_preview",
-				target_point,
-				endpoint,
-				String(spell_data.get("aoe_shape", "sphere")),
-				_spell_style(spell_data),
-				_spell_line_width_world(spell_data)
-			)
-			_set_spell_geometry_highlight(
-				target_point,
-				endpoint,
-				spell_data,
-				_pending_caster
-			)
-
-		"target_token":
-			_set_spell_affected_targets([], true)
-			var target_data: Dictionary = _target_or_point_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(target_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-
-			var target_endpoint: Vector3
-			if String(target_data.get("kind", "")) == "point":
-				target_endpoint = target_data.get("point", Vector3.ZERO)
-			else:
-				var target: Node3D = target_data.get("target") as Node3D
-				if target == null:
-					_hide_spell_preview()
-					return
-				target_endpoint = _token_spell_origin(target)
-
-			measurement_tool.call(
-				"show_spell_preview",
-				_token_spell_origin(_pending_caster),
-				target_endpoint,
-				"line",
-				String(
-					spell_data.get("projectile_style", _spell_style(spell_data))
+				return {}
+			var point_data: Dictionary = _point_target_data(screen_position, spell_data)
+			if bool(point_data.get("valid", false)):
+				return _area_preview(
+					point_data.get("point", Vector3.ZERO), spell_data, _pending_caster
 				)
-			)
-
+		"target_token", "multi_target_tokens":
+			var target_data: Dictionary = _target_or_point_data(screen_position, spell_data)
+			var endpoint: Dictionary = _preview_target_endpoint(target_data)
+			if bool(endpoint.get("valid", false)):
+				var projectile_style: String = (
+					String(spell_data.get("projectile_style", _spell_style(spell_data)))
+					if _targeting_phase == "target_token"
+					else String(spell_data.get("projectile_style", "magic_missile"))
+				)
+				return _line_preview(
+					_token_spell_origin(_pending_caster),
+					endpoint.get("point", Vector3.ZERO),
+					projectile_style
+				)
 		"transform_target", "transform_multi_targets", "resize_target":
-			_set_spell_affected_targets([], true)
 			var transform_data: Dictionary = _transformation_target_data(
-				screen_position,
-				spell_data
+				screen_position, spell_data
 			)
-			if not bool(transform_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-			var transform_target: Node3D = (
-				transform_data.get("target") as Node3D
-			)
-			if transform_target == null:
-				_hide_spell_preview()
-				return
-			measurement_tool.call(
-				"show_spell_preview",
-				_token_spell_origin(_pending_caster),
-				_token_spell_origin(transform_target),
-				"line",
-				_spell_style(spell_data)
-			)
-
-		"multi_target_tokens":
-			_set_spell_affected_targets(_pending_targets, true)
-			var multi_data: Dictionary = _target_or_point_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(multi_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-
-			var multi_endpoint: Vector3
-			if String(multi_data.get("kind", "")) == "point":
-				multi_endpoint = multi_data.get("point", Vector3.ZERO)
-			else:
-				var multi_target: Node3D = multi_data.get("target") as Node3D
-				if multi_target == null:
-					_hide_spell_preview()
-					return
-				multi_endpoint = _token_spell_origin(multi_target)
-
-			measurement_tool.call(
-				"show_spell_preview",
-				_token_spell_origin(_pending_caster),
-				multi_endpoint,
-				"line",
-				String(spell_data.get("projectile_style", "magic_missile"))
-			)
-
-		"multi_target_points":
-			var multi_point_data: Dictionary = _point_target_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(multi_point_data.get("valid", false)):
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
-
-			var multi_point: Vector3 = multi_point_data.get(
-				"point",
-				Vector3.ZERO
-			)
-			var multi_point_end: Vector3 = _area_endpoint(
-				multi_point,
-				spell_data
-			)
-			measurement_tool.call(
-				"show_spell_preview",
-				multi_point,
-				multi_point_end,
-				String(spell_data.get("aoe_shape", "sphere")),
-				_spell_style(spell_data),
-				_spell_line_width_world(spell_data)
-			)
-			_set_spell_geometry_highlight(
-				multi_point,
-				multi_point_end,
-				spell_data,
-				_pending_caster
-			)
-
+			var target: Node3D = transform_data.get("target") as Node3D
+			if bool(transform_data.get("valid", false)) and target != null:
+				return _line_preview(_token_spell_origin(_pending_caster),
+					_token_spell_origin(target), _spell_style(spell_data))
 		"summon_point":
-			_set_spell_affected_targets([], true)
 			var summon_spell: Dictionary = spell_data.duplicate(true)
 			if bool(spell_data.get("summon_requires_ground", false)):
 				summon_spell["requires_ground"] = true
-			var summon_point_data: Dictionary = _point_target_data(
-				screen_position,
-				summon_spell
+			var summon_data: Dictionary = _point_target_data(
+				screen_position, summon_spell
 			)
-			if not bool(summon_point_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-			var summon_point: Vector3 = summon_point_data.get(
-				"point",
-				Vector3.ZERO
+			if bool(summon_data.get("valid", false)):
+				var point: Vector3 = summon_data.get("point", Vector3.ZERO)
+				return _line_preview(point,
+					point + Vector3.RIGHT * _cell_size() * 0.45,
+					_spell_style(spell_data), "sphere")
+		"chain_primary", "chain_secondary":
+			var secondary: bool = _targeting_phase == "chain_secondary"
+			var chain_data: Dictionary = (
+				_chain_secondary_target_data(screen_position, spell_data)
+				if secondary else _target_token_data(screen_position, spell_data)
 			)
-			measurement_tool.call(
-				"show_spell_preview",
-				summon_point,
-				summon_point + Vector3.RIGHT * _cell_size() * 0.45,
-				"sphere",
-				_spell_style(spell_data)
-			)
-
-		"chain_primary":
-			_set_spell_affected_targets([], true)
-			var primary_data: Dictionary = _target_token_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(primary_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-			var primary_target: Node3D = primary_data.get("target") as Node3D
-			if primary_target == null:
-				_hide_spell_preview()
-				return
-			measurement_tool.call(
-				"show_spell_preview",
-				_token_spell_origin(_pending_caster),
-				_token_spell_origin(primary_target),
-				"line",
-				"chain_lightning"
-			)
-
-		"chain_secondary":
-			_set_spell_affected_targets([], true)
-			var secondary_data: Dictionary = _chain_secondary_target_data(
-				screen_position,
-				spell_data
-			)
-			if not bool(secondary_data.get("valid", false)):
-				_hide_spell_preview()
-				return
-			var secondary_target: Node3D = secondary_data.get("target") as Node3D
-			if secondary_target == null:
-				_hide_spell_preview()
-				return
-			measurement_tool.call(
-				"show_spell_preview",
-				_token_spell_origin(_pending_chain_primary),
-				_token_spell_origin(secondary_target),
-				"line",
-				"chain_lightning"
-			)
-
+			var chain_target: Node3D = chain_data.get("target") as Node3D
+			if bool(chain_data.get("valid", false)) and chain_target != null:
+				return _line_preview(
+					_token_spell_origin(_pending_chain_primary if secondary else _pending_caster),
+					_token_spell_origin(chain_target), "chain_lightning"
+				)
 		"direction_point":
 			var direction_data: Dictionary = _direction_target_data(
-				screen_position,
-				spell_data
+				screen_position, spell_data
 			)
-			if not bool(direction_data.get("valid", false)):
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
+			if bool(direction_data.get("valid", false)):
+				return _direction_preview(
+					_direction_geometry_from_point(
+						_pending_caster,
+						direction_data.get("point", Vector3.ZERO),
+						spell_data
+					), spell_data, _pending_caster, "line"
+				)
+	return {}
 
-			var geometry: Dictionary = _direction_geometry_from_point(
-				_pending_caster,
-				direction_data.get("point", Vector3.ZERO),
-				spell_data
-			)
-			if geometry.is_empty():
-				_set_spell_affected_targets([], true)
-				_hide_spell_preview()
-				return
 
-			var direction_start: Vector3 = geometry.get(
-				"start",
-				Vector3.ZERO
-			)
-			var direction_end: Vector3 = geometry.get(
-				"end",
-				Vector3.ZERO
-			)
-			measurement_tool.call(
-				"show_spell_preview",
-				direction_start,
-				direction_end,
-				String(spell_data.get("aoe_shape", "line")),
-				_spell_style(spell_data),
-				_spell_line_width_world(spell_data)
-			)
-			_set_spell_geometry_highlight(
-				direction_start,
-				direction_end,
-				spell_data,
-				_pending_caster
-			)
+func _preview_target_endpoint(target_data: Dictionary) -> Dictionary:
+	if not bool(target_data.get("valid", false)):
+		return {}
+	if String(target_data.get("kind", "")) == "point":
+		return {"valid": true, "point": target_data.get("point", Vector3.ZERO)}
+	var token: Node3D = target_data.get("target") as Node3D
+	if token == null:
+		return {}
+	return {"valid": true, "point": _token_spell_origin(token)}
 
-		"saving_throw":
-			_set_spell_affected_targets(_saving_throw_targets, true)
-			_hide_spell_preview()
 
-		_:
-			_set_spell_affected_targets([], true)
-			_hide_spell_preview()
+func _line_preview(start: Vector3, end: Vector3, style: String,
+	shape: String = "line") -> Dictionary:
+	return {"valid": true, "start": start, "end": end,
+		"shape": shape, "style": style}
 
+
+func _area_preview(origin: Vector3, spell_data: Dictionary,
+	caster: Node3D) -> Dictionary:
+	return {
+		"valid": true, "start": origin,
+		"end": _area_endpoint(origin, spell_data),
+		"shape": String(spell_data.get("aoe_shape", "sphere")),
+		"style": _spell_style(spell_data),
+		"width": _spell_line_width_world(spell_data),
+		"highlight_geometry": true, "caster": caster
+	}
+
+
+func _direction_preview(geometry: Dictionary, spell_data: Dictionary,
+	caster: Node3D, fallback_shape: String) -> Dictionary:
+	if geometry.is_empty():
+		return {}
+	return {
+		"valid": true,
+		"start": geometry.get("start", Vector3.ZERO),
+		"end": geometry.get("end", Vector3.ZERO),
+		"shape": String(spell_data.get("aoe_shape", fallback_shape)),
+		"style": _spell_style(spell_data),
+		"width": _spell_line_width_world(spell_data),
+		"highlight_geometry": true, "caster": caster
+	}
 
 func _token_at_screen(screen_position: Vector2) -> Node3D:
 	if _remote_input_active:
