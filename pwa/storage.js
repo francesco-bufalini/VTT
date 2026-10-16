@@ -44,6 +44,63 @@ function requiredString(value, label) {
   return value;
 }
 
+// Atomic batch for portable creature imports: insert new creature and only
+// previously unknown homebrew definitions in the same transaction.
+export async function insertRecords(entries) {
+  if (!Array.isArray(entries) || !entries.length) throw new TypeError("No records");
+  const validated = entries.map(({ scope, type, id, data, ifAbsent = false }) => ({
+    scope: requiredString(scope, "scope"), type: requiredString(type, "type"),
+    id: requiredString(id, "id"), data, ifAbsent: !!ifAbsent
+  }));
+  const unique = new Set();
+  for (const row of validated) {
+    const key = JSON.stringify([row.scope, row.type, row.id]);
+    if (unique.has(key)) throw new Error("Duplicate record in import");
+    unique.add(key);
+  }
+  const db = await openStorage();
+  try {
+    const tx = db.transaction("records", "readwrite");
+    const store = tx.objectStore("records");
+    for (const row of validated) {
+      const entry = { scope: row.scope, type: row.type, id: row.id,
+        data: row.data, revision: 1, updatedAt: Date.now() };
+      if (row.ifAbsent) {
+        const check = store.get([row.scope, row.type, row.id]);
+        check.onsuccess = () => { if (!check.result) store.add(entry); };
+      } else {
+        store.add(entry); // Abort the ENTIRE import on ID collision.
+      }
+    }
+    await completed(tx);
+  } finally {
+    db.close();
+  }
+}
+
+// Permanent per-installation ID; get-and-create is a single transaction so
+// multiple tabs cannot silently assign different owners.
+export async function getOrCreateSetting(key, makeValue) {
+  requiredString(key, "setting");
+  const db = await openStorage();
+  try {
+    const tx = db.transaction("settings", "readwrite");
+    const store = tx.objectStore("settings");
+    let result;
+    const request = store.get(key);
+    request.onsuccess = () => {
+      if (request.result) result = request.result.value;
+      else {
+        result = makeValue();
+        store.add({ key, value: result });
+      }
+    };
+    return await completed(tx, () => result);
+  } finally {
+    db.close();
+  }
+}
+
 export async function getRecord(scope, type, id) {
   const db = await openStorage();
   try {
