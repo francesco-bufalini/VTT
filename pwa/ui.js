@@ -26,6 +26,16 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"stats", map
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let toastTimer = null;
+const pendingFieldTimers = new Map();
+async function flushPendingFields() {
+  const targets = [...pendingFieldTimers.keys()];
+  for (const target of targets) {
+    clearTimeout(pendingFieldTimers.get(target));
+    pendingFieldTimers.delete(target);
+    if (target.isConnected && state.editor) await handleField(target);
+  }
+  if (state.editor) await state.editor.flush();
+}
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
   ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]); }
 function text(value) { return String(value ?? "").trim(); }
@@ -86,7 +96,7 @@ function stopSubscriptions() {
 async function navigate(page, id=null) {
   if (!sections.has(page)) return;
   if (state.editor) {
-    try { await state.editor.flush(); }
+    try { await flushPendingFields(); }
     catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
   }
   stopSubscriptions();
@@ -834,6 +844,7 @@ function listen(){
     if(button.disabled)return;
     button.disabled=true;
     try {
+      await flushPendingFields();
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
     }catch(error){message(errorMessage(error),true);}
@@ -846,7 +857,6 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const inputTimers = new WeakMap();
   const editable = "[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
@@ -858,9 +868,10 @@ function listen(){
     }
     if(!target?.matches("[data-field],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
-    clearTimeout(inputTimers.get(target));
+    clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
-    inputTimers.set(target,setTimeout(()=>{
+    pendingFieldTimers.set(target,setTimeout(()=>{
+      pendingFieldTimers.delete(target);
       if(target.isConnected && state.editor===editor)
         handleField(target).catch(error=>message(errorMessage(error),true));
     },400));
@@ -891,7 +902,8 @@ function listen(){
       state.castLevel=Number(target.value);return;
     }
     if(!e.target?.matches(editable))return;
-    clearTimeout(inputTimers.get(e.target));
+    clearTimeout(pendingFieldTimers.get(e.target));
+    pendingFieldTimers.delete(e.target);
     handleField(e.target).catch(error=>message(errorMessage(error),true));
   });
   creatureInput.addEventListener("change",async()=>{
