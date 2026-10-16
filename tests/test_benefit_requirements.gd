@@ -4,6 +4,7 @@ const Requirements = preload("res://vtt/benefit_requirements.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const ItemInstances = preload("res://vtt/item_instance.gd")
 
 
 func _initialize() -> void:
@@ -141,6 +142,10 @@ func _run() -> void:
 		"bonus_saving_throw": 2,
 		"requirements": {"scope": "character", "min_level": 5}
 	}
+	var round_trip: Dictionary = ItemInstances.from_saved(
+		ItemInstances.from_catalog(relic))
+	assert(round_trip.get("requirements", {}) == relic["requirements"],
+		"Whole-item gates must survive export and local save normalization")
 	var item_bonus_record: Dictionary = bonus_record.duplicate(true)
 	item_bonus_record["level"] = 3
 	item_bonus_record["inventory"] = [relic]

@@ -56,3 +56,10 @@ by a unique name match WITHIN their class/edition/subclass. Ambiguous matches
 fall back to a stable `tracker:auto:` identity, never an unrelated trait.
 The engines that consume/spend resources, evaluate numeric formulas, grant
 spells, and activate items remain intentionally independent.
+
+An equipped item's own optional `requirements` is also checked against the
+character before activating its numeric bonuses, proficiencies, feat/spell
+origin descendants and structured defense traits. The item remains owned
+and visible when below the threshold. The field survives item snapshots and
+character import/export through `item_instance.gd`; inventory/equipment
+states and per-effect gates are deliberately kept separate.

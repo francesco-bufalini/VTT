@@ -21,6 +21,7 @@ on:
       - "vtt/creature_bonus_tab.gd"
       - "vtt/creature_damage_defenses_tab.gd"
       - "vtt/creature_trackers_tab.gd"
+      - "vtt/item_instance.gd"
       - "vtt/creature_item_rules.gd"
       - "tests/test_creature_features_standalone.gd"
       - "tests/test_benefit_requirements.gd"
