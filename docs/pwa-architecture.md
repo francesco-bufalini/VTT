@@ -140,7 +140,9 @@ the local archive directly:
   the existing native `chat_send` action.
 - **Chat**: send text and poll existing native shared chat events while paired.
 - **Partita**: HTTPS bearer pairing, visible tactical tokens, movement and
-  condition actions, combat initiative. No fabricated geometry: the tactical
+  condition actions, native-compatible placement next to an existing token or
+  claim of a free scene token, combat initiative. Placement uploads only a
+  public subset of the local creature (never private HP, inventory or spells). No fabricated geometry: the tactical
   projection does not yet include map coordinates or terrain images.
 - **Backup**: download or restore complete IndexedDB JSON backup with binary
   attachments, as well as individual VTT portable creature files.
