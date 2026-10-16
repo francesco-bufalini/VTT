@@ -150,6 +150,8 @@ var tailscale_serve_disable: Button
 var tailscale_serve_copy: Button
 var tailscale_serve_url: String = ""
 var _tailscale_serve_busy := false
+var tailscale_serve_authorize: Button
+var _tailscale_authorization_url := ""
 var map_save_dialog: FileDialog
 var map_load_dialog: FileDialog
 var camera_settings_dialog: AcceptDialog
@@ -5921,6 +5923,14 @@ func _build_share_dialog() -> void:
 			DisplayServer.clipboard_set(tailscale_serve_url)
 	)
 	layout.add_child(tailscale_serve_copy)
+	tailscale_serve_authorize = Button.new()
+	tailscale_serve_authorize.text = "Autorizza Tailscale nel browser"
+	tailscale_serve_authorize.visible = false
+	tailscale_serve_authorize.pressed.connect(func() -> void:
+		if not TailscaleServe.authorization_url(_tailscale_authorization_url).is_empty():
+			OS.shell_open(_tailscale_authorization_url)
+	)
+	layout.add_child(tailscale_serve_authorize)
 	var tailscale_hint := Label.new()
 	tailscale_hint.text = "Attivazione una sola volta per PC. Per associare il telefono premi Ctrl+Shift+P. Serve è limitato alla tailnet, non è Funnel."
 	tailscale_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -5960,6 +5970,8 @@ func _load_tailscale_serve_ui() -> void:
 	if not bool(result.get("ok", false)):
 		tailscale_serve_label.text = "Tailscale non pronto: " + String(result.get("message", "Impossibile leggere lo stato."))
 	elif bool(result.get("active", false)):
+		tailscale_serve_authorize.hide()
+		_tailscale_authorization_url = ""
 		var host: Node = get_node_or_null("/root/PwaHost")
 		if host != null and host.has_method("_tailscale_url"):
 			tailscale_serve_url = String(await host.call("_tailscale_url"))
@@ -5990,7 +6002,11 @@ func _change_tailscale_serve(enabled: bool) -> void:
 	_tailscale_serve_busy = false
 	if not is_instance_valid(tailscale_serve_label):
 		return
-	if not bool(result.get("ok", false)):
+	_tailscale_authorization_url = String(result.get("authorization_url", ""))
+	tailscale_serve_authorize.visible = not _tailscale_authorization_url.is_empty()
+	if not _tailscale_authorization_url.is_empty():
+		tailscale_serve_label.text = String(result.message)
+	elif not bool(result.get("ok", false)):
 		tailscale_serve_label.text = "Operazione non riuscita: " + String(result.get("message", ""))
 
 

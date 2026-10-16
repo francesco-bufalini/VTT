@@ -5,6 +5,13 @@ const LOCAL_PORT := 8765
 
 # Nonblocking pipes keep the board and loopback PWA server responsive even
 # while Tailscale waits for browser approval or an unavailable daemon.
+static func authorization_url(message: String) -> String:
+	var pattern := RegEx.new()
+	pattern.compile("(?m)^\\s*(https://login\\.tailscale\\.com/f/serve\\?node=[A-Za-z0-9_-]+)\\s*$")
+	var found := pattern.search(message)
+	return found.get_string(1) if found != null else ""
+
+
 static func _run_process(binary: String, arguments: PackedStringArray, timeout_ms: int = 15000) -> Dictionary:
 	var process := OS.execute_with_pipe(binary, arguments, false)
 	if process.is_empty():
@@ -17,6 +24,14 @@ static func _run_process(binary: String, arguments: PackedStringArray, timeout_m
 		output.append_array(process.stdio.get_buffer(65536))
 		errors.append_array(process.stderr.get_buffer(65536))
 		var running := OS.is_process_running(pid)
+		var auth_url := authorization_url(errors.get_string_from_utf8() + "\n" + output.get_string_from_utf8())
+		if not auth_url.is_empty():
+			if running:
+				OS.kill(pid)
+			process.stdio.close()
+			process.stderr.close()
+			return {"ok": false, "started": true, "authorization_url": auth_url,
+				"message": "Tailscale richiede una prima autorizzazione. Premi Autorizza Tailscale nel browser, abilita Serve/HTTPS, poi premi nuovamente Attiva accesso telefono."}
 		if output.size() + errors.size() > 2 * 1024 * 1024 or (running and Time.get_ticks_msec() >= deadline):
 			OS.kill(pid)
 			process.stdio.close()
@@ -126,7 +141,7 @@ static func set_enabled(enabled: bool) -> Dictionary:
 	var applied := await _command(arguments)
 	if not applied.ok:
 		return {"ok": false, "active": state.active, "other_rules": state.other_rules,
-			"message": applied.message}
+			"message": applied.message, "authorization_url": applied.get("authorization_url", "")}
 	var updated := await get_status()
 	if updated.ok and bool(updated.active) != enabled:
 		updated["ok"] = false
