@@ -1,5 +1,4 @@
 name: Global Creature Archive Regression
-
 on:
   pull_request:
     branches: [main]
@@ -8,21 +7,19 @@ on:
       - "vtt/creature_local_storage.gd"
       - "vtt/master_creature_store.gd"
       - "vtt/player_character_store.gd"
-      - "vtt/mobile/creatures_mobile.gd"
       - "tests/test_global_creature_archive.gd"
-      - "tests/test_creature_archive_revisions.gd"
-      - "tests/test_creature_sheets.gd"
-      - "tests/test_creature_reference_completion.gd"
       - ".github/workflows/creature-global-archive.yml"
-
+  workflow_dispatch:
+concurrency:
+  group: global-creature-archive-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   archive-regressions:
-    runs-on: [self-hosted, windows, x64, vtt-godot]
-    timeout-minutes: 12
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
-          clean: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /project.godot
@@ -30,6 +27,7 @@ jobs:
             /*.tscn
             /vtt/
             /network/
+            /encounter/*.gd
             /interaction/
             /items/
             /homebrew/
@@ -37,35 +35,24 @@ jobs:
             /assets/items/
             /assets/spell_area_geometry.json
             /assets/tokens/test/
-      - name: Import and parse
-        shell: powershell
+      - name: Install Godot
         run: |
-          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
-          & $exe --headless --path . --editor --import --quit
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Run targeted creature archive tests
-        shell: powershell
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Parse project
+        run: /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
+      - name: Test archive and migrated sheets
         run: |
-          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
-          foreach ($test in @(
-            "test_global_creature_archive.gd",
-            "test_creature_archive_revisions.gd",
-            "test_creature_sheets.gd",
-            "test_creature_reference_completion.gd"
-          )) {
-            $stdout = [IO.Path]::GetTempFileName()
-            $stderr = $stdout + ".err"
-            try {
-              $proc = Start-Process -FilePath $exe -ArgumentList @(
-                "--headless", "--path", ".", "--script", "res://tests/$test"
-              ) -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-              $log = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue) +
-                (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
-              Write-Host "== $test ==`n$log"
-              if ($proc.ExitCode -ne 0 -or $log -notmatch "PASS:" -or $log -match "SCRIPT ERROR:") {
-                throw "Archive regression failed: $test"
-              }
-            } finally {
-              Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
-            }
-          }
+          set -euo pipefail
+          for test in test_global_creature_archive.gd test_creature_archive_revisions.gd test_creature_sheets.gd test_creature_reference_completion.gd; do
+            echo "== $test =="
+            log="$(mktemp)"
+            if ! timeout 110s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script "res://tests/$test" > "$log" 2>&1; then
+              cat "$log"; exit 1
+            fi
+            cat "$log"
+            grep -q 'PASS:' "$log"
+            if grep -q 'SCRIPT ERROR:' "$log"; then exit 1; fi
+            rm "$log"
+          done
