@@ -70,17 +70,7 @@ func setup(on_change: Callable) -> void:
 	var left := _create_column(columns, "Origini delle competenze", 190)
 	var right := _create_column(columns, "Singole competenze", 225)
 
-	var origin_scroller := ScrollContainer.new()
-	origin_scroller.mouse_force_pass_scroll_events = false
-	ScrollBoundaryGuard.install(origin_scroller)
-	origin_scroller.custom_minimum_size.y = 245
-	origin_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	origin_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(origin_scroller)
-	_origin_cards = VBoxContainer.new()
-	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_origin_cards.add_theme_constant_override("separation", 5)
-	origin_scroller.add_child(_origin_cards)
+	_origin_cards = EditorUI.origin_list(left)
 	var competence_scroller := ScrollContainer.new()
 	competence_scroller.mouse_force_pass_scroll_events = false
 	ScrollBoundaryGuard.install(competence_scroller)
