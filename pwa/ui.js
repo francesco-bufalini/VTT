@@ -228,11 +228,12 @@ async function editorView() {
     '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
-    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Statistiche")+'</div>';
+    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
   let body = "";
-  if(state.sheet==='info'){
-    await Promise.all(['races','classes','subclasses','backgrounds'].map(async key=>{
-      if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}catch{ /* Saved fields remain editable offline. */ }
+  if(state.sheet==="info"){
+    await Promise.all(["races","classes","subclasses","backgrounds"].map(async key=>{
+      if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
+      catch{ /* References stay editable offline. */ }
     }));
   }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
@@ -250,7 +251,8 @@ async function editorView() {
       panel("Patto",'<div class="columns">'+field('Livello slot','pact_slot_level',c.pact_slot_level??1,'number','min="1" max="5"')+field('Slot massimi','pact_slots_total',c.pact_slots_total??0,'number','min="0"')+field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"')+'</div>')+
       panel("Incantesimi di classe",spellList(c,"spells"))+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
-      panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+'<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
+      panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
+      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
     body=panel("Condizioni",'<div class="condition-list">'+conditions.map(id=>
@@ -264,7 +266,8 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+'<button class="btn" data-act="sheet" data-sheet="json">Editor avanzato JSON</button>'+
+  return navigation+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+    '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
 function resourceView(c){
@@ -293,7 +296,7 @@ function resourceView(c){
       '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>');
   }
 
-function conditionLabel(id){return ({blinded:'Accecato',charmed:'Affascinato',deafened:'Assordato',exhaustion:'Indebolimento',frightened:'Spaventato',grappled:'Afferrato',incapacitated:'Incapacitato',invisible:'Invisibile',paralyzed:'Paralizzato',petrified:'Pietrificato',poisoned:'Avvelenato',prone:'Prono',restrained:'Trattenuto',stunned:'Stordito',unconscious:'Privo di sensi',concentrating:'Concentrazione',surprised:'Sorpreso',hidden:'Nascosto',dead:'Morto'})[id]||id;}
+function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
 function inventoryRow(item,index) {
   const obj = item && typeof item === "object" ? item : {name:String(item??"")};
   return '<div class="list-item"><div class="row between"><strong>Oggetto '+(index+1)+'</strong>'+
@@ -599,12 +602,14 @@ async function handleField(target) {
   if(!state.editor) return;
   const creature=state.editor.read();
   if(target.dataset.nativeList){
-    await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==='checkbox'?target.checked:target.value));
+    await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
     return;
   }
-  if(target.hasAttribute('data-native-cr')){
-    const value=target.value.trim();if(!/^(?:\d+(?:\.\d+)?|\d+\/[1-9]\d*)$/.test(value))throw Error('GS non valido');
-    const stat=structuredClone(creature.stat_block||{});stat.cr=stat.cr&&typeof stat.cr==='object'?{...stat.cr,cr:value}:value;
+  if(target.hasAttribute("data-native-cr")){
+    const value=target.value.trim();
+    if(!/^(?:\d+(?:\.\d+)?|\d+\/[1-9]\d*)$/.test(value))throw Error("GS non valido");
+    const stat=structuredClone(creature.stat_block||{});
+    stat.cr=stat.cr&&typeof stat.cr==="object"?{...stat.cr,cr:value}:value;
     await patch({stat_block:stat});return;
   }
   if(target.dataset.field){
@@ -614,12 +619,12 @@ async function handleField(target) {
       value=Number(value);
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
-    if(target.validity && !target.validity.valid)throw new Error('Valore fuori intervallo.');
-    let changes=identityPatch(creature,key,value);
-    const category=({species:'races',subrace:'races',class:'classes',subclass:'subclasses',background:'backgrounds'})[key];
+    if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    const changes=identityPatch(creature,key,value);
+    const category=({species:"races",subrace:"races",class:"classes",subclass:"subclasses",background:"backgrounds"})[key];
     if(category){
-      const matches=(state.referenceCatalogs[category]||[]).filter(row=>row.name===value);
-      if(matches.length===1){changes[key+'_id']=matches[0].id||'';changes[key+'_source']=matches[0].source||'';}
+      const matches=(state.referenceCatalogs[category]||[]).filter(r=>r.name===value);
+      if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
     if(key==="name"){
@@ -673,17 +678,24 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
-  if(act==='sheet-details'){
+  if(act==="sheet-details"){
     if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
-    state.sheet='origins';state.detail=target.dataset.detail;await render();return;
+    state.sheet="origins";state.detail=target.dataset.detail;await render();return;
   }
-  if(act==='native-add'||act==='native-remove'){
-    const key=target.dataset.list;if(!ROW_FIELDS[key])throw Error('Elenco non valido');
+  if(act==="native-add"||act==="native-remove"){
+    const key=target.dataset.list;if(!ROW_FIELDS[key])throw Error("Elenco non valido");
     const c=state.editor.read(),rows=rowsFor(c,key);
-    if(act==='native-remove'){
-      const index=Number(target.dataset.index);if(!rows[index]||rows[index].automatic)throw Error('Voce non rimovibile');rows.splice(index,1);
+    if(act==="native-remove"){
+      const index=Number(target.dataset.index);
+      if(!rows[index]||rows[index].automatic)throw Error("Voce non rimovibile");
+      rows.splice(index,1);
     }else{
-      const defaults={classes:{name:'',source:'',level:1},proficiency_choices:{kind:'skill',key:'',origin_id:'',origin_name:'',disabled:false},feats_catalog:{name:'Nuovo talento',source:'',disabled:false},formula_bonuses:{id:'bonus_'+crypto.randomUUID(),target:'initiative',expression:'0',origin_id:'',origin_name:'',disabled:false,automatic:false},damage_defense_entries:{key:'fire',rank:1,origin_id:'',automatic:false},origin_spell_grants:{origin_id:'',origin_name:'',disabled:false}};
+      const defaults={classes:{name:"",source:"",level:1},
+        proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
+        feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
+        formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
+        damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
+        origin_spell_grants:{origin_id:"",origin_name:"",disabled:false}};
       rows.push(defaults[key]);
     }
     await patch(collectionPatch(c,key,rows));await render();return;
@@ -998,7 +1010,7 @@ function listen(){
       if(results)results.innerHTML=renderCatalogRows();
       return;
     }
-    if(!target?.matches("[data-field],[data-item-index]"))return;
+    if(!target?.matches("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
@@ -1020,9 +1032,10 @@ function listen(){
         btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
       return;
     }
-    if(target?.id==='native-details'){
+    if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
-      flushPendingFields().then(()=>{state.detail=target.value;return render();}).catch(error=>message(errorMessage(error),true));return;
+      flushPendingFields().then(()=>{state.detail=target.value;return render();})
+        .catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="catalog-category"){
       state.catalogCategory=target.value;state.catalogSelected=-1;
@@ -1074,7 +1087,7 @@ function listen(){
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){
       const active=document.activeElement;
-      if(active?.matches?.("[data-field],[data-item-index]"))
+      if(active?.matches?.("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
     } else if(state.page==="session") {
       refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
