@@ -1,5 +1,5 @@
 import { status, session, pair, unpair, map, action, subscribeMap } from "./client.js";
-import { listCreatures, createCreature, importCreatureFile, exportCreature,
+import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor } from "./creatures.js";
 import { exportBackup, importBackup } from "./storage.js";
 
@@ -85,7 +85,7 @@ async function navigate(page, id=null) {
   }
   stopSubscriptions();
   state.page=page; state.creatureId=id; state.editor=null;
-  if (page==="chat") state.cachedCreatures=(await listCreatures()).map(row=>({id:row.creature.id,name:row.creature.name}));
+  if (page==="chat" || page==="session") state.cachedCreatures=(await listCreatures()).map(row=>({id:row.creature.id,name:row.creature.name}));
   await render();
 }
 async function render() {
@@ -295,6 +295,12 @@ function sessionView() {
       '<h3>Condizioni</h3><div class="pillbox">'+conditions.map(id=>
       '<label class="check pill"><input type="checkbox" data-token-condition="'+id+'" '+
       ((selected.conditions||[]).includes(id)?"checked":"")+'>'+esc(id)+'</label>').join("")+'</div>');
+    if((state.cachedCreatures||[]).length) html+=panel("Piazza una tua creatura",
+      '<p class="hint">Seleziona una scheda locale. Il desktop riceverà solo l’identità e i dati tattici pubblici necessari a posizionare il token.</p>'+
+      '<label>Creatura<select id="place-creature">'+state.cachedCreatures.map(c=>
+        '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select></label>'+
+      '<div class="actions">'+btn("place-creature","Piazza vicino al token","primary")+
+      (selected.free?btn("claim-creature","Associa al token libero"):"")+'</div>');
   }
   if(combat.active) html += panel("Iniziativa · Round "+(combat.round||1),
     (combat.entries||[]).map((entry,i)=>
@@ -527,6 +533,29 @@ async function handleAction(target){
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
     await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;await render();return;
+  }
+  if(act==="place-creature"||act==="claim-creature"){
+    const selectedId=document.querySelector("#place-creature")?.value;
+    const selectedToken=state.map?.tokens?.find(t=>t.id===state.tokenId);
+    if(!selectedToken||!selectedId)throw new Error("Scegli un token e una creatura locale.");
+    if(act==="claim-creature"&&!selectedToken.free)throw new Error("Il token non è più libero.");
+    const stored=await loadCreature(selectedId);
+    if(!stored)throw new Error("Scheda non trovata in locale.");
+    const sheet=stored.data;
+    // Do NOT upload the private character sheet. This is the Android tactical
+    // identity projection, with no inventory, HP, biography or known spells.
+    const visible={id:sheet.id,owner_id:sheet.owner_id,name:sheet.name,
+      current_miniature_id:sheet.current_miniature_id||"",
+      default_miniature_id:sheet.default_miniature_id||"",
+      size_name:sheet.size_name||"Medium",footprint:sheet.footprint??1,
+      reach_feet:sheet.reach_feet??5,conditions:sheet.conditions||[],
+      rules_version:sheet.rules_version||"2014",
+      visual_front_quarter_turns:sheet.visual_front_quarter_turns??0};
+    const result=await action(act==="claim-creature"?"claim_free_token":"place_token",
+      {token_id:state.tokenId,creature:visible});
+    if(!result.ok)throw new Error(result.error||"Impossibile piazzare la creatura.");
+    message("Token aggiornato: "+(result.name||sheet.name));
+    await refreshMapOnce();return;
   }
   if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
   if(act==="move"||act==="move-up"||act==="move-down"){
