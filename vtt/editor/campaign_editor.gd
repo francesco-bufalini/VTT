@@ -2025,8 +2025,13 @@ func _poll_editor_autosave() -> void:
 	if now < _editor_autosave_retry_after or now - _editor_autosave_last_poll < EDITOR_AUTOSAVE_POLL_MS:
 		return
 	_editor_autosave_last_poll = now
+	var state := _editor_state()
+	# The encounter controller can temporarily refuse snapshots mid-turn.
+	# Never replace a valid campaign save with a partial board state.
+	if (state.get("board_snapshot", {}) as Dictionary).is_empty():
+		return
 	var signature := JSON.stringify({
-		"state": _editor_state(), "fog_revision": _fog_change_revision
+		"state": state, "fog_revision": _fog_change_revision
 	}).sha256_text()
 	if signature == _editor_autosave_last_signature:
 		_editor_autosave_candidate = ""
@@ -2050,8 +2055,11 @@ func _poll_editor_autosave() -> void:
 func _save_campaign() -> Error:
 	if not _is_active_user_campaign():
 		return ERR_UNAVAILABLE
+	var state := _editor_state()
+	if (state.get("board_snapshot", {}) as Dictionary).is_empty():
+		return ERR_BUSY
 	_save_fog_mask_asset()
-	var error: Error = int(_campaign_manager().call("save_active_state", _editor_state()))
+	var error: Error = int(_campaign_manager().call("save_active_state", state))
 	if error != OK:
 		_set_status("Errore salvataggio: %s" % error_string(error))
 	return error
