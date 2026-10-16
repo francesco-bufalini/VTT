@@ -1,4 +1,6 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem } from "./item_controls.js";
+import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -241,7 +243,7 @@ async function editorView() {
   case "inventory":
     body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
       (Array.isArray(c.inventory) ? c.inventory.map((item,index) => inventoryRow(item,index)).join("") : "")+
-      '<div class="actions">'+btn("add-item","＋ Aggiungi oggetto","primary")+'</div>');
+      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+btn("add-item","Crea oggetto locale")+'</div>');
     break;
   case "magic":
     body = panel("Caratteristica degli incantesimi",'<p class="hint">'+esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
@@ -299,13 +301,30 @@ function resourceView(c,configure=false){
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
 function inventoryRow(item,index) {
-  const obj = item && typeof item === "object" ? item : {name:String(item??"")};
-  return '<div class="list-item"><div class="row between"><strong>Oggetto '+(index+1)+'</strong>'+
-    '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
-    '<div class="columns">'+listField("Nome",index,"name",obj.name||obj.title)+
-    listField("Quantità",index,"quantity",obj.quantity??1,"number")+'</div>'+
+  const obj=item&&typeof item==="object"?item:{name:String(item??"")};
+  const kind=itemKind(obj),catalog=isCatalogItem(obj);
+  const checked=(key)=>obj[key]===true?' checked':'';
+  const enabled=(key,label)=>'<label class="check"><input type="checkbox" data-item-index="'+index+
+    '" data-item-key="'+key+'"'+checked(key)+'>'+label+'</label>';
+  const tags=[obj.source||"",obj.rarity||"",obj.type||""].filter(Boolean).join(" · ");
+  const quantity=kind==="document"?
+    '<span class="hint">Documento</span>':
+    listField("Quantità",index,"quantity",obj.quantity??1,"number");
+  const name=catalog?'<strong>'+esc(obj.name||"Oggetto")+'</strong>':
+    listField("Nome",index,"name",obj.name||"");
+  const desc=catalog?'<p class="hint">'+esc(typeof obj.description==="string"?obj.description:"")+'</p>':
     '<label>Descrizione<textarea data-item-index="'+index+'" data-item-key="description" rows="2">'+
-    esc(obj.description||"")+'</textarea></label></div>';
+    esc(obj.description||"")+'</textarea></label>';
+  return '<article class="list-item inventory-entry"><div class="row between">'+name+
+    '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
+    '<p class="hint">'+esc(tags||"Oggetto personale")+'</p>'+quantity+
+    '<div class="inventory-switches">'+
+    (!["weapon","shield","armor","document"].includes(kind)?enabled("equipped","Equipaggiato"):'')+
+    (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
+    enabled("active","Attivo")+'</div>'+
+    (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
+    '<details><summary>Dettagli oggetto</summary>'+desc+
+    '<p class="hint">Identificativo: '+esc(obj.id||"Locale")+'</p></details></article>';
 }
 function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
@@ -662,12 +681,8 @@ async function handleField(target) {
     await patch({spell_slots_spent:array});
   } else if(target.dataset.itemIndex !== undefined){
     const index=Number(target.dataset.itemIndex),key=target.dataset.itemKey;
-    const items=structuredClone(creature.inventory||[]);
-    if(!items[index]||typeof items[index]!=="object") throw new Error("Oggetto non valido.");
-    items[index][key] = key==="quantity"?Number(target.value):target.value;
-    if(key==="quantity"&&(!Number.isInteger(items[index][key])||items[index][key]<0))
-      throw new Error("Quantità non valida.");
-    await patch({inventory:items});
+    const value=target.type==="checkbox"?target.checked:target.value;
+    await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
   } else if(target.dataset.condition){
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
@@ -738,10 +753,7 @@ async function handleAction(target){
         throw new Error("Incantesimo già presente in questa scheda.");
       await editor.update({spells:[...known,spell]});
     }else if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
-      const item=structuredClone(entry);
-      delete item._category;delete item._homebrew;
-      item.instance_id="pwa_"+crypto.randomUUID();
-      item.quantity=1;
+      const item=createOwnedItem(entry,"pwa_"+crypto.randomUUID());
       await editor.update({inventory:[...(sheet.inventory||[]),item]});
     }else if(category==="feats"){
       const feat={id:entry.id||"",name:entry.name,source:entry.source||""};
@@ -866,10 +878,12 @@ async function handleAction(target){
     }
     await patch({resource_tracker_spent:spent});await render();return;
   }
+  if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="add-item"){
     const c=state.editor.read();
     const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
-    inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:""});
+    inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:"",
+      source:"",custom_item_type:"other",equipped:false,equipped_slots:[],attuned:false,active:true});
     await patch({inventory});await render();return;
   }
   if(act==="remove-item"){
