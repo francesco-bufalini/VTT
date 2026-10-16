@@ -47,7 +47,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/catalog/player.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
