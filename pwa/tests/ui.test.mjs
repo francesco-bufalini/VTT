@@ -28,7 +28,8 @@ globalThis.fetch=async (url,options={})=>{
 };
 const {mount,stopRealtime}=await import("../ui.js");
 const {takeQrPairCode}=await import("../client.js");
-const {listCreatures,loadCreature}=await import("../creatures.js");
+const {listCreatures,loadCreature,exportCreature}=await import("../creatures.js");
+const {getRecord}=await import("../storage.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
   const end=Date.now()+limit;
@@ -444,5 +445,57 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   await until(()=>document.querySelector('#catalog-category'));
   assert.equal(document.querySelector('#catalog-category').value,"items");
   click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Scriba locale");
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="document-add"]'));
+  click('[data-act="document-add"]');
+  await until(()=>document.querySelector('[data-document-part="title"]'));
+  change('[data-document-part="title"]',"Messaggio segreto");
+  change('[data-document-part="body"]',"Un testo lungo e modificabile.");
+  await until(async()=>{
+    const items=(await listCreatures()).find(x=>x.creature.name==="Scriba locale")?.creature.inventory||[];
+    const item=items.find(x=>x.category==="documents");
+    if(!item)return false;
+    const stored=await getRecord("global","homebrew",item.id);
+    return stored?.data?.name==="Messaggio segreto"&&
+      stored?.data?.data?.description==="Un testo lungo e modificabile.";
+  });
+  assert.match(document.querySelector(".document-paper").textContent,/Messaggio segreto/);
+  assert.match(document.querySelector(".document-paper").textContent,/Un testo lungo e modificabile/);
+  change('[data-document-part="style"]',"lettera");
+  await until(()=>document.querySelector(".document-paper.letter"));
+  await until(async()=> {
+    const creature=(await listCreatures()).find(x=>x.creature.name==="Scriba locale")?.creature;
+    return creature?.inventory?.some(x=>x.category==="documents"&&x.display_style==="lettera");
+  });
+  const saved=(await listCreatures()).find(x=>x.creature.name==="Scriba locale").creature;
+  const portable=JSON.parse(await (await exportCreature(saved.id)).text());
+  assert.ok(portable.homebrew_content.some(x=>x.id===saved.inventory[0].id &&
+    x.name==="Messaggio segreto"&&x.data.description==="Un testo lungo e modificabile."));
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  const open=[...document.querySelectorAll('[data-act="open"]')]
+    .find(x=>x.getAttribute("data-id")===saved.id);
+  assert.ok(open);open.click();
+  await until(()=>document.querySelector('[data-field="name"]')?.value==="Scriba locale");
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-document-card]'));
+  const card=document.querySelector('[data-document-card]');
+  card.open=true;
+  assert.equal(document.querySelector('[data-document-part="title"]').value,"Messaggio segreto");
+  assert.equal(document.querySelector('[data-document-part="body"]').value,"Un testo lungo e modificabile.");
+  assert.equal(document.querySelector('[data-document-part="style"]').value,"lettera");
+  click('[data-act="document-remove"]');
+  await until(async()=> {
+    const c=(await listCreatures()).find(x=>x.creature.id===saved.id)?.creature;
+    return c?.inventory?.length===0;
+  });
+  click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });

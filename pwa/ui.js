@@ -7,7 +7,9 @@ import { listCreatures, loadCreature, createCreature, importCreatureFile, export
 import { TacticalViewer } from "./tactical_view.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
-import { exportBackup, importBackup } from "./storage.js";
+import { exportBackup, importBackup, getRecord } from "./storage.js";
+import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
+import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -26,7 +28,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -45,6 +47,7 @@ function acceptSession(info){
   state.session=info;
 }
 const pendingFieldTimers = new Map();
+let pendingDocumentWrites=Promise.resolve();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
   for (const target of targets) {
@@ -52,6 +55,7 @@ async function flushPendingFields() {
     pendingFieldTimers.delete(target);
     if (target.isConnected && state.editor) await handleField(target);
   }
+  await pendingDocumentWrites;
   if (state.editor) await state.editor.flush();
 }
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
@@ -244,11 +248,25 @@ async function editorView() {
   }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
-  case "inventory":
-    body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
-      (Array.isArray(c.inventory) ? c.inventory.map((item,index) => inventoryRow(item,index)).join("") : "")+
-      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+btn("add-item","Crea oggetto locale")+'</div>');
+  case "inventory": {
+    const inventory=Array.isArray(c.inventory)?c.inventory:[];
+    const ordinary=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+    const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
+    const definitions=await Promise.all(documents.map(({item})=>
+      getRecord("global","homebrew",String(item.id||""))));
+    body=panel("Oggetti nell’inventario",
+      '<p class="hint">Gli oggetti di catalogo mantengono le loro definizioni; le copie hanno quantità ed equipaggiamento propri.</p>'+
+      (ordinary.length?ordinary.map(({item,index})=>inventoryRow(item,index)).join(""):
+        '<p class="hint">Nessun oggetto.</p>')+
+      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
+      btn("add-item","Crea oggetto locale")+'</div>')+
+      panel("Documenti",'<p class="hint">Documenti homebrew condivisi fra le copie della scheda. Stile e data appartengono alla singola copia.</p>'+
+      (documents.length?documents.map(({item,index},i)=>
+        documentRow(item,index,definitions[i])).join(""):
+        '<p class="hint">Nessun documento.</p>')+
+      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>');
     break;
+  }
   case "magic":
     body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
       esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
@@ -332,6 +350,27 @@ function equipmentView(c){
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
     }).join('')+'</div>');
+}
+function documentRow(item,index,stored){
+  const {title,body,style,addedAt}=documentInfo(item,stored?.data);
+  const editable=!!stored;
+  const selected=state.openDocumentInstance===String(item.instance_id||item.id);
+  return '<details class="document-entry"'+(selected?' open':'')+' data-document-card="'+index+'">'+
+    '<summary>'+esc(title)+' <span class="hint">'+(style==="lettera"?"Lettera":"Pergamena")+'</span></summary>'+
+    '<div class="document-body">'+
+    (addedAt?'<p class="hint">Aggiunto il '+esc(new Date(addedAt*1000).toLocaleDateString("it-IT"))+'</p>':'')+
+    '<label>Visualizzazione<select data-document-index="'+index+'" data-document-part="style">'+
+      '<option value="pergamena"'+(style==="pergamena"?' selected':'')+'>Pergamena</option>'+
+      '<option value="lettera"'+(style==="lettera"?' selected':'')+'>Lettera</option></select></label>'+
+    (editable?
+      '<details class="document-edit"><summary>Modifica documento</summary>'+
+      '<label>Titolo<input maxlength="160" data-document-index="'+index+'" data-document-part="title" value="'+esc(title)+'"></label>'+
+      '<label>Testo<textarea maxlength="3500" rows="10" data-document-index="'+index+'" data-document-part="body">'+esc(body)+'</textarea></label>'+
+      '<p class="hint">Salvataggio automatico. La definizione viaggia con la creatura esportata.</p></details>':
+      '<p class="warning">Definizione homebrew non installata: documento visibile ma non modificabile.</p>')+
+    '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>'+
+    '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
+    '</div></details>';
 }
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
@@ -655,6 +694,46 @@ async function patch(patchValue) {
     message("Modifica non salvata: "+state.saveError,true);
   }
 }
+async function persistDocumentEdit(index,part,creature){
+  const item=creature.inventory?.[index];
+  if(!isDocument(item))throw Error("Documento non trovato nell'inventario.");
+  if(part==="style"){
+    const field=app.querySelector('[data-document-index="'+index+'"][data-document-part="style"]');
+    if(!field)return;
+    const inventory=structuredClone(creature.inventory);
+    inventory[index].display_style=documentStyle(field.value);
+    await patch({inventory});
+    const paper=app.querySelector('[data-document-card="'+index+'"] .document-paper');
+    if(paper)paper.className="document-paper "+(inventory[index].display_style==="lettera"?"letter":"parchment");
+    return;
+  }
+  if(part!=="title"&&part!=="body")return;
+  const title=app.querySelector('[data-document-index="'+index+'"][data-document-part="title"]')?.value;
+  const body=app.querySelector('[data-document-index="'+index+'"][data-document-part="body"]')?.value;
+  if(title===undefined||body===undefined)throw Error("Editor documento non disponibile.");
+  const activeEditor=state.editor,docId=item.id;
+  pendingDocumentWrites=pendingDocumentWrites.catch(()=>{}).then(async()=>{
+    const record=await getRecord("global","homebrew",docId);
+    if(!record)throw Error("Definizione documento mancante: esporta un backup prima di continuare.");
+    const updated=editDocumentDefinition(record.data,title,body);
+    await editHomebrewDefinition(updated,record.revision);
+    if(state.editor===activeEditor){
+      const current=activeEditor.read();
+      const rows=structuredClone(current.inventory||[]);
+      for(const row of rows)if(row.id===docId)row.name=updated.name;
+      await patch({inventory:rows});
+      const summary=app.querySelector('[data-document-card="'+index+'"] summary');
+      if(summary)summary.firstChild.textContent=updated.name+' ';
+      const preview=app.querySelector('[data-document-card="'+index+'"] .document-paper');
+      if(preview){
+        const heading=preview.querySelector("strong"),paragraph=preview.querySelector("p");
+        if(heading)heading.textContent=updated.name;
+        if(paragraph)paragraph.textContent=body;
+      }
+    }
+  });
+  await pendingDocumentWrites;
+}
 async function handleField(target) {
   // Tactical controls are independent from an open local creature editor.
   if(target.dataset.tokenCondition){
@@ -666,6 +745,10 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.documentIndex!==undefined){
+    await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
+    return;
+  }
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
     await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
@@ -925,6 +1008,24 @@ async function handleAction(target){
     await patch({resource_tracker_spent:spent});await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
+  if(act==="document-add"){
+    if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
+    const localId="doc_"+crypto.randomUUID().replace(/-/g,"");
+    const definition=createDocumentDefinition(localId);
+    await saveHomebrewDefinition(definition);
+    const owned=createOwnedDocument(definition,"owned_doc_"+crypto.randomUUID().replace(/-/g,""));
+    state.openDocumentInstance=owned.instance_id;
+    const record=state.editor.read();
+    await patch({inventory:[...(record.inventory||[]),owned]});
+    await render();return;
+  }
+  if(act==="document-remove"){
+    const index=Number(target.dataset.index),record=state.editor.read();
+    const inventory=structuredClone(record.inventory||[]);
+    if(!isDocument(inventory[index]))throw Error("Documento non valido.");
+    inventory.splice(index,1);state.openDocumentInstance="";
+    await patch({inventory});await render();return;
+  }
   if(act==="add-item"){
     const c=state.editor.read();
     const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
@@ -1079,7 +1180,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){
@@ -1094,7 +1195,7 @@ function listen(){
       if(results)results.innerHTML=renderCatalogRows();
       return;
     }
-    if(!target?.matches("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
+    if(!target?.matches("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
@@ -1174,7 +1275,7 @@ function listen(){
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){
       const active=document.activeElement;
-      if(active?.matches?.("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
+      if(active?.matches?.("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
     } else if(state.page==="session") {
       refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
