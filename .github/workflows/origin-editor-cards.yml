@@ -1,0 +1,71 @@
+name: Shared Origin Editor Cards (Godot)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "vtt/origin_editor_ui.gd"
+      - "vtt/creature_bonus_tab.gd"
+      - "vtt/creature_proficiencies_tab.gd"
+      - "vtt/creature_feats_tab.gd"
+      - "vtt/creature_trackers_tab.gd"
+      - "vtt/creature_damage_defenses_tab.gd"
+      - "tests/test_unified_origin_editor_cards.gd"
+      - ".github/workflows/origin-editor-cards.yml"
+  workflow_dispatch:
+
+jobs:
+  origin-cards:
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /interaction/
+            /items/
+            /homebrew/
+            /tests/
+            /assets/items/
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/
+      - name: Import and parse
+        shell: powershell
+        run: |
+          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $exe --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run origin presentation and domain regressions
+        shell: powershell
+        run: |
+          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          foreach ($test in @(
+            "test_unified_origin_editor_cards.gd",
+            "test_bonus_origin_highlight.gd",
+            "test_pending_bonus_choices.gd",
+            "test_damage_defenses.gd",
+            "test_origin_editor_experience.gd"
+          )) {
+            $stdout = [IO.Path]::GetTempFileName()
+            $stderr = $stdout + ".err"
+            try {
+              $proc = Start-Process -FilePath $exe -ArgumentList @(
+                "--headless", "--path", ".", "--script", "res://tests/$test"
+              ) -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+              $log = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue) +
+                (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
+              Write-Host "== $test ==`n$log"
+              if ($proc.ExitCode -ne 0 -or $log -notmatch "PASS:" -or $log -match "SCRIPT ERROR:") {
+                throw "Origin editor regression failed: $test"
+              }
+            } finally {
+              Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
+            }
+          }
