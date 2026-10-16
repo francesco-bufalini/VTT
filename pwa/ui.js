@@ -236,7 +236,7 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory":
     body = panel("Oggetti nell’inventario",'<p class="hint">I dati aggiunti agli oggetti originali (ID, equipaggiamento, homebrew) vengono mantenuti.</p>'+
@@ -244,11 +244,12 @@ async function editorView() {
       '<div class="actions">'+btn("add-item","＋ Aggiungi oggetto","primary")+'</div>');
     break;
   case "magic":
-    body = panel("Caratteristica degli incantesimi",'<label>Caratteristica<select data-field="spellcasting_ability">'+[['','Automatica'],...Object.entries(abilities)].map(([key,label])=>'<option value="'+key+'" '+((c.spellcasting_ability||'')===key?'selected':'')+'>'+label+'</option>').join('')+'</select></label>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
+    body = panel("Caratteristica degli incantesimi",'<p class="hint">'+esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+panel("Slot incantesimo",'<p class="hint">Modifica il consumo degli slot. I lanci effettuati dalla sezione Partita usano le regole Godot. I privilegi speciali richiedono ancora la versione nativa.</p>'+
       '<div class="columns three">'+Array.from({length:9},(_,i)=>{const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
       return '<div class="ability-box"><label>Liv. '+level+'<input type="number" min="0" data-slot="'+level+
         '" value="'+esc(spent)+'"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';}).join("")+'</div>')+
-      panel("Patto",'<div class="columns">'+field('Livello slot','pact_slot_level',c.pact_slot_level??1,'number','min="1" max="5"')+field('Slot massimi','pact_slots_total',c.pact_slots_total??0,'number','min="0"')+field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"')+'</div>')+
+      panel("Patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+' · slot totali '+esc(c.pact_slots_total??0)+'</p>'+
+      field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
       panel("Incantesimi di classe",spellList(c,"spells"))+
       panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
@@ -270,7 +271,7 @@ async function editorView() {
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
-function resourceView(c){
+function resourceView(c,configure=false){
     const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
@@ -280,20 +281,20 @@ function resourceView(c){
         const max=Math.max(0,Number(t.max)||0);
         const used=Math.max(0,Number(spent[t.id])||0);
         return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
-          '</strong><button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button></div>'+
+          '</strong>'+(configure?'<button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button>':'')+'</div>'+
           '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
           ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
           '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
           '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
       }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
-      '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>')+
-      panel("Aggiungi tracker",'<div class="columns">'+
+      (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>':'') )+
+      (configure?panel("Aggiungi tracker",'<div class="columns">'+
       '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
       '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
       '<label>Ricarica<select id="tracker-recharge"><option value="manual">Manuale</option>'+
       '<option value="turn">Inizio turno</option><option value="short_rest">Riposo breve</option>'+
       '<option value="long_rest">Riposo lungo</option></select></label>'+
-      '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>');
+      '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>'):'');
   }
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
@@ -319,9 +320,7 @@ function spellList(c,key) {
       '</div><button type="button" class="btn danger small" data-act="remove-spell" data-key="'+
       key+'" data-index="'+i+'">Rimuovi</button></div>';
   }).join(""):'<p class="hint">Nessun incantesimo.</p>')+
-    '<div class="row"><input type="text" id="new-'+key+'" placeholder="Nome o ID incantesimo" aria-label="Nome o ID incantesimo">'+
-    '<button type="button" class="btn small primary" data-act="add-spell" data-key="'+key+'">Aggiungi</button></div>'+
-    '<p class="hint">L’inserimento manuale salva un ID testuale; selezione dal catalogo e cast non sono ancora disponibili nella PWA.</p></div>';
+    '<p class="hint">Aggiungi gli incantesimi dal Catalogo per mantenere gli identificativi compatibili con Godot.</p></div>';
 }
 function diceView() {
   return header("Strumenti", "Lancia i dadi", "Tiri locali con generatore crittografico. Se collegato, puoi condividerli nella chat della partita.")+
@@ -601,6 +600,19 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.reference){
+    const category=target.dataset.reference,key=target.dataset.referenceKey;
+    if(!['species','subrace','background','class','subclass'].includes(key))throw Error('Riferimento non valido');
+    if(target.value==='__current__')return;
+    const rows=state.referenceCatalogs[category]||[];
+    const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
+    if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
+    const selected=selection||{};
+    await patch({...identityPatch(creature,key,String(selected.name||'')),
+      [key+'_id']:String(selected.id||''),[key+'_source']:String(selected.source||'')});
+    if(key==='species')await render();
+    return;
+  }
   if(target.dataset.nativeList){
     await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
     return;
@@ -1001,7 +1013,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="catalog-search"){

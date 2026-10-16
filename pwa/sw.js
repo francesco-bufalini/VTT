@@ -1,6 +1,6 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v11";
+const CACHE = "vtt-mobile-shell-v12";
 const CATALOGS = ["/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json"];
 const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/native_sheet.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
   "/catalog/player.json", "/catalog/spells.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];

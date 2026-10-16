@@ -2,6 +2,7 @@
 export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abilità"],
  ["battle","Battaglia"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
+export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
 export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Competenze"],
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
@@ -63,6 +64,7 @@ export function collectionPatch(c,key,rows){
 export function identityPatch(c,key,value){
  const patch={[key]:value};
  if(['species','subrace','background','class','subclass'].includes(key)&&value!==c[key])patch[key+'_id']='';
+ if(key==='species'&&value!==c.species)Object.assign(patch,{subrace:'',subrace_id:'',subrace_source:''});
  if(key==='size_name')patch.footprint=({Tiny:1,Small:1,Medium:1,Large:2,Huge:3,Gargantuan:4})[value]||1;
  if(key==='visual_front_quarter_turns')patch[key]=Number(value);
  if(['class','subclass','level','class_source','subclass_source'].includes(key)){
@@ -76,40 +78,71 @@ export function identityPatch(c,key,value){
  }
  return patch;
 }
-export function nativeSection(c,section,{field,area,panel,resources,details='overview',catalogs={}}){
+export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,details='overview',catalogs={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
- const reference=(label,key,category)=>field(label,key,c[key],'text','list="ref-'+key+'"')+'<datalist id="ref-'+key+'">'+list(catalogs[category]).map(r=>'<option value="'+esc(r.name)+'">'+esc(r.source)+'</option>').join('')+'</datalist>';
+ const reference=(label,key,category)=>{
+   const rows=list(catalogs[category]).filter(r=>r?.name&&(key!=='subrace'||!r.raceName||r.raceName===c.species));
+   const current=c[key]||'', source=c[key+'_source']||'';
+   const active=rows.find(r=>r.name===current&&(!source||r.source===source));
+   const options=[['','Nessuno'],...(!active&&current?[['__current__',current+' · importato']]:[]),
+     ...rows.map(r=>[String(r.id||r.name+'|'+(r.source||'')),r.name+(r.source?' · '+r.source:'')])];
+   const chosen=active?String(active.id||active.name+'|'+(active.source||'')):current?'__current__':'';
+   return '<label>'+esc(label)+'<select data-reference="'+esc(category)+'" data-reference-key="'+esc(key)+'" '+
+     (!rows.length?'disabled':'')+'>'+
+     options.map(([v,label])=>'<option value="'+esc(v)+'" '+(v===chosen?'selected':'')+'>'+esc(label)+'</option>').join('')+
+     '</select></label>';
+ };
  const number=(label,key,value=c[key]??0,min=0,max=99999)=>field(label,key,value,'number','min="'+min+'" max="'+max+'"');
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
  const nativeNote='<p class="hint">I valori derivati e i benefici delle origini vengono ricalcolati dalla versione nativa quando importa la scheda.</p>';
- if(section==='info')return panel('Identità',cols(select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+field('Giocatore','player_name',c.player_name||'')+field('Allineamento','alignment',c.alignment||'')))+
-  panel('Fisico',cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races')+field('Tipo','type',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||''))+
-   (c.kind==='monster'?'<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':'')+
-   cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
-   '<h3>Miniature</h3>'+cols(field('Miniatura base','default_miniature_id',c.default_miniature_id)+field('Forma attuale','current_miniature_id',c.current_miniature_id))+
-   '<h3>Movimento</h3>'+summary([['Camminata (ft)',c.speed_base??c.speed??30],...['climb','swim','fly','burrow'].map((mode,i)=>[['Scalata','Nuoto','Volo','Scavo'][i]+' (ft)',c.species_speed?.[mode]??c.stat_block?.speed?.[mode]??0])])+
-   number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30))+
-  panel('Background',reference('Background','background','backgrounds'))+
-  panel('Classi e progressione',cols(number('XP','xp')+reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+number('Livello totale','level',c.level??1,1,20))+
-   '<details><summary>Progressione e multiclasse</summary>'+nativeRows({...c,classes:list(c.classes).length?c.classes:c.class?[{name:c.class,source:c.class_source||'',subclass:c.subclass||'',level:c.level||1}]:[]},'classes')+'</details>')+
-  panel('Talenti',feats)+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
-   '<details><summary>Altre annotazioni</summary>'+area('Appunti','notes',c.notes)+area('Descrizione fisica','appearance',c.appearance)+area('Tratti del personaggio','personality_traits',c.personality_traits)+area('Ideali','ideals',c.ideals)+area('Legami','bonds',c.bonds)+area('Difetti','flaws',c.flaws)+'</details>');
+ if(section==='info')return panel('Identità',cols(
+    select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
+    field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
+    select('Allineamento','alignment',ALIGNMENTS,c.alignment||'Completamente neutrale')))+
+   panel('Fisico',
+    (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
+      '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
+      cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
+      summary([['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'Da specie']]))+
+    '<h3>Miniature</h3>'+
+    summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
+    '<p class="hint">Le miniature si scelgono dal catalogo della versione nativa.</p>'+
+    cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
+      select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
+    '<h3>Movimento</h3>'+summary([['Camminata (ft)',c.speed_base??c.speed??30],
+      ...['climb','swim','fly','burrow'].map((mode,i)=>[['Scalata','Nuoto','Volo','Scavo'][i]+' (ft)',c.species_speed?.[mode]??c.stat_block?.speed?.[mode]??0])])+
+    (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
+       '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
+   panel('Background',c.kind==='monster'?summary([['Background',c.background]]):
+     reference('Background','background','backgrounds'))+
+   panel('Classi e progressione',cols(number('XP','xp')+
+      reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
+      number('Livello totale','level',c.level??1,1,20))+
+      (list(c.classes).length>1?'<details><summary>Multiclasse (riepilogo)</summary>'+
+        summary(c.classes.map((r,i)=>['Classe '+(i+1),r.name+' · livello '+r.level]))+
+        '<p class="hint">Per modificare le classi aggiuntive usa la scheda nativa.</p></details>':''))+
+   panel('Talenti',feats)+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
+     (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
+      '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
+      summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
+        ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio base</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label><span>'+ (rowsFor(c,'proficiency_choices').some(r=>r.kind==='save'&&r.key===key&&!r.disabled)||list(c.saving_throw_proficiencies).includes(key)?'Competente':'—')+'</span>').join('')+'</div>'+nativeNote)+
   panel('Riepilogo',summary([['Bonus competenza',c.proficiency_bonus],['Percezione passiva',c.passive_perception]]))+
   panel('Abilità',summary(SKILLS.map(([id,label,ability])=>[label+' · '+ability.toUpperCase(),rowsFor(c,'proficiency_choices').some(r=>r.kind==='expertise'&&r.key===id&&!r.disabled)?'Maestria':rowsFor(c,'proficiency_choices').some(r=>r.kind==='skill'&&r.key===id&&!r.disabled)?'Competente':'—'])))+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],rowsFor(c,'proficiency_choices').filter(r=>r.kind===kind&&!r.disabled).map(r=>r.key).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle')return panel('Punti ferita',cols(number('Attuali','current_hp',c.current_hp??1)+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+number('Seconda forma · massimi','second_form_max_hp')))+
-  resources+panel('CA e iniziativa',cols(number('CA base','armor_class_base',c.armor_class_base??10)+field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula)+number('Iniziativa base','initiative',c.initiative??0,-99,99))+nativeNote)+
+  resources+panel('CA e iniziativa',summary([['CA base (riferimento)',c.armor_class_base??c.armor_class??10],['Iniziativa salvata (riferimento)',c.initiative??0]])+
+      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
   panel('Attacchi disponibili',select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
    list(c.inventory).filter(i=>i.equipped).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+
    '<button class="btn" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>');
  if(section==='traits')return panel('Tratti',summary([['Razza / Specie',c.species],['Sottorazza',c.subrace],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+feats+
   list(c.stat_block?.trait).map(t=>'<article class="list-item"><h3>'+esc(t.name)+'</h3><p>'+esc(list(t.entries).filter(x=>typeof x==='string').join(' '))+'</p></article>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
  if(section==='origins'){
-  let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resources:nativeRows(c,details);
+  let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details);
   return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;
