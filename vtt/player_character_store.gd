@@ -7,114 +7,42 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
+const Storage = preload("res://vtt/creature_local_storage.gd")
+
+# Kept only to identify pre-migration archives; all new writes are global.
 const ROOT_DIR := "user://player_characters"
 const FILE_VERSION := 3
 
-var _campaign_manager: Node
+var archive_path: String = Storage.FILE_PATH
 
 
-func setup(campaign_manager: Node) -> void:
-	_campaign_manager = campaign_manager
-	DirAccess.make_dir_recursive_absolute(
-		ProjectSettings.globalize_path(ROOT_DIR)
-	)
+func setup(_campaign_manager: Node = null) -> void:
+	# The local collection never changes when the user switches scenarios.
+	pass
 
 
-func scope_id() -> String:
-	if _campaign_manager != null and is_instance_valid(_campaign_manager):
-		var campaign_group_id: String = String(
-			_campaign_manager.get("selected_campaign_group_id")
-		).strip_edges()
-		if not campaign_group_id.is_empty():
-			return "campaign_" + _safe_id(campaign_group_id)
-
-		var active_campaign_id: String = String(
-			_campaign_manager.get("active_campaign_id")
-		).strip_edges()
-		if not active_campaign_id.is_empty():
-			return "scenario_" + _safe_id(active_campaign_id)
-
-	return "default"
+func _storage() -> RefCounted:
+	var storage := Storage.new()
+	storage.path = archive_path
+	return storage
 
 
 func list_characters(include_unowned: bool = false) -> Array[Dictionary]:
-	var path: String = _file_path()
-	if not FileAccess.file_exists(path):
-		return []
-
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return []
-
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if not parsed is Dictionary:
-		return []
-
-	var root: Dictionary = parsed as Dictionary
-	var characters_value: Variant = root.get("characters", [])
-	if not characters_value is Array:
-		return []
-
 	var result: Array[Dictionary] = []
-	for item: Variant in characters_value:
-		if item is Dictionary:
-			var character := normalize_character(item as Dictionary)
-			if include_unowned or CreatureOwner.is_owner(character):
-				result.append(character)
+	for raw: Dictionary in _storage().list_records("character"):
+		var record: Dictionary = normalize_character(raw)
+		if include_unowned or CreatureOwner.is_owner(record):
+			result.append(record)
 	return result
 
 
-func save_characters(characters: Array[Dictionary], allow_transfer: bool = false) -> Error:
-	DirAccess.make_dir_recursive_absolute(
-		ProjectSettings.globalize_path(ROOT_DIR)
-	)
-
-	# Keep private records transferred to another installation intact when
-	# a local controller saves their visible subset.
-	var merged: Array[Dictionary] = characters.duplicate(true)
-	var previous := FileAccess.open(_file_path(), FileAccess.READ)
-	if previous != null:
-		var root_value: Variant = JSON.parse_string(previous.get_as_text())
-		previous.close()
-		if root_value is Dictionary:
-			var saved_value: Variant = (root_value as Dictionary).get("characters", [])
-			if saved_value is Array:
-				for raw: Variant in saved_value as Array:
-					if not raw is Dictionary:
-						continue
-					var stored: Dictionary = raw as Dictionary
-					for candidate: Dictionary in merged:
-						if String(candidate.get("id", "")) != String(stored.get("id", "")):
-							continue
-						if not allow_transfer and (not CreatureOwner.can_edit(candidate, stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
-							return ERR_UNAUTHORIZED
-					if CreatureOwner.is_owner(stored):
-						continue
-					var exists := false
-					for visible: Dictionary in merged:
-						if String(visible.get("id", "")) == String(stored.get("id", "")):
-							exists = true
-							break
-					if not exists:
-						merged.append(stored.duplicate(true))
-	var payload: Dictionary = {
-		"version": FILE_VERSION,
-		"scope": scope_id(),
-		"characters": merged
-	}
-	var destination := _file_path()
-	var temporary := destination + ".tmp"
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return FileAccess.get_open_error()
-
-	file.store_string(JSON.stringify(payload, "  "))
-	var error: Error = file.get_error()
-	file.close()
-	if error != OK:
-		return error
-	return DirAccess.rename_absolute(ProjectSettings.globalize_path(temporary), ProjectSettings.globalize_path(destination))
+func save_characters(records: Array[Dictionary], allow_transfer: bool = false) -> Error:
+	var scoped: Array[Dictionary] = []
+	for record: Dictionary in records:
+		var row: Dictionary = record.duplicate(true)
+		row["kind"] = "character"
+		scoped.append(row)
+	return _storage().save_records("character", scoped, allow_transfer)
 
 
 func create_character() -> Dictionary:
@@ -441,16 +369,4 @@ func normalize_character(value: Dictionary) -> Dictionary:
 
 
 func _file_path() -> String:
-	return ROOT_DIR.path_join(scope_id() + ".json")
-
-
-func _safe_id(value: String) -> String:
-	var result := ""
-	for character: String in value.to_lower():
-		if character.is_valid_identifier() or character.is_valid_int():
-			result += character
-		elif character in ["-", "_"]:
-			result += character
-		else:
-			result += "_"
-	return result
+	return archive_path
