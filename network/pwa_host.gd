@@ -15,6 +15,7 @@ const FILES := {
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
 	"/styles.css": ["res://pwa/styles.css", "text/css; charset=utf-8"],
 	"/storage.js": ["res://pwa/storage.js", "text/javascript; charset=utf-8"],
 	"/creatures.js": ["res://pwa/creatures.js", "text/javascript; charset=utf-8"],
@@ -263,7 +264,7 @@ func _respond(client: Dictionary, status: int, mime: String,
 	head += "Content-Type: %s\r\nContent-Length: %d\r\n" % [mime, payload.size()]
 	head += "Connection: close\r\nCache-Control: no-store\r\n"
 	head += "X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n"
-	head += "Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"
+	head += "Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n\r\n"
 	var response := head.to_utf8_buffer()
 	response.append_array(payload)
 	client.out = response
