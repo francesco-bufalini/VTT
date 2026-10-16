@@ -71,6 +71,23 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
   });
+  click('[data-sheet="resources"]');
+  await until(()=>document.querySelector("#tracker-name"));
+  change("#tracker-name","Impulsi");
+  change("#tracker-max","3");
+  click('[data-act="tracker-add"]');
+  await until(()=>document.querySelector('[data-act="tracker-more"]'));
+  click('[data-act="tracker-more"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
+      r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
+  });
+  click('[data-act="tracker-long"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
+  });
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   assert.match(document.querySelector("#app").textContent,/Arcanista mobile/);
