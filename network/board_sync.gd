@@ -1459,6 +1459,50 @@ func create_snapshot() -> Dictionary:
 	return snapshot
 
 
+# The same serializer used by network snapshots is shared with the token
+# export UI, preventing loss of miniature, size and condition attributes.
+# This file is a selection, not a map; importing it cannot replace terrain.
+func export_selected_tokens_to_file(path: String, selected: Array[CharacterBody3D]) -> Error:
+	var clean_path := path.strip_edges()
+	if clean_path.is_empty():
+		return ERR_INVALID_PARAMETER
+	if clean_path.get_extension().is_empty():
+		clean_path += ".vtttokens"
+	var objects: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for token: CharacterBody3D in selected:
+		if token == null or not is_instance_valid(token) or token.is_queued_for_deletion():
+			continue
+		if not board_root.is_ancestor_of(token) or not token.is_in_group("dnd_token"):
+			continue
+		var instance_id := token.get_instance_id()
+		if seen.has(instance_id):
+			continue
+		seen[instance_id] = true
+		objects.append(_serialize_node(token, "dnd_token"))
+	if objects.is_empty():
+		status_changed.emit("Seleziona almeno un token da esportare.")
+		return ERR_INVALID_DATA
+	var file := FileAccess.open(clean_path, FileAccess.WRITE)
+	if file == null:
+		var failed := FileAccess.get_open_error()
+		status_changed.emit("Esportazione token fallita: %s" % error_string(failed))
+		return failed
+	file.store_string(JSON.stringify({
+		"magic": "DND_TOKEN_SELECTION_V1",
+		"saved_at": Time.get_datetime_string_from_system(),
+		"scene": board_root.scene_file_path,
+		"objects": objects
+	}, "  "))
+	var error := file.get_error()
+	file.close()
+	if error == OK:
+		status_changed.emit("Esportati %d token: %s" % [objects.size(), clean_path])
+	else:
+		status_changed.emit("Esportazione token fallita: %s" % error_string(error))
+	return error
+
+
 func save_snapshot_to_file(path: String) -> Error:
 	var clean_path := path.strip_edges()
 	if clean_path.is_empty():
