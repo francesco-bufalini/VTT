@@ -30,11 +30,20 @@ iPhone / Android (Safari/Chrome PWA)
           BoardSync -> MapDataController -> existing _handle_mobile_action()
 ```
 
-The desktop starts the HTTP bridge itself and **serves the PWA assets from
-its native distribution**. Updating the desktop binary updates the offered
-web assets. No separate application server, static web host or GitHub download
-is needed. The host persists across desktop scene changes; the authenticated
-API returns 503 until a board with an active session exists.
+The native desktop **automatically starts** the PWA HTTP listener on
+`127.0.0.1:8765` **when `dnd_base.tscn` opens**, and **closes the socket**
+as the scene exits (including switching away from it). `PwaHost` remains an
+autoload to watch the scene lifecycle, but does not expose the HTTP server
+outside the board. This works in exported desktop VTT and when running
+the project/scene with **Godot's F5/F6**. Merely viewing the scene inside
+the Godot editor is not a running game and cannot start the listener.
+
+The desktop serves PWA assets from its distribution. Updating the desktop
+build updates the offered web files without a separate web-server process.
+If the session changes within the same board, the listener remains active
+and its authenticated `/api/session` response reports the current session.
+When the board closes, the server is unavailable, but previously installed
+browsers keep their offline IndexedDB sheets and cached app shell.
 
 The phase-1 browser transport deliberately uses same-origin HTTPS requests
 and 1.5 s polling for the allowlisted tactical projection, plus POST for
@@ -50,9 +59,15 @@ origin later without changing the domain API.
 1. Run VTT **native desktop** with this version.
 2. Make sure Tailscale is installed on both devices, and enable MagicDNS and
    HTTPS certificates in the tailnet's DNS settings.
-3. On the desktop, configure Tailscale Serve to forward HTTPS to the bridge:
-   `tailscale serve --bg 8765` (inspect its printed URL and status; CLI
-   syntax may differ with client versions).
+3. **Once per desktop**, configure Tailscale Serve to forward HTTPS to
+   the native listener: `tailscale serve --bg 8765`. This configuration
+   **persists through app closure and machine restart**; it does not need
+   to be run each time you open a game. Verify with
+   `tailscale serve status` and never enable public Tailscale Funnel.
+   The proxy itself remains configured when the board closes, but there
+   is **no local HTTP server listening**, so the game cannot be accessed.
+   If you want to remove the proxy entirely, use `tailscale serve off`.
+   These commands depend on Tailscale being installed and HTTPS enabled.
 4. Open the printed `https://<machine>.<tailnet>.ts.net/` URL on the phone.
    Use **Share → Add to Home Screen** on Safari/iPhone.
 5. With native VTT open on the desktop, press **Ctrl+Shift+P** to display
@@ -63,7 +78,7 @@ origin later without changing the domain API.
    pairing. Never put the secret in a URL or the repository.
    The 1–5 session number is not a password.
 
-Native `PwaHost` binds to **127.0.0.1:8765 only**, not the public LAN or
+While the board is open, native `PwaHost` binds to **127.0.0.1:8765 only**, not the public LAN or
 the Internet. Tailscale Serve supplies HTTPS and access control on the
 tailnet; do **not** use Funnel (public exposure). For LAN-only access without
 Tailscale, a trusted HTTPS reverse proxy + trusted device certificate must
@@ -94,6 +109,20 @@ Keep a single stable URL or export/import a backup before changing origins.
   browser HTTP caching and carry basic defensive headers.
 - Existing Android/native TCP/UDP services are unchanged; the two mobile
   clients can coexist.
+
+### Why the browser has a separate first-use credential
+
+Native Android still uses `CreaturePresence` UDP broadcast/discovery
+(`45456`) and the shared **session number 1–5**, unchanged by the PWA.
+Browsers cannot run the same arbitrary UDP discovery and the digits 1–5
+are not strong HTTP API authentication. The PWA currently uses a **random
+256-bit bearer**, shown on the trusted desktop with **Ctrl+Shift+P** and
+optionally remembered by the browser; it is **not required again every
+time a new scene opens**. Opening the game's known HTTPS address is the
+browser's equivalent to selecting a discovered host, and the native board
+chooses the current session. Any shorter first-use enrollment must still
+issue a strong token and enforce limited attempts; the game PIN must not
+be used as a web authorization password.
 
 The bridge does not yet offer WebSocket push, binary file transfer endpoints,
 recipient-addressed inventory/document delivery, or automatic conflict-safe
