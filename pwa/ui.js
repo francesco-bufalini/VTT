@@ -693,6 +693,37 @@ async function patch(patchValue) {
     message("Modifica non salvata: "+state.saveError,true);
   }
 }
+async function persistDocumentEdit(index,part,creature){
+  const item=creature.inventory?.[index];
+  if(!isDocument(item))throw Error("Documento non trovato nell'inventario.");
+  if(part==="style"){
+    const field=app.querySelector('[data-document-index="'+index+'"][data-document-part="style"]');
+    if(!field)return;
+    const inventory=structuredClone(creature.inventory);
+    inventory[index].display_style=documentStyle(field.value);
+    await patch({inventory});return;
+  }
+  if(part!=="title"&&part!=="body")return;
+  const title=app.querySelector('[data-document-index="'+index+'"][data-document-part="title"]')?.value;
+  const body=app.querySelector('[data-document-index="'+index+'"][data-document-part="body"]')?.value;
+  if(title===undefined||body===undefined)throw Error("Editor documento non disponibile.");
+  const activeEditor=state.editor,docId=item.id;
+  pendingDocumentWrites=pendingDocumentWrites.catch(()=>{}).then(async()=>{
+    const record=await getRecord("global","homebrew",docId);
+    if(!record)throw Error("Definizione documento mancante: esporta un backup prima di continuare.");
+    const updated=editDocumentDefinition(record.data,title,body);
+    await editHomebrewDefinition(updated,record.revision);
+    if(state.editor===activeEditor){
+      const current=activeEditor.read();
+      const rows=structuredClone(current.inventory||[]);
+      for(const row of rows)if(row.id===docId)row.name=updated.name;
+      await patch({inventory:rows});
+      const summary=app.querySelector('[data-document-card="'+index+'"] summary');
+      if(summary)summary.firstChild.textContent=updated.name+' ';
+    }
+  });
+  await pendingDocumentWrites;
+}
 async function handleField(target) {
   // Tactical controls are independent from an open local creature editor.
   if(target.dataset.tokenCondition){
@@ -704,6 +735,10 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.documentIndex!==undefined){
+    await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
+    return;
+  }
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
     await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
@@ -963,6 +998,24 @@ async function handleAction(target){
     await patch({resource_tracker_spent:spent});await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
+  if(act==="document-add"){
+    if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
+    const localId="doc_"+crypto.randomUUID().replace(/-/g,"");
+    const definition=createDocumentDefinition(localId);
+    await saveHomebrewDefinition(definition);
+    const owned=createOwnedDocument(definition,"owned_doc_"+crypto.randomUUID().replace(/-/g,""));
+    state.openDocumentInstance=owned.instance_id;
+    const record=state.editor.read();
+    await patch({inventory:[...(record.inventory||[]),owned]});
+    await render();return;
+  }
+  if(act==="document-remove"){
+    const index=Number(target.dataset.index),record=state.editor.read();
+    const inventory=structuredClone(record.inventory||[]);
+    if(!isDocument(inventory[index]))throw Error("Documento non valido.");
+    inventory.splice(index,1);state.openDocumentInstance="";
+    await patch({inventory});await render();return;
+  }
   if(act==="add-item"){
     const c=state.editor.read();
     const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
@@ -1117,7 +1170,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){
@@ -1132,7 +1185,7 @@ function listen(){
       if(results)results.innerHTML=renderCatalogRows();
       return;
     }
-    if(!target?.matches("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
+    if(!target?.matches("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
@@ -1212,7 +1265,7 @@ function listen(){
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden){
       const active=document.activeElement;
-      if(active?.matches?.("[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
+      if(active?.matches?.("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index]"))
         active.dispatchEvent(new Event("change",{bubbles:true}));
     } else if(state.page==="session") {
       refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
