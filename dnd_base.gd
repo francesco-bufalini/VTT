@@ -1631,6 +1631,8 @@ func _input(event: InputEvent) -> void:
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
 		and not _ui_owns_mouse
+		# Repositioning takes priority over the usual click-to-dismiss AoE.
+		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
 		and spell_system != null
 		and is_instance_valid(spell_system)
 		and spell_system.has_method(
