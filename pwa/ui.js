@@ -363,11 +363,12 @@ function documentRow(item,index,stored){
       '<option value="pergamena"'+(style==="pergamena"?' selected':'')+'>Pergamena</option>'+
       '<option value="lettera"'+(style==="lettera"?' selected':'')+'>Lettera</option></select></label>'+
     (editable?
+      '<details class="document-edit"><summary>Modifica documento</summary>'+
       '<label>Titolo<input maxlength="160" data-document-index="'+index+'" data-document-part="title" value="'+esc(title)+'"></label>'+
       '<label>Testo<textarea maxlength="3500" rows="10" data-document-index="'+index+'" data-document-part="body">'+esc(body)+'</textarea></label>'+
-      '<p class="hint">Salvataggio automatico. La definizione viaggia con la creatura esportata.</p>':
-      '<p class="warning">Definizione homebrew non installata: documento visibile ma non modificabile.</p>'+
-      '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>')+
+      '<p class="hint">Salvataggio automatico. La definizione viaggia con la creatura esportata.</p></details>':
+      '<p class="warning">Definizione homebrew non installata: documento visibile ma non modificabile.</p>')+
+    '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>'+
     '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
     '</div></details>';
 }
@@ -701,7 +702,10 @@ async function persistDocumentEdit(index,part,creature){
     if(!field)return;
     const inventory=structuredClone(creature.inventory);
     inventory[index].display_style=documentStyle(field.value);
-    await patch({inventory});return;
+    await patch({inventory});
+    const paper=app.querySelector('[data-document-card="'+index+'"] .document-paper');
+    if(paper)paper.className="document-paper "+(inventory[index].display_style==="lettera"?"letter":"parchment");
+    return;
   }
   if(part!=="title"&&part!=="body")return;
   const title=app.querySelector('[data-document-index="'+index+'"][data-document-part="title"]')?.value;
@@ -720,6 +724,12 @@ async function persistDocumentEdit(index,part,creature){
       await patch({inventory:rows});
       const summary=app.querySelector('[data-document-card="'+index+'"] summary');
       if(summary)summary.firstChild.textContent=updated.name+' ';
+      const preview=app.querySelector('[data-document-card="'+index+'"] .document-paper');
+      if(preview){
+        const heading=preview.querySelector("strong"),paragraph=preview.querySelector("p");
+        if(heading)heading.textContent=updated.name;
+        if(paragraph)paragraph.textContent=body;
+      }
     }
   });
   await pendingDocumentWrites;
