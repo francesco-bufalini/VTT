@@ -20,7 +20,7 @@ globalThis.fetch=async (url,options={})=>{
   if(url==="/api/status") return new Response(JSON.stringify({protocol:1,desktop_online:false}),{status:200});
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
-const {mount}=await import("../ui.js");
+const {mount,stopRealtime}=await import("../ui.js");
 const {listCreatures,loadCreature}=await import("../creatures.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
@@ -94,7 +94,8 @@ test("dice roll is usable offline; session has functioning pairing form",async()
 });
 
 
-test("pairing connects tactical tokens and shared chat through desktop API",async()=>{
+test("pairing connects tactical tokens and shared chat through desktop API",async(t)=>{
+  t.after(stopRealtime);
   Object.defineProperty(globalThis.self,"isSecureContext",{value:true,configurable:true});
   const calls=[];
   globalThis.fetch=async (url,options={})=>{
