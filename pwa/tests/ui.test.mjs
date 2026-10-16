@@ -177,7 +177,7 @@ test("dice roll is usable offline; session has functioning pairing form",async()
   await until(()=>document.querySelector("#pair-form"));
   assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
-  assert.equal(document.querySelectorAll("#nav button").length,5);
+  assert.equal(document.querySelectorAll("#nav button").length,4,"Android has four main sections");
 });
 
 
@@ -235,8 +235,9 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
-  click('[data-nav="chat"]');
+  click('[data-nav="dice"]');
   await until(()=>document.querySelector("#chat-form"));
+  change("#chat-author","Arcanista mobile");
   const input=document.querySelector("#chat-message");
   input.value="Messaggio dal browser";
   document.querySelector("#chat-form").dispatchEvent(
@@ -245,9 +246,20 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const sent=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
   const msg=JSON.parse(sent.options.body).payload.event;
   assert.equal(msg.kind,"chat");
+  assert.equal(msg.author,"Arcanista mobile");
   assert.equal(msg.text,"Messaggio dal browser");
   assert.ok(msg.id.startsWith("pwa_"));
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
+  click('[data-act="roll"][data-sides="20"]');
+  await until(()=>document.querySelector('[data-act="share-roll"]'));
+  assert.equal(document.querySelector("#chat-author").value,"Arcanista mobile",
+    "The author selection survives a dice re-render");
+  click('[data-act="share-roll"]');
+  await until(()=>calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send").length>=2);
+  const rolls=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
+  const sentRoll=JSON.parse(rolls.at(-1).options.body).payload.event;
+  assert.equal(sentRoll.kind,"roll");
+  assert.equal(sentRoll.author,"Arcanista mobile","Chat and dice must use the same selected creature");
   click('[data-nav="library"]'); // Release chat polling timer.
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -522,6 +534,42 @@ test("sheet derived values update locally and never call a desktop calculation A
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/13/);
   assert.equal(requests.filter(url=>url==="/api/evaluate").length,0,
     "A private creature sheet must never be transmitted for derived calculations");
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("Android-style drawer restores the selected character and edits multiclass and narrative fields",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Custode PWA");
+  await until(async()=> (await listCreatures()).some(r=>r.creature.name==="Custode PWA"));
+  const saved=(await listCreatures()).find(r=>r.creature.name==="Custode PWA").creature;
+  change('[data-field="notes"]',"Note modificabili anche nel browser");
+  await until(async()=> (await loadCreature(saved.id))?.data.notes==="Note modificabili anche nel browser");
+  click('[data-sheet="origins"]');
+  await until(()=>document.querySelector("#native-details"));
+  change("#native-details","classes");
+  await until(()=>document.querySelector('[data-act="native-add"][data-list="classes"]'));
+  click('[data-act="native-add"][data-list="classes"]');
+  await until(()=>document.querySelector('[data-native-list="classes"][data-key="name"]'));
+  change('[data-native-list="classes"][data-key="name"]',"Mago");
+  await until(async()=> (await loadCreature(saved.id))?.data.class==="Mago");
+  change('[data-native-list="classes"][data-key="level"]',"3");
+  await until(async()=> (await loadCreature(saved.id))?.data.classes?.[0]?.level===3);
+  click('[data-nav="dice"]');
+  await until(()=>document.querySelector("#die-count"));
+  assert.ok(document.querySelector('#sheet-navigation [data-sheet="info"]'),
+    "Sheet sections remain available from other primary pages");
+  click('#sheet-navigation [data-sheet="info"]');
+  await until(()=>document.querySelector('[data-field="notes"]'));
+  assert.equal(document.querySelector('[data-field="notes"]').value,"Note modificabili anche nel browser");
+  assert.equal(document.querySelector('[data-field="name"]').value,"Custode PWA");
+  click('[data-sheet="origins"]');
+  await until(()=>document.querySelector("#native-details"));
+  change("#native-details","classes");
+  await until(()=>document.querySelector('[data-native-list="classes"][data-key="name"]'));
+  assert.equal(document.querySelector('[data-native-list="classes"][data-key="name"]').value,"Mago");
+  assert.equal(document.querySelector('[data-native-list="classes"][data-key="level"]').value,"3");
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });

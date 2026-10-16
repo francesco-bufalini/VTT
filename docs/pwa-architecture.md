@@ -220,13 +220,13 @@ The browser **GUI** (`pwa/index.html`, `pwa/styles.css`, `pwa/ui.js`) now calls
 the local archive directly:
 - **Creature**: list, create/import/export/delete (including bulk import/export
   with selection-only actions), edit abilities, HP and base
-  stats, names, origins, character notes, personal conditions, inventory
+  stats, names, origins, class/multiclass rows, all narrative notes, personal conditions, inventory
   name/quantity/description, spell IDs and expended slots, plus native-schema
   manual resource trackers, usage counters and short/long rest recovery. Also
   provides an advanced JSON editor without dropping unrelated record fields.
-- **Dadi**: local Web Crypto dice rolls and optional chat sharing through
-  the existing native `chat_send` action.
-- **Chat**: send text and poll existing native shared chat events while paired.
+- **Dadi e chat**: local Web Crypto dice rolls and chat messages share the same
+  character-author selection, following Android's single dice/chat section;
+  paired devices poll native shared events and send through `chat_send`.
 - **Partita**: HTTPS bearer pairing, automatic tactical-map retries after
   temporary desktop loss and resume/online reconnect, visible tactical tokens, movement and
   condition actions, native-compatible placement next to an existing token or
@@ -246,9 +246,10 @@ the local archive directly:
 - **Backup**: download or restore complete IndexedDB JSON backup with binary
   attachments, as well as individual VTT portable creature files.
 
-The GUI is useful but **not yet at full Android feature parity**: it does not
-implement the Godot origin/class bonus calculators, complex class spell
-preparation and granted spell tracker rules, full attack weapon configuration,
+The GUI is useful but **not yet at full Android feature parity**: its local
+structured origin/class calculator covers only supported generic effects; it
+still lacks feature-specific exceptions, complex class spell preparation and
+granted spell tracker rules, full attack weapon configuration,
 or recipient-addressed transfer of inventory/documents. Advanced native spell
 stages such as dialogs for summoning can still require desktop input. A browser field edit is stored locally, not automatically
 executed as an action on the desktop. Keep game rules authoritative in native

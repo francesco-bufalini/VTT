@@ -826,6 +826,9 @@ async function handleField(target) {
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
+      const cached=(state.cachedCreatures||[]).find(row=>row.id===creature.id);
+      if(cached)cached.name=value;
+      syncNav();
     }
   } else if(target.dataset.ability){
     const key=target.dataset.ability, value=Number(target.value);
@@ -920,7 +923,7 @@ async function handleAction(target){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-    message("Contenuto aggiunto. Eventuali bonus vengono elaborati dalla versione Godot.");
+    message("Contenuto aggiunto. I bonus strutturati supportati sono calcolati nella PWA.");
     return;
   }
   if(act==="refresh"){await render();return;}
