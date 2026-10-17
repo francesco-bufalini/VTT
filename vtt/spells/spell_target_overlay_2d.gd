@@ -632,12 +632,18 @@ func _move_sidebar_area(root: Node3D) -> void:
 	if root == null or not is_instance_valid(root):
 		return
 	var index: int = _sidebar_persistent_area_index(root)
+	var started: bool = false
 	if index >= 0:
 		# Manual templates are static by default; this explicit command
 		# enables repositioning without changing their spell-specific limits.
-		measure.call("begin_movable_aoe_drag", index, true)
+		started = bool(measure.call("begin_movable_aoe_drag", index, true))
 	elif root.has_meta("spell_overlay_2d"):
-		measure.call("begin_held_aoe_drag", root)
+		started = bool(measure.call("begin_held_aoe_drag", root))
+	if started:
+		# A previously focused field must not swallow Esc while moving.
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		if focused != null:
+			focused.release_focus()
 
 
 func _refresh_area_sidebar() -> void:
