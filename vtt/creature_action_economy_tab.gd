@@ -11,6 +11,19 @@ const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
 const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
+const GENERAL_ACTIONS_PATH := "res://vtt/data/combat_action_supplements_5etools.json"
+static var _general_actions_cache: Array[Dictionary] = []
+static var _general_actions_loaded := false
+
+static func _general_supplements() -> Array[Dictionary]:
+	if not _general_actions_loaded:
+		_general_actions_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(GENERAL_ACTIONS_PATH))
+		if parsed is Dictionary and int(parsed.get("version", -1)) == 1:
+			for raw: Variant in parsed.get("entries", []):
+				if raw is Dictionary:
+					_general_actions_cache.append(raw)
+	return _general_actions_cache
 static var _supplement_cache: Array[Dictionary] = []
 static var _supplements_loaded := false
 
@@ -164,6 +177,24 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		results.append(entry)
 	for row: Array in COMMON:
 		results.append(_entry(String(row[0]), int(row[1]), String(row[2]), String(row[3])))
+	# Curated 5etools supplements are driven by a versioned JSON file. The
+	# same file ships with both native builds and the offline/browser client.
+	var selected_edition := "2024" if String(record.get("rules_version", "2014")) == "2024" else "2014"
+	for supplement: Dictionary in _general_supplements():
+		if String(supplement.get("edition", "")) != selected_edition:
+			continue
+		var description := String(supplement.get("description", ""))
+		description += "\nFonte: %s, p. %d" % [String(supplement.get("source", "")), int(supplement.get("page", 0))]
+		if bool(supplement.get("optional", false)):
+			description += "\nRegola opzionale: richiede l'approvazione del DM."
+		for when: Variant in supplement.get("timings", []):
+			var rule := _entry(String(supplement.get("name", "")), _timing(when),
+				"Regola opzionale" if bool(supplement.get("optional", false)) else "Generale",
+				description, String(supplement.get("tracker", "")))
+			rule["skill_ids"] = supplement.get("skills", [])
+			rule["action_id"] = String(supplement.get("action_id", ""))
+			rule["catalog_id"] = String(supplement.get("id", ""))
+			results.append(rule)
 	if record.is_empty():
 		return results
 	var trackers: Dictionary = {}
@@ -345,13 +376,26 @@ func _add_entry(entry: Dictionary) -> void:
 	)
 	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
 	section.add_child(button)
+	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
-		var stealth := Button.new()
-		stealth.text = "↳ Tira Furtività"
-		stealth.set_meta("action_generated", true)
-		stealth.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		stealth.pressed.connect(func() -> void: skill_requested.emit("skill:stealth"))
-		section.add_child(stealth)
+		checks.append("stealth")
+	var seen_skills: Dictionary = {}
+	for raw_skill: Variant in checks:
+		var skill_id := String(raw_skill)
+		if seen_skills.has(skill_id):
+			continue
+		seen_skills[skill_id] = true
+		var label := skill_id.capitalize()
+		for definition: Dictionary in Skills5e.SKILLS:
+			if String(definition.get("id", "")) == skill_id:
+				label = String(definition.get("label", skill_id))
+				break
+		var check := Button.new()
+		check.text = "↳ Tira " + label
+		check.set_meta("action_generated", true)
+		check.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		check.pressed.connect(func() -> void: skill_requested.emit("skill:" + skill_id))
+		section.add_child(check)
 
 func refresh_top_skills(record: Dictionary) -> void:
 	if _skill_list == null:

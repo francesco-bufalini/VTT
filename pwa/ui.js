@@ -1,4 +1,4 @@
-import { actionEconomyView, loadFeatureActionOverrides } from "./action_economy.js";
+import { actionEconomyView, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
@@ -279,8 +279,9 @@ async function editorView() {
     }));
   }
   if(state.sheet==="actions"){
-    try{state.featureActionOverrides=await loadFeatureActionOverrides();}
-    catch{state.featureActionOverrides=[];}
+    const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
+    state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
+    state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
   }
   if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
@@ -311,7 +312,7 @@ async function editorView() {
     break;
   }
   case "actions":
-    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[]);
+    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[]);
     break;
   case "magic":
     body=panel('Lancio tattico',c.linked_token_sync_id?
@@ -1174,18 +1175,20 @@ async function handleAction(target){
   const act=target.dataset.act;
   if(act==='combat-action'){
     const mode=target.dataset.mode;
-    if(!['help','shove','prone'].includes(mode))throw Error('Azione non valida.');
+    if(!['help','shove','prone','grapple'].includes(mode))throw Error('Azione non valida.');
     const record=state.editor?.read();
     if(!record?.id)throw Error('Seleziona prima una creatura.');
     const tokenId=record.linked_token_sync_id;
     if(!tokenId)throw Error('Piazza o associa la creatura a un token prima di scegliere il bersaglio.');
     const calculated=await computeLocalData(record);
+    const kind=mode==='grapple'?'La presa':mode==='prone'?'Buttare prono':'Spingere';
     const rule=record.rules_version==='2024'?
-      '2024 · TS Forza o Destrezza, a scelta del bersaglio, CD '+
+      '2024 · '+kind+': TS Forza o Destrezza a scelta del bersaglio, CD '+
        (8+Number(calculated.abilities?.str?.modifier??0)+Number(calculated.stats?.proficiency??0))+
-       '. La spinta sostituisce un attacco.':
-      '2014 · Atletica '+(Number(calculated.skills?.athletics??0)>=0?'+':'')+
-       Number(calculated.skills?.athletics??0)+' contro Atletica o Acrobazia (a scelta del bersaglio). La spinta sostituisce un attacco.';
+       '. Sostituisce un attacco con un colpo senz’armi'+(mode==='grapple'?' e richiede una mano libera.':'.'):
+      '2014 · '+kind+': Atletica '+(Number(calculated.skills?.athletics??0)>=0?'+':'')+
+       Number(calculated.skills?.athletics??0)+' contro Atletica o Acrobazia (a scelta del bersaglio). Sostituisce un attacco'+
+       (mode==='grapple'?' e richiede una mano libera.':'.');
     if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
     await tacticalViewer.open(tokenId,{});
     tacticalViewer.setBasicAction({mode,rule});

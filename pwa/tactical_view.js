@@ -102,7 +102,7 @@ export class TacticalViewer {
     await this.refresh();
   }
   setBasicAction(action) {
-    if(!this.root||!['help','shove','prone'].includes(action?.mode))
+    if(!this.root||!['help','shove','prone','grapple'].includes(action?.mode))
       throw Error('Azione di combattimento non valida.');
     this.basicAction={...action};
     this.setStatus(action.mode==='help'?
@@ -302,7 +302,7 @@ export class TacticalViewer {
       });
       this.basicAction=null;
       await this.refresh();
-      this.setStatus((basic.mode==='help'?'Aiutato':basic.mode==='prone'?'Prono':'Spinto')+
+      this.setStatus((basic.mode==='help'?'Aiutato':basic.mode==='prone'?'Prono':basic.mode==='grapple'?'Afferrato':'Spinto')+
         ' · bersaglio: '+marker.name);
       return;
     }

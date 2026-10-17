@@ -44,6 +44,7 @@ jobs:
             /pwa/
             /vtt/data/class_mechanics_5etools.json
             /vtt/data/class_resource_overrides.json
+            /vtt/data/combat_action_supplements_5etools.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
@@ -152,6 +153,7 @@ jobs:
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
           copy2(Path("vtt/data/action_feature_overrides.json"), root / "catalog/action_feature_overrides.json")
+          copy2(Path("vtt/data/combat_action_supplements_5etools.json"), root / "catalog/combat_action_supplements_5etools.json")
           for file in ("classes", "ability_grants", "class_mechanics", "proficiency_grants"):
               copy2(Path("pwa/catalog") / (file + ".json"), root / "catalog" / (file + ".json"))
           (root / "start-preview.cmd").write_text(

@@ -14,6 +14,26 @@ func run() -> void:
 	assert(_contains(modern, "Influenzare", 0))
 	assert(_contains(modern, "Muoversi", 3))
 	assert(_contains(modern, "Attacco di opportunità", 4))
+	# Every source-supplemented edition shows the right available options.
+	assert(_contains(old, "Attivare un oggetto magico", 0))
+	assert(not _contains(modern, "Attivare un oggetto magico", 0))
+	assert(_contains(old, "Disarmare", 0))
+	assert(_contains(old, "Travolgere (attraversare lo spazio nemico)", 0))
+	assert(_contains(old, "Travolgere (attraversare lo spazio nemico)", 1))
+	assert(_contains(old, "Passare con acrobazia attraverso un nemico", 0))
+	assert(_contains(old, "Passare con acrobazia attraverso un nemico", 1))
+	assert(_contains(old, "Identificare un incantesimo", 0))
+	assert(_contains(old, "Identificare un incantesimo", 4))
+	assert(_contains(old, "Interrompere concentrazione", 2))
+	assert(_contains(modern, "Interrompere concentrazione", 2))
+	assert(_contains(modern, "Afferrare una creatura", 0))
+	assert(_contains(modern, "Indossare o rimuovere uno scudo", 0))
+	assert(_contains(modern, "Combattere con due armi", 1))
+	assert(not _contains(modern, "Impulso curativo", 0))
+	for definition: Dictionary in Actions._general_supplements():
+		assert(String(definition.get("source", "")) in ["DMG", "PHB", "XGE", "XPHB"])
+		assert(int(definition.get("page", 0)) > 0)
+		assert(not (definition.get("timings", []) as Array).is_empty())
 	# Non-attack monster options must not disappear just because they lack a hit roll.
 	var monster: Dictionary = {
 		"kind": "monster", "rules_version": "2014",

@@ -2838,7 +2838,7 @@ func _on_basic_action_requested(action_id: String) -> void:
 		_set_status("Nessun token bersaglio presente.")
 		return
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "Aiutare" if action_id == "help" else "Spingere" if action_id == "shove" else "Buttare prono"
+	dialog.title = "Aiutare" if action_id == "help" else "Spingere" if action_id == "shove" else "Afferrare" if action_id == "grapple" else "Buttare prono"
 	dialog.ok_button_text = "Applica" if action_id == "help" else "Confermo il successo"
 	dialog.cancel_button_text = "Annulla"
 	var body := VBoxContainer.new()
@@ -2851,10 +2851,10 @@ func _on_basic_action_requested(action_id: String) -> void:
 		var info: Dictionary = BasicCombat.shove_details(record,
 			BonusRules.value(record, "skill:athletics"),
 			BonusRules.value(record, "ability_mod:str"), BonusRules.value(record, "proficiency"))
-		caption.text = String(info.get("check", "")) + "\n" + String(info.get("action", "")) + (
+		caption.text = String(info.get("check", "")) + "\n" + (("Afferrare: mano libera richiesta; applica Afferrato dopo il successo." if action_id == "grapple" else String(info.get("action", ""))) + "\n" + (
 			"\nCD: %d" % int(info["dc"]) if info.has("dc") else
 			"\nAtletica: %+d" % int(info.get("athletics_bonus", 0))
-		) + "\nApplica solo se la prova o il TS è stato risolto con successo."
+		)) + "\nApplica solo se la prova o il TS è stato risolto con successo."
 	body.add_child(caption)
 	if action_id != "help" and String(record.get("rules_version", "2014")) != "2024":
 		var roll := Button.new()
