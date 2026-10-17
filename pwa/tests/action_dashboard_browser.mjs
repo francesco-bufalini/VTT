@@ -31,6 +31,7 @@ try{
   const saved=await createCreature('character','Esploratrice di prova');
   await saveCreature({...saved.data,class:'Rogue',class_source:'PHB',level:2,rules_version:'2014',abilities:{str:12,dex:16,con:14,int:12,wis:14,cha:10},
    inventory:[{id:'shortsword',name:'Shortsword',source:'PHB',type:'M',damage:'1d6',weapon_category:'martial',properties:['L','F'],equipped_slots:['main','off'],quantity:2}],
+   prepared_spells:['action','bonus','reaction'].map(unit=>({id:'test_spell_'+unit,name:'Incantesimo '+unit,level:1,time:[{unit,number:1}],entries:['Testo della selezione di prova']})),
    action_grants:[{id:'resource_demo',name:'Capacità di prova',action_type:'bonus',tracker_id:'charge'}],
    resource_trackers:[{id:'charge',name:'Cariche',max:3,recharge:'long_rest'}],resource_tracker_spent:{charge:1}},'default',saved.revision);
  });
@@ -44,6 +45,8 @@ try{
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='actions'){
     assert.equal(await page.locator('.action-economy-section').count(),5);
+    assert.equal(await page.locator('.action-group-label').filter({hasText:'Incantesimi'}).count(),3);
+    for(const time of ['action','bonus','reaction'])assert(await page.locator('[data-timing="'+time+'"] [data-spell-id="test_spell_'+time+'"]').count());
     const bonus=page.locator('[data-timing="bonus"]');
     assert((await bonus.textContent()).includes('Spostamento'));
     assert.equal(await page.locator('[data-act="action-open-spells"]').count(),0);
@@ -75,9 +78,9 @@ try{
  await page.locator('[data-timing="movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
  await page.locator('[data-act="close-sheet-roll"]').click();
- await page.waitForFunction(async()=> (await navigator.serviceWorker.getRegistration())?.active?.state==='activated');
+ await page.waitForFunction(()=> !!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await section('actions');
  assert((await page.locator('#app').textContent()).includes('Movimento furtivo'));
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 9 styled PWA sections at 360/390/768/1440px, expanded trees, native routes, stealth dice, persistent variants and offline reload');
+ console.log('PASS: 9 styled PWA sections at 360/390/768/1440px, expanded trees, three spell groups, native routes, stealth dice, persistent variants and offline reload');
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

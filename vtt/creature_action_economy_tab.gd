@@ -665,9 +665,10 @@ static func _spell_rows(spell: Dictionary) -> Array[Dictionary]:
 	var times: Array = time if time is Array else [time]
 	var seen: Array[int] = []
 	for raw: Variant in times:
-		var unit := String(raw.get("unit", "") if raw is Dictionary else raw).to_lower().strip_edges()
+		var unit := String(raw.get("unit", "") if raw is Dictionary else raw).to_lower().strip_edges().replace("_", " ")
 		if raw is Dictionary and int(raw.get("number", 1)) != 1: continue
-		if unit not in ["action", "bonus", "reaction", "azione", "azione bonus", "reazione", "1 action", "1 bonus action", "1 reaction"]: continue
+		if unit.begins_with("1 "): unit = unit.substr(2).strip_edges()
+		if unit not in ["action", "bonus", "bonus action", "reaction", "azione", "azione bonus", "reazione"]: continue
 		var timing := _timing(unit)
 		if timing in seen: continue
 		seen.append(timing)
@@ -910,6 +911,7 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	elif not tracker_name.is_empty() and tracker_name not in ["Nessuno", "Nessuna risorsa"]:
 		var tag := Label.new()
 		tag.text = tracker_name
+		if String(entry.get("kind", "")) == "Incantesimo": tag.custom_minimum_size.x = 110
 		tag.tooltip_text = tracker_name
 		tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		tag.add_theme_font_size_override("font_size", 11)

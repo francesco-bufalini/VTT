@@ -17,6 +17,7 @@ on:
       - "vtt/structured_resource_trackers.gd"
       - "vtt/creature_area.gd"
       - "tests/test_creature_action_economy.gd"
+      - "tests/test_action_spell_groups.gd"
       - "tests/test_action_dashboard_ui.gd"
       - "tests/test_combat_basic_actions.gd"
       - ".github/workflows/creature-feature-domain.yml"
@@ -25,6 +26,7 @@ on:
     paths:
       - "vtt/creature_sheet_style.gd"
       - "vtt/creature_action_economy_tab.gd"
+      - "tests/test_action_spell_groups.gd"
       - "tests/test_action_dashboard_ui.gd"
       - "vtt/feature_timing_recovery_rules.gd"
       - "vtt/data/feature_timing_recovery_rules.json"
@@ -105,6 +107,7 @@ jobs:
             test_action_rules_2014.gd \
             test_creature_action_economy.gd \
             test_action_dashboard_ui.gd \
+            test_action_spell_groups.gd \
             test_feature_timing_recovery.gd \
             test_combat_basic_actions.gd \
             test_trait_origins.gd \

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries,spellActionEntries} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const actionEntries=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>project(record,{feature_rules:featureRules,...calculated},spells,overrides,rules,enabled);
@@ -65,13 +65,14 @@ test('bonus movement is grouped independently and keeps alternate-cost marker by
  assert(marker.nextElementSibling.classList.contains('action-economy-chevron'));
 });
 
-test('action page excludes spells and keeps real resource counters',()=>{
+test('base projection stays separate from conditional spell groups and resource counters',()=>{
  const record={prepared_spells:['spell_a'],action_grants:[{name:'Ispirazione',action_type:'bonus',tracker_id:'bardic'}]};
  const calculated={trackers:[{id:'bardic',name:'Ispirazione bardica',max:3,spent:1}],origin_spells:[{spell_id:'spell_a',tracker_id:'bardic'}]};
  const spells=[{id:'spell_a',name:'Fulmine',level:3,time:'action',entries:['Raggio']}];
  const rows=actionEntries(record,calculated,spells),html=actionEconomyView(record,calculated,spells);
  assert(!rows.some(row=>row.type==='Incantesimo'||row.name==='Fulmine'||row.name==='Lanciare un incantesimo'));
- assert(!html.includes('Lancia incantesimo'));assert(!html.includes('action-open-spells'));
+ assert(html.includes('Incantesimi disponibili'));assert(!html.includes('action-open-spells'));
+ assert(html.includes('data-spell-id="spell_a"'));
  assert(html.includes('data-act="tracker-more" data-tracker-id="bardic"'));
  assert(html.includes('data-act="tracker-less" data-tracker-id="bardic"'));assert(html.includes('2 / 3'));
 });
@@ -130,7 +131,7 @@ test('all 98 generated golden icons are shared, discoverable and cached offline'
  assert(html.includes('data-target="skill:athletics"'));
 });
 
-test('multiclass spell choices preserve casting classes outside the action dashboard',()=>{
+test('multiclass spell groups preserve independent casting class choices',()=>{
  const wizard='class|phb|wizard',warlock='class|phb|warlock';
  const spell={id:'shield',name:'Shield',level:1,
   casting_classes:[wizard,warlock]};
@@ -146,5 +147,23 @@ test('multiclass spell choices preserve casting classes outside the action dashb
  assert.deepEqual(choices.map(row=>row.casting_class),[wizard,warlock]);
  assert.equal(actionEntries(record,calculated,catalog).filter(row=>row.spell_id==='shield').length,0);
  const markup=actionEconomyView(record,calculated,catalog);
- assert(!markup.includes('data-spell-id="shield"'));
+ assert.equal((markup.match(/data-spell-id="shield"/g)||[]).length,2);
+ assert(markup.includes('data-casting-class="'+wizard+'"'));assert(markup.includes('data-casting-class="'+warlock+'"'));
+});
+
+test('only nonempty action, bonus and reaction spell groups appear with the actual payment',()=>{
+ const make=(id,unit)=>({id,name:id,level:1,time:[{unit,number:1}],entries:['Testo di prova']});
+ const record={prepared_spells:[make('action','action'),make('bonus','bonus'),make('reaction','reaction'),make('slow','minute')],spellbook_spells:[make('book','action')]};
+ const document=doc(actionEconomyView(record));
+ assert.equal(document.querySelectorAll('.action-tree').length>0,true);
+ for(const key of ['action','bonus','reaction']){
+  const section=document.querySelector('[data-timing="'+key+'"]');
+  assert(section.textContent.includes('Incantesimi disponibili'));
+  assert(section.querySelector('[data-spell-id="'+key+'"]'));
+  assert(section.textContent.includes('Slot · liv. 1+'));
+ }
+ assert(!document.querySelector('[data-spell-id="slow"]'));assert(!document.querySelector('[data-spell-id="book"]'));
+ assert(!actionEconomyView({}).includes('Incantesimi disponibili'));
+ const rows=spellActionEntries({}, {origin_spells:[{id:'grant',spell_id:'reaction',payment_mode:'tracker',tracker_id:'wand'}],trackers:[{id:'wand',name:'Cariche',max:3}]},[make('reaction','reaction')]);
+ assert.equal(rows.length,1);assert.equal(rows[0].tracker_id,'wand');assert.equal(rows[0].grant_id,'grant');assert.equal(rows[0].tracker,'Cariche');
 });

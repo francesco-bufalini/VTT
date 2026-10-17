@@ -1,5 +1,6 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
+import {sessionSpellEntries} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
 import {featureActionEntries} from './feature_mechanics.js';
 
@@ -211,6 +212,32 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  return normalized;
 }
+export function spellActionEntries(record={},calculated={},spells=[]){
+ const output=[];
+ const context={...calculated,casting_classes:arr(calculated.casting_classes),origin_spells:arr(calculated.origin_spells)};
+ for(const spell of sessionSpellEntries(record,context,spells)){
+  if(spell.internal_grant||spell.disabled)continue;
+  const grant=context.origin_spells.find(row=>String(row.id)===String(spell.grant_id));
+  if(grant?.disabled)continue;
+  const mode=grant?(grant.payment_mode||(grant.tracker_id?'tracker':'free')):'class';
+  const tracker_id=mode==='tracker'?String(grant.tracker_id||''):'';
+  const tracker=arr(calculated.trackers).find(row=>String(row.id)===tracker_id);
+  const prefix=spell.casting_label&&spell.casting_label!=='Scheda'?spell.casting_label+' · ':'';
+  const resource=mode==='tracker'?tracker?.name||tracker_id:mode==='free'?'Senza consumo · '+spell.casting_label:
+   prefix+(Number(spell.level||0)===0?'Trucchetto · nessuno slot':'Slot · liv. '+spell.level+'+');
+  const values=spell.time??spell.casting_time??[];
+  const seen=new Set();
+  for(const raw of Array.isArray(values)?values:[values]){
+   const unit=String(typeof raw==='object'?raw?.unit:raw).trim().toLowerCase().replaceAll('_',' ').replace(/^1\s+/,'');
+   if(typeof raw==='object'&&Number(raw?.number??1)!==1)continue;
+   if(!['action','bonus','bonus action','reaction','azione','azione bonus','reazione'].includes(unit))continue;
+   const time=timing(unit);if(seen.has(time))continue;seen.add(time);
+   output.push({id:spell.id,spell_id:spell.id,name:spell.name,time,type:'Incantesimo',description:details(spell.entries??spell.description??''),origin:'general',
+    casting_class:spell.casting_class||'',grant_id:spell.grant_id||'',spell_mode:mode,tracker_id,tracker:resource});
+  }
+ }
+ return output;
+}
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
 function actionRow(item,calculated){
@@ -225,14 +252,14 @@ function actionRow(item,calculated){
    .filter((id,index,all)=>all.indexOf(id)===index);
  const actionButtons=(isSpell?
    '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
-     '" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+esc(item.casting_class||'')+'">Usa capacità</button>':
+     '" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+esc(item.casting_class||'')+'">'+(item.type==='Incantesimo'?'Lancia':'Usa capacità')+'</button>':
    item.name==='Lanciare un incantesimo'||item.name==='Magia'?
      '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
   (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+
     '<span>'+remaining+' / '+esc(t.max)+'</span>'+
     '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
     !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
- const subLabel=isClassSpell?'Slot incantesimo':resource;
+ const subLabel=resource;
  const groupOnly=item.children?.length&&!item.description;
  return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'">'+
   '<div class="action-economy-main">'+(groupOnly?'<div class="action-economy-entry action-group-label">'+glyph+'<strong>'+esc(item.name)+'</strong></div>':'<details class="action-economy-entry"><summary>'+
@@ -275,6 +302,14 @@ export function groupActionEntries(entries){
 }
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const entries=groupActionEntries(actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants));
+ const spellGroups=new Map();
+ for(const spell of spellActionEntries(record,calculated,spells)){
+  if(!spellGroups.has(spell.time)){
+   const parent={id:'spells_'+spell.time,name:'Incantesimi',time:spell.time,type:'Incantesimo',origin:'general',children:[],children_heading:'Incantesimi disponibili'};
+   spellGroups.set(spell.time,parent);entries.push(parent);
+  }
+  spellGroups.get(spell.time).children.push(spell);
+ }
  const skills=topSkillEntries(calculated);
  return GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);

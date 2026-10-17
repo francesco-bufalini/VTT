@@ -27,9 +27,11 @@ Presentation:
   bonus group, with an A icon showing the alternative action cost. Different
   resource/payment choices remain separate. Action/reaction timings also
   remain separate because their triggers differ.
-- Spell selections and the generic spell launcher are excluded from this
-  overview. Internal ability grants are still abilities. Spell data and the
-  dedicated spellcasting pane are untouched.
+- Selected spells are collected in conditional Spell groups under Action, Bonus
+  Action and Reaction. Longer casting times and spellbook-only selections stay
+  out. Internal ability grants remain abilities. Each class/origin retains its
+  own casting identity, tracker or slot placeholder and opens the existing
+  Poteri casting flow; there is no generic spell launcher.
 - The arrow opens source descriptions. Target and dice buttons are explicit
   separate controls, so opening a description never applies a tactical effect.
 
@@ -39,7 +41,7 @@ from creatures in `user://action_overview.cfg`. Combat variants add their
 corresponding action entries; other references are table reminders, without
 new automatic campaign effects. Source links open the original rule.
 
-Focused tests: `test_action_rules_2014.gd`, `test_action_dashboard_ui.gd`,
+Focused tests: `test_action_rules_2014.gd`, `test_action_dashboard_ui.gd`, `test_action_spell_groups.gd`,
 `test_creature_action_economy.gd`, `test_feature_timing_recovery.gd`, and
 `test_combat_basic_actions.gd`. The fast Windows suite and feature-domain CI
 include them. CI includes the existing shared `pwa/icons` atlases.
@@ -55,3 +57,5 @@ Spostamento raccoglie Scattare, Disimpegnarsi, le opzioni abilitate per attraver
 `creature_sheet_style.gd` fornisce superfici e icone condivise alla scheda nativa, incluse le sezioni caricate successivamente. La PWA usa lo stesso catalogo generato, atlanti, palette e alberi. Le sue varianti sono preferenze del dispositivo in `vtt.actionVariants.2014`, separate dall’archivio creature. Il service worker aggiorna la cache dell’interfaccia senza cancellare IndexedDB. Le correzioni multiclasse restano nel flusso Poteri.
 
 `npm run test:actions-browser` verifica nove sezioni alle larghezze 360, 390, 768 e 1440, alberi espansi, tiri di Furtività, varianti persistenti e riapertura offline in un profilo isolato. `test_pwa_host.gd` verifica anche la consegna delle risorse condivise dal server nativo.
+
+Le otto schede desktop mantengono i titoli completi e le icone: la barra adatta font e spaziatura alla larghezza disponibile, senza scorrimento alla normale larghezza dell’archivio (846 pixel logici). I tre riquadri Incantesimi sono indipendenti e scompaiono quando non contengono selezioni.

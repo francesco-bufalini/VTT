@@ -113,7 +113,7 @@ func run() -> void:
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
 	var stylesheet := await http("GET", "/styles.css")
 	assert(stylesheet.begins_with("HTTP/1.1 200") and stylesheet.contains(".bottom-nav"))
-	for asset: String in ["/catalog/combat_actions_5etools.json", "/icons/action_controls.svg", "/feature_mechanics.js"]:
+	for asset: String in ["/mobile_metal_theme.css", "/catalog/combat_actions_5etools.json", "/icons/action_controls.svg", "/feature_mechanics.js"]:
 		var response := await http("GET", asset)
 		assert(response.begins_with("HTTP/1.1 200"), "Shared action asset missing: " + asset)
 	var rules_module := await http("GET", "/sheet_rules.js")

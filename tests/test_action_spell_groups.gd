@@ -44,16 +44,36 @@ func run() -> void:
 		if String(candidate.get("name", "")).to_lower() == "shield" and candidate.get("source", "") == "PHB":
 			shield = candidate; break
 	assert(not shield.is_empty())
+	var misty: Dictionary = {}
+	for candidate: Dictionary in Catalog.all_spells_for_rules("2014"):
+		if String(candidate.get("name", "")).to_lower() == "misty step" and candidate.get("source", "") == "PHB":
+			misty = candidate; break
+	assert(not misty.is_empty())
+	var misty_rows := Actions.spell_entries({"prepared_spells": [misty]})
+	assert(misty_rows.size() == 1 and misty_rows[0]["time"] == 1, "Actual PHB bonus spell time: " + str(misty.get("casting_time", misty.get("time"))))
 	var grant_record := {"proficiency_origins": [{"id": "custom:test", "name": "Dono", "group": "custom"}],
 		"resource_trackers": [{"id": "charges", "name": "Cariche bacchetta", "max": 3}],
 		"origin_spell_grants": [{"id": "wand_shield", "origin_id": "custom:test", "spell_id": shield["id"], "tracker_id": "charges", "payment_mode": "tracker"}]}
 	var granted := Actions.spell_entries(grant_record)
-	assert(granted.size() == 1 and granted[0]["time"] == 4, JSON.stringify({"granted": granted, "time": shield.get("time"), "casting_time": shield.get("casting_time"), "grants": Actions.OriginSpells.all_grants(grant_record), "id": shield.get("id"), "catalogue": Catalog.catalog_spell(shield.get("id", ""))}))
+	assert(granted.size() == 1 and granted[0]["time"] == 4, "Origin spell uses its reaction timing")
 	assert(granted[0]["tracker_id"] == "charges" and granted[0]["grant_id"] == "wand_shield")
 	assert(granted[0]["tracker"] == "Cariche bacchetta")
 	var multiclass := {"classes": [{"name": "Wizard", "source": "PHB", "level": 3}, {"name": "Sorcerer", "source": "PHB", "level": 3}], "prepared_spells": [{"id": shield["id"], "casting_classes": ["class|phb|wizard", "class|phb|sorcerer"]}]}
 	var rows := Actions.spell_entries(multiclass)
 	assert(rows.size() == 2 and rows[0]["class_id"] != rows[1]["class_id"])
+	# Opening the existing casting dialog keeps the selected class and spends nothing.
+	multiclass["abilities"] = {"int": 18, "cha": 12}
+	var caster := preload("res://vtt/creature_spellcasting_tab.gd").new()
+	root.add_child(caster)
+	caster.setup(func(_values: Dictionary) -> void: pass, func(_message: String) -> void: pass,
+		func(_spell: Dictionary, _level: int, _grant: Dictionary) -> bool: return false)
+	caster.load_record(multiclass)
+	assert(caster.request_cast_from_actions(shield["id"], "", "class|phb|sorcerer"))
+	assert(caster._view_selected_class["id"] == "class|phb|sorcerer")
+	assert(caster._pending_cast_spell["caster_spellcasting_ability"] == "cha")
+	assert(not caster.request_cast_from_actions(shield["id"], "", "class|phb|bard"))
+	caster._cast_dialog.hide()
+	caster.queue_free()
 	# The real eight-tab strip must fit its normal archive width with full titles.
 	var area := Area.new()
 	root.add_child(area)
