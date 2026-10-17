@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {actionEntries,actionEconomyView,topSkillEntries} from '../action_economy.js';
+import {readFileSync} from 'node:fs';
 
 test('SRD editions expose the appropriate general actions',()=>{
  const basic=actionEntries({rules_version:'2014'},{});
@@ -99,4 +100,40 @@ test('basic combat actions show targeting buttons, both movement modes, and top 
  assert(html.includes('data-mode="prone"'));
  assert(html.includes('data-target="skill:stealth"'));
  assert(html.includes('data-target="skill:arcana"'));
+});
+
+test('structured 5etools supplement covers all 17 previously unlisted actions',()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_action_supplements_5etools.json',import.meta.url),'utf8'));
+ assert.equal(catalog.version,1);
+ const ids=new Set(catalog.entries.map(row=>row.id));
+ assert.equal(ids.size,17);
+ const old=actionEntries({rules_version:'2014'},{},[],[],catalog.entries);
+ const newer=actionEntries({rules_version:'2024'},{},[],[],catalog.entries);
+ for(const name of ['Attivare un oggetto magico','Disarmare','Afferrare una creatura',
+   'Liberarsi da una presa','Stabilizzare una creatura','Combattere con due armi',
+   'Svegliare una creatura','Travolgere (attraversare lo spazio nemico)',
+   'Passare con acrobazia attraverso un nemico']){
+   assert(old.some(row=>row.name===name),'Missing legacy action '+name);
+ }
+ assert(!newer.some(row=>row.name==='Disarmare'),'2014 DMG optional rules must not leak into 2024');
+ assert(newer.some(row=>row.name==='Afferrare una creatura'&&row.action_id==='grapple'));
+ assert(newer.some(row=>row.name==='Interrompere concentrazione'&&row.time==='free'));
+ assert(old.some(row=>row.name==='Identificare un incantesimo'&&row.time==='reaction'));
+ assert(old.some(row=>row.name==='Identificare un incantesimo'&&row.time==='action'));
+ assert(old.some(row=>row.name==='Travolgere (attraversare lo spazio nemico)'&&row.time==='bonus'));
+ assert(old.some(row=>row.name==='Travolgere (attraversare lo spazio nemico)'&&row.time==='action'));
+ assert(old.some(row=>row.name==='Impulso curativo'&&row.tracker==='Dadi Vita'));
+ const html=actionEconomyView({rules_version:'2014'},{skills:{athletics:6,acrobatics:2,arcana:4}},[],[],catalog.entries);
+ assert(html.includes('data-mode="grapple"'),'Grapple must target a token');
+ assert(html.includes('data-target="skill:athletics"'));
+ assert(html.includes('data-target="skill:acrobatics"'));
+ assert(html.includes('Regola opzionale'));
+ for(const entry of catalog.entries){
+   assert(['2014','2024'].includes(entry.edition));
+   assert(['DMG','PHB','XPHB','XGE'].includes(entry.source));
+   assert(entry.page>0);
+   assert(Array.isArray(entry.timings)&&entry.timings.length>0);
+ }
+ const keys=catalog.entries.flatMap(entry=>entry.timings.map(t=>[entry.edition,entry.id,t].join(':')));
+ assert.equal(new Set(keys).size,keys.length,'No duplicate catalog actions per edition/timing');
 });
