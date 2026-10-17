@@ -183,7 +183,7 @@ func _ready() -> void:
 	_skill_buttons.add_theme_constant_override("h_separation", 5)
 	_skill_buttons.add_theme_constant_override("v_separation", 5)
 	_skill_list.add_child(_skill_buttons)
-	_sections[0].add_child(_skill_list)
+	_sections[2].add_child(_skill_list)
 	resized.connect(_arrange_columns)
 	call_deferred("_arrange_columns")
 
@@ -269,23 +269,16 @@ func _arrange_columns() -> void:
 	_layout_one.visible = narrow
 	for i: int in range(_panels.size()):
 		var parent: VBoxContainer = (
-			_layout_one if narrow else _layout_left if i in [0, 3] else _layout_right
+			_layout_one if narrow else _layout_left if i == 0 else _layout_right
 		)
 		var panel: PanelContainer = _panels[i]
 		if panel.get_parent() != parent:
 			panel.reparent(parent)
-	# Keep the primary action box first and movement directly below it.
+	# Only actions occupy the first desktop column.
 	for index: int in range(_panels.size()):
 		var panel: PanelContainer = _panels[index]
-		var parent: Node = panel.get_parent()
-		if narrow:
-			parent.move_child(panel, index)
-		elif index == 0 or index == 1 or index == 2:
-			parent.move_child(panel, 0 if index != 2 else 1)
-		elif index == 3:
-			parent.move_child(panel, 1)
-		else:
-			parent.move_child(panel, 2)
+		panel.get_parent().move_child(panel, index if narrow else maxi(0, index - 1))
+
 
 
 static func _timing(value: Variant) -> int:
@@ -919,17 +912,33 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 		var nested := VBoxContainer.new()
 		nested.add_theme_constant_override("separation", 5)
 		var key := String(entry.get("id", ""))
-		var toggle := _action_button("Attacchi e manovre · %d" % children.size())
+		var tree_heading := String(entry.get("children_tree_heading", "Attacchi e manovre"))
+		var toggle := _action_button("▸ %s · %d" % [tree_heading, children.size()])
 		toggle.toggle_mode = true
 		toggle.button_pressed = bool(_expanded_actions.get(key, false))
 		nested.visible = toggle.button_pressed
 		toggle.toggled.connect(func(open: bool) -> void:
+			toggle.text = "%s %s · %d" % ["▾" if open else "▸", tree_heading, children.size()]
 			nested.visible = open
 			_expanded_actions[key] = open)
 		content.add_child(toggle)
 		content.add_child(nested)
-		for child: Dictionary in children:
-			_add_entry(child, nested)
+		toggle.text = "%s %s · %d" % ["▾" if toggle.button_pressed else "▸", tree_heading, children.size()]
+		for index: int in range(children.size()):
+			var branch := HBoxContainer.new()
+			branch.name = "ActionTreeBranch"
+			branch.add_theme_constant_override("separation", 8)
+			nested.add_child(branch)
+			var guide := Label.new()
+			guide.text = "└─" if index == children.size() - 1 else "├─"
+			guide.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+			guide.custom_minimum_size.x = 24
+			guide.add_theme_color_override("font_color", GOLD)
+			branch.add_child(guide)
+			var child_slot := VBoxContainer.new()
+			child_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			branch.add_child(child_slot)
+			_add_entry(children[index], child_slot)
 
 
 func refresh_top_skills(record: Dictionary) -> void:
@@ -1026,14 +1035,22 @@ func load_record(record: Dictionary) -> void:
 	for entry: Dictionary in projected:
 		if entry.get("id", "") in ["attack", "two_weapon"]:
 			parents[String(entry["id"])] = entry
+	var checks := {"id": "ability_checks", "name": "Prove di abilità", "time": 0,
+		"kind": "skill", "detail": "", "origin": "general", "children": [],
+		"children_heading": "Prove che richiedono un’azione"}
 	for entry: Dictionary in projected:
 		var parent := String(entry.get("parent_action", ""))
+		if parent.is_empty() and int(entry.get("time", 0)) == 0 and not (entry.get("skill_ids", []) as Array).is_empty():
+			checks["children"].append(entry)
+			continue
 		if parents.has(parent):
 			var children: Array = parents[parent].get("children", [])
 			children.append(entry)
 			parents[parent]["children"] = children
 			continue
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
+	if not checks["children"].is_empty():
+		grouped[0].append(checks)
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
 		_section_counts[i].text = "%d" % (grouped[i] as Array).size()
@@ -1054,9 +1071,8 @@ func load_record(record: Dictionary) -> void:
 			_add_subheading(section, "Generali")
 		for item: Dictionary in common:
 			_add_entry(item)
-		# Keep the skills inside Azione, after the common actions, before
-		# attacks/spells and features granted specifically to this creature.
-		if i == 0 and _skill_list != null:
+		# Quick rolls do not by themselves spend an action.
+		if i == 2 and _skill_list != null:
 			section.move_child(_skill_list, section.get_child_count() - 1)
 		if not personal.is_empty():
 			_add_subheading(section, "Dalla scheda")

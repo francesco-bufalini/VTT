@@ -34,8 +34,21 @@ func run() -> void:
 	assert(tab._layout_two.visible)
 	assert(tab._panels[0].get_parent() == tab._layout_left)
 	assert(tab._panels[1].get_parent() == tab._layout_right)
-	assert(tab._panels[3].get_parent() == tab._layout_left)
+	assert(tab._panels[3].get_parent() == tab._layout_right)
 	assert(tab._skill_buttons.columns == 1)
+	assert(tab._layout_left.get_child_count() == 1, "Only actions belong in the first column")
+	assert(tab._skill_list.get_parent() == tab._sections[2], "Quick rolls have no intrinsic action cost")
+	var checks_title := _find_button(tab, "Prove di abilità")
+	assert(checks_title != null)
+	var checks_card := checks_title.get_parent().get_parent().get_parent().get_parent()
+	var checks_entry: Dictionary = checks_card.get_meta("action_entry")
+	var check_ids: Array = []
+	for check: Dictionary in checks_entry["children"]:
+		check_ids.append(check["id"])
+		assert(check.get("parent_action", "").is_empty())
+		assert(int(check["time"]) == 0)
+	assert("hide" in check_ids and "search" in check_ids)
+	assert(not "grapple" in check_ids and not "shove" in check_ids)
 	# Titles and separate arrows must preserve the existing action routing.
 	var basic: Array[String] = []
 	tab.basic_action_requested.connect(func(id: String) -> void: basic.append(id))
