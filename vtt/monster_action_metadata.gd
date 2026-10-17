@@ -75,6 +75,19 @@ static func parse_attack(action: Dictionary) -> Dictionary:
 	}
 
 
+static func _all_reach_in_entry(action: Dictionary) -> int:
+	# Preserve legacy maximum-reach semantics, including all distinct reach
+	# mentions within non-attack actions. Do this only on import/edit.
+	var expression := RegEx.create_from_string("reach\\\\s*(\\\\d+)\\\\s*(?:ft\\\\.?|feet)")
+	if expression == null:
+		return 5
+	var best := 5
+	var content: String = JSON.stringify(action.get("entries", [])).to_lower()
+	for found: RegExMatch in expression.search_all(content):
+		best = maxi(best, int(found.get_string(1)))
+	return best
+
+
 static func _clean_name(name: String) -> String:
 	# Clean only the formal 5etools suffix, never infer recharge from prose.
 	var start: int = name.find("{@recharge")
@@ -149,6 +162,7 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 		and int(stat_block.get("vtt_action_override_revision", -1)) == override_revision):
 		return stat_block
 	var stat: Dictionary = stat_block.duplicate(true)
+	var max_reach: int = 5
 	for section: String in SECTIONS:
 		var raw: Variant = stat.get(section, [])
 		if not raw is Array:
@@ -162,6 +176,7 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 			# the new formal tags and then apply the curated override.
 			action.erase("vtt_attack")
 			action.erase("vtt_resource")
+			max_reach = maxi(max_reach, _all_reach_in_entry(action))
 			var name: String = String(action.get("name", ""))
 			var generated: Dictionary = parse_attack(action)
 			var resource: Dictionary = parse_recharge(name)
@@ -216,6 +231,7 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 		action["vtt_resource"] = resource
 		rows[index] = action
 		stat[section] = rows
+	stat["vtt_max_reach_feet"] = max_reach
 	stat["vtt_action_metadata_version"] = 1
 	stat["vtt_action_source_revision"] = source_revision
 	stat["vtt_action_override_revision"] = override_revision
