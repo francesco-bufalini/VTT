@@ -5,6 +5,7 @@ const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const Store = preload("res://vtt/master_creature_store.gd")
+const Rules = preload("res://vtt/creature_rules.gd")
 
 
 func _initialize() -> void:
@@ -41,6 +42,9 @@ func run() -> void:
 	}
 	var normalized: Dictionary = Metadata.prepare(sample)
 	assert(int(normalized.get("vtt_action_metadata_version", 0)) == 1)
+	assert(int(normalized.get("vtt_max_reach_feet", 0)) == 10)
+	assert(int(Rules.monster_base_reach_feet(normalized)) == 10,
+		"Normalized monster reach must be immediately available without regex")
 	var record: Dictionary = {"kind": "monster", "stat_block": normalized}
 	var mandibles: Dictionary = _attack(record, "Mandibles")
 	assert(int(mandibles.get("base_hit", 0)) == 11)
@@ -73,6 +77,8 @@ func run() -> void:
 	for entry: Variant in normalized["action"]:
 		(entry as Dictionary).erase("entries")
 	assert(_attack(record, "Mandibles").get("damage") == "2d10 + 6")
+	assert(int(Rules.monster_base_reach_feet(normalized)) == 10,
+		"Removing prose after import must not invalidate structured reach")
 	assert(int(_tracker(record, "Fire Breath").get("recharge_min", 0)) == 5)
 
 	# Fight Club supplemental recharge is joined once during import, not
