@@ -1,6 +1,7 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {availableSpells, spellId} from './spell_selection.js';
+import {SKILLS} from './native_sheet.js';
 
 let supplementsCache=null;
 export async function loadFeatureActionOverrides(){
@@ -20,7 +21,9 @@ const SRD_2014=[
  ["Scattare","action","Generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
  ["Disimpegnarsi","action","Generale","Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
  ["Schivare","action","Generale","Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare","action","Generale","Aiuta un alleato in una prova o in un tiro per colpire."],
+ ["Aiutare","action","Generale","Seleziona un token e applica soltanto Aiutato; nessun vantaggio o altro effetto automatico."],
+ ["Spingere","action","Attacco","2014: sostituisce un attacco. Prova di Forza (Atletica) contrapposta ad Atletica o Acrobazia del bersaglio (a sua scelta); al successo sposta 5 ft."],
+ ["Buttare prono","action","Attacco","2014: sostituisce un attacco. Atletica contrapposta ad Atletica o Acrobazia; al successo infligge Prono."],
  ["Nascondersi","action","Prova caratteristica","Effettua una prova di Destrezza (Furtività)."],
  ["Cercare","action","Prova caratteristica","Effettua una prova di Saggezza (Percezione) o Intelligenza (Indagare)."],
  ["Preparare","action","Generale","Prepara un'azione in risposta a una condizione, usando la reazione."],
@@ -32,7 +35,9 @@ const SRD_2024=[
  ["Scattare","action","Generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
  ["Disimpegnarsi","action","Generale","Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
  ["Schivare","action","Generale","Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare","action","Generale","Aiuta una prova, un attacco o il primo soccorso."],
+ ["Aiutare","action","Generale","Seleziona un token e applica soltanto Aiutato; nessun effetto automatico."],
+ ["Spingere","action","Attacco","2024: colpo senz'armi anziché un attacco. TS Forza o Destrezza a scelta del bersaglio, CD 8 + competenza + modificatore Forza. Fallimento: spostamento di 5 ft."],
+ ["Buttare prono","action","Attacco","2024: colpo senz'armi anziché un attacco. TS Forza o Destrezza a scelta del bersaglio, CD 8 + competenza + modificatore Forza. Fallimento: Prono."],
  ["Nascondersi","action","Prova caratteristica","Effettua una prova di Destrezza (Furtività)."],
  ["Cercare","action","Prova caratteristica","Effettua una prova di Saggezza (Intuizione, Medicina, Percezione o Sopravvivenza)."],
  ["Studiare","action","Prova caratteristica","Effettua una prova di Intelligenza (Arcano, Storia, Indagare, Natura o Religione)."],
@@ -44,6 +49,7 @@ const COMMON=[
  ["Interagire con un oggetto","free","Generale","Una semplice interazione durante il turno."],
  ["Parlare brevemente","free","Generale","Pronuncia poche parole quando puoi comunicare."],
  ["Muoversi","movement","Movimento","Usa il movimento disponibile, anche prima e dopo un'azione."],
+ ["Movimento furtivo","movement","Movimento","Muoversi furtivamente non è movimento gratuito extra. Per nascondersi, usa Nascondersi e una prova di Destrezza (Furtività); nel 2024 la CD è 15. Non si applica automaticamente Nascosto."],
  ["Attacco di opportunità","reaction","Attacco","Attacco in mischia come reazione quando una creatura lascia la tua portata."]
 ];
 const arr=value=>Array.isArray(value)?value:[];
@@ -68,8 +74,17 @@ function castingTime(spell){
 function spellDefinition(stored,catalog){
  return catalog.find(s=>s.id===spellId(stored))|| (stored&&typeof stored==='object'?stored:null);
 }
+export function topSkillEntries(calculated={},limit=4){
+ return SKILLS.map(([id,label])=>({id,label,bonus:Number(calculated.skills?.[id])}))
+   .filter(row=>Number.isFinite(row.bonus))
+   .sort((a,b)=>b.bonus-a.bonus||a.label.localeCompare(b.label,'it')||a.id.localeCompare(b.id))
+   .slice(0,limit);
+}
 export function actionEntries(record={},calculated={},spells=[],featureOverrides=[]){
- const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({name,time,type,description,tracker:'',cost:0}));
+ const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({
+   name,time,type,description,tracker:'',cost:0,
+   action_id:name==='Aiutare'?'help':name==='Spingere'?'shove':name==='Buttare prono'?'prone':''
+ }));
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
@@ -148,7 +163,13 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 }
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides);
- return GROUPS.map(([id,title])=>{
+ const skills=topSkillEntries(calculated);
+ const skillPanel='<section class="panel"><h2>Prova abilità · 4 bonus più alti</h2>'+
+   (skills.length?'<div class="actions">'+skills.map(row=>
+     '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
+     '" data-label="'+esc(row.label)+'">'+esc(row.label)+' · '+(row.bonus>=0?'+':'')+esc(row.bonus)+'</button>').join('')+'</div>':
+     '<p class="hint">Nessun bonus disponibile.</p>')+'</section>';
+ return skillPanel+GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);
   const groups=new Map();
   for(const entry of matching){
@@ -159,7 +180,9 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   return '<section class="panel"><h2>'+title+'</h2>'+
    ([...groups].map(([label,items])=>'<div class="action-resource-group"><h3>'+esc(label)+'</h3>'+
      items.map(item=>'<details class="native-entry"><summary><strong>'+esc(item.name)+'</strong>'+
-       (item.cost?' · costo '+esc(item.cost):'')+'</summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p></details>').join('')+'</div>').join('')||
+       (item.cost?' · costo '+esc(item.cost):'')+'</summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
+       (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
+       '</details>').join('')+'</div>').join('')||
     '<p class="hint">Nessuna azione disponibile.</p>')+'</section>';
  }).join('');
 }
