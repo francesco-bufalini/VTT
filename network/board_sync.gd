@@ -2,6 +2,7 @@ extends Node
 
 signal status_changed(message: String)
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const CreaturePresence = preload("res://network/creature_presence.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
