@@ -142,3 +142,47 @@ label.check, .native-summary > div { min-height:var(--touch-target); }
 .action-economy-skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .action-economy-skill-grid>.btn{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
 @media(max-width:359px){.action-economy-column-head,.action-economy-row{grid-template-columns:minmax(0,1fr) 96px;gap:7px}.action-economy-skill-grid{grid-template-columns:1fr}}
+
+
+/* Action economy dashboard: bordered action pools, concise cards and real counters. */
+.action-economy-dashboard{display:flex;flex-direction:column;gap:11px;min-width:0}
+.action-economy-dashboard>.action-economy-section{margin:0;padding:12px;border:2px solid #b88646;border-radius:11px;background:#201b1b;min-width:0}
+.action-economy-heading{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px}
+.action-economy-heading .action-economy-icon{font-size:24px;color:var(--accent);line-height:1.1;flex-shrink:0}
+.action-economy-heading h2{color:#f3c079;font-size:21px;font-weight:850;line-height:1.2;margin:0 0 3px}
+.action-economy-heading p{color:var(--muted);font-size:11px;line-height:1.35;margin:0}
+.action-economy-group-title{font-size:12px!important;color:var(--accent);font-weight:740;margin:13px 0 5px!important;letter-spacing:.035em}
+.action-economy-row{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #755033;background:#302627;border-radius:7px;margin:5px 0;min-width:0}
+.action-economy-main{min-width:0;flex:1}
+.action-economy-entry{border:0!important;background:transparent!important;padding:0!important;margin:0!important}
+.action-economy-entry summary{display:flex;align-items:center;gap:7px;min-height:22px!important;padding:0!important;list-style:none;color:var(--text);font-size:14px;cursor:pointer}
+.action-economy-entry summary::-webkit-details-marker{display:none}
+.action-economy-entry summary strong{overflow-wrap:anywhere;flex:1}
+.action-economy-chevron{color:var(--accent);font-size:19px;line-height:1}
+.action-economy-entry[open] .action-economy-chevron{transform:rotate(90deg)}
+.action-economy-entry p{font-size:12px;color:var(--muted);white-space:pre-wrap;margin:8px 0}
+.action-economy-preview{display:block;color:var(--muted);font-size:11px;line-height:1.4;margin-top:2px;overflow-wrap:anywhere}
+.action-economy-entry[open]+.action-economy-preview{display:none}
+.action-economy-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;max-width:52%;min-width:0}
+.action-economy-controls .btn{white-space:normal;padding:6px 9px;min-height:32px}
+.action-resource-control{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.action-resource-control>.btn{padding:3px 8px;min-height:31px;font-size:17px}
+.action-resource-control>span{font-weight:720;font-variant-numeric:tabular-nums;font-size:12px;color:var(--text);min-width:38px;text-align:center}
+.action-economy-resource-label{font-size:10px;color:var(--accent);text-align:right}
+.action-economy-skills{border:0;padding:8px 0 12px}
+.action-economy-skills>h3{color:var(--accent)!important;font-size:13px!important;margin:0 0 9px}
+.action-economy-skill-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.action-economy-skill-grid .btn{text-align:left;background:#302627;border:1px solid #755033;font-variant-numeric:tabular-nums}
+@media(min-width:740px){
+ .action-economy-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:10px}
+ .action-economy-section[data-timing=action]{grid-column:1;grid-row:1 / span 3}
+ .action-economy-section[data-timing=bonus]{grid-column:2;grid-row:1}
+ .action-economy-section[data-timing=free]{grid-column:2;grid-row:2}
+ .action-economy-section[data-timing=reaction]{grid-column:2;grid-row:3}
+ .action-economy-section[data-timing=movement]{grid-column:1;grid-row:4}
+}
+@media(max-width:460px){
+ .action-economy-row{align-items:flex-start;flex-direction:column;gap:5px}
+ .action-economy-controls{max-width:100%;width:100%;justify-content:flex-end}
+ .action-economy-preview{max-height:2.8em;overflow:hidden}
+}
