@@ -51,6 +51,7 @@ export class TacticalViewer {
     this.send=send;this.ownerId=ownerId;this.notify=notify;this.onCastAccepted=onCastAccepted;
     this.tokenId="";this.attack={};this.image=null;this.snapshot=null;
     this.targeting={};this.preview=null;this.aimPixel=null;this.selectedId="";
+    this.basicAction=null;
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
