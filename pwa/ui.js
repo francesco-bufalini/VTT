@@ -6,7 +6,7 @@ import { listCreatures, loadCreature, createCreature, importCreatureFile, export
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { createDemoCreature } from "./demo.js";
-import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
+import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -219,8 +219,20 @@ async function catalogView() {
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
       '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
-      '<p class="hint">La PWA salva il riferimento; i bonus delle origini vengono calcolati solo nel motore Godot.</p>':""));
+      '<p class="hint">I benefici strutturati vengono calcolati in locale.</p>':"")+
+      (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
+        '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
+  const quickPanel=['items','feats','backgrounds'].includes(state.catalogCategory)?panel('Crea contenuto personalizzato',
+    '<label>Nome<input id="quick-name" maxlength="120"></label>'+
+    '<label>Descrizione<textarea id="quick-description" rows="3" maxlength="12000"></textarea></label>'+
+    (state.catalogCategory==='items'?
+      '<div class="columns"><label>Tipo<select id="quick-type">'+[['other','Altro'],['weapon','Arma'],['shield','Scudo'],['armor','Armatura'],['tool','Strumento'],['magic','Magico']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
+      '<label>Rarità<select id="quick-rarity">'+[['none','Nessuna'],['common','Comune'],['uncommon','Non comune'],['rare','Raro'],['very rare','Molto raro'],['legendary','Leggendario'],['artifact','Artefatto']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
+      '<label>Valore (mo)<input id="quick-value" type="number" min="0" max="100000000" value="0"></label></div>':
+      '<p class="hint">Competenze concesse (fino a tre). Le scelte aperte non vengono assegnate automaticamente.</p>'+
+      Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
+    '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
     panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
@@ -229,7 +241,7 @@ async function catalogView() {
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
       state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
       '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
-    detail;
+    quickPanel+detail;
 }
 
 async function computeLocalData(record){
@@ -856,7 +868,7 @@ async function handleField(target) {
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
     if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
     const selected=selection||{};
-    const changes=referencePatch(creature,key,selected);
+    const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
     await patch(changes);
     await render();
     return;
@@ -1125,6 +1137,27 @@ async function handleAction(target){
     if(key==='origin_spell_grants'&&!state.calculated.origins.length)changes.proficiency_origins=[...(c.proficiency_origins||[]),{id:'pwa_manual',name:'Personalizzato',group:'custom',disabled:false}];
     await patch(changes);await render();return;
   }
+  if(act==='quick-create'){
+    const name=text(app.querySelector('#quick-name')?.value);
+    const description=app.querySelector('#quick-description')?.value||'';
+    const grants=[...app.querySelectorAll('[data-quick-kind]')].map(select=>{
+      const key=app.querySelector('[data-quick-key="'+select.dataset.quickKind+'"]')?.value?.trim()||'';
+      return {kind:select.value,key};
+    }).filter(row=>row.kind&&row.key);
+    const details=state.catalogCategory==='items'?{
+      custom_item_type:app.querySelector('#quick-type')?.value,
+      rarity:app.querySelector('#quick-rarity')?.value,
+      value:Number(app.querySelector('#quick-value')?.value)
+    }:{};
+    const created=await createQuickHomebrew(state.catalogCategory,name,description,grants,details);
+    state.catalogSelected=-1;state.catalogQuery=created.name;
+    await render();message('Contenuto personalizzato salvato in locale.');return;
+  }
+  if(act==='quick-delete'){
+    if(!window.confirm('Eliminare questo contenuto personalizzato?'))return;
+    await deleteQuickHomebrew(target.dataset.id);
+    state.catalogSelected=-1;state.catalogQuery='';await render();message('Contenuto eliminato.');return;
+  }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
     await render();return;
@@ -1146,14 +1179,14 @@ async function handleAction(target){
       const current=Array.isArray(sheet.feats_catalog)?sheet.feats_catalog:[];
       if(current.some(row=>row.id===feat.id&&row.name===feat.name&&row.source===feat.source))
         throw new Error("Talento già presente in questa scheda.");
-      await editor.update({feats_catalog:[...current,feat]});
+      await editor.update({feats_catalog:[...current,feat],...quickGrantPatch(sheet,entry)});
     }else if(category==="backgrounds"){
-      await editor.update({background:entry.name,background_source:entry.source||""});
+      await editor.update({background:entry.name,background_id:entry.id||"",background_source:entry.source||"",...quickGrantPatch(sheet,entry)});
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-    message("Contenuto aggiunto. Eventuali bonus vengono elaborati dalla versione Godot.");
+    message("Contenuto aggiunto; i benefici strutturati sono calcolati localmente.");
     return;
   }
   if(act==="refresh"){await render();return;}
