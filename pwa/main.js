@@ -1,32 +1,72 @@
-import { mount } from "./ui.js";
-import { openStorage, requestPersistentStorage, storageEstimate } from "./storage.js";
+// The local archive must be usable even if the desktop or Service Worker stalls.
+// Keep all module imports inside boot(): a broken module must show an error rather
+// than leaving the static "Apertura archivio locale…" placeholder forever.
+const app = document.querySelector("#app");
 
-async function boot() {
-  if ("serviceWorker" in navigator && self.isSecureContext) {
-    try {
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      // Native desktop serves refreshed assets from the same stable HTTPS origin.
-      await registration.update();
-    } catch (error) {
-      console.warn("VTT offline shell unavailable", error);
-    }
-  }
+function showStage(text) {
+  if (app) app.textContent = text;
+}
+
+function deadline(promise, ms, description) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(description + " non risponde (" + Math.round(ms / 1000) + " s).")), ms);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
+function showFailure(phase, error) {
+  if (!app) return;
+  app.innerHTML = '<div class="page-head"><p class="eyebrow">Avvio non riuscito</p>' +
+    '<h1>Impossibile aprire VTT Mobile</h1>' +
+    '<p>Fase: <strong id="startup-phase"></strong></p>' +
+    '<p id="startup-error" class="warning"></p>' +
+    '<p>I dati locali non sono stati cancellati. Prova a ricaricare la pagina; se il problema continua, segnala il messaggio qui sopra.</p>' +
+    '<button type="button" class="btn primary" id="retry-startup">Riprova</button></div>';
+  app.querySelector("#startup-phase").textContent = phase;
+  app.querySelector("#startup-error").textContent = error?.message || String(error);
+  app.querySelector("#retry-startup").addEventListener("click", () => location.reload());
+  console.error("VTT Mobile startup failed during " + phase, error);
+}
+
+async function installOfflineShell() {
+  if (!("serviceWorker" in navigator) || !self.isSecureContext) return;
   try {
-    const database = await openStorage();
-    database.close();
-    // Browser may decline persistence, but requesting it can reduce eviction
-    // risk on supporting browsers. Explicit backups remain essential.
-    await requestPersistentStorage();
-    await mount();
-    console.info("VTT mobile storage ready", await storageEstimate());
+    const registration = await deadline(navigator.serviceWorker.register("/sw.js"), 10000, "Registrazione offline");
+    // Updating the optional offline shell must NEVER gate local creature access.
+    registration.update().catch(error => console.warn("VTT offline update unavailable", error));
   } catch (error) {
-    document.querySelector("#app").innerHTML =
-      '<div class="page-head"><p class="eyebrow">Archivio non disponibile</p>'+
-      '<h1>Impossibile aprire i dati locali</h1><p>Non cancellare i dati del sito. '+
-      'Controlla la modalità privata, lo spazio disponibile e riprova.</p></div>'+
-      '<p class="warning"></p>';
-    document.querySelector("#app .warning").textContent = error.message || String(error);
-    console.error(error);
+    console.warn("VTT offline shell unavailable; local archive remains usable", error);
   }
 }
+
+async function boot() {
+  let phase = "Caricamento dei moduli";
+  try {
+    showStage("Caricamento dell'interfaccia…");
+    // Dynamic import ensures syntax/network/module-link errors are caught here.
+    const [{ mount }, { openStorage, requestPersistentStorage, storageEstimate }] =
+      await deadline(Promise.all([import("./ui.js"), import("./storage.js")]),
+        12000, "Caricamento dell'interfaccia");
+    phase = "Apertura archivio locale";
+    showStage("Apertura archivio locale…");
+    const database = await deadline(openStorage(), 12000, "Archivio IndexedDB");
+    database.close();
+    phase = "Caricamento dell'archivio";
+    showStage("Caricamento delle creature…");
+    await deadline(mount(), 30000, "Inizializzazione dell'archivio");
+    // Browser persistence requests, cache downloads and diagnostics are optional.
+    // None of them may delay painting the usable character library.
+    Promise.resolve().then(() => requestPersistentStorage()).catch(error =>
+      console.warn("VTT persistent storage unavailable", error));
+    Promise.resolve().then(() => storageEstimate()).then(estimate =>
+      console.info("VTT mobile storage ready", estimate)).catch(() => {});
+    void installOfflineShell();
+  } catch (error) {
+    showFailure(phase, error);
+  }
+}
+
 boot();
