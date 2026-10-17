@@ -26,6 +26,7 @@ const FILES := {
 	"/structured_effects.js": ["res://pwa/structured_effects.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
 	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
 	"/catalog_data.js": ["res://pwa/catalog_data.js", "text/javascript; charset=utf-8"],
