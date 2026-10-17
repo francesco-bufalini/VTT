@@ -333,7 +333,7 @@ test("native Android section order and editable sheet data",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
-  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Cosa posso fare?","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
