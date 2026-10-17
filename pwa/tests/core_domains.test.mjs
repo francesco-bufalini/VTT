@@ -22,6 +22,10 @@ test("new browser character uses native Android core defaults without shared ref
  assert.deepEqual(c.proficiency_choices,[]);
  assert.deepEqual(c.attack_overrides,{});
  assert.equal(c.linked_token_sync_id,"");
+ assert.deepEqual(c.resource_recovery_ready,{});
+ assert.deepEqual(c.resource_recovery_used,{});
+ assert.deepEqual(c,initialCreature("character",c.name,c.id,c.owner_id),
+   "Archive and domain factory must keep the same native-compatible defaults");
  const other=initialCreature("character","Altro","local_second","owner_second");
  other.spell_slots_spent[2]=1;
  other.abilities.str=18;
