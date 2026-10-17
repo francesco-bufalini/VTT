@@ -1,4 +1,4 @@
-import { actionEconomyView, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
+import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
@@ -161,6 +161,7 @@ async function render() {
     }
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
+    decorateSheetHeadings();
     if(state.paired && !realtimeStopped && !state.stopMap) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
@@ -318,7 +319,7 @@ async function editorView() {
     break;
   }
   case "actions":
-    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[]);
+    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants());
     break;
   case "magic":
     body=panel('Lancio tattico',c.linked_token_sync_id?
@@ -1187,8 +1188,29 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     throw error;
   }
 }
+function readActionVariants(){
+ try{const choices=JSON.parse(window.localStorage.getItem('vtt.actionVariants.2014')||'[]');return Array.isArray(choices)?choices:[];}catch{return [];}
+}
+function decorateSheetHeadings(){
+ for(const heading of app.querySelectorAll('.panel > h2, .native-entry > h3, .current-section')){
+  if(heading.querySelector('.vtt-action-glyph'))continue;
+  const text=heading.textContent.toLocaleLowerCase('it');
+  const key=/inventari|oggett|equipaggia/.test(text)?'inventory':/ferit|salute/.test(text)?'healing':/caratterist|abilit|competenz/.test(text)?'skill':/condizion/.test(text)?'condition':/attacc|battaglia/.test(text)?'weapon':/moviment|velocit/.test(text)?'dash':/poter|incantesim|slot/.test(text)?'spark':/tratt|privileg|talent/.test(text)?'proficiency':'information';
+  heading.insertAdjacentHTML('afterbegin',actionGlyph(key));
+  heading.classList.add('sheet-heading');
+ }
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='action-variants'){
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog action-variants-dialog';
+    const enabled=readActionVariants();
+    dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
+    dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!row.textContent.toLocaleLowerCase('it').includes(e.target.value.toLocaleLowerCase('it'));});
+    dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{window.localStorage.setItem('vtt.actionVariants.2014',JSON.stringify([...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value)));dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
+    dialog.querySelector('[data-close-variants]').addEventListener('click',()=>dialog.remove());
+    dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return;
+  }
   if(act==='action-open-spells'){
     state.sheet='magic';await render();return;
   }

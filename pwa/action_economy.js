@@ -1,18 +1,20 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
-import {availableSpells, spellId} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
 import {featureActionEntries} from './feature_mechanics.js';
 
 let supplementsCache=null;
 let generalActionsCache=null;
+let variantsCache=[];
+export const actionVariants=()=>variantsCache;
 export async function loadGeneralActionSupplements(){
  if(generalActionsCache)return generalActionsCache;
- const response=await fetch('/catalog/combat_action_supplements_5etools.json',{cache:'no-store'});
+ const response=await fetch('/catalog/combat_actions_5etools.json',{cache:'no-store'});
  if(!response.ok)throw Error('Catalogo azioni 5etools non disponibile');
  const payload=await response.json();
- if(payload?.version!==1||!Array.isArray(payload.entries))throw Error('Catalogo azioni 5etools non valido');
- generalActionsCache=payload.entries;
+ if(payload?.version!==1||!Array.isArray(payload.actions))throw Error('Catalogo azioni 5etools non valido');
+ generalActionsCache=payload.actions;
+ variantsCache=payload.variants||[];
  return generalActionsCache;
 }
 export async function loadFeatureActionOverrides(){
@@ -32,7 +34,7 @@ const GOLD_ICON_GROUPS=[["action","bonus","free","movement","reaction","sword","
 const GOLD_ICON_INDEX=new Map(GOLD_ICON_GROUPS.flatMap((keys,group)=>
  keys.map((key,index)=>[key,{group,index,count:keys.length}])));
 const HEADER_GLYPHS={action:"weapon",bonus:"flight",free:"sleight_of_hand",movement:"dash",reaction:"reaction_trigger"};
-function actionGlyph(key){
+export function actionGlyph(key){
  const {group,index,count}=GOLD_ICON_INDEX.get(key)||GOLD_ICON_INDEX.get("weapon");
  return '<span class="vtt-action-glyph vtt-action-glyph--pack-'+group+'" style="--glyph-position:'+
    (100*index/(count-1)).toFixed(6)+'%" aria-hidden="true"></span>';
@@ -85,49 +87,12 @@ function skillGlyphKey(skill){
  })[skill]||'skill';
 }
 
-const SRD_2014=[
- ["Attaccare","action","Attacco","Effettua un attacco in mischia o a distanza."],
- ["Lanciare un incantesimo","action","Generale","Il tempo di lancio determina il tipo di azione richiesta."],
- ["Scattare","action","Generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
- ["Disimpegnarsi","action","Generale","Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
- ["Schivare","action","Generale","Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare","action","Generale","Seleziona un token e applica soltanto Aiutato; nessun vantaggio o altro effetto automatico."],
- ["Spingere","action","Attacco","2014: sostituisce un attacco. Prova di Forza (Atletica) contrapposta ad Atletica o Acrobazia del bersaglio (a sua scelta); al successo sposta 5 ft."],
- ["Buttare prono","action","Attacco","2014: sostituisce un attacco. Atletica contrapposta ad Atletica o Acrobazia; al successo infligge Prono."],
- ["Nascondersi","action","Prova caratteristica","Effettua una prova di Destrezza (Furtività)."],
- ["Cercare","action","Prova caratteristica","Effettua una prova di Saggezza (Percezione) o Intelligenza (Indagare)."],
- ["Preparare","action","Generale","Prepara un'azione in risposta a una condizione, usando la reazione."],
- ["Usare un oggetto","action","Generale","Utilizza un oggetto che richiede un'azione."]
-];
-const SRD_2024=[
- ["Attaccare","action","Attacco","Effettua un attacco con un'arma o un colpo senz'armi."],
- ["Magia","action","Generale","Lancia un incantesimo o attiva un oggetto o privilegio magico."],
- ["Scattare","action","Generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
- ["Disimpegnarsi","action","Generale","Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
- ["Schivare","action","Generale","Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare","action","Generale","Seleziona un token e applica soltanto Aiutato; nessun effetto automatico."],
- ["Spingere","action","Attacco","2024: colpo senz'armi anziché un attacco. TS Forza o Destrezza a scelta del bersaglio, CD 8 + competenza + modificatore Forza. Fallimento: spostamento di 5 ft."],
- ["Buttare prono","action","Attacco","2024: colpo senz'armi anziché un attacco. TS Forza o Destrezza a scelta del bersaglio, CD 8 + competenza + modificatore Forza. Fallimento: Prono."],
- ["Nascondersi","action","Prova caratteristica","Effettua una prova di Destrezza (Furtività)."],
- ["Cercare","action","Prova caratteristica","Effettua una prova di Saggezza (Intuizione, Medicina, Percezione o Sopravvivenza)."],
- ["Studiare","action","Prova caratteristica","Effettua una prova di Intelligenza (Arcano, Storia, Indagare, Natura o Religione)."],
- ["Influenzare","action","Prova caratteristica","Effettua una prova sociale per influenzare una creatura."],
- ["Preparare","action","Generale","Prepara una risposta da eseguire con la reazione."],
- ["Utilizzare","action","Generale","Usa un oggetto non magico."]
-];
-const COMMON=[
- ["Interagire con un oggetto","free","Generale","Una semplice interazione durante il turno."],
- ["Parlare brevemente","free","Generale","Pronuncia poche parole quando puoi comunicare."],
- ["Muoversi","movement","Movimento","Usa il movimento disponibile, anche prima e dopo un'azione."],
- ["Movimento furtivo","movement","Movimento","Muoversi furtivamente non è movimento gratuito extra. Per nascondersi, usa Nascondersi e una prova di Destrezza (Furtività); nel 2024 la CD è 15. Non si applica automaticamente Nascosto."],
- ["Attacco di opportunità","reaction","Attacco","Attacco in mischia come reazione quando una creatura lascia la tua portata."]
-];
 const arr=value=>Array.isArray(value)?value:[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const details=value=>typeof value==='string'?value:Array.isArray(value)?value.map(details).filter(Boolean).join('\n'):value&&typeof value==='object'?details(value.entries??value.entry??value.text??value.description??''):'';
 const specified=v=>v!==null&&v!==undefined&&(typeof v!=='string'||v.trim()!=='')&&(!Array.isArray(v)||v.length>0);
 function timing(value){
- if(Array.isArray(value))return timing(value[0]);
+ if(Array.isArray(value))return value.some(v=>timing(v)==='bonus')?'bonus':timing(value[0]);
  if(value&&typeof value==='object')return timing(value.unit??value.type??value.action_type??value.activation_type??value.time);
  const s=String(value||'').toLowerCase();
  if(s.includes('reaction')||s.includes('reazione'))return 'reaction';
@@ -141,42 +106,36 @@ function castingTime(spell){
  const value=typeof time==='object'?String(time.number||1)+' '+String(time.unit||'azione'):String(time);
  return value;
 }
-function spellDefinition(stored,catalog){
- return catalog.find(s=>s.id===spellId(stored))|| (stored&&typeof stored==='object'?stored:null);
-}
 export function topSkillEntries(calculated={},limit=4){
  return SKILLS.map(([id,label])=>({id,label,bonus:Number(calculated.skills?.[id])}))
    .filter(row=>Number.isFinite(row.bonus))
    .sort((a,b)=>b.bonus-a.bonus||a.label.localeCompare(b.label,'it')||a.id.localeCompare(b.id))
    .slice(0,limit);
 }
-export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=[]){
- const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({
-   name,time,type,description,tracker:'',cost:0,origin:'general',optional:false,
-   action_id:name==='Aiutare'?'help':name==='Spingere'?'shove':name==='Buttare prono'?'prone':''
- }));
- // The same structured supplemental rows are used by the Godot native tab.
- // Preserve both time options (e.g. bonus action OR action) as distinct entries.
+export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
+ const out=[];
  const edition=record.rules_version==='2024'?'2024':'2014';
  for(const rule of arr(generalActions)){
-  if(rule?.edition!==edition||!Array.isArray(rule.timings)||!rule.name)continue;
-  const source=String(rule.source||'')+(Number.isFinite(Number(rule.page))?', p. '+rule.page:'');
-  const description=String(rule.description||'')+(source?'\nFonte: '+source:'')+
-    (rule.optional?'\nRegola opzionale: richiede approvazione del DM.':'');
-  for(const time of rule.timings){
-   if(!GROUPS.some(([group])=>group===time))continue;
-   out.push({
-     name:String(rule.name),time,type:rule.optional?'Regola opzionale':'Generale',
-     description,tracker:String(rule.tracker||''),cost:0,origin:'general',optional:rule.optional===true,
-     action_id:String(rule.action_id||''),skill_ids:arr(rule.skills).map(String),
-     catalog_id:String(rule.id||'')
-   });
-  }
+  if(rule.edition!==edition||rule.variant_id&&!enabledVariants.includes(rule.variant_id))continue;
+  let times=arr(rule.timings);
+  const alternate=times.includes('action')&&times.includes('bonus');
+  if(alternate)times=['bonus'];
+  if(rule.id==='healing_surge'&&enabledVariants.includes('healing_surges_bonus_dmg'))times=['bonus'];
+  for(const time of times)out.push({id:rule.id,name:rule.name,time,type:rule.parent_action==='attack'?'Attacco':'Generale',
+   description:rule.description,tracker:rule.tracker||'',cost:0,origin:'general',optional:!!rule.variant_id,
+   action_id:rule.action_id||'',skill_ids:arr(rule.skills),parent_action:rule.parent_action||'',
+   source_label:rule.source+(rule.page?', p. '+rule.page:''),source_url:rule.source_url,
+   alternate_action:alternate,catalog_id:rule.id});
  }
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0,extra={})=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal',...extra});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
- for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{}))out.push({...row,time:timing(row.time)});
+ for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{})){
+  const rule=arr(calculated.feature_rules?.actions).find(r=>r.id===row.rule_id);
+  const base=out.find(r=>r.id===rule?.action_id);
+  if(base){base.alternate_action=base.time==='action'&&timing(row.time)==='bonus';base.time=timing(row.time);}
+  else out.push({...row,id:rule?.action_id||row.rule_id,time:timing(row.time)});
+ }
  const already=new Set();
  // Local combat calculations preserve equipped weapon slots, hit, damage,
  // reach and monster section in stable attack identifiers.
@@ -186,7 +145,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const section=String(attack.id).split(':')[1];
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
   const hit=Number.isFinite(Number(attack.hit))?'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
-  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.');
+  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
@@ -210,7 +169,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
-      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0,{tracker_id:String(feature.tracker_id||'')});
+      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
  }
  // Exact 5etools class/feature/source/level supplements, not prose analysis.
  const members=arr(record.classes).length?arr(record.classes):
@@ -227,20 +186,12 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
       resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
  }
- for(const raw of availableSpells(record)){
-  const definition=spellDefinition(raw,spells);
-  if(!definition)continue;
-  const level=Number(definition.level??raw?.level??0);
-  add(definition.name||spellId(raw),definition.time??definition.casting_time??'action','Incantesimo',
-      'Livello '+level+' · Tempo di lancio: '+castingTime(definition)+'.\n'+details(definition.entries??definition.description??''),
-      level>0?'Slot incantesimo':'Nessuna risorsa',0,{spell_id:spellId(raw),spell_mode:'class',level});
- }
  // Origin-spell grants are already resolved by the local rules engine,
  // including custom payment mode, disabled origins and level requirements.
  for(const grant of arr(calculated.origin_spells)){
   if(grant?.disabled)continue;
   const definition=spells.find(row=>row.id===grant.spell_id);
-  if(!definition)continue;
+  if(!definition||definition.internal_grant!==true)continue;
   const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
   const tracker=mode==='tracker'?tracked(grant.tracker_id):mode==='slot'?'Slot incantesimo':'Nessuna risorsa';
   const internal=definition.internal_grant===true;
@@ -250,12 +201,20 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
       tracker,mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0,
       {spell_id:String(grant.spell_id),grant_id:String(grant.id),spell_mode:mode,tracker_id:mode==='tracker'?String(grant.tracker_id||''):''});
  }
- return out;
+ const normalized=[];
+ for(const row of out){
+  if(row.type==='Incantesimo')continue;
+  const same=normalized.find(old=>(old.id||old.name)===(row.id||row.name)&&old.tracker_id===row.tracker_id&&
+   (old.time===row.time||[old.time,row.time].every(t=>['action','bonus'].includes(t))));
+  if(!same){normalized.push(row);continue;}
+  if(same.time!==row.time){same.time='bonus';same.alternate_action=true;}
+ }
+ return normalized;
 }
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
 function actionRow(item,calculated){
- const glyph=actionGlyph(actionGlyphKey(item));
+ const glyph=actionGlyph(item.id?.startsWith('movement_options_')?'dash':item.id==='ability_checks'?'skill':actionGlyphKey(item));
  const tracker=String(item.tracker||'').trim();
  const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
  const t=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||''));
@@ -266,7 +225,7 @@ function actionRow(item,calculated){
    .filter((id,index,all)=>all.indexOf(id)===index);
  const actionButtons=(isSpell?
    '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
-     '" data-grant-id="'+esc(item.grant_id||'')+'">Lancia incantesimo</button>':
+     '" data-grant-id="'+esc(item.grant_id||'')+'">Usa capacità</button>':
    item.name==='Lanciare un incantesimo'||item.name==='Magia'?
      '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
   (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+
@@ -274,33 +233,56 @@ function actionRow(item,calculated){
     '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
     !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
  const subLabel=isClassSpell?'Slot incantesimo':resource;
+ const groupOnly=item.children?.length&&!item.description;
  return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'">'+
-  '<div class="action-economy-main"><details class="action-economy-entry"><summary>'+
+  '<div class="action-economy-main">'+(groupOnly?'<div class="action-economy-entry action-group-label">'+glyph+'<strong>'+esc(item.name)+'</strong></div>':'<details class="action-economy-entry"><summary>'+
   '<span class="action-economy-type-icon" aria-hidden="true">'+glyph+'</span><strong>'+esc(item.name)+
-  '</strong><span class="action-economy-chevron">›</span></summary><p>'+
-  esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
+  '</strong>'+(item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione" aria-label="Anche con un’azione">A</span>':'')+'<span class="action-economy-chevron">›</span></summary><p>'+
+  esc(item.description||'Seleziona una delle opzioni sotto elencate.')+'</p>'+(item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'')+
   (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
+  (item.attack_id?'<button type="button" class="btn small" data-act="sheet-roll" data-target="attack_hit:'+esc(item.attack_id)+'" data-label="'+esc(item.name)+'">'+diceGlyph()+' Tiro per colpire</button>':'')+
   checks.map(id=>{
    const label=SKILLS.find(([key])=>key===id)?.[1]||id;
    return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
-    '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
-  }).join('')+'</details><span class="action-economy-preview">'+
+    '" data-label="'+esc(label)+'">'+diceGlyph()+' '+esc(label)+'</button>';
+  }).join('')+'</details>')+'<span class="action-economy-preview">'+
   (item.optional?'<span class="action-economy-optional">Opzionale</span> ':'')+
   esc((item.description||'').split('\n')[0].slice(0,92))+'</span></div>'+
   '<div class="action-economy-controls">'+actionButtons+
-  (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div></article>';
+  (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div>'+
+  (item.children?.length?'<details class="action-tree"><summary>'+esc(item.children_heading||'Attacchi e manovre')+' · '+item.children.length+'</summary><ol>'+item.children.map(child=>'<li>'+actionRow(child,calculated)+'</li>').join('')+'</ol></details>':'')+'</article>';
 }
 
-export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=[]){
- const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions);
+function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
+export function groupActionEntries(entries){
+ const parents=new Map(entries.filter(row=>['attack','two_weapon'].includes(row.id)).map(row=>[row.id,{...row,children:[]}]));
+ const roots=[];const groups=new Map();
+ for(const raw of entries){
+  const row=parents.get(raw.id)||raw;
+  if(parents.has(row.parent_action)){parents.get(row.parent_action).children.push(row);continue;}
+  let group='';
+  if(row.time==='movement'||['dash','disengage','climb_large','overrun','tumble','escape_grapple'].includes(row.id))group='movement_options_'+row.time;
+  else if(row.time==='action'&&row.skill_ids?.length&&!row.parent_action)group='ability_checks';
+  if(!group){roots.push(row);continue;}
+  if(!groups.has(group)){
+   const moving=group.startsWith('movement_options_');
+   const parent={id:group,name:moving?'Spostamento':'Prove di abilità',time:row.time,origin:'general',children:[],children_heading:moving?'Opzioni di movimento':'Prove che richiedono un’azione'};
+   roots.push(parent);groups.set(group,parent);
+  }
+  groups.get(group).children.push(row);
+ }
+ return roots;
+}
+export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
+ const entries=groupActionEntries(actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants));
  const skills=topSkillEntries(calculated);
  return GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);
   const general=matching.filter(row=>row.origin!=='personal')
    .sort((a,b)=>Number(a.optional===true)-Number(b.optional===true));
   const personal=matching.filter(row=>row.origin==='personal');
-  const skillsPanel=id!=='action'?'':(
-    '<div class="action-economy-skills"><h3>Prove abilità · 4 migliori</h3>'+
+  const skillsPanel=id!=='free'?'':(
+    '<div class="action-economy-skills"><h3>Tiri rapidi · 4 migliori</h3>'+
     (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
       '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
       '" data-label="'+esc(row.label)+'">'+actionGlyph(skillGlyphKey(row.id))+'<span class="action-skill-name">'+esc(row.label)+'</span><span class="action-skill-bonus">'+(row.bonus>=0?'+':'')+esc(row.bonus)+'</span></button>'
@@ -309,9 +291,7 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   const separated=general.length&&personal.length;
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
     '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(HEADER_GLYPHS[id])+'</span>'+
-    '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
-      bonus:'Capacità che usano una azione bonus',free:'Interazioni senza costo in azioni',
-      movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div>'+
+    '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2></div>'+
     '<span class="action-economy-count" aria-label="'+matching.length+' opzioni">'+matching.length+'</span></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
       general.map(row=>actionRow(row,calculated)).join(''):'')+
@@ -319,5 +299,5 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
     (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
       personal.map(row=>actionRow(row,calculated)).join(''):'')+
     (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
- }).join('').replace(/^/,'<div class="action-economy-dashboard">')+'</div>';
+ }).join('').replace(/^/,'<div class="action-toolbar"><span>Azioni e opzioni</span><button type="button" class="btn small" data-act="action-variants" aria-label="Regole varianti 2014">'+actionGlyph('settings')+'</button></div><div class="action-economy-dashboard">')+'</div>';
 }

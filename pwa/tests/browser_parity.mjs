@@ -9,14 +9,15 @@ const root=new URL('../',import.meta.url),native=new URL('../../vtt/data/',impor
 const artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],entries:['Test reference.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Bard','Wizard']}]};
-const aliases={'/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
+const aliases={'/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
   res.setHeader('Cache-Control','no-store');
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(spells));return;}
-  if(!/^\/(?:[a-z_0-9.-]+|catalog\/[a-z_0-9.-]+)?$/.test(path)){res.writeHead(404);res.end();return;}
+  if(path==='/icons/action_controls.svg'){res.setHeader('Content-Type','image/svg+xml');res.end(await readFile(new URL('../../vtt/icons/action_controls.svg',import.meta.url)));return;}
+  if(!/^\/(?:[a-z_0-9.-]+|catalog\/[a-z_0-9.-]+|icons\/gold_generated\/gold_[0-3]\.svg|icons\/[a-z_0-9.-]+)?$/.test(path)){res.writeHead(404);res.end();return;}
   const location=aliases[path]?new URL(aliases[path],native):new URL(path==='/'?'index.html':path.slice(1),root);
   const body=await readFile(location);
   const type=path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.json')?'application/json':path.endsWith('.png')?'image/png':path.endsWith('.svg')?'image/svg+xml':path.endsWith('.webmanifest')?'application/manifest+json':'text/html';
@@ -49,11 +50,11 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('[data-field="name"]').waitFor();
- const names={info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
+ const names={actions:'Cosa posso fare?',info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
  const section=async key=>{await page.locator('#section-menu').evaluate(node=>node.open=true);await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(name=>document.querySelector('.current-section')?.textContent===name,names[key]);};
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:844});
-  for(const key of ['info','stats','battle','magic','inventory','traits','conditions','origins']){
+  for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){
    await section(key);
    await page.waitForFunction(()=>document.querySelector('#save-state'));
    const size=await page.evaluate(()=>({width:innerWidth,content:document.documentElement.scrollWidth}));

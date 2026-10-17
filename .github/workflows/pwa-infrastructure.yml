@@ -44,6 +44,7 @@ jobs:
             /pwa/
             /vtt/data/class_mechanics_5etools.json
             /vtt/data/class_resource_overrides.json
+            /vtt/data/combat_actions_5etools.json
             /vtt/data/combat_action_supplements_5etools.json
             /vtt/data/feature_timing_recovery_rules.json
             /vtt/data/activated_abilities_5etools.json
@@ -158,6 +159,8 @@ jobs:
               copy2(Path("vtt/data") / source, root / "catalog" / target)
           copy2(Path("vtt/data/action_feature_overrides.json"), root / "catalog/action_feature_overrides.json")
           copy2(Path("vtt/data/combat_action_supplements_5etools.json"), root / "catalog/combat_action_supplements_5etools.json")
+          copy2(Path("vtt/data/combat_actions_5etools.json"), root / "catalog/combat_actions_5etools.json")
+          copy2(Path("vtt/icons/action_controls.svg"), root / "icons/action_controls.svg")
           copy2(Path("vtt/data/feature_timing_recovery_rules.json"), root / "catalog/feature_timing_recovery_rules.json")
           copy2(Path("vtt/data/class_resource_overrides.json"), root / "catalog/class_resource_overrides.json")
           for file in ("classes", "ability_grants", "class_mechanics", "proficiency_grants"):

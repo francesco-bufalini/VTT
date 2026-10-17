@@ -740,6 +740,7 @@ func _show_entry(entry: Dictionary) -> void:
 	dialog.close_requested.connect(dialog.queue_free)
 
 func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
+	var group_only := not (entry.get("children", []) as Array).is_empty() and String(entry.get("detail", "")).is_empty()
 	var title := String(entry.get("name", ""))
 	var detail := String(entry.get("detail", ""))
 	var section: VBoxContainer = target if target != null else _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
@@ -773,7 +774,7 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	heading.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 	heading.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 	heading.tooltip_text = detail
-	heading.pressed.connect(_show_entry.bind(entry))
+	if not group_only: heading.pressed.connect(_show_entry.bind(entry))
 	info.add_child(heading)
 	if not detail.is_empty():
 		var brief := Label.new()
@@ -855,7 +856,7 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	details.add_theme_color_override("font_color", GOLD)
 	details.custom_minimum_size = Vector2(30, 32)
 	details.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	details.pressed.connect(_show_entry.bind(entry))
+	if not group_only: details.pressed.connect(_show_entry.bind(entry))
 	row.add_child(details)
 	var tactical := String(entry.get("action_id", ""))
 	if tactical in ["help", "shove", "prone", "grapple"]:
@@ -922,6 +923,10 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 			toggle.text = "%s %s · %d" % ["▾" if open else "▸", tree_heading, children.size()]
 			nested.visible = open
 			_expanded_actions[key] = open)
+		if group_only:
+			heading.pressed.connect(func() -> void: toggle.button_pressed = not toggle.button_pressed)
+			details.pressed.connect(func() -> void: toggle.button_pressed = not toggle.button_pressed)
+			details.tooltip_text = "Espandi o richiudi · " + title
 		content.add_child(toggle)
 		content.add_child(nested)
 		toggle.text = "%s %s · %d" % ["▾" if toggle.button_pressed else "▸", tree_heading, children.size()]

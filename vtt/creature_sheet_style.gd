@@ -67,17 +67,17 @@ static func _watch(node: Node) -> void:
 static func _polish(node: Node) -> void:
 	if not is_instance_valid(node) or not node is Control: return
 	var control := node as Control
-	if control.has_theme_stylebox_override("panel"):
-		var old := control.get_theme_stylebox("panel") as StyleBoxFlat
-		# Replace legacy blue card surfaces while preserving warning/selection colors.
+	for slot: String in ["panel", "normal", "focus"]:
+		if not control.has_theme_stylebox_override(slot): continue
+		var old := control.get_theme_stylebox(slot) as StyleBoxFlat
+		# Replace legacy blue surfaces while keeping warning/selection colors.
 		if old != null and (old.bg_color.b > old.bg_color.r or old.border_color.b > old.border_color.r):
 			var box := old.duplicate() as StyleBoxFlat
 			box.bg_color = Color("352928f7")
 			box.border_color = Color("9c7048")
-			box.draw_center = true
 			box.shadow_color = Color(0, 0, 0, 0.24)
 			box.shadow_size = 2
-			control.add_theme_stylebox_override("panel", box)
+			control.add_theme_stylebox_override(slot, box)
 	if control is Label and control.has_theme_color_override("font_color"):
 		var color := control.get_theme_color("font_color")
 		if color.b > color.r:
