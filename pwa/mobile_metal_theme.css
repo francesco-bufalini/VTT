@@ -133,18 +133,18 @@ input:not([type=checkbox]):not([type=file]),select,textarea{
   background-image:url("/icons/character_tabs.png");
   background-size:800% 100%;
   background-repeat:no-repeat;
-  background-position:calc(var(--sheet-icon-frame, 0) * 100% / 7) center;
+  background-position:var(--sheet-icon-position, 0%) center;
   filter:drop-shadow(0 1px 1px #000a);
 }
 .current-section[data-sheet-icon]::before { width:27px;height:27px;flex-basis:27px }
-.drawer-sheet [data-sheet="info"],.current-section[data-sheet-icon="info"]{--sheet-icon-frame:0}
-.drawer-sheet [data-sheet="stats"],.current-section[data-sheet-icon="stats"]{--sheet-icon-frame:1}
-.drawer-sheet [data-sheet="actions"],.current-section[data-sheet-icon="actions"]{--sheet-icon-frame:2}
-.drawer-sheet [data-sheet="magic"],.current-section[data-sheet-icon="magic"]{--sheet-icon-frame:3}
-.drawer-sheet [data-sheet="inventory"],.current-section[data-sheet-icon="inventory"]{--sheet-icon-frame:4}
-.drawer-sheet [data-sheet="traits"],.current-section[data-sheet-icon="traits"]{--sheet-icon-frame:5}
-.drawer-sheet [data-sheet="conditions"],.current-section[data-sheet-icon="conditions"]{--sheet-icon-frame:6}
-.drawer-sheet [data-sheet="origins"],.current-section[data-sheet-icon="origins"]{--sheet-icon-frame:7}
+.drawer-sheet [data-sheet="info"],.current-section[data-sheet-icon="info"]{--sheet-icon-position:0.000000%}
+.drawer-sheet [data-sheet="stats"],.current-section[data-sheet-icon="stats"]{--sheet-icon-position:14.285714%}
+.drawer-sheet [data-sheet="actions"],.current-section[data-sheet-icon="actions"]{--sheet-icon-position:28.571429%}
+.drawer-sheet [data-sheet="magic"],.current-section[data-sheet-icon="magic"]{--sheet-icon-position:42.857143%}
+.drawer-sheet [data-sheet="inventory"],.current-section[data-sheet-icon="inventory"]{--sheet-icon-position:57.142857%}
+.drawer-sheet [data-sheet="traits"],.current-section[data-sheet-icon="traits"]{--sheet-icon-position:71.428571%}
+.drawer-sheet [data-sheet="conditions"],.current-section[data-sheet-icon="conditions"]{--sheet-icon-position:85.714286%}
+.drawer-sheet [data-sheet="origins"],.current-section[data-sheet-icon="origins"]{--sheet-icon-position:100.000000%}
 /* Battle is a ninth mobile-only section: keep the matching crossed-swords glyph. */
 .drawer-sheet [data-sheet="battle"]::before,
 .current-section[data-sheet-icon="battle"]::before{
