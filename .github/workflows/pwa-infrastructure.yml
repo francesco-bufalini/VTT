@@ -45,11 +45,12 @@ jobs:
             /vtt/data/class_mechanics_5etools.json
             /vtt/data/class_resource_overrides.json
             /vtt/data/combat_action_supplements_5etools.json
+            /vtt/data/feature_timing_recovery_rules.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/sheet_rules.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
