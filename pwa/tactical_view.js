@@ -113,7 +113,7 @@ export class TacticalViewer {
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
-    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;
+    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
