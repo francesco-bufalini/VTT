@@ -532,7 +532,7 @@ func _add_entry(entry: Dictionary) -> void:
 	row.add_child(info)
 	var heading := Button.new()
 	var kind := String(entry.get("kind", ""))
-	var symbol := {"Attacco": "⚔", "Incantesimo": "✦", "Capacità": "◆", "Regola opzionale": "◇"}.get(kind, "•")
+	var symbol: String = String({"Attacco": "⚔", "Incantesimo": "✦", "Capacità": "◆", "Regola opzionale": "◇"}.get(kind, "•"))
 	heading.text = symbol + "  " + title + "   ›"
 	heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	heading.flat = true
