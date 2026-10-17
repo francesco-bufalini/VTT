@@ -1838,6 +1838,8 @@ func show_held_spell_aoe(
 
 
 func clear_held_spell_aoes() -> void:
+	if _held_aoe_drag_root != null and is_instance_valid(_held_aoe_drag_root):
+		finish_movable_aoe_drag(false)
 	for root: Node3D in _held_spell_aoes:
 		if root != null and is_instance_valid(root):
 			root.hide()
