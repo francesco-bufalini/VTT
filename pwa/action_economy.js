@@ -2,6 +2,17 @@
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {availableSpells, spellId} from './spell_selection.js';
 
+let supplementsCache=null;
+export async function loadFeatureActionOverrides(){
+ if(supplementsCache)return supplementsCache;
+ const response=await fetch('/catalog/action_feature_overrides.json',{cache:'no-store'});
+ if(!response.ok)throw Error('Catalogo azioni di classe non disponibile');
+ const payload=await response.json();
+ if(payload?.version!==1||!Array.isArray(payload.entries))throw Error('Catalogo azioni di classe non valido');
+ supplementsCache=payload.entries;
+ return supplementsCache;
+}
+
 export const GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
 const SRD_2014=[
  ["Attaccare","action","Attacco","Effettua un attacco in mischia o a distanza."],
@@ -57,7 +68,7 @@ function castingTime(spell){
 function spellDefinition(stored,catalog){
  return catalog.find(s=>s.id===spellId(stored))|| (stored&&typeof stored==='object'?stored:null);
 }
-export function actionEntries(record={},calculated={},spells=[]){
+export function actionEntries(record={},calculated={},spells=[],featureOverrides=[]){
  const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({name,time,type,description,tracker:'',cost:0}));
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost});
@@ -97,6 +108,20 @@ export function actionEntries(record={},calculated={},spells=[]){
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
       feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0);
  }
+ // Exact 5etools class/feature/source/level supplements, not prose analysis.
+ const members=arr(record.classes).length?arr(record.classes):
+   record.class?[{name:record.class,source:record.class_source,level:record.level||1}]:[];
+ const selectedEdition=record.rules_version==='2024'?'XPHB':'PHB';
+ for(const rule of arr(featureOverrides)){
+  const classMember=members.find(m=>String(m?.name||'').toLowerCase()===String(rule.class_name||'').toLowerCase()&&
+    String(m?.source||selectedEdition).toUpperCase()===String(rule.book||'').toUpperCase()&&
+    Number(m?.level||0)>=Number(rule.min_level||1));
+  if(!classMember)continue;
+  const resource=arr(calculated.trackers).find(t=>String(t.name).toLowerCase()===String(rule.resource_name||'').toLowerCase()&&
+    (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
+  add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
+      resource?.name||rule.resource_name||'');
+ }
  for(const raw of availableSpells(record)){
   const definition=spellDefinition(raw,spells);
   if(!definition)continue;
@@ -121,8 +146,8 @@ export function actionEntries(record={},calculated={},spells=[]){
  }
  return out;
 }
-export function actionEconomyView(record,calculated,spells=[]){
- const entries=actionEntries(record,calculated,spells);
+export function actionEconomyView(record,calculated,spells=[],featureOverrides=[]){
+ const entries=actionEntries(record,calculated,spells,featureOverrides);
  return GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);
   const groups=new Map();
