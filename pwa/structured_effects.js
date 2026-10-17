@@ -138,65 +138,110 @@ export function numericGrant(sid,name,field,target,value,suffix=""){
     origin_id:sid,origin_name:name,target,expression:String(value),
     automatic:true,disabled:false};
 }
-function structuredFeatures(record){
-  const collected=[];
-  const append=(row,originKey,gate={},fallbackId="")=>{
-    if(!row||typeof row!=="object"||!Array.isArray(row.bonuses)||!row.bonuses.length)return;
-    if(row.inactive)return;
-    // Features._append() has a *nested* fallback key: origin|origin|level|name.
-    // Preserve that identity so persisted auto|... disabled grants still work.
-    const level=Number(gate.min_level??0);
-    const id=String(row.id||"").trim()||
-      (originKey+"|"+level+"|"+norm(row.name));
-    const featureKey=originKey+"|"+id;
-    collected.push({key:featureKey,originKey,source:row,requirements:{
-      scope:gate.scope||"character",min_level:Number(gate.min_level??row.min_level??0),
-      class_name:gate.class_name||"",class_source:gate.class_source||""}});
-  };
+// Native CreatureFeatures.collect_features identity scheme. These are
+// data-driven projections, not inferred mechanics from English descriptions.
+export function collectStructuredFeatures(record,catalogs={}){
+  const results=[],seen=new Set();
+  const members=classMembers(record),total=members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)||Number(record.level)||1;
+  const classLevel=(name,source)=>members.filter(c=>match(c.name,name)&&(!source||!c.source||match(c.source,source)))
+    .reduce((n,c)=>Math.max(n,Number(c.level)||0),0);
+  function append(row,origin,level=1,scope="character",className="",classSource="",inactive=false){
+    if(!row||typeof row!=="object"||!String(row.name||"").trim())return;
+    const gate={scope,min_level:level,...(scope==="class"?{class_name:className,class_source:classSource}:{}),...(row.requirements||{})};
+    const at=gate.scope==="class"?classLevel(gate.class_name||className,gate.class_source||classSource):total;
+    if(at<Number(gate.min_level||0)||gate.max_level!==undefined&&gate.max_level!==""&&at>Number(gate.max_level))return;
+    const id=String(row.id||"").trim()||origin+"|"+level+"|"+norm(row.name);
+    const key=origin+"|"+id;if(seen.has(key))return;seen.add(key);
+    results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
+      level,requirements:gate,inactive:inactive||row.inactive===true,
+      bonuses:array(row.bonuses),action_type:row.action_type??row.activation_type??"",
+      action_kind:row.action_kind||"Capacità"});
+  }
   if(record.kind==="monster"){
-    const stat=record.stat_block||{};
     for(const section of ["trait","action","bonus","reaction","legendary","mythic","lairActions"])
-      for(const [i,row] of array(stat[section]).entries())
-        append(row,"monster|"+section,{min_level:0},String(i));
-  }
-  // Structured features already present in portable/homebrew definitions.
-  // Mirror Features._append() IDs and leave prose-only traits untouched.
-  for(const feat of array(record.feats_catalog)){
-    if(feat?.disabled)continue;
-    const featId=String(feat.id||norm(feat.name)+"|"+norm(feat.source));
-    const originKey="feat|"+featId;
-    // Native feat overview does not copy the owned feat's 'bonuses' field.
-    for(const [i,row] of array(feat.feature_sections).entries())
-      append(row,originKey,{min_level:Number(row.min_level??1)},String(i));
-  }
-  for(const member of classMembers(record)){
-    const classKey="class|"+norm(member.source)+"|"+norm(member.name);
-    for(const [i,row] of array(member.features).entries())
-      append(row,classKey,{scope:"class",class_name:member.name,
-        class_source:member.source,min_level:Number(row.level??1)},String(i));
-    for(const [i,row] of array(member.subclass_features).entries()){
-      const subclassKey=classKey+"|subclass|"+norm(member.subclass)+"|"+
-        norm(member.subclass_source);
-      append(row,subclassKey,{scope:"class",class_name:member.name,
-        class_source:member.source,min_level:Number(row.level??1)},String(i));
+      for(const row of array(record.stat_block?.[section]))
+        append(row,"monster|"+section,0);
+  }else{
+    const details=catalogs.originDetails||{};
+    const lookup=(category,name,source)=>{
+      const entries=details[category];if(!entries||!name)return null;
+      if(Array.isArray(entries))return entries.find(r=>match(r.name,name)&&(!source||match(r.source,source)))||null;
+      const candidate=entries[norm(name)+"|"+norm(source)];if(candidate)return candidate;
+      if(source)return null;
+      const matching=Object.entries(entries).filter(([key])=>key.startsWith(norm(name)+"|"));
+      return matching.length===1?matching[0][1]:null;
+    };
+    if(record.species){
+      const full=record.subrace&&lookup("races",record.species+" ("+record.subrace+")",record.subrace_source);
+      const race=full||lookup("races",record.species,record.species_source);
+      const origin="species|"+(record.species_id||norm(record.species))+"|"+norm(record.species_source);
+      array(race?.entries).forEach((row,i)=>{
+        if(row&&typeof row==="object")append({...row,name:row.name||"Altri tratti · "+(i+1)},origin,
+          Number(row.level||1));
+      });
+    }
+    if(record.background){
+      const background=lookup("backgrounds",record.background,record.background_source);
+      const origin="background|"+norm(background?.source||record.background_source)+"|"+norm(record.background);
+      for(const row of array(background?.entries))
+        if(row?.name&&(row.entries!==undefined||row.entry!==undefined))
+          append({...row,entries:row.entries??row.entry},origin,1);
+    }
+    for(const feat of array(record.feats_catalog)){
+      if(!feat?.name)continue;
+      const info=lookup("feats",feat.name,feat.source);
+      const origin="feat|"+String(feat.id||norm(feat.name)+"|"+norm(feat.source));
+      const sections=Array.isArray(info?.feature_sections)?info.feature_sections:
+        Array.isArray(feat.feature_sections)?feat.feature_sections:null;
+      const entries=sections||info?.entries||feat.entries||[];
+      array(entries).forEach((row,i)=>{
+        if(row?.name&&(row.entries!==undefined||row.entry!==undefined))
+          append({...row,id:row.id||(sections?"section-"+i:"section-"+i)},origin,
+            Number(row.min_level??1),"character","","",Boolean(feat.disabled));
+      });
     }
   }
-  return collected;
-}
-export function structuredFeatureGrants(record){
-  const results=[];
-  for(const f of structuredFeatures(record)){
-    const sid="feature:"+f.key;
-    for(const entry of f.source.bonuses){
-      if(!entry||typeof entry!=="object")continue;
-      const target=String(entry.target||"");
-      const grant=numericGrant(sid,"Tratto · "+(f.source.name||f.key),"bonuses",
-        target,entry.expression,"|"+target);
-      if(grant)results.push({...grant,requirements:f.requirements,
-        parent_origin:f.originKey});
+  const featureIndex=catalogs.classFeatures||{};
+  const selectedEdition=record.rules_version==="2024"?"XPHB":"PHB";
+  for(const member of members){
+    if(!member?.name||match(member.name,"Mostro"))continue;
+    const name=member.name,source=String(member.source||record.class_source||selectedEdition);
+    const level=Math.max(0,Number(member.level)||0),base="class|"+norm(source)+"|"+norm(name);
+    for(const row of [...array(featureIndex.class_features),...array(member.features)]){
+      if(row?.class_name&&!match(row.class_name,name))continue;
+      if(row?.class_source&&!match(row.class_source,source))continue;
+      const at=Number(row?.level??1);
+      if(at>=1&&at<=level)append(row,base,at,"class",name,source);
+    }
+    if(!member.subclass)continue;
+    const sub=member.subclass,subsource=String(member.subclass_source||"");
+    const origin=base+"|subclass|"+norm(sub)+"|"+norm(subsource);
+    for(const row of [...array(featureIndex.subclass_features),...array(member.subclass_features)]){
+      if(row?.class_name&&!match(row.class_name,name))continue;
+      if(row?.class_source&&!match(row.class_source,source))continue;
+      if((row?.subclass_name||row?.subclass_short_name)&&
+        !match(row.subclass_name,sub)&&!match(row.subclass_short_name,sub))continue;
+      if(subsource&&row?.subclass_source&&!match(row.subclass_source,subsource))continue;
+      const at=Number(row?.level??1);
+      if(at>=1&&at<=level)append(row,origin,at,"class",name,source);
     }
   }
   return results;
+}
+export function structuredFeatureGrants(record,catalogs={},features=collectStructuredFeatures(record,catalogs)){
+  const result=[];
+  for(const feature of features){
+    if(feature.inactive)continue;
+    for(const row of feature.bonuses){
+      if(!row||typeof row!=="object")continue;
+      const target=String(row.target||"");
+      const grant=numericGrant(feature.origin_id,"Tratto · "+feature.name,
+        "bonuses",target,row.expression,"|"+target);
+      if(grant)result.push({...grant,requirements:feature.requirements,
+        parent_origin:feature.origin_key});
+    }
+  }
+  return result;
 }
 export function structuredOrigins(record,index={}){
   return selectedSources(record,index).map(row=>({id:row.id,
