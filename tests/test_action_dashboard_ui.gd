@@ -22,6 +22,7 @@ func run() -> void:
 	tab.size = Vector2(1250, 880)
 	var record: Dictionary = {
 		"kind": "character", "rules_version": "2014",
+		"class": "Rogue", "class_source": "PHB", "level": 2,
 		"action_grants": [{"name": "Manovra", "action_type": "bonus", "tracker_id": "charge"}],
 		"resource_trackers": [{"id": "charge", "name": "Cariche", "max": 3, "recharge": "long_rest"}],
 		"prepared_spells": [{"id": "spell_action_test", "name": "Raggio di prova",
@@ -47,8 +48,18 @@ func run() -> void:
 		check_ids.append(check["id"])
 		assert(check.get("parent_action", "").is_empty())
 		assert(int(check["time"]) == 0)
-	assert("hide" in check_ids and "search" in check_ids)
+	assert(not "hide" in check_ids and "search" in check_ids)
 	assert(not "grapple" in check_ids and not "shove" in check_ids)
+	var move_count := 0
+	for section in tab._sections:
+		for card in section.get_children():
+			if not card.has_meta("action_entry"): continue
+			var entry: Dictionary = card.get_meta("action_entry")
+			if not String(entry.get("id", "")).begins_with("movement_options_"): continue
+			move_count += 1
+			for option: Dictionary in entry["children"]:
+				assert(option["time"] == entry["time"], "Movement groups preserve the actual action cost")
+	assert(move_count == 3, "Movement options are grouped separately for action, bonus and movement costs")
 	# Titles and separate arrows must preserve the existing action routing.
 	var basic: Array[String] = []
 	tab.basic_action_requested.connect(func(id: String) -> void: basic.append(id))

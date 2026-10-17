@@ -431,6 +431,25 @@
       "action_id": ""
     },
     {
+      "id": "stealth_movement",
+      "name": "Movimento furtivo",
+      "source_name": "Stealth",
+      "source": "PHB",
+      "page": 182,
+      "edition": "2014",
+      "timings": [
+        "movement"
+      ],
+      "description": "While traveling at a slow pace, the characters can move stealthily.",
+      "source_url": "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/adventuring#Stealth",
+      "variant_id": "",
+      "skills": [
+        "stealth"
+      ],
+      "parent_action": "",
+      "action_id": ""
+    },
+    {
       "id": "movement",
       "name": "Muoversi",
       "source_name": "Movement and Position",

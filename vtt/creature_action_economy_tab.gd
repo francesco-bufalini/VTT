@@ -664,6 +664,8 @@ func _icon(key: String, extent: int = 28) -> TextureRect:
 	return icon
 
 func _entry_icon(entry: Dictionary) -> String:
+	if String(entry.get("id", "")).begins_with("movement_options_"): return "dash"
+	if entry.get("id", "") == "ability_checks": return "skill"
 	var title := String(entry.get("name", "")).to_lower()
 	var kind := String(entry.get("kind", ""))
 	var action_id := String(entry.get("action_id", ""))
@@ -1052,8 +1054,17 @@ func load_record(record: Dictionary) -> void:
 	var checks := {"id": "ability_checks", "name": "Prove di abilità", "time": 0,
 		"kind": "skill", "detail": "", "origin": "general", "children": [],
 		"children_heading": "Prove che richiedono un’azione"}
+	var movement_groups: Dictionary = {}
+	for timing: int in [0, 1, 3]:
+		movement_groups[timing] = {"id": "movement_options_%d" % timing, "name": "Spostamento",
+			"time": timing, "kind": "Movimento", "detail": "", "origin": "general",
+			"children": [], "children_heading": "Opzioni di movimento"}
 	for entry: Dictionary in projected:
 		var parent := String(entry.get("parent_action", ""))
+		var timing := int(entry.get("time", 0))
+		if parent.is_empty() and movement_groups.has(timing) and (timing == 3 or entry.get("id", "") in ["dash", "disengage", "climb_large", "overrun", "tumble", "escape_grapple"]):
+			movement_groups[timing]["children"].append(entry)
+			continue
 		if parent.is_empty() and int(entry.get("time", 0)) == 0 and not (entry.get("skill_ids", []) as Array).is_empty():
 			checks["children"].append(entry)
 			continue
@@ -1063,6 +1074,9 @@ func load_record(record: Dictionary) -> void:
 			parents[parent]["children"] = children
 			continue
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
+	for timing: int in movement_groups:
+		if not movement_groups[timing]["children"].is_empty():
+			grouped[timing].append(movement_groups[timing])
 	if not checks["children"].is_empty():
 		grouped[0].append(checks)
 	for i: int in range(GROUPS.size()):

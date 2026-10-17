@@ -95,6 +95,8 @@ def generate(data_root):
   if edition == "2014":
    output.append(dict(id="movement", name="Muoversi", source_name="Movement and Position", source=source, page=190, edition=edition, timings=["movement"], description="On your turn, you can move a distance up to your speed.", source_url="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat#MovementandPosition", variant_id="", skills=[], parent_action="", action_id=""))
    output.append(dict(id="drop_prone", name="Gettarsi a terra", source_name="Being Prone", source=source, page=190, edition=edition, timings=["free"], description="You can drop prone without using any of your speed.", source_url="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat#BeingProne", variant_id="", skills=[], parent_action="", action_id=""))
+ # Stealth while traveling is movement, not the Hide action in combat.
+ output.append(dict(id="stealth_movement", name="Movimento furtivo", source_name="Stealth", source="PHB", page=182, edition="2014", timings=["movement"], description="While traveling at a slow pace, the characters can move stealthily.", source_url="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/adventuring#Stealth", variant_id="", skills=["stealth"], parent_action="", action_id=""))
  speed = next(x for x in variants if x["source"] == "XPHB" and x["name"] == "Speed")
  output.append(dict(id="movement", name="Muoversi", source_name="Speed", source="XPHB", page=speed["page"], edition="2024", timings=["movement"], description=plain(speed["entries"]), source_url=link("variantrules", "Speed", "XPHB"), variant_id="", skills=[], parent_action="", action_id=""))
  strike = next(x for x in variants if x["source"] == "XPHB" and x["name"] == "Unarmed Strike")
