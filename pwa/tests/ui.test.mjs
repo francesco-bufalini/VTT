@@ -126,7 +126,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   const persisted=await loadCreature(creature.creature.id);
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
-  assert.equal(persisted.data.spell_slots_spent[1],2);
+  assert.equal(persisted.data.spell_slots_spent[1],0,"Il riposo lungo ripristina gli slot di classe");
   assert.equal(persisted.data.background_personality,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
@@ -333,7 +333,7 @@ test("native Android section order and editable sheet data",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
-  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Cosa posso fare?","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
@@ -371,9 +371,11 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
   assert.equal(picker.tagName,"SELECT");
   assert.equal(picker.value,"Completamente neutrale");
   assert.equal(picker.options.length,9);
-  for(const key of ['type','default_miniature_id','current_miniature_id','speed_base','player_name']){
+  for(const key of ['type','default_miniature_id','current_miniature_id','speed_base']){
     assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' must not be freely editable');
   }
+  assert.ok(document.querySelector('[data-field="player_name"]'),
+    'Il giocatore è un campo narrativo editabile della scheda');
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-field="current_hp"]'));
   for(const key of ['armor_class_base','initiative']){

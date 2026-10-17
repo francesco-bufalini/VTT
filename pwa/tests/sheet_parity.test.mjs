@@ -6,7 +6,7 @@ import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:mechanics};
 
@@ -127,9 +127,13 @@ test('manual origin powers follow origin toggles and automatic bonus switches ke
  assert.equal(calculateSheet({...c,origin_enabled:{[id]:false}},catalogs).origin_spells.length,0);
  assert.equal(c.origin_spell_grants.length,2,'projection never rewrites imported rows');
 });
-test('bundled PWA native tables and resource definitions are generated without divergence',()=>{
- const native=JSON.parse(readFileSync(new URL('../../vtt/data/class_mechanics_5etools.json',import.meta.url),'utf8'));
- const overrides=JSON.parse(readFileSync(new URL('../../vtt/data/class_resource_overrides.json',import.meta.url),'utf8'));
+test('bundled PWA native tables and resource definitions are generated without divergence',t=>{
+ const nativePath=new URL('../../vtt/data/class_mechanics_5etools.json',import.meta.url);
+ const overridesPath=new URL('../../vtt/data/class_resource_overrides.json',import.meta.url);
+ if(!existsSync(nativePath)||!existsSync(overridesPath))
+   return t.skip('Source comparison requires full checkout; browser-assets checks out only pwa/.');
+ const native=JSON.parse(readFileSync(nativePath,'utf8'));
+ const overrides=JSON.parse(readFileSync(overridesPath,'utf8'));
  assert.deepEqual(mechanics.classes,native.classes);
  assert.deepEqual(mechanics.resource_overrides,overrides.classes);
 });
