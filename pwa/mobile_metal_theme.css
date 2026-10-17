@@ -1,0 +1,115 @@
+/* VTT mobile: native-inspired brushed bronze and enamel, touch-first. 
+   Intentionally separate from sheet mechanics and from desktop theme resources. */
+:root{
+  --vtt-rim:#a57948;--vtt-highlight:#f5d498;--vtt-recess:#171414;
+  --vtt-bronze:linear-gradient(180deg,#e4b97535 0%,#7252362b 3%,#3b2d29 18%,#292120 57%,#201b1b 100%);
+  --vtt-enamel:linear-gradient(180deg,#75414a 0%,#622d3a 48%,#49212c 100%);
+  --vtt-metal-button:linear-gradient(180deg,#846144 0%,#654b37 3%,#43342e 19%,#332926 52%,#251f1e 100%);
+}
+html{background:#171414}
+body{background:radial-gradient(ellipse 90% 48% at 50% -8%,#63452e48,transparent 90%),linear-gradient(180deg,#211b1b,#141313 72%);background-attachment:fixed}
+.app-shell{min-width:0}
+.topbar{
+  background:linear-gradient(180deg,#4b3931f5,#2b2220f8 35%,#1e1919f9);
+  border-bottom:2px solid var(--vtt-rim);
+  box-shadow:inset 0 1px 0 #f6d99b38,0 5px 20px #0009;
+}
+.brand{color:#f9e7c7;text-shadow:0 1px 1px #000;font-family:Georgia,"Palatino Linotype",serif}
+.brand small{color:var(--vtt-highlight)}
+.connection{padding:5px 8px;border:1px solid #8364448a;border-radius:6px;background:#191717b8}
+.content{min-width:0}
+.page-head{padding:4px 2px 0;border-bottom:1px solid #98744970;padding-bottom:12px}
+.page-head h1,.editor-head h1{color:#f9dfb1;text-shadow:0 2px 2px #0009;font-family:Georgia,"Palatino Linotype",serif}
+h2,h3,.current-section,.drawer-heading{color:var(--vtt-highlight);text-shadow:0 1px 1px #0008}
+.panel,.creature-card,.token-card,.event,.sheet-roll-dialog,.tactical-dialog{
+  border:1px solid var(--vtt-rim);border-top:2px solid #d6a568;border-radius:11px;
+  background:linear-gradient(150deg,#43322999 0%,transparent 39%),var(--vtt-bronze);
+  box-shadow:inset 0 1px 0 #ffe0a02a,inset 0 -1px 0 #090808,0 6px 14px #0006;
+}
+.panel.soft{background:linear-gradient(165deg,#45342e,#2a2423)}
+.native-entry,.trait-card,.derived-metric,.ability-box,.document-entry,.action-economy-skills{
+  border:1px solid #9a7349;
+  background:linear-gradient(165deg,#3b2f2a,#272120);
+  box-shadow:inset 0 1px 0 #e9bd7830,0 2px 5px #0005;
+}
+.section-menu>summary,.btn,.section-tabs button,.action-tree>summary,.sections-drawer button,
+.action-economy-skill-grid .btn,.action-economy-controls .btn{
+  color:#f8e9d1;background:var(--vtt-metal-button);border:1px solid #ad8150;
+  border-top-color:#dfb477;border-bottom-color:#60462e;border-radius:8px;
+  box-shadow:inset 0 1px 0 #ffe0aa53,inset 0 -1px 0 #140f0e,0 2px 5px #0006;
+  text-shadow:0 1px 1px #0008;
+}
+.btn.primary,.section-tabs button[aria-pressed=true],.section-menu[open]>summary,
+.sections-drawer button[aria-current=page],.sections-drawer button[aria-pressed=true]{
+  background:linear-gradient(180deg,#975c66,#75404e 20%,#5e2d3a 65%,#4b222f);
+  color:#fff1d7;border-color:#e0af70;border-top-color:#ffdaa0;
+  box-shadow:inset 0 1px 0 #ffe4b56c,0 2px 7px #0009;
+}
+.btn.danger{border-color:#b57469;color:#ffb9ac}
+.btn.ghost{background:#28201e9c}
+.btn:active,.section-menu>summary:active,.section-tabs button:active{transform:translateY(1px);box-shadow:inset 0 2px 6px #0009}
+.btn:disabled{transform:none;filter:saturate(.55);opacity:.5}
+input:not([type=checkbox]):not([type=file]),select,textarea{
+ background:linear-gradient(180deg,#161313,#241d1a);border-color:#956d45;
+ box-shadow:inset 0 2px 5px #0007,inset 0 1px 0 #000;
+}
+.section-tabs{scroll-snap-type:x proximity}
+.section-tabs button{scroll-snap-align:start;white-space:nowrap}
+.sections-drawer{
+  border:1px solid #d0a067;border-top:2px solid #f0c78b;
+  background:linear-gradient(155deg,#45312a,#211b1a 76%);
+  box-shadow:inset 0 1px 0 #efd29d50,0 14px 35px #000b;
+}
+.sections-drawer nav .btn{display:flex;align-items:center;gap:10px}
+.sections-drawer nav .btn::before{
+ content:"";display:inline-block;width:25px;height:25px;flex:none;
+ background-image:url('/icons/gold_generated/gold_2.svg');
+ background-size:2500% 100%;background-repeat:no-repeat;background-position:calc(var(--vtt-nav-icon,14) * 100% / 24) center;
+ filter:drop-shadow(0 1px 1px #000);
+}
+.sections-drawer nav [data-nav="library"]{--vtt-nav-icon:6}
+.sections-drawer nav [data-nav="catalog"]{--vtt-nav-icon:10}
+.sections-drawer nav [data-nav="dice"]{--vtt-nav-icon:13}
+.sections-drawer nav [data-nav="chat"]{--vtt-nav-icon:22}
+.sections-drawer nav [data-nav="session"]{--vtt-nav-icon:14}
+.creature-avatar{
+ border:1px solid #c59960;border-radius:10px;
+ background:radial-gradient(circle at 30% 12%,#815d39,#452a28 72%);
+ box-shadow:inset 0 1px 0 #ffe9b866,0 2px 5px #0008;
+}
+.creature-name{color:#ffe1ae;text-shadow:0 1px 1px #000}
+.tag,.pill,.action-economy-count,.action-skill-bonus{
+ border:1px solid #ad8051;background:linear-gradient(180deg,#49392c,#251e1d);
+ color:#f4d39c;box-shadow:inset 0 1px 0 #ffe6b429;
+}
+.action-economy-dashboard>.action-economy-section{
+ border-top-color:#e4b477;
+ background:linear-gradient(150deg,#5b3e2a35,transparent 38%),var(--vtt-bronze);
+}
+.action-economy-row{border-top-color:#c19666}
+.action-economy-heading h2{font-family:Georgia,"Palatino Linotype",serif}
+.action-economy-group-title{border:1px solid #a67a4b;border-top-color:#d2a16a}
+.action-resource-control,.slot-counter{background:#17141477;border-radius:7px}
+.native-summary>div{border-color:#a47a4977}
+:where(.panel,.creature-card,.token-card,.native-entry,.action-economy-section,.document-entry) :where(p,strong,span,button,summary){overflow-wrap:anywhere}
+:where(.panel,.native-entry,.action-economy-row) *{min-width:0}
+:where(button,summary,input,select,textarea):focus-visible{outline:2px solid #ffda9d;outline-offset:3px}
+@media(hover:hover){
+ .btn:hover,.section-tabs button:hover,.section-menu>summary:hover,
+ .sections-drawer button:hover{border-color:#ffce86;filter:brightness(1.12)}
+}
+@media(max-width:520px){
+ .topbar{gap:7px;padding-left:10px;padding-right:10px}
+ .content{padding-left:10px;padding-right:10px}
+ .panel,.creature-card,.token-card{padding:12px}
+ .section-menu>summary{padding:9px 10px}
+ .sections-drawer{width:min(330px,calc(100vw - 20px));max-height:calc(100dvh - 95px)}
+ .brand{font-size:17px}
+ .btn,.section-tabs button{min-height:44px}
+ .action-economy-dashboard>.action-economy-section{padding:10px}
+ .action-economy-row{padding:8px}
+ .action-economy-controls{max-width:100%;width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .btn,.section-tabs button,.section-menu>summary{transition:none}
+}
