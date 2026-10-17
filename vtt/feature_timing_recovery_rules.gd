@@ -174,7 +174,7 @@ static func optional_recovery_patch(record: Dictionary, rule_id: String, tracker
 				continue
 			var amount := maxi(0, int(rule.get("amount", 0)))
 			if String(rule.get("formula", "")) == "half_class_level_floor":
-				amount = int(member.get("level", 0)) / 2
+				amount = int(floor(float(member.get("level", 0)) / 2.0))
 			var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
 			var id := String(tracker.get("id", ""))
 			spent[id] = maxi(0, int(spent.get(id, 0)) - amount)
