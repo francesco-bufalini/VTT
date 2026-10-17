@@ -215,3 +215,33 @@ test('action layout exposes section counts, compact type icons and usable resour
  assert(html.includes('data-act="action-cast-spell" data-spell-id="test_spell"'));
  assert(html.includes('Slot incantesimo'));
 });
+
+
+test('shared gradient action sprites match both UI clients and stay available offline',()=>{
+ const html=actionEconomyView({rules_version:'2014'},{
+   skills:{'sleight of hand':7,athletics:5,arcana:4,perception:3}
+ });
+ assert(html.includes('vtt-action-glyph--base'),'Core glyphs should use the shared atlas');
+ assert(html.includes('vtt-action-glyph--extra'),'Additional skill/action glyphs should render');
+ assert(html.includes('style="--glyph-position:'),'Sprite selection is deterministic');
+ assert(!html.includes('>⚔<'),'OS-dependent pictogram emoji must not be used');
+ const base=readFileSync(new URL('../icons/action_dashboard_gloss.svg',import.meta.url),'utf8');
+ const extra=readFileSync(new URL('../icons/action_extras.svg',import.meta.url),'utf8');
+ assert.equal((base.match(/<g transform=/g)||[]).length,20);
+ assert.equal((extra.match(/<g transform=/g)||[]).length,16);
+ for(const svg of [base,extra]){
+   assert(svg.startsWith('<svg '));
+   assert(svg.includes('linearGradient id="gold"'));
+   assert(svg.includes('linearGradient id="rose"'));
+   assert(svg.includes('</svg>'));
+ }
+ const native=readFileSync(new URL('../../vtt/creature_action_economy_tab.gd',import.meta.url),'utf8');
+ assert(native.includes('res://pwa/icons/action_dashboard_gloss.svg'));
+ assert(native.includes('res://pwa/icons/action_extras.svg'));
+ const host=readFileSync(new URL('../../network/pwa_host.gd',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
+ for(const path of ['/icons/action_dashboard_gloss.svg','/icons/action_extras.svg']){
+   assert(host.includes('"'+path+'"'),'PWA host must serve '+path);
+   assert(worker.includes('"'+path+'"'),'PWA offline shell must cache '+path);
+ }
+});
