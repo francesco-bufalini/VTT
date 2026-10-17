@@ -5,6 +5,7 @@ on:
     paths:
       - "vtt/monster_action_metadata.gd"
       - "vtt/creature_attack_data.gd"
+      - "vtt/creature_rules.gd"
       - "vtt/structured_resource_trackers.gd"
       - "vtt/master_creature_store.gd"
       - "vtt/creature_active_spells.gd"
@@ -17,6 +18,7 @@ on:
     paths:
       - "vtt/monster_action_metadata.gd"
       - "vtt/creature_attack_data.gd"
+      - "vtt/creature_rules.gd"
       - "vtt/structured_resource_trackers.gd"
       - "vtt/master_creature_store.gd"
       - "vtt/creature_active_spells.gd"
