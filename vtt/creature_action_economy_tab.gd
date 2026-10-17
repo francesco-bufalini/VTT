@@ -49,10 +49,15 @@ static func _feature_supplements() -> Array[Dictionary]:
 
 # Original vector pictograms: fixed atlas cells avoid font/emoji differences across devices.
 # Both atlases live in pwa/ so Godot and the offline browser render identical glyphs.
-const ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_dashboard_gloss.svg")
-const EXTRA_ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_extras.svg")
-const ICON_KEYS := ["action", "bonus", "free", "movement", "reaction", "sword", "help", "shove", "prone", "stealth", "eye", "object", "speech", "target", "shield", "book", "spark", "flag", "skill", "hand"]
-const EXTRA_ICON_KEYS := ["dash", "disengage", "dodge", "hide", "search", "ready", "misty_step", "concentration", "sleight_of_hand", "athletics", "potion", "wild_shape", "arcana", "fire", "healing", "mark_enemy"]
+# Original 98-icon pack: 64px cells. Keys are in the same order as manifest.json.
+const GENERATED_ICON_KEYS := ["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand","acrobatics","animal_handling","arcana","armor","athletics","attack_bonus","bardic_inspiration","break_concentration","buff","check","coins","concentration","condition","cross","dash","debuff","deception","decrease","details","disengage","dodge","filter","fire","flight","grapple","healing","help_alt","hide","history","ice","increase","information","infusion","insight","interact","intimidation","inventory","investigation","invisibility","key","lightning","lock","magic_item","maneuver","map","mark_enemy","medicine","misty_step","nature","necromancy","opportunity_attack","perception","persuasion","poison","potion","proficiency","prone_alt","reaction_trigger","ready","religion","reset","rest_long","rest_short","save_throw","scroll","search","settings","sleight_of_hand","speed","spell_cast","spell_slot","stealth_check","summon","survival","talk","teleport","weapon","wild_shape"]
+const GENERATED_ICON_ATLASES := [
+	preload("res://pwa/icons/gold_generated/gold_0.svg"),
+	preload("res://pwa/icons/gold_generated/gold_1.svg"),
+	preload("res://pwa/icons/gold_generated/gold_2.svg"),
+	preload("res://pwa/icons/gold_generated/gold_3.svg")
+]
+const HEADER_ICON_KEYS := ["weapon", "flight", "sleight_of_hand", "dash", "reaction_trigger"]
 const CONTROL_ICONS: Texture2D = preload("res://vtt/icons/action_controls.svg")
 const CONTROL_ICON_KEYS := ["dice", "settings", "alternate"]
 const GOLD := Color("edbd77")
@@ -141,7 +146,7 @@ func _ready() -> void:
 		var header := HBoxContainer.new()
 		section.add_child(header)
 		header.add_theme_constant_override("separation", 12)
-		header.add_child(_icon(ICON_KEYS[index], 38))
+		header.add_child(_icon(HEADER_ICON_KEYS[index], 38))
 		var header_text := VBoxContainer.new()
 		header_text.add_theme_constant_override("separation", 2)
 		header_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -172,7 +177,7 @@ func _ready() -> void:
 	var skill_heading_row := HBoxContainer.new()
 	skill_heading_row.add_theme_constant_override("separation", 8)
 	_skill_list.add_child(skill_heading_row)
-	skill_heading_row.add_child(_icon("skill", 20))
+	skill_heading_row.add_child(_icon("proficiency", 20))
 	var skills_heading := Label.new()
 	skills_heading.text = "Prove di abilità · 4 migliori"
 	skills_heading.add_theme_font_size_override("font_size", 15)
@@ -635,18 +640,17 @@ func _action_style() -> StyleBoxFlat:
 
 func _icon_texture(key: String) -> AtlasTexture:
 	var texture := AtlasTexture.new()
-	var index := CONTROL_ICON_KEYS.find(key)
-	if index >= 0:
+	# Preserve VTT's special controls (dice roll and activation variant).
+	var control_index := CONTROL_ICON_KEYS.find(key)
+	if key in ["dice", "alternate"] and control_index >= 0:
 		texture.atlas = CONTROL_ICONS
-		texture.region = Rect2(index * 64, 0, 64, 64)
+		texture.region = Rect2(control_index * 64, 0, 64, 64)
 		return texture
-	index = ICON_KEYS.find(key)
-	texture.atlas = ACTION_ICONS
-	if index < 0:
-		index = EXTRA_ICON_KEYS.find(key)
-		if index >= 0:
-			texture.atlas = EXTRA_ACTION_ICONS
-	texture.region = Rect2(maxi(0, index) * 64, 0, 64, 64)
+	var icon_index := GENERATED_ICON_KEYS.find(key)
+	if icon_index < 0:
+		icon_index = GENERATED_ICON_KEYS.find("weapon")
+	texture.atlas = GENERATED_ICON_ATLASES[int(icon_index / 25)]
+	texture.region = Rect2((icon_index % 25) * 64, 0, 64, 64)
 	return texture
 
 func _icon(key: String, extent: int = 28) -> TextureRect:
@@ -662,31 +666,41 @@ func _icon(key: String, extent: int = 28) -> TextureRect:
 func _entry_icon(entry: Dictionary) -> String:
 	var title := String(entry.get("name", "")).to_lower()
 	var kind := String(entry.get("kind", ""))
-	if "nebbios" in title or "teletrasport" in title: return "misty_step"
-	if "concentrazione" in title: return "concentration"
+	var action_id := String(entry.get("action_id", ""))
+	if action_id == "grapple" or "afferrar" in title or "grapple" in title: return "grapple"
+	if action_id == "prone" or "prono" in title or "atterrar" in title: return "prone_alt"
+	if action_id == "shove" or "spinger" in title: return "shove"
+	if action_id == "help" or "aiutar" in title: return "help_alt"
 	if "forma selvatica" in title or "wild shape" in title: return "wild_shape"
-	if "guarig" in title or "curar" in title: return "healing"
-	if "fuoco" in title or "fiamma" in title: return "fire"
-	if "incantesim" in title or title == "magia" or kind == "Incantesimo": return "spark"
+	if "ispirazione bardica" in title or "bardic inspiration" in title: return "bardic_inspiration"
+	if title == "ira" or "rage" in title or "furia" in title: return "fire"
+	if "nebbios" in title or "teletrasport" in title: return "misty_step"
+	if "interrompere concentrazione" in title: return "break_concentration"
+	if "concentrazione" in title: return "concentration"
+	if "riposo" in title: return "rest_short"
+	if "guarig" in title or "curar" in title or "energia" in title: return "healing"
+	if "incantesim" in title or title == "magia": return "spell_cast"
+	if kind == "Incantesimo": return "spell_cast"
 	if "rapidità di mano" in title: return "sleight_of_hand"
-	if "furtiv" in title or "nascond" in title: return "stealth"
-	if "opportunit" in title: return "sword"
-	if "attacc" in title or "disarm" in title: return "sword"
-	if "aiutar" in title: return "help"
-	if "spinger" in title: return "shove"
-	if "prono" in title or "atterrar" in title: return "prone"
-	if "oggetto" in title or "utilizz" in title or "scudo" in title: return "object"
+	if "furtiv" in title or "nascond" in title: return "stealth_check"
+	if "opportunit" in title: return "opportunity_attack"
+	if "disarm" in title: return "maneuver"
+	if "due armi" in title: return "weapon"
+	if "attacc" in title: return "weapon"
+	if "pugnale" in title or "spada" in title or "sword" in title or "arco" in title or "bow" in title: return "weapon"
+	if "oggetto" in title or "utilizz" in title: return "interact"
+	if "scudo" in title: return "armor"
 	if "pozion" in title: return "potion"
-	if "parlare" in title or "influenz" in title: return "speech"
+	if "parlare" in title or "comunicar" in title: return "talk"
+	if "influenz" in title: return "persuasion"
 	if "schivar" in title: return "dodge"
 	if "disimpegn" in title: return "disengage"
 	if "cercar" in title or "indagar" in title: return "search"
 	if "studiar" in title or "arcano" in title: return "arcana"
 	if "marcare" in title: return "mark_enemy"
 	if "preparar" in title: return "ready"
-	if "scatt" in title: return "dash"
-	if "muov" in title or int(entry.get("time", 0)) == 3: return "movement"
-	return {"Attacco": "sword", "Incantesimo": "spark", "Capacità": "bonus"}.get(kind, "action")
+	if "scatt" in title or "muov" in title or int(entry.get("time", 0)) == 3: return "dash"
+	return {"Attacco": "weapon", "Incantesimo": "spell_cast", "Capacità": "proficiency"}.get(kind, "action")
 
 func _action_button(text: String, help: String = "") -> Button:
 	var button := Button.new()
@@ -961,7 +975,7 @@ func refresh_top_skills(record: Dictionary) -> void:
 		row.add_theme_constant_override("separation", 12)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(row)
-		row.add_child(_icon("dice", 26))
+		row.add_child(_icon({"stealth": "stealth_check", "sleight of hand": "sleight_of_hand", "insight": "insight", "perception": "perception", "investigation": "investigation", "athletics": "athletics", "acrobatics": "acrobatics", "arcana": "arcana", "animal handling": "animal_handling", "medicine": "medicine", "survival": "survival", "nature": "nature", "persuasion": "persuasion", "deception": "deception", "intimidation": "intimidation", "religion": "religion", "history": "history"}.get(key, "skill"), 26))
 		var caption := Label.new()
 		caption.text = String(skill["label"])
 		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -299,13 +299,21 @@ label.check, .native-summary > div { min-height:var(--touch-target); }
   background-position:var(--glyph-position,0%) center;
   filter:drop-shadow(0 1px 1px #0008);
 }
-.vtt-action-glyph--base {
-  background-image:url("/icons/action_dashboard_gloss.svg");
-  background-size:2000% 100%;
+.vtt-action-glyph--pack-0 {
+  background-image: url("/icons/gold_generated/gold_0.svg");
+  background-size: 2500% 100%;
 }
-.vtt-action-glyph--extra {
-  background-image:url("/icons/action_extras.svg");
-  background-size:1600% 100%;
+.vtt-action-glyph--pack-1 {
+  background-image: url("/icons/gold_generated/gold_1.svg");
+  background-size: 2500% 100%;
+}
+.vtt-action-glyph--pack-2 {
+  background-image: url("/icons/gold_generated/gold_2.svg");
+  background-size: 2500% 100%;
+}
+.vtt-action-glyph--pack-3 {
+  background-image: url("/icons/gold_generated/gold_3.svg");
+  background-size: 2300% 100%;
 }
 .action-economy-type-icon {
   width:29px;
