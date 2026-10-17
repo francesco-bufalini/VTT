@@ -11,6 +11,65 @@ export function itemKind(item={}){
   if(String(item.id||"").startsWith("magic_item:"))return "magic";
   return "other";
 }
+
+// Native ItemInstance.resolve allowlist: per-copy fields never mutate compendium data.
+export const ITEM_INSTANCE_FIELDS=["damage","versatile_damage","damage_type","range","properties",
+  "ac","bonus_ac","bonus_weapon","weight","weapon_size"];
+export const WEAPON_SIZES=["Tiny","Small","Medium","Large","Huge","Gargantuan"];
+export function resolveOwnedItem(saved={}){
+  const effective={...saved},overrides=saved?.instance_overrides;
+  if(overrides&&typeof overrides==="object"&&!Array.isArray(overrides))
+    for(const key of ITEM_INSTANCE_FIELDS)
+      if(Object.hasOwn(overrides,key))effective[key]=structuredClone(overrides[key]);
+  if(saved?.infusion?.requires_attunement===true)effective.req_attune=true;
+  return effective;
+}
+// Native inventory behavior: editing one item in a stack splits it off.
+export function changeItemOverride(inventory,index,key,value){
+  if(!Array.isArray(inventory)||!Number.isInteger(index)||index<0||index>=inventory.length)
+    throw Error("Oggetto non trovato.");
+  const rows=structuredClone(inventory),item=rows[index];
+  if(!item||typeof item!=="object"||!["weapon_size","damage","versatile_damage","damage_type","range","ac","bonus_ac","bonus_weapon"].includes(key))
+    throw Error("Proprietà di istanza non modificabile.");
+  const kind=itemKind(item);
+  if(key==="weapon_size"&&kind!=="weapon"||
+     ["damage","versatile_damage","range","bonus_weapon"].includes(key)&&kind!=="weapon"||
+     ["ac","bonus_ac"].includes(key)&&!["armor","shield"].includes(kind))
+    throw Error("Proprietà incompatibile con l'oggetto.");
+  let normalized=String(value??"").trim(),valid=true;
+  if(key==="weapon_size")valid=!normalized||WEAPON_SIZES.includes(normalized);
+  else if(["damage","versatile_damage"].includes(key))
+    valid=!normalized||/^([1-9]\d{0,2})d(4|6|8|10|12|20|100)(?:\s*[+-]\s*\d{1,3})?$/i.test(normalized);
+  else if(key==="range"){
+    valid=!normalized||/^[1-9]\d{0,3}(?:\/[1-9]\d{0,3})?$/.test(normalized);
+    const distances=normalized.split("/").map(Number);
+    if(normalized&&distances.length>1&&distances[1]<distances[0])valid=false;
+  }else if(["ac","bonus_ac","bonus_weapon"].includes(key)){
+    if(normalized!==""){
+      const n=Number(normalized),lo=key==="ac"?0:-20,hi=key==="ac"?40:20;
+      valid=Number.isInteger(n)&&n>=lo&&n<=hi;
+      if(valid)normalized=n;
+    }
+  }else if(key==="damage_type")valid=normalized.length<=60&&(!normalized||/^[a-zA-Z _-]+$/.test(normalized));
+  if(!valid)throw Error("Valore non valido per "+key);
+  const current=item.instance_overrides&&typeof item.instance_overrides==="object"?
+    {...item.instance_overrides}:{};
+  if(normalized===(current[key]??""))return rows;
+  if(Number(item.quantity||1)>1){
+    rows[index].quantity=Number(item.quantity)-1;
+    const one=structuredClone(item);
+    one.quantity=1;one.equipped_slots=[];one.equipped=false;one.attuned=false;
+    one.instance_id="pwa_instance_"+crypto.randomUUID();
+    rows.splice(index+1,0,one);
+    index++;
+  }
+  const changed=rows[index],overrides={...(changed.instance_overrides||{})};
+  if(normalized==="")delete overrides[key];
+  else overrides[key]=normalized;
+  changed.instance_overrides=overrides;
+  return rows;
+}
+
 export function requiresAttunement(item={}){
   const v=item.req_attune??item.reqAttune??item.infusion?.requires_attunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
