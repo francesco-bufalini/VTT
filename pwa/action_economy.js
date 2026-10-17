@@ -92,7 +92,7 @@ export function topSkillEntries(calculated={},limit=4){
 }
 export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=[]){
  const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({
-   name,time,type,description,tracker:'',cost:0,
+   name,time,type,description,tracker:'',cost:0,origin:'general',optional:false,
    action_id:name==='Aiutare'?'help':name==='Spingere'?'shove':name==='Buttare prono'?'prone':''
  }));
  // The same structured supplemental rows are used by the Godot native tab.
@@ -107,14 +107,14 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
    if(!GROUPS.some(([group])=>group===time))continue;
    out.push({
      name:String(rule.name),time,type:rule.optional?'Regola opzionale':'Generale',
-     description,tracker:String(rule.tracker||''),cost:0,
+     description,tracker:String(rule.tracker||''),cost:0,origin:'general',optional:rule.optional===true,
      action_id:String(rule.action_id||''),skill_ids:arr(rule.skills).map(String),
      catalog_id:String(rule.id||'')
    });
   }
  }
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
- const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost});
+ const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal'});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
  const already=new Set();
  // Local combat calculations preserve equipped weapon slots, hit, damage,
@@ -189,35 +189,49 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  return out;
 }
+// One row = one action and its resource. The rule's type remains in the
+// structured data but is not used as a repeated visual heading.
+function actionRow(item){
+ const tracker=String(item.tracker||'').trim();
+ const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
+ const checks=[...(item.skill_ids||[]),...(item.name==='Nascondersi'||item.name==='Movimento furtivo'?['stealth']:[])]
+   .filter((id,index,all)=>all.indexOf(id)===index);
+ return '<div class="action-economy-row"><details class="native-entry action-economy-entry"><summary><strong>'+
+   esc(item.name)+'</strong></summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
+   (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
+   checks.map(id=>{
+    const label=SKILLS.find(([key])=>key===id)?.[1]||id;
+    return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
+      '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
+   }).join('')+'</details><span class="action-economy-tracker" title="Tracker utilizzato">'+
+   (resource?esc(resource):'<span aria-label="Nessun tracker">—</span>')+
+   (item.cost?' <small>×'+esc(item.cost)+'</small>':'')+'</span></div>';
+}
+
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions);
  const skills=topSkillEntries(calculated);
- const skillPanel='<section class="panel"><h2>Prova abilità · 4 bonus più alti</h2>'+
-   (skills.length?'<div class="actions">'+skills.map(row=>
-     '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
-     '" data-label="'+esc(row.label)+'">'+esc(row.label)+' · '+(row.bonus>=0?'+':'')+esc(row.bonus)+'</button>').join('')+'</div>':
-     '<p class="hint">Nessun bonus disponibile.</p>')+'</section>';
- return skillPanel+GROUPS.map(([id,title])=>{
+ return GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);
-  const groups=new Map();
-  for(const entry of matching){
-   const tracker=entry.tracker||'Nessuna risorsa',key=tracker+' · '+entry.type;
-   if(!groups.has(key))groups.set(key,[]);
-   groups.get(key).push(entry);
-  }
-  return '<section class="panel"><h2>'+title+'</h2>'+
-   ([...groups].map(([label,items])=>'<div class="action-resource-group"><h3>'+esc(label)+'</h3>'+
-     items.map(item=>'<details class="native-entry"><summary><strong>'+esc(item.name)+'</strong>'+
-       (item.cost?' · costo '+esc(item.cost):'')+'</summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
-       (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
-       ([...(item.skill_ids||[]),...(item.name==='Nascondersi'||item.name==='Movimento furtivo'?['stealth']:[])]
-         .filter((id,index,all)=>all.indexOf(id)===index)
-         .map(id=>{
-           const label=SKILLS.find(([key])=>key===id)?.[1]||id;
-           return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
-             '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
-         }).join(''))+
-       '</details>').join('')+'</div>').join('')||
-    '<p class="hint">Nessuna azione disponibile.</p>')+'</section>';
+  const general=matching.filter(row=>row.origin!=='personal')
+   .sort((a,b)=>Number(a.optional===true)-Number(b.optional===true));
+  const personal=matching.filter(row=>row.origin==='personal');
+  const skillsPanel=id!=='action'?'':(
+    '<div class="action-economy-skills"><h3>Prove abilità · 4 migliori</h3>'+
+    (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
+      '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
+      '" data-label="'+esc(row.label)+'">'+esc(row.label)+' · '+(row.bonus>=0?'+':'')+esc(row.bonus)+'</button>'
+     ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>'
+  );
+  const separated=general.length&&personal.length;
+  const columnHead=(matching.length?
+    '<div class="action-economy-column-head"><span>Attività</span><span>Tracker</span></div>':'');
+  return '<section class="panel action-economy-section"><h2>'+esc(title)+'</h2>'+columnHead+
+    (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
+      general.map(actionRow).join(''):'')+
+    skillsPanel+
+    (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
+      personal.map(actionRow).join(''):'')+
+    (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
  }).join('');
 }
