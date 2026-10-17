@@ -43,3 +43,7 @@ Focused tests: `test_action_rules_2014.gd`, `test_action_dashboard_ui.gd`,
 `test_creature_action_economy.gd`, `test_feature_timing_recovery.gd`, and
 `test_combat_basic_actions.gd`. The fast Windows suite and feature-domain CI
 include them. CI includes the existing shared `pwa/icons` atlases.
+
+### Gerarchia della scheda
+
+Su desktop la prima colonna contiene solo Azione; bonus, tiri rapidi, movimento e reazioni sono nella seconda. I figli di Attaccare, Combattere con due armi e Prove di abilità sono rientrati con rami di albero e un controllo di espansione. Il riquadro delle prove raccoglie solo le opzioni con prove esplicite che consumano un’azione e non appartengono ad Attaccare. I quattro tiri rapidi non assegnano autonomamente un costo di azione.

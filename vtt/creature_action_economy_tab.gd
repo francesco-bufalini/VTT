@@ -926,7 +926,7 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 		var nested := VBoxContainer.new()
 		nested.add_theme_constant_override("separation", 5)
 		var key := String(entry.get("id", ""))
-		var tree_heading := String(entry.get("children_tree_heading", "Attacchi e manovre"))
+		var tree_heading := String(entry.get("children_heading", "Attacchi e manovre"))
 		var toggle := _action_button("▸ %s · %d" % [tree_heading, children.size()])
 		toggle.toggle_mode = true
 		toggle.button_pressed = bool(_expanded_actions.get(key, false))
