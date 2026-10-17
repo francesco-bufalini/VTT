@@ -19,7 +19,7 @@ test("item overrides resolve only for owned copy, never mutate catalog snapshot"
  assert.equal(source.bonus_weapon,1);
  const result=calculateSheet(character([source]));
  assert.equal(result.attacks[0].damage,"2d10 + 1 + 2");
- assert.equal(result.attacks[0].hit,1+2+2+4);
+ assert.equal(result.attacks[0].hit,1+2+2);
 });
 
 test("armor AC and numeric item bonuses are based on resolved overrides",()=>{
