@@ -1,5 +1,5 @@
 import { actionEconomyView, SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, validSlot, equipSlot } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
@@ -248,7 +248,9 @@ async function computeLocalData(record){
   let catalogs={},loadError="";
   try{catalogs=await loadRuleCatalogs();}
   catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
-  return {...calculateSheet(record,catalogs),loadError};
+  return {...calculateSheet(record,catalogs),loadError,
+    infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
+    infusion_mechanics:catalogs.classMechanics||{}};
 }
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
@@ -292,7 +294,8 @@ async function editorView() {
       (documents.length?documents.map(({item,index},i)=>
         documentRow(item,index,definitions[i])).join(""):
         '<p class="hint">Nessun documento.</p>')+
-      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>');
+      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>')+
+      infusionPanel(c,calculated);
     break;
   }
   case "actions":
@@ -432,6 +435,31 @@ function documentRow(item,index,stored){
     '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>'+
     '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
     '</div></details>';
+}
+function infusionPanel(c,calculated){
+  const caps=infusionLimits(c,calculated.infusion_mechanics);
+  if(!caps.level)return "";
+  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
+  const options=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2));
+  const select=(id,rows)=>'<select id="'+id+'">'+rows.map(([value,label])=>
+    '<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select>';
+  const itemRows=(c.inventory||[]).map((item,index)=>[index,(item.name||item.id||"Oggetto")+
+    (item.infusion?.id?' · ✦ '+(item.infusion.name||'Infuso'):'')]);
+  const learned=known.map((entry,index)=>[index,entry.name+
+    (entry.plan_item_name?' · '+entry.plan_item_name:'')]);
+  const active=(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length;
+  return panel('Infusioni · Artefice (TCE)',
+    '<p class="hint">Conosciute '+known.length+'/'+caps.known+
+    ' · Oggetti infusi '+active+'/'+caps.active+' · Livello Artefice '+caps.level+
+    '. Gli effetti numerici sono calcolati in locale, i poteri descrittivi restano consultabili.</p>'+
+    '<div class="columns"><label>Nuova infusione'+select('infusion-available',options.map(row=>[row.id,row.name]))+'</label>'+
+    '<label>Oggetto dell’inventario'+select('infusion-item',itemRows)+'</label>'+
+    '<label>Infusione conosciuta'+select('infusion-known',learned)+'</label></div>'+
+    '<div class="actions">'+btn('infusion-learn','Impara')+
+    btn('infusion-apply','Infondi oggetto')+
+    btn('infusion-forget','Dimentica')+
+    btn('infusion-clear','Termina infusione')+'</div>'+
+    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
 }
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
@@ -1316,6 +1344,20 @@ async function handleAction(target){
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
     await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':act==='tracker-turn'?'turn':'short_rest',calculated.trackers));await render();return;
+  }
+  if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
+    const creature=state.editor.read(),calculated=await computeLocalData(creature);
+    const definitions=calculated.infusion_catalog,mechanics=calculated.infusion_mechanics;
+    const index=Number(app.querySelector('#infusion-item')?.value);
+    const known=learnedInfusions(creature,definitions);
+    const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
+    const learned=known[Number(app.querySelector('#infusion-known')?.value)];
+    let changes;
+    if(act==='infusion-learn')changes=learnInfusionPatch(creature,option,definitions,mechanics,index);
+    else if(act==='infusion-apply')changes=applyInfusionPatch(creature,learned,definitions,mechanics,index);
+    else if(act==='infusion-forget')changes=forgetInfusionPatch(creature,learned);
+    else changes=clearInfusionPatch(creature,index);
+    await patch(changes);await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
