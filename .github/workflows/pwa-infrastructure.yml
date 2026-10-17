@@ -46,6 +46,8 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /pwa/
+            /network/pwa_host.gd
+            /vtt/icons/action_controls.svg
             /vtt/data/class_mechanics_5etools.json
             /vtt/data/class_resource_overrides.json
             /vtt/data/combat_actions_5etools.json
