@@ -102,10 +102,11 @@ test('a multiclass member never inherits the primary class subclass',()=>{
   ]};
  const actions=featureActionEntries(rogue,[],rules);
  assert(actions.some(row=>row.rule_id==='rogue_phb_use_object'));
- assert(!actions.some(row=>row.rule_id==='druid_phb_wild_shape'));
+ assert(actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='action'));
+ assert(!actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
  const primaryLegacy={...rogue,class:'Druid',subclass:'Circle of the Moon',
   classes:[{name:'Druid',source:'PHB',level:2},{name:'Rogue',source:'PHB',level:3}]};
  const legacyActions=featureActionEntries(primaryLegacy,[],rules);
- assert(legacyActions.some(row=>row.rule_id==='druid_phb_wild_shape'));
+ assert(legacyActions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
  assert(!legacyActions.some(row=>row.rule_id==='rogue_phb_use_object'));
 });
