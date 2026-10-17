@@ -107,6 +107,17 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
       r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
   });
+  click('[data-act="tracker-less"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
+      !Object.hasOwn(r.creature.resource_tracker_spent||{},r.creature.resource_trackers[0].id));
+  });
+  click('[data-act="tracker-more"]');
+  await until(async()=>{
+    const rows=await listCreatures();
+    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
+  });
   click('[data-act="tracker-long"]');
   await until(async()=>{
     const rows=await listCreatures();
