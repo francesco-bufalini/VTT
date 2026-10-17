@@ -950,6 +950,9 @@ func _build_ui() -> void:
 	actions_tab.add_child(_action_economy_ui)
 	_action_economy_ui.skill_requested.connect(_on_formula_roll_requested)
 	_action_economy_ui.basic_action_requested.connect(_on_basic_action_requested)
+	_action_economy_ui.tracker_change_requested.connect(_on_action_tracker_change)
+	_action_economy_ui.cast_spell_requested.connect(_on_action_cast_requested)
+	_action_economy_ui.open_spellbook_requested.connect(func() -> void: _show_sheet_tab("Poteri"))
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
 	inventory_tab.add_child(_inventory_ui)
@@ -2816,6 +2819,19 @@ func _on_formula_bonus_requested(key: String) -> void:
 func _scroll_origins_to_top() -> void:
 	if _origins_scroll != null and is_instance_valid(_origins_scroll):
 		_origins_scroll.scroll_vertical = 0
+
+
+func _on_action_tracker_change(tracker_id: String, delta: int, maximum: int) -> void:
+	_change_tracker(tracker_id, delta, maximum)
+	if _action_economy_ui != null:
+		_action_economy_ui.call("load_record", _current())
+
+
+func _on_action_cast_requested(spell_id: String, grant_id: String) -> void:
+	if _spellcasting_ui == null or not _spellcasting_ui.has_method("request_cast_from_actions"):
+		return
+	if not bool(_spellcasting_ui.call("request_cast_from_actions", spell_id, grant_id)):
+		_set_status("Incantesimo non più disponibile. Aggiorna la scheda Poteri.")
 
 
 func _on_basic_action_requested(action_id: String) -> void:
