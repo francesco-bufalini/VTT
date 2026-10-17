@@ -162,3 +162,10 @@ L'elenco non crea privilegi inesistenti: i tratti puramente descrittivi
 restano descrittivi e i privilegi privi di regole machine-readable possono
 richiedere configurazione manuale. L'esecuzione dei calcoli rimane nella PWA
 e non richiede una chiamata al server.
+
+
+## Selezione bersagli e applicazione effetti dalla PWA
+
+Lancio incantesimi dalla scheda **Magia** (compresi incantesimi concessi dalle origini) e dalla schermata **Partita**: con la creatura collegata a un token, `begin_spell` apre lo snapshot WebP bidimensionale con i marcatori selezionabili. `target_spell`, `preview_spell`, `finish_spell` e `cancel_spell` sono gli stessi comandi autorizzati da Godot per Android; i calcoli di area, portata ed effetti rimangono sul desktop. La PWA addebita la risorsa solo dopo l'accettazione del lancio, non per anteprime o comandi rifiutati.
+
+Ogni snapshot pubblico della mappa espone `conditions`, `concentrating_spell_id` e `active_spell_ids` dei token effettivamente interessati: la PWA riconcilia questi campi con **le sole proprie schede collegate**, anche quando si sta usando la scheda, usando la stessa semantica di `CreatureArea._copy_public_token_status` Android. Gli incantesimi aggiunti diventano origini `spell:<id>` con `applied: true`; quelli dispersi vengono rimossi solo se erano stati applicati. Origini di altre provenienze, bonus volontari, PF, inventario e contesti privati non vengono cancellati. La riconciliazione usa l'editor aperto per evitare conflitti di revisioni su IndexedDB. Nessun dato della scheda viene inviato con la mappa.
