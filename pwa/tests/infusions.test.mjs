@@ -45,7 +45,7 @@ test("learn, infuse one stacked sword, and compute upgraded +2 attack/damage ent
  assert.equal(infusionNumericBonuses(record,record.inventory[0],definitions).bonus_weapon,2);
  const output=calculateSheet(record,{abilityGrants:index});
  assert.equal(output.attacks[0].hit,3+4+2);
- assert.equal(output.attacks[0].damage,"1d8 + 3 + 2");
+ assert.equal(output.attacks[0].damage,"1d8 + 5");
  assert.throws(()=>applyInfusionPatch(record,known[0],definitions,mechanics,1),/già applicata/);
  record={...record,...clearInfusionPatch(record,0)};
  assert.equal(calculateSheet(record,{abilityGrants:index}).attacks[0].hit,3+4);
