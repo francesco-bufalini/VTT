@@ -345,8 +345,8 @@ func _add_entry(entry: Dictionary) -> void:
 	)
 	_sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)].add_child(button)
 
-func load_record(record: Dictionary) -> void:
-	if _sections.is_empty():
+func refresh_top_skills(record: Dictionary) -> void:
+	if _skill_list == null:
 		return
 	for child: Node in _skill_list.get_children():
 		_skill_list.remove_child(child)
@@ -358,6 +358,11 @@ func load_record(record: Dictionary) -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.pressed.connect(func() -> void: skill_requested.emit("skill:" + key))
 		_skill_list.add_child(button)
+
+func load_record(record: Dictionary) -> void:
+	if _sections.is_empty():
+		return
+	refresh_top_skills(record)
 	for section: VBoxContainer in _sections:
 		for child: Node in section.get_children():
 			if child.has_meta("action_generated"):
