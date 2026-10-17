@@ -282,7 +282,8 @@ export function calculateSheet(record={},catalogs={}){
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
-  const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"));
+  const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
+    .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r);
   const automatic=[...(index?indexRows(record,index,warnings):[]),
     ...itemRows(record,warnings),...structuredFeatureGrants(record)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
@@ -424,6 +425,7 @@ export function calculateSheet(record={},catalogs={}){
     warnings.add("Bonus di origine non verificabile: "+sid);
     return false;
   }
+  const explanations={},components={};
   function sumGrants(target,stack){
     let total=0;
     for(const row of grants){
@@ -431,6 +433,8 @@ export function calculateSheet(record={},catalogs={}){
       try{
         const value=parseArithmetic(row.expression??"0",name=>resolveSymbol(name,resolve,stack));
         total+=value;
+        if(!components[target])components[target]=new Map();
+        components[target].set(row.id||row,(row.origin_name||'Bonus')+': '+row.expression+' = '+value);
       }catch(error){warnings.add("Bonus ignorato per "+target+": "+error.message);}
     }
     return total;
@@ -474,13 +478,28 @@ export function calculateSheet(record={},catalogs={}){
     }
     automaticHP={available:true,value:total};
   }
+  if(kind==='monster'&&!classes.length){
+    const hp=record.stat_block?.hp;
+    if(typeof hp==='number'||Number.isFinite(Number(hp?.average)))
+      automaticHP={available:true,value:Math.max(1,int(typeof hp==='number'?hp:hp.average))};
+  }
   // Unknown class/feature effects are reported, not silently guessed or persisted.
   const speeds={walk:safe("speed")};
   for(const v of ["climb","swim","fly","burrow"])speeds[v]=safe("speed:"+v);
+  for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
+  memo.set('pact_slot',pactTotal);
+  for(const target of ['ac','initiative','hp','second_max','passive_perception'])safe(target);
+  for(const target of memo.keys()){
+    const total=memo.get(target),parts=[...(components[target]?.values()||[])];
+    explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
+  }
   return {source:"local",schema:1,abilities,saves,skills,
+    values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
+    bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
-      speeds,automatic_hp:automaticHP},
+      speeds,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
+      jumps:{long:Math.max(0,abilities.str.score??0),high:Math.max(0,3+(abilities.str.modifier??0))}},
     spell_slots:slots,pact_slots:{total:pactTotal,spent:Math.min(pactTotal,int(record.pact_slots_spent)),
       level:useSaved?int(record.pact_slot_level,1):progression.pact_level},
     warnings:[...warnings],complete:warnings.size===0};

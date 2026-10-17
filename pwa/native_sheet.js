@@ -1,4 +1,6 @@
-// Presentation and edits of the existing portable native schema. No rules engine.
+// Native-style sheet sections and mutations of the portable native schema.
+// Math is owned by sheet_rules.js; this module never calls the desktop.
+import {formulaReadout} from './sheet_rules_view.js';
 export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abilità"],
  ["battle","Battaglia"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
@@ -7,19 +9,33 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
+export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],
+ ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
+ ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
+ ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const list=v=>Array.isArray(v)?v:[];
 export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
  feats_catalog:[["name","Talento"],["source","Fonte"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
- formula_bonuses:[["target","Valore",[["ac","CA"],["initiative","Iniziativa"],["max_hp","PF massimi"],["speed","Velocità"],["proficiency","Competenza"],...['str','dex','con','int','wis','cha'].flatMap(a=>[["ability:"+a,"Punteggio "+a.toUpperCase()],["save:"+a,"TS "+a.toUpperCase()]])]], ["expression","Formula"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ formula_bonuses:[["target","Valore",BONUS_TARGETS], ["expression","Formula"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
  origin_spell_grants:[["origin_name","Origine"],["spellcasting_ability","Caratteristica",[["","Automatica"],["int","Intelligenza"],["wis","Saggezza"],["cha","Carisma"]]],["disabled","Disattivata","checkbox"]]
 };
 export function rowsFor(c,key){
+ if(key==='classes'&&!list(c.classes).length&&c.class)return [{name:c.class,source:c.class_source||'',id:c.class_id||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',subclass_id:c.subclass_id||'',level:c.level||1}];
  if(key!=="proficiency_choices" || Array.isArray(c.proficiency_choices))return structuredClone(list(c[key]));
  return [['skill','skill_proficiencies'],['expertise','skill_expertise'],['save','saving_throw_proficiencies']].flatMap(([kind,field])=>list(c[field]).map(key=>({kind,key,origin_id:'',origin_name:'',disabled:false})));
+}
+// Same mutation contract as CreatureSheetController.change_hit_points().
+export function hitPointPatch(c,delta,calculated){
+ if(!Number.isInteger(delta)||Math.abs(delta)>99999)throw Error('Quantità PF non valida');
+ if(delta>=0)return {current_hp:Math.min(Math.max(0,calculated.stats.max_hp),Number(c.current_hp||0)+delta)};
+ let remaining=-delta;
+ const absorb=value=>{const hp=Math.max(0,Number(value)||0),used=Math.min(hp,remaining);remaining-=used;return hp-used;};
+ const temporary_hp=absorb(c.temporary_hp),second_form_hp=absorb(c.second_form_hp);
+ return {temporary_hp,second_form_hp,current_hp:absorb(c.current_hp)};
 }
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
@@ -78,7 +94,7 @@ export function identityPatch(c,key,value){
  }
  return patch;
 }
-export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',details='overview',catalogs={}}){
+export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',details='overview',catalogs={},calculated={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
@@ -100,14 +116,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const number=(label,key,value=c[key]??0,min=0,max=99999)=>field(label,key,value,'number','min="'+min+'" max="'+max+'"');
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
- const nativeNote='<p class="hint">I valori derivati e i benefici delle origini vengono ricalcolati dalla versione nativa quando importa la scheda.</p>';
+ const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
+ const nativeNote='<p class="hint">Modifica i valori base o usa ± per gestire i bonus. I risultati si aggiornano sulla scheda, anche offline.</p>';
  if(section==='info')return panel('Identità',cols(
     select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
     field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
     select('Allineamento','alignment',
       c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
         [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
-      c.alignment||'Completamente neutrale')))+
+      c.alignment||'Completamente neutrale'))+reference('Background','background','backgrounds'))+
    panel('Fisico',
     (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
@@ -118,33 +135,28 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<p class="hint">Le miniature si scelgono dal catalogo della versione nativa.</p>'+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
-    '<h3>Movimento</h3>'+summary([['Camminata base salvata (ft)',c.speed_base??c.speed??30],
-      ...['climb','swim','fly','burrow'].map((mode,i)=>[['Scalata','Nuoto','Volo','Scavo'][i]+' (ft)',c.species_speed?.[mode]??c.stat_block?.speed?.[mode]??0])])+
+    '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
+    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft']])+
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
        '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
-   panel('Background',reference('Background','background','backgrounds'))+
    panel('Classi e progressione',cols(number('XP','xp')+
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
       (c.class?number('Livello totale','level',c.level??1,1,20):
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
-      (list(c.classes).length>1?'<details><summary>Multiclasse (riepilogo)</summary>'+
-        summary(c.classes.map((r,i)=>['Classe '+(i+1),r.name+' · livello '+r.level]))+
-        '<p class="hint">Per modificare le classi aggiuntive usa la scheda nativa.</p></details>':''))+
+      '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows({...c,classes:list(c.classes).length?c.classes:c.class?[{name:c.class,source:c.class_source||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',level:c.level||1}]:[]},'classes')+'</details>')+
    panel('Talenti',feats)+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
      (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
       '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
       summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
         ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
- if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio base</strong><strong>Mod. base</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label><span class="native-derived">'+
-     (Math.floor((Number(c.abilities?.[key]??10)-10)/2)>=0?'+':'')+
-     Math.floor((Number(c.abilities?.[key]??10)-10)/2)+'</span><span>'+
-     (rowsFor(c,'proficiency_choices').some(r=>r.kind==='save'&&r.key===key&&!r.disabled)||list(c.saving_throw_proficiencies).includes(key)?'Competente':'—')+'</span>').join('')+'</div>'+nativeNote)+
-  // Effective proficiency and passive perception are computed by local sheet_rules.js.
-  panel('Abilità',summary(SKILLS.map(([id,label,ability])=>[label+' · '+ability.toUpperCase(),rowsFor(c,'proficiency_choices').some(r=>r.kind==='expertise'&&r.key===id&&!r.disabled)?'Maestria':rowsFor(c,'proficiency_choices').some(r=>r.kind==='skill'&&r.key===id&&!r.disabled)?'Competente':'—'])))+
-  panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],rowsFor(c,'proficiency_choices').filter(r=>r.kind===kind&&!r.disabled).map(r=>r.key).join(', ')||'Nessuno'])))+
+ if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
+  panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>')+
+  panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>')+
+  panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
- if(section==='battle')return panel('Punti ferita',cols(number('Attuali','current_hp',c.current_hp??1)+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+number('Seconda forma · massimi','second_form_max_hp')))+
-  resources+panel('CA e iniziativa',summary([['CA base (riferimento)',c.armor_class_base??c.armor_class??10],['Iniziativa salvata (riferimento)',c.initiative??0]])+
+ if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp'))+
+    (calculated.stats?.automatic_hp?.available?'<p class="hint">PF da progressione: '+calculated.stats.automatic_hp.value+'</p><button class="btn" data-act="hp-automatic">Applica PF automatici</button>':''))+
+  resources+panel('CA e iniziativa','<div class="row between"><span>Classe armatura '+read('ac','Classe armatura')+'</span><span>Iniziativa '+read('initiative','Iniziativa',true)+'</span></div>'+armor+
       cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+equipment+
   panel('Attacchi disponibili',select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
    list(c.inventory).filter(i=>Array.isArray(i.equipped_slots)&& (i.equipped_slots.includes('main')||i.equipped_slots.includes('off'))).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+

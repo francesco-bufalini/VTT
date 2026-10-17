@@ -1,4 +1,4 @@
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, hitPointPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
@@ -11,7 +11,7 @@ import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
-import { localSheetView } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -226,13 +226,11 @@ async function catalogView() {
     detail;
 }
 
-async function computeLocalView(record,section){
-  if(!["info","stats","battle","magic"].includes(section))return "";
+async function computeLocalData(record){
   let catalogs={},loadError="";
   try{catalogs=await loadRuleCatalogs();}
   catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
-  const data=calculateSheet(record,catalogs);
-  return localSheetView(section,data,loadError);
+  return {...calculateSheet(record,catalogs),loadError};
 }
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
@@ -256,7 +254,9 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
+  const calculated=await computeLocalData(c);
+  state.calculated=calculated;
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off']),armor:equipmentView(c,['body'],false),details:state.detail,catalogs:state.referenceCatalogs,calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -316,7 +316,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+(await computeLocalView(c,state.sheet))+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return navigation+'<div data-local-sheet-calculations>'+body+calculationNote(calculated,calculated.loadError)+'</div><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -324,7 +324,7 @@ function resourceView(c,configure=false){
     const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
-    return panel("Utilizzi e risorse",
+    return panel("Risorse",
       '<p class="hint">Contatori manuali. I tracker automatici di classe e privilegi non sono ancora coperti integralmente dal motore locale.</p>'+
       (trackers.length?trackers.map((t,i)=>{
         const max=Math.max(0,Number(t.max)||0);
@@ -347,19 +347,18 @@ function resourceView(c,configure=false){
   }
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
-function equipmentView(c){
+function equipmentView(c,slots=['main','off','body'],boxed=true){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
   const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
-  return panel("Equipaggiamento",
-    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per i calcoli di CA e attacchi di Godot. Le armi a due mani escludono la mano secondaria.</p>'+
-    '<div class="columns">'+labels.map(([slot,label])=>{
+  const body='<div class="columns">'+labels.filter(([slot])=>slots.includes(slot)).map(([slot,label])=>{
       const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
       const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
       return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
         '<option value="-1"'+(index<0?' selected':'')+'>Nessuno</option>'+
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
-    }).join('')+'</div>');
+    }).join('')+'</div>';
+  return boxed?panel('Equipaggiamento',body):body;
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -696,10 +695,13 @@ async function patch(patchValue) {
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
     await state.editor.update(patchValue);
-    const oldProjection=app.querySelector(".derived-local");
-    if(oldProjection){
-      const fresh=await computeLocalView(state.editor.read(),state.sheet);
-      if(fresh)oldProjection.outerHTML=fresh;
+    const editor=state.editor,revision=editor.revision;
+    const calculated=await computeLocalData(editor.read());
+    if(state.editor===editor&&revision===editor.revision){
+      state.calculated=calculated;
+      refreshCalculatedValues(app,calculated);
+      const note=app.querySelector('[data-calculation-note]');
+      if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
     }
     state.saveError="";
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
@@ -861,9 +863,34 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(['hp-damage','hp-heal','hp-restore','hp-automatic'].includes(act)){
+    const c=state.editor.read(),calculated=await computeLocalData(c);
+    if(act==='hp-automatic'){
+      if(!calculated.stats.automatic_hp.available)throw Error('PF automatici non disponibili');
+      await patch({max_hp_base:calculated.stats.automatic_hp.value});
+    }else if(act==='hp-restore')await patch({current_hp:Math.max(0,calculated.stats.max_hp)});
+    else{
+      const amount=Number(app.querySelector('#hp-amount')?.value);
+      if(!Number.isInteger(amount)||amount<0||amount>99999)throw Error('Quantità PF non valida');
+      await patch(hitPointPatch(c,amount*(act==='hp-damage'?-1:1),calculated));
+    }
+    await render();return;
+  }
   if(act==="sheet-details"){
     if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
     state.sheet="origins";state.detail=target.dataset.detail;await render();return;
+  }
+  if(act==='edit-bonus'){
+    const c=state.editor.read(),targetKey=target.dataset.target;
+    const rows=rowsFor(c,'formula_bonuses');
+    if(!rows.some(row=>row.target===targetKey&&!row.automatic)){
+      rows.push({id:'bonus_'+crypto.randomUUID(),target:targetKey,expression:'0',origin_id:'',origin_name:'',disabled:false,automatic:false});
+      await patch({formula_bonuses:rows});
+    }
+    state.sheet='origins';state.detail='formula_bonuses';await render();
+    const index=rows.findIndex(row=>row.target===targetKey&&!row.automatic);
+    app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"][data-key="expression"]')?.focus();
+    return;
   }
   if(act==="native-add"||act==="native-remove"){
     const key=target.dataset.list;if(!ROW_FIELDS[key])throw Error("Elenco non valido");
