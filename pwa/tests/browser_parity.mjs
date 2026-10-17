@@ -58,6 +58,15 @@ try{
    await page.waitForFunction(()=>document.querySelector('#save-state'));
    const size=await page.evaluate(()=>({width:innerWidth,content:document.documentElement.scrollWidth}));
    assert.ok(size.content<=width,`${key} overflows at ${width}px: ${size.content}`);
+   if(width===360&&['info','stats','battle','magic'].includes(key)){
+    const touch=await page.evaluate(()=>{
+     const control=document.querySelector('input:not([type=checkbox]):not([type=file]), select');
+     const summary=document.querySelector('.native-summary > div');
+     return {control:control?.getBoundingClientRect().height||0,summary:summary?.getBoundingClientRect().height||0};
+    });
+    assert.ok(touch.control>=48,`${key} exposes 48px phone controls`);
+    if(touch.summary)assert.ok(touch.summary>=48,`${key} keeps summary rows tappable on phone`);
+   }
    if(key==='traits'){
      assert.ok(await page.locator('.trait-card > summary').filter({hasText:/^Font of Inspiration(?: ·|$)/}).count(),'level 5 Bard feature must be visible');
      assert.equal(await page.locator('.trait-card > summary').filter({hasText:/^Countercharm(?: ·|$)/}).count(),0,'level 6 Bard feature must not be visible at level 5');

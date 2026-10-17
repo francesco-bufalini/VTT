@@ -104,3 +104,22 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .native-abilities > * { min-width:0; }
 .native-abilities .sheet-formula { flex-wrap:wrap; justify-content:center; }
 @media(max-width:420px) { .native-abilities { gap:.35rem; } .native-abilities .formula-bonus { min-width:26px; } }
+
+/* Phone-first sheet controls: a field is a deliberate touch target, not a
+   compact desktop control that happens to fit on a phone. */
+:root { --touch-target:48px; }
+input:not([type=checkbox]):not([type=file]), select { min-height:var(--touch-target); }
+label.check, .native-summary > div { min-height:var(--touch-target); }
+.native-summary > div { align-items:center; }
+.derived-metric { padding:11px; min-height:68px; align-content:center; }
+
+@media(max-width:420px) {
+  .native-abilities {
+    grid-template-columns:28px minmax(74px,1.4fr) minmax(48px,.72fr) minmax(54px,.82fr);
+    gap:.35rem;
+  }
+  .native-abilities strong { font-size:10px; overflow-wrap:anywhere; }
+  .native-abilities .sheet-result,
+  .native-abilities .sheet-formula output { padding:.38rem .2rem; }
+  .slot-table { grid-template-columns:1.8rem minmax(0,1fr) minmax(0,1fr); gap:.6rem .25rem; }
+}
