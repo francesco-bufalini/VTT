@@ -164,6 +164,33 @@ static func _append_monster_trackers(record: Dictionary, output: Array[Dictionar
 			"origin": "Azioni leggendarie",
 			"recharge": "turn"
 		})
+	# Normalized bestiary records already contain complete action counters.
+	# Avoid scanning every title with regex and rejoining Fight Club by name
+	# each time the sheet rebuilds or a resting event checks its resources.
+	if int(stat.get("vtt_action_metadata_version", 0)) == 1:
+		if not ((action_count is int or action_count is float) and int(action_count) > 0):
+			var supplement_count: int = int(stat.get("vtt_legendary_actions", 0))
+			var legendary_rows: Variant = stat.get("legendary", [])
+			if supplement_count > 0 and legendary_rows is Array and not (legendary_rows as Array).is_empty():
+				output.append({"id": "legendary_actions", "name": "Azioni leggendarie",
+					"max": supplement_count, "origin": "Azioni leggendarie",
+					"recharge": "turn", "source_label": "Fight Club 5e"})
+		for section: String in ["trait", "action", "bonus", "reaction", "legendary", "mythic"]:
+			var values: Variant = stat.get(section, [])
+			if not values is Array:
+				continue
+			for raw_entry: Variant in values:
+				if not raw_entry is Dictionary:
+					continue
+				var counter: Variant = (raw_entry as Dictionary).get("vtt_resource", {})
+				if not counter is Dictionary or (counter as Dictionary).is_empty():
+					continue
+				var row: Dictionary = (counter as Dictionary).duplicate(true)
+				if int(row.get("max", 0)) <= 0:
+					continue
+				row["origin"] = String(row.get("name", (raw_entry as Dictionary).get("name", "")))
+				output.append(row)
+		return
 	# The recharge tag is machine-readable syntax, not a natural-language
 	# expression such as "(Recharges after a Short or Long Rest)".
 	for section: String in ["trait", "action", "bonus", "reaction", "legendary", "mythic"]:
