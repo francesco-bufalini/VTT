@@ -278,7 +278,7 @@ func _select_basic_target(target_id: String) -> void:
 		Bonuses.value(_basic_record, "skill:athletics"),
 		Bonuses.value(_basic_record, "ability_mod:str"),
 		Bonuses.value(_basic_record, "proficiency"))
-	var rule := String(info.get("check", "")) + "\n" + String(info.get("action", ""))
+	var rule := String(info.get("check", "")) + "\n" + ("Afferrare con una mano libera: applica Afferrato al successo." if _basic_mode == "grapple" else String(info.get("action", "")))
 	if info.has("dc"):
 		rule += "\nCD: %d" % int(info["dc"])
 	else:
@@ -475,7 +475,7 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 			elif bool(_spell_status.get("active", false)):
 				caption.text += " · " + String(_spell_status.get("instruction", "Seleziona sulla mappa"))
 			if not _basic_mode.is_empty():
-				caption.text += " · tocca un bersaglio per " + ("Aiutare" if _basic_mode == "help" else "Spingere" if _basic_mode == "shove" else "Buttare prono")
+				caption.text += " · tocca un bersaglio per " + ("Aiutare" if _basic_mode == "help" else "Spingere" if _basic_mode == "shove" else "Afferrare" if _basic_mode == "grapple" else "Buttare prono")
 			elif not _snapshot_attack.is_empty():
 				caption.text += " · verde: gittata normale · arancio: lunga" + _target_note
 		else:
