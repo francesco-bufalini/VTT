@@ -4,7 +4,7 @@ import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwn
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
-  removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
+  removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
@@ -37,6 +37,9 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
+let tokenStatusFingerprint="";
+let tokenSyncQueue=Promise.resolve();
+let mapGeneration=0;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
@@ -46,6 +49,7 @@ function acceptSession(info){
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
     state.messages=[];state.after="";state.map=null;state.tokenId="";
+    tokenStatusFingerprint="";
   }
   if(next)currentGameSession=next;
   state.session=info;
@@ -121,6 +125,7 @@ function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").sli
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
 function stopSubscriptions() {
   ++chatGeneration;
+  ++mapGeneration;
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -152,7 +157,7 @@ async function render() {
     }
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
-    if(state.page === "session" && state.paired) startMap();
+    if(state.paired && !state.stopMap) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
@@ -307,7 +312,13 @@ async function editorView() {
     body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[]);
     break;
   case "magic":
-    body=panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+
+    body=panel('Lancio tattico',c.linked_token_sync_id?
+      '<p class="hint">I bersagli si scelgono sullo snapshot 2D della mappa; lo slot è consumato solo dopo l’accettazione del desktop.</p>'+
+      '<div class="columns"><label>Livello slot (0 = automatico)<input id="sheet-cast-level" type="number" min="0" max="9" value="'+esc(state.castLevel)+'"></label>'+
+      '<label>Risorsa<select id="sheet-cast-payment"><option value="auto">Automatica</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label></div>'+
+      (!state.paired||!state.online?'<p class="hint">Collega la partita e piazza il token prima di lanciare.</p>':''):
+      '<p class="hint">Piazza e collega questa creatura a un token dalla sezione Partita.</p>')+
+      panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+
       panel("Incantesimi disponibili",calculated.casting_classes.map(member=>{
         const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
         return '<article class="native-entry"><h3>'+esc(member.name)+' · '+esc(member.source)+'</h3><p>'+member.mode+' '+count.leveled+' / '+(member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+castingStatistics(c,member.id,member.ability)+spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</article>';
@@ -526,6 +537,7 @@ function originPowersView(c,calculated){
   const options=calculated.spell_slots.filter(s=>s.level>=Number(spell?.level||0)&&s.total>s.spent).map(s=>[s.level,'Livello '+s.level]);
   if(calculated.pact_slots.level>=Number(spell?.level||0)&&calculated.pact_slots.total>calculated.pact_slots.spent)options.push([0,'Patto']);
   const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+(grant.automatic?' · Da origine':'')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+esc(id)+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
+   (spell&&c.linked_token_sync_id?'<button class="btn primary small" data-act="cast-origin-spell" data-grant-id="'+esc(id)+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia · bersagli</button>':'')+
    (mode!=='free'?'<button class="btn" data-act="origin-spend" data-grant-id="'+esc(id)+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+
    '<details><summary>Configura consumo</summary><label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label><label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label><label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(id)+'"></label></details>'+
    (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(id)+'">Cambia questa scelta</button>':'')+'</article>';
@@ -554,8 +566,12 @@ function spellList(c,key,classId=null,classes=[]) {
     const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
     const meta=typeof spell==="object"&&spell?
       ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
+    const id=typeof spell==="string"?spell:spell?.id||"";
     return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
-      '<span class="hint">'+meta+'</span></div><button type="button" class="btn danger small" '+
+      '<span class="hint">'+meta+'</span></div>'+
+      (key==="prepared_spells"&&c.linked_token_sync_id&&id?
+        '<button type="button" class="btn primary small" data-act="cast-sheet-spell" data-spell-id="'+esc(id)+'" data-casting-class="'+esc(classId||'')+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia</button>':'')+
+      '<button type="button" class="btn danger small" '+
       'data-act="remove-spell" data-key="'+key+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'">Rimuovi</button></div>';
   }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
 }
@@ -710,8 +726,9 @@ async function refreshConnection(quiet=false) {
 }
 function startMap() {
   state.stopMap?.();
+  const generation=++mapGeneration;
   state.stopMap = subscribeMap(data=>{
-    if(state.page!=="session") return;
+    if(generation!==mapGeneration)return;
     const recovered=!state.online;
     state.map = data;
     state.online=true;
@@ -725,6 +742,33 @@ function startMap() {
       }).catch(()=>{});
     }
     const entries=data?.tokens||[];
+    // Match Android's local ownership boundary: public token status is
+    // projected into the linked sheet only, never the server's private data.
+    const fingerprint=JSON.stringify(entries.map(row=>[row.id,row.conditions,
+      row.concentrating_spell_id,row.active_spell_ids,row.current_miniature_id,row.default_miniature_id]));
+    if(fingerprint!==tokenStatusFingerprint){
+      tokenSyncQueue=tokenSyncQueue.then(async()=>{
+        if(generation!==mapGeneration)return;
+        const current=state.editor&&state.creatureId?
+          {id:state.creatureId,editor:state.editor}:null;
+        const changed=await syncLinkedTokenStatuses(data,{liveEditor:current,spells:state.spellCatalog||[]});
+        if(generation!==mapGeneration)return;
+        tokenStatusFingerprint=fingerprint;
+        if(changed.length){
+          if(state.page==='session'){
+            state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+            state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
+          }else if(state.editor&&changed.includes(state.creatureId)){
+            if(!app.contains(document.activeElement)||document.activeElement.tagName==='BUTTON')
+              await render();
+            else{
+              state.calculated=await computeLocalData(state.editor.read());
+              refreshCalculatedValues(app,state.calculated);
+            }
+          }else if(state.page==='library')await render();
+        }
+      }).catch(error=>{message("Sincronizzazione effetti: "+errorMessage(error),true);});
+    }
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
     // Avoid replacing focused inputs while a player interacts.
@@ -734,7 +778,7 @@ function startMap() {
       window.scrollTo(0,scrollY);
     }
   },error=>{
-    if(state.page!=="session")return;
+    if(generation!==mapGeneration)return;
     const wasOnline=state.online;
     state.online=false;
     state.hostReachable=!!error?.status;
@@ -742,6 +786,7 @@ function startMap() {
     // network loss is recoverable: subscribeMap continues retrying.
     state.map=null;
     state.tokenId="";
+    tokenStatusFingerprint="";
     if(error?.status===401){
       state.paired=false;state.session=null;
       state.stopMap?.();state.stopMap=null;
@@ -750,7 +795,7 @@ function startMap() {
       return;
     }
     syncNav();
-    app.innerHTML=sessionView();
+    if(state.page==='session')app.innerHTML=sessionView();
     if(wasOnline)message("Connessione persa. Riconnessione automatica in corso.");
   },2500);
 }
@@ -1058,6 +1103,42 @@ async function refreshMapOnce() {
   if(state.page==="session"){const scroll=window.scrollY;app.innerHTML=sessionView();window.scrollTo(0,scroll);}
 }
 
+// Android and PWA use the same native targeting commands, not independent
+// spell/area calculations. Never send a private creature sheet to the host.
+async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken=''){
+  if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
+  const stored=await loadCreature(casterId);
+  if(!stored)throw Error("Scheda locale non trovata.");
+  const tokenId=String(stored.data.linked_token_sync_id||"");
+  if(!tokenId||expectedToken&&expectedToken!==tokenId)
+    throw Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
+  if(!state.map?.tokens?.some(row=>row.id===tokenId))
+    throw Error("Il token della creatura non è sulla mappa attiva.");
+  const calculated=await computeLocalData(stored.data);
+  const plan=spellCastPlan(stored.data,selection,requestedLevel,calculated,payment);
+  if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+  let charged=false;
+  tacticalViewer.onCastAccepted=async()=>{
+    if(charged)return;
+    const editor=state.editor&&state.creatureId===casterId?
+      state.editor:await openCreatureEditor(casterId);
+    const current=editor.read();
+    const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
+    if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
+    charged=true;
+    if(state.page==='session'){
+      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      state.castSheets?.set(casterId,await computeLocalData(editor.read()));
+    }else if(state.editor===editor)state.calculated=await computeLocalData(editor.read());
+  };
+  try{
+    await tacticalViewer.open(tokenId);
+    await tacticalViewer.beginSpell({spell:selection,slotLevel:plan.slotLevel,context:plan.context});
+  }catch(error){
+    tacticalViewer.close();
+    throw error;
+  }
+}
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='sheet-roll'){
@@ -1456,34 +1537,29 @@ async function handleAction(target){
     await tacticalViewer.open(state.tokenId,attack);
     return;
   }
+  if(act==="cast-sheet-spell"||act==="cast-origin-spell"){
+    const c=state.editor?.read();if(!c)throw Error("Apri una scheda prima del lancio.");
+    const calculated=await computeLocalData(c);
+    const selections=sessionSpellEntries(c,calculated,state.spellCatalog||[]);
+    const spell=act==="cast-origin-spell"?
+      selections.find(row=>row.grant_id===target.dataset.grantId):
+      selections.find(row=>row.id===target.dataset.spellId&&
+        (!target.dataset.castingClass||target.dataset.castingClass==='manual'||
+         row.casting_class===target.dataset.castingClass));
+    if(!spell)throw Error("Incantesimo non disponibile nella scheda.");
+    const level=Number(app.querySelector('#sheet-cast-level')?.value??state.castLevel);
+    if(!Number.isInteger(level)||level<0||level>9)throw Error("Livello di slot non valido.");
+    state.castLevel=level;
+    await startTargetedCast(c.id,structuredClone(spell),level,
+      app.querySelector('#sheet-cast-payment')?.value||'auto');
+    return;
+  }
   if(act==="begin-spell"){
     const casterId=document.querySelector("#cast-creature")?.value;
-    const caster=await loadCreature(casterId);
-    if(!caster)throw new Error("Scegli una scheda locale.");
-    if(caster.data.linked_token_sync_id!==state.tokenId)
-      throw new Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
     const spell=state.visibleSpells?.[Number(document.querySelector("#cast-spell")?.value)];
     if(!spell)throw new Error("Scegli un incantesimo della creatura.");
-    if(!Number.isInteger(state.castLevel)||state.castLevel<0||state.castLevel>9)
-      throw new Error("Livello di slot non valido.");
-    if(!tacticalViewer)tacticalViewer=new TacticalViewer({
-      send:action,ownerId,notify:message
-    });
-    const requestedLevel=state.castLevel,payment=document.querySelector('#cast-payment')?.value||'auto';
-    const selection=structuredClone(spell),calculated=await computeLocalData(caster.data);
-    const plan=spellCastPlan(caster.data,selection,requestedLevel,calculated,payment);
-    let charged=false;
-    tacticalViewer.onCastAccepted=async()=>{
-      if(charged)return;
-      charged=true;
-      const editor=await openCreatureEditor(casterId),current=editor.read();
-      const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
-      if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
-      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-      state.castSheets.set(casterId,await computeLocalData(editor.read()));
-    };
-    await tacticalViewer.open(state.tokenId);
-    await tacticalViewer.beginSpell({spell:selection,slotLevel:plan.slotLevel,context:plan.context});
+    await startTargetedCast(casterId,structuredClone(spell),state.castLevel,
+      document.querySelector('#cast-payment')?.value||'auto',state.tokenId);
     return;
   }
   if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
