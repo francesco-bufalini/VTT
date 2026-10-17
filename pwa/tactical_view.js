@@ -101,6 +101,14 @@ export class TacticalViewer {
     this.updateButtons();
     await this.refresh();
   }
+  setBasicAction(action) {
+    if(!this.root||!['help','shove','prone'].includes(action?.mode))
+      throw Error('Azione di combattimento non valida.');
+    this.basicAction={...action};
+    this.setStatus(action.mode==='help'?
+      'Aiutare: scegli un token per applicare soltanto Aiutato.':
+      action.rule+' Tocca il bersaglio e conferma il successo dopo aver risolto il tiro.');
+  }
   close() {
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
