@@ -83,6 +83,7 @@ const COMMON := [
 
 var _sections: Array[VBoxContainer] = []
 var _panels: Array[PanelContainer] = []
+var _section_counts: Array[Label] = []
 var _layout_two: HBoxContainer
 var _layout_left: VBoxContainer
 var _layout_right: VBoxContainer
@@ -149,6 +150,16 @@ func _ready() -> void:
 		heading.add_theme_color_override("font_color", Color(1.0, 0.80, 0.50))
 		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		header.add_child(heading)
+		var count := Label.new()
+		count.text = "0"
+		count.tooltip_text = "Azioni disponibili in questa categoria"
+		count.add_theme_font_size_override("font_size", 12)
+		count.add_theme_color_override("font_color", Color(0.95, 0.78, 0.51))
+		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count.custom_minimum_size.x = 32
+		header.add_child(count)
+		_section_counts.append(count)
 		var rule_hint := Label.new()
 		rule_hint.text = [
 			"Attacchi, incantesimi e prove di abilità",
@@ -470,11 +481,11 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 
 func _action_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.21, 0.18, 0.19, 0.93)
-	style.border_color = Color(0.46, 0.32, 0.23, 0.82)
+	style.bg_color = Color(0.19, 0.16, 0.17, 0.97)
+	style.border_color = Color(0.44, 0.31, 0.22, 0.82)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(6)
-	style.set_content_margin_all(7)
+	style.set_content_margin_all(8)
 	return style
 
 func _action_button(text: String, help: String = "") -> Button:
@@ -482,6 +493,7 @@ func _action_button(text: String, help: String = "") -> Button:
 	button.text = text
 	button.tooltip_text = help
 	button.add_theme_font_size_override("font_size", 13)
+	button.custom_minimum_size.y = 29
 	return button
 
 func _show_entry(entry: Dictionary) -> void:
@@ -519,7 +531,9 @@ func _add_entry(entry: Dictionary) -> void:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(info)
 	var heading := Button.new()
-	heading.text = title + " ›"
+	var kind := String(entry.get("kind", ""))
+	var symbol := {"Attacco": "⚔", "Incantesimo": "✦", "Capacità": "◆", "Regola opzionale": "◇"}.get(kind, "•")
+	heading.text = symbol + "  " + title + "   ›"
 	heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	heading.flat = true
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -531,11 +545,13 @@ func _add_entry(entry: Dictionary) -> void:
 	if not detail.is_empty():
 		var brief := Label.new()
 		brief.text = detail.get_slice("\n", 0).strip_edges()
-		if brief.text.length() > 110:
-			brief.text = brief.text.substr(0, 107) + "…"
+		if brief.text.length() > 82:
+			brief.text = brief.text.substr(0, 79) + "…"
+		brief.max_lines_visible = 1
+		brief.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		brief.add_theme_font_size_override("font_size", 11)
-		brief.add_theme_color_override("font_color", Color(0.78, 0.72, 0.68))
+		brief.add_theme_color_override("font_color", Color(0.77, 0.72, 0.66))
 		info.add_child(brief)
 	var tracker_name := String(entry.get("tracker", "")).strip_edges()
 	var tracker_id := String(entry.get("tracker_id", ""))
@@ -619,12 +635,22 @@ func refresh_top_skills(record: Dictionary) -> void:
 
 
 func _add_subheading(section: VBoxContainer, text: String) -> void:
+	var band := PanelContainer.new()
+	band.set_meta("action_generated", true)
+	var band_style := StyleBoxFlat.new()
+	band_style.bg_color = Color(0.25, 0.19, 0.17, 0.72)
+	band_style.border_color = Color(0.58, 0.39, 0.23, 0.75)
+	band_style.border_width_bottom = 1
+	band_style.content_margin_left = 8
+	band_style.content_margin_top = 5
+	band_style.content_margin_bottom = 5
+	band.add_theme_stylebox_override("panel", band_style)
 	var label := Label.new()
-	label.text = text
-	label.set_meta("action_generated", true)
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", Color(0.78, 0.79, 0.69))
-	section.add_child(label)
+	label.text = text.to_upper()
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.98, 0.79, 0.49))
+	band.add_child(label)
+	section.add_child(band)
 
 func load_record(record: Dictionary) -> void:
 	if _sections.is_empty():
@@ -644,6 +670,7 @@ func load_record(record: Dictionary) -> void:
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
+		_section_counts[i].text = "%d" % (grouped[i] as Array).size()
 		var common: Array[Dictionary] = []
 		var personal: Array[Dictionary] = []
 		for item: Dictionary in grouped[i]:
