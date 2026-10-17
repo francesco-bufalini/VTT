@@ -1,5 +1,6 @@
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
+import { initialCreature } from "./character_core.js";
 import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
   getOrCreateSetting } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
@@ -59,9 +60,7 @@ export async function saveCreature(creature, scope = "default", expectedRevision
 
 export async function createCreature(kind = "character", name = "Nuova creatura", scope = "default") {
   if (!["character", "monster"].includes(kind)) throw new TypeError("Invalid creature kind");
-  const creature = { id: "creature_" + localId(), owner_id: await ownerId(),
-    transfer_revision: 0, linked_token_sync_id: "", linked_token_name: "",
-    kind, name, alignment: "Completamente neutrale", inventory: [], documents: [] };
+  const creature = initialCreature(kind, name, "creature_" + localId(), await ownerId());
   const saved = await saveCreature(creature, scope, 0);
   return saved;
 }
