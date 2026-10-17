@@ -218,6 +218,11 @@ static func monster_base_reach_feet(stat: Dictionary) -> float:
 	var explicit: Variant = stat.get("reach", null)
 	if explicit is float or explicit is int:
 		return maxf(5.0, float(explicit))
+	# Official monsters are normalized once at import/load. Prefer the typed
+	# maximum instead of running six-section RegEx scans on every reach query.
+	var structured: Variant = stat.get("vtt_max_reach_feet", null)
+	if structured is int or structured is float:
+		return maxf(5.0, float(structured))
 	var maximum: float = 5.0
 	for section: String in ["action", "bonus", "reaction", "legendary", "mythic", "trait"]:
 		var entries: Variant = stat.get(section, [])

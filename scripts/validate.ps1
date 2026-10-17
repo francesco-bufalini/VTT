@@ -132,6 +132,7 @@ $fastTests = @(
     # Creature-sheet interactions are a common source of parser/UI regressions:
     # validate them before independent tactical-grid rendering assertions.
     "test_structured_resource_trackers.gd",
+    "test_monster_action_metadata.gd",
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",
@@ -193,6 +194,7 @@ $ciSmokeTestNames = @(
     "test_spell_slot_profiles.gd",
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
+    "test_monster_action_metadata.gd",
     "test_creature_sheet_controller.gd",
     "test_board_smoke.gd",
     "test_dialog_layout.gd"

@@ -7,6 +7,7 @@ const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const MonsterActions = preload("res://vtt/monster_action_metadata.gd")
 
 
 static func definitions(record: Dictionary) -> Array[Dictionary]:
@@ -25,47 +26,20 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			var title: String = String(action.get("name", "")).strip_edges()
 			if title.is_empty():
 				continue
-			var text_value: String = JSON.stringify(action.get("entries", []))
-			var hit_tag: String = _capture(text_value, "\\{@hit\\s*([+-]?\\d+)\\}")
-			if hit_tag.is_empty():
-				hit_tag = _capture(text_value, "([+-]\\d+)\\s+to\\s+hit")
-			var has_attack: bool = (
-				not hit_tag.is_empty()
-				or "{@atk " in text_value
-				or "weapon attack:" in text_value.to_lower()
-				or "spell attack:" in text_value.to_lower()
-			)
-			if not has_attack:
+			# Imported monsters carry a typed attack. Parse formal legacy markup
+			# only for ad-hoc or older stat blocks that have not been normalized.
+			var spec: Dictionary = action.get("vtt_attack", {})
+			if spec.is_empty() and not stat.has("vtt_action_metadata_version"):
+				spec = MonsterActions.parse_attack(action)
+			if String(spec.get("attack_kind", "")) != "attack":
 				continue
-			var reach: String = _capture(text_value.to_lower(), "reach\\s*(\\d+)\\s*(?:ft|feet)")
-			var ranged_distance_text: String = _capture(text_value.to_lower(), "range\\s*(\\d+)\\s*(?:/|ft|feet)")
-			var ranged_long_text: String = _capture(text_value.to_lower(), "range\\s*\\d+\\s*/\\s*(\\d+)")
-			var ranged: bool = (
-				"ranged" in text_value.to_lower()
-				or "{@atk rw}" in text_value
-				or "{@atk rs}" in text_value
-			)
-			var dice: String = _capture(text_value, "\\{@damage\\s*([^}]+)\\}")
-			if dice.is_empty():
-				dice = _capture(text_value, "(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)*)")
-			var distance_feet: int = 5
-			if ranged and not ranged_distance_text.is_empty():
-				distance_feet = int(ranged_distance_text)
-			elif not reach.is_empty():
-				distance_feet = int(reach)
-			var melee: bool = not ranged or "melee or ranged" in text_value.to_lower()
-			result.append({
-				"id": "monster:%s:%d" % [section, index],
-				"name": title, "source": section, "melee": melee,
-				"range_feet": maxi(5, distance_feet),
-				"long_range_feet": maxi(0, int(ranged_long_text)) if ranged and not ranged_long_text.is_empty() else 0,
-				"melee_reach_feet": maxi(5, int(reach)) if not reach.is_empty() else 5,
-				"proficient": true, "damage": dice,
-				"base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
-				"hit_known": not hit_tag.is_empty(),
-				"source_ability": "dex" if ranged else "str",
-				"raw": action.duplicate(true)
-			})
+			var definition: Dictionary = spec.duplicate(true)
+			definition["id"] = "monster:%s:%d" % [section, index]
+			definition["name"] = title
+			definition["source"] = section
+			definition["proficient"] = true
+			definition["raw"] = action.duplicate(true)
+			result.append(definition)
 	# Carried weapons are not attack options until equipped. The same item can
 	# occupy both hands when at least two copies are owned.
 	var inventory: Variant = record.get("inventory", [])
@@ -122,14 +96,6 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			"proficient": false, "damage": "1d4", "base_hit": 0
 		})
 	return result
-
-
-static func _capture(text_value: String, expression: String) -> String:
-	var pattern: RegEx = RegEx.create_from_string(expression)
-	if pattern == null:
-		return ""
-	var match_value: RegExMatch = pattern.search(text_value)
-	return match_value.get_string(1) if match_value != null else ""
 
 
 static func override_for(record: Dictionary, attack_id: String) -> Dictionary:
@@ -346,7 +312,7 @@ static func max_melee_range(record: Dictionary) -> float:
 	for attack: Dictionary in definitions(record):
 		if bool(attack.get("melee", false)):
 			var value: float = float(range_for(record, attack))
-			if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(attack.get("raw", {})).to_lower():
+			if attack.has("melee_reach_feet") and bool(attack.get("has_ranged_mode", false)):
 				var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 				if not settings.has("range_feet"):
 					value = float(clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), int(attack.get("melee_reach_feet", 5))), 5, 1000))
@@ -445,9 +411,7 @@ static func first_melee_range(record: Dictionary) -> float:
 			return float(range_for(record, attack))
 		# A bestiary attack that supports both melee and ranged modes must
 		# use its melee reach, never the projectile range.
-		if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(
-			attack.get("raw", {})
-		).to_lower():
+		if attack.has("melee_reach_feet") and bool(attack.get("has_ranged_mode", false)):
 			return float(clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), int(attack.get("melee_reach_feet", 5))), 5, 1000))
 		return float(range_for(record, attack))
 	return 5.0
