@@ -1,6 +1,14 @@
 name: Creature Feature Domain Regression
 
 on:
+  pull_request:
+    paths:
+      - "vtt/creature_action_economy_tab.gd"
+      - "vtt/creature_action_economy_tab.gd"
+      - "vtt/creature_features.gd"
+      - "vtt/creature_area.gd"
+      - "tests/test_creature_action_economy.gd"
+      - ".github/workflows/creature-feature-domain.yml"
   push:
     branches: [main]
     paths:
@@ -69,6 +77,7 @@ jobs:
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
+            test_creature_action_economy.gd \
             test_trait_origins.gd \
             test_structured_numeric_bonuses.gd \
             test_creature_equipment_regressions.gd \
