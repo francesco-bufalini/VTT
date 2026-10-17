@@ -1,0 +1,70 @@
+name: Structured monster actions and spell duration (Godot)
+
+on:
+  pull_request:
+    paths:
+      - "vtt/monster_action_metadata.gd"
+      - "vtt/creature_attack_data.gd"
+      - "vtt/structured_resource_trackers.gd"
+      - "vtt/master_creature_store.gd"
+      - "vtt/creature_active_spells.gd"
+      - "vtt/data/monster_action_overrides.json"
+      - "tests/test_monster_action_metadata.gd"
+      - "scripts/validate.ps1"
+      - ".github/workflows/structured-monster-actions.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vtt/monster_action_metadata.gd"
+      - "vtt/creature_attack_data.gd"
+      - "vtt/structured_resource_trackers.gd"
+      - "vtt/master_creature_store.gd"
+      - "vtt/creature_active_spells.gd"
+      - "vtt/data/monster_action_overrides.json"
+
+jobs:
+  native-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /vtt/
+            /network/
+            /homebrew/
+            /tests/test_monster_action_metadata.gd
+            /tests/test_structured_resource_trackers.gd
+            /tests/test_attack_range_formulas.gd
+            /tests/test_spell_effect_tracking.gd
+            /assets/spell_area_geometry.json
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Native import and targeted regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'config_version=5\n' > project.godot
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          "$GODOT" --headless --path . --editor --import --quit
+          for test in test_monster_action_metadata test_structured_resource_trackers \
+            test_attack_range_formulas test_spell_effect_tracking; do
+            echo "RUN $test"
+            output=$(timeout 120s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
+              printf '%s\n' "$output"
+              exit 1
+            }
+            printf '%s\n' "$output"
+            if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script|Assertion failed' <<< "$output" \
+              || ! grep -q 'PASS:' <<< "$output"; then
+              echo "FAIL $test"
+              exit 1
+            fi
+          done
