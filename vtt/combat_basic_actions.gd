@@ -1,7 +1,7 @@
 extends RefCounted
 ## Exact rule data and a single tactical executor shared by desktop and mobile.
 ## Checks are adjudicated at the table: the VTT never invents a successful roll.
-const ACTIONS := ["help", "shove", "prone"]
+const ACTIONS := ["help", "shove", "prone", "grapple"]
 const SIZES := ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]
 
 static func edition(record: Dictionary) -> String:
@@ -53,7 +53,7 @@ static func validate(board: Node, actor: CharacterBody3D, target: CharacterBody3
 		footprint = maxf(1.0, (float(actor.call("get_footprint_cells")) + float(target.call("get_footprint_cells"))) / 2.0)
 	var needed := maxf(0.0, maxf(dx, dz) - footprint + 1.0) * 5.0
 	if needed > reach + 0.001:
-		return {"ok": false, "error": "Bersaglio fuori portata per una spinta."}
+		return {"ok": false, "error": "Bersaglio fuori portata per questa azione."}
 	return {"ok": true}
 
 static func execute(board: Node, actor: CharacterBody3D, target: CharacterBody3D, mode: String, success_confirmed: bool = false) -> Dictionary:
@@ -65,9 +65,10 @@ static func execute(board: Node, actor: CharacterBody3D, target: CharacterBody3D
 		return {"ok": true, "condition": "helped"}
 	if not success_confirmed:
 		return {"ok": false, "error": "Prima risolvi la prova contrapposta (2014) o il tiro salvezza (2024), quindi conferma il successo."}
-	if mode == "prone":
-		board.call("_set_token_status", target, "prone", true)
-		return {"ok": true, "condition": "prone"}
+	if mode in ["prone", "grapple"]:
+		var condition := "prone" if mode == "prone" else "grappled"
+		board.call("_set_token_status", target, condition, true)
+		return {"ok": true, "condition": condition}
 	# Forced movement: never use normal movement controls, which could charge
 	# movement, trigger opportunity attacks or move a mounted group.
 	var delta := target.global_position - actor.global_position
