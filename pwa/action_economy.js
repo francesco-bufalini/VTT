@@ -115,7 +115,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   }
  }
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
- const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal'});
+ const add=(name,time,type,description,tracker='',cost=0,extra={})=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal',...extra});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
  for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{}))out.push({...row,time:timing(row.time)});
  const already=new Set();
@@ -151,7 +151,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
-      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0);
+      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0,{tracker_id:String(feature.tracker_id||'')});
  }
  // Exact 5etools class/feature/source/level supplements, not prose analysis.
  const members=arr(record.classes).length?arr(record.classes):
@@ -166,7 +166,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const resource=arr(calculated.trackers).find(t=>String(t.name).toLowerCase()===String(rule.resource_name||'').toLowerCase()&&
     (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
-      resource?.name||rule.resource_name||'');
+      resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
  }
  for(const raw of availableSpells(record)){
   const definition=spellDefinition(raw,spells);
@@ -174,7 +174,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const level=Number(definition.level??raw?.level??0);
   add(definition.name||spellId(raw),definition.time??definition.casting_time??'action','Incantesimo',
       'Livello '+level+' · Tempo di lancio: '+castingTime(definition)+'.\n'+details(definition.entries??definition.description??''),
-      level>0?'Slot incantesimo':'Nessuna risorsa');
+      level>0?'Slot incantesimo':'Nessuna risorsa',0,{spell_id:spellId(raw),spell_mode:'class',level});
  }
  // Origin-spell grants are already resolved by the local rules engine,
  // including custom payment mode, disabled origins and level requirements.
@@ -188,27 +188,44 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   add(definition.name||grant.spell_id,definition.time??definition.casting_time??'action',
       internal?'Capacità':'Incantesimo',
       (internal?'':'Tempo di lancio: '+castingTime(definition)+'.\n')+details(definition.entries??definition.description??''),
-      tracker,mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0);
+      tracker,mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0,
+      {spell_id:String(grant.spell_id),grant_id:String(grant.id),spell_mode:mode,tracker_id:mode==='tracker'?String(grant.tracker_id||''):''});
  }
  return out;
 }
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
-function actionRow(item){
+function actionRow(item,calculated){
  const tracker=String(item.tracker||'').trim();
  const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
+ const t=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||''));
+ const remaining=t?Math.max(0,Number(t.max||0)-Number(t.spent||0)):0;
+ const isSpell=!!item.spell_id;
+ const isClassSpell=isSpell&&item.spell_mode==='class';
  const checks=[...(item.skill_ids||[]),...(item.name==='Nascondersi'||item.name==='Movimento furtivo'?['stealth']:[])]
    .filter((id,index,all)=>all.indexOf(id)===index);
- return '<div class="action-economy-row"><details class="native-entry action-economy-entry"><summary><strong>'+
-   esc(item.name)+'</strong></summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
-   (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
-   checks.map(id=>{
-    const label=SKILLS.find(([key])=>key===id)?.[1]||id;
-    return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
-      '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
-   }).join('')+'</details><span class="action-economy-tracker" title="Tracker utilizzato">'+
-   (resource?esc(resource):'<span aria-label="Nessun tracker">—</span>')+
-   (item.cost?' <small>×'+esc(item.cost)+'</small>':'')+'</span></div>';
+ const actionButtons=(isSpell?
+   '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
+     '" data-grant-id="'+esc(item.grant_id||'')+'">Lancia incantesimo</button>':
+   item.name==='Lanciare un incantesimo'||item.name==='Magia'?
+     '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
+  (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+
+    '<span>'+remaining+' / '+esc(t.max)+'</span>'+
+    '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
+    !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
+ const subLabel=isClassSpell?'Slot incantesimo':resource;
+ return '<article class="action-economy-row">'+
+  '<div class="action-economy-main"><details class="action-economy-entry"><summary><strong>'+esc(item.name)+
+  '</strong><span class="action-economy-chevron">›</span></summary><p>'+
+  esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
+  (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
+  checks.map(id=>{
+   const label=SKILLS.find(([key])=>key===id)?.[1]||id;
+   return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
+    '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
+  }).join('')+'</details><span class="action-economy-preview">'+esc((item.description||'').split('\n')[0].slice(0,108))+'</span></div>'+
+  '<div class="action-economy-controls">'+actionButtons+
+  (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div></article>';
 }
 
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=[]){
@@ -227,14 +244,16 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
      ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>'
   );
   const separated=general.length&&personal.length;
-  const columnHead=(matching.length?
-    '<div class="action-economy-column-head"><span>Attività</span><span>Tracker</span></div>':'');
-  return '<section class="panel action-economy-section"><h2>'+esc(title)+'</h2>'+columnHead+
+  return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
+    '<span class="action-economy-icon" aria-hidden="true">'+({action:'⚔',bonus:'✦',free:'✋',movement:'➜',reaction:'↩'}[id])+'</span>'+
+    '<div><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
+      bonus:'Capacità che usano una azione bonus',free:'Interazioni senza costo in azioni',
+      movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
-      general.map(actionRow).join(''):'')+
+      general.map(row=>actionRow(row,calculated)).join(''):'')+
     skillsPanel+
     (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
-      personal.map(actionRow).join(''):'')+
+      personal.map(row=>actionRow(row,calculated)).join(''):'')+
     (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
- }).join('');
+ }).join('').replace(/^/,'<div class="action-economy-dashboard">')+'</div>';
 }
