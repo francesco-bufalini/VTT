@@ -30,6 +30,7 @@ const LEGACY_CONDITIONS := [
 	{"id": "concentrating", "name": "Concentration", "icon": "🧠", "official": false},
 	{"id": "surprised", "name": "Surprised", "icon": "❗", "official": false},
 	{"id": "hidden", "name": "Hidden", "icon": "🥷", "official": false},
+	{"id": "helped", "name": "Aiutato", "icon": "🤝", "official": false, "description": "Solo marcatore tattico: nessun effetto automatico."},
 	{"id": "dead", "name": "Dead", "icon": "💀", "official": false},
 
 ]
