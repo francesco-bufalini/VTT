@@ -123,3 +123,22 @@ label.check, .native-summary > div { min-height:var(--touch-target); }
   .native-abilities .sheet-formula output { padding:.38rem .2rem; }
   .slot-table { grid-template-columns:1.8rem minmax(0,1fr) minmax(0,1fr); gap:.6rem .25rem; }
 }
+
+/* Action economy: one action and one tracker column, shared desktop/phone. */
+.action-economy-section{min-width:0}
+.action-economy-column-head,.action-economy-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(96px,30%);column-gap:12px;align-items:start}
+.action-economy-column-head{border-bottom:1px solid var(--line);padding:3px 0 8px;color:var(--muted);font-size:11px}
+.action-economy-column-head span:last-child{text-align:right}
+.action-economy-row{border-bottom:1px solid #89644055;min-width:0}
+.action-economy-row .action-economy-entry{padding:0;margin:0;border:0;min-width:0}
+.action-economy-row .action-economy-entry>summary{min-height:44px;padding:10px 0;font-size:13px;overflow-wrap:anywhere}
+.action-economy-row .action-economy-entry>p{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:6px 0 10px}
+.action-economy-row .action-economy-entry>.btn{margin:0 6px 10px 0}
+.action-economy-tracker{padding:11px 0;text-align:right;overflow-wrap:anywhere;word-break:normal;color:var(--muted);font-size:12px;line-height:1.5}
+.action-economy-tracker small{color:var(--accent);white-space:nowrap}
+.action-economy-section>.action-economy-group-title{font-size:13px;color:var(--accent);font-weight:700;margin:14px 0 4px}
+.action-economy-skills{padding:12px 0;border-bottom:1px solid var(--line)}
+.action-economy-skills>h3{font-size:13px;color:var(--muted);margin:0 0 9px}
+.action-economy-skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.action-economy-skill-grid>.btn{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
+@media(max-width:359px){.action-economy-column-head,.action-economy-row{grid-template-columns:minmax(0,1fr) 96px;gap:7px}.action-economy-skill-grid{grid-template-columns:1fr}}
