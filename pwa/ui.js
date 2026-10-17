@@ -1565,6 +1565,7 @@ async function handleAction(target){
       current_miniature_id:sheet.current_miniature_id||"",
       default_miniature_id:sheet.default_miniature_id||"",
       size_name:sheet.size_name||"Medium",footprint:sheet.footprint??1,
+      rules_version:sheet.rules_version==="2024"?"2024":"2014",
       reach_feet:sheet.reach_feet??5,conditions:sheet.conditions||[],
       rules_version:sheet.rules_version||"2014",
       visual_front_quarter_turns:sheet.visual_front_quarter_turns??0};
