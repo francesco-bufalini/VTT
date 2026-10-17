@@ -22,7 +22,7 @@ const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
 	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
 	"poisoned", "prone", "restrained", "stunned", "unconscious",
-	"concentrating", "surprised", "hidden", "dead"
+	"concentrating", "surprised", "hidden", "helped", "dead"
 ]
 const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
 const SYNC_APPEARANCE_REVISION_META := "board_sync_appearance_revision"
