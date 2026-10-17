@@ -411,57 +411,77 @@ const FULL_CASTER_SLOTS := [
 ]
 
 
+# A profile can vary by rules edition without branching on a class name.
+static func _slot_edition_value(raw: Variant, edition: String, fallback: Variant) -> Variant:
+	if raw is Dictionary:
+		var versions: Dictionary = raw as Dictionary
+		return versions.get(edition, versions.get("2014", fallback))
+	return raw if raw != null else fallback
+
+
 static func spell_slot_progression(character: Dictionary) -> Dictionary:
 	var classes: Array[Dictionary] = level_classes(character)
 	var edition: String = String(character.get("rules_version", "2014"))
 	var contributions: Array[Dictionary] = []
-	var warlock_level := 0
+	var pact_levels := 0
+	var pact_profile: Dictionary = {}
 	var warnings := PackedStringArray()
 	for cls: Dictionary in classes:
 		var name: String = String(cls.get("name", "")).to_lower()
 		var level: int = clampi(int(cls.get("level", 1)), 1, 20)
-		if name == "warlock":
-			warlock_level += level
-		elif name in ["bard", "cleric", "druid", "sorcerer", "wizard"]:
-			contributions.append({"name": name, "level": level, "kind": "full"})
-		elif name == "artificer":
-			contributions.append({"name": name, "level": level, "kind": "half_up"})
-		elif name in ["paladin", "ranger"]:
-			if level >= 2 or edition == "2024":
-				contributions.append({"name": name, "level": level, "kind": "half"})
-		elif name in ["fighter", "rogue"]:
-			warnings.append(
-				"Le sottoclassi magiche di %s richiedono il calcolo manuale." % String(cls.get("name", ""))
-			)
-		elif name == "mostro":
-			# CR is not a caster level; real class additions determine slots.
-			pass
-		elif not name.is_empty() and ClassMechanics.hit_die(name, String(cls.get("source", ""))) <= 0:
-			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
+		var profile: Dictionary = ClassMechanics.slot_profile(name)
+		match String(profile.get("slot_kind", "")):
+			"pact":
+				pact_levels += level
+				if pact_profile.is_empty():
+					pact_profile = profile
+			"full":
+				contributions.append({"level": level, "profile": profile})
+			"fractional":
+				var starts_at: int = int(_slot_edition_value(profile.get("starts_at", 1), edition, 1))
+				if level >= starts_at:
+					contributions.append({"level": level, "profile": profile})
+			"none":
+				if bool(profile.get("manual_subclass_spellcasting", false)):
+					warnings.append(
+						"Le sottoclassi magiche di %s richiedono il calcolo manuale." % String(cls.get("name", ""))
+					)
+			_:
+				# A monster CR is never itself a caster level. For unsupported
+				# homebrew classes preserve the former warning behavior.
+				if name != "mostro" and not name.is_empty() and ClassMechanics.hit_die(name, String(cls.get("source", ""))) <= 0:
+					warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
+
 	var caster_level := 0
-	# Combined progression applies only to multiple Spellcasting classes.
-	# Pact Magic and noncasting classes do not change single-class rounding.
+	# Pact Magic and noncasting classes do not affect half-caster rounding.
+	# "Multiclass" here means multiple contributing Spellcasting classes.
 	var multiclass: bool = contributions.size() > 1
 	for contribution: Dictionary in contributions:
 		var level: int = int(contribution.get("level", 0))
-		match String(contribution.get("kind", "")):
-			"full":
-				caster_level += level
-			"half_up":
-				caster_level += ceili(float(level) / 2.0)
-			"half":
-				if multiclass and edition == "2014":
-					caster_level += floori(float(level) / 2.0)
-				else:
-					caster_level += ceili(float(level) / 2.0)
+		var profile: Dictionary = contribution.get("profile", {})
+		if String(profile.get("slot_kind", "")) == "full":
+			caster_level += level
+			continue
+		var divisor: int = maxi(1, int(profile.get("divisor", 2)))
+		var rounding: Variant = (profile.get("multiclass_round", "floor") if multiclass
+			else profile.get("single_class_round", "ceil"))
+		if String(_slot_edition_value(rounding, edition, "ceil")) == "floor":
+			caster_level += floori(float(level) / float(divisor))
+		else:
+			caster_level += ceili(float(level) / float(divisor))
+
 	caster_level = clampi(caster_level, 0, 20)
 	var slots: Array = FULL_CASTER_SLOTS[caster_level].duplicate()
-	# Pact Magic uses a separate pool, refreshed on a short rest.
 	var pact_total: int = 0
 	var pact_level: int = 1
-	if warlock_level >= 1:
-		pact_total = 1 if warlock_level == 1 else 2 if warlock_level < 11 else 3 if warlock_level < 17 else 4
-		pact_level = mini(5, ceili(float(warlock_level) / 2.0))
+	if pact_levels > 0:
+		var pact: Dictionary = pact_profile.get("pact", {})
+		var totals: Array = pact.get("slot_totals", [])
+		var levels: Array = pact.get("slot_levels", [])
+		var index: int = clampi(pact_levels, 1, 20) - 1
+		if index < totals.size() and index < levels.size():
+			pact_total = int(totals[index])
+			pact_level = int(levels[index])
 	return {
 		"slots": slots,
 		"pact_total": pact_total,
