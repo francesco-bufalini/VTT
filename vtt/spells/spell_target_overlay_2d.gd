@@ -168,6 +168,9 @@ func _collect_post_cast_areas() -> void:
 			if not data_value is Dictionary:
 				continue
 			var data: Dictionary = (data_value as Dictionary).duplicate()
+			var preview_offset: Vector3 = measure.call("area_drag_preview_offset", root)
+			data["start"] = Vector3(data.get("start", Vector3.ZERO)) + preview_offset
+			data["end"] = Vector3(data.get("end", Vector3.ZERO)) + preview_offset
 			data["root"] = root
 			_areas.append(data)
 	var persistent_value: Variant = measure.get("persistent_aoes")
@@ -185,10 +188,11 @@ func _collect_post_cast_areas() -> void:
 		var root: Node3D = roots[index] as Node3D
 		if not is_instance_valid(root):
 			continue
+		var preview_offset: Vector3 = measure.call("area_drag_preview_offset", root)
 		_areas.append({
 			"root": root,
-			"start": _array_vector3(data.get("start")),
-			"end": _array_vector3(data.get("end")),
+			"start": _array_vector3(data.get("start")) + preview_offset,
+			"end": _array_vector3(data.get("end")) + preview_offset,
 			"shape": String(data.get("shape", "sphere")),
 			"width": float(data.get("line_width_world", -1.0)),
 			"style": String(data.get("style", "")),
