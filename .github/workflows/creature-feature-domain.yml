@@ -8,6 +8,9 @@ on:
       - "vtt/combat_basic_actions.gd"
       - "vtt/data/combat_action_supplements_5etools.json"
       - "vtt/creature_features.gd"
+      - "vtt/feature_timing_recovery_rules.gd"
+      - "vtt/data/feature_timing_recovery_rules.json"
+      - "vtt/structured_resource_trackers.gd"
       - "vtt/creature_area.gd"
       - "tests/test_creature_action_economy.gd"
       - "tests/test_combat_basic_actions.gd"
@@ -15,6 +18,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "vtt/feature_timing_recovery_rules.gd"
+      - "vtt/data/feature_timing_recovery_rules.json"
       - "vtt/benefit_requirements.gd"
       - "vtt/class_resource_overrides.gd"
       - "vtt/structured_resource_trackers.gd"
@@ -79,6 +84,8 @@ jobs:
             --check-only --script res://vtt/benefit_requirements.gd
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
             --check-only --script res://vtt/structured_resource_trackers.gd
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --check-only --script res://vtt/feature_timing_recovery_rules.gd
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
