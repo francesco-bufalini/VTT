@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "source": "Curated VTT exceptions to 5etools/FightClub structured monster fields",
+  "notes": "Keys are SOURCE|monster-name-lowercase|section|action-name-lowercase. Values override a specific action's normalized attack and/or resource. Never merge monsters by name without source.",
+  "actions": {
+    "AI|ancient deep crow|action|mandibles": {
+      "attack": {
+        "attack_kind": "attack",
+        "melee": true,
+        "has_ranged_mode": false,
+        "range_feet": 10,
+        "long_range_feet": 0,
+        "melee_reach_feet": 10,
+        "base_hit": 11,
+        "hit_known": true,
+        "damage": "2d10 + 6",
+        "source_ability": "str"
+      }
+    },
+    "AI|ancient deep crow|action|shadow caw": {
+      "attack": {
+        "attack_kind": "saving_throw",
+        "save_ability": "con",
+        "save_dc": 17,
+        "damage": "3d6",
+        "damage_type": "psychic"
+      }
+    },
+    "PHB|animated object (huge)|action|slam": {
+      "attack": {
+        "attack_kind": "attack",
+        "melee": true,
+        "has_ranged_mode": false,
+        "range_feet": 5,
+        "long_range_feet": 0,
+        "melee_reach_feet": 5,
+        "base_hit": 8,
+        "hit_known": true,
+        "damage": "2d12 + 4",
+        "source_ability": "str"
+      }
+    }
+  }
+}

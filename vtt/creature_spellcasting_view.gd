@@ -1,6 +1,8 @@
 extends VBoxContainer
 const Choices = preload("res://vtt/class_spell_selection.gd")
 const Catalog = preload("res://vtt/spells/spell_catalog.gd")
+const Abilities = preload("res://vtt/activated_ability_catalog.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Grants = preload("res://vtt/origin_spell_grants.gd")
 const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
@@ -67,8 +69,12 @@ func refresh() -> void:
 	if members.is_empty() and unassigned.is_empty():
 		_label(pair[0], "Nessuna classe con incantesimi. Le concessioni dei privilegi sono qui sotto.")
 	_slots(pair[1], record)
+	var ability_grants: Array[Dictionary] = []
 	var groups: Dictionary = {}
 	for grant: Dictionary in Grants.all_grants(record):
+		if Abilities.is_ability(Catalog.catalog_spell(String(grant.get("spell_id", "")))):
+			ability_grants.append(grant)
+			continue
 		var sid: String = String(grant.get("origin_id", ""))
 		if not groups.has(sid):
 			groups[sid] = {"grants": [], "choices": [], "name": grant.get("origin_name", sid)}
@@ -127,6 +133,26 @@ func refresh() -> void:
 			pair[0].add_child(choose)
 		if seen.is_empty():
 			_label(pair[1], "Senza tracker · usa gli slot sopra quando previsto")
+	# Nonspell capabilities live at the end of the spellcasting list,
+	# together regardless of which class, feat or item granted them.
+	if not ability_grants.is_empty():
+		ability_grants.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return String(Catalog.catalog_spell(String(a.get("spell_id", ""))).get("name", "")).naturalnocasecmp_to(
+				String(Catalog.catalog_spell(String(b.get("spell_id", ""))).get("name", ""))) < 0)
+		pair = _pair()
+		_heading(pair[0], "Capacità")
+		_heading(pair[1], "Risorse delle capacità")
+		var ability_list: VBoxContainer = _list(pair[0], ability_grants.size())
+		var ability_trackers: Dictionary = {}
+		for grant: Dictionary in ability_grants:
+			var ability: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
+			_spell_button(ability_list, ability, {}, grant)
+			var tracker_id: String = String(grant.get("tracker_id", ""))
+			if String(grant.get("payment_mode", "")) == "tracker" and not tracker_id.is_empty() and not ability_trackers.has(tracker_id):
+				ability_trackers[tracker_id] = true
+				_tracker(pair[1], record, Grants.tracker_for(record, grant))
+		if ability_trackers.is_empty():
+			_label(pair[1], "Nessun tracker associato")
 	_fit()
 	_balance_lists.call_deferred()
 
@@ -268,7 +294,8 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	parent.add_child(row)
 	var button := Button.new()
 	button.set_meta("creature_gui_data", true)
-	button.text = String(spell.get("name", "")) + (" · 0°" if int(spell.get("level", 0)) == 0 else " · %d°" % int(spell.get("level", 0)))
+	button.text = (String(spell.get("name", "")) if Abilities.is_ability(spell)
+		else String(spell.get("name", "")) + (" · 0°" if int(spell.get("level", 0)) == 0 else " · %d°" % int(spell.get("level", 0))))
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.clip_text = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -285,10 +312,24 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 		cost_label.add_theme_font_size_override("font_size", 13)
 		cost_label.add_theme_color_override("font_color", Color(0.79, 0.86, 0.91))
 		cost_label.tooltip_text = ("Tracker cost per cast: %d" if english else "Utilizzi del tracker consumati per lancio: %d") % cost
-	if grant.is_empty():
+	if Abilities.is_ability(spell) and String(spell.get("activation_mode", "")) == "contextual":
+		# Maneuvers occur in attack/reaction contexts. Browsing a maneuver
+		# must never consume a Superiority Die or invent a map effect.
+		button.pressed.connect(_inspect_ability.bind(spell))
+	elif grant.is_empty():
 		button.pressed.connect(_actions.cast_class.bind(spell, member))
 	else:
 		button.pressed.connect(_actions.cast_origin.bind(grant))
+
+
+func _inspect_ability(ability: Dictionary) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = "Capacità · " + String(ability.get("name", ""))
+	dialog.dialog_text = String(ability.get("description", "Descrizione non disponibile."))
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+	DialogLayout.popup(dialog, Vector2i(620, 420), 0.92)
 
 func _slots(parent: Node, record: Dictionary) -> void:
 	var grid := GridContainer.new()

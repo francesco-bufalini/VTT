@@ -54,6 +54,7 @@ foreach ($file in @(
     'vtt/menu/main_menu.tscn',
     'vtt/mobile/creatures_mobile.tscn',
     'vtt/data/player_5etools_catalog.json',
+    'vtt/data/class_spell_slot_profiles.json',
     'vtt/data/compendium_items_5etools.json',
     'vtt/data/miniature_bestiary.json'
 )) {

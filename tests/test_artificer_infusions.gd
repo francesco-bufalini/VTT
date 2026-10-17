@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Infusions = preload("res://vtt/creature_infusions.gd")
+const ItemEnhancements = preload("res://vtt/item_enhancement_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Instances = preload("res://vtt/item_instance.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
@@ -35,6 +36,27 @@ func run() -> void:
 	}
 	assert(Infusions.active_limit(record) == 2 and Infusions.known_limit(record) == 4)
 	assert(Infusions.item_eligible(option, armor))
+	# Every infusion declares typed prerequisites; item selections no longer
+	# depend on English prerequisite text or an infusion display name.
+	for entry: Dictionary in Infusions.catalog():
+		assert(not (entry.get("item_selector", {}) as Dictionary).is_empty())
+		assert(String(entry.get("application_kind", "")) in ["enhancement", "replicate"])
+	var shield: Dictionary = {"id": "test:shield", "name": "Shield", "type": "S", "quantity": 1}
+	assert(ItemEnhancements.item_matches({"nonmagical": true, "kinds": ["armor", "shield"]}, shield))
+	assert(not ItemEnhancements.item_matches({"nonmagical": true, "kinds": ["weapon"]}, shield))
+	assert(ItemEnhancements.item_matches({"nonmagical": true, "name_contains_any": ["helm"]},
+		{"id": "test:helm", "name": "Helm of Testing", "type": "other"}))
+	assert(not ItemEnhancements.item_matches({"nonmagical": true, "name_contains_any": ["boot"]},
+		{"id": "test:helm", "name": "Helm of Testing", "type": "other"}))
+	assert(ItemEnhancements.numeric_effects({"numeric_item_bonuses": {"bonus_ac": 2}},
+		armor, false).get("bonus_ac", 0) == 2)
+	assert(ItemEnhancements.numeric_effects({"numeric_item_bonuses": {"bonus_ac": 2}},
+		armor, true).get("bonus_ac", 0) == 4)
+	var planned: Dictionary = replicate.duplicate(true)
+	planned["plan_item_id"] = "magic_item:bag"
+	assert(Infusions.item_eligible(planned, {"id": "magic_item:bag", "name": "Bag of holding"}))
+	assert(not Infusions.item_eligible(planned, {"id": "magic_item:other", "name": "Another item"}))
+
 	assert(not Infusions.item_eligible(option, {"id": "magic_item:enchanted_armor", "name": "Enchanted Armor", "type": "MA", "rarity": "rare"}))
 	assert(Infusions.replicable(replicate, {"id": "magic_item:bag", "name": "Bag of holding", "rarity": "uncommon"}, 2))
 	assert(not Infusions.replicable(replicate, {"id": "magic_item:bag", "name": "Bag of holding", "rarity": "uncommon"}, 1))

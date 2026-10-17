@@ -46,11 +46,13 @@ jobs:
             /vtt/data/class_resource_overrides.json
             /vtt/data/combat_action_supplements_5etools.json
             /vtt/data/feature_timing_recovery_rules.json
+            /vtt/data/activated_abilities_5etools.json
+            /vtt/data/class_resource_overrides.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/activated_abilities.js pwa/character_core.js pwa/class_spells.js pwa/class_trackers.js pwa/quick_homebrew.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
@@ -68,7 +70,7 @@ jobs:
           manifest = json.loads((root / "manifest.webmanifest").read_text())
           assert manifest["scope"] == "/" and manifest["start_url"] == "/"
           required = {"/", "/index.html", "/main.js", "/ui.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js",
-                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                      "/creatures.js", "/creature_format.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/catalog/class_resource_overrides.json", "/catalog/class_mechanics.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/proficiency_grants.json", "/catalog/classes.json", "/catalog/player.json", "/catalog/spells.json", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                       "/icon-192.png", "/icon-512.png"}
           served = (root / "sw.js").read_text()
           for name in required - {"/sw.js"}:
@@ -150,12 +152,14 @@ jobs:
               "compendium_backgrounds_5etools.json": "backgrounds.json",
               "compendium_features_5etools.json": "features.json",
               "compendium_items_5etools.json": "items.json",
+              "activated_abilities_5etools.json": "activated_abilities.json",
           }
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
           copy2(Path("vtt/data/action_feature_overrides.json"), root / "catalog/action_feature_overrides.json")
           copy2(Path("vtt/data/combat_action_supplements_5etools.json"), root / "catalog/combat_action_supplements_5etools.json")
           copy2(Path("vtt/data/feature_timing_recovery_rules.json"), root / "catalog/feature_timing_recovery_rules.json")
+          copy2(Path("vtt/data/class_resource_overrides.json"), root / "catalog/class_resource_overrides.json")
           for file in ("classes", "ability_grants", "class_mechanics", "proficiency_grants"):
               copy2(Path("pwa/catalog") / (file + ".json"), root / "catalog" / (file + ".json"))
           (root / "start-preview.cmd").write_text(
@@ -187,7 +191,7 @@ jobs:
           import json
           from pathlib import Path
           root = Path("pwa-prototype")
-          for file in ["player", "backgrounds", "features", "items", "spells", "classes", "ability_grants", "class_mechanics", "proficiency_grants"]:
+          for file in ["player", "backgrounds", "features", "items", "spells", "classes", "ability_grants", "activated_abilities", "class_resource_overrides", "class_mechanics", "proficiency_grants"]:
               assert (root / "catalog" / (file + ".json")).exists(), file
           choices = json.loads((root / "catalog/classes.json").read_text())
           assert choices["version"] == 1 and len(choices["classes"]) >= 12

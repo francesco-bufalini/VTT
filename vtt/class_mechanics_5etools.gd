@@ -3,8 +3,11 @@ extends RefCounted
 # Compact structured 5etools classTableGroups and hd; generated from upstream
 # class JSON, not copied class-specific progressions or translated display names.
 const PATH := "res://vtt/data/class_mechanics_5etools.json"
+const SLOT_PROFILE_PATH := "res://vtt/data/class_spell_slot_profiles.json"
 static var _rows: Dictionary = {}
 static var _loaded := false
+static var _slot_profiles_loaded := false
+static var _slot_profiles: Dictionary = {}
 
 
 static func _ensure_loaded() -> void:
@@ -73,3 +76,20 @@ static func resource_columns(klass_name: String, source: String) -> Array[Dictio
 		if value is Dictionary and String((value as Dictionary).get("kind", "")) == "resource":
 			result.append(value)
 	return result
+
+# Spell-slot classifications are curated independently of generated 5etools
+# class tables. The same profiles can be consumed by non-Godot clients.
+static func slot_profile(klass_name: String) -> Dictionary:
+	if not _slot_profiles_loaded:
+		_slot_profiles_loaded = true
+		var file := FileAccess.open(SLOT_PROFILE_PATH, FileAccess.READ)
+		if file == null:
+			push_warning("Class slot progression profiles unavailable: " + SLOT_PROFILE_PATH)
+		else:
+			var parsed: Variant = JSON.parse_string(file.get_as_text())
+			file.close()
+			if parsed is Dictionary and (parsed as Dictionary).get("profiles", {}) is Dictionary:
+				_slot_profiles = (parsed as Dictionary)["profiles"]
+	var key: String = klass_name.strip_edges().to_lower()
+	var value: Variant = _slot_profiles.get(key, {})
+	return (value as Dictionary).duplicate(true) if value is Dictionary else {}

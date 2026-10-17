@@ -1440,7 +1440,7 @@ func _refresh_infusion_ui() -> void:
 	for option: Dictionary in Infusions.catalog():
 		if int(option.get("min_level", 2)) > level:
 			continue
-		if String(option.get("name", "")) != "Replicate Magic Item" and Infusions.is_learned(record, option):
+		if String(option.get("application_kind", "")) != "replicate" and Infusions.is_learned(record, option):
 			continue
 		_infusion_candidates.append(option)
 		_infusion_catalog_picker.add_item(String(option.get("name", "")))
@@ -1474,7 +1474,7 @@ func _learn_infusion() -> void:
 		return
 	var option: Dictionary = _infusion_candidates[index]
 	var learned: Dictionary = {"id": option.get("id", ""), "name": option.get("name", ""), "source": "TCE"}
-	if String(option.get("name", "")) == "Replicate Magic Item":
+	if String(option.get("application_kind", "")) == "replicate":
 		var selected: int = _selected_inventory_index()
 		if selected < 0 or selected >= _inventory.size():
 			_infusion_message("Seleziona prima dall'inventario l'oggetto magico da replicare.")
