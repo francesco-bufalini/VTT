@@ -2998,6 +2998,8 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 		_update_ability_modifier(ability)
 	_loading = previous_loading
 	_refresh_skill_values(record)
+	if _action_economy_ui != null and _tabs != null and _tabs.get_tab_control(_tabs.current_tab).name == "Cosa posso fare?":
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	_update_max_hp_display()
 	_update_second_max_formula()
 	_update_defense_display()
@@ -6226,6 +6228,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
+	if index >= 0 and _tabs.get_tab_control(index).name == "Cosa posso fare?" and _action_economy_ui != null:
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	if index >= 0 and _tabs.get_tab_control(index).name == "Modifica personaggio" and _editor_section_picker.selected == 0:
 		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
