@@ -2580,6 +2580,18 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 			return {"ok": false, "error": "Movimento non disponibile."}
 		var moved: bool = board_root.call("nudge_token_from_mobile", target, directions[step])
 		return {"ok": true, "moved": moved, "token_id": get_sync_id_for_node(target)}
+	if action == "battle_action":
+		var mode: String = String(payload.get("mode", ""))
+		var victim := _visible_mobile_token(String(payload.get("target_id", "")))
+		var owner := String(target.get_meta("creature_owner_id", ""))
+		if not owner.is_empty() and String(payload.get("owner_id", "")) != owner:
+			return {"ok": false, "error": "Non controlli il token che esegue l'azione."}
+		if victim == null:
+			return {"ok": false, "error": "Bersaglio non disponibile."}
+		# The UI requires the player/GM to resolve the actual 5e contest/save.
+		# The server validates both tokens and never invents a successful die.
+		var confirmed: bool = payload.get("success_confirmed", false) is bool and bool(payload.get("success_confirmed", false))
+		return BasicCombat.execute(board_root, target, victim, mode, confirmed)
 	if action == "set_condition":
 		var id: String = String(payload.get("condition_id", ""))
 		if not payload.get("enabled") is bool:
