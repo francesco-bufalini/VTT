@@ -142,7 +142,7 @@ export function numericGrant(sid,name,field,target,value,suffix=""){
 // data-driven projections, not inferred mechanics from English descriptions.
 export function collectStructuredFeatures(record,catalogs={}){
   const results=[],seen=new Set();
-  const members=classMembers(record),total=members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)||Number(record.level)||1;
+  const members=classMembers(record),total=Number(record.level??members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)??1)||1;
   const classLevel=(name,source)=>members.filter(c=>match(c.name,name)&&(!source||!c.source||match(c.source,source)))
     .reduce((n,c)=>Math.max(n,Number(c.level)||0),0);
   function append(row,origin,level=1,scope="character",className="",classSource="",inactive=false){
@@ -196,7 +196,7 @@ export function collectStructuredFeatures(record,catalogs={}){
       const entries=sections||info?.entries||feat.entries||[];
       array(entries).forEach((row,i)=>{
         if(row?.name&&(sections||row.entries!==undefined||row.entry!==undefined))
-          append({...row,id:row.id||"section-"+i},origin,
+          append({...row,...(!sections&&!row.id?{id:"section-"+i}:{})},origin,
             Number(row.min_level??1),"character","","",Boolean(feat.disabled));
       });
     }
