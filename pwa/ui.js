@@ -773,8 +773,10 @@ function startMap() {
     }
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
-    // Avoid replacing focused inputs while a player interacts.
-    if(!app.contains(document.activeElement) || document.activeElement?.tagName==="BUTTON"){
+    // Rebuild only the session panel: sheet/chat/library views must never
+    // be replaced by a background tactical polling response.
+    if(state.page==="session" && (!app.contains(document.activeElement) ||
+       document.activeElement?.tagName==="BUTTON")){
       const scrollY=window.scrollY;
       app.innerHTML=sessionView();
       window.scrollTo(0,scrollY);
