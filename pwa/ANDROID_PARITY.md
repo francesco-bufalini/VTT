@@ -137,3 +137,9 @@ Modifica direttamente nella PWA aspetto, note, personalità, identità e ispiraz
 ## Oggetti per istanza e calcoli locali
 
 La PWA ora applica `instance_overrides` ai valori effettivi degli oggetti nell'inventario con la stessa lista chiusa di campi di `ItemInstance.resolve` in Godot. Danni, gittata, CA e bonus sulle armi usano l'oggetto risolto dalla copia; il compendio e le altre copie restano immutati. L'editor per dimensione arma, dadi, gittata, bonus arma, CA e bonus CA divide automaticamente una pila prima di cambiare una copia. Gli oggetti infusi che richiedono sintonia sono inattivi fino alla sintonia. Non interpreta descrizioni testuali in runtime.
+
+## Infusioni TCE nell'archivio PWA
+
+I dati tipizzati delle 16 infusioni sono proiettati in `catalog/ability_grants.json` (URL già esposto dal server nativo), con selettori per tipi di oggetto, proprietà, fonte e bonus numerici. `npm run sync-catalogs` li rigenera usando i file strutturati già nel repository, con fallback curati per i selettori delle versioni precedenti; nessun parsing della prosa a runtime.
+
+L'inventario della PWA ora gestisce apprendimento, applicazione, rimozione e dimenticanza, i limiti della classe Artefice, la sintonia e la divisione delle pile. I sette tipi con effetti numerici documentati applicano bonus locali (anche al livello del potenziamento); altri effetti rimangono descrittivi e non vengono applicati senza una rappresentazione strutturata. Nessuna sincronizzazione di schede private è necessaria per il calcolo.
