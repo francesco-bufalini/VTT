@@ -48,7 +48,7 @@ test('prepared and origin granted spells use their own resource tracker',()=>{
  assert.equal(entries.find(x=>x.name==='Difesa arcana').tracker,'Ispirazione bardica');
  assert.equal(entries.find(x=>x.name==='Ispirazione').time,'bonus');
  const html=actionEconomyView(record,calculated,spells);
- assert(html.includes('action-economy-tracker'));
+ assert(html.includes('action-resource-control'));
  assert(html.includes('Slot incantesimo'));
  assert(html.includes('Ispirazione bardica'));
  assert(!html.includes('Ispirazione bardica · Incantesimo'));
@@ -148,7 +148,7 @@ test('action panel prioritizes common actions, skill checks, then personal abili
  const creature={rules_version:'2014',
    action_grants:[{name:'Privilegio unico',action_type:'action',tracker_id:'charges'}]};
  const calculated={skills:{stealth:7,athletics:4,arcana:3,acrobatics:2,perception:6},
-   trackers:[{id:'charges',name:'Cariche personali'}],
+   trackers:[{id:'charges',name:'Cariche personali',max:3,spent:1}],
    attacks:[{id:'item:main:weapon',name:'Spada personale',hit:5,damage:'1d8'}]};
  const catalog=[{id:'disarm',edition:'2014',name:'Disarmare',timings:['action'],optional:true,
    source:'DMG',page:271,skills:['athletics'],description:'Disarma il nemico.'}];
@@ -169,9 +169,32 @@ test('action panel prioritizes common actions, skill checks, then personal abili
  assert.equal((action.match(/action-economy-group-title/g)||[]).length,2);
  assert(!action.includes('<h3>Regola opzionale</h3>'));
  assert(action.includes('Fonte: DMG'),'Optional source remains readable in details');
- assert(action.includes('<span class="action-economy-tracker" title="Tracker utilizzato">Cariche personali</span>'));
+ assert(action.includes('data-tracker-id="charges"'));
  assert(action.includes('data-target="skill:stealth"'));
  assert(action.includes('data-target="skill:perception"'));
  assert(action.includes('data-target="skill:athletics"'));
  assert(!action.includes('data-target="skill:acrobatics"'));
+});
+
+test('dashboard groups all five action costs in bordered cards and keeps live resources visible',()=>{
+ const c={rules_version:'2014',prepared_spells:['test_spell'],
+  action_grants:[{name:'Manovra speciale',action_type:'bonus',tracker_id:'dice'}]};
+ const calculated={trackers:[{id:'dice',name:'Dadi superiorità',max:4,spent:2}],skills:{arcana:5,stealth:2}};
+ const spells=[{id:'test_spell',name:'Raggio di gelo',level:1,time:'action'}];
+ const html=actionEconomyView(c,calculated,spells);
+ for(const key of ['action','bonus','free','movement','reaction']){
+  assert(html.includes('data-timing="'+key+'"'),'Action group missing: '+key);
+ }
+ assert(html.includes('class="action-economy-dashboard"'));
+ assert(html.includes('class="action-economy-heading"'));
+ assert(html.includes('data-act="tracker-more" data-tracker-id="dice"'));
+ assert(html.includes('data-act="tracker-less" data-tracker-id="dice"'));
+ assert(html.includes('2 / 4'));
+ assert(html.includes('data-act="action-cast-spell" data-spell-id="test_spell"'));
+ assert(html.includes('Slot incantesimo'));
+ assert(html.includes('Lancia incantesimo'));
+ assert(!html.includes('class="action-economy-column-head"'),'No obsolete tracker column headings');
+ const entries=actionEntries(c,calculated,spells);
+ assert.equal(entries.find(x=>x.name==='Raggio di gelo').spell_id,'test_spell');
+ assert.equal(entries.find(x=>x.name==='Manovra speciale').tracker_id,'dice');
 });

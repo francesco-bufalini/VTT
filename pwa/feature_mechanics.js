@@ -27,7 +27,7 @@ export function featureActionEntries(record,trackers,catalog={}){
  return [...selected.values()].map(rule=>{
   const tracker=trackerFor(featureMember(record,rule),rule,trackers);
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
-   tracker:tracker?.name||rule.tracker_name||'',cost:0,origin:'personal',
+   tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',cost:0,origin:'personal',
    action_id:'',rule_id:rule.id,feature:rule.feature};
  });
 }

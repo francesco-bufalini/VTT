@@ -1,6 +1,9 @@
 extends VBoxContainer
 signal skill_requested(key: String)
 signal basic_action_requested(action_id: String)
+signal tracker_change_requested(tracker_id: String, delta: int, maximum: int)
+signal cast_spell_requested(spell_id: String, grant_id: String)
+signal open_spellbook_requested()
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 ## Local-only action overview. Neither casting nor sheet calculations require a server.
@@ -79,8 +82,15 @@ const COMMON := [
 ]
 
 var _sections: Array[VBoxContainer] = []
+var _panels: Array[PanelContainer] = []
+var _layout_two: HBoxContainer
+var _layout_left: VBoxContainer
+var _layout_right: VBoxContainer
+var _layout_one: VBoxContainer
 var _skill_list: VBoxContainer
-var _skill_buttons: VBoxContainer
+var _skill_buttons: GridContainer
+var _record: Dictionary = {}
+var _trackers: Dictionary = {}
 
 static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
@@ -98,24 +108,103 @@ static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]
 	return results.slice(0, mini(count, results.size()))
 
 func _ready() -> void:
-	for heading_text: String in GROUPS:
+	add_theme_constant_override("separation", 8)
+	_layout_two = HBoxContainer.new()
+	_layout_two.add_theme_constant_override("separation", 12)
+	_layout_two.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(_layout_two)
+	_layout_left = VBoxContainer.new()
+	_layout_right = VBoxContainer.new()
+	for column: VBoxContainer in [_layout_left, _layout_right]:
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		column.add_theme_constant_override("separation", 10)
+		_layout_two.add_child(column)
+	_layout_one = VBoxContainer.new()
+	_layout_one.add_theme_constant_override("separation", 10)
+	add_child(_layout_one)
+	for index: int in range(GROUPS.size()):
+		var panel := PanelContainer.new()
+		panel.name = "Actions_" + GROUPS[index].replace(" ", "_")
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.115, 0.100, 0.103, 0.96)
+		style.border_color = Color(0.62, 0.43, 0.24, 0.94)
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(10)
+		style.set_content_margin_all(12)
+		panel.add_theme_stylebox_override("panel", style)
 		var section := VBoxContainer.new()
+		section.add_theme_constant_override("separation", 5)
+		panel.add_child(section)
+		var header := HBoxContainer.new()
+		section.add_child(header)
+		var icon_label := Label.new()
+		icon_label.text = ["⚔", "✦", "✋", "➜", "↩"][index]
+		icon_label.add_theme_font_size_override("font_size", 24)
+		icon_label.add_theme_color_override("font_color", Color(0.96, 0.72, 0.42))
+		header.add_child(icon_label)
 		var heading := Label.new()
-		heading.text = heading_text
-		heading.add_theme_font_size_override("font_size", 19)
-		section.add_child(heading)
-		add_child(section)
+		heading.text = GROUPS[index]
+		heading.add_theme_font_size_override("font_size", 23)
+		heading.add_theme_color_override("font_color", Color(1.0, 0.80, 0.50))
+		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header.add_child(heading)
+		var rule_hint := Label.new()
+		rule_hint.text = [
+			"Attacchi, incantesimi e prove di abilità",
+			"Capacità che usano un'azione bonus",
+			"Interazioni senza costo in azioni",
+			"Usa la velocità disponibile",
+			"Azioni in risposta a eventi"
+		][index]
+		rule_hint.add_theme_font_size_override("font_size", 12)
+		rule_hint.add_theme_color_override("font_color", Color(0.77, 0.70, 0.63))
+		section.add_child(rule_hint)
+		_layout_one.add_child(panel)
 		_sections.append(section)
-	# The four best skill checks are actions, not a separate top-level section.
+		_panels.append(panel)
 	_skill_list = VBoxContainer.new()
 	_skill_list.name = "ProveAbilita"
 	var skills_heading := Label.new()
 	skills_heading.text = "Prove abilità · 4 migliori"
-	skills_heading.add_theme_font_size_override("font_size", 14)
+	skills_heading.add_theme_font_size_override("font_size", 15)
+	skills_heading.add_theme_color_override("font_color", Color(1.0, 0.78, 0.49))
 	_skill_list.add_child(skills_heading)
-	_skill_buttons = VBoxContainer.new()
+	_skill_buttons = GridContainer.new()
+	_skill_buttons.columns = 2
+	_skill_buttons.add_theme_constant_override("h_separation", 5)
+	_skill_buttons.add_theme_constant_override("v_separation", 5)
 	_skill_list.add_child(_skill_buttons)
 	_sections[0].add_child(_skill_list)
+	resized.connect(_arrange_columns)
+	call_deferred("_arrange_columns")
+
+func _arrange_columns() -> void:
+	if _panels.size() != GROUPS.size() or _layout_one == null:
+		return
+	var narrow := size.x < 850
+	_layout_two.visible = not narrow
+	_layout_one.visible = narrow
+	for i: int in range(_panels.size()):
+		var parent: VBoxContainer = (
+			_layout_one if narrow else _layout_left if i in [0, 3] else _layout_right
+		)
+		var panel: PanelContainer = _panels[i]
+		if panel.get_parent() != parent:
+			panel.reparent(parent)
+	# Keep the primary action box first and movement directly below it.
+	for index: int in range(_panels.size()):
+		var panel: PanelContainer = _panels[index]
+		var parent: Node = panel.get_parent()
+		if narrow:
+			parent.move_child(panel, index)
+		elif index == 0 or index == 1 or index == 2:
+			parent.move_child(panel, 0 if index != 2 else 1)
+		elif index == 3:
+			parent.move_child(panel, 1)
+		else:
+			parent.move_child(panel, 2)
+
 
 static func _timing(value: Variant) -> int:
 	if value is Array:
@@ -352,7 +441,9 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		var level := int(spell.get("level", 0))
 		var tracker := "Nessuno" if level == 0 else "Slot incantesimo"
 		var detail := "Livello: %d\n" % level + _description(spell.get("entries", spell.get("description", "")))
-		results.append(_entry(String(spell.get("name", id)), _timing(time), "Incantesimo", detail, tracker))
+		var cast_entry := _entry(String(spell.get("name", id)), _timing(time), "Incantesimo", detail, tracker)
+		cast_entry["spell_id"] = id
+		results.append(cast_entry)
 	for grant: Dictionary in OriginSpells.all_grants(record):
 		if bool(grant.get("disabled", false)):
 			continue
@@ -366,73 +457,151 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		# VTT internal effect templates (e.g. Bardic Inspiration / Wild Shape)
 		# are abilities, not spells: no spell-school or component semantics.
 		var kind := "Capacità" if bool(spell.get("internal_grant", false)) else "Incantesimo"
-		results.append(_entry(String(spell.get("name", grant.get("spell_id", ""))),
+		var grant_entry := _entry(String(spell.get("name", grant.get("spell_id", ""))),
 			_timing(spell.get("time", spell.get("casting_time", "action"))), kind,
-			_description(spell.get("entries", spell.get("description", ""))), tracker, tracker_id if mode == "tracker" else ""))
+			_description(spell.get("entries", spell.get("description", ""))), tracker, tracker_id if mode == "tracker" else "")
+		grant_entry["spell_id"] = String(grant.get("spell_id", ""))
+		grant_entry["grant_id"] = String(grant.get("id", ""))
+		results.append(grant_entry)
 	for index: int in range(results.size()):
 		results[index]["origin"] = "personal" if index >= personal_start else "general"
 		results[index]["position"] = index
 	return results
 
+func _action_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.21, 0.18, 0.19, 0.93)
+	style.border_color = Color(0.46, 0.32, 0.23, 0.82)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(7)
+	return style
+
+func _action_button(text: String, help: String = "") -> Button:
+	var button := Button.new()
+	button.text = text
+	button.tooltip_text = help
+	button.add_theme_font_size_override("font_size", 13)
+	return button
+
+func _show_entry(entry: Dictionary) -> void:
+	var action_id := String(entry.get("action_id", ""))
+	if not action_id.is_empty():
+		basic_action_requested.emit(action_id)
+		return
+	if String(entry.get("name", "")) == "Lanciare un incantesimo":
+		open_spellbook_requested.emit()
+		return
+	var dialog := AcceptDialog.new()
+	dialog.title = String(entry.get("name", "Capacità"))
+	dialog.dialog_text = String(entry.get("detail", "Nessuna descrizione disponibile."))
+	add_child(dialog)
+	dialog.popup_centered_ratio(0.75)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+
 func _add_entry(entry: Dictionary) -> void:
 	var title := String(entry.get("name", ""))
 	var detail := String(entry.get("detail", ""))
-	var row := HBoxContainer.new()
-	row.set_meta("action_generated", true)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var button := Button.new()
-	button.text = title
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.tooltip_text = detail
-	button.set_meta("action_generated", true)
-	button.pressed.connect(func() -> void:
-		var action_id := String(entry.get("action_id", ""))
-		if not action_id.is_empty():
-			basic_action_requested.emit(action_id)
-			return
-		var dialog := AcceptDialog.new()
-		dialog.title = title
-		dialog.dialog_text = detail if not detail.is_empty() else "Nessuna descrizione disponibile."
-		add_child(dialog)
-		dialog.popup_centered_ratio(0.75)
-		dialog.confirmed.connect(dialog.queue_free)
-		dialog.close_requested.connect(dialog.queue_free)
-	)
-	var tracker := String(entry.get("tracker", "")).strip_edges()
-	var tracker_label := Label.new()
-	tracker_label.text = "" if tracker in ["Nessuno", "Nessuna risorsa"] else tracker
-	tracker_label.tooltip_text = tracker_label.text
-	tracker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	tracker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	tracker_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tracker_label.custom_minimum_size = Vector2(110, 0)
-	tracker_label.size_flags_horizontal = Control.SIZE_FILL
-	row.add_child(button)
-	row.add_child(tracker_label)
 	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
-	section.add_child(row)
+	var card := PanelContainer.new()
+	card.set_meta("action_generated", true)
+	card.add_theme_stylebox_override("panel", _action_style())
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	section.add_child(card)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	card.add_child(content)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	content.add_child(row)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(info)
+	var heading := Button.new()
+	heading.text = title + " ›"
+	heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	heading.flat = true
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.add_theme_font_size_override("font_size", 15)
+	heading.tooltip_text = detail
+	heading.pressed.connect(_show_entry.bind(entry))
+	info.add_child(heading)
+	if not detail.is_empty():
+		var brief := Label.new()
+		brief.text = detail.get_slice("\n", 0).strip_edges()
+		if brief.text.length() > 110:
+			brief.text = brief.text.substr(0, 107) + "…"
+		brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		brief.add_theme_font_size_override("font_size", 11)
+		brief.add_theme_color_override("font_color", Color(0.78, 0.72, 0.68))
+		info.add_child(brief)
+	var tracker_name := String(entry.get("tracker", "")).strip_edges()
+	var tracker_id := String(entry.get("tracker_id", ""))
+	var spell_id := String(entry.get("spell_id", ""))
+	var grant_id := String(entry.get("grant_id", ""))
+	if not spell_id.is_empty():
+		var cast := _action_button("Lancia", "Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")
+		cast.pressed.connect(func() -> void: cast_spell_requested.emit(spell_id, grant_id))
+		row.add_child(cast)
+	elif title == "Lanciare un incantesimo" or title == "Magia":
+		var open := _action_button("Incantesimi", "Apri la scheda Poteri per scegliere cosa lanciare")
+		open.pressed.connect(func() -> void: open_spellbook_requested.emit())
+		row.add_child(open)
+	if not tracker_id.is_empty() and _trackers.has(tracker_id):
+		var tracker: Dictionary = _trackers[tracker_id]
+		var base: int = maxi(0, int(tracker.get("max", 0)))
+		var maximum := maxi(0, Bonuses.add(_record, "tracker:" + tracker_id, base))
+		var spent: Dictionary = _record.get("resource_tracker_spent", {})
+		var used := clampi(int(spent.get(tracker_id, 0)), 0, maximum)
+		var counter := HBoxContainer.new()
+		counter.add_theme_constant_override("separation", 3)
+		row.add_child(counter)
+		var minus := _action_button("−", "Consuma 1 · " + tracker_name)
+		minus.disabled = used >= maximum or bool(tracker.get("disabled", false))
+		minus.pressed.connect(func() -> void: tracker_change_requested.emit(tracker_id, 1, maximum))
+		counter.add_child(minus)
+		var remaining := Label.new()
+		remaining.text = "%d/%d" % [maximum - used, maximum]
+		remaining.tooltip_text = tracker_name
+		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		remaining.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		remaining.custom_minimum_size.x = 47
+		counter.add_child(remaining)
+		var plus := _action_button("+", "Recupera 1 · " + tracker_name)
+		plus.disabled = used <= 0 or bool(tracker.get("disabled", false))
+		plus.pressed.connect(func() -> void: tracker_change_requested.emit(tracker_id, -1, maximum))
+		counter.add_child(plus)
+	elif not tracker_name.is_empty() and tracker_name not in ["Nessuno", "Nessuna risorsa"]:
+		var tag := Label.new()
+		tag.text = tracker_name
+		tag.tooltip_text = tracker_name
+		tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tag.add_theme_font_size_override("font_size", 11)
+		tag.add_theme_color_override("font_color", Color(0.94, 0.72, 0.45))
+		row.add_child(tag)
 	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
 		checks.append("stealth")
-	var seen_skills: Dictionary = {}
-	for raw_skill: Variant in checks:
-		var skill_id := String(raw_skill)
-		if seen_skills.has(skill_id):
-			continue
-		seen_skills[skill_id] = true
-		var label := skill_id.capitalize()
-		for definition: Dictionary in Skills5e.SKILLS:
-			if String(definition.get("id", "")) == skill_id:
-				label = String(definition.get("label", skill_id))
-				break
-		var check := Button.new()
-		check.text = "↳ Tira " + label
-		check.set_meta("action_generated", true)
-		check.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		check.pressed.connect(func() -> void: skill_requested.emit("skill:" + skill_id))
-		section.add_child(check)
+	if not checks.is_empty():
+		var checks_row := HFlowContainer.new()
+		checks_row.add_theme_constant_override("h_separation", 4)
+		content.add_child(checks_row)
+		var seen_skills: Dictionary = {}
+		for raw_skill: Variant in checks:
+			var skill_id := String(raw_skill)
+			if seen_skills.has(skill_id):
+				continue
+			seen_skills[skill_id] = true
+			var label := skill_id.capitalize()
+			for definition: Dictionary in Skills5e.SKILLS:
+				if String(definition.get("id", "")) == skill_id:
+					label = String(definition.get("label", skill_id))
+					break
+			var check := _action_button("↳ Tira " + label)
+			check.pressed.connect(func() -> void: skill_requested.emit("skill:" + skill_id))
+			checks_row.add_child(check)
 
 func refresh_top_skills(record: Dictionary) -> void:
 	if _skill_buttons == null:
@@ -442,11 +611,12 @@ func refresh_top_skills(record: Dictionary) -> void:
 		child.queue_free()
 	for skill: Dictionary in best_skills(record):
 		var key := String(skill["id"])
-		var button := Button.new()
-		button.text = "%s  %+d" % [skill["label"], int(skill["bonus"])]
+		var button := _action_button("%s   %+d" % [skill["label"], int(skill["bonus"])])
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(func() -> void: skill_requested.emit("skill:" + key))
 		_skill_buttons.add_child(button)
+
 
 func _add_subheading(section: VBoxContainer, text: String) -> void:
 	var label := Label.new()
@@ -459,6 +629,10 @@ func _add_subheading(section: VBoxContainer, text: String) -> void:
 func load_record(record: Dictionary) -> void:
 	if _sections.is_empty():
 		return
+	_record = record.duplicate(true)
+	_trackers.clear()
+	for resource: Dictionary in Trackers.for_creature(record):
+		_trackers[String(resource.get("id", ""))] = resource
 	refresh_top_skills(record)
 	for section: VBoxContainer in _sections:
 		for child: Node in section.get_children():

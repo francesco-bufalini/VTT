@@ -1176,6 +1176,65 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='action-open-spells'){
+    state.sheet='magic';await render();return;
+  }
+  if(act==='action-cast-spell'){
+    const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
+    const calculated=await computeLocalData(record);
+    const entry=sessionSpellEntries(record,calculated,state.spellCatalog||[])
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+    if(!entry)throw Error('Incantesimo non disponibile nella scheda.');
+    const options=[];
+    const level=Number(entry.level||0);
+    const grant=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
+    const mode=grant?.payment_mode||'slot';
+    if(level===0||mode==='free'||mode==='tracker'){
+      options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Nessuno slot']);
+    }else{
+      for(const slot of calculated.spell_slots||[]){
+        if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
+          options.push(['slot:'+slot.level,slot.level+'° livello · '+(slot.total-slot.spent)+' disponibili']);
+      }
+      if(mode!=='slot'||!grant){
+        if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+          options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
+      }
+    }
+    if(!options.length)throw Error('Non ci sono slot disponibili per questo incantesimo.');
+    app.querySelector('#action-cast-dialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='action-cast-dialog';
+    dialog.innerHTML='<h2>Lancia '+esc(entry.name||entry.id)+'</h2>'+
+      '<p class="hint">Scegli la risorsa da consumare. Se la partita non è collegata, il lancio registra solo il consumo sulla scheda locale.</p>'+
+      '<label>Risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>'+
+      '<div class="actions"><button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'">Conferma lancio</button>'+
+      '<button type="button" class="btn" data-act="action-cast-cancel">Annulla</button></div>';
+    app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return;
+  }
+  if(act==='action-cast-cancel'){
+    app.querySelector('#action-cast-dialog')?.close();return;
+  }
+  if(act==='action-cast-confirm'){
+    const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
+    const calculated=await computeLocalData(record);
+    const selection=sessionSpellEntries(record,calculated,state.spellCatalog||[])
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+    if(!selection)throw Error('Incantesimo non più disponibile.');
+    const choice=app.querySelector('#action-cast-choice')?.value||'';
+    const [payment,levelText]=choice.split(':');const level=Number(levelText);
+    if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
+      throw Error('Risorsa di lancio non valida.');
+    if(record.linked_token_sync_id&&state.paired&&state.online){
+      app.querySelector('#action-cast-dialog')?.close();
+      await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
+    }
+    const plan=spellCastPlan(record,selection,level,calculated,payment);
+    app.querySelector('#action-cast-dialog')?.close();
+    if(Object.keys(plan.patch).length)await patch(plan.patch);
+    await render();
+    message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
+    return;
+  }
   if(act==='combat-action'){
     const mode=target.dataset.mode;
     if(!['help','shove','prone','grapple'].includes(mode))throw Error('Azione non valida.');
