@@ -1,7 +1,7 @@
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,hasProperty} from "./item_controls.js";
+import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
 import {automaticId,numericGrant,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 
@@ -182,7 +182,8 @@ function indexRows(record,index,warnings){
   }
   return rows;
 }
-function itemActive(item){
+function itemActive(item,record={}){
+  if(item.requirements&&!requirementsAllow(record,item))return false;
   if(int(item.quantity,1)<=0||item.active===false)return false;
   if(requiresAttunement(item)&&!item.attuned)return false;
   const slots=arr(item.equipped_slots),kind=itemKind(item);
@@ -191,16 +192,16 @@ function itemActive(item){
   return item.equipped===true;
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
-function itemRows(record,warnings){
+function itemRows(record,warnings,infusionCatalog=[]){
   const rows=[],seen=new Set(),seenAttacks=new Set();
-  for(const item of arr(record.inventory)){
-    if(!item||!item.id||!itemActive(item))continue;
-    if(!String(item.id).startsWith("local_")&&item.instance_overrides&&
-        Object.keys(item.instance_overrides).length)
-      warnings.add("Override di oggetti di catalogo: verifica le proprietà non ancora risolte");
+  for(const saved of arr(record.inventory)){
+    const item=resolveOwnedItem(saved);
+    if(!item||!item.id||!itemActive(item,record))continue;
     if(item.infusion&&Object.keys(item.infusion).length)
       warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
     const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
+    const infusion=infusionNumericBonuses(record,item,infusionCatalog);
+    const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
       const raw=item?.[snake]??item?.[camel];
       const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw);
@@ -221,7 +222,23 @@ function itemRows(record,warnings){
           ["bonus_weapon_attack","bonus_weapon_attack","bonusWeaponAttack","attack_hit:"+attack],
           ["bonus_weapon_damage","bonus_weapon_damage","bonusWeaponDamage","attack_damage:"+attack]
         ])add(target,field,snake,camel);
+        if(Number.isFinite(infusion.bonus_weapon)){
+          for(const type of ["attack_hit:","attack_damage:"]){
+            const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
+            if(grant)rows.push(grant);
+          }
+        }
       }
+    }
+    // General infusion grants are per active item, while weapon grants
+    // above follow the actual equipped hand and thrown-attack identities.
+    if(infusion.bonus_ac!==undefined&&["armor","shield"].includes(kind)){
+      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
+      if(grant)rows.push(grant);
+    }
+    if(infusion.bonus_spell_attack!==undefined){
+      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
+      if(grant)rows.push(grant);
     }
     if(seen.has(sid))continue;
     seen.add(sid);
@@ -397,7 +414,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
 // CreatureAttackData / CreatureItemRules projection: each equipped hand keeps
 // its native stable attack ID. Published monster totals already include PB.
 export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0){
- const out=[],inventory=arr(record.inventory),trained=new Set(proficiencies);
+ const out=[],inventory=arr(record.inventory).map(resolveOwnedItem),trained=new Set(proficiencies);
  const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
  const main=occupied('main'),off=occupied('off');
  const dual=arr(record.feats_catalog).some(f=>!f?.disabled&&same(f.name,'Dual Wielder'));
@@ -489,7 +506,7 @@ export function calculateSheet(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings),...structuredFeatureGrants(record)];
+    ...itemRows(record,warnings,index?.artificer_infusions||[]),...structuredFeatureGrants(record)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id))];
@@ -501,7 +518,7 @@ export function calculateSheet(record={},catalogs={}){
   const proficiencies=fixedProficiencies(record,catalogs.proficiencyGrants);
   if(!catalogs.proficiencyGrants)
     warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
-  const inventory=arr(record.inventory);
+  const inventory=arr(record.inventory).map(resolveOwnedItem);
   const equipped=slot=>inventory.find(it=>int(it?.quantity,1)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
   const armor=currentArmor&&itemKind(currentArmor)==="armor"?currentArmor:null;
@@ -611,7 +628,7 @@ export function calculateSheet(record={},catalogs={}){
     }
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     if(sid.startsWith("item:"))
-      return inventory.some(it=>"item:"+it.id===sid&&itemActive(it));
+      return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
     const fragments=sid.split("|"),group=fragments[0],
       source=fragments[1]||"",name=fragments.slice(2).join("|");
     if(group==="race")return same(record.species,name)&&

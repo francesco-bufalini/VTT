@@ -11,6 +11,65 @@ export function itemKind(item={}){
   if(String(item.id||"").startsWith("magic_item:"))return "magic";
   return "other";
 }
+
+// Native ItemInstance.resolve allowlist: per-copy fields never mutate compendium data.
+export const ITEM_INSTANCE_FIELDS=["damage","versatile_damage","damage_type","range","properties",
+  "ac","bonus_ac","bonus_weapon","weight","weapon_size"];
+export const WEAPON_SIZES=["Tiny","Small","Medium","Large","Huge","Gargantuan"];
+export function resolveOwnedItem(saved={}){
+  const effective={...saved},overrides=saved?.instance_overrides;
+  if(overrides&&typeof overrides==="object"&&!Array.isArray(overrides))
+    for(const key of ITEM_INSTANCE_FIELDS)
+      if(Object.hasOwn(overrides,key))effective[key]=structuredClone(overrides[key]);
+  if(saved?.infusion?.requires_attunement===true)effective.req_attune=true;
+  return effective;
+}
+// Native inventory behavior: editing one item in a stack splits it off.
+export function changeItemOverride(inventory,index,key,value){
+  if(!Array.isArray(inventory)||!Number.isInteger(index)||index<0||index>=inventory.length)
+    throw Error("Oggetto non trovato.");
+  const rows=structuredClone(inventory),item=rows[index];
+  if(!item||typeof item!=="object"||!["weapon_size","damage","versatile_damage","damage_type","range","ac","bonus_ac","bonus_weapon"].includes(key))
+    throw Error("Proprietà di istanza non modificabile.");
+  const kind=itemKind(item);
+  if(key==="weapon_size"&&kind!=="weapon"||
+     ["damage","versatile_damage","range","bonus_weapon"].includes(key)&&kind!=="weapon"||
+     ["ac","bonus_ac"].includes(key)&&!["armor","shield"].includes(kind))
+    throw Error("Proprietà incompatibile con l'oggetto.");
+  let normalized=String(value??"").trim(),valid=true;
+  if(key==="weapon_size")valid=!normalized||WEAPON_SIZES.includes(normalized);
+  else if(["damage","versatile_damage"].includes(key))
+    valid=!normalized||/^([1-9]\d{0,2})d(4|6|8|10|12|20|100)(?:\s*[+-]\s*\d{1,3})?$/i.test(normalized);
+  else if(key==="range"){
+    valid=!normalized||/^[1-9]\d{0,3}(?:\/[1-9]\d{0,3})?$/.test(normalized);
+    const distances=normalized.split("/").map(Number);
+    if(normalized&&distances.length>1&&distances[1]<distances[0])valid=false;
+  }else if(["ac","bonus_ac","bonus_weapon"].includes(key)){
+    if(normalized!==""){
+      const n=Number(normalized),lo=key==="ac"?0:-20,hi=key==="ac"?40:20;
+      valid=Number.isInteger(n)&&n>=lo&&n<=hi;
+      if(valid)normalized=n;
+    }
+  }else if(key==="damage_type")valid=normalized.length<=60&&(!normalized||/^[a-zA-Z _-]+$/.test(normalized));
+  if(!valid)throw Error("Valore non valido per "+key);
+  const current=item.instance_overrides&&typeof item.instance_overrides==="object"?
+    {...item.instance_overrides}:{};
+  if(normalized===(current[key]??""))return rows;
+  if(Number(item.quantity||1)>1){
+    rows[index].quantity=Number(item.quantity)-1;
+    const one=structuredClone(item);
+    one.quantity=1;one.equipped_slots=[];one.equipped=false;one.attuned=false;
+    one.instance_id="pwa_instance_"+crypto.randomUUID();
+    rows.splice(index+1,0,one);
+    index++;
+  }
+  const changed=rows[index],overrides={...(changed.instance_overrides||{})};
+  if(normalized==="")delete overrides[key];
+  else overrides[key]=normalized;
+  changed.instance_overrides=overrides;
+  return rows;
+}
+
 export function requiresAttunement(item={}){
   const v=item.req_attune??item.reqAttune??item.infusion?.requires_attunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
@@ -45,6 +104,128 @@ export function changeOwnedItem(inventory,index,key,value){
     item[key]=value;
   }
   return items;
+}
+
+
+const sameText=(a,b)=>String(a??"").trim().toLowerCase()===String(b??"").trim().toLowerCase();
+export function artificerLevel(record={}){
+ const classes=array(record.classes);
+ const members=classes.length?classes:[{name:record.class,source:record.class_source,level:record.level}];
+ return Math.max(0,Math.min(20,Number(members.find(c=>sameText(c?.name,"Artificer")&&sameText(c?.source,"TCE"))?.level)||0));
+}
+export function infusionLimits(record={},classMechanics={}){
+ const level=artificerLevel(record);
+ const cls=array(classMechanics?.classes).find(c=>sameText(c.name,"Artificer")&&sameText(c.source,"TCE"));
+ const column=array(cls?.columns).find(c=>sameText(c.name,"Infused Items"));
+ const active=level<2?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
+ return {level,active,known:active*2};
+}
+export function learnedInfusions(record={},definitions=[]){
+ return array(record.optional_features_catalog).flatMap((saved,index)=>{
+   const option=array(definitions).find(row=>row.id===saved?.id);
+   return option?[{...option,plan_item_id:saved.plan_item_id||"",plan_item_name:saved.plan_item_name||"",saved_index:index}]:[];
+ });
+}
+export function infusionEligible(option,owned){
+ if(!option||!owned||typeof owned!=="object")return false;
+ const entry=resolveOwnedItem(owned),selector=option.item_selector||{};
+ const kind=itemKind(entry),name=String(entry.name||"").toLowerCase(),id=String(owned.id||"");
+ if(selector.id_prefix&&!id.startsWith(selector.id_prefix))return false;
+ if(selector.nonmagical&&(id.startsWith("magic_item:")||entry.magic===true||
+    !["","none","unknown","—"].includes(String(entry.rarity||"").toLowerCase())))return false;
+ if(array(selector.kinds).length&&!selector.kinds.includes(kind))return false;
+ if(array(selector.name_contains_any).length&&!selector.name_contains_any.some(part=>name.includes(String(part).toLowerCase())))return false;
+ if(array(selector.properties_all).length&&!selector.properties_all.every(code=>hasProperty(entry,code)))return false;
+ return true;
+}
+function replicableItem(option,entry,level){
+ if(!entry||!String(entry.id||"").startsWith("magic_item:"))return false;
+ if(array(option.replicable_items).some(row=>sameText(row.name,entry.name)&&level>=Number(row.level||99)))return true;
+ return String(entry.rarity||"").toLowerCase()==="common"&&!["P","SC"].includes(String(entry.type||"").toUpperCase());
+}
+export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1){
+ const caps=infusionLimits(record,classMechanics),known=learnedInfusions(record,definitions);
+ if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2)||
+    known.length>=caps.known)throw Error("Infusione non disponibile o limite di conoscenza raggiunto.");
+ let plan_item_id="",plan_item_name="";
+ if(option.application_kind==="replicate"){
+   const item=array(record.inventory)[itemIndex];
+   if(!replicableItem(option,item,caps.level))throw Error("Oggetto magico non replicabile al livello attuale.");
+   plan_item_id=item.id;plan_item_name=item.name||"";
+ }
+ if(known.some(row=>row.id===option.id&&row.plan_item_id===plan_item_id))throw Error("Infusione già conosciuta.");
+ return {optional_features_catalog:[...array(record.optional_features_catalog),
+   {id:option.id,name:option.name,source:option.source||"TCE",...(plan_item_id?{plan_item_id,plan_item_name}:{})}]};
+}
+export function applyInfusionPatch(record,known,definitions,classMechanics,index){
+ const caps=infusionLimits(record,classMechanics),items=structuredClone(array(record.inventory));
+ const option=array(definitions).find(row=>row.id===known?.id),item=items[index];
+ if(!option||!item||!array(record.optional_features_catalog).some(row=>
+   row.id===option.id&&String(row.plan_item_id||"")===String(known.plan_item_id||"")))
+   throw Error("Infusione non conosciuta oppure oggetto non disponibile.");
+ if(caps.level<Math.max(2,Number(option.min_level)||2)||!infusionEligible(option,item))
+   throw Error("Oggetto incompatibile o livello dell'Artefice insufficiente.");
+ if(option.application_kind==="replicate"&&(!known.plan_item_id||known.plan_item_id!==item.id))
+   throw Error("Questo piano replica un altro oggetto.");
+ for(const [i,other] of items.entries()){
+   const inf=other?.infusion;
+   if(i!==index&&inf?.creator_id===record.id&&inf?.id===option.id&&
+      String(inf.plan_item_id||"")===String(known.plan_item_id||""))
+     throw Error("Infusione già applicata a un altro oggetto.");
+ }
+ const old=item.infusion;
+ if(old&&Object.keys(old).length&&old.creator_id!==record.id)throw Error("Infusione appartenente a un altro Artefice.");
+ const active=items.filter(row=>Number(row?.quantity??1)>0&&row?.infusion?.creator_id===record.id).length;
+ if(!old?.id&&active>=caps.active)throw Error("Limite di oggetti infusi raggiunto.");
+ if(Number(item.quantity??1)>1){
+   const remaining=structuredClone(item);
+   remaining.quantity=Number(item.quantity)-1;remaining.equipped_slots=[];
+   remaining.equipped=false;remaining.attuned=false;delete remaining.infusion;
+   remaining.instance_id="pwa_instance_"+crypto.randomUUID();
+   items.splice(index+1,0,remaining);item.quantity=1;
+ }
+ item.infusion={id:option.id,name:option.name,source:"TCE",level:caps.level,
+   creator_id:record.id,plan_item_id:known.plan_item_id||"",
+   requires_attunement:Boolean(option.requires_attunement)};
+ return {inventory:items};
+}
+export function clearInfusionPatch(record,index){
+ const items=structuredClone(array(record.inventory));
+ if(!items[index]?.infusion?.id)throw Error("Nessuna infusione da rimuovere.");
+ delete items[index].infusion;items[index].attuned=false;
+ return {inventory:items};
+}
+export function forgetInfusionPatch(record,known){
+ const current=array(record.optional_features_catalog);
+ const index=current.findIndex(row=>row.id===known?.id&&
+   String(row.plan_item_id||"")===String(known.plan_item_id||""));
+ if(index<0)throw Error("Infusione non trovata.");
+ const updated=structuredClone(current);updated.splice(index,1);
+ const inventory=structuredClone(array(record.inventory));
+ for(const item of inventory){
+   const inf=item.infusion||{};
+   if(inf.creator_id===record.id&&inf.id===known.id&&
+      String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
+     delete item.infusion;item.attuned=false;
+   }
+ }
+ return {optional_features_catalog:updated,inventory};
+}
+export function infusionNumericBonuses(record,item,definitions=[]){
+ const inf=item?.infusion;
+ if(!inf?.id)return {};
+ const row=array(definitions).find(r=>r.id===inf.id);
+ const data=row?.numeric_item_bonuses;
+ if(!data||!infusionEligible(row,item))return {};
+ const level=inf.creator_id===record.id&&artificerLevel(record)>=2?
+   artificerLevel(record):Math.max(0,Number(inf.level)||0);
+ if(level<Number(row.min_level||2))return {};
+ const selector=data.item_selector||{};
+ if(array(selector.item_types).length&&!selector.item_types.includes(String(item.type||"").split("|")[0].toUpperCase()))return {};
+ const mult=level>=Number(data.upgrade_level||99)?2:1;
+ return Object.fromEntries(["bonus_ac","bonus_weapon","bonus_spell_attack"]
+  .filter(key=>Number.isFinite(Number(data[key])))
+  .map(key=>[key,Number(data[key])*mult]));
 }
 
 export function hasProperty(item,code){

@@ -2,6 +2,182 @@
 // No native files are changed; no catalog output is edited by hand.
 import {readFile,writeFile} from 'node:fs/promises';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
+// Project typed TCE infusion data to a URL already served by PwaHost.
+// Older native snapshots lack selectors: use source-qualified structured
+// fallbacks, never English-description parsing in browser runtime.
+const infusionSelectors={
+  "infusion|tce|arcane propulsion armor": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "armor"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|armor of magical strength": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "armor"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|boots of the winding path": {
+    "item_selector": {
+      "nonmagical": true,
+      "name_contains_any": [
+        "boot"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|enhanced arcane focus": {
+    "item_selector": {
+      "nonmagical": true,
+      "name_contains_any": [
+        "rod",
+        "staff",
+        "wand"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|enhanced defense": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "armor",
+        "shield"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|enhanced weapon": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "weapon"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|helm of awareness": {
+    "item_selector": {
+      "nonmagical": true,
+      "name_contains_any": [
+        "helm"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|homunculus servant": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "other",
+        "tool"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|mind sharpener": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "armor"
+      ],
+      "name_contains_any": [
+        "robe"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|radiant weapon": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "weapon"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|repeating shot": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "weapon"
+      ],
+      "properties_all": [
+        "A"
+      ]
+    },
+    "application_kind": "enhancement",
+    "numeric_item_selector": {
+      "item_types": [
+        "R"
+      ]
+    }
+  },
+  "infusion|tce|replicate magic item": {
+    "item_selector": {
+      "id_prefix": "magic_item:"
+    },
+    "application_kind": "replicate"
+  },
+  "infusion|tce|repulsion shield": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "shield"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|resistant armor": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "armor"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|returning weapon": {
+    "item_selector": {
+      "nonmagical": true,
+      "kinds": [
+        "weapon"
+      ],
+      "properties_all": [
+        "T"
+      ]
+    },
+    "application_kind": "enhancement"
+  },
+  "infusion|tce|spell-refueling ring": {
+    "item_selector": {
+      "nonmagical": true,
+      "name_contains_any": [
+        "ring"
+      ]
+    },
+    "application_kind": "enhancement"
+  }
+};
+const abilityIndex=await read('../../vtt/data/structured_ability_grants_5etools.json');
+const infusionNative=await read('../../vtt/data/artificer_infusions_5etools.json');
+abilityIndex.artificer_infusions=infusionNative.infusions.map(row=>{
+  const typed=infusionSelectors[row.id]||{};
+  const fields={...row,item_selector:row.item_selector||typed.item_selector||{},
+    application_kind:row.application_kind||typed.application_kind||'enhancement'};
+  if(typed.numeric_item_selector&&fields.numeric_item_bonuses&&!fields.numeric_item_bonuses.item_selector)
+    fields.numeric_item_bonuses={...fields.numeric_item_bonuses,item_selector:typed.numeric_item_selector};
+  return fields;
+});
+abilityIndex.meta={...abilityIndex.meta,artificer_infusions:'TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract'};
+await writeFile(new URL('../catalog/ability_grants.json',import.meta.url),JSON.stringify(abilityIndex,null,2)+'\n');
 const mechanics=await read('../../vtt/data/class_mechanics_5etools.json');
 const resources=await read('../../vtt/data/class_resource_overrides.json');
 mechanics.resource_overrides=resources.classes;
