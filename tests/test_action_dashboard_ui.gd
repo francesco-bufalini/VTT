@@ -27,6 +27,8 @@ func run() -> void:
 	}
 	tab.load_record(record)
 	assert(tab._panels.size() == 5 and tab._sections.size() == 5)
+	assert(tab._section_counts.size() == 5 and int(tab._section_counts[0].text) > 0,
+		"Each bordered action panel must expose its live action count")
 	assert(tab._layout_two.visible)
 	assert(tab._panels[0].get_parent() == tab._layout_left)
 	assert(tab._panels[1].get_parent() == tab._layout_right)
@@ -39,8 +41,8 @@ func run() -> void:
 		actions.append([id, delta, maximum]))
 	minus.pressed.emit()
 	assert(actions == [["charge", 1, 3]], "Native action tracker uses stable resource ID")
-	var cast := _find_button(tab, "Lancia")
-	assert(cast != null, "Class spells must have a casting control, not a slot counter")
+	var cast := _find_button(tab, "Lancia · slot")
+	assert(cast != null, "Class spells must offer slot casting, not a separate spell tracker")
 	var spells: Array = []
 	tab.cast_spell_requested.connect(func(id: String, grant: String) -> void: spells.append([id, grant]))
 	cast.pressed.emit()
