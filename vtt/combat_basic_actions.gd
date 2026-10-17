@@ -17,7 +17,11 @@ static func shove_details(record: Dictionary, athletics_bonus: int = 0, strength
 		"action": "Sostituisce un attacco dell'azione Attaccare. Successo: prono o spostamento di 5 ft."}
 
 static func _size(node: Node3D) -> int:
-	var name := String(node.get("_size_name")) if "_size_name" in node else String(node.get_meta("size_name", "Medium"))
+	var name := String(node.get_meta("size_name", "Medium"))
+	for property: Dictionary in node.get_property_list():
+		if String(property.get("name", "")) == "_size_name":
+			name = String(node.get("_size_name"))
+			break
 	var index := SIZES.find(name)
 	return index if index >= 0 else 2
 
@@ -45,8 +49,8 @@ static func validate(board: Node, actor: CharacterBody3D, target: CharacterBody3
 	var footprint := 1.0
 	if actor.has_method("get_footprint_cells") and target.has_method("get_footprint_cells"):
 		footprint = maxf(1.0, (float(actor.call("get_footprint_cells")) + float(target.call("get_footprint_cells"))) / 2.0)
-	var gap := maxf(0.0, maxf(dx, dz) - footprint) * 5.0
-	if gap > reach - 5.0 + 0.001:
+	var needed := maxf(0.0, maxf(dx, dz) - footprint + 1.0) * 5.0
+	if needed > reach + 0.001:
 		return {"ok": false, "error": "Bersaglio fuori portata per una spinta."}
 	return {"ok": true}
 
