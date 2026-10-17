@@ -13,6 +13,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
 import { changeTrackerUses, recoveryPatch } from "./character_core.js";
 import { classSpellSections, assignClassSpell, revokeClassSpell } from "./class_spells.js";
+import { classResourceTrackers, loadClassResourceOverrides } from "./class_trackers.js";
 import { createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./quick_homebrew.js";
 import { localSheetView } from "./sheet_rules_view.js";
 
@@ -33,7 +34,7 @@ const state = { page:"library", creatureId:null, lastCreatureId:null, chatAuthor
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:"", spellSections:[], spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:"", spellSections:[], effectiveTrackers:[], spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -290,6 +291,15 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
+  if(["battle","origins","magic"].includes(state.sheet)){
+    try{
+      const catalogs=await loadRuleCatalogs();
+      const derived=calculateSheet(c,catalogs);
+      const modifiers=Object.fromEntries(Object.entries(derived.abilities||{}).map(([key,value])=>[key,value.modifier]));
+      const overrides=await loadClassResourceOverrides().catch(()=>({}));
+      state.effectiveTrackers=classResourceTrackers(c,catalogs.classMechanics,overrides,modifiers);
+    }catch{state.effectiveTrackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];}
+  }else state.effectiveTrackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory": {
@@ -364,21 +374,23 @@ async function editorView() {
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
 function resourceView(c,configure=false){
-    const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
+    const trackers=state.effectiveTrackers;
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
     return panel("Utilizzi e risorse",
-      '<p class="hint">Contatori manuali. I tracker automatici di classe e privilegi non sono ancora coperti integralmente dal motore locale.</p>'+
-      (trackers.length?trackers.map((t,i)=>{
+      '<p class="hint">Risorse di classe strutturate e contatori manuali. Le eccezioni dei privilegi senza dati numerici non vengono inventate.</p>'+
+      (trackers.length?trackers.map(t=>{
+        const manualIndex=(c.resource_trackers||[]).findIndex(row=>row?.id===t.id);
         const max=Math.max(0,Number(t.max)||0);
         const used=Math.max(0,Number(spent[t.id])||0);
         return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
-          '</strong>'+(configure?'<button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button>':'')+'</div>'+
+          '</strong>'+(t.automatic?'<span class="tag">Da classe</span>':
+          configure&&manualIndex>=0?'<button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+manualIndex+'">Elimina</button>':'')+'</div>'+
           '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
           ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
-          '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
-          '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
-      }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
+          '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo">−</button>'+
+          '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
+      }).join(""):'<p class="hint">Nessun tracker disponibile.</p>')+
       (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+btn("tracker-turn","Nuovo turno")+'</div>':'') )+
       (configure?panel("Aggiungi tracker",'<div class="columns">'+
       '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
@@ -1066,21 +1078,23 @@ async function handleAction(target){
     await patch({resource_trackers:trackers});await render();return;
   }
   if(["tracker-more","tracker-less","tracker-delete"].includes(act)){
-    const record=state.editor.read(),trackers=structuredClone(record.resource_trackers||[]);
-    const index=Number(target.dataset.index),row=trackers[index];
-    if(!row)throw new Error("Tracker non disponibile.");
+    const record=state.editor.read();
     if(act==="tracker-delete"){
+      const trackers=structuredClone(record.resource_trackers||[]);
+      const index=Number(target.dataset.index),row=trackers[index];
+      if(!row)throw new Error("Tracker manuale non disponibile.");
       trackers.splice(index,1);
       const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
       await patch({resource_trackers:trackers,resource_tracker_spent:spent});
     }else{
-      await patch(changeTrackerUses(record,row.id,act==="tracker-more"?1:-1));
+      await patch(changeTrackerUses(record,target.dataset.trackerId,
+        act==="tracker-more"?1:-1,state.effectiveTrackers));
     }
     await render();return;
   }
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const event=act==="tracker-short"?"short_rest":act==="tracker-long"?"long_rest":"turn";
-    await patch(recoveryPatch(state.editor.read(),event));
+    await patch(recoveryPatch(state.editor.read(),event,state.effectiveTrackers));
     await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
