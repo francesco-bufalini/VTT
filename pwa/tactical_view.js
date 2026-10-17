@@ -59,7 +59,7 @@ export class TacticalViewer {
   async open(tokenId, attack={}) {
     if(!tokenId)throw new Error("Scegli prima un token.");
     this.close();
-    this.tokenId=tokenId;this.attack=structuredClone(attack);
+    this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
     this.root=document.createElement("div");
     this.root.className="tactical-overlay";
     this.root.innerHTML='<section class="tactical-dialog" role="dialog" aria-modal="true" aria-label="Snapshot della mappa">'+
