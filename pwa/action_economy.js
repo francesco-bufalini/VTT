@@ -2,6 +2,7 @@
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {availableSpells, spellId} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
+import {featureActionEntries} from './feature_mechanics.js';
 
 let supplementsCache=null;
 let generalActionsCache=null;
@@ -116,6 +117,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal'});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
+ for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{}))out.push({...row,time:timing(row.time)});
  const already=new Set();
  // Local combat calculations preserve equipped weapon slots, hit, damage,
  // reach and monster section in stable attack identifiers.
@@ -156,6 +158,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
    record.class?[{name:record.class,source:record.class_source,level:record.level||1}]:[];
  const selectedEdition=record.rules_version==='2024'?'XPHB':'PHB';
  for(const rule of arr(featureOverrides)){
+  if(rule.feature_name==='Cunning Action')continue; // Superseded by structured alternative activations.
   const classMember=members.find(m=>String(m?.name||'').toLowerCase()===String(rule.class_name||'').toLowerCase()&&
     String(m?.source||selectedEdition).toUpperCase()===String(rule.book||'').toUpperCase()&&
     Number(m?.level||0)>=Number(rule.min_level||1));
