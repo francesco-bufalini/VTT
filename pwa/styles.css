@@ -456,3 +456,93 @@ input:not([type=checkbox]):not([type=file]),select,textarea{background:#211c1c;b
 
 .action-group-label{display:flex;align-items:center;gap:9px;min-height:34px;color:var(--text)}
 .action-group-label>.vtt-action-glyph{width:29px;height:29px;flex:0 0 29px}
+
+
+/* Native VTT parity: one metallic surface language throughout the mobile shell.
+   Palette and icon positions derive from vtt/creature_sheet_style.gd. */
+:root{
+ --vtt-gold:#edbd77;--vtt-gold-bright:#ffdea3;--vtt-edge:#9c7048;
+ --vtt-metal-top:#49342e;--vtt-metal-base:#352928;--vtt-metal-bottom:#211b1b;
+ --vtt-metal-reflection:#ffe5b51e;
+}
+body{background:radial-gradient(ellipse at 50% -15%,#392820 0%,#201b1a 48%,#171515 100%);}
+.topbar{
+ background:linear-gradient(180deg,#392b28f9,#211b1af9 94%);
+ border-bottom:2px solid #c99750;
+ box-shadow:inset 0 1px 0 #ffe4b12c,0 5px 15px #0008;
+}
+.brand{color:#f5eee5;text-shadow:0 1px 2px #000c;}
+.brand-icon{display:grid;place-items:center;width:30px;height:30px;flex:none;font-size:0;}
+.brand-icon::before{
+ content:"";display:block;width:28px;height:28px;
+ background:url("/icons/gold_generated/gold_2.svg") 66.6667% center/2500% 100% no-repeat;
+ filter:drop-shadow(0 1px 2px #000a);
+}
+.brand small,.eyebrow,.drawer-heading,.current-section{color:var(--vtt-gold);}
+.page-head h1,.editor-head h1{color:#f5eee5;text-shadow:0 2px 3px #000a;}
+.panel,.creature-card,.token-card,.event,.document-entry,.derived-warnings,.sheet-roll-dialog,.tactical-dialog{
+ background:linear-gradient(180deg,#ffffff10,transparent 33%),linear-gradient(155deg,#302522,#211c1b 85%);
+ border:1px solid var(--vtt-edge);border-top:2px solid #c99750;
+ box-shadow:inset 0 1px 0 var(--vtt-metal-reflection),inset 0 -2px 3px #0004,0 4px 13px #0006;
+}
+.panel.soft{background:linear-gradient(160deg,#43312c,#29211f);}
+.panel h2,.panel h3,.action-economy-heading h2{color:var(--vtt-gold);}
+.native-entry,.trait-card,.derived-metric,.ability-box,.document-paper:not(.parchment):not(.letter){
+ background:linear-gradient(180deg,#ffffff0a,transparent 45%),linear-gradient(155deg,#40302d,#302625);
+ border-color:#97704d;border-top-color:#b08659;
+ box-shadow:inset 0 1px 0 #ffe0ae18,0 2px 6px #0005;
+}
+.btn,.section-menu>summary,.section-tabs button,.action-tree>summary{
+ background:linear-gradient(180deg,#ffffff17,transparent 51%),linear-gradient(165deg,#493632,#2b2322);
+ border:1px solid #9f734b;border-top-color:#c1945b;
+ box-shadow:inset 0 1px 0 #ffe6b33d,inset 0 -1px 0 #0005,0 2px 5px #0005;
+ color:#f5eee5;
+}
+.btn.primary,.section-tabs button[aria-pressed=true],.sections-drawer button[aria-current=page],.sections-drawer button[aria-pressed=true],.section-menu[open]>summary{
+ background:linear-gradient(180deg,#ffffff1c,transparent 48%),linear-gradient(160deg,#843d48,#542a33);
+ border-color:#e6b46c;box-shadow:inset 0 1px 0 #ffdfad45,0 2px 7px #0007;
+}
+.btn.danger{border-color:#a55a64;}
+.btn.ghost{background:transparent;box-shadow:none;border-color:#89643f;}
+@media(hover:hover){
+ .btn:hover:not(:disabled),.section-menu>summary:hover,.section-tabs button:hover{
+  background:linear-gradient(180deg,#ffffff22,transparent 52%),linear-gradient(165deg,#5b3e37,#342625);
+  border-color:#f2c779;box-shadow:inset 0 1px 0 #ffe6b35b,0 0 9px #d8a25838,0 3px 8px #0007;
+ }
+ .creature-card:hover,.catalog-entry:hover{border-color:#d2a468;}
+}
+.btn:active:not(:disabled),.section-menu>summary:active{box-shadow:inset 0 2px 6px #0009;background:#3b2926;}
+.btn:focus-visible,.section-menu>summary:focus-visible,.section-tabs button:focus-visible{outline:2px solid #f2c779;outline-offset:2px;}
+.btn:disabled{box-shadow:none;filter:saturate(.6);}
+.sections-drawer{
+ background:linear-gradient(155deg,#352925,#211b1b);
+ border:1px solid #bd8b51;border-top:2px solid #efc783;
+ box-shadow:inset 0 1px 0 #ffdfad24,0 16px 36px #000b;
+}
+.section-tabs button{white-space:nowrap;}
+.tag,.pill,.action-economy-count{
+ background:linear-gradient(180deg,#4c382d,#29211e);
+ border-color:#ac8050;box-shadow:inset 0 1px 0 #fbe2b122;
+}
+input:not([type=checkbox]):not([type=file]),select,textarea{
+ background:linear-gradient(180deg,#181515,#241c1b);
+ border:1px solid #89643f;box-shadow:inset 0 2px 4px #0006,inset 0 1px 0 #0006;
+}
+input:focus,textarea:focus,select:focus{border-color:#edbd77;}
+.creature-avatar{border:1px solid #b98b53;box-shadow:inset 0 1px 0 #ffe7bd36,0 2px 5px #0007;background:linear-gradient(#523237,#302122);}
+.tactical-dialog{min-width:0;}
+/* Exactly the native generated-gold atlas; no emoji or unrelated icon pack. */
+#nav .btn{display:flex;align-items:center;gap:11px;}
+#nav .btn::before{content:"";display:inline-block;flex:none;width:25px;height:25px;filter:drop-shadow(0 1px 1px #0009);background-repeat:no-repeat;background-size:2500% 100%;}
+#nav [data-nav=library]::before{background-image:url("/icons/gold_generated/gold_2.svg");background-position:25% center;}
+#nav [data-nav=catalog]::before{background-image:url("/icons/gold_generated/gold_0.svg");background-position:62.5% center;}
+#nav [data-nav=dice]::before{background-image:url("/icons/gold_generated/gold_1.svg");background-position:16.6667% center;}
+#nav [data-nav=chat]::before{background-image:url("/icons/gold_generated/gold_0.svg");background-position:50% center;}
+#nav [data-nav=session]::before{background-image:url("/icons/gold_generated/gold_2.svg");background-position:58.3333% center;}
+@media(max-width:480px){
+ .brand-icon{width:26px;height:26px;}
+ .brand-icon::before{width:24px;height:24px;}
+ .panel,.creature-card,.token-card,.event{box-shadow:inset 0 1px 0 #ffe4b11a,0 2px 7px #0006;}
+ .sections-drawer{max-width:calc(100vw - 24px);}
+}
+@media(prefers-reduced-motion:reduce){.btn,.section-tabs button{transition:none;}}
