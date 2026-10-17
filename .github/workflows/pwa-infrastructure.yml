@@ -44,6 +44,7 @@ jobs:
             /pwa/
             /vtt/data/class_mechanics_5etools.json
             /vtt/data/class_resource_overrides.json
+            /vtt/data/combat_action_supplements_5etools.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
