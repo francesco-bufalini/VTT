@@ -95,14 +95,30 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
 export function recoveryPatch(c,event,trackers){
  if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
  const spent={...(c.resource_tracker_spent||{})};
- for(const row of trackers)if(!row.disabled&&(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest'))delete spent[row.id];
- const patch={resource_tracker_spent:spent};
- // Pact Magic recharges on a short rest; class spell slots on a long rest.
- // Opening/recalculating a sheet never triggers recovery.
+ const ready={...(c.resource_recovery_ready||{})};
+ const used={...(c.resource_recovery_used||{})};
+ for(const row of trackers){
+  if(row.disabled)continue;
+  if(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest')delete spent[row.id];
+  if(event!=='short_rest')continue;
+  for(const rule of row.partial_recoveries||[]){
+   if(rule.event!=='short_rest')continue;
+   if(rule.mode==='optional_partial'){
+    if(!used[rule.id])ready[rule.id]=true;
+   }else if(rule.mode==='partial'){
+    spent[row.id]=Math.max(0,Number(spent[row.id]||0)-Math.max(0,Number(rule.amount)||0));
+    if(!spent[row.id])delete spent[row.id];
+   }
+  }
+ }
+ if(event==='long_rest'){for(const id of Object.keys(ready))delete ready[id];for(const id of Object.keys(used))delete used[id];}
+ const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
+ // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
  return patch;
 }
+
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
   const options=type.some(([v])=>String(v)===String(value??''))?type:[[value??'',value||'Non selezionato'],...type];
