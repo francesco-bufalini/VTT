@@ -95,3 +95,24 @@ test("typed background, species, feat sections have native origin identities and
  assert.equal(calculateSheet({...upgraded,feats_catalog:[{name:"Keen",source:"PHB",disabled:true}]},
    {classFeatures,originDetails}).stats.initiative,3);
 });
+
+test("native fallback feature keys honor nested feat requirement level and activation",()=>{
+ const c=fighter(5);
+ c.feats_catalog=[{name:"Attentive",source:"HB",feature_sections:[
+  {name:"Level Gate",requirements:{min_level:5},
+    bonuses:[{target:"initiative",expression:2}]}
+ ]}];
+ const featureCatalog={...classFeatures,class_features:[
+  ...classFeatures.class_features,
+  {id:"typed-reaction",name:"Counterguard",class_name:"Fighter",
+   class_source:"PHB",level:4,activation:{type:"reaction"},entries:["reaction"]}
+ ]};
+ const catalogs={classFeatures:featureCatalog,originDetails:{}};
+ const result=calculateSheet(c,catalogs);
+ const gated=result.features.find(f=>f.name==="Level Gate");
+ assert.equal(gated.key,"feat|attentive|hb|feat|attentive|hb|5|level gate");
+ assert.equal(result.stats.initiative,3+2);
+ assert(actionEntries(c,result,[]).some(x=>x.name==="Counterguard"&&x.time==="reaction"));
+ const below=calculateSheet({...c,level:4,classes:[{...c.classes[0],level:4}]},catalogs);
+ assert(!below.features.some(f=>f.name==="Level Gate"));
+});
