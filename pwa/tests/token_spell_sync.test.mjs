@@ -45,7 +45,7 @@ test("Android-compatible dispel removes only applied spell origins and their con
 
 test("map changes persist through the live editor without invalidating IndexedDB CAS",async()=>{
  const scope="targeting-test-"+crypto.randomUUID();
- const {creature}=await createCreature("character","CasualTarget",scope);
+ const creature=await createCreature("character","CasualTarget",scope);
  const editor=await openCreatureEditor(creature.id,scope);
  await editor.update({linked_token_sync_id:"token-hero",
    proficiency_origins:[{id:"spell:spell:old",group:"spell",applied:true}],
