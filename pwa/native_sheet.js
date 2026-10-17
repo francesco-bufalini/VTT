@@ -18,10 +18,10 @@ const list=v=>Array.isArray(v)?v:[];
 export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
- feats_catalog:[["name","Talento"],["source","Fonte"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ feats_catalog:[["name","Talento"],["source","Fonte"],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  formula_bonuses:[["target","Valore",BONUS_TARGETS], ["expression","Formula"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
- origin_spell_grants:[["origin_name","Origine"],["spellcasting_ability","Caratteristica",[["","Automatica"],["int","Intelligenza"],["wis","Saggezza"],["cha","Carisma"]]],["disabled","Disattivata","checkbox"]]
+ origin_spell_grants:[["origin_id","Origine"],["origin_name","Nome origine"],["spell_id","Incantesimo"],["payment_mode","Consumo",[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']]],["tracker_id","Tracker"],["tracker_cost","Costo","number",1,999],["spellcasting_ability","Caratteristica",[["","Automatica"],["str","Forza"],["dex","Destrezza"],["con","Costituzione"],["int","Intelligenza"],["wis","Saggezza"],["cha","Carisma"]]],["disabled","Disattivata","checkbox"]]
 };
 export function rowsFor(c,key){
  if(key==='classes'&&!list(c.classes).length&&c.class)return [{name:c.class,source:c.class_source||'',id:c.class_id||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',subclass_id:c.subclass_id||'',level:c.level||1}];
@@ -61,13 +61,33 @@ function control(label,attrs,value,type='text',min,max){
  if(type==='checkbox')return '<label class="check"><input type="checkbox" '+attrs+' '+(value?'checked':'')+'>'+esc(label)+'</label>';
  return '<label>'+esc(label)+'<input type="'+type+'" '+attrs+' value="'+esc(value)+'" '+(min!==undefined?'min="'+min+'" max="'+max+'"':'')+'></label>';
 }
-export function nativeRows(c,key){
+export function nativeRows(c,key,catalogs={}){
  const rows=rowsFor(c,key);
  return rows.map((row,i)=>{
   if(!row||typeof row!=='object')return '<p class="hint">'+esc(row)+'</p>';
   const automatic=!!row.automatic;
+  if(key==='formula_bonuses'&&(automatic||String(row.id||'').startsWith('auto|')))return '';
   return '<article class="native-entry"><div class="row between"><strong>'+esc(row.name||row.origin_name||row.key||'Voce '+(i+1))+'</strong>'+
-   (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>control(label,'data-native-list="'+key+'" data-index="'+i+'" data-key="'+field+'"'+(automatic&&field!=='disabled'?' disabled':''),row[field],type,min,max)).join('')+'</div>'+ (key==='origin_spell_grants'?'<p class="hint">'+list(row.spells).map(s=>esc(typeof s==='string'?s:s.name||s.id)).join(', ')+'</p>':'')+'</article>';
+   (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
+    const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':'';
+    const candidates=list(catalogs[category]).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
+    if(category&&candidates.length){
+      const chosen=candidates.find(ref=>ref.name===row[field]&&(!row[field==='name'?'source':'subclass_source']||ref.source===row[field==='name'?'source':'subclass_source']));
+      const selected=chosen?String(chosen.id||chosen.name+'|'+chosen.source):row[field]?'__current__':'';
+      const options=[['','Nessuno'],...(!chosen&&row[field]?[['__current__',row[field]+' · importato']]:[]),...candidates.map(ref=>[String(ref.id||ref.name+'|'+ref.source),ref.name+' · '+ref.source])];
+      return control(label,'data-native-pick="'+key+'" data-index="'+i+'" data-key="'+field+'" data-category="'+category+'"',selected,options);
+    }
+    if(key==='proficiency_choices'&&field==='key'){
+      if(['skill','expertise'].includes(row.kind))type=SKILLS.map(([id,name])=>[id,name]);
+      if(row.kind==='save')type=['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()]);
+    }
+    if(key==='origin_spell_grants'){
+      if(field==='origin_id')type=list(catalogs.origins).map(o=>[o.id,o.name]);
+      if(field==='spell_id')type=[['','Scegli incantesimo'],...list(catalogs.spells).filter(s=>!s.internal_grant).map(s=>[s.id,s.name+' · '+s.source])];
+      if(field==='tracker_id')type=[['','Nessuno'],...list(catalogs.trackers).map(t=>[t.id,t.name])];
+    }
+    return control(label,'data-native-list="'+key+'" data-index="'+i+'" data-key="'+field+'"'+(automatic&&field!=='disabled'?' disabled':''),row[field],type,min,max);
+   }).join('')+'</div>'+ (key==='origin_spell_grants'?'<p class="hint">'+list(row.spells).map(s=>esc(typeof s==='string'?s:s.name||s.id)).join(', ')+'</p>':'')+'</article>';
  }).join('')+'<button type="button" class="btn" data-act="native-add" data-list="'+key+'">＋ Aggiungi</button>';
 }
 export function nativeRowPatch(c,key,index,field,value){
@@ -79,7 +99,10 @@ export function nativeRowPatch(c,key,index,field,value){
   value=Number(value);if(!Number.isInteger(value)||(definition[3]!==undefined&&(value<definition[3]||value>definition[4])))throw Error('Valore fuori intervallo');
  }
  if(Array.isArray(definition[2])&&!definition[2].some(([v])=>String(v)===String(value)))throw Error('Scelta non valida');
- if(key==='classes'&&['name','subclass'].includes(field)&&row[field]!==value){row[field==='name'?'id':'subclass_id']='';}
+ if(key==='classes'&&['name','source','subclass','subclass_source'].includes(field)&&row[field]!==value){
+  row[['name','source'].includes(field)?'id':'subclass_id']='';
+  if(['name','source'].includes(field))Object.assign(row,{subclass:'',subclass_source:'',subclass_id:''});
+ }
  row[field]=value;
  return collectionPatch(c,key,rows);
 }
@@ -87,11 +110,35 @@ export function collectionPatch(c,key,rows){
  if(!ROW_FIELDS[key])throw Error('Elenco non valido');
  const patch={[key]:rows};
  if(key==='classes'){
-  const total=rows.reduce((sum,row)=>sum+Number(row.level||1),0);if(total>20)throw Error('La somma dei livelli non può superare 20');
+  const total=rows.filter(row=>row.name).reduce((sum,row)=>sum+Number(row.level||1),0);if(total>20)throw Error('La somma dei livelli non può superare 20');
   const primary=rows[0]||{};
   Object.assign(patch,{class:primary.name||'',class_source:primary.source||'',class_id:primary.id||'',subclass:primary.subclass||'',subclass_source:primary.subclass_source||'',subclass_id:primary.subclass_id||'',level:total||1});
  }
  return patch;
+}
+export function referencePatch(c,key,selected={}){
+ const name=selected.name||'',source=selected.source||'',id=selected.id||'';
+ const patch={...identityPatch(c,key,name),[key+'_id']:id,[key+'_source']:source};
+ if(key==='class'||key==='subclass'){
+  const changed=name!==c[key]||source!==(c[key+'_source']||'');
+  const classes=patch.classes||rowsFor(c,'classes');
+  if(classes.length){Object.assign(classes[0],key==='class'?{name,source,id}:{subclass:name,subclass_source:source,subclass_id:id});patch.classes=classes;}
+  if(key==='class'&&changed){
+   Object.assign(patch,{subclass:'',subclass_source:'',subclass_id:''});
+   if(classes.length)Object.assign(classes[0],{subclass:'',subclass_source:'',subclass_id:''});
+  }
+ }
+ if(key==='species'&&source!==(c.species_source||''))Object.assign(patch,{subrace:'',subrace_id:'',subrace_source:''});
+ return patch;
+}
+export function rowReferencePatch(c,key,index,field,selected={}){
+ const rows=rowsFor(c,key),row=rows[index];if(!row||row.automatic)throw Error('Voce non modificabile');
+ if(key==='classes'&&field==='subclass')Object.assign(row,{subclass:selected.name||'',subclass_source:selected.source||'',subclass_id:selected.id||''});
+ else {
+  Object.assign(row,{name:selected.name||'',source:selected.source||'',id:selected.id||''});
+  if(key==='classes')Object.assign(row,{subclass:'',subclass_source:'',subclass_id:''});
+ }
+ return collectionPatch(c,key,rows);
 }
 export function identityPatch(c,key,value){
  const patch={[key]:value};
@@ -110,7 +157,7 @@ export function identityPatch(c,key,value){
  }
  return patch;
 }
-export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',details='overview',catalogs={},calculated={}}){
+export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',attacks='',details='overview',catalogs={},calculated={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
@@ -153,15 +200,15 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
-    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft']])+
+    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
        '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
    panel('Classi e progressione',cols(number('XP','xp')+
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
       (c.class?number('Livello totale','level',c.level??1,1,20):
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
-      '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows({...c,classes:list(c.classes).length?c.classes:c.class?[{name:c.class,source:c.class_source||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',level:c.level||1}]:[]},'classes')+'</details>')+
-   panel('Talenti',feats)+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
+      '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows(c,'classes',catalogs)+'</details>')+
+   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>')+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
      (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
       '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
       summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
@@ -174,14 +221,16 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp'))+
     (calculated.stats?.automatic_hp?.available?'<p class="hint">PF da progressione: '+calculated.stats.automatic_hp.value+'</p><button class="btn" data-act="hp-automatic">Applica PF automatici</button>':''))+
   resources+panel('CA e iniziativa','<div class="row between"><span>Classe armatura '+read('ac','Classe armatura')+'</span><span>Iniziativa '+read('initiative','Iniziativa',true)+'</span></div>'+armor+
-      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+equipment+
-  panel('Attacchi disponibili',select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
-   list(c.inventory).filter(i=>Array.isArray(i.equipped_slots)&& (i.equipped_slots.includes('main')||i.equipped_slots.includes('off'))).map(i=>'<p>'+esc(i.name||i.id)+'</p>').join('')+
+      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
+  panel('Attacchi disponibili',equipment+select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
+   '<label class="check"><input type="checkbox" data-field="hand_grip_two_handed" '+(c.hand_grip_two_handed?'checked':'')+'>Impugnatura a due mani (Versatile)</label>'+attacks+
    '<button class="btn" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>');
  if(section==='traits')return panel('Tratti',summary([['Razza / Specie',c.species],['Sottorazza',c.subrace],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+feats+
   list(c.stat_block?.trait).map(t=>'<article class="list-item"><h3>'+esc(t.name)+'</h3><p>'+esc(list(t.entries).filter(x=>typeof x==='string').join(' '))+'</p></article>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
  if(section==='origins'){
-  let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details);
+  let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details,catalogs);
+  if(details==='overview')content+='<h3>Origini dei benefici</h3>'+list(calculated.origins).map(o=>'<label class="check"><input type="checkbox" data-origin-enabled="'+esc(o.id)+'" '+(!o.disabled?'checked':'')+'>'+esc(o.name)+'</label>').join('');
+  if(details==='formula_bonuses')content='<details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content;
   return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;

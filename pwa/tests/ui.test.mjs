@@ -525,3 +525,63 @@ test("sheet derived values update locally and never call a desktop calculation A
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
+
+test('native boxes, HP actions, automatic resources and slot edits remain usable offline',async t=>{
+ const oldFetch=globalThis.fetch;
+ const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ clearLocalRuleCatalogCache();
+ globalThis.fetch=async(url,options)=>{
+  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants'})[url];
+  if(file)return new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200});
+  return oldFetch(url,options);
+ };
+ t.after(()=>{globalThis.fetch=oldFetch;clearLocalRuleCatalogCache();});
+ const {createCreature,saveCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Verifica parità PWA');
+ await saveCreature({...saved.data,class:'Bard',class_source:'PHB',level:5,
+   classes:[{name:'Bard',source:'PHB',level:5}],abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
+   max_hp_base:20,current_hp:20,temporary_hp:3,second_form_hp:4,
+   spell_slots_automatic:true,spell_slots_spent:[0,1],
+   inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d6',properties:['F','L'],quantity:1,equipped_slots:['main']}],
+   proficiency_choices:[{kind:'weapon',key:'simple'}]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti','Storia e personalità']);
+ click('[data-sheet="battle"]');
+ await until(()=>document.querySelector('#hp-amount'));
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Punti ferita','Risorse','CA e iniziativa','Attacchi disponibili']);
+ document.querySelector('#hp-amount').value='10';click('[data-act="hp-damage"]');
+ await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
+ let record=(await loadCreature(saved.data.id)).data;
+ assert.deepEqual([record.temporary_hp,record.second_form_hp,record.current_hp],[0,0,17]);
+ const tracker='class:bard:phb:bardic_inspiration';
+ click('[data-act="tracker-more"][data-tracker-id="'+tracker+'"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===1);
+ click('[data-act="tracker-short"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
+ click('[data-sheet="magic"]');
+ await until(()=>document.querySelector('[data-slot-total="1"]'));
+ assert.equal(document.querySelector('[data-calculated="slot:1"]').textContent,'4');
+ assert.match(document.querySelector('#app').textContent,/Conosciuti 0 \/ 8/);
+ change('[data-slot-total="1"]','7');
+ await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='7');
+ assert.equal((await loadCreature(saved.data.id)).data.spell_slots_manual,true);
+ click('[data-act="slots-automatic"]');
+ await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='4');
+ click('[data-act="slot-use"][data-level="1"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===2);
+ click('[data-act="slots-restore"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
+ click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
+ change('[data-ability="dex"]','18');
+ await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
+ assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
+ click('[data-act="edit-bonus"][data-target="skill:stealth"]');
+ await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
+ change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
+ click('[data-sheet="stats"]');
+ await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
+ click('[data-act="back"]');await until(()=>document.querySelector('[data-act="create"]'));
+});

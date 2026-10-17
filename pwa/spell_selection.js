@@ -26,7 +26,8 @@ export function castingSources(entry,classes,catalog=[]){
 }
 export function classSelectionCount(creature,member,classes,catalog=[]){
  const selected=availableSpells(creature).filter(row=>castingSources(row,classes,catalog).includes(member.id));
- return {cantrips:selected.filter(row=>Number(row?.level||0)===0).length,leveled:selected.filter(row=>Number(row?.level||0)>0).length};
+ const level=row=>Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0);
+ return {cantrips:selected.filter(row=>level(row)===0).length,leveled:selected.filter(row=>level(row)>0).length};
 }
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[]}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");

@@ -1,4 +1,4 @@
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, castingSources, classSelectionCount } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
@@ -10,7 +10,7 @@ import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription }
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
+import { calculateSheet, loadRuleCatalogs, localClasses } from "./sheet_rules.js";
 import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -244,19 +244,19 @@ async function editorView() {
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
     '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
   let body = "";
-  if(state.sheet==="info"){
-    await Promise.all(["races","classes","subclasses","backgrounds"].map(async key=>{
+  if(['info','origins'].includes(state.sheet)){
+    await Promise.all(["races","classes","subclasses","backgrounds",...(state.sheet==='origins'?['feats']:[])].map(async key=>{
       if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
       catch{ /* References stay editable offline. */ }
     }));
   }
-  if(state.sheet==="magic"&&!state.spellCatalog){
+  if((state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
   const calculated=await computeLocalData(c);
   state.calculated=calculated;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off']),armor:equipmentView(c,['body'],false),details:state.detail,catalogs:state.referenceCatalogs,calculated})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -286,10 +286,11 @@ async function editorView() {
       panel('Slot · Classi / Patto','<div class="slot-table"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+calculated.spell_slots.map(slot=>{
         const level=slot.level,pact=calculated.pact_slots;
         return '<span>'+level+'°</span><div>'+slotCounter(level,slot.total,slot.spent)+
-          '<details><summary>Usati / modifica base</summary><label>Slot usati<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(c.spell_slots_spent?.[level]||0)+'"></label><label>Massimo base<input type="number" min="0" max="99" data-slot-total="'+level+'" value="'+esc(c.spell_slots_total?.[level]??slot.total)+'"></label></details></div><div>'+(pact.level===level?slotCounter(0,pact.total,pact.spent):'—')+'</div>';
+          '<details><summary>Usati / modifica base</summary><label>Slot usati<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(c.spell_slots_spent?.[level]||0)+'"></label><label>Massimo base<input type="number" min="0" max="99" data-slot-total="'+level+'" value="'+esc(slot.base)+'"></label></details></div><div>'+(pact.level===level?slotCounter(0,pact.total,pact.spent):'—')+'</div>';
       }).join('')+'</div><details><summary>Impostazioni slot</summary><p>'+((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+btn('slots-automatic','Usa progressione automatica')+
-      '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(c.pact_slots_total??calculated.pact_slots.total)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
+      '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
       field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
+      originPowersView(c,calculated)+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
         '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
@@ -308,6 +309,7 @@ async function editorView() {
       '<label class="check"><input type="checkbox" data-condition="'+id+'" '+
       ((c.conditions||[]).includes(id)?'checked':'')+'>'+esc(conditionLabel(id))+'</label>').join('')+'</div>');
     break;
+  case 'traits':body=await traitsView(c);break;
   case "json":
     body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
       '<label>Documento completo<textarea id="json-editor" rows="18" spellcheck="false" class="inline-code">'+
@@ -326,14 +328,16 @@ function resourceView(c,configure=false){
     return panel("Risorse",
       '<p class="hint">Risorse delle classi e tracker personali. I massimi includono formule e bonus attivi.</p>'+
       (trackers.length?trackers.map((t,i)=>{
+        const base=(c.resource_trackers||[]).find(row=>row.id===t.id)||t;
         const max=Math.max(0,Number(t.max)||0);
-        const used=Math.max(0,Number(spent[t.id])||0);
+        const used=Math.max(0,Math.min(max,Number(spent[t.id])||0));
         return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
           '</strong>'+(configure&&!t.automatic?'<button type="button" class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'')+'</div>'+
           '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
-          ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
+          ' / </span>'+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+(t.name||'risorsa'))+'<span class="hint">'+esc(({manual:'Manuale',short_rest:'Riposo breve',long_rest:'Riposo lungo',turn:'Inizio turno',d6:'Ricarica d6'})[t.recharge]||t.recharge||'Manuale')+'</span><span class="row">'+
           '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo">−</button>'+
-          '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
+          '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo">＋</button></span></div>'+
+          (configure&&!t.automatic?'<div class="columns"><label>Massimo base<input type="number" min="0" max="99999" data-tracker-field="max" data-tracker-id="'+esc(t.id)+'" value="'+esc(base.max)+'"></label><label>Formula del massimo<input data-tracker-field="max_formula" data-tracker-id="'+esc(t.id)+'" value="'+esc(t.max_formula||'')+'"></label><label>Recupero<select data-tracker-field="recharge" data-tracker-id="'+esc(t.id)+'">'+[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno']].map(([value,label])=>'<option value="'+value+'" '+(t.recharge===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label></div>':'')+'</div>';
       }).join(""):'<p class="hint">Nessuna risorsa disponibile.</p>')+
       '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>')+
       (configure?panel("Aggiungi tracker",'<div class="columns">'+
@@ -353,11 +357,51 @@ function equipmentView(c,slots=['main','off','body'],boxed=true){
       const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
       const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
       return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
-        '<option value="-1"'+(index<0?' selected':'')+'>Nessuno</option>'+
+        '<option value="-1"'+(index<0&&(!c['hand_'+slot+'_special']||c['hand_'+slot+'_special']==='none')?' selected':'')+'>'+(slot==='body'?'Naturale':'Nessuno')+'</option>'+
+        (slot!=='body'?[['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']].map(([id,name])=>'<option value="'+id+'" '+(index<0&&c['hand_'+slot+'_special']===id?'selected':'')+'>'+name+'</option>').join(''):'')+
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
     }).join('')+'</div>';
   return boxed?panel('Equipaggiamento',body):body;
+}
+function attacksView(calculated){
+ return '<div data-attack-list>'+((calculated.attacks||[]).map(attack=>'<article class="native-entry"><h3>'+esc(attack.name)+'</h3><div class="row between"><span>Tiro per colpire '+formulaReadout(calculated,'attack_hit:'+attack.id,'Tiro per colpire',{signed:true})+'</span><span>Danni: '+esc(attack.damage)+' '+esc(attack.damage_type||'')+'</span></div><p class="hint">'+esc(attack.explanation)+(attack.offhand_bonus?' · Attacco secondario con azione bonus':'')+'</p><div class="row"><span>'+ (attack.melee?'Portata':'Gittata')+' '+formulaReadout(calculated,'attack_range:'+attack.id,'Portata', {suffix:' ft'})+'</span>'+(attack.long_range_feet?'<span>Lunga '+formulaReadout(calculated,'attack_long_range:'+attack.id,'Gittata lunga',{suffix:' ft'})+'</span>':'')+'</div></article>').join('')||'<p class="hint">Seleziona un’arma in una mano per renderne disponibile l’attacco.</p>')+'</div>';
+}
+async function traitsView(c){
+ const groups=[],warnings=[];
+ const load=async category=>{
+  if(!state.referenceCatalogs[category])try{state.referenceCatalogs[category]=await catalogEntries(category);}
+  catch{warnings.push('Riferimenti '+category+' non disponibili offline.');return [];}
+  return state.referenceCatalogs[category];
+ };
+ const linked='<div class="actions">'+[['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']].map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
+ const card=entry=>'<details class="trait-card"><summary>'+esc(entry.name||'Descrizione')+'</summary><p class="trait-description">'+esc(flattenDescription(entry)||'Descrizione non presente nel catalogo locale.')+'</p>'+linked+'</details>';
+ const addReference=async(category,name,source,title)=>{
+  if(!name)return;
+  const candidates=(await load(category)).filter(r=>r.name?.toLowerCase()===name.toLowerCase()&&(!source||r.source?.toLowerCase()===source.toLowerCase()));
+  const row=candidates.length===1?candidates[0]:null;
+  const entry=row?await detailedEntry(category,row):{name,entries:['Riferimento importato senza una descrizione univoca nel catalogo locale.']};
+  groups.push('<h3>'+esc(title)+' · '+esc(name)+'</h3>'+card(entry));
+ };
+ if(c.kind==='monster')for(const t of c.stat_block?.trait||[])groups.push(card(t));
+ else{
+  await addReference('races',c.species,c.species_source,'Razza / Specie');
+  if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
+ }
+ await addReference('backgrounds',c.background,c.background_source,'Background');
+ const features=await load('class_features'),subfeatures=await load('subclass_features');
+ for(const member of localClasses(c)){
+  const source=member.source||(c.rules_version==='2024'?'XPHB':'PHB');
+  const selected=features.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&Number(f.level||0)<=Number(member.level));
+  groups.push('<h3>Classe · '+esc(member.name)+' · '+esc(source)+'</h3>'+selected.map(card).join(''));
+  const subclass=member.subclass||'',subsource=member.subclass_source||'';
+  if(subclass){
+    const selected=subfeatures.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&[f.subclass_name,f.subclass_short_name].some(name=>name?.toLowerCase()===subclass.toLowerCase())&&(!subsource||f.subclass_source?.toLowerCase()===subsource.toLowerCase())&&Number(f.level||0)<=Number(member.level));
+    groups.push('<h3>Sottoclasse · '+esc(subclass)+'</h3>'+selected.map(card).join(''));
+  }
+ }
+ for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled)await addReference('feats',feat.name,feat.source,'Talento');
+ return panel('Tratti',(groups.join('')||'<p class="hint">Seleziona le origini della creatura per leggerne i tratti.</p>')+warnings.map(w=>'<p class="hint">'+esc(w)+'</p>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -415,7 +459,23 @@ function castingStatistics(c,section,ability){
  return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_hit'})+'</span></div>';
 }
 function slotCounter(level,total,spent){
- return '<div class="slot-counter"><button class="btn small" data-act="slot-use" data-level="'+level+'" '+(spent>=total?'disabled':'')+' aria-label="Consuma slot '+level+'">−</button><button class="btn small" data-act="slot-recover" data-level="'+level+'" '+(spent<=0?'disabled':'')+' aria-label="Recupera slot '+level+'">＋</button><span>'+Math.max(0,total-spent)+' / </span>'+formulaReadout(state.calculated,level===0?'pact_slot':'slot:'+level,'Massimo slot '+level)+'</div>';
+ const key=level===0?'pact_slot':'slot:'+level;
+ return '<div class="slot-counter">'+(total>0?'<button class="btn small" data-act="slot-use" data-level="'+level+'" '+(spent>=total?'disabled':'')+' aria-label="Consuma slot '+level+'">−</button><button class="btn small" data-act="slot-recover" data-level="'+level+'" '+(spent<=0?'disabled':'')+' aria-label="Recupera slot '+level+'">＋</button>':'')+'<span>'+Math.max(0,total-spent)+' / </span><button class="btn small slot-total" data-act="edit-bonus" data-target="'+key+'" data-calculated="'+key+'" aria-label="Bonus massimo slot '+level+'">'+total+'</button></div>';
+}
+function originPowersView(c,calculated){
+ const groups=new Map();
+ for(const [index,grant] of (c.origin_spell_grants||[]).entries()){
+  if(!calculated.origin_spells.includes(grant))continue;
+  const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
+  const mode=grant.payment_mode|| (grant.tracker_id?'tracker':'free'),tracker=calculated.trackers.find(t=>t.id===grant.tracker_id);
+  const cost=Math.max(1,Number(grant.tracker_cost)||1),remaining=tracker?Math.floor((tracker.max-tracker.spent)/cost):0;
+  const options=calculated.spell_slots.filter(s=>s.level>=Number(spell?.level||0)&&s.total>s.spent).map(s=>[s.level,'Livello '+s.level]);
+  if(calculated.pact_slots.level>=Number(spell?.level||0)&&calculated.pact_slots.total>calculated.pact_slots.spent)options.push([0,'Patto']);
+  const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+index+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
+   (mode!=='free'?'<button class="btn" data-act="origin-spend" data-index="'+index+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+'</article>';
+  const key=grant.origin_id;if(!groups.has(key))groups.set(key,{name:grant.origin_name||key,ability:grant.spellcasting_ability||'int',items:[]});groups.get(key).items.push(content);
+ }
+ return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,castingStatistics(c,'origin:'+key,group.ability)+group.items.join(''))).join('');
 }
 function spellList(c,key,classId=null,classes=[]) {
   const rows=key==="prepared_spells"?availableSpells(c):
@@ -691,8 +751,8 @@ async function shareRoll() {
   if(!state.roll) return;
   if(!state.paired) throw new Error("Collega prima una partita.");
   const r=state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:"Giocatore",
-    timestamp:Math.floor(Date.now()/1000),label:r.notation,die:"d"+r.sides,
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:r.author||"Giocatore",
+    timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,die:"d"+r.sides,
     count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total};
   const result=await action("chat_send",{event});
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
@@ -709,6 +769,7 @@ async function patch(patchValue) {
     if(state.editor===editor&&revision===editor.revision){
       state.calculated=calculated;
       refreshCalculatedValues(app,calculated);
+      const attacks=app.querySelector('[data-attack-list]');if(attacks)attacks.outerHTML=attacksView(calculated);
       const note=app.querySelector('[data-calculation-note]');
       if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
     }
@@ -777,7 +838,8 @@ async function handleField(target) {
   }
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
-    await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
+    const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
+    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),...(slot==='body'?{}:{['hand_'+slot+'_special']:special})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -788,20 +850,42 @@ async function handleField(target) {
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
     if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
     const selected=selection||{};
-    const changes={...identityPatch(creature,key,String(selected.name||'')),
-      [key+'_id']:String(selected.id||''),[key+'_source']:String(selected.source||'')};
-    if(key==='class'&&String(creature.class||'')!==String(selected.name||'')){
-      Object.assign(changes,{subclass:'',subclass_id:'',subclass_source:''});
-      if(Array.isArray(changes.classes)&&changes.classes.length)
-        Object.assign(changes.classes[0],{subclass:'',subclass_id:'',subclass_source:''});
-    }
+    const changes=referencePatch(creature,key,selected);
     await patch(changes);
-    if(key==='species'||key==='class')await render();
+    await render();
     return;
   }
   if(target.dataset.nativeList){
     await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
+    if(target.dataset.key==='kind')await render();
     return;
+  }
+  if(target.dataset.trackerField){
+    const key=target.dataset.trackerField,rows=structuredClone(creature.resource_trackers||[]),row=rows.find(t=>t.id===target.dataset.trackerId);
+    if(!row||!['max','max_formula','recharge'].includes(key))throw Error('Tracker non modificabile');
+    let value=target.value;
+    if(key==='max'){value=Number(value);if(!Number.isInteger(value)||value<0||value>99999)throw Error('Massimo non valido');}
+    if(key==='recharge'&&!['manual','short_rest','long_rest','turn'].includes(value))throw Error('Recupero non valido');
+    row[key]=value;await patch({resource_trackers:rows});await render();return;
+  }
+  if(target.dataset.originEnabled){
+    const id=target.dataset.originEnabled,rows=structuredClone(creature.proficiency_origins||[]),row=rows.find(o=>o.id===id);
+    if(row)row.disabled=!target.checked;else rows.push({id,name:state.calculated.origins.find(o=>o.id===id)?.name||id,disabled:!target.checked});
+    await patch({proficiency_origins:rows,origin_enabled:{...creature.origin_enabled,[id]:target.checked}});await render();return;
+  }
+  if(target.dataset.autoBonus){
+    const id=target.dataset.autoBonus,rows=rowsFor(creature,'formula_bonuses'),index=rows.findIndex(row=>row.id===id);
+    const automatic=state.calculated.automatic_bonuses.find(row=>row.id===id);if(!automatic)throw Error('Bonus non disponibile');
+    const row={...automatic,automatic:true,disabled:!target.checked};if(index>=0)rows[index]=row;else rows.push(row);
+    await patch({formula_bonuses:rows});await render();return;
+  }
+  if(target.dataset.nativePick){
+    if(target.value==='__current__')return;
+    const rows=state.referenceCatalogs[target.dataset.category]||[];
+    const selected=rows.find(row=>String(row.id||row.name+'|'+row.source)===target.value);
+    if(target.value&&!selected)throw Error('Riferimento non valido');
+    await patch(rowReferencePatch(creature,target.dataset.nativePick,Number(target.dataset.index),target.dataset.key,selected));
+    await render();return;
   }
   if(target.dataset.castingSection){
     if(!Object.hasOwn(abilities,target.value))throw Error('Caratteristica non valida');
@@ -834,12 +918,17 @@ async function handleField(target) {
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
     const changes=identityPatch(creature,key,value);
+    if(key==='pact_slot_level'){
+      const calculated=await computeLocalData(creature);
+      Object.assign(changes,{spell_slots_manual:true,spell_slots_total:[0,...calculated.spell_slots.map(s=>s.base)],pact_slots_total:calculated.pact_slots.base});
+    }
     const category=({species:"races",subrace:"races",class:"classes",subclass:"subclasses",background:"backgrounds"})[key];
     if(category){
       const matches=(state.referenceCatalogs[category]||[]).filter(r=>r.name===value);
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
+    if(key==='rules_version')await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -887,6 +976,33 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='sheet-roll'){
+    const calculated=await computeLocalData(state.editor.read()),modifier=calculated.values[target.dataset.target];
+    if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
+    const die=randomDie(20),notation='1d20'+(modifier>=0?'+':'')+modifier;
+    const label=target.dataset.label||'Tiro',author=selectedName();
+    state.roll={sides:20,count:1,modifier,rolls:[die],total:die+modifier,notation,label:label+' · '+notation,author,detail:die+' '+(modifier>=0?'+ ':'− ')+Math.abs(modifier)};
+    state.rollHistory.unshift(state.roll);
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='sheet-roll-dialog';
+    dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2><div class="dice-result">'+state.roll.total+'</div><p>'+esc(state.roll.detail)+'</p><div class="actions">'+(state.paired?btn('share-roll','Invia in chat'):'')+btn('close-sheet-roll','Chiudi')+'</div>';
+    document.body.append(dialog);dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});
+    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    return;
+  }
+  if(act==='close-sheet-roll'){document.querySelector('#sheet-roll-dialog')?.remove();return;}
+  if(act==='origin-spend'){
+    const c=state.editor.read(),index=Number(target.dataset.index),grant=c.origin_spell_grants?.[index],calculated=await computeLocalData(c);
+    if(!grant||!calculated.origin_spells.some(row=>row.origin_id===grant.origin_id&&row.spell_id===grant.spell_id))throw Error('Concessione non disponibile');
+    if(grant.payment_mode==='slot'){
+      const picker=app.querySelector('[data-origin-slot="'+index+'"]');if(!picker||picker.value==='')throw Error('Nessuno slot disponibile');
+      await patch(slotUsePatch(c,Number(picker.value),1,calculated));
+    }else{
+      const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1);
+      if(!tracker||tracker.max-tracker.spent<cost)throw Error('Utilizzi esauriti');
+      await patch({resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:tracker.spent+cost}});
+    }
+    await render();return;
+  }
   if(act==='stop-concentration'){
     const c=state.editor.read();await patch({conditions:(c.conditions||[]).filter(id=>id!=='concentrating'),concentrating_spell_id:''});await render();return;
   }
@@ -939,10 +1055,12 @@ async function handleAction(target){
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
         damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
-        origin_spell_grants:{origin_id:"",origin_name:"",disabled:false}};
+        origin_spell_grants:{id:'grant_'+crypto.randomUUID(),origin_id:state.calculated.origins[0]?.id||'pwa_manual',origin_name:state.calculated.origins[0]?.name||'Personalizzato',spell_id:'',payment_mode:'free',tracker_id:'',tracker_cost:1,disabled:false}};
       rows.push(defaults[key]);
     }
-    await patch(collectionPatch(c,key,rows));await render();return;
+    const changes=collectionPatch(c,key,rows);
+    if(key==='origin_spell_grants'&&!state.calculated.origins.length)changes.proficiency_origins=[...(c.proficiency_origins||[]),{id:'pwa_manual',name:'Personalizzato',group:'custom',disabled:false}];
+    await patch(changes);await render();return;
   }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
@@ -1255,7 +1373,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){

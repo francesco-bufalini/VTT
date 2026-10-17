@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch} from '../native_sheet.js';
+import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
@@ -94,4 +95,41 @@ test('species speeds resolve from native identity, replacing stale snapshots and
  assert.equal(out.stats.speeds.walk,25);
  assert.equal(out.stats.speeds.fly,50);
  assert.equal(out.stats.speeds.swim,15);
+});
+test('equipped attacks calculate proficiency, finesse, offhand damage, thrown range and native enhancement IDs',()=>{
+ const weapon={id:'shortsword',name:'Shortsword',type:'M',weapon_category:'martial',damage:'1d6',properties:['F','L'],quantity:2,equipped_slots:['main','off']};
+ const c={kind:'character',level:5,class:'Fighter',abilities:{str:12,dex:18},attack_ability:'dex',inventory:[weapon],proficiency_choices:[{kind:'weapon',key:'martial'}],formula_bonuses:[{target:'attack_hit:item:shortsword',expression:'1'}]};
+ const out=calculateSheet(c,catalogs);
+ assert.deepEqual(out.attacks.map(a=>[a.id,a.hit,a.damage]),[['item:shortsword',8,'1d6 + 4'],['item:off:shortsword',7,'1d6']]);
+ assert.equal(out.attacks[1].offhand_bonus,true);
+ const style=calculateSheet({...c,two_weapon_fighting:true},catalogs);
+ assert.equal(style.attacks[1].damage,'1d6 + 4');
+ const thrown=calculateSheet({...c,inventory:[{...weapon,id:'dagger',properties:['F','L','T'],range:'20/60',equipped_slots:['main']}]},catalogs);
+ assert.deepEqual(thrown.attacks.map(a=>[a.id,a.range_feet,a.long_range_feet]),[['item:dagger',5,0],['item:throw:main:dagger',20,60]]);
+ const monster=calculateSheet({kind:'monster',abilities:{str:20},stat_block:{action:[{name:'Bite',entries:['{@atk mw} {@hit 7} reach 10 ft. {@damage 2d6 + 5} damage.']}]}},catalogs);
+ assert.equal(monster.attacks[0].hit,7);
+ assert.equal(monster.attacks[0].damage,'2d6 + 5');
+});
+test('class and subclass catalog edits keep legacy fields and multi-class IDs coherent',()=>{
+ const c={class:'Wizard',class_id:'old',class_source:'PHB',subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub',level:5,
+  classes:[{id:'old',name:'Wizard',source:'PHB',level:5,subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub'}]};
+ const patch=referencePatch(c,'class',{id:'new',name:'Wizard',source:'XPHB'});
+ assert.deepEqual([patch.class_id,patch.class_source,patch.classes[0].id,patch.classes[0].source],['new','XPHB','new','XPHB']);
+ assert.equal(patch.subclass,'');assert.equal(patch.classes[0].subclass_id,'');
+ const row=rowReferencePatch(c,'classes',0,'subclass',{name:'Abjurer',source:'XPHB',id:'abjurer'});
+ assert.equal(row.subclass_id,'abjurer');assert.equal(row.classes[0].subclass_source,'XPHB');
+ assert.equal(c.subclass_id,'oldsub');
+});
+test('manual origin powers follow origin toggles and automatic bonus switches keep native IDs',()=>{
+ const id='custom_origin';
+ const c={kind:'character',level:3,proficiency_origins:[{id,name:'Chosen',disabled:false}],origin_spell_grants:[{id:'grant',origin_id:id,spell_id:'shield',payment_mode:'free'},{id:'duplicate',origin_id:id,spell_id:'shield'}]};
+ assert.equal(calculateSheet(c,catalogs).origin_spells.length,1,'duplicate origin/spell pairs are projected once');
+ assert.equal(calculateSheet({...c,origin_enabled:{[id]:false}},catalogs).origin_spells.length,0);
+ assert.equal(c.origin_spell_grants.length,2,'projection never rewrites imported rows');
+});
+test('bundled PWA native tables and resource definitions are generated without divergence',()=>{
+ const native=JSON.parse(readFileSync(new URL('../../vtt/data/class_mechanics_5etools.json',import.meta.url),'utf8'));
+ const overrides=JSON.parse(readFileSync(new URL('../../vtt/data/class_resource_overrides.json',import.meta.url),'utf8'));
+ assert.deepEqual(mechanics.classes,native.classes);
+ assert.deepEqual(mechanics.resource_overrides,overrides.classes);
 });

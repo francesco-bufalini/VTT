@@ -11,10 +11,12 @@ export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   return (sign?signed(value):value??"—")+suffix;
 }
 export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target}={}){
-  return '<span class="sheet-formula"><output data-calculated="'+esc(target)+
+  const rollable=/^(?:ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
+  const tag=rollable?'button':'output';
+  return '<span class="sheet-formula"><'+tag+(rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(target)+'" data-label="'+esc(label)+'"':'')+' data-calculated="'+esc(target)+
     '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
     esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
-    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</output>'+
+    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</'+tag+'>'+
     '<button type="button" class="btn small formula-bonus" data-act="edit-bonus" data-target="'+
     esc(bonusTarget)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button></span>';
 }

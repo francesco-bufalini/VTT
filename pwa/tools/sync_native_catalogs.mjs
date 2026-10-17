@@ -17,4 +17,10 @@ mechanics.subraces=proficiencies.subrace.map(row=>{
   id:full?.id||'subrace:'+row.raceName.toLowerCase()+'|'+row.raceSource.toLowerCase()+'|'+row.name.toLowerCase()+'|'+row.source.toLowerCase()};
 });
 await writeFile(new URL('../catalog/class_mechanics.json',import.meta.url),JSON.stringify(mechanics,null,2)+'\n');
+const subclassCatalog=await read('../../vtt/data/subclasses_5etools.json');
+const subclassFeatures=await read('../../vtt/data/subclass_features_5etools.json');
+const classes={version:1,classes:references.classes.map(({id,name,source})=>({id,name,source})),
+ subclasses:subclassCatalog.subclasses,
+ class_features:references.class_features,subclass_features:subclassFeatures.subclass_features};
+await writeFile(new URL('../catalog/classes.json',import.meta.url),JSON.stringify(classes)+'\n');
 console.log('PWA: class mechanics, resource supplement and species movement regenerated.');

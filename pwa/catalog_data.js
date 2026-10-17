@@ -38,7 +38,7 @@ async function supplementalCatalog(category){
     const rules=await loadRuleCatalogs();
     if(Array.isArray(rules.classMechanics?.races))return [...rules.classMechanics.races,...(rules.classMechanics.subraces||[])];
   }
-  const path=(category==="classes"||category==="subclasses")?
+  const path=(["classes","subclasses","class_features","subclass_features"].includes(category))?
     "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";
   if(!supplementary.has(path)){
     const response=await fetch(path,{cache:"no-store"});
@@ -46,7 +46,7 @@ async function supplementalCatalog(category){
     supplementary.set(path,await response.json());
   }
   const data=supplementary.get(path);
-  if(category==="classes"||category==="subclasses"){
+  if(["classes","subclasses","class_features","subclass_features"].includes(category)){
     if(data?.version!==1||!Array.isArray(data[category]))throw Error("Indice classi non valido");
     return data[category];
   }
@@ -78,7 +78,7 @@ export async function catalogEntries(category) {
       ...known.filter(record=>record.id?.split(":")[2]==="spells")
         .map(record=>({...record.data.data,...record.data,_category:"spells",_homebrew:true}))];
   }
-  const extra=["classes","subclasses","races","backgrounds"].includes(category);
+  const extra=["classes","subclasses","class_features","subclass_features","races","backgrounds"].includes(category);
   const data=extra?null:await loadReferenceCatalog();
   const keys=category==="items"?
     ["weapons","armor","tools","mundane_items","magic_items"]:[category];

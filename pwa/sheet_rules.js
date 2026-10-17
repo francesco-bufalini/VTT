@@ -1,7 +1,7 @@
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement} from "./item_controls.js";
+import {itemKind,requiresAttunement,hasProperty} from "./item_controls.js";
 import {automaticId,numericGrant,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
@@ -331,6 +331,65 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
  }
  return [...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false);
 }
+// CreatureAttackData / CreatureItemRules projection: each equipped hand keeps
+// its native stable attack ID. Published monster totals already include PB.
+export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0){
+ const out=[],inventory=arr(record.inventory),trained=new Set(proficiencies);
+ const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
+ const main=occupied('main'),off=occupied('off');
+ const dual=arr(record.feats_catalog).some(f=>!f?.disabled&&same(f.name,'Dual Wielder'));
+ const offAllowed=main&&off&&itemKind(main)==='weapon'&&itemKind(off)==='weapon'&&
+   (String(record.rules_version)==='2024'?hasProperty(main,'L')&&(hasProperty(off,'L')||dual&&String(off.type).split('|')[0]!=='R'):
+    String(main.type).split('|')[0]!=='R'&&String(off.type).split('|')[0]!=='R'&&(hasProperty(main,'L')&&hasProperty(off,'L')||dual));
+ const style=record.two_weapon_fighting||['fighting_styles','proficiency_choices','proficiency_origins','selected_features','feats_catalog','trait_choices'].some(field=>arr(record[field]).some(row=>{
+   if(row?.disabled)return false;
+   const label=typeof row==='string'?row:[row?.name||row?.label||row?.key||'',...['fighting_style','fightingStyle','selected_style','selected','choice'].map(k=>typeof row?.[k]!=='boolean'?row?.[k]||'':'')].join(' ');
+   return label.toLowerCase().includes('two-weapon fighting');
+ }));
+ const sign=n=>n>0?' + '+n:n<0?' − '+Math.abs(n):'';
+ const append=(attack,ability,proficient,damage,baseHit=null)=>{
+  const settings=record.attack_overrides?.[attack.id]||{};
+  const modifier=abilities[ability]?.modifier??0;
+  const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
+  let damageMod=baseHit!==null?0:modifier;
+  if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
+  damageMod+=bonus('attack_damage:'+attack.id);
+  const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
+  const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
+  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',range_feet:range,long_range_feet:longRange,
+    explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
+    offhand_bonus:attack.slot==='off'&&!!offAllowed});
+ };
+ for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
+  if(!action?.name)return;
+  const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
+  if(!hit&&!/\{@atk |weapon attack:|spell attack:/i.test(text))return;
+  const ranged=/ranged|\{@atk r[ws]\}/i.test(text),reach=int(text.match(/reach\s*(\d+)\s*(?:ft|feet)/i)?.[1],5);
+  const range=text.match(/range\s*(\d+)(?:\/(\d+))?/i),damage=text.match(/\{@damage\s*([^}]+)\}/)?.[1]||text.match(/\d+d\d+(?:\s*[+-]\s*\d+)*/)?.[0]||'';
+  append({id:'monster:'+section+':'+i,name:action.name,melee:!ranged||/melee or ranged/i.test(text),range_feet:ranged?int(range?.[1],5):reach,long_range_feet:ranged?int(range?.[2]):0},ranged?'dex':'str',true,damage,int(hit?.[1]));
+ });
+ for(const slot of ['main','off']){
+  const item=occupied(slot);if(!item||itemKind(item)!=='weapon')continue;
+  const ranged=String(item.type||'').split('|')[0].toUpperCase()==='R';
+  const ranges=String(item.range||'').split('/').map(Number),reach=hasProperty(item,'R')?10:5;
+  const proficient=trained.has('weapon:'+String(item.name).toLowerCase())||trained.has('weapon:'+String(item.weapon_category).toLowerCase())||trained.has('weapon:all');
+  const ability=hasProperty(item,'F')?(record.attack_ability==='dex'?'dex':'str'):ranged?'dex':'str';
+  let damage=item.damage||'';
+  if(slot==='main'&&!off&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
+  const size=item.instance_overrides?.weapon_size||record.size_name||'Medium',factor=({Large:2,Huge:3,Gargantuan:4})[size]||1;
+  if(factor>1)damage=damage.replace(/^(\s*)(\d+)d(\d+)/,(_,space,count,die)=>space+(Number(count)*factor)+'d'+die);
+  const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||''};
+  append(attack,ability,proficient,damage);
+  if(!ranged&&hasProperty(item,'T')&&ranges[0]>0)append({...attack,id:'item:throw:'+slot+':'+item.id,name:attack.name+' · lancio',melee:false,range_feet:ranges[0],long_range_feet:ranges[1]||0},ability,proficient,damage);
+ }
+ const hands=[record.hand_main_special,record.hand_off_special];
+ for(const [key,name] of [['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']])if(hands.includes(key)){
+  const proficient=key==='unarmed'||trained.has('weapon:improvised');
+  append({id:key,name,melee:true,range_feet:5,long_range_feet:0},'str',proficient,key==='unarmed'?'1':'1d4');
+  if(key==='unarmed')out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+bonus('attack_damage:unarmed')));
+ }
+ return out;
+}
 export function spellProgression(record,classes){
   const edition=String(record.rules_version||"2014"),sources=[];let warlock=0;
   const warnings=[];
@@ -580,13 +639,32 @@ export function calculateSheet(record={},catalogs={}){
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
+  for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
+  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0);
+  const originMap=new Map();
+  const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
+  for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
+  for(const [group,field] of [['race','species'],['subrace','subrace'],['background','background']])if(record[field])addOrigin(group+'|'+String(record[field+'_source']||'').toLowerCase()+'|'+String(record[field]).toLowerCase(),record[field]);
+  for(const feat of arr(record.feats_catalog))if(feat?.name)addOrigin('feat|'+String(feat.source||'').toLowerCase()+'|'+feat.name.toLowerCase(),feat.name);
+  for(const origin of arr(record.proficiency_origins))addOrigin(origin.id,origin.name||origin.label||origin.id);
+  const originSpellMap=new Map();
+  for(const row of arr(record.origin_spell_grants))if(row?.origin_id&&row.spell_id&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
+    const key=row.origin_id+'|'+row.spell_id;if(!originSpellMap.has(key))originSpellMap.set(key,row);
+  }
+  const originSpells=[...originSpellMap.values()];
+  for(const attack of attacks){
+    memo.set('attack_hit:'+attack.id,attack.hit);
+    memo.set('attack_range:'+attack.id,attack.range_feet);
+    memo.set('attack_long_range:'+attack.id,attack.long_range_feet);
+  }
   for(const target of memo.keys()){
     const total=memo.get(target),parts=[...(components[target]?.values()||[])];
     explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
   }
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
-    casting_classes:spellClasses,trackers,
+    casting_classes:spellClasses,trackers,attacks,origins:[...originMap.values()],origin_spells:originSpells,
+    automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
