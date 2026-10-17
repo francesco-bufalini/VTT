@@ -133,3 +133,7 @@ Nuove schede complete secondo i default del nativo (senza normalizzare gli archi
 Modifica direttamente nella PWA aspetto, note, personalità, identità e ispirazione; ora sono editabili anche tiri salvezza contro la morte e livello di indebolimento. I valori strutturati restano calcolati in locale. Le azioni leggono gli incantesimi legacy e quelli concessi automaticamente.
 
 **Compatibilità di distribuzione:** `network/pwa_host.gd` continua a servire gli stessi percorsi JS; per mantenere i cambiamenti confinati a `pwa/`, le funzioni di dominio sono state incorporate in moduli già autorizzati. La cache offline usa `v21`. I test di parità proteggono i percorsi importati. Le opzioni che richiedono una modifica della scena 3D, del protocollo di trasferimento o nuovi endpoint nativi sono escluse.
+
+## Oggetti per istanza e calcoli locali
+
+La PWA ora applica `instance_overrides` ai valori effettivi degli oggetti nell'inventario con la stessa lista chiusa di campi di `ItemInstance.resolve` in Godot. Danni, gittata, CA e bonus sulle armi usano l'oggetto risolto dalla copia; il compendio e le altre copie restano immutati. L'editor per dimensione arma, dadi, gittata, bonus arma, CA e bonus CA divide automaticamente una pila prima di cambiare una copia. Gli oggetti infusi che richiedono sintonia sono inattivi fino alla sintonia. Non interpreta descrizioni testuali in runtime.
