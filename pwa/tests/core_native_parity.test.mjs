@@ -86,7 +86,7 @@ test("server-served JS paths contain every imported runtime module",()=>{
    for(const match of imports)
      assert.ok(server.includes('"/'+match[1]+'"'),"Godot must serve /"+match[1]);
  }
- assert.doesNotMatch(ui,/from\s+["']\.\/action_economy\.js/);
+ assert.match(ui,/from\s+["']\.\/action_economy\.js/);
 });
 
 test("native-style panels expose baseline health and narrative editors",()=>{
