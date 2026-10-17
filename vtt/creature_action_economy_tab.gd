@@ -6,6 +6,20 @@ const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
+const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
+static var _supplement_cache: Array[Dictionary] = []
+static var _supplements_loaded := false
+
+static func _feature_supplements() -> Array[Dictionary]:
+	if not _supplements_loaded:
+		_supplements_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ACTION_SUPPLEMENTS_PATH))
+		if parsed is Dictionary:
+			for raw: Variant in parsed.get("entries", []):
+				if raw is Dictionary:
+					_supplement_cache.append(raw)
+	return _supplement_cache
+
 const GROUPS := ["Azione", "Azione bonus", "Azione gratuita", "Movimento", "Reazione"]
 # SRD 5.1 (2014) and SRD 5.2 (2024): edition-specific names are deliberate.
 const BASIC_2014 := [
@@ -157,7 +171,8 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	# Only explicitly structured activations are classified. Passive features
 	# remain in Tratti rather than being guessed from descriptive prose.
 	var automatic: Dictionary = {}
-	for feature: Dictionary in Features.collect_features(record):
+	var collected: Array[Dictionary] = Features.collect_features(record)
+	for feature: Dictionary in collected:
 		if bool(feature.get("inactive", false)):
 			continue
 		var activation: Variant = null
@@ -179,6 +194,41 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		results.append(_entry(String(feature.get("name", "Capacità")), _timing(activation),
 			String(feature.get("action_kind", "Capacità")), _description(feature.get("entries", "")),
 			_tracker_label(tracker_id, trackers), tracker_id))
+	# Small hand-checked structured supplements for class features whose 5etools
+	# entries contain descriptions but no typed activation. Exact book/class/
+	# feature matches avoid accidentally granting subclass or passive traits.
+	for rule: Dictionary in _feature_supplements():
+		var matched_feature: Dictionary = {}
+		for feature: Dictionary in collected:
+			if bool(feature.get("inactive", false)):
+				continue
+			if String(feature.get("class_name", "")).nocasecmp_to(String(rule.get("class_name", ""))) != 0:
+				continue
+			if String(feature.get("class_source", "")).nocasecmp_to(String(rule.get("book", ""))) != 0:
+				continue
+			if String(feature.get("name", "")).nocasecmp_to(String(rule.get("feature_name", ""))) != 0:
+				continue
+			if int(feature.get("level", 0)) < int(rule.get("min_level", 1)):
+				continue
+			matched_feature = feature
+			break
+		if matched_feature.is_empty():
+			continue
+		var resource_label := String(rule.get("resource_name", ""))
+		var tracker_id := ""
+		for resource_id: String in trackers.keys():
+			var resource: Dictionary = trackers[resource_id]
+			if String(resource.get("name", "")).nocasecmp_to(resource_label) != 0:
+				continue
+			var owner_class := String(resource.get("origin_class", ""))
+			if not owner_class.is_empty() and owner_class.nocasecmp_to(String(rule.get("class_name", ""))) != 0:
+				continue
+			tracker_id = resource_id
+			break
+		results.append(_entry(String(rule.get("display_name", rule.get("feature_name", ""))),
+			_timing(rule.get("activation", "action")), "Capacità",
+			String(rule.get("description", "")) + "\n" + _description(matched_feature.get("entries", "")),
+			_tracker_label(tracker_id, trackers) if not tracker_id.is_empty() else resource_label, tracker_id))
 	for grant in record.get("action_grants", []):
 		if not grant is Dictionary or bool(grant.get("disabled", false)):
 			continue
