@@ -48,8 +48,11 @@ test('prepared and origin granted spells use their own resource tracker',()=>{
  assert.equal(entries.find(x=>x.name==='Difesa arcana').tracker,'Ispirazione bardica');
  assert.equal(entries.find(x=>x.name==='Ispirazione').time,'bonus');
  const html=actionEconomyView(record,calculated,spells);
- assert(html.includes('Ispirazione bardica · Incantesimo'));
- assert(html.includes('Ispirazione bardica · Capacità'));
+ assert(html.includes('action-economy-tracker'));
+ assert(html.includes('Slot incantesimo'));
+ assert(html.includes('Ispirazione bardica'));
+ assert(!html.includes('Ispirazione bardica · Incantesimo'));
+ assert(!html.includes('Nessuna risorsa · Capacità'));
 });
 
 test('passive traits are excluded and all descriptions are escaped',()=>{
@@ -100,6 +103,9 @@ test('basic combat actions show targeting buttons, both movement modes, and top 
  assert(html.includes('data-mode="prone"'));
  assert(html.includes('data-target="skill:stealth"'));
  assert(html.includes('data-target="skill:arcana"'));
+ assert(html.indexOf('<h2>Azione</h2>')<html.indexOf('Prove abilità · 4 migliori'));
+ assert(html.indexOf('Prove abilità · 4 migliori')<html.indexOf('<h2>Azione bonus</h2>'));
+ assert(!html.startsWith('<section class="panel"><h2>Prova abilità'));
 });
 
 test('structured 5etools supplement covers all 17 previously unlisted actions',()=>{
@@ -136,4 +142,36 @@ test('structured 5etools supplement covers all 17 previously unlisted actions',(
  }
  const keys=catalog.entries.flatMap(entry=>entry.timings.map(t=>[entry.edition,entry.id,t].join(':')));
  assert.equal(new Set(keys).size,keys.length,'No duplicate catalog actions per edition/timing');
+});
+
+test('action panel prioritizes common actions, skill checks, then personal abilities and spells',()=>{
+ const creature={rules_version:'2014',
+   action_grants:[{name:'Privilegio unico',action_type:'action',tracker_id:'charges'}]};
+ const calculated={skills:{stealth:7,athletics:4,arcana:3,acrobatics:2,perception:6},
+   trackers:[{id:'charges',name:'Cariche personali'}],
+   attacks:[{id:'item:main:weapon',name:'Spada personale',hit:5,damage:'1d8'}]};
+ const catalog=[{id:'disarm',edition:'2014',name:'Disarmare',timings:['action'],optional:true,
+   source:'DMG',page:271,skills:['athletics'],description:'Disarma il nemico.'}];
+ const items=actionEntries(creature,calculated,[],[],catalog);
+ assert.equal(items.find(x=>x.name==='Scattare').origin,'general');
+ assert.equal(items.find(x=>x.name==='Disarmare').origin,'general');
+ assert.equal(items.find(x=>x.name==='Disarmare').optional,true);
+ assert.equal(items.find(x=>x.name==='Privilegio unico').origin,'personal');
+ assert.equal(items.find(x=>x.name==='Spada personale').origin,'personal');
+ const html=actionEconomyView(creature,calculated,[],[],catalog);
+ const action=html.split('<h2>Azione bonus</h2>')[0];
+ const indices=['<h3 class="action-economy-group-title">Generali</h3>',
+   'Attaccare','Disarmare','Prove abilità · 4 migliori',
+   '<h3 class="action-economy-group-title">Dalla scheda</h3>','Spada personale','Privilegio unico']
+    .map(marker=>action.indexOf(marker));
+ assert(indices.every(x=>x>=0),JSON.stringify(indices));
+ assert(indices.every((x,i)=>i===0||x>indices[i-1]),JSON.stringify(indices));
+ assert.equal((action.match(/action-economy-group-title/g)||[]).length,2);
+ assert(!action.includes('<h3>Regola opzionale</h3>'));
+ assert(action.includes('Fonte: DMG'),'Optional source remains readable in details');
+ assert(action.includes('<span class="action-economy-tracker" title="Tracker utilizzato">Cariche personali</span>'));
+ assert(action.includes('data-target="skill:stealth"'));
+ assert(action.includes('data-target="skill:perception"'));
+ assert(action.includes('data-target="skill:athletics"'));
+ assert(!action.includes('data-target="skill:acrobatics"'));
 });
