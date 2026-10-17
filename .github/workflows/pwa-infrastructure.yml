@@ -39,8 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
-            pwa
+            /pwa/
+            /vtt/data/class_mechanics_5etools.json
+            /vtt/data/class_resource_overrides.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
