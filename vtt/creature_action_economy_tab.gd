@@ -13,6 +13,7 @@ const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
 const GENERAL_ACTIONS_PATH := "res://vtt/data/combat_action_supplements_5etools.json"
@@ -40,6 +41,13 @@ static func _feature_supplements() -> Array[Dictionary]:
 				if raw is Dictionary:
 					_supplement_cache.append(raw)
 	return _supplement_cache
+
+# Original vector pictograms: fixed atlas cells avoid font/emoji differences across devices.
+const ACTION_ICONS: Texture2D = preload("res://vtt/icons/action_dashboard.svg")
+const ICON_KEYS := ["action", "bonus", "free", "movement", "reaction", "sword", "help", "shove", "prone", "stealth", "eye", "object", "speech", "target", "shield", "book", "spark", "flag", "skill", "hand"]
+const GOLD := Color("edbd77")
+const INK := Color("f5eee5")
+const MUTED := Color("c7bdb1")
 
 const GROUPS := ["Azione", "Azione bonus", "Azione gratuita", "Movimento", "Reazione"]
 # SRD 5.1 (2014) and SRD 5.2 (2024): edition-specific names are deliberate.
@@ -128,28 +136,29 @@ func _ready() -> void:
 		panel.name = "Actions_" + GROUPS[index].replace(" ", "_")
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.115, 0.100, 0.103, 0.96)
-		style.border_color = Color(0.62, 0.43, 0.24, 0.94)
-		style.set_border_width_all(2)
+		style.bg_color = Color("201e1df7")
+		style.border_color = Color("c99750")
+		style.set_border_width_all(1)
 		style.set_corner_radius_all(10)
-		style.set_content_margin_all(12)
+		style.set_content_margin_all(10)
 		panel.add_theme_stylebox_override("panel", style)
 		var section := VBoxContainer.new()
 		section.add_theme_constant_override("separation", 5)
 		panel.add_child(section)
 		var header := HBoxContainer.new()
 		section.add_child(header)
-		var icon_label := Label.new()
-		icon_label.text = ["⚔", "✦", "✋", "➜", "↩"][index]
-		icon_label.add_theme_font_size_override("font_size", 24)
-		icon_label.add_theme_color_override("font_color", Color(0.96, 0.72, 0.42))
-		header.add_child(icon_label)
+		header.add_theme_constant_override("separation", 12)
+		header.add_child(_icon(ICON_KEYS[index], 38))
+		var header_text := VBoxContainer.new()
+		header_text.add_theme_constant_override("separation", 2)
+		header_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header.add_child(header_text)
 		var heading := Label.new()
 		heading.text = GROUPS[index]
 		heading.add_theme_font_size_override("font_size", 23)
-		heading.add_theme_color_override("font_color", Color(1.0, 0.80, 0.50))
+		heading.add_theme_color_override("font_color", GOLD)
 		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		header.add_child(heading)
+		header_text.add_child(heading)
 		var count := Label.new()
 		count.text = "0"
 		count.tooltip_text = "Azioni disponibili in questa categoria"
@@ -157,7 +166,8 @@ func _ready() -> void:
 		count.add_theme_color_override("font_color", Color(0.95, 0.78, 0.51))
 		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count.custom_minimum_size.x = 32
+		count.custom_minimum_size = Vector2(28, 24)
+		count.add_theme_stylebox_override("normal", _surface(Color("2c2724"), Color("785a39"), 6, 4))
 		header.add_child(count)
 		_section_counts.append(count)
 		var rule_hint := Label.new()
@@ -169,20 +179,26 @@ func _ready() -> void:
 			"Azioni in risposta a eventi"
 		][index]
 		rule_hint.add_theme_font_size_override("font_size", 12)
-		rule_hint.add_theme_color_override("font_color", Color(0.77, 0.70, 0.63))
-		section.add_child(rule_hint)
+		rule_hint.add_theme_color_override("font_color", MUTED)
+		rule_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		header_text.add_child(rule_hint)
 		_layout_one.add_child(panel)
 		_sections.append(section)
 		_panels.append(panel)
 	_skill_list = VBoxContainer.new()
 	_skill_list.name = "ProveAbilita"
+	_skill_list.add_theme_constant_override("separation", 5)
+	var skill_heading_row := HBoxContainer.new()
+	skill_heading_row.add_theme_constant_override("separation", 8)
+	_skill_list.add_child(skill_heading_row)
+	skill_heading_row.add_child(_icon("skill", 20))
 	var skills_heading := Label.new()
-	skills_heading.text = "Prove abilità · 4 migliori"
+	skills_heading.text = "Prove di abilità · 4 migliori"
 	skills_heading.add_theme_font_size_override("font_size", 15)
 	skills_heading.add_theme_color_override("font_color", Color(1.0, 0.78, 0.49))
-	_skill_list.add_child(skills_heading)
+	skill_heading_row.add_child(skills_heading)
 	_skill_buttons = GridContainer.new()
-	_skill_buttons.columns = 2
+	_skill_buttons.columns = 1
 	_skill_buttons.add_theme_constant_override("h_separation", 5)
 	_skill_buttons.add_theme_constant_override("v_separation", 5)
 	_skill_list.add_child(_skill_buttons)
@@ -193,7 +209,9 @@ func _ready() -> void:
 func _arrange_columns() -> void:
 	if _panels.size() != GROUPS.size() or _layout_one == null:
 		return
-	var narrow := size.x < 850
+	# The desktop canvas is 1152 logical pixels wide; its archive content
+	# is about 830px after the sidebar and margins, even on a large display.
+	var narrow := size.x < 800
 	_layout_two.visible = not narrow
 	_layout_one.visible = narrow
 	for i: int in range(_panels.size()):
@@ -479,21 +497,66 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		results[index]["position"] = index
 	return results
 
-func _action_style() -> StyleBoxFlat:
+func _surface(background: Color, border: Color, radius: int = 7, padding: int = 8) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.19, 0.16, 0.17, 0.97)
-	style.border_color = Color(0.44, 0.31, 0.22, 0.82)
+	style.bg_color = background
+	style.border_color = border
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(8)
+	style.set_corner_radius_all(radius)
+	style.set_content_margin_all(padding)
 	return style
+
+func _action_style() -> StyleBoxFlat:
+	return _surface(Color("2c2726f7"), Color("89643f"))
+
+func _icon_texture(key: String) -> AtlasTexture:
+	var texture := AtlasTexture.new()
+	texture.atlas = ACTION_ICONS
+	texture.region = Rect2(maxi(0, ICON_KEYS.find(key)) * 64, 0, 64, 64)
+	return texture
+
+func _icon(key: String, extent: int = 28) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = _icon_texture(key)
+	icon.custom_minimum_size = Vector2(extent, extent)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+func _entry_icon(entry: Dictionary) -> String:
+	var title := String(entry.get("name", "")).to_lower()
+	if "incantesim" in title or title == "magia": return "spark"
+	if "furtiv" in title or "nascond" in title: return "stealth"
+	if "opportunit" in title: return "sword"
+	if "attacc" in title or "disarm" in title: return "sword"
+	if "aiutar" in title: return "help"
+	if "spinger" in title: return "shove"
+	if "prono" in title: return "prone"
+	if "oggetto" in title or "utilizz" in title or "scudo" in title: return "object"
+	if "parlare" in title or "influenz" in title: return "speech"
+	if "concentrazione" in title: return "target"
+	if "schivar" in title or "disimpegn" in title: return "shield"
+	if "cercar" in title: return "eye"
+	if "studiar" in title: return "book"
+	if "marcare" in title or "preparar" in title: return "flag"
+	if "muov" in title or "scatt" in title or int(entry.get("time", 0)) == 3: return "movement"
+	return {"Attacco": "sword", "Incantesimo": "spark", "Capacità": "bonus"}.get(String(entry.get("kind", "")), "action")
 
 func _action_button(text: String, help: String = "") -> Button:
 	var button := Button.new()
 	button.text = text
 	button.tooltip_text = help
 	button.add_theme_font_size_override("font_size", 13)
-	button.custom_minimum_size.y = 29
+	button.custom_minimum_size.y = 30
+	button.add_theme_color_override("font_color", INK)
+	button.add_theme_color_override("font_hover_color", Color("fff1cf"))
+	button.add_theme_color_override("font_pressed_color", Color("fff1cf"))
+	button.add_theme_stylebox_override("normal", _surface(Color("392d2c"), Color("987047"), 6, 5))
+	button.add_theme_stylebox_override("hover", _surface(Color("503835"), GOLD, 6, 5))
+	button.add_theme_stylebox_override("pressed", _surface(Color("612d38"), GOLD, 6, 5))
+	button.add_theme_stylebox_override("focus", _surface(Color(0, 0, 0, 0), GOLD, 6, 5))
 	return button
 
 func _show_entry(entry: Dictionary) -> void:
@@ -506,9 +569,14 @@ func _show_entry(entry: Dictionary) -> void:
 		return
 	var dialog := AcceptDialog.new()
 	dialog.title = String(entry.get("name", "Capacità"))
-	dialog.dialog_text = String(entry.get("detail", "Nessuna descrizione disponibile."))
+	var description := RichTextLabel.new()
+	description.text = String(entry.get("detail", "Nessuna descrizione disponibile."))
+	description.selection_enabled = true
+	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dialog.add_child(description)
 	add_child(dialog)
-	dialog.popup_centered_ratio(0.75)
+	DialogLayout.popup(dialog, Vector2i(720, 360), 0.85)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.close_requested.connect(dialog.queue_free)
 
@@ -525,20 +593,25 @@ func _add_entry(entry: Dictionary) -> void:
 	content.add_theme_constant_override("separation", 4)
 	card.add_child(content)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 5)
+	row.add_theme_constant_override("separation", 10)
 	content.add_child(row)
+	row.add_child(_icon(_entry_icon(entry)))
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(info)
 	var heading := Button.new()
-	var kind := String(entry.get("kind", ""))
-	var symbol: String = String({"Attacco": "⚔", "Incantesimo": "✦", "Capacità": "◆", "Regola opzionale": "◇"}.get(kind, "•"))
-	heading.text = symbol + "  " + title + "   ›"
+	heading.text = title
 	heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	heading.flat = true
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 15)
+	heading.add_theme_color_override("font_color", INK)
+	heading.add_theme_color_override("font_hover_color", GOLD)
+	heading.add_theme_color_override("font_pressed_color", GOLD)
+	heading.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	heading.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	heading.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 	heading.tooltip_text = detail
 	heading.pressed.connect(_show_entry.bind(entry))
 	info.add_child(heading)
@@ -551,7 +624,7 @@ func _add_entry(entry: Dictionary) -> void:
 		brief.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		brief.add_theme_font_size_override("font_size", 11)
-		brief.add_theme_color_override("font_color", Color(0.77, 0.72, 0.66))
+		brief.add_theme_color_override("font_color", MUTED)
 		info.add_child(brief)
 	var tracker_name := String(entry.get("tracker", "")).strip_edges()
 	var tracker_id := String(entry.get("tracker_id", ""))
@@ -562,6 +635,7 @@ func _add_entry(entry: Dictionary) -> void:
 	var controls := VBoxContainer.new()
 	controls.add_theme_constant_override("separation", 3)
 	controls.size_flags_horizontal = Control.SIZE_SHRINK_END
+	controls.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(controls)
 	if not spell_id.is_empty():
 		var cast := _action_button("Lancia · slot" if tracker_name == "Slot incantesimo" else "Lancia",
@@ -614,6 +688,14 @@ func _add_entry(entry: Dictionary) -> void:
 		tag.add_theme_font_size_override("font_size", 11)
 		tag.add_theme_color_override("font_color", Color(0.94, 0.72, 0.45))
 		controls.add_child(tag)
+	var details := _action_button("›", "Mostra dettagli · " + title)
+	details.name = "ActionDetails"
+	details.add_theme_font_size_override("font_size", 22)
+	details.add_theme_color_override("font_color", GOLD)
+	details.custom_minimum_size = Vector2(30, 32)
+	details.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	details.pressed.connect(_show_entry.bind(entry))
+	row.add_child(details)
 	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
 		checks.append("stealth")
@@ -644,26 +726,67 @@ func refresh_top_skills(record: Dictionary) -> void:
 		child.queue_free()
 	for skill: Dictionary in best_skills(record):
 		var key := String(skill["id"])
-		var button := _action_button("%s   %+d" % [skill["label"], int(skill["bonus"])])
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var button := _action_button("", "Tira " + String(skill["label"]))
+		button.custom_minimum_size.y = 38
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(func() -> void: skill_requested.emit("skill:" + key))
 		_skill_buttons.add_child(button)
+		var row := HBoxContainer.new()
+		row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		row.offset_left = 10
+		row.offset_right = -10
+		row.add_theme_constant_override("separation", 12)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(row)
+		var icon_key := "stealth" if key == "stealth" else "hand" if key == "sleight of hand" else "eye" if key in ["insight", "perception", "investigation"] else "skill"
+		row.add_child(_icon(icon_key, 26))
+		var caption := Label.new()
+		caption.text = String(skill["label"])
+		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		caption.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		caption.add_theme_font_size_override("font_size", 14)
+		caption.add_theme_color_override("font_color", INK)
+		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(caption)
+		var ability := Label.new()
+		for definition: Dictionary in Skills5e.SKILLS:
+			if String(definition["id"]) == key:
+				ability.text = String({"str": "FOR", "dex": "DES", "con": "COS", "int": "INT", "wis": "SAG", "cha": "CAR"}.get(String(definition["ability"]), ""))
+		ability.add_theme_font_size_override("font_size", 12)
+		ability.add_theme_color_override("font_color", MUTED)
+		ability.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(ability)
+		var bonus := Label.new()
+		bonus.text = "%+d" % int(skill["bonus"])
+		bonus.custom_minimum_size.x = 42
+		bonus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bonus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		bonus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bonus.add_theme_stylebox_override("normal", _surface(Color("211e1e"), Color("86613f"), 5, 3))
+		bonus.add_theme_color_override("font_color", GOLD)
+		bonus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(bonus)
+		var arrow := Label.new()
+		arrow.text = "›"
+		arrow.add_theme_font_size_override("font_size", 24)
+		arrow.add_theme_color_override("font_color", GOLD)
+		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(arrow)
 
 
 func _add_subheading(section: VBoxContainer, text: String) -> void:
 	var band := PanelContainer.new()
 	band.set_meta("action_generated", true)
 	var band_style := StyleBoxFlat.new()
-	band_style.bg_color = Color(0.25, 0.19, 0.17, 0.72)
-	band_style.border_color = Color(0.58, 0.39, 0.23, 0.75)
+	band_style.bg_color = Color(0, 0, 0, 0)
+	band_style.border_color = Color("735336")
 	band_style.border_width_bottom = 1
 	band_style.content_margin_left = 8
 	band_style.content_margin_top = 5
 	band_style.content_margin_bottom = 5
 	band.add_theme_stylebox_override("panel", band_style)
 	var label := Label.new()
-	label.text = text.to_upper()
+	label.text = text
 	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", Color(0.98, 0.79, 0.49))
 	band.add_child(label)
