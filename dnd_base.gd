@@ -1601,6 +1601,15 @@ func _process(_delta: float) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
+func _is_pointer_over_area_sidebar(screen_position: Vector2) -> bool:
+	var overlay: Node = get_node_or_null("UI/SpellTargetOverlay2D")
+	return (
+		overlay != null
+		and overlay.has_method("is_pointer_over_area_sidebar")
+		and bool(overlay.call("is_pointer_over_area_sidebar", screen_position))
+	)
+
+
 func _input(event: InputEvent) -> void:
 	# _input runs BEFORE Godot dispatches events to focused Controls.
 	# Do not move tokens, undo actions or operate shortcuts while a GUI
@@ -1630,7 +1639,22 @@ func _input(event: InputEvent) -> void:
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
+		and not _is_pointer_over_area_sidebar(event.position)
+		and bool(measurement_tool.call("is_movable_aoe_dragging"))
+	):
+		# The sidebar arms a move on button release. The next click on
+		# the map must not simultaneously select a token or start a ruler.
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
 		and not _ui_owns_mouse
+		and not _is_pointer_over_area_sidebar(event.position)
+		# Repositioning takes priority over the usual click-to-dismiss AoE.
+		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
 		and spell_system != null
 		and is_instance_valid(spell_system)
 		and spell_system.has_method(
@@ -2303,6 +2327,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if bool(measurement_tool.call("is_movable_aoe_dragging")):
+		if (
+			event is InputEventMouseButton
+			and event.button_index == MOUSE_BUTTON_LEFT
+			and event.pressed
+		):
+			get_viewport().set_input_as_handled()
+			return
 		if event is InputEventMouseMotion:
 			measurement_tool.call(
 				"update_movable_aoe_drag",
