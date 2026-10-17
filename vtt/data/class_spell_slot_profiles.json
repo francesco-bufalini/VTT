@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "format": 1,
+    "description": "Curated slot contributions by class and rules edition; separate from generated 5etools spell selection capacities.",
+    "notes": "Profiles intentionally key on canonical class name for legacy characters without a class source. Edition-specific start level and multiclass rounding preserve VTT 2014/2024 behavior. Pact Magic remains a separate slot pool."
+  },
+  "profiles": {
+    "artificer": {
+      "slot_kind": "fractional",
+      "divisor": 2,
+      "starts_at": 1,
+      "single_class_round": "ceil",
+      "multiclass_round": "ceil"
+    },
+    "barbarian": {
+      "slot_kind": "none"
+    },
+    "bard": {
+      "slot_kind": "full"
+    },
+    "cleric": {
+      "slot_kind": "full"
+    },
+    "druid": {
+      "slot_kind": "full"
+    },
+    "fighter": {
+      "slot_kind": "none",
+      "manual_subclass_spellcasting": true
+    },
+    "monk": {
+      "slot_kind": "none"
+    },
+    "paladin": {
+      "slot_kind": "fractional",
+      "divisor": 2,
+      "starts_at": {
+        "2014": 2,
+        "2024": 1
+      },
+      "single_class_round": "ceil",
+      "multiclass_round": {
+        "2014": "floor",
+        "2024": "ceil"
+      }
+    },
+    "ranger": {
+      "slot_kind": "fractional",
+      "divisor": 2,
+      "starts_at": {
+        "2014": 2,
+        "2024": 1
+      },
+      "single_class_round": "ceil",
+      "multiclass_round": {
+        "2014": "floor",
+        "2024": "ceil"
+      }
+    },
+    "rogue": {
+      "slot_kind": "none",
+      "manual_subclass_spellcasting": true
+    },
+    "sorcerer": {
+      "slot_kind": "full"
+    },
+    "warlock": {
+      "slot_kind": "pact",
+      "pact": {
+        "slot_totals": [
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4
+        ],
+        "slot_levels": [
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      }
+    },
+    "wizard": {
+      "slot_kind": "full"
+    }
+  }
+}

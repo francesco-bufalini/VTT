@@ -85,6 +85,11 @@ func handle_event(event: InputEvent) -> bool:
 
 func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> void:
 	_tokens = tokens.duplicate()
+	if board.mount_controller != null:
+		_tokens = board.mount_controller.get_motion_tokens(_tokens)
+	# Preview and commit must choose the dragged member as the same pivot.
+	_tokens.erase(anchor_token)
+	_tokens.push_front(anchor_token)
 	_undo_state = {}
 	if board != null and board.has_method("begin_token_move_transaction"):
 		var history_value: Variant = board.call(
@@ -179,15 +184,26 @@ func update_preview(screen_point: Vector2) -> void:
 	preview_at(position, support)
 
 func preview_at(position: Vector3, support: Node3D = null) -> bool:
+	_valid = false
 	for token in _tokens:
 		if is_instance_valid(support) and token.is_ancestor_of(support):
+			_preview.visible = false
 			return false
 	_targets.clear()
 	_valid = true
-	var delta := position - _anchor
+	# Snap each formation's pivot once. All its companions receive the same
+	# translation, even when their sizes use different grid offsets.
+	var delta: Vector3 = position - _anchor
+	var group_deltas: Dictionary = {}
 	for index in range(_tokens.size()):
 		var token := _tokens[index]
 		var target: Vector3 = token.snap_destination(_origins[index] + delta, support)
+		if board.mount_controller != null:
+			var root: CharacterBody3D = board.mount_controller.get_token_group_root(token)
+			if root != null:
+				if not group_deltas.has(root):
+					group_deltas[root] = target - _origins[index]
+				target = _origins[index] + Vector3(group_deltas[root])
 		_targets.append(target)
 		if token.movement_validator.is_valid() and not token.movement_validator.call(token, target):
 			_valid = false

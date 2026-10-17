@@ -83,3 +83,165 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .derived-warnings{border:1px solid var(--line);border-radius:8px;padding:10px;margin:12px 0}
 .derived-warnings summary{cursor:pointer;font-size:12px;color:var(--accent)}
 .derived-warnings li{font-size:12px;line-height:1.4;margin:5px 0}
+/* Native sheet: computed results live beside their own editors. */
+.sheet-formula { display:inline-flex; align-items:center; gap:.2rem; min-width:0; }
+.sheet-formula output,.sheet-formula .sheet-result { display:inline-block; padding:.25rem .35rem; border:1px solid var(--border,#77634d); border-radius:5px; font-weight:700; overflow-wrap:anywhere; }
+.sheet-result { color:inherit; background:transparent; font:inherit; cursor:pointer; }
+.sheet-roll-dialog { width:min(92vw,420px); border:1px solid var(--line); border-radius:8px; color:var(--text); background:var(--panel); padding:20px; }
+.sheet-roll-dialog::backdrop { background:#0009; }
+.trait-card { margin:.5rem 0; padding:.65rem 0; border-bottom:1px solid var(--line); }
+.trait-description { white-space:pre-wrap; overflow-wrap:anywhere; }
+.sheet-formula .formula-bonus { min-width:30px; padding:.25rem; }
+.base-editor { font-size:.8rem; }
+.base-editor input { max-width:6rem; }
+.calculation-note { margin:1rem 0; font-size:.85rem; }
+.slot-table { display:grid; grid-template-columns:2rem minmax(0,1fr) minmax(0,1fr); gap:.6rem .35rem; align-items:start; }
+.slot-counter,.casting-statistics { display:flex; flex-wrap:wrap; align-items:center; gap:.3rem; }
+.slot-table details { font-size:.8rem; margin-top:.35rem; }
+.slot-counter .btn { min-width:30px; padding:.3rem; }
+.casting-statistics { margin:.4rem 0 .7rem; }
+.casting-statistics label { flex:1 1 10rem; }
+.native-abilities > * { min-width:0; }
+.native-abilities .sheet-formula { flex-wrap:wrap; justify-content:center; }
+@media(max-width:420px) { .native-abilities { gap:.35rem; } .native-abilities .formula-bonus { min-width:26px; } }
+
+/* Phone-first sheet controls: a field is a deliberate touch target, not a
+   compact desktop control that happens to fit on a phone. */
+:root { --touch-target:48px; }
+input:not([type=checkbox]):not([type=file]), select { min-height:var(--touch-target); }
+label.check, .native-summary > div { min-height:var(--touch-target); }
+.native-summary > div { align-items:center; }
+.derived-metric { padding:11px; min-height:68px; align-content:center; }
+
+@media(max-width:420px) {
+  .native-abilities {
+    grid-template-columns:28px minmax(74px,1.4fr) minmax(48px,.72fr) minmax(54px,.82fr);
+    gap:.35rem;
+  }
+  .native-abilities strong { font-size:10px; overflow-wrap:anywhere; }
+  .native-abilities .sheet-result,
+  .native-abilities .sheet-formula output { padding:.38rem .2rem; }
+  .slot-table { grid-template-columns:1.8rem minmax(0,1fr) minmax(0,1fr); gap:.6rem .25rem; }
+}
+
+/* Action economy: one action and one tracker column, shared desktop/phone. */
+.action-economy-section{min-width:0}
+.action-economy-column-head,.action-economy-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(96px,30%);column-gap:12px;align-items:start}
+.action-economy-column-head{border-bottom:1px solid var(--line);padding:3px 0 8px;color:var(--muted);font-size:11px}
+.action-economy-column-head span:last-child{text-align:right}
+.action-economy-row{border-bottom:1px solid #89644055;min-width:0}
+.action-economy-row .action-economy-entry{padding:0;margin:0;border:0;min-width:0}
+.action-economy-row .action-economy-entry>summary{min-height:44px;padding:10px 0;font-size:13px;overflow-wrap:anywhere}
+.action-economy-row .action-economy-entry>p{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:6px 0 10px}
+.action-economy-row .action-economy-entry>.btn{margin:0 6px 10px 0}
+.action-economy-tracker{padding:11px 0;text-align:right;overflow-wrap:anywhere;word-break:normal;color:var(--muted);font-size:12px;line-height:1.5}
+.action-economy-tracker small{color:var(--accent);white-space:nowrap}
+.action-economy-section>.action-economy-group-title{font-size:13px;color:var(--accent);font-weight:700;margin:14px 0 4px}
+.action-economy-skills{padding:12px 0;border-bottom:1px solid var(--line)}
+.action-economy-skills>h3{font-size:13px;color:var(--muted);margin:0 0 9px}
+.action-economy-skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.action-economy-skill-grid>.btn{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
+@media(max-width:359px){.action-economy-column-head,.action-economy-row{grid-template-columns:minmax(0,1fr) 96px;gap:7px}.action-economy-skill-grid{grid-template-columns:1fr}}
+
+
+/* Action economy dashboard: bordered action pools, concise cards and real counters. */
+.action-economy-dashboard{display:flex;flex-direction:column;gap:11px;min-width:0}
+.action-economy-dashboard>.action-economy-section{margin:0;padding:12px;border:2px solid #b88646;border-radius:11px;background:#201b1b;min-width:0}
+.action-economy-heading{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px}
+.action-economy-heading .action-economy-icon{font-size:24px;color:var(--accent);line-height:1.1;flex-shrink:0}
+.action-economy-heading h2{color:#f3c079;font-size:21px;font-weight:850;line-height:1.2;margin:0 0 3px}
+.action-economy-heading p{color:var(--muted);font-size:11px;line-height:1.35;margin:0}
+.action-economy-group-title{font-size:12px!important;color:var(--accent);font-weight:740;margin:13px 0 5px!important;letter-spacing:.035em}
+.action-economy-row{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #755033;background:#302627;border-radius:7px;margin:5px 0;min-width:0}
+.action-economy-main{min-width:0;flex:1}
+.action-economy-entry{border:0!important;background:transparent!important;padding:0!important;margin:0!important}
+.action-economy-entry summary{display:flex;align-items:center;gap:7px;min-height:22px!important;padding:0!important;list-style:none;color:var(--text);font-size:14px;cursor:pointer}
+.action-economy-entry summary::-webkit-details-marker{display:none}
+.action-economy-entry summary strong{overflow-wrap:anywhere;flex:1}
+.action-economy-chevron{color:var(--accent);font-size:19px;line-height:1}
+.action-economy-entry[open] .action-economy-chevron{transform:rotate(90deg)}
+.action-economy-entry p{font-size:12px;color:var(--muted);white-space:pre-wrap;margin:8px 0}
+.action-economy-preview{display:block;color:var(--muted);font-size:11px;line-height:1.4;margin-top:2px;overflow-wrap:anywhere}
+.action-economy-entry[open]+.action-economy-preview{display:none}
+.action-economy-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;max-width:52%;min-width:0}
+.action-economy-controls .btn{white-space:normal;padding:6px 9px;min-height:32px}
+.action-resource-control{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.action-resource-control>.btn{padding:3px 8px;min-height:31px;font-size:17px}
+.action-resource-control>span{font-weight:720;font-variant-numeric:tabular-nums;font-size:12px;color:var(--text);min-width:38px;text-align:center}
+.action-economy-resource-label{font-size:10px;color:var(--accent);text-align:right}
+.action-economy-skills{border:0;padding:8px 0 12px}
+.action-economy-skills>h3{color:var(--accent)!important;font-size:13px!important;margin:0 0 9px}
+.action-economy-skill-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.action-economy-skill-grid .btn{text-align:left;background:#302627;border:1px solid #755033;font-variant-numeric:tabular-nums}
+@media(min-width:740px){
+ .action-economy-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:10px}
+ .action-economy-section[data-timing=action]{grid-column:1;grid-row:1 / span 3}
+ .action-economy-section[data-timing=bonus]{grid-column:2;grid-row:1}
+ .action-economy-section[data-timing=free]{grid-column:2;grid-row:2}
+ .action-economy-section[data-timing=reaction]{grid-column:2;grid-row:3}
+ .action-economy-section[data-timing=movement]{grid-column:1;grid-row:4}
+}
+@media(max-width:460px){
+ .action-economy-row{align-items:flex-start;flex-direction:column;gap:5px}
+ .action-economy-controls{max-width:100%;width:100%;justify-content:flex-end}
+ .action-economy-preview{max-height:2.8em;overflow:hidden}
+}
+
+
+/* Action sheet visual refinement: framed timing pools and restrained hierarchy. */
+.action-economy-dashboard>.action-economy-section{
+ border-color:#977044;background:linear-gradient(165deg,#292020,#1d1a1b 85%);
+ box-shadow:inset 0 1px 0 #e0b27513;padding:14px;
+}
+.action-economy-heading{
+ display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;
+ padding:1px 0 11px;border-bottom:1px solid #916b435c;margin-bottom:8px;
+}
+.action-economy-heading-copy{min-width:0}
+.action-economy-heading h2{font-size:20px;letter-spacing:.01em;margin:0 0 2px}
+.action-economy-heading .action-economy-icon{font-size:23px}
+.action-economy-count{
+ font-weight:750;min-width:29px;text-align:center;border:1px solid #947044;
+ color:#f3c079;border-radius:7px;background:#40302a;padding:5px 7px;
+ font-size:12px;font-variant-numeric:tabular-nums;
+}
+.action-economy-row{
+ border:1px solid #72533d;background:#33292a;min-height:49px;
+ padding:7px 9px;box-shadow:inset 0 1px 0 #ffffff06;
+ transition:border-color .15s,background .15s;
+}
+.action-economy-row:hover{border-color:#b58c57;background:#382d2c}
+.action-economy-row:focus-within{border-color:#e2ba7f}
+.action-economy-row[data-origin=personal]{border-left:3px solid #bd9053}
+.action-economy-type-icon{
+ width:20px;flex:0 0 20px;text-align:center;color:#dbaf76;
+ font-size:14px;line-height:1.5;
+}
+.action-economy-entry summary{gap:5px}
+.action-economy-entry summary strong{font-size:13px;line-height:1.28}
+.action-economy-preview{font-size:11px;line-height:1.45;max-height:2.9em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.action-economy-optional{color:#f0bd7b;font-weight:700}
+.action-economy-controls{flex:0 0 auto;max-width:49%;align-items:center;gap:6px}
+.action-economy-controls .btn{line-height:1.2;padding:7px 9px;min-height:33px}
+.action-resource-control{border:1px solid #735238;border-radius:6px;background:#261f20;padding:2px 3px}
+.action-resource-control>.btn{min-width:32px;min-height:30px}
+.action-resource-control>span{min-width:43px}
+.action-economy-resource-label{font-size:11px;line-height:1.35}
+.action-economy-group-title{
+ color:#f3c079!important;background:#392a27;border-bottom:1px solid #815835;
+ padding:7px 9px!important;border-radius:5px 5px 0 0;margin:14px 0 8px!important;
+}
+.action-economy-skills{border:1px solid #6f5236;border-radius:7px;background:#2a2323;padding:9px;margin:10px 0}
+.action-economy-skills>h3{font-size:12px!important;margin:0 0 7px}
+.action-economy-skill-grid .btn{min-height:35px}
+@media(min-width:740px) and (max-width:899px){
+ .action-economy-dashboard{display:flex;flex-direction:column}
+}
+@media(max-width:520px){
+ .action-economy-heading{grid-template-columns:25px minmax(0,1fr) auto}
+ .action-economy-heading h2{font-size:18px}
+ .action-economy-dashboard>.action-economy-section{padding:10px}
+ .action-economy-row{gap:5px;padding:8px}
+ .action-economy-preview{max-height:2.9em}
+ .action-economy-skill-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

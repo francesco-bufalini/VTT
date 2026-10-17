@@ -2,6 +2,7 @@ extends Node
 
 signal status_changed(message: String)
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const CreaturePresence = preload("res://network/creature_presence.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
@@ -22,7 +23,7 @@ const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
 	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
 	"poisoned", "prone", "restrained", "stunned", "unconscious",
-	"concentrating", "surprised", "hidden", "dead"
+	"concentrating", "surprised", "hidden", "helped", "dead"
 ]
 const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
 const SYNC_APPEARANCE_REVISION_META := "board_sync_appearance_revision"
@@ -2579,6 +2580,18 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 			return {"ok": false, "error": "Movimento non disponibile."}
 		var moved: bool = board_root.call("nudge_token_from_mobile", target, directions[step])
 		return {"ok": true, "moved": moved, "token_id": get_sync_id_for_node(target)}
+	if action == "battle_action":
+		var mode: String = String(payload.get("mode", ""))
+		var victim := _visible_mobile_token(String(payload.get("target_id", "")))
+		var owner := String(target.get_meta("creature_owner_id", ""))
+		if not owner.is_empty() and String(payload.get("owner_id", "")) != owner:
+			return {"ok": false, "error": "Non controlli il token che esegue l'azione."}
+		if victim == null:
+			return {"ok": false, "error": "Bersaglio non disponibile."}
+		# The UI requires the player/GM to resolve the actual 5e contest/save.
+		# The server validates both tokens and never invents a successful die.
+		var confirmed: bool = payload.get("success_confirmed", false) is bool and bool(payload.get("success_confirmed", false))
+		return BasicCombat.execute(board_root, target, victim, mode, confirmed)
 	if action == "set_condition":
 		var id: String = String(payload.get("condition_id", ""))
 		if not payload.get("enabled") is bool:
@@ -2748,6 +2761,9 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 	token.set_meta("default_miniature_id", String(creature.get("default_miniature_id", miniature)))
 	token.call("set_display_name", String(creature.get("name", "Creatura")))
 	token.call("set_size_category", String(creature.get("size_name", "Medium")), float(footprint), false)
+	# Preserve the edition for SRD combat resolution on both PWA and Android.
+	var rules_version := String(creature.get("rules_version", "2014"))
+	token.set_meta("rules_version", rules_version if rules_version in ["2014", "2024"] else "2014")
 	token.call("set_token_pack_id", miniature)
 	if not claim_free:
 		board_root.call("apply_creature_sheet_appearance", token, creature)

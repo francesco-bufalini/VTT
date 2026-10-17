@@ -51,6 +51,7 @@ export class TacticalViewer {
     this.send=send;this.ownerId=ownerId;this.notify=notify;this.onCastAccepted=onCastAccepted;
     this.tokenId="";this.attack={};this.image=null;this.snapshot=null;
     this.targeting={};this.preview=null;this.aimPixel=null;this.selectedId="";
+    this.basicAction=null;
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
@@ -58,7 +59,7 @@ export class TacticalViewer {
   async open(tokenId, attack={}) {
     if(!tokenId)throw new Error("Scegli prima un token.");
     this.close();
-    this.tokenId=tokenId;this.attack=structuredClone(attack);
+    this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
     this.root=document.createElement("div");
     this.root.className="tactical-overlay";
     this.root.innerHTML='<section class="tactical-dialog" role="dialog" aria-modal="true" aria-label="Snapshot della mappa">'+
@@ -100,11 +101,19 @@ export class TacticalViewer {
     this.updateButtons();
     await this.refresh();
   }
+  setBasicAction(action) {
+    if(!this.root||!['help','shove','prone','grapple'].includes(action?.mode))
+      throw Error('Azione di combattimento non valida.');
+    this.basicAction={...action};
+    this.setStatus(action.mode==='help'?
+      'Aiutare: scegli un token per applicare soltanto Aiutato.':
+      action.rule+' Tocca il bersaglio e conferma il successo dopo aver risolto il tiro.');
+  }
   close() {
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
-    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;
+    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
@@ -279,6 +288,24 @@ export class TacticalViewer {
     this.selectedId=marker?.id||"";
     const payload={token_id:this.tokenId,owner_id:await this.ownerId(),
       target_id:marker?.id||"",snapshot_id:this.snapshot.snapshot_id,pixel};
+    if(this.basicAction && marker){
+      const basic=this.basicAction;
+      const confirmed=basic.mode==='help'||window.confirm(basic.rule+
+        '\nHai risolto la prova contrapposta/il tiro salvezza e confermi il successo?');
+      if(!confirmed){
+        this.setStatus('Azione annullata: nessuna condizione o posizione modificata.');
+        return;
+      }
+      await this.runAction('battle_action',{
+        token_id:this.tokenId,owner_id:await this.ownerId(),target_id:marker.id,
+        mode:basic.mode,success_confirmed:basic.mode==='help'?false:true
+      });
+      this.basicAction=null;
+      await this.refresh();
+      this.setStatus((basic.mode==='help'?'Aiutato':basic.mode==='prone'?'Prono':basic.mode==='grapple'?'Afferrato':'Spinto')+
+        ' · bersaglio: '+marker.name);
+      return;
+    }
     if(isAimStatus(this.targeting) && !marker){
       this.aimPixel=pixel;this.preview=null;this.updateButtons();this.draw();
       try {

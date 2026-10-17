@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "source": "5etools class features / SRD 5.1 and 5.2",
+  "note": "Curated structured activation supplements for 5etools entries lacking explicit action metadata. Match exact class, feature, edition and level. Descriptions are short summaries, not automatic execution rules.",
+  "entries": [
+    {
+      "class_name": "Barbarian",
+      "feature_name": "Rage",
+      "book": "PHB",
+      "min_level": 1,
+      "activation": "bonus",
+      "display_name": "Ira",
+      "resource_name": "Rages",
+      "description": "Entra in Ira usando un utilizzo della risorsa Ira."
+    },
+    {
+      "class_name": "Fighter",
+      "feature_name": "Second Wind",
+      "book": "PHB",
+      "min_level": 1,
+      "activation": "bonus",
+      "display_name": "Recuperare energie",
+      "resource_name": "Second Wind",
+      "description": "Recupera punti ferita usando Recuperare energie."
+    },
+    {
+      "class_name": "Fighter",
+      "feature_name": "Action Surge",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "free",
+      "display_name": "Impeto d'azione",
+      "resource_name": "Action Surge",
+      "description": "Ottieni un'azione aggiuntiva nel tuo turno, rispettando le limitazioni dell'edizione."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Scattare",
+      "resource_name": "",
+      "description": "Scatta usando la tua azione bonus."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Disimpegnarsi",
+      "resource_name": "",
+      "description": "Disimpegnati usando la tua azione bonus."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Nascondersi",
+      "resource_name": "",
+      "description": "Nasconditi usando la tua azione bonus."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Flurry of Blows",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Raffica di colpi",
+      "resource_name": "Ki Points",
+      "description": "Esegui gli attacchi aggiuntivi previsti dall'edizione spendendo la risorsa del monaco."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Patient Defense",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Difesa paziente",
+      "resource_name": "Ki Points",
+      "description": "Effettua l'opzione difensiva del privilegio; la spesa cambia con l'edizione."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Step of the Wind",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Passo del vento",
+      "resource_name": "Ki Points",
+      "description": "Ottieni le opzioni di mobilità del privilegio; la spesa cambia con l'edizione."
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Lay on Hands",
+      "book": "PHB",
+      "min_level": 1,
+      "activation": "action",
+      "display_name": "Imposizione delle mani",
+      "resource_name": "Lay on Hands",
+      "description": "Cura una creatura spendendo punti dalla riserva di Imposizione delle mani."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Uncanny Dodge",
+      "book": "PHB",
+      "min_level": 5,
+      "activation": "reaction",
+      "display_name": "Schivata prodigiosa",
+      "resource_name": "",
+      "description": "Riduci il danno di un attacco che ti ha colpito e che puoi vedere."
+    },
+    {
+      "class_name": "Sorcerer",
+      "feature_name": "Font of Magic",
+      "book": "PHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Conversione slot e punti stregoneria",
+      "resource_name": "Sorcery Points",
+      "description": "Converti slot e punti stregoneria secondo le regole dell'edizione."
+    },
+    {
+      "class_name": "Barbarian",
+      "feature_name": "Rage",
+      "book": "XPHB",
+      "min_level": 1,
+      "activation": "bonus",
+      "display_name": "Ira",
+      "resource_name": "Rages",
+      "description": "Entra in Ira usando un utilizzo della risorsa Ira."
+    },
+    {
+      "class_name": "Fighter",
+      "feature_name": "Second Wind",
+      "book": "XPHB",
+      "min_level": 1,
+      "activation": "bonus",
+      "display_name": "Recuperare energie",
+      "resource_name": "Second Wind",
+      "description": "Recupera punti ferita usando Recuperare energie."
+    },
+    {
+      "class_name": "Fighter",
+      "feature_name": "Action Surge",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "free",
+      "display_name": "Impeto d'azione",
+      "resource_name": "Action Surge",
+      "description": "Ottieni un'azione aggiuntiva nel tuo turno, rispettando le limitazioni dell'edizione."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Scattare",
+      "resource_name": "",
+      "description": "Scatta usando la tua azione bonus."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Disimpegnarsi",
+      "resource_name": "",
+      "description": "Disimpegnati usando la tua azione bonus."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Cunning Action",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Azione scaltra · Nascondersi",
+      "resource_name": "",
+      "description": "Nasconditi usando la tua azione bonus."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Flurry of Blows",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Raffica di colpi",
+      "resource_name": "Focus Points",
+      "description": "Esegui gli attacchi aggiuntivi previsti dall'edizione spendendo la risorsa del monaco."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Patient Defense",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Difesa paziente",
+      "resource_name": "Focus Points",
+      "description": "Effettua l'opzione difensiva del privilegio; la spesa cambia con l'edizione."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Step of the Wind",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Passo del vento",
+      "resource_name": "Focus Points",
+      "description": "Ottieni le opzioni di mobilità del privilegio; la spesa cambia con l'edizione."
+    },
+    {
+      "class_name": "Paladin",
+      "feature_name": "Lay on Hands",
+      "book": "XPHB",
+      "min_level": 1,
+      "activation": "bonus",
+      "display_name": "Imposizione delle mani",
+      "resource_name": "Lay on Hands",
+      "description": "Cura una creatura spendendo punti dalla riserva di Imposizione delle mani."
+    },
+    {
+      "class_name": "Rogue",
+      "feature_name": "Uncanny Dodge",
+      "book": "XPHB",
+      "min_level": 5,
+      "activation": "reaction",
+      "display_name": "Schivata prodigiosa",
+      "resource_name": "",
+      "description": "Riduci il danno di un attacco che ti ha colpito e che puoi vedere."
+    },
+    {
+      "class_name": "Sorcerer",
+      "feature_name": "Font of Magic",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "bonus",
+      "display_name": "Conversione slot e punti stregoneria",
+      "resource_name": "Sorcery Points",
+      "description": "Converti slot e punti stregoneria secondo le regole dell'edizione."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Deflect Missiles",
+      "book": "PHB",
+      "min_level": 3,
+      "activation": "reaction",
+      "display_name": "Deviare proiettili",
+      "resource_name": "",
+      "description": "Riduci i danni di un attacco a distanza usando la tua reazione."
+    },
+    {
+      "class_name": "Monk",
+      "feature_name": "Deflect Attacks",
+      "book": "XPHB",
+      "min_level": 3,
+      "activation": "reaction",
+      "display_name": "Deviare attacchi",
+      "resource_name": "",
+      "description": "Riduci i danni di un attacco utilizzando la reazione."
+    },
+    {
+      "class_name": "Cleric",
+      "feature_name": "Turn Undead",
+      "book": "XPHB",
+      "min_level": 2,
+      "activation": "action",
+      "display_name": "Scacciare non morti",
+      "resource_name": "Channel Divinity",
+      "description": "Utilizza Incanalare Divinità per scacciare i non morti."
+    }
+  ]
+}

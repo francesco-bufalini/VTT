@@ -209,6 +209,51 @@ func is_in_token_group(token: CharacterBody3D) -> bool:
 	return false
 
 
+func get_motion_tokens(tokens: Array) -> Array[CharacterBody3D]:
+	var result: Array[CharacterBody3D] = []
+	for token: CharacterBody3D in tokens:
+		if not is_instance_valid(token) or token.is_queued_for_deletion():
+			continue
+		if not result.has(token):
+			result.append(token)
+		var root: CharacterBody3D = get_token_group_root(token)
+		if root == null:
+			continue
+		for value: Node in get_tree().get_nodes_in_group("dnd_token"):
+			if value is CharacterBody3D and board.is_ancestor_of(value):
+				if not value.is_queued_for_deletion() and get_token_group_root(value) == root and not result.has(value):
+					result.append(value)
+	return result
+
+
+# Detach this token from its parent and its direct followers. Descendants
+# keep their own links, so stopping an intermediate token splits the group.
+func stop_moving_together(token: CharacterBody3D) -> Array[CharacterBody3D]:
+	var detached: Array[CharacterBody3D] = []
+	for member: CharacterBody3D in get_motion_tokens([token]):
+		if is_mounted(member) and (member == token or get_target(member) == token):
+			detached.append(member)
+	for member: CharacterBody3D in detached:
+		dismount(member)
+	return detached
+
+
+# The pivot has already performed its collision-aware nudge. Reject that
+# nudge if any companion would cross an obstacle or fail its map validator.
+func can_apply_token_motion(pivot: CharacterBody3D, previous_transform: Transform3D) -> bool:
+	var delta: Transform3D = pivot.global_transform * previous_transform.affine_inverse()
+	for member: CharacterBody3D in get_motion_tokens([pivot]):
+		if member == pivot:
+			continue
+		var destination: Vector3 = (delta * member.global_transform).origin
+		var validator: Callable = member.get("movement_validator")
+		if validator.is_valid() and not validator.call(member, destination):
+			return false
+		if member.test_move(member.global_transform, destination - member.global_position):
+			return false
+	return true
+
+
 # Apply a rigid world-space delta to the common leader. A delta calculated
 # from the moved follower also rotates the formation *around that follower*,
 # rather than snapping it back to its old parent-relative position.

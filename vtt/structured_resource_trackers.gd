@@ -8,6 +8,7 @@ const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const OriginSpells5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 const FightClubMonsters = preload("res://vtt/fightclub_monster_resources.gd")
+const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -29,6 +30,7 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 		if not id.is_empty() and not seen.has(id):
 			seen[id] = true
 			result.append(tracker)
+	FeatureRules.apply_tracker_rules(record, result)
 	return result
 
 
@@ -36,16 +38,15 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 # resources which recharge on a short rest. Manual and d6 trackers stay intact.
 # Callers choose when a rest occurs; merely opening a sheet never resets uses.
 static func spent_after_recovery(record: Dictionary, event: String) -> Dictionary:
-	var saved: Variant = record.get("resource_tracker_spent", {})
-	var spent: Dictionary = (saved as Dictionary).duplicate(true) if saved is Dictionary else {}
-	if event not in ["short_rest", "long_rest", "turn"]:
-		return spent
-	for tracker: Dictionary in for_creature(record):
-		var mode: String = String(tracker.get("recharge", "manual"))
-		if mode == event or (event == "long_rest" and mode == "short_rest"):
-			spent.erase(String(tracker.get("id", "")))
-	return spent
+	return recovery_patch(record, event).get("resource_tracker_spent", {})
 
+# Atomic recovery patch also carries limited-use and optional post-rest flags.
+# Callers must save all returned fields; the legacy spent-only API is retained.
+static func recovery_patch(record: Dictionary, event: String) -> Dictionary:
+	return FeatureRules.recovery_patch(record, event, for_creature(record))
+
+static func optional_recovery_patch(record: Dictionary, rule_id: String) -> Dictionary:
+	return FeatureRules.optional_recovery_patch(record, rule_id, for_creature(record))
 
 # Keep machine-derived counters, but allow additional user-defined resources.
 # Their current uses remain in resource_tracker_spent, keyed by stable ID.
@@ -164,6 +165,33 @@ static func _append_monster_trackers(record: Dictionary, output: Array[Dictionar
 			"origin": "Azioni leggendarie",
 			"recharge": "turn"
 		})
+	# Normalized bestiary records already contain complete action counters.
+	# Avoid scanning every title with regex and rejoining Fight Club by name
+	# each time the sheet rebuilds or a resting event checks its resources.
+	if int(stat.get("vtt_action_metadata_version", 0)) == 1:
+		if not ((action_count is int or action_count is float) and int(action_count) > 0):
+			var supplement_count: int = int(stat.get("vtt_legendary_actions", 0))
+			var legendary_rows: Variant = stat.get("legendary", [])
+			if supplement_count > 0 and legendary_rows is Array and not (legendary_rows as Array).is_empty():
+				output.append({"id": "legendary_actions", "name": "Azioni leggendarie",
+					"max": supplement_count, "origin": "Azioni leggendarie",
+					"recharge": "turn", "source_label": "Fight Club 5e"})
+		for section: String in ["trait", "action", "bonus", "reaction", "legendary", "mythic"]:
+			var values: Variant = stat.get(section, [])
+			if not values is Array:
+				continue
+			for raw_entry: Variant in values:
+				if not raw_entry is Dictionary:
+					continue
+				var counter: Variant = (raw_entry as Dictionary).get("vtt_resource", {})
+				if not counter is Dictionary or (counter as Dictionary).is_empty():
+					continue
+				var row: Dictionary = (counter as Dictionary).duplicate(true)
+				if int(row.get("max", 0)) <= 0:
+					continue
+				row["origin"] = String(row.get("name", (raw_entry as Dictionary).get("name", "")))
+				output.append(row)
+		return
 	# The recharge tag is machine-readable syntax, not a natural-language
 	# expression such as "(Recharges after a Short or Long Rest)".
 	for section: String in ["trait", "action", "bonus", "reaction", "legendary", "mythic"]:
