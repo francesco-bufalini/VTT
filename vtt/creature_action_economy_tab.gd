@@ -15,6 +15,7 @@ const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
+const SheetStyle = preload("res://vtt/creature_sheet_style.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
@@ -50,13 +51,8 @@ static func _feature_supplements() -> Array[Dictionary]:
 # Original vector pictograms: fixed atlas cells avoid font/emoji differences across devices.
 # Both atlases live in pwa/ so Godot and the offline browser render identical glyphs.
 # Original 98-icon pack: 64px cells. Keys are in the same order as manifest.json.
-const GENERATED_ICON_KEYS := ["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand","acrobatics","animal_handling","arcana","armor","athletics","attack_bonus","bardic_inspiration","break_concentration","buff","check","coins","concentration","condition","cross","dash","debuff","deception","decrease","details","disengage","dodge","filter","fire","flight","grapple","healing","help_alt","hide","history","ice","increase","information","infusion","insight","interact","intimidation","inventory","investigation","invisibility","key","lightning","lock","magic_item","maneuver","map","mark_enemy","medicine","misty_step","nature","necromancy","opportunity_attack","perception","persuasion","poison","potion","proficiency","prone_alt","reaction_trigger","ready","religion","reset","rest_long","rest_short","save_throw","scroll","search","settings","sleight_of_hand","speed","spell_cast","spell_slot","stealth_check","summon","survival","talk","teleport","weapon","wild_shape"]
-const GENERATED_ICON_ATLASES := [
-	preload("res://pwa/icons/gold_generated/gold_0.svg"),
-	preload("res://pwa/icons/gold_generated/gold_1.svg"),
-	preload("res://pwa/icons/gold_generated/gold_2.svg"),
-	preload("res://pwa/icons/gold_generated/gold_3.svg")
-]
+const GENERATED_ICON_KEYS = SheetStyle.GENERATED_ICON_KEYS
+const GENERATED_ICON_ATLASES = SheetStyle.GENERATED_ICON_ATLASES
 const HEADER_ICON_KEYS := ["weapon", "flight", "sleight_of_hand", "dash", "reaction_trigger"]
 const CONTROL_ICONS: Texture2D = preload("res://vtt/icons/action_controls.svg")
 const CONTROL_ICON_KEYS := ["dice", "settings", "alternate"]
@@ -617,18 +613,7 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 	return _normalize_alternatives(results.filter(func(row: Dictionary) -> bool: return String(row.get("kind", "")) != "Incantesimo"))
 
 func _surface(background: Color, border: Color, radius: int = 7, padding: int = 8) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background
-	style.border_color = border
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(radius)
-	style.set_content_margin_all(padding)
-	# Shared lightweight surface treatment: gold edge, depth and a softer shadow.
-	style.shadow_color = Color(0, 0, 0, 0.24)
-	style.shadow_size = 2
-	style.shadow_offset = Vector2(0, 1)
-	style.anti_aliasing = true
-	return style
+	return SheetStyle.surface(background, border, radius, padding)
 
 func _action_style() -> StyleBoxFlat:
 	var style := _surface(Color("352928f7"), Color("89643f"), 8, 8)

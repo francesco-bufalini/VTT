@@ -653,6 +653,7 @@ func _build_ui() -> void:
 	preload("res://vtt/scrollable_caption.gd").install(self)
 	_panel = PanelContainer.new()
 	_panel.name = "CreatureSheet"
+	preload("res://vtt/creature_sheet_style.gd").install(_panel)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# Reduce outer gutters; keep the window entirely inside the viewport.
 	_panel.offset_left = 12
@@ -2133,6 +2134,11 @@ func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.follow_focus = true
 	tabs.add_child(scroll)
+	var icon_key: String = {"Info": "information", "Statistiche": "skill", "Cosa posso fare?": "weapon",
+		"Poteri": "spark", "Inventario": "inventory", "Tratti": "proficiency",
+		"Condizioni": "condition", "Modifica personaggio": "settings"}.get(title, "book")
+	tabs.set_tab_icon(tabs.get_tab_count() - 1, preload("res://vtt/creature_sheet_style.gd").icon(icon_key))
+	tabs.set_tab_icon_max_width(tabs.get_tab_count() - 1, 18)
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for edge: String in ["margin_left", "margin_right"]:
@@ -2632,7 +2638,7 @@ func _add_formula_label(parent: Node, value: String) -> void:
 
 func _style_statistics_heading(label: Label) -> void:
 	label.add_theme_font_size_override("font_size", 17)
-	label.add_theme_color_override("font_color", Color(0.82, 0.91, 0.97))
+	label.add_theme_color_override("font_color", Color("edbd77"))
 	label.add_theme_color_override("font_shadow_color", Color(0.03, 0.05, 0.08, 0.7))
 	label.add_theme_constant_override("shadow_offset_y", 1)
 
