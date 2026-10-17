@@ -26,7 +26,7 @@ const sectionMenu = document.querySelector("#section-menu");
 const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
-  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
+  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
@@ -1172,6 +1172,25 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='combat-action'){
+    const mode=target.dataset.mode;
+    if(!['help','shove','prone'].includes(mode))throw Error('Azione non valida.');
+    const record=state.editor?.read();
+    if(!record?.id)throw Error('Seleziona prima una creatura.');
+    const tokenId=record.linked_token_sync_id;
+    if(!tokenId)throw Error('Piazza o associa la creatura a un token prima di scegliere il bersaglio.');
+    const calculated=await computeLocalData(record);
+    const rule=record.rules_version==='2024'?
+      '2024 · TS Forza o Destrezza, a scelta del bersaglio, CD '+
+       (8+Number(calculated.abilities?.str?.modifier??0)+Number(calculated.stats?.proficiency??0))+
+       '. La spinta sostituisce un attacco.':
+      '2014 · Atletica '+(Number(calculated.skills?.athletics??0)>=0?'+':'')+
+       Number(calculated.skills?.athletics??0)+' contro Atletica o Acrobazia (a scelta del bersaglio). La spinta sostituisce un attacco.';
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+    await tacticalViewer.open(tokenId,{});
+    tacticalViewer.setBasicAction({mode,rule});
+    return;
+  }
   if(act==='sheet-roll'){
     const calculated=await computeLocalData(state.editor.read()),modifier=calculated.values[target.dataset.target];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
@@ -1546,6 +1565,7 @@ async function handleAction(target){
       current_miniature_id:sheet.current_miniature_id||"",
       default_miniature_id:sheet.default_miniature_id||"",
       size_name:sheet.size_name||"Medium",footprint:sheet.footprint??1,
+      rules_version:sheet.rules_version==="2024"?"2024":"2014",
       reach_feet:sheet.reach_feet??5,conditions:sheet.conditions||[],
       rules_version:sheet.rules_version||"2014",
       visual_front_quarter_turns:sheet.visual_front_quarter_turns??0};

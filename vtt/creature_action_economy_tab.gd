@@ -1,4 +1,8 @@
 extends VBoxContainer
+signal skill_requested(key: String)
+signal basic_action_requested(action_id: String)
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 ## Local-only action overview. Neither casting nor sheet calculations require a server.
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Features = preload("res://vtt/creature_features.gd")
@@ -28,7 +32,9 @@ const BASIC_2014 := [
  ["Scattare", 0, "Generale", "Ottieni movimento aggiuntivo pari alla tua velocità."],
  ["Disimpegnarsi", 0, "Generale", "Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
  ["Schivare", 0, "Generale", "Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare", 0, "Generale", "Aiuta una creatura in una prova oppure nel primo attacco contro un bersaglio vicino."],
+ ["Aiutare", 0, "Generale", "Seleziona un token bersaglio e applica solo la condizione Aiutato, senza altri effetti automatici."],
+ ["Spingere", 0, "Attacco", "2014: sostituisce un attacco. Atletica contrapposta a Atletica/Acrobazia del bersaglio, che sceglie; sposta di 5 ft dopo il successo."],
+ ["Buttare prono", 0, "Attacco", "2014: sostituisce un attacco. Atletica contrapposta a Atletica/Acrobazia del bersaglio; al successo applica Prono."],
  ["Nascondersi", 0, "Prova caratteristica", "Effettua una prova di Destrezza (Furtività)."],
  ["Cercare", 0, "Prova caratteristica", "Effettua una prova di Saggezza (Percezione) o Intelligenza (Indagare)."],
  ["Preparare", 0, "Generale", "Definisci una condizione e usa la reazione quando si verifica."],
@@ -40,7 +46,9 @@ const BASIC_2024 := [
  ["Scattare", 0, "Generale", "Ottieni movimento aggiuntivo pari alla tua velocità."],
  ["Disimpegnarsi", 0, "Generale", "Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
  ["Schivare", 0, "Generale", "Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare", 0, "Generale", "Fornisci aiuto per una prova, un tiro per colpire o primo soccorso."],
+ ["Aiutare", 0, "Generale", "Seleziona un token bersaglio e applica solo la condizione Aiutato, senza altri effetti automatici."],
+ ["Spingere", 0, "Attacco", "2024: colpo senz'armi invece di un attacco; il bersaglio sceglie TS Forza o Destrezza contro CD 8 + competenza + mod. Forza. Fallimento: 5 ft."],
+ ["Buttare prono", 0, "Attacco", "2024: colpo senz'armi invece di un attacco; il bersaglio sceglie TS Forza o Destrezza contro CD 8 + competenza + mod. Forza. Fallimento: Prono."],
  ["Nascondersi", 0, "Prova caratteristica", "Effettua una prova di Destrezza (Furtività)."],
  ["Cercare", 0, "Prova caratteristica", "Effettua una prova di Saggezza (Intuizione, Medicina, Percezione o Sopravvivenza)."],
  ["Studiare", 0, "Prova caratteristica", "Effettua una prova di Intelligenza (Arcano, Storia, Indagare, Natura o Religione)."],
@@ -52,12 +60,35 @@ const COMMON := [
  ["Interagire con un oggetto", 2, "Generale", "Una semplice interazione durante il movimento o un'azione."],
  ["Parlare brevemente", 2, "Generale", "Pronuncia poche parole quando puoi comunicare."],
  ["Muoversi", 3, "Movimento", "Usa il movimento disponibile, eventualmente suddividendolo fra le azioni."],
+ ["Movimento furtivo", 3, "Movimento", "Muoviti cercando di restare nascosto. Per nasconderti effettua una prova di Destrezza (Furtività) usando Nascondersi; nel 2024 è una prova CD 15. Il movimento usa la normale velocità: non concede automaticamente la condizione Nascosto."],
  ["Attacco di opportunità", 4, "Attacco", "Attacco in mischia come reazione quando una creatura lascia la tua portata."]
 ]
 
 var _sections: Array[VBoxContainer] = []
+var _skill_list: VBoxContainer
+
+static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]:
+	var results: Array[Dictionary] = []
+	if record.is_empty():
+		return results
+	for skill: Dictionary in Skills5e.SKILLS:
+		var key := String(skill["id"])
+		results.append({"id": key, "label": String(skill["label"]),
+			"bonus": Bonuses.value(record, "skill:" + key)})
+	results.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a["bonus"]) != int(b["bonus"]):
+			return int(a["bonus"]) > int(b["bonus"])
+		return String(a["label"]).nocasecmp_to(String(b["label"])) < 0
+	)
+	return results.slice(0, mini(count, results.size()))
 
 func _ready() -> void:
+	var skills_heading := Label.new()
+	skills_heading.text = "Prova abilità · 4 bonus più alti"
+	skills_heading.add_theme_font_size_override("font_size", 17)
+	add_child(skills_heading)
+	_skill_list = VBoxContainer.new()
+	add_child(_skill_list)
 	for heading_text: String in GROUPS:
 		var section := VBoxContainer.new()
 		var heading := Label.new()
@@ -125,7 +156,12 @@ static func _tracker_label(tracker_id: String, trackers: Dictionary) -> String:
 static func entries(record: Dictionary) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	for row: Array in (BASIC_2024 if String(record.get("rules_version", "2014")) == "2024" else BASIC_2014):
-		results.append(_entry(String(row[0]), int(row[1]), String(row[2]), String(row[3])))
+		var entry := _entry(String(row[0]), int(row[1]), String(row[2]), String(row[3]))
+		match String(row[0]):
+			"Aiutare": entry["action_id"] = "help"
+			"Spingere": entry["action_id"] = "shove"
+			"Buttare prono": entry["action_id"] = "prone"
+		results.append(entry)
 	for row: Array in COMMON:
 		results.append(_entry(String(row[0]), int(row[1]), String(row[2]), String(row[3])))
 	if record.is_empty():
@@ -295,6 +331,10 @@ func _add_entry(entry: Dictionary) -> void:
 	button.tooltip_text = detail
 	button.set_meta("action_generated", true)
 	button.pressed.connect(func() -> void:
+		var action_id := String(entry.get("action_id", ""))
+		if not action_id.is_empty():
+			basic_action_requested.emit(action_id)
+			return
 		var dialog := AcceptDialog.new()
 		dialog.title = title
 		dialog.dialog_text = detail if not detail.is_empty() else "Nessuna descrizione disponibile."
@@ -303,11 +343,34 @@ func _add_entry(entry: Dictionary) -> void:
 		dialog.confirmed.connect(dialog.queue_free)
 		dialog.close_requested.connect(dialog.queue_free)
 	)
-	_sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)].add_child(button)
+	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
+	section.add_child(button)
+	if title in ["Nascondersi", "Movimento furtivo"]:
+		var stealth := Button.new()
+		stealth.text = "↳ Tira Furtività"
+		stealth.set_meta("action_generated", true)
+		stealth.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		stealth.pressed.connect(func() -> void: skill_requested.emit("skill:stealth"))
+		section.add_child(stealth)
+
+func refresh_top_skills(record: Dictionary) -> void:
+	if _skill_list == null:
+		return
+	for child: Node in _skill_list.get_children():
+		_skill_list.remove_child(child)
+		child.queue_free()
+	for skill: Dictionary in best_skills(record):
+		var key := String(skill["id"])
+		var button := Button.new()
+		button.text = "%s  %+d" % [skill["label"], int(skill["bonus"])]
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(func() -> void: skill_requested.emit("skill:" + key))
+		_skill_list.add_child(button)
 
 func load_record(record: Dictionary) -> void:
 	if _sections.is_empty():
 		return
+	refresh_top_skills(record)
 	for section: VBoxContainer in _sections:
 		for child: Node in section.get_children():
 			if child.has_meta("action_generated"):

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {actionEntries,actionEconomyView} from '../action_economy.js';
+import {actionEntries,actionEconomyView,topSkillEntries} from '../action_economy.js';
 
 test('SRD editions expose the appropriate general actions',()=>{
  const basic=actionEntries({rules_version:'2014'},{});
@@ -79,4 +79,24 @@ test('supplemented class privileges require the correct edition and level',()=>{
  assert(!opts.some(x=>x.name==="Impeto d'azione"));
  assert(actionEntries(higher,{},[],overrides).some(x=>x.name==="Impeto d'azione"));
  assert(!actionEntries(newEdition,{},[],overrides).some(x=>x.name==='Recuperare energie'));
+});
+
+test('basic combat actions show targeting buttons, both movement modes, and top four skill bonuses',()=>{
+ const record={rules_version:'2024'};
+ const calculated={skills:{stealth:8,athletics:4,arcana:8,acrobatics:2,perception:5}};
+ const entries=actionEntries(record,calculated);
+ assert.equal(entries.find(row=>row.name==='Aiutare').action_id,'help');
+ assert.equal(entries.find(row=>row.name==='Spingere').action_id,'shove');
+ assert.equal(entries.find(row=>row.name==='Buttare prono').action_id,'prone');
+ assert(entries.some(row=>row.name==='Muoversi'&&row.time==='movement'));
+ assert(entries.some(row=>row.name==='Movimento furtivo'&&row.time==='movement'));
+ const skills=topSkillEntries(calculated);
+ assert.equal(skills.length,4);
+ assert.deepEqual(skills.map(x=>x.bonus),[8,8,5,4]);
+ const html=actionEconomyView(record,calculated);
+ assert(html.includes('data-mode="help"'));
+ assert(html.includes('data-mode="shove"'));
+ assert(html.includes('data-mode="prone"'));
+ assert(html.includes('data-target="skill:stealth"'));
+ assert(html.includes('data-target="skill:arcana"'));
 });

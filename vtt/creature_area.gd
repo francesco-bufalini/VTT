@@ -14,6 +14,7 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ActionEconomyTab = preload("res://vtt/creature_action_economy_tab.gd")
+const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -947,6 +948,8 @@ func _build_ui() -> void:
 	var actions_tab := _add_sheet_tab(_tabs, "Cosa posso fare?")
 	_action_economy_ui = ActionEconomyTab.new()
 	actions_tab.add_child(_action_economy_ui)
+	_action_economy_ui.skill_requested.connect(_on_formula_roll_requested)
+	_action_economy_ui.basic_action_requested.connect(_on_basic_action_requested)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
 	inventory_tab.add_child(_inventory_ui)
@@ -2815,6 +2818,68 @@ func _scroll_origins_to_top() -> void:
 		_origins_scroll.scroll_vertical = 0
 
 
+func _on_basic_action_requested(action_id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	# The Android shell uses its existing token-selectable 2D map snapshot.
+	if board_root.has_method("request_mobile_basic_action"):
+		board_root.call("request_mobile_basic_action", record, action_id)
+		return
+	var actor: CharacterBody3D = find_linked_token_for_creature(String(record.get("id", "")))
+	if actor == null:
+		_set_status("Associa prima la creatura a un token sulla mappa.")
+		return
+	var candidates: Array[CharacterBody3D] = []
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is CharacterBody3D and board_root.is_ancestor_of(node) and node != actor and node.is_visible_in_tree():
+			candidates.append(node)
+	if candidates.is_empty():
+		_set_status("Nessun token bersaglio presente.")
+		return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Aiutare" if action_id == "help" else "Spingere" if action_id == "shove" else "Buttare prono"
+	dialog.ok_button_text = "Applica" if action_id == "help" else "Confermo il successo"
+	dialog.cancel_button_text = "Annulla"
+	var body := VBoxContainer.new()
+	dialog.add_child(body)
+	var caption := Label.new()
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if action_id == "help":
+		caption.text = "Applica Aiutato al bersaglio. Nessun vantaggio o altro effetto viene calcolato automaticamente."
+	else:
+		var info: Dictionary = BasicCombat.shove_details(record,
+			BonusRules.value(record, "skill:athletics"),
+			BonusRules.value(record, "ability_mod:str"), BonusRules.value(record, "proficiency"))
+		caption.text = String(info.get("check", "")) + "\n" + String(info.get("action", "")) + (
+			"\nCD: %d" % int(info["dc"]) if info.has("dc") else
+			"\nAtletica: %+d" % int(info.get("athletics_bonus", 0))
+		) + "\nApplica solo se la prova o il TS è stato risolto con successo."
+	body.add_child(caption)
+	if action_id != "help" and String(record.get("rules_version", "2014")) != "2024":
+		var roll := Button.new()
+		roll.text = "Tira Atletica con il roller della scheda"
+		roll.pressed.connect(func() -> void: _on_formula_roll_requested("skill:athletics"))
+		body.add_child(roll)
+	var picker := OptionButton.new()
+	for target: CharacterBody3D in candidates:
+		var target_name := String(target.call("get_display_name")) if target.has_method("get_display_name") else String(target.name)
+		picker.add_item(target_name)
+	body.add_child(picker)
+	dialog.confirmed.connect(func() -> void:
+		var index := picker.selected
+		if index >= 0 and index < candidates.size():
+			var victim: CharacterBody3D = candidates[index]
+			var result: Dictionary = BasicCombat.execute(board_root, actor, victim, action_id, action_id != "help")
+			_set_status("Azione eseguita." if bool(result.get("ok", false)) else String(result.get("error", "Azione non valida.")))
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered_ratio(0.72)
+
+
 func _on_formula_roll_requested(key: String) -> void:
 	if key.begins_with("attack_hit:"):
 		_roll_attack_from_sheet(key.trim_prefix("attack_hit:"), false)
@@ -2933,6 +2998,8 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 		_update_ability_modifier(ability)
 	_loading = previous_loading
 	_refresh_skill_values(record)
+	if _action_economy_ui != null and _tabs != null and _tabs.get_tab_control(_tabs.current_tab).name == "Cosa posso fare?":
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	_update_max_hp_display()
 	_update_second_max_formula()
 	_update_defense_display()
@@ -6161,6 +6228,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
+	if index >= 0 and _tabs.get_tab_control(index).name == "Cosa posso fare?" and _action_economy_ui != null:
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	if index >= 0 and _tabs.get_tab_control(index).name == "Modifica personaggio" and _editor_section_picker.selected == 0:
 		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
