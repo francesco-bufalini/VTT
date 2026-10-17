@@ -2,7 +2,7 @@
 // No regex matching feature prose; no network access in the evaluation path.
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value||'').trim().toLowerCase();
-const subclass=value=>low(value).replace(/^(?:circle of |the |way of |oath of |school of )/,'');
+const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
 export function featureMember(record,rule){
  const edition=record?.rules_version==='2024'?'XPHB':'PHB';
  const classes=rows(record?.classes).length?record.classes:
