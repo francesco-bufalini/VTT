@@ -4,6 +4,16 @@ import {availableSpells, spellId} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
 
 let supplementsCache=null;
+let generalActionsCache=null;
+export async function loadGeneralActionSupplements(){
+ if(generalActionsCache)return generalActionsCache;
+ const response=await fetch('/catalog/combat_action_supplements_5etools.json',{cache:'no-store'});
+ if(!response.ok)throw Error('Catalogo azioni 5etools non disponibile');
+ const payload=await response.json();
+ if(payload?.version!==1||!Array.isArray(payload.entries))throw Error('Catalogo azioni 5etools non valido');
+ generalActionsCache=payload.entries;
+ return generalActionsCache;
+}
 export async function loadFeatureActionOverrides(){
  if(supplementsCache)return supplementsCache;
  const response=await fetch('/catalog/action_feature_overrides.json',{cache:'no-store'});
@@ -80,11 +90,29 @@ export function topSkillEntries(calculated={},limit=4){
    .sort((a,b)=>b.bonus-a.bonus||a.label.localeCompare(b.label,'it')||a.id.localeCompare(b.id))
    .slice(0,limit);
 }
-export function actionEntries(record={},calculated={},spells=[],featureOverrides=[]){
+export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=[]){
  const out=(record.rules_version==='2024'?SRD_2024:SRD_2014).concat(COMMON).map(([name,time,type,description])=>({
    name,time,type,description,tracker:'',cost:0,
    action_id:name==='Aiutare'?'help':name==='Spingere'?'shove':name==='Buttare prono'?'prone':''
  }));
+ // The same structured supplemental rows are used by the Godot native tab.
+ // Preserve both time options (e.g. bonus action OR action) as distinct entries.
+ const edition=record.rules_version==='2024'?'2024':'2014';
+ for(const rule of arr(generalActions)){
+  if(rule?.edition!==edition||!Array.isArray(rule.timings)||!rule.name)continue;
+  const source=String(rule.source||'')+(Number.isFinite(Number(rule.page))?', p. '+rule.page:'');
+  const description=String(rule.description||'')+(source?'\nFonte: '+source:'')+
+    (rule.optional?'\nRegola opzionale: richiede approvazione del DM.':'');
+  for(const time of rule.timings){
+   if(!GROUPS.some(([group])=>group===time))continue;
+   out.push({
+     name:String(rule.name),time,type:rule.optional?'Regola opzionale':'Generale',
+     description,tracker:String(rule.tracker||''),cost:0,
+     action_id:String(rule.action_id||''),skill_ids:arr(rule.skills).map(String),
+     catalog_id:String(rule.id||'')
+   });
+  }
+ }
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0)=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost});
  const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
@@ -161,8 +189,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  return out;
 }
-export function actionEconomyView(record,calculated,spells=[],featureOverrides=[]){
- const entries=actionEntries(record,calculated,spells,featureOverrides);
+export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=[]){
+ const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions);
  const skills=topSkillEntries(calculated);
  const skillPanel='<section class="panel"><h2>Prova abilità · 4 bonus più alti</h2>'+
    (skills.length?'<div class="actions">'+skills.map(row=>
@@ -182,7 +210,13 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
      items.map(item=>'<details class="native-entry"><summary><strong>'+esc(item.name)+'</strong>'+
        (item.cost?' · costo '+esc(item.cost):'')+'</summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
        (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
-       (item.name==='Nascondersi'||item.name==='Movimento furtivo'?'<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:stealth" data-label="Furtività">Tira Furtività</button>':'')+
+       ([...(item.skill_ids||[]),...(item.name==='Nascondersi'||item.name==='Movimento furtivo'?['stealth']:[])]
+         .filter((id,index,all)=>all.indexOf(id)===index)
+         .map(id=>{
+           const label=SKILLS.find(([key])=>key===id)?.[1]||id;
+           return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
+             '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
+         }).join(''))+
        '</details>').join('')+'</div>').join('')||
     '<p class="hint">Nessuna azione disponibile.</p>')+'</section>';
  }).join('');
