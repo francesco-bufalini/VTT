@@ -326,3 +326,18 @@ root script inheritance chain. The board must still initialize
 a completely independent `Node3D` scene that does not derive from
 `dnd_base.gd`, the PWA server intentionally does **not** start.
 This prevents the web gateway from staying open in menus, tools or editors.
+
+
+### Consolidamento PR #153 (moduli compatibilità PWA)
+
+I file `character_core.js`, `class_spells.js`, `class_trackers.js` e
+`quick_homebrew.js` sono conservati come moduli di riferimento e coperti da
+regressioni specifiche. La PWA attuale impiega già le implementazioni più
+recenti di `creatures.js`, `sheet_rules.js`, `spell_selection.js` e
+`catalog_data.js` per creazione schede, regole di classi, tracker,
+incantesimi e homebrew. **Non** reindirizzare le operazioni di riposo
+alle implementazioni precedenti di `character_core.js`: manca il tracciamento
+dei recuperi parziali 2024 introdotto successivamente. Anche i tracker
+calcolati in `class_trackers.js` sono da considerarsi alternativi di
+compatibilità, non una seconda fonte di verità. Sono distribuiti offline
+per migrazioni e per i test, senza modificare la gestione attuale della PWA.
