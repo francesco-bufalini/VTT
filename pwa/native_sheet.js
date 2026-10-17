@@ -1,6 +1,7 @@
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
+import {formulaValue} from './sheet_rules.js';
 export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abilità"],
  ["battle","Battaglia"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
@@ -9,7 +10,7 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
-export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_hit','Attacco incantesimi'],
+export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
@@ -19,10 +20,32 @@ export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
  feats_catalog:[["name","Talento"],["source","Fonte"],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
- formula_bonuses:[["target","Valore",BONUS_TARGETS], ["expression","Formula"],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ formula_bonuses:[["target","Valore"], ["expression","Formula"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
+ dice_bonuses:[["target","Tiro",[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']]],["dice","Dadi (es. 1d4)"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
  origin_spell_grants:[["origin_id","Origine"],["origin_name","Nome origine"],["spell_id","Incantesimo"],["payment_mode","Consumo",[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']]],["tracker_id","Tracker"],["tracker_cost","Costo","number",1,999],["spellcasting_ability","Caratteristica",[["","Automatica"],["str","Forza"],["dex","Destrezza"],["con","Costituzione"],["int","Intelligenza"],["wis","Saggezza"],["cha","Carisma"]]],["disabled","Disattivata","checkbox"]]
 };
+export function benefitRequirements(row,attrs){
+ const gate=row.requirements||{};
+ return '<details><summary>Requisiti di livello</summary><div class="columns">'+
+ control('Livello di riferimento',attrs+' data-requirement="scope"',gate.scope||'character',[['character','Personaggio'],['class','Classe']])+
+ control('Livello minimo',attrs+' data-requirement="min_level"',gate.min_level??row.min_level??0,'number',0,20)+
+ control('Livello massimo (vuoto: nessuno)',attrs+' data-requirement="max_level"',gate.max_level??'','number',0,20)+
+ control('Nome classe',attrs+' data-requirement="class_name"',gate.class_name||'')+
+ control('Fonte classe',attrs+' data-requirement="class_source"',gate.class_source||'')+'</div></details>';
+}
+export function requirementPatch(row,field,value){
+ if(!['scope','min_level','max_level','class_name','class_source'].includes(field))throw Error('Requisito non valido');
+ const gate={scope:'character',min_level:row.min_level??0,...row.requirements};
+ if(field==='scope'&&!['character','class'].includes(value))throw Error('Ambito non valido');
+ if(['min_level','max_level'].includes(field)){
+  if(field==='max_level'&&value===''){delete gate.max_level;return gate;}
+  value=Number(value);if(!Number.isInteger(value)||value<0||value>20)throw Error('Livello da 0 a 20');
+ }
+ gate[field]=value;
+ if(gate.max_level!==undefined&&gate.max_level<gate.min_level)throw Error('Il massimo non può essere inferiore al minimo');
+ return gate;
+}
 export function rowsFor(c,key){
  if(key==='classes'&&!list(c.classes).length&&c.class)return [{name:c.class,source:c.class_source||'',id:c.class_id||'',subclass:c.subclass||'',subclass_source:c.subclass_source||'',subclass_id:c.subclass_id||'',level:c.level||1}];
  if(key!=="proficiency_choices" || Array.isArray(c.proficiency_choices))return structuredClone(list(c[key]));
@@ -81,14 +104,22 @@ export function nativeRows(c,key,catalogs={}){
       if(['skill','expertise'].includes(row.kind))type=SKILLS.map(([id,name])=>[id,name]);
       if(row.kind==='save')type=['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()]);
     }
+    if(['formula_bonuses','dice_bonuses'].includes(key)&&field==='origin_id')type=[['','Senza origine'],...list(catalogs.origins).map(o=>[o.id,o.name])];
+    if(key==='formula_bonuses'&&field==='target')type=[...BONUS_TARGETS,...list(catalogs.trackers).map(t=>['tracker:'+t.id,'Tracker · '+t.name]),...list(catalogs.attacks).flatMap(a=>[['attack_hit:'+a.id,'Colpire · '+a.name],['attack_damage:'+a.id,'Danni · '+a.name],['attack_range:'+a.id,'Gittata · '+a.name],['attack_long_range:'+a.id,'Gittata lunga · '+a.name]])];
     if(key==='origin_spell_grants'){
       if(field==='origin_id')type=list(catalogs.origins).map(o=>[o.id,o.name]);
       if(field==='spell_id')type=[['','Scegli incantesimo'],...list(catalogs.spells).filter(s=>!s.internal_grant).map(s=>[s.id,s.name+' · '+s.source])];
       if(field==='tracker_id')type=[['','Nessuno'],...list(catalogs.trackers).map(t=>[t.id,t.name])];
     }
     return control(label,'data-native-list="'+key+'" data-index="'+i+'" data-key="'+field+'"'+(automatic&&field!=='disabled'?' disabled':''),row[field],type,min,max);
-   }).join('')+'</div>'+ (key==='origin_spell_grants'?'<p class="hint">'+list(row.spells).map(s=>esc(typeof s==='string'?s:s.name||s.id)).join(', ')+'</p>':'')+'</article>';
+   }).join('')+'</div>'+(key==='formula_bonuses'?benefitRequirements(row,'data-benefit-list="'+key+'" data-index="'+i+'"'):'')+
+   (key==='formula_bonuses'?'<p class="hint" data-formula-preview="'+i+'">'+esc(formulaPreview(row.expression,catalogs.calculated))+'</p>':'')+
+   (key==='origin_spell_grants'?'<p class="hint">'+list(row.spells).map(s=>esc(typeof s==='string'?s:s.name||s.id)).join(', ')+'</p>':'')+'</article>';
  }).join('')+'<button type="button" class="btn" data-act="native-add" data-list="'+key+'">＋ Aggiungi</button>';
+}
+export function formulaPreview(expression,calculated){
+ try{return 'Risultato della formula: '+formulaValue(expression,calculated);}
+ catch(error){return 'Formula non applicata: '+error.message;}
 }
 export function nativeRowPatch(c,key,index,field,value){
  const definition=ROW_FIELDS[key]?.find(row=>row[0]===field);
@@ -230,7 +261,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='origins'){
   let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details,catalogs);
   if(details==='overview')content+='<h3>Origini dei benefici</h3>'+list(calculated.origins).map(o=>'<label class="check"><input type="checkbox" data-origin-enabled="'+esc(o.id)+'" '+(!o.disabled?'checked':'')+'>'+esc(o.name)+'</label>').join('');
-  if(details==='formula_bonuses')content='<details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content;
+  if(details==='formula_bonuses')content='<p class="hint">Formule: str_mod, cha_mod, proficiency, level, max_hp, save_dex, skill_perception; numeri, +, −, *, / e parentesi. I bonus si sommano. Le dipendenze circolari e le formule non valide sono segnalate nei calcoli.</p><details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content+'<h3>Bonus ai tiri con dadi</h3>'+nativeRows(c,'dice_bonuses',catalogs);
   return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;

@@ -1,6 +1,6 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
-import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, castingSources, classSelectionCount } from "./spell_selection.js";
+import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -10,7 +10,8 @@ import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription }
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs, localClasses } from "./sheet_rules.js";
+import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
+import {benefitRequirements,requirementPatch,formulaPreview} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -256,7 +257,7 @@ async function editorView() {
   }
   const calculated=await computeLocalData(c);
   state.calculated=calculated;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,spells:state.spellCatalog||[]},calculated})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -290,7 +291,7 @@ async function editorView() {
       }).join('')+'</div><details><summary>Impostazioni slot</summary><p>'+((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+btn('slots-automatic','Usa progressione automatica')+
       '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
       field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
-      originPowersView(c,calculated)+
+      originChoicesView(calculated)+originPowersView(c,calculated)+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
         '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
@@ -322,32 +323,20 @@ async function editorView() {
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
 function resourceView(c,configure=false){
-    const trackers=state.calculated?.trackers||(Array.isArray(c.resource_trackers)?c.resource_trackers:[]);
-    const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
-      c.resource_tracker_spent:{};
-    return panel("Risorse",
-      '<p class="hint">Risorse delle classi e tracker personali. I massimi includono formule e bonus attivi.</p>'+
-      (trackers.length?trackers.map((t,i)=>{
-        const base=(c.resource_trackers||[]).find(row=>row.id===t.id)||t;
-        const max=Math.max(0,Number(t.max)||0);
-        const used=Math.max(0,Math.min(max,Number(spent[t.id])||0));
-        return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
-          '</strong>'+(configure&&!t.automatic?'<button type="button" class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'')+'</div>'+
-          '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
-          ' / </span>'+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+(t.name||'risorsa'))+'<span class="hint">'+esc(({manual:'Manuale',short_rest:'Riposo breve',long_rest:'Riposo lungo',turn:'Inizio turno',d6:'Ricarica d6'})[t.recharge]||t.recharge||'Manuale')+'</span><span class="row">'+
-          '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo">−</button>'+
-          '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo">＋</button></span></div>'+
-          (configure&&!t.automatic?'<div class="columns"><label>Massimo base<input type="number" min="0" max="99999" data-tracker-field="max" data-tracker-id="'+esc(t.id)+'" value="'+esc(base.max)+'"></label><label>Formula del massimo<input data-tracker-field="max_formula" data-tracker-id="'+esc(t.id)+'" value="'+esc(t.max_formula||'')+'"></label><label>Recupero<select data-tracker-field="recharge" data-tracker-id="'+esc(t.id)+'">'+[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno']].map(([value,label])=>'<option value="'+value+'" '+(t.recharge===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label></div>':'')+'</div>';
-      }).join(""):'<p class="hint">Nessuna risorsa disponibile.</p>')+
-      '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>')+
-      (configure?panel("Aggiungi tracker",'<div class="columns">'+
-      '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
-      '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
-      '<label>Ricarica<select id="tracker-recharge"><option value="manual">Manuale</option>'+
-      '<option value="turn">Inizio turno</option><option value="short_rest">Riposo breve</option>'+
-      '<option value="long_rest">Riposo lungo</option></select></label>'+
-      '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>'):'');
-  }
+ const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
+ const trackers=configure?[...active,...saved.filter(t=>!active.some(a=>a.id===t.id)).map(t=>({...t,inactive:true}))]:active;
+ const modes=[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']];
+ const options=(rows,value)=>rows.map(([id,name])=>'<option value="'+esc(id)+'" '+(id===value?'selected':'')+'>'+esc(name)+'</option>').join('');
+ const control=(t,key,label,value,type='text')=>'<label>'+esc(label)+'<input type="'+type+'" data-tracker-field="'+key+'" data-tracker-id="'+esc(t.id)+'" value="'+esc(value??'')+'" '+(type==='number'?'min="0" max="99999"':'')+'></label>';
+ const body=trackers.map(t=>{
+  const base=saved.find(row=>row.id===t.id)||t,maximum=Math.max(0,Number(t.max)||0),used=Number(c.resource_tracker_spent?.[t.id])||0;
+  const pick=(key,label,rows,value)=>'<label>'+label+'<select data-tracker-field="'+key+'" data-tracker-id="'+esc(t.id)+'">'+options(rows,value)+'</select></label>';
+  const actions=!t.inactive?'<div class="row"><button class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'">Ripristina 1</button><button class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'">Consuma 1</button>'+(t.recharge==='d6'?'<button class="btn small" data-act="tracker-recharge" data-tracker-id="'+esc(t.id)+'">Ricarica d6 · '+esc(t.recharge_min||6)+'+</button>':'')+'</div>':'';
+  const edit=configure&&!t.automatic?'<div class="columns">'+control(t,'name','Nome',base.name)+control(t,'max','Massimo base',base.max,'number')+control(t,'max_formula','Formula del massimo',base.max_formula)+pick('origin_id','Origine',[['','Senza origine'],...(!origins.some(o=>o.id===base.origin_id)&&base.origin_id?[[base.origin_id,base.origin_name||base.origin_id]]:[]),...origins.map(o=>[o.id,o.name])],base.origin_id||'')+pick('recharge','Recupero',modes,base.recharge||'manual')+control(t,'recharge_min','Ricarica d6 da (1–6)',base.recharge_min||6,'number')+'<label class="check"><input type="checkbox" data-tracker-field="disabled" data-tracker-id="'+esc(t.id)+'" '+(base.disabled?'checked':'')+'>Disattivato</label></div>'+benefitRequirements(base,'data-benefit-tracker="'+esc(t.id)+'"')+(base.max_formula?'<p class="hint">'+esc(formulaPreview(base.max_formula,state.calculated))+'</p>':'')+'<button class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'';
+  return '<article class="list-item"><strong>'+esc(t.name)+'</strong><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+edit+'</article>';
+ }).join('');
+ return panel('Risorse','<p class="hint">I massimi includono formule e bonus attivi. I recuperi modificano solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
+}
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
 function equipmentView(c,slots=['main','off','body'],boxed=true){
@@ -456,7 +445,7 @@ function listField(label,index,key,value,type="text") {
 }
 function castingStatistics(c,section,ability){
  const selected=c.spellcasting_section_abilities?.[section]||ability;
- return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_hit'})+'</span></div>';
+ return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
 }
 function slotCounter(level,total,spent){
  const key=level===0?'pact_slot':'slot:'+level;
@@ -464,18 +453,32 @@ function slotCounter(level,total,spent){
 }
 function originPowersView(c,calculated){
  const groups=new Map();
- for(const [index,grant] of (c.origin_spell_grants||[]).entries()){
-  if(!calculated.origin_spells.includes(grant))continue;
+ for(const grant of calculated.origin_spells){
+  const id=grant.id;
   const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
   const mode=grant.payment_mode|| (grant.tracker_id?'tracker':'free'),tracker=calculated.trackers.find(t=>t.id===grant.tracker_id);
   const cost=Math.max(1,Number(grant.tracker_cost)||1),remaining=tracker?Math.floor((tracker.max-tracker.spent)/cost):0;
   const options=calculated.spell_slots.filter(s=>s.level>=Number(spell?.level||0)&&s.total>s.spent).map(s=>[s.level,'Livello '+s.level]);
   if(calculated.pact_slots.level>=Number(spell?.level||0)&&calculated.pact_slots.total>calculated.pact_slots.spent)options.push([0,'Patto']);
-  const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+index+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
-   (mode!=='free'?'<button class="btn" data-act="origin-spend" data-index="'+index+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+'</article>';
+  const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+(grant.automatic?' · Da origine':'')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+esc(id)+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
+   (mode!=='free'?'<button class="btn" data-act="origin-spend" data-grant-id="'+esc(id)+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+
+   '<details><summary>Configura consumo</summary><label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label><label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label><label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(id)+'"></label></details>'+
+   (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(id)+'">Cambia questa scelta</button>':'')+'</article>';
   const key=grant.origin_id;if(!groups.has(key))groups.set(key,{name:grant.origin_name||key,ability:grant.spellcasting_ability||'int',items:[]});groups.get(key).items.push(content);
  }
  return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,castingStatistics(c,'origin:'+key,group.ability)+group.items.join(''))).join('');
+}
+function originChoicesView(calculated){
+ const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
+ if(!choices.length)return '';
+ return panel('Scelte da origini',choices.map(choice=>{
+  const eligible=choice.spell_options?.length?state.spellCatalog||[]:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
+  const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
+  const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
+  return '<article class="native-entry"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
+   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+offered.map(spell=>'<option value="'+esc(spell.id)+'">'+esc(spell.name)+' · '+esc(spell.source)+' · liv. '+spell.level+'</option>').join('')+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
+     '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
+ }).join(''));
 }
 function spellList(c,key,classId=null,classes=[]) {
   const rows=key==="prepared_spells"?availableSpells(c):
@@ -496,8 +499,10 @@ function renderSpellResults(){
   if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
   const query=state.spellQuery.trim().toLocaleLowerCase();
   if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
+  const editionSpells=new Set(spellsForEdition(rows,state.editor?.read().rules_version||'2014'));
   const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
     (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)&&
+    editionSpells.has(spell)&&
     (state.spellClass==='manual'||!state.calculated?.casting_classes.some(member=>member.id===state.spellClass)||spellEligible(spell,state.calculated.casting_classes.find(member=>member.id===state.spellClass)))).slice(0,40);
   return found.length?found.map(({spell,index})=>
     '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
@@ -856,17 +861,48 @@ async function handleField(target) {
     return;
   }
   if(target.dataset.nativeList){
-    await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
+    const key=target.dataset.nativeList,field=target.dataset.key;
+    if(key==='dice_bonuses'&&field==='dice'&&!validBonusDice(target.value))throw Error('Dadi: da 1 a 100 dadi d4, d6, d8, d10, d12, d20 o d100; modificatore opzionale');
+    const changes=nativeRowPatch(creature,key,Number(target.dataset.index),field,target.type==="checkbox"?target.checked:target.value);
+    if(field==='origin_id')changes[key][Number(target.dataset.index)].origin_name=state.calculated.origins.find(o=>o.id===target.value)?.name||'';
+    await patch(changes);
+    if(key==='formula_bonuses'&&field==='expression'){
+      const preview=app.querySelector('[data-formula-preview="'+target.dataset.index+'"]');
+      if(preview)preview.textContent=formulaPreview(target.value,state.calculated);
+    }
     if(target.dataset.key==='kind')await render();
     return;
   }
+  if(target.dataset.originConfig){
+    const id=target.dataset.grantId,key=target.dataset.originConfig;
+    if(!['payment_mode','tracker_id','tracker_cost'].includes(key)||!state.calculated.origin_spells.some(g=>g.id===id))throw Error('Concessione non disponibile');
+    let value=target.value;
+    if(key==='tracker_cost'){value=Number(value);if(!Number.isInteger(value)||value<1||value>999)throw Error('Costo da 1 a 999');}
+    if(key==='payment_mode'&&!['free','slot','tracker'].includes(value))throw Error('Consumo non valido');
+    const configs=structuredClone(creature.origin_spell_configs||{});configs[id]={...configs[id],[key]:value};
+    await patch({origin_spell_configs:configs});await render();return;
+  }
   if(target.dataset.trackerField){
     const key=target.dataset.trackerField,rows=structuredClone(creature.resource_trackers||[]),row=rows.find(t=>t.id===target.dataset.trackerId);
-    if(!row||!['max','max_formula','recharge'].includes(key))throw Error('Tracker non modificabile');
-    let value=target.value;
+    if(!row||!['name','max','max_formula','recharge','origin_id','disabled','recharge_min'].includes(key))throw Error('Tracker non modificabile');
+    let value=target.type==='checkbox'?target.checked:target.value;
+    if(key==='name'&&(!value.trim()||value.length>120))throw Error('Nome tracker non valido');
+    if(key==='recharge_min'){value=Number(value);if(!Number.isInteger(value)||value<1||value>6)throw Error('Soglia da 1 a 6');}
     if(key==='max'){value=Number(value);if(!Number.isInteger(value)||value<0||value>99999)throw Error('Massimo non valido');}
-    if(key==='recharge'&&!['manual','short_rest','long_rest','turn'].includes(value))throw Error('Recupero non valido');
+    if(key==='recharge'&&!['manual','short_rest','long_rest','turn','d6'].includes(value))throw Error('Recupero non valido');
+    if(key==='origin_id')row.origin_name=state.calculated.origins.find(o=>o.id===value)?.name||'';
     row[key]=value;await patch({resource_trackers:rows});await render();return;
+  }
+  if(target.dataset.requirement){
+    if(target.dataset.benefitTracker){
+      const rows=structuredClone(creature.resource_trackers||[]),row=rows.find(t=>t.id===target.dataset.benefitTracker);if(!row)throw Error('Tracker non disponibile');
+      row.requirements=requirementPatch(row,target.dataset.requirement,target.value);await patch({resource_trackers:rows});
+    }else{
+      const key=target.dataset.benefitList,rows=rowsFor(creature,key),row=rows[Number(target.dataset.index)];
+      if(!['formula_bonuses','dice_bonuses'].includes(key)||!row||row.automatic)throw Error('Beneficio non modificabile');
+      row.requirements=requirementPatch(row,target.dataset.requirement,target.value);await patch(collectionPatch(creature,key,rows));
+    }
+    await render();return;
   }
   if(target.dataset.originEnabled){
     const id=target.dataset.originEnabled,rows=structuredClone(creature.proficiency_origins||[]),row=rows.find(o=>o.id===id);
@@ -985,16 +1021,53 @@ async function handleAction(target){
     state.rollHistory.unshift(state.roll);
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='sheet-roll-dialog';
     dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2><div class="dice-result">'+state.roll.total+'</div><p>'+esc(state.roll.detail)+'</p><div class="actions">'+(state.paired?btn('share-roll','Invia in chat'):'')+btn('close-sheet-roll','Chiudi')+'</div>';
+    const bonuses=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]);
+    if(bonuses.length){
+      const choices=document.createElement('div');
+      choices.innerHTML='<p>Scegli i dadi da aggiungere al risultato. I bonus monouso saranno consumati.</p>'+bonuses.map((row,i)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+i+'">'+esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'<button type="button" class="btn">Applica bonus</button>';
+      choices.querySelector('button').addEventListener('click',async()=>{
+        try{
+          const available=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]),selected=[...choices.querySelectorAll('input:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(row=>available.some(a=>a.id===row.id));
+          if(!selected.length)return;
+          const consumed=new Set(),parts=[];let addition=0;
+          for(const row of selected){
+            const match=String(row.dice).replaceAll(' ','').match(/^(\d+)d(\d+)([+-]\d+)?$/i),rolls=Array.from({length:Number(match[1])},()=>randomDie(Number(match[2]))),value=rolls.reduce((sum,n)=>sum+n,0)+Number(match[3]||0);
+            addition+=value;parts.push(row.dice+' ['+rolls.join(', ')+'] = '+value);if(row.consumes_spell)consumed.add(row.consumes_spell);
+          }
+          state.roll={...state.roll,total:state.roll.total+addition,detail:state.roll.detail+' · '+parts.join(' · '),notation:state.roll.notation+'+'+selected.map(r=>r.dice).join('+')};
+          state.rollHistory.unshift({...state.roll});
+          if(consumed.size){
+            const record=state.editor.read(),contexts={...record.active_spell_context};for(const id of consumed)delete contexts[id];
+            await patch({proficiency_origins:(record.proficiency_origins||[]).filter(o=>!consumed.has(String(o.id).slice(6))||o.group!=='spell'),active_spell_context:contexts});
+          }
+          dialog.querySelector('.dice-result').textContent=state.roll.total;dialog.querySelector('p').textContent=state.roll.detail;choices.remove();
+        }catch(error){message(errorMessage(error),true);}
+      });
+      dialog.append(choices);
+    }
     document.body.append(dialog);dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});
     if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
     return;
   }
   if(act==='close-sheet-roll'){document.querySelector('#sheet-roll-dialog')?.remove();return;}
+  if(act==='origin-choice-pick'){
+    const c=state.editor.read(),calculated=await computeLocalData(c),choice=calculated.origin_choices.find(row=>row.id===target.dataset.choiceId);
+    if(!choice)throw Error('Scelta non disponibile');
+    const picker=[...app.querySelectorAll('[data-origin-choice]')].find(el=>el.dataset.originChoice===choice.id);
+    const ability=[...app.querySelectorAll('[data-choice-ability]')].find(el=>el.dataset.choiceAbility===choice.id)?.value||'';
+    const spell=state.spellCatalog?.find(row=>row.id===picker?.value);if(!spell)throw Error('Scegli un incantesimo');
+    await patch(applyOriginSpellChoice(c,choice,spell,{ability}));await render();return;
+  }
+  if(act==='origin-choice-remove'){
+    const c=state.editor.read();
+    const rows=(c.origin_spell_grants||[]).filter(g=>g.id!==target.dataset.grantId);
+    await patch({origin_spell_grants:rows});await render();return;
+  }
   if(act==='origin-spend'){
-    const c=state.editor.read(),index=Number(target.dataset.index),grant=c.origin_spell_grants?.[index],calculated=await computeLocalData(c);
-    if(!grant||!calculated.origin_spells.some(row=>row.origin_id===grant.origin_id&&row.spell_id===grant.spell_id))throw Error('Concessione non disponibile');
+    const c=state.editor.read(),calculated=await computeLocalData(c),grant=calculated.origin_spells.find(row=>row.id===target.dataset.grantId);
+    if(!grant)throw Error('Concessione non disponibile');
     if(grant.payment_mode==='slot'){
-      const picker=app.querySelector('[data-origin-slot="'+index+'"]');if(!picker||picker.value==='')throw Error('Nessuno slot disponibile');
+      const picker=[...app.querySelectorAll('[data-origin-slot]')].find(el=>el.dataset.originSlot===grant.id);if(!picker||picker.value==='')throw Error('Nessuno slot disponibile');
       await patch(slotUsePatch(c,Number(picker.value),1,calculated));
     }else{
       const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1);
@@ -1054,6 +1127,7 @@ async function handleAction(target){
         proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
+        dice_bonuses:{id:'dice_'+crypto.randomUUID(),target:'ability_check',dice:'1d4',origin_id:'',origin_name:'',disabled:false},
         damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
         origin_spell_grants:{id:'grant_'+crypto.randomUUID(),origin_id:state.calculated.origins[0]?.id||'pwa_manual',origin_name:state.calculated.origins[0]?.name||'Personalizzato',spell_id:'',payment_mode:'free',tracker_id:'',tracker_cost:1,disabled:false}};
       rows.push(defaults[key]);
@@ -1168,18 +1242,18 @@ async function handleAction(target){
     const name=text(document.querySelector("#tracker-name")?.value);
     const maximum=Number(document.querySelector("#tracker-max")?.value);
     const recharge=document.querySelector("#tracker-recharge")?.value||"manual";
-    if(!name||name.length>120||!Number.isInteger(maximum)||maximum<1||maximum>99999)
+    if(!name||name.length>120||!Number.isInteger(maximum)||maximum<0||maximum>99999)
       throw new Error("Specifica nome e massimo valido della risorsa.");
     const record=state.editor.read();
     const trackers=structuredClone(record.resource_trackers||[]);
     trackers.push({id:"pwa_tracker_"+crypto.randomUUID(),name,max:maximum,
-      max_formula:"",origin_name:"Personalizzato",recharge});
+      max_formula:text(document.querySelector('#tracker-formula')?.value),origin_id:document.querySelector('#tracker-origin')?.value||'',origin_name:state.calculated.origins.find(o=>o.id===document.querySelector('#tracker-origin')?.value)?.name||'',recharge});
     await patch({resource_trackers:trackers});await render();return;
   }
-  if(["tracker-more","tracker-less","tracker-delete"].includes(act)){
+  if(["tracker-more","tracker-less","tracker-delete","tracker-recharge"].includes(act)){
     const record=state.editor.read(),trackers=structuredClone(record.resource_trackers||[]);
     const calculated=await computeLocalData(record);
-    const row=calculated.trackers.find(t=>t.id===target.dataset.trackerId),index=trackers.findIndex(t=>t.id===row?.id);
+    const row=calculated.trackers.find(t=>t.id===target.dataset.trackerId)||(act==='tracker-delete'?trackers.find(t=>t.id===target.dataset.trackerId):null),index=trackers.findIndex(t=>t.id===row?.id);
     if(!row)throw new Error("Tracker non disponibile.");
     if(act==="tracker-delete"){
       if(index<0||row.automatic)throw Error('Modifica questa risorsa dalla sua origine');
@@ -1187,6 +1261,12 @@ async function handleAction(target){
       const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
       await patch({resource_trackers:trackers,resource_tracker_spent:spent});
     }else{
+      if(act==='tracker-recharge'){
+        if(row.recharge!=='d6')throw Error('Questa risorsa non usa la ricarica d6');
+        const die=randomDie(6),success=die>=Number(row.recharge_min||6),spent={...(record.resource_tracker_spent||{})};
+        if(success){delete spent[row.id];await patch({resource_tracker_spent:spent});}
+        await render();message(row.name+': d6 = '+die+' · '+(success?'Ricaricata':'Non ricaricata'));return;
+      }
       const maximum=Math.max(0,Number(row.max)||0);
       const spent={...(record.resource_tracker_spent||{})};
       const delta=act==="tracker-more"?1:-1;
@@ -1195,9 +1275,9 @@ async function handleAction(target){
     }
     await render();return;
   }
-  if(act==="tracker-short"||act==="tracker-long"){
+  if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
-    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':'short_rest',calculated.trackers));await render();return;
+    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':act==='tracker-turn'?'turn':'short_rest',calculated.trackers));await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
@@ -1373,7 +1453,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){

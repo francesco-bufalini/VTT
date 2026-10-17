@@ -67,7 +67,9 @@ async function spellCatalog(){
   if(!response.ok)throw new Error("Catalogo incantesimi non disponibile offline.");
   const data=await response.json();
   if(data?.version!==1||!Array.isArray(data.spells))throw new Error("Catalogo incantesimi non valido.");
-  packagedSpells=data.spells;
+  let legacy=[];
+  try{const {loadRuleCatalogs}=await import('./sheet_rules.js');legacy=(await loadRuleCatalogs()).classMechanics?.legacy_spells||[];}catch{ /* The current catalog remains available independently of numeric indexes. */ }
+  packagedSpells=[...new Map([...data.spells,...legacy].map(s=>[s.id,s])).values()];
   return packagedSpells;
 }
 export async function catalogEntries(category) {

@@ -3,6 +3,7 @@
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,hasProperty} from "./item_controls.js";
 import {automaticId,numericGrant,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
+import {structuredSpellGrants} from './spell_selection.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -99,6 +100,31 @@ function symbolTarget(value){
     burrow_speed:"speed:burrow",max_hp:"hp",
     passive_perception:"passive_perception",level:"level"
   })[value]||null;
+}
+export function formulaValue(expression,calculated){
+ return parseArithmetic(expression,name=>{
+  const target=symbolTarget(name);
+  if(!target||!Number.isFinite(calculated?.values?.[target]))throw Error('Variabile non disponibile: '+name);
+  return calculated.values[target];
+ });
+}
+export function validBonusDice(value){
+ const match=String(value).toLowerCase().replaceAll(' ','').match(/^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$/);
+ return !!match&&Number(match[1])<=100;
+}
+export function applicableDiceBonuses(record,target,spells=[]){
+ const scope=target==='initiative'||/^(ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
+ if(!scope)return [];
+ const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
+ const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll';
+ const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&enabled(row.origin_id)&&fits(row));
+ for(const origin of arr(record.proficiency_origins)){
+  if(origin?.group!=='spell'||!String(origin.id).startsWith('spell:')||!enabled(origin.id))continue;
+  const id=origin.id.slice(6),spell=spells.find(s=>s.id===id),context=record.active_spell_context?.[id];
+  if(!spell||!validBonusDice(context?.bonus_dice)||!arr(spell.roll_bonus_targets).some(key=>fits({target:key})))continue;
+  rows.push({id:'spell_roll:'+id,origin_id:origin.id,origin_name:spell.name+' · '+(context.caster_name||''),dice:context.bonus_dice,automatic:true,consumes_spell:spell.consume_effect_on_roll?id:''});
+ }
+ return rows;
 }
 function fixedAbilities(row){
   const options=arr(row.ability).length?row.ability:[row.ability];
@@ -288,6 +314,20 @@ function subclassKey(value){
 // Same stable tracker IDs and recovery events as StructuredResourceTrackers.
 export function resourceTrackers(record,catalog,resolve=()=>0){
  const rows=new Map();
+ const features=[];
+ const append=(row,origin,level=0,member=null)=>{
+  if(!row?.name)return;
+  features.push({...row,key:origin+'|'+(row.id||origin+'|'+level+'|'+row.name.toLowerCase()),origin_key:origin,parent_origin:member?'class|'+String(member.source||'').toLowerCase()+'|'+member.name.toLowerCase():''});
+ };
+ for(const member of localClasses(record))for(const row of arr(catalog?.resource_features)){
+  if(!same(row.class_name,member.name)||member.source&&!same(row.class_source,member.source)||int(row.level)<1||int(row.level)>int(member.level))continue;
+  const origin='class|'+String(member.source||'').toLowerCase()+'|'+member.name.toLowerCase();
+  if(row.subclass_name||row.subclass_short_name){
+   if(!same(row.subclass_name,member.subclass)&&!same(row.subclass_short_name,member.subclass)||member.subclass_source&&!same(row.subclass_source,member.subclass_source))continue;
+   append(row,origin+'|subclass|'+String(member.subclass||'').toLowerCase()+'|'+String(member.subclass_source||'').toLowerCase(),int(row.level),member);
+  }else append(row,origin,int(row.level),member);
+ }
+ if(record.kind==='monster')for(const section of ['trait','action','bonus','reaction','legendary','mythic'])for(const feature of arr(record.stat_block?.[section]))append(feature,'monster|'+section);
  const add=row=>{if(row.id&&!rows.has(row.id))rows.set(row.id,row);};
  for(const member of localClasses(record)){
   const level=int(member.level),base=classMechanicsRow(catalog,member.name,member.source);
@@ -297,12 +337,12 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
   for(const column of arr(base.columns)){
    const max=column.levels?.[level-1];
    if(column.kind==='resource'&&typeof max==='number'&&max>0)
-    add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_id:'class|'+base.source.toLowerCase()+'|'+member.name.toLowerCase(),recharge:'manual',automatic:true});
+    add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_feature_key:column.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,recharge:'manual',automatic:true});
   }
   for(const group of arr(catalog?.resource_overrides).filter(r=>same(r.class,member.name)&&same(r.source,base.source))){
    for(const resource of arr(group.resources)){
     if(resource.subclass&&subclassKey(resource.subclass)!==subclassKey(member.subclass||record.subclass))continue;
-    const steps=arr(resource.steps).filter(s=>int(s.level)<=level).sort((a,b)=>int(b.level)-int(a.level));
+    const steps=arr(resource.steps).filter(s=>requirementsAllow(record,{requirements:{scope:'class',class_name:member.name,class_source:base.source,min_level:int(s.level),...s.requirements}})).sort((a,b)=>int(b.requirements?.min_level??b.level)-int(a.requirements?.min_level??a.level));
     const step=steps[0];if(!step)continue;
     const columnName=resource.column||resource.name,column=arr(base.columns).find(c=>c.name===columnName);
     if(column&&(typeof column.levels?.[level-1]!=='number'||column.levels[level-1]<=0))continue;
@@ -310,7 +350,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     if(rows.has(id)){rows.get(id).recharge=step.reset||'manual';continue;}
     try{
      const max=Math.max(int(resource.minimum),parseArithmetic(step.value,resolve));
-     if(max>0)add({id,name:resource.name,max,origin_name:resource.origin_feature||resource.name,origin_id:'class|'+base.source.toLowerCase()+'|'+member.name.toLowerCase(),recharge:step.reset||'manual',automatic:true});
+     if(max>0)add({id,name:resource.name,max,max_formula:String(step.value),origin_name:resource.origin_feature||resource.name,origin_feature_key:resource.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass||'',recharge:step.reset||'manual',automatic:true});
     }catch{ /* An unsupported formula cannot invent a resource maximum. */ }
    }
   }
@@ -322,12 +362,35 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    const m=String(feature?.name||'').match(/\{@recharge(?: ([1-6]))?\}/);
    if(m)add({id:'recharge:'+section+':'+i,name:feature.name.replace(m[0],'').trim(),max:1,recharge:'d6',recharge_min:int(m[1],6),automatic:true});
   });
+  const clean=name=>String(name||'').replace(/\{@recharge(?: [1-6])?\}|\(recharge [1-6](?:-[1-6])?\)/i,'').trim();
+  const supplement=arr(catalog?.monster_resources).find(row=>same(row.source,stat.source??record.source)&&same(row.name,stat.name??record.base_name));
+  for(const resource of arr(supplement?.resources)){
+   if(int(resource.max)<=0||!['d6','turn','short_rest','long_rest'].includes(resource.recharge))continue;
+   if(resource.legendary_pool){if(arr(stat.legendary).length)add({id:'legendary_actions',name:'Azioni leggendarie',max:int(resource.max),recharge:'turn',automatic:true});continue;}
+   if(!['trait','action','bonus','reaction','legendary','mythic'].includes(resource.section))continue;
+   const matches=arr(stat[resource.section]).map((feature,i)=>({feature,i})).filter(({feature})=>same(clean(feature?.name),clean(resource.name)));
+   if(matches.length!==1)continue;
+   const {feature,i}=matches[0];if(rows.has('recharge:'+resource.section+':'+i))continue;
+   add({id:'fightclub:'+resource.section+':'+i,name:clean(feature.name),max:int(resource.max),recharge:resource.recharge,...(resource.recharge==='d6'?{recharge_min:int(resource.recharge_min,6)}:{}),automatic:true});
+  }
+ }
+ for(const row of rows.values()){
+  const ref=String(row.origin_feature_key||'').replace(/^feature:/,''),wanted=String(row.origin_name||row.name).trim().toLowerCase();
+  const matches=ref?features.filter(f=>f.key===ref):features.filter(f=>{
+   if(row.origin_class&&(!same(f.class_name,row.origin_class)||!same(f.class_source,row.origin_class_source)||f.origin_key.includes('|subclass|')!==!!row.origin_subclass||row.origin_subclass&&!f.origin_key.includes('|subclass|'+row.origin_subclass.toLowerCase()+'|')))return false;
+   const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
+  });
+  const feature=matches.length===1?matches[0]:null;
+  row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id;
+  row.origin_name=feature?'Tratto · '+feature.name:row.origin_name||row.name;
+  if(feature?.parent_origin)row.parent_origin=feature.parent_origin;
  }
  for(const row of arr(record.resource_trackers)){
   if(!row||!requirementsAllow(record,row))continue;
   let max=Math.max(0,int(row.max));
-  if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch{}
-  add({...row,max,automatic:false});
+  let formula_error='';
+  if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
+  if(row.id&&row.name)add({...row,max,formula_error,automatic:false});
  }
  return [...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false);
 }
@@ -424,7 +487,7 @@ export function calculateSheet(record={},catalogs={}){
   }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
-    .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r);
+    .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const automatic=[...(index?indexRows(record,index,warnings):[]),
     ...itemRows(record,warnings),...structuredFeatureGrants(record)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
@@ -439,7 +502,7 @@ export function calculateSheet(record={},catalogs={}){
   if(!catalogs.proficiencyGrants)
     warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
   const inventory=arr(record.inventory);
-  const equipped=slot=>inventory.find(it=>int(it?.quantity,0)>0&&arr(it?.equipped_slots).includes(slot));
+  const equipped=slot=>inventory.find(it=>int(it?.quantity,1)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
   const armor=currentArmor&&itemKind(currentArmor)==="armor"?currentArmor:null;
   const shield=[equipped("main"),equipped("off")].filter(it=>it&&itemKind(it)==="shield");
@@ -546,7 +609,7 @@ export function calculateSheet(record={},catalogs={}){
            (!source||!x.source||same(x.source,source))))return false;
       }
     }
-    if(sid.startsWith("feature:"))return true;
+    if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it));
     const fragments=sid.split("|"),group=fragments[0],
@@ -566,12 +629,33 @@ export function calculateSheet(record={},catalogs={}){
     warnings.add("Bonus di origine non verificabile: "+sid);
     return false;
   }
+  const dependencies=expression=>[...String(expression||'').toLowerCase().matchAll(/[a-z_][a-z0-9_]*/g)].map(m=>symbolTarget(m[0])).filter(Boolean);
+  const nativeDependencies=target=>{
+    if(target.startsWith('ability_mod:'))return ['ability:'+target.slice(12)];
+    if(target==='initiative')return ['ability_mod:dex'];
+    if(target.startsWith('save:'))return ['ability_mod:'+target.slice(5),'proficiency'];
+    if(target.startsWith('skill:'))return ['ability_mod:'+(SKILLS.find(([id])=>id===target.slice(6))?.[2]||'wis'),'proficiency'];
+    if(target==='passive_perception')return ['skill:perception'];
+    if(target==='ac'&&inventory.some(it=>arr(it.equipped_slots).includes('body')&&['LA','MA'].includes(String(it.type).split('|')[0])))return ['ability_mod:dex'];
+    if(target.startsWith('speed:')&&record.rules_version==='2024'&&int(record.movement_speeds?.[target.slice(6)]??record.species_speed?.[target.slice(6)])>0)return ['speed'];
+    return [];
+  };
+  const reaches=(current,wanted,visited=new Set())=>{
+    if(current===wanted)return true;
+    if(visited.has(current))return false;
+    visited.add(current);
+    const refs=[...nativeDependencies(current),...grants.filter(r=>r.target===current&&!r.disabled&&sourceEnabled(r)).flatMap(r=>dependencies(r.expression))];
+    return refs.some(ref=>reaches(ref,wanted,visited));
+  };
+  const cycleCache=new Map();
   const explanations={},components={};
   function sumGrants(target,stack){
     let total=0;
     for(const row of grants){
       if(row?.target!==target||row.disabled||!requirementsAllow(record,row)||!sourceEnabled(row))continue;
       try{
+        if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
+        if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
         const value=parseArithmetic(row.expression??"0",name=>resolveSymbol(name,resolve,stack));
         total+=value;
         if(!components[target])components[target]=new Map();
@@ -629,13 +713,19 @@ export function calculateSheet(record={},catalogs={}){
   for(const v of ["climb","swim","fly","burrow"])speeds[v]=safe("speed:"+v);
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
-  for(const target of ['ac','initiative','hp','second_max','passive_perception'])safe(target);
+  for(const target of ['level','ac','initiative','hp','second_max','passive_perception'])safe(target);
   const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
-    memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_hit')??0));
+    memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
-  const trackers=resourceTrackers(record,classesCatalog,name=>resolveSymbol(name,resolve,new Set())).map(row=>{
+  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],catalogs.features||[]);
+  for(const warning of additional.warnings)warnings.add(warning);
+  const trackerMap=new Map();
+  for(const row of [...resourceTrackers(record,classesCatalog,name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
+    if(!trackerMap.has(row.id)&&sourceEnabled(row))trackerMap.set(row.id,row);
+  const trackers=[...trackerMap.values()].map(row=>{
+    if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
@@ -647,11 +737,23 @@ export function calculateSheet(record={},catalogs={}){
   for(const [group,field] of [['race','species'],['subrace','subrace'],['background','background']])if(record[field])addOrigin(group+'|'+String(record[field+'_source']||'').toLowerCase()+'|'+String(record[field]).toLowerCase(),record[field]);
   for(const feat of arr(record.feats_catalog))if(feat?.name)addOrigin('feat|'+String(feat.source||'').toLowerCase()+'|'+feat.name.toLowerCase(),feat.name);
   for(const origin of arr(record.proficiency_origins))addOrigin(origin.id,origin.name||origin.label||origin.id);
+  for(const tracker of trackers)addOrigin(tracker.origin_id,tracker.origin_name||tracker.name);
   const originSpellMap=new Map();
-  for(const row of arr(record.origin_spell_grants))if(row?.origin_id&&row.spell_id&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
-    const key=row.origin_id+'|'+row.spell_id;if(!originSpellMap.has(key))originSpellMap.set(key,row);
+  for(const row of [...arr(record.origin_spell_grants),...additional.grants])if(row?.origin_id&&row.spell_id&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
+    const key=row.origin_id+'|'+row.spell_id;
+    if(!originSpellMap.has(key)){
+      const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
+      for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost'])if(Object.hasOwn(config,field))resolved[field]=config[field];
+      if(!['tracker','slot','free'].includes(resolved.payment_mode))resolved.payment_mode=resolved.tracker_id?'tracker':'free';
+      originSpellMap.set(key,resolved);
+    }
   }
   const originSpells=[...originSpellMap.values()];
+  const originChoices=additional.choices.map(choice=>{
+    const selected=arr(record.origin_spell_grants).filter(g=>g?.source_choice_id===choice.id&&!g.disabled);
+    return {...choice,selected,remaining:Math.max(0,choice.count-selected.length)};
+  });
+  for(const row of [...originSpells,...originChoices])addOrigin(row.origin_id,row.origin_name||row.origin_id);
   for(const attack of attacks){
     memo.set('attack_hit:'+attack.id,attack.hit);
     memo.set('attack_range:'+attack.id,attack.range_feet);
@@ -663,7 +765,7 @@ export function calculateSheet(record={},catalogs={}){
   }
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
-    casting_classes:spellClasses,trackers,attacks,origins:[...originMap.values()],origin_spells:originSpells,
+    casting_classes:spellClasses,trackers,attacks,origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
     automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
@@ -679,8 +781,10 @@ export function loadRuleCatalogs(){
   if(!catalogPromise)catalogPromise=Promise.all([
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
-    fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();})
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants])=>({abilityGrants,classMechanics,proficiencyGrants}))
+    fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
+    fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[])
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells])=>({abilityGrants,classMechanics,proficiencyGrants,
+    spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
 }

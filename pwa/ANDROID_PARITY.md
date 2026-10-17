@@ -38,6 +38,8 @@ alla creatura e la possibilità di condivisione esplicita nella chat collegata.
 | `CreatureSheetController.change_hit_points()` | `hitPointPatch()`: temporanei → seconda forma → PF normali; cure entro il massimo effettivo |
 | `ClassSpellSelection` | `castingClasses()` e `spell_selection.js`: capacità, trucchetti, livello massimo, proprietà `casting_classes`, libro/preparati |
 | `StructuredResourceTrackers` | `resourceTrackers()` e `recoveryPatch()`: stessi ID, formule, soglie, sottoclassi, recuperi espliciti |
+| `StructuredOriginSpells5e` | `structuredSpellGrants()`: concessioni, scelte esplicite, contatori giornalieri, origini e soglie; `origin_spell_configs` conserva le personalizzazioni |
+| `CreatureDiceBonuses` | `applicableDiceBonuses()`: dadi separati dai valori permanenti, scelta dopo il d20 e consumo degli effetti monouso |
 | `CreatureAttackData` / `CreatureItemRules` | `attackCalculations()`, `item_controls.js`: competenza, Finesse, lancio, seconda mano, Versatile, taglia e bonus per attacco |
 | `CreatureRaceRules` | velocità risolta da identità/fonte della specie e sottorazza, con `movement_speeds` espliciti |
 | Formule nella GUI | `formulaReadout()` e `refreshCalculatedValues()` in `sheet_rules_view.js` |
@@ -49,6 +51,14 @@ manuali e i totali legacy non vengono sostituiti dalla progressione automatica;
 il pulsante dedicato consente di ripristinarla. Aprire la scheda non recupera
 slot o risorse. Il recupero dei tracker e quello degli slot sono azioni distinte,
 come nelle rispettive interfacce native.
+
+Gli editor di bonus e tracker mantengono origine, requisiti sul livello del
+personaggio o di una classe, soglia minima e massima e stato disattivato. Un
+tracker non attivo resta modificabile e conserva gli utilizzi salvati. Le
+formule errate sono segnalate; per il massimo di un tracker si mantiene il
+valore base, come nel nativo. Le formule circolari sono escluse prima del
+calcolo, conservando gli altri bonus additivi. I recuperi sono espliciti:
+riposo breve, riposo lungo, inizio turno e tiro d6 con soglia per le ricariche.
 
 ## Dati e rigenerazione
 
@@ -62,7 +72,8 @@ npm run sync-catalogs
 `vtt/data/` e rigenera esclusivamente i due cataloghi della PWA:
 
 - `catalog/class_mechanics.json`: tabelle, dadi vita, supplementi delle risorse,
-  identità e movimento di specie/sottorazze;
+  contatori dei mostri, identità dei privilegi, movimento di specie/sottorazze,
+  concessioni strutturate e definizioni degli incantesimi PHB 2014;
 - `catalog/classes.json`: classi, sottoclassi e testi dei loro privilegi.
 
 Non modificare a mano questi output. Gli URL erano già serviti da `PwaHost` e
@@ -74,12 +85,11 @@ IndexedDB né sostituisce schede dell'utente.
 Questo è un allineamento dei meccanismi base, non una dichiarazione di parità
 totale con ogni privilegio nativo. Rimangono da migrare integralmente:
 
-- generazione e scelte automatiche di tutti gli incantesimi concessi dalle
-  origini; l'editor e il consumo delle concessioni manuali/importate funzionano;
+- concessioni da privilegi opzionali non ancora proiettati nella PWA e filtri
+  di scelta complessi non riconosciuti; questi restano visibili come scelte
+  pendenti, senza concedere automaticamente incantesimi;
 - effetti di privilegi che non sono rappresentati da dati numerici strutturati,
   scelte di beneficio specifiche e infusioni avanzate;
-- supplementi Fight Club dei contatori dei mostri oltre ai campi numerici e ai
-  tag formali di ricarica;
 - scelta delle miniature, trasferimento a destinatari di oggetti/documenti e
   finestre di lancio avanzate che richiedono ancora supporto nativo.
 
@@ -91,14 +101,21 @@ attribuisce silenziosamente benefici che non può calcolare.
 ```text
 npm test
 npm run test:browser
+npm run test:native-origins
+npm run test:native-mechanics
 ```
 
 Il secondo comando usa Chrome installato su Windows (percorso sovrascrivibile
 con `CHROME_PATH`), un profilo temporaneo e un archivio sintetico. Prova tutte
 le sezioni a 360, 390, 768 e 1440 pixel, danni, selezione libro/preparati,
-consumo slot e riapertura offline. Le schermate sono in `.test-artifacts/`,
+bonus con dadi, massimi con formula, requisiti dei tracker, recuperi, scelte
+delle origini, consumo di risorse/slot e riapertura offline. Le schermate sono in `.test-artifacts/`,
 esclusa da Git. Non si collega al profilo Chrome dell'utente.
 
 Per provare gli asset offerti dal Godot aperto, impostare
 `VTT_PWA_TEST_ORIGIN=http://127.0.0.1:8765`. Anche in questo caso il profilo e
 l'archivio sono temporanei; nessun comando di partita viene inviato.
+
+I due confronti nativi avviano Godot 4.7.2 su dati sintetici: 16 casi per le
+concessioni e 215 casi per le risorse e le formule. Il percorso dell'eseguibile
+si può impostare con `GODOT`. Non aprono né riscrivono gli archivi dell'utente.
