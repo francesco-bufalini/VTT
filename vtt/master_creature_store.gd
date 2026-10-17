@@ -110,7 +110,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_miniature_id": _default_miniature_id(stat_block),
 		"size_name": "Medium",
 		"footprint": 1.0,
-		"reach_feet": CreatureRules.monster_base_reach_feet(stat_block),
+		"reach_feet": CreatureRules.monster_base_reach_feet(prepared_stat),
 		"reach_is_custom": false,
 		"visual_front_quarter_turns": 0,
 		"party_id": "",
