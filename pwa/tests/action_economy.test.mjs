@@ -198,3 +198,20 @@ test('dashboard groups all five action costs in bordered cards and keeps live re
  assert.equal(entries.find(x=>x.name==='Raggio di gelo').spell_id,'test_spell');
  assert.equal(entries.find(x=>x.name==='Manovra speciale').tracker_id,'dice');
 });
+
+test('action layout exposes section counts, compact type icons and usable resource controls',()=>{
+ const c={rules_version:'2014',prepared_spells:['test_spell'],
+  action_grants:[{name:'Manovra speciale',action_type:'bonus',tracker_id:'dice'}]};
+ const calculated={trackers:[{id:'dice',name:'Dadi superiorità',max:4,spent:2}],skills:{arcana:5,stealth:2}};
+ const spells=[{id:'test_spell',name:'Raggio di gelo',level:1,time:'action'}];
+ const html=actionEconomyView(c,calculated,spells);
+ assert.equal((html.match(/class="action-economy-count"/g)||[]).length,5);
+ assert(html.includes('class="action-economy-type-icon"'));
+ assert(html.includes('data-origin="personal"'));
+ assert(html.includes('data-origin="general"'));
+ assert(html.includes('aria-label="'));
+ assert(html.includes('data-act="tracker-more" data-tracker-id="dice"'));
+ assert(html.includes('data-act="tracker-less" data-tracker-id="dice"'));
+ assert(html.includes('data-act="action-cast-spell" data-spell-id="test_spell"'));
+ assert(html.includes('Slot incantesimo'));
+});
