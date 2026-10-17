@@ -182,6 +182,7 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
      items.map(item=>'<details class="native-entry"><summary><strong>'+esc(item.name)+'</strong>'+
        (item.cost?' · costo '+esc(item.cost):'')+'</summary><p>'+esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
        (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
+       (item.name==='Nascondersi'||item.name==='Movimento furtivo'?'<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:stealth" data-label="Furtività">Tira Furtività</button>':'')+
        '</details>').join('')+'</div>').join('')||
     '<p class="hint">Nessuna azione disponibile.</p>')+'</section>';
  }).join('');
