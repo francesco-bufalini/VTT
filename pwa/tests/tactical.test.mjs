@@ -60,3 +60,38 @@ test("native Godot receives exact spell/attack/area targeting payloads",async()=
   assert.equal(calls[3].action,"target_attack");
   assert.equal(calls[3].payload.target_id,"enemy");
 });
+test('desktop rejection or transport failure never consumes a local casting resource',async()=>{
+ for(const send of [async()=>({ok:false,error:'Rejected'}),async()=>{throw Error('Disconnected');}]){
+  let charged=0;
+  const viewer=new TacticalViewer({send,ownerId:async()=> 'owner',notify:()=>{},onCastAccepted:async()=>{charged++;}});
+  viewer.root={querySelector:()=>null,querySelectorAll:()=>[]};viewer.tokenId='token';viewer.refresh=async()=>{};
+  await assert.rejects(viewer.beginSpell({spell:{id:'test'},slotLevel:1}));
+  assert.equal(charged,0);
+ }
+});
+
+test("a targeted spell selects the exact token ID and confirms/cancels via native protocol",async()=>{
+ const actions=[];
+ const viewer=new TacticalViewer({
+  send:async(name,payload)=>{
+   actions.push({name,payload});
+   if(name==="target_spell")return {ok:true,targeting:{active:true,phase:"multi_target_tokens",selected_ids:["enemy"]}};
+   return {ok:true,targeting:{active:false,outcome:name==="finish_spell"?"completed":"cancelled"}};
+  },ownerId:async()=> "local-owner",notify:()=>{}
+ });
+ viewer.root={querySelector:()=>null,querySelectorAll:()=>[]};
+ viewer.tokenId="hero";
+ viewer.snapshot=snapshot();
+ viewer.targeting={active:true,phase:"multi_target_tokens",selected_ids:[]};
+ viewer.refresh=async()=>{};
+ viewer.draw=()=>{};
+ await viewer.tap([750,600]);
+ assert.deepEqual(actions[0],{name:"target_spell",payload:{token_id:"hero",
+   owner_id:"local-owner",target_id:"enemy",snapshot_id:"snapshot123",pixel:[750,600]}});
+ await viewer.control("finish");
+ assert.equal(actions[1].name,"finish_spell");
+ assert.deepEqual(actions[1].payload,{token_id:"hero",owner_id:"local-owner"});
+ viewer.targeting={active:true,phase:"target_token"};
+ await viewer.control("cancel");
+ assert.equal(actions[2].name,"cancel_spell");
+});

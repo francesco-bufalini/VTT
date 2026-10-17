@@ -30,6 +30,7 @@ const LEGACY_CONDITIONS := [
 	{"id": "concentrating", "name": "Concentration", "icon": "🧠", "official": false},
 	{"id": "surprised", "name": "Surprised", "icon": "❗", "official": false},
 	{"id": "hidden", "name": "Hidden", "icon": "🥷", "official": false},
+	{"id": "helped", "name": "Aiutato", "icon": "🤝", "official": false, "description": "Solo marcatore tattico: nessun effetto automatico."},
 	{"id": "dead", "name": "Dead", "icon": "💀", "official": false},
 
 ]
@@ -292,6 +293,13 @@ static func condition_definitions(edition: String = "2014") -> Array[Dictionary]
 			):
 				versions.append(effect)
 		if versions.is_empty():
+			# Local VTT tactical markers must appear even without a 5etools rule.
+			if String(row.id) == "helped":
+				row["category"] = "conditions"
+				row["edition"] = rules_edition
+				row["entries"] = ["Marcatore tattico senza effetti automatici."]
+				result.append(row)
+				seen[String(row.id)] = true
 			continue
 		var matched := false
 		for version: Dictionary in versions:

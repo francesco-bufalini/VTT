@@ -61,6 +61,8 @@ func create_character() -> Dictionary:
 		"party_id": "",
 		"classes": [],
 		"resource_tracker_spent": {},
+		"resource_recovery_ready": {},
+		"resource_recovery_used": {},
 		"resource_trackers": [],
 		"origin_spell_grants": [],
 		"origin_spell_configs": {},
@@ -228,6 +230,9 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	# Persistent usage counters survive reloads and level changes.
 	if not defaults.get("resource_tracker_spent", {}) is Dictionary:
 		defaults["resource_tracker_spent"] = {}
+	for field: String in ["resource_recovery_ready", "resource_recovery_used"]:
+		if not defaults.get(field, {}) is Dictionary:
+			defaults[field] = {}
 
 	var abilities_value: Variant = value.get("abilities", {})
 	if abilities_value is Dictionary:

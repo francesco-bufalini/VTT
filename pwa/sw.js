@@ -1,9 +1,9 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v17";
+const CACHE = "vtt-mobile-shell-v32";
 const CATALOGS = ["/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json"];
-const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
-  "/catalog/classes.json", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/proficiency_grants.json", "/catalog/player.json", "/catalog/spells.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const SHELL = ["/", "/index.html", "/main.js", "/ui.js", "/action_economy.js", "/feature_mechanics.js", "/native_sheet.js", "/item_controls.js", "/documents.js", "/spell_selection.js", "/sheet_rules.js", "/structured_effects.js", "/sheet_rules_view.js", "/demo.js", "/tactical_view.js", "/catalog_data.js", "/styles.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
+  "/catalog/action_feature_overrides.json", "/catalog/combat_action_supplements_5etools.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/classes.json", "/catalog/ability_grants.json", "/catalog/class_mechanics.json", "/catalog/proficiency_grants.json", "/catalog/player.json", "/catalog/spells.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));

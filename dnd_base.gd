@@ -1601,6 +1601,15 @@ func _process(_delta: float) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
+func _is_pointer_over_area_sidebar(screen_position: Vector2) -> bool:
+	var overlay: Node = get_node_or_null("UI/SpellTargetOverlay2D")
+	return (
+		overlay != null
+		and overlay.has_method("is_pointer_over_area_sidebar")
+		and bool(overlay.call("is_pointer_over_area_sidebar", screen_position))
+	)
+
+
 func _input(event: InputEvent) -> void:
 	# _input runs BEFORE Godot dispatches events to focused Controls.
 	# Do not move tokens, undo actions or operate shortcuts while a GUI
@@ -1630,7 +1639,22 @@ func _input(event: InputEvent) -> void:
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
+		and not _is_pointer_over_area_sidebar(event.position)
+		and bool(measurement_tool.call("is_movable_aoe_dragging"))
+	):
+		# The sidebar arms a move on button release. The next click on
+		# the map must not simultaneously select a token or start a ruler.
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
 		and not _ui_owns_mouse
+		and not _is_pointer_over_area_sidebar(event.position)
+		# Repositioning takes priority over the usual click-to-dismiss AoE.
+		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
 		and spell_system != null
 		and is_instance_valid(spell_system)
 		and spell_system.has_method(
@@ -2303,6 +2327,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if bool(measurement_tool.call("is_movable_aoe_dragging")):
+		if (
+			event is InputEventMouseButton
+			and event.button_index == MOUSE_BUTTON_LEFT
+			and event.pressed
+		):
+			get_viewport().set_input_as_handled()
+			return
 		if event is InputEventMouseMotion:
 			measurement_tool.call(
 				"update_movable_aoe_drag",
@@ -3342,24 +3373,57 @@ func _on_token_effect_dialog_visibility_changed(dialog: ConfirmationDialog) -> v
 
 
 func _on_token_condition_toggled(enabled: bool, target: Node3D, condition_id: String) -> void:
+	if not is_instance_valid(target) or target.is_queued_for_deletion():
+		return
+	if target.has_method("has_condition") and bool(target.call("has_condition", condition_id)) == enabled:
+		return
+	var before: Dictionary = begin_undo_transaction()
 	_set_token_status(target, condition_id, enabled)
+	commit_undo_transaction(before)
 
 
 func _on_token_active_spell_removed(target: Node3D, spell_id: String, button: Button) -> void:
+	if not is_instance_valid(target) or target.is_queued_for_deletion():
+		return
+	var before: Dictionary = begin_undo_transaction()
 	_set_token_active_spell(target, spell_id, false)
+	commit_undo_transaction(before)
 	if is_instance_valid(button):
 		button.queue_free()
 
 
+func _on_token_active_spell_added(target: Node3D, spell_id: String) -> void:
+	if not is_instance_valid(target) or target.is_queued_for_deletion():
+		return
+	if target.has_method("get_active_spell_ids") and spell_id in target.call("get_active_spell_ids"):
+		return
+	var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if spell.is_empty() or not ActiveSpells.has_duration(spell):
+		return
+	var before: Dictionary = begin_undo_transaction()
+	_set_token_active_spell(target, spell_id, true)
+	commit_undo_transaction(before)
+
+
 func _open_token_conditions_dialog(target: Node3D) -> void:
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "Condizioni · " + String(target.name)
+	dialog.title = "Condizioni ed effetti · " + _token_notice_name(target)
 	dialog.ok_button_text = "Chiudi"
-	dialog.cancel_button_text = "Annulla"
+	dialog.get_cancel_button().hide()
 	$UI.add_child(dialog)
+	var content := VBoxContainer.new()
+	dialog.add_child(content)
+	var search := LineEdit.new()
+	search.name = "ConditionSearch"
+	search.placeholder_text = "Cerca condizione, effetto o malattia…"
+	content.add_child(search)
+	var hint := Label.new()
+	hint.text = "Le modifiche sono immediate e annullabili con Annulla ultima azione."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(hint)
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(400, 440)
-	dialog.add_child(scroll)
+	content.add_child(scroll)
 	var rows := VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(rows)
@@ -3382,17 +3446,26 @@ func _open_token_conditions_dialog(target: Node3D) -> void:
 		# the final dictionary entry when the user toggles a different row.
 		check.toggled.connect(_on_token_condition_toggled.bind(target, condition_id))
 		rows.add_child(check)
+	search.text_changed.connect(func(query: String) -> void:
+		var normalized: String = query.strip_edges().to_lower()
+		for check: Node in rows.get_children():
+			(check as Control).visible = normalized.is_empty() or normalized in (check as CheckButton).text.to_lower()
+	)
 	_popup_token_effect_dialog(dialog, Vector2i(480, 560))
 
 
 func _open_token_active_spells_dialog(target: Node3D) -> void:
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "Incantesimi attivi · " + String(target.name)
+	dialog.title = "Incantesimi attivi · " + _token_notice_name(target)
 	dialog.ok_button_text = "Applica"
 	dialog.cancel_button_text = "Chiudi"
 	$UI.add_child(dialog)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(420, 320)
+	dialog.add_child(scroll)
 	var content := VBoxContainer.new()
-	dialog.add_child(content)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(content)
 	var existing_title := Label.new()
 	existing_title.text = "Incantesimi attualmente attivi (× per rimuovere)"
 	content.add_child(existing_title)
@@ -3405,9 +3478,11 @@ func _open_token_active_spells_dialog(target: Node3D) -> void:
 		remove.pressed.connect(_on_token_active_spell_removed.bind(target, spell_id, remove))
 		content.add_child(remove)
 	var search := LineEdit.new()
+	search.name = "ActiveSpellSearch"
 	search.placeholder_text = "Cerca incantesimi con durata non istantanea…"
 	content.add_child(search)
 	var picker := OptionButton.new()
+	picker.name = "ActiveSpellPicker"
 	picker.custom_minimum_size.x = 420
 	picker.fit_to_longest_item = false
 	content.add_child(picker)
@@ -3429,7 +3504,7 @@ func _open_token_active_spells_dialog(target: Node3D) -> void:
 			count += 1
 			if count > 120:
 				break
-			picker.add_item(spell_name)
+			picker.add_item("%s · %s" % [spell_name, String(definition.get("source", ""))])
 			picker.set_item_metadata(picker.item_count - 1, id)
 		if picker.item_count > 0:
 			picker.select(0)
@@ -3437,8 +3512,8 @@ func _open_token_active_spells_dialog(target: Node3D) -> void:
 	fill.call("")
 	search.text_changed.connect(func(query: String) -> void: fill.call(query))
 	dialog.confirmed.connect(func() -> void:
-		if picker.selected >= 0:
-			_set_token_active_spell(target, String(picker.get_selected_metadata()), true)
+		if picker.selected >= 0 and is_instance_valid(target) and not target.is_queued_for_deletion():
+			_on_token_active_spell_added(target, String(picker.get_selected_metadata()))
 	)
 	_popup_token_effect_dialog(dialog, Vector2i(490, 440))
 
@@ -3488,7 +3563,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		if _selected_tokens.size() == 1:
 			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
 			context_token_menu.add_item("Muovi insieme a token…", CONTEXT_MOVE_WITH_TOKEN)
-			if mount_controller != null and mount_controller.is_mounted(_selected_tokens[0]):
+			if mount_controller != null and (mount_controller.is_mounted(_selected_tokens[0]) or mount_controller.is_in_token_group(_selected_tokens[0])):
 				context_token_menu.add_item("Interrompi movimento insieme", CONTEXT_STOP_MOVING_TOGETHER)
 			if _context_reposition_valid:
 				context_token_menu.add_item("Riposiziona creatura qui", CONTEXT_REPOSITION_SELECTED)
@@ -3713,10 +3788,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 	if id == CONTEXT_STOP_MOVING_TOGETHER:
 		if mount_controller != null and _selected_tokens.size() == 1:
 			var mounted_token: CharacterBody3D = _selected_tokens[0]
-			if mount_controller.is_mounted(mounted_token):
-				push_undo_state()
-				mount_controller.dismount(mounted_token)
-				call_deferred("_sync_explicit_token_change", mounted_token)
+			var before: Dictionary = begin_undo_transaction()
+			var detached: Array[CharacterBody3D] = mount_controller.stop_moving_together(mounted_token)
+			if not detached.is_empty():
+				commit_undo_transaction(before)
+				for member: CharacterBody3D in detached:
+					call_deferred("_sync_explicit_token_change", member)
 		_close_context_menu_to_game()
 		return
 
@@ -5423,20 +5500,31 @@ func _move_selected(
 				mount_controller.dismount(moving_token)
 				dismounted = true
 	var origins: Array[Vector3] = []
-	for token: CharacterBody3D in _selected_tokens:
+	var motion_tokens: Array[CharacterBody3D] = (
+		mount_controller.get_motion_tokens(_selected_tokens)
+		if mount_controller != null else _selected_tokens.duplicate()
+	)
+	for token: CharacterBody3D in motion_tokens:
 		origins.append(token.global_position)
 
 	for token: CharacterBody3D in pivots:
 		var previous_transform: Transform3D = token.global_transform
+		var previous_support: Node3D = token.grid_support
+		var previous_velocity: Vector3 = token.velocity
 		if token.has_method("nudge_grid"):
 			token.call("nudge_grid", direction)
 		if mount_controller != null:
-			mount_controller.apply_explicit_token_motion(token, previous_transform)
+			if mount_controller.can_apply_token_motion(token, previous_transform):
+				mount_controller.apply_explicit_token_motion(token, previous_transform)
+			else:
+				token.global_transform = previous_transform
+				token.grid_support = previous_support
+				token.velocity = previous_velocity
 
 	if item_controller != null:
-		item_controller.flush_motion(_selected_tokens)
+		item_controller.flush_motion(motion_tokens)
 
-	var moved: bool = _selected_tokens_moved_from(origins)
+	var moved: bool = _tokens_moved_from(motion_tokens, origins)
 	if moved and apply_gravity_after:
 		for token: CharacterBody3D in pivots:
 			var gravity_target: CharacterBody3D = (
@@ -5452,7 +5540,7 @@ func _move_selected(
 		commit_undo_transaction(before)
 	if moved:
 		check_opportunity_attacks_after_movement(
-			_selected_tokens.duplicate(),
+			motion_tokens,
 			origins
 		)
 
@@ -5476,34 +5564,45 @@ func _move_selected_vertical(steps: int) -> void:
 				mount_controller.dismount(moving_token)
 				dismounted = true
 	var origins: Array[Vector3] = []
-	for token: CharacterBody3D in _selected_tokens:
+	var motion_tokens: Array[CharacterBody3D] = (
+		mount_controller.get_motion_tokens(_selected_tokens)
+		if mount_controller != null else _selected_tokens.duplicate()
+	)
+	for token: CharacterBody3D in motion_tokens:
 		origins.append(token.global_position)
 
 	for token: CharacterBody3D in pivots:
 		var previous_transform: Transform3D = token.global_transform
+		var previous_support: Node3D = token.grid_support
+		var previous_velocity: Vector3 = token.velocity
 		if token.has_method("nudge_vertical"):
 			token.call("nudge_vertical", steps)
 		if mount_controller != null:
-			mount_controller.apply_explicit_token_motion(token, previous_transform)
+			if mount_controller.can_apply_token_motion(token, previous_transform):
+				mount_controller.apply_explicit_token_motion(token, previous_transform)
+			else:
+				token.global_transform = previous_transform
+				token.grid_support = previous_support
+				token.velocity = previous_velocity
 
 	if item_controller != null:
-		item_controller.flush_motion(_selected_tokens)
+		item_controller.flush_motion(motion_tokens)
 
-	var moved: bool = _selected_tokens_moved_from(origins)
+	var moved: bool = _tokens_moved_from(motion_tokens, origins)
 	if moved or dismounted:
 		commit_undo_transaction(before)
 	if moved:
 		check_opportunity_attacks_after_movement(
-			_selected_tokens.duplicate(),
+			motion_tokens,
 			origins
 		)
 
 
-func _selected_tokens_moved_from(origins: Array[Vector3]) -> bool:
-	if origins.size() != _selected_tokens.size():
+func _tokens_moved_from(tokens: Array[CharacterBody3D], origins: Array[Vector3]) -> bool:
+	if origins.size() != tokens.size():
 		return true
-	for index: int in range(_selected_tokens.size()):
-		var token: CharacterBody3D = _selected_tokens[index]
+	for index: int in range(tokens.size()):
+		var token: CharacterBody3D = tokens[index]
 		if (
 			token != null
 			and is_instance_valid(token)
