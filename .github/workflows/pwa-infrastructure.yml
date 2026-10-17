@@ -149,6 +149,8 @@ jobs:
           from shutil import copy2, copytree
           root = Path("pwa-prototype")
           (root / "catalog").mkdir(parents=True, exist_ok=True)
+          # All creature-action SVG sprite sheets must survive offline packaging.
+          copytree(Path("pwa/icons"), root / "icons", dirs_exist_ok=True)
           for asset in Path("pwa").iterdir():
               if asset.is_file() and asset.name != "package.json":
                   copy2(asset, root / asset.name)
@@ -207,6 +209,8 @@ jobs:
           spells = json.loads((root / "catalog" / "spells.json").read_text())
           assert spells["version"] == 1 and len(spells["spells"]) > 50
           assert (root / "demo.js").exists()
+          for icon in ["action_controls.svg", "gold_generated/gold_0.svg", "gold_generated/gold_1.svg", "gold_generated/gold_2.svg", "gold_generated/gold_3.svg"]:
+              assert (root / "icons" / icon).exists(), icon
           print("PASS: complete standalone offline prototype with built-in catalogs")
           PY
       - name: Publish downloadable mobile prototype

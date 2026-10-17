@@ -22,11 +22,19 @@ test("new browser character uses native Android core defaults without shared ref
  assert.deepEqual(c.proficiency_choices,[]);
  assert.deepEqual(c.attack_overrides,{});
  assert.equal(c.linked_token_sync_id,"");
+ assert.deepEqual(c.resource_recovery_ready,{});
+ assert.deepEqual(c.resource_recovery_used,{});
+ assert.deepEqual(c,initialCreature("character",c.name,c.id,c.owner_id),
+   "Archive and domain factory must keep the same native-compatible defaults");
  const other=initialCreature("character","Altro","local_second","owner_second");
  other.spell_slots_spent[2]=1;
  other.abilities.str=18;
  assert.equal(c.spell_slots_spent[2],0,"Default arrays must not share references");
  assert.equal(c.abilities.str,10,"Default objects must not share references");
+ const monster=initialCreature("monster","Sentinella","local_monster","owner_monster");
+ assert.deepEqual(monster.stat_block,{});
+ assert.deepEqual(monster.resource_recovery_ready,{});
+ assert.deepEqual(monster.resource_recovery_used,{});
 });
 test("resource operations recover only the correct rest types and keep stable IDs",()=>{
  const c=initialCreature("character","Mago","id","owner");
