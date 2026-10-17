@@ -4,9 +4,12 @@ on:
   pull_request:
     paths:
       - "vtt/creature_action_economy_tab.gd"
-      - "vtt/creature_action_economy_tab.gd"
       - "vtt/combat_basic_actions.gd"
       - "vtt/data/combat_action_supplements_5etools.json"
+      - "vtt/data/combat_actions_5etools.json"
+      - "vtt/icons/action_controls.svg"
+      - "tests/test_action_rules_2014.gd"
+      - "scripts/generate_combat_actions.py"
       - "vtt/creature_features.gd"
       - "vtt/feature_timing_recovery_rules.gd"
       - "vtt/data/feature_timing_recovery_rules.json"
@@ -19,6 +22,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "vtt/creature_action_economy_tab.gd"
+      - "tests/test_action_dashboard_ui.gd"
       - "vtt/feature_timing_recovery_rules.gd"
       - "vtt/data/feature_timing_recovery_rules.json"
       - "vtt/benefit_requirements.gd"
@@ -27,6 +32,10 @@ on:
       - "vtt/creature_infusions.gd"
       - "vtt/combat_basic_actions.gd"
       - "vtt/data/combat_action_supplements_5etools.json"
+      - "vtt/data/combat_actions_5etools.json"
+      - "vtt/icons/action_controls.svg"
+      - "tests/test_action_rules_2014.gd"
+      - "scripts/generate_combat_actions.py"
       - "vtt/creature_features.gd"
       - "vtt/creature_traits_tab.gd"
       - "vtt/creature_proficiency_rules.gd"
@@ -60,6 +69,7 @@ jobs:
             /*.gd
             /*.tscn
             /vtt/
+            /pwa/icons/
             /network/
             /homebrew/
             /encounter/encounter_events.gd
@@ -90,6 +100,7 @@ jobs:
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
+            test_action_rules_2014.gd \
             test_creature_action_economy.gd \
             test_action_dashboard_ui.gd \
             test_feature_timing_recovery.gd \

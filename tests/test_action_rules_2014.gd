@@ -30,6 +30,15 @@ func run() -> void:
 		for row: Dictionary in rogue:
 			if row.get("id", "") == id: count += 1
 		assert(count == 1, "Cunning Action must replace the standard presentation")
+	var typed := Actions.entries({"rules_version": "2014", "action_grants": [{"id": "typed", "name": "Capacità", "action_type": [{"unit": "action"}, {"unit": "bonus"}], "description": "Testo esatto del privilegio"}]})
+	assert(find(typed, "typed")["time"] == 1 and find(typed, "typed")["alternate_action"])
+	var separate := Actions.entries({"rules_version": "2014", "action_grants": [
+		{"id": "paid", "name": "Capacità", "action_type": "action", "tracker_id": "first"},
+		{"id": "paid", "name": "Capacità", "action_type": "bonus", "tracker_id": "second"}]})
+	var paid := 0
+	for row: Dictionary in separate:
+		if row.get("id") == "paid": paid += 1
+	assert(paid == 2, "Different payments must not be collapsed into one action")
 	var wizard := Actions.entries({"rules_version": "2014", "prepared_spells": [{"id": "fixture", "name": "Fireball", "level": 3, "time": "action"}]})
 	for row: Dictionary in wizard:
 		assert(row.get("kind", "") != "Incantesimo" and row.get("name", "") != "Lanciare un incantesimo")

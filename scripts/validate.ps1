@@ -110,6 +110,11 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 }
 
 $fastTests = @(
+    "test_action_rules_2014.gd",
+    "test_action_dashboard_ui.gd",
+    "test_creature_action_economy.gd",
+    "test_feature_timing_recovery.gd",
+    "test_combat_basic_actions.gd",
     "test_map_data_controller.gd",
     "test_mobile_action_limits.gd",
     "test_mobile_map_actions.gd",

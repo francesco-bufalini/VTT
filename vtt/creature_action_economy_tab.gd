@@ -290,7 +290,8 @@ func _arrange_columns() -> void:
 
 static func _timing(value: Variant) -> int:
 	if value is Array:
-		return _timing(value[0]) if not value.is_empty() else 0
+		var costs := _activation_costs(value)
+		return 1 if 0 in costs and 1 in costs else int(costs[0]) if not costs.is_empty() else 0
 	if value is Dictionary:
 		for key: String in ["unit", "type", "action_type", "activation_type", "time"]:
 			if value.has(key):
@@ -306,6 +307,19 @@ static func _timing(value: Variant) -> int:
 	if "move" in s or "movimento" in s:
 		return 3
 	return 0
+
+static func _activation_costs(value: Variant) -> Array[int]:
+	var result: Array[int] = []
+	if value is Array:
+		for part: Variant in value:
+			for cost: int in _activation_costs(part):
+				if cost not in result: result.append(cost)
+	elif value is Dictionary:
+		for key: String in ["unit", "type", "action_type", "activation_type", "time"]:
+			if value.has(key): return _activation_costs(value[key])
+	else:
+		result.append(_timing(value))
+	return result
 
 static func _explicit_time(value: Variant) -> bool:
 	if value == null:
@@ -516,6 +530,8 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		results.append(_entry(String(feature.get("name", "Capacità")), _timing(activation),
 			String(feature.get("action_kind", "Capacità")), _source_text(_description(feature.get("entries", ""))),
 			_tracker_label(tracker_id, trackers), tracker_id))
+		var costs := _activation_costs(activation)
+		results.back()["alternate_action"] = 0 in costs and 1 in costs
 	# Small hand-checked structured supplements for class features whose 5etools
 	# entries contain descriptions but no typed activation. Exact book/class/
 	# feature matches avoid accidentally granting subclass or passive traits.
@@ -564,12 +580,15 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		if not feature_id.is_empty() and automatic.has(feature_id):
 			continue
 		var tracker_id := String(grant.get("tracker_id", ""))
-		results.append(_entry(String(grant.get("name", grant.get("title", "Capacità"))),
+		var grant_row := _entry(String(grant.get("name", grant.get("title", "Capacità"))),
 			_timing(grant.get("action_type", grant.get("activation", "action"))),
 			String(grant.get("type", "Capacità")), _description(grant.get("description", grant.get("entries", ""))),
-			_tracker_label(tracker_id, trackers), tracker_id))
+			_tracker_label(tracker_id, trackers), tracker_id)
+		grant_row["id"] = String(grant.get("key", grant.get("id", "")))
+		results.append(grant_row)
 		var activation: Variant = grant.get("action_type", grant.get("activation", "action"))
-		if activation is Array and "action" in activation and "bonus" in activation:
+		var costs := _activation_costs(activation)
+		if 0 in costs and 1 in costs:
 			results.back()["time"] = 1
 			results.back()["alternate_action"] = true
 	for grant: Dictionary in OriginSpells.all_grants(record):
@@ -854,8 +873,15 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 		apply.pressed.connect(func() -> void: basic_action_requested.emit(tactical))
 		controls.add_child(apply)
 	var attack_id := String(entry.get("attack_id", ""))
-	if not attack_id.is_empty():
-		var roll := _action_button("", "Tira per colpire · " + title)
+	var disarm := String(entry.get("id", "")) == "disarm"
+	if disarm:
+		var weapon := Attacks.active_attack(_record)
+		if String(weapon.get("source", "")) in ["item", "improvised"]:
+			attack_id = String(weapon.get("id", ""))
+	if not attack_id.is_empty() or disarm:
+		var roll := _action_button("", ("Tiro per disarmare" if disarm else "Tira per colpire") + " · " + title)
+		roll.disabled = attack_id.is_empty()
+		if roll.disabled: roll.tooltip_text = "Equipaggia e seleziona un'arma per questo tiro"
 		roll.icon = _icon_texture("dice")
 		roll.expand_icon = true
 		roll.add_theme_constant_override("icon_max_width", 22)
@@ -884,6 +910,7 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 			check.icon = _icon_texture("dice")
 			check.expand_icon = true
 			check.add_theme_constant_override("icon_max_width", 20)
+			check.custom_minimum_size.x = 42 + check.get_theme_font("font").get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 			check.pressed.connect(func() -> void: skill_requested.emit("skill:" + skill_id))
 			checks_row.add_child(check)
 
