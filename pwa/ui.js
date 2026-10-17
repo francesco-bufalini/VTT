@@ -425,7 +425,7 @@ async function traitsView(c){
   if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
  }
  await addReference('backgrounds',c.background,c.background_source,'Background');
- if(!projected.length){
+ if(!projected.some(f=>f.origin_key?.startsWith('class|'))){
  const features=await load('class_features'),subfeatures=await load('subclass_features');
  for(const member of localClasses(c)){
   const source=member.source||(c.rules_version==='2024'?'XPHB':'PHB');
