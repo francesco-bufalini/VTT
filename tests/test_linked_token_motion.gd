@@ -188,5 +188,20 @@ func _run() -> void:
 		_fail("detaching an intermediate token broke its own followers")
 		return
 
+	if not bool(links.call("mount", follower, leader)):
+		_fail("rejoining a formation after detachment was rejected")
+		return
+	var stopped: Array = links.call("stop_moving_together", leader)
+	if stopped.size() != 2 or bool(links.call("is_mounted", follower)) or bool(links.call("is_mounted", sibling)):
+		_fail("stopping the leader must release all its direct followers")
+		return
+	if not bool(links.call("is_mounted", tail)) or tail.get_collision_exceptions().has(leader):
+		_fail("stopping a leader must preserve descendant subgroups and restore external collisions")
+		return
+	links.call("stop_moving_together", follower)
+	if bool(links.call("is_mounted", tail)):
+		_fail("stopping an intermediate leader must also release its direct follower")
+		return
+
 	print("PASS: linked token motion, rotation, elevation, chains, cycles, detachment")
 	quit()

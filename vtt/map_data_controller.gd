@@ -12,7 +12,7 @@ const POLL_MS := 1500
 const TIMEOUT_MS := 5000
 
 var port := PORT
-const ACTIONS := ["place_token", "claim_free_token", "snapshot", "move_token", "set_condition", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "set_appearance", "chat_send", "chat_poll"]
+const ACTIONS := ["place_token", "claim_free_token", "snapshot", "move_token", "set_condition", "battle_action", "begin_spell", "target_spell", "cancel_spell", "finish_spell", "target_attack", "preview_spell", "set_appearance", "chat_send", "chat_poll"]
 const ACTION_MAX_BYTES := 2 * 1024 * 1024
 const ACTION_TIMEOUT_MS := 15000
 var _action_provider: Callable

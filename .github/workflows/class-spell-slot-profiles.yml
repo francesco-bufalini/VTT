@@ -1,0 +1,57 @@
+name: Class spell-slot profiles (Godot)
+
+on:
+  pull_request:
+    paths:
+      - "vtt/creature_rules.gd"
+      - "vtt/class_mechanics_5etools.gd"
+      - "vtt/data/class_spell_slot_profiles.json"
+      - "tests/test_spell_slot_profiles.gd"
+      - ".github/workflows/class-spell-slot-profiles.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vtt/creature_rules.gd"
+      - "vtt/class_mechanics_5etools.gd"
+      - "vtt/data/class_spell_slot_profiles.json"
+      - "tests/test_spell_slot_profiles.gd"
+      - ".github/workflows/class-spell-slot-profiles.yml"
+
+jobs:
+  slot-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /vtt/creature_rules.gd
+            /vtt/class_mechanics_5etools.gd
+            /vtt/data/class_spell_slot_profiles.json
+            /tests/test_spell_slot_profiles.gd
+
+      - name: Install matching Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+
+      - name: Run isolated native slot-progression regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'config_version=5\n' > project.godot
+          output=$(timeout 60s /tmp/Godot_v4.7.2-stable_linux.x86_64 \
+            --headless --path . --script res://tests/test_spell_slot_profiles.gd 2>&1) || {
+              printf '%s\n' "$output"
+              exit 1
+            }
+          printf '%s\n' "$output"
+          if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script' <<< "$output" \
+            || ! grep -q 'PASS: data-driven' <<< "$output"; then
+            exit 1
+          fi

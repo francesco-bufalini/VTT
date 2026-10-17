@@ -44,8 +44,17 @@ function requiredString(value, label) {
   return value;
 }
 
-// Atomic batch for portable creature imports: insert new creature and only
-// previously unknown homebrew definitions in the same transaction.
+// Portable definitions are JSON data; object key order is not significant.
+function sameData(a, b) {
+  if (Object.is(a, b)) return true;
+  if (!a || !b || typeof a !== "object" || typeof b !== "object" ||
+      Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every(key =>
+    Object.hasOwn(b, key) && sameData(a[key], b[key]));
+}
+
+// Import creature and dependencies atomically; reuse only equivalent definitions.
 export async function insertRecords(entries) {
   if (!Array.isArray(entries) || !entries.length) throw new TypeError("No records");
   const validated = entries.map(({ scope, type, id, data, ifAbsent = false }) => ({
@@ -62,17 +71,24 @@ export async function insertRecords(entries) {
   try {
     const tx = db.transaction("records", "readwrite");
     const store = tx.objectStore("records");
+    let conflict = null;
     for (const row of validated) {
       const entry = { scope: row.scope, type: row.type, id: row.id,
         data: row.data, revision: 1, updatedAt: Date.now() };
       if (row.ifAbsent) {
         const check = store.get([row.scope, row.type, row.id]);
-        check.onsuccess = () => { if (!check.result) store.add(entry); };
+        check.onsuccess = () => {
+          if (!check.result) store.add(entry);
+          else if (!sameData(check.result.data, entry.data)) {
+            conflict = new Error("Contenuto homebrew in conflitto: " + entry.id);
+            tx.abort();
+          }
+        };
       } else {
         store.add(entry); // Abort the ENTIRE import on ID collision.
       }
     }
-    await completed(tx);
+    await completed(tx).catch(error => { throw conflict || error; });
   } finally {
     db.close();
   }
@@ -351,18 +367,25 @@ export async function importBackup(file, { overwrite = false } = {}) {
     attachments.push({ digest: item.digest, blob, mime: blob.type, bytes: blob.size });
   }
   const archivedDigests = new Set(attachments.map(entry => entry.digest));
+  const recordKeys = new Set();
   for (const item of content.records) {
     requiredString(item.scope, "scope");
     requiredString(item.type, "type");
     requiredString(item.id, "id");
+    const key = JSON.stringify([item.scope, item.type, item.id]);
+    if (recordKeys.has(key)) throw new Error("Duplicate record in backup");
+    recordKeys.add(key);
     if (item.digest && !archivedDigests.has(item.digest)) {
       throw new Error("Backup contains a missing attachment reference");
     }
   }
+  const actionIds = new Set();
   for (const item of content.outbox) {
     requiredString(item.id, "id");
     requiredString(item.scope, "scope");
     requiredString(item.action, "action");
+    if (actionIds.has(item.id)) throw new Error("Duplicate action in backup");
+    actionIds.add(item.id);
   }
   const db = await openStorage();
   try {

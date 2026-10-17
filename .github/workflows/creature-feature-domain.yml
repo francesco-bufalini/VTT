@@ -1,13 +1,32 @@
 name: Creature Feature Domain Regression
 
 on:
+  pull_request:
+    paths:
+      - "vtt/creature_action_economy_tab.gd"
+      - "vtt/creature_action_economy_tab.gd"
+      - "vtt/combat_basic_actions.gd"
+      - "vtt/data/combat_action_supplements_5etools.json"
+      - "vtt/creature_features.gd"
+      - "vtt/feature_timing_recovery_rules.gd"
+      - "vtt/data/feature_timing_recovery_rules.json"
+      - "vtt/structured_resource_trackers.gd"
+      - "vtt/creature_area.gd"
+      - "tests/test_creature_action_economy.gd"
+      - "tests/test_action_dashboard_ui.gd"
+      - "tests/test_combat_basic_actions.gd"
+      - ".github/workflows/creature-feature-domain.yml"
   push:
     branches: [main]
     paths:
+      - "vtt/feature_timing_recovery_rules.gd"
+      - "vtt/data/feature_timing_recovery_rules.json"
       - "vtt/benefit_requirements.gd"
       - "vtt/class_resource_overrides.gd"
       - "vtt/structured_resource_trackers.gd"
       - "vtt/creature_infusions.gd"
+      - "vtt/combat_basic_actions.gd"
+      - "vtt/data/combat_action_supplements_5etools.json"
       - "vtt/creature_features.gd"
       - "vtt/creature_traits_tab.gd"
       - "vtt/creature_proficiency_rules.gd"
@@ -66,9 +85,15 @@ jobs:
             --check-only --script res://vtt/benefit_requirements.gd
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
             --check-only --script res://vtt/structured_resource_trackers.gd
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --check-only --script res://vtt/feature_timing_recovery_rules.gd
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
+            test_creature_action_economy.gd \
+            test_action_dashboard_ui.gd \
+            test_feature_timing_recovery.gd \
+            test_combat_basic_actions.gd \
             test_trait_origins.gd \
             test_structured_numeric_bonuses.gd \
             test_creature_equipment_regressions.gd \

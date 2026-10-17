@@ -1,17 +1,20 @@
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
-import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
+import { actionEconomyView, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
+import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
-  removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
+  removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { createDemoCreature } from "./demo.js";
-import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription } from "./catalog_data.js";
+import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs } from "./sheet_rules.js";
-import { localSheetView } from "./sheet_rules_view.js";
+import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
+import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
+import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
+import {optionalRecoveryPatch} from './feature_mechanics.js';
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -24,17 +27,21 @@ const sectionMenu = document.querySelector("#section-menu");
 const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
-  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
+  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
+let tokenStatusFingerprint="";
+let tokenSyncQueue=Promise.resolve();
+let mapGeneration=0;
+let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
@@ -44,6 +51,7 @@ function acceptSession(info){
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
     state.messages=[];state.after="";state.map=null;state.tokenId="";
+    tokenStatusFingerprint="";
   }
   if(next)currentGameSession=next;
   state.session=info;
@@ -119,6 +127,7 @@ function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").sli
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
 function stopSubscriptions() {
   ++chatGeneration;
+  ++mapGeneration;
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -129,6 +138,7 @@ async function navigate(page, id=null) {
     catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
   }
   stopSubscriptions();
+  if(page==="session")realtimeStopped=false;
   state.page=page; state.creatureId=id; state.editor=null;
   if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
@@ -142,10 +152,15 @@ async function render() {
     else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "dice") html = diceView();
     else if (state.page === "chat") html = chatView();
-    else if (state.page === "session") html = sessionView();
+    else if (state.page === "session") {
+      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      if(!state.spellCatalog)try{state.spellCatalog=await catalogEntries('spells');}catch{}
+      state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async creature=>[creature.id,await computeLocalData(creature)])));
+      html=sessionView();
+    }
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
-    if(state.page === "session" && state.paired) startMap();
+    if(state.paired && !realtimeStopped && !state.stopMap) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
@@ -213,8 +228,20 @@ async function catalogView() {
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
       '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
-      '<p class="hint">La PWA salva il riferimento; i bonus delle origini vengono calcolati solo nel motore Godot.</p>':""));
+      '<p class="hint">I benefici strutturati vengono calcolati in locale.</p>':"")+
+      (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
+        '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
+  const quickPanel=['items','feats','backgrounds'].includes(state.catalogCategory)?panel('Crea contenuto personalizzato',
+    '<label>Nome<input id="quick-name" maxlength="120"></label>'+
+    '<label>Descrizione<textarea id="quick-description" rows="3" maxlength="12000"></textarea></label>'+
+    (state.catalogCategory==='items'?
+      '<div class="columns"><label>Tipo<select id="quick-type">'+[['other','Altro'],['weapon','Arma'],['shield','Scudo'],['armor','Armatura'],['tool','Strumento'],['magic','Magico']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
+      '<label>Rarità<select id="quick-rarity">'+[['none','Nessuna'],['common','Comune'],['uncommon','Non comune'],['rare','Raro'],['very rare','Molto raro'],['legendary','Leggendario'],['artifact','Artefatto']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
+      '<label>Valore (mo)<input id="quick-value" type="number" min="0" max="100000000" value="0"></label></div>':
+      '<p class="hint">Competenze concesse (fino a tre). Le scelte aperte non vengono assegnate automaticamente.</p>'+
+      Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
+    '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
     panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
@@ -223,16 +250,16 @@ async function catalogView() {
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
       state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
       '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
-    detail;
+    quickPanel+detail;
 }
 
-async function computeLocalView(record,section){
-  if(!["info","stats","battle","magic"].includes(section))return "";
+async function computeLocalData(record){
   let catalogs={},loadError="";
   try{catalogs=await loadRuleCatalogs();}
   catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
-  const data=calculateSheet(record,catalogs);
-  return localSheetView(section,data,loadError);
+  return {...calculateSheet(record,catalogs),loadError,
+    infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
+    infusion_mechanics:catalogs.classMechanics||{}};
 }
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
@@ -246,17 +273,24 @@ async function editorView() {
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
     '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
   let body = "";
-  if(state.sheet==="info"){
-    await Promise.all(["races","classes","subclasses","backgrounds"].map(async key=>{
+  if(['info','origins'].includes(state.sheet)){
+    await Promise.all(["races","classes","subclasses","backgrounds",...(state.sheet==='origins'?['feats']:[])].map(async key=>{
       if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
       catch{ /* References stay editable offline. */ }
     }));
   }
-  if(state.sheet==="magic"&&!state.spellCatalog){
+  if(state.sheet==="actions"){
+    const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
+    state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
+    state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
+  }
+  if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
+  const calculated=await computeLocalData(c);
+  state.calculated=calculated;
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -274,27 +308,37 @@ async function editorView() {
       (documents.length?documents.map(({item,index},i)=>
         documentRow(item,index,definitions[i])).join(""):
         '<p class="hint">Nessun documento.</p>')+
-      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>');
+      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>')+
+      infusionPanel(c,calculated);
     break;
   }
+  case "actions":
+    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[]);
+    break;
   case "magic":
-    body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
-      esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
-      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus vengono calcolati da Godot.</p>'+
-        '<div class="columns three">'+Array.from({length:9},(_,i)=>{
-          const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
-          return '<div class="ability-box"><label>Liv. '+level+
-            '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
-            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
-        }).join("")+'</div>')+
-      panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
-        ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
-        field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono determinate dal motore Godot.</p>')+
-      panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
+    body=panel('Lancio tattico',c.linked_token_sync_id?
+      '<p class="hint">I bersagli si scelgono sullo snapshot 2D della mappa; lo slot è consumato solo dopo l’accettazione del desktop.</p>'+
+      '<div class="columns"><label>Livello slot (0 = automatico)<input id="sheet-cast-level" type="number" min="0" max="9" value="'+esc(state.castLevel)+'"></label>'+
+      '<label>Risorsa<select id="sheet-cast-payment"><option value="auto">Automatica</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label></div>'+
+      (!state.paired||!state.online?'<p class="hint">Collega la partita e piazza il token prima di lanciare.</p>':''):
+      '<p class="hint">Piazza e collega questa creatura a un token dalla sezione Partita.</p>')+
+      panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+
+      panel("Incantesimi disponibili",calculated.casting_classes.map(member=>{
+        const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
+        return '<article class="native-entry"><h3>'+esc(member.name)+' · '+esc(member.source)+'</h3><p>'+member.mode+' '+count.leveled+' / '+(member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+castingStatistics(c,member.id,member.ability)+spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</article>';
+      }).join('')+'<h3>Altri incantesimi disponibili</h3>'+spellList(c,'prepared_spells','manual',calculated.casting_classes))+
+      panel('Slot · Classi / Patto','<div class="slot-table"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+calculated.spell_slots.map(slot=>{
+        const level=slot.level,pact=calculated.pact_slots;
+        return '<span>'+level+'°</span><div>'+slotCounter(level,slot.total,slot.spent)+
+          '<details><summary>Usati / modifica base</summary><label>Slot usati<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(c.spell_slots_spent?.[level]||0)+'"></label><label>Massimo base<input type="number" min="0" max="99" data-slot-total="'+level+'" value="'+esc(slot.base)+'"></label></details></div><div>'+(pact.level===level?slotCounter(0,pact.total,pact.spent):'—')+'</div>';
+      }).join('')+'</div><details><summary>Impostazioni slot</summary><p>'+((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+btn('slots-automatic','Usa progressione automatica')+
+      '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
+      field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
+      originChoicesView(calculated)+originPowersView(c,calculated)+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
         '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
+        '<label>Classe / origine<select id="spell-class"><option value="manual">Manuale · altre concessioni</option>'+calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+' · '+esc(member.source)+'</option>').join('')+'</select></label>'+
         '<label>Destinazione<select id="spell-target">'+
         '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
         '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
@@ -305,10 +349,11 @@ async function editorView() {
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
-    body=panel("Condizioni",'<div class="condition-list">'+conditions.map(id=>
+    body=panel("Condizioni",field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+'<div class="condition-list">'+conditions.map(id=>
       '<label class="check"><input type="checkbox" data-condition="'+id+'" '+
       ((c.conditions||[]).includes(id)?'checked':'')+'>'+esc(conditionLabel(id))+'</label>').join('')+'</div>');
     break;
+  case 'traits':body=await traitsView(c);break;
   case "json":
     body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
       '<label>Documento completo<textarea id="json-editor" rows="18" spellcheck="false" class="inline-code">'+
@@ -316,50 +361,102 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+(await computeLocalView(c,state.sheet))+body+'<details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return navigation+'<div data-local-sheet-calculations>'+body+calculationNote(calculated,calculated.loadError)+'</div><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
 function resourceView(c,configure=false){
-    const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
-    const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
-      c.resource_tracker_spent:{};
-    return panel("Utilizzi e risorse",
-      '<p class="hint">Contatori manuali. I tracker automatici di classe e privilegi non sono ancora coperti integralmente dal motore locale.</p>'+
-      (trackers.length?trackers.map((t,i)=>{
-        const max=Math.max(0,Number(t.max)||0);
-        const used=Math.max(0,Number(spent[t.id])||0);
-        return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
-          '</strong>'+(configure?'<button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button>':'')+'</div>'+
-          '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
-          ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
-          '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
-          '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
-      }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
-      (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>':'') )+
-      (configure?panel("Aggiungi tracker",'<div class="columns">'+
-      '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
-      '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
-      '<label>Ricarica<select id="tracker-recharge"><option value="manual">Manuale</option>'+
-      '<option value="turn">Inizio turno</option><option value="short_rest">Riposo breve</option>'+
-      '<option value="long_rest">Riposo lungo</option></select></label>'+
-      '<div class="actions">'+btn("tracker-add","Aggiungi risorsa","primary")+'</div>'):'');
-  }
+ const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
+ const trackers=configure?[...active,...saved.filter(t=>!active.some(a=>a.id===t.id)).map(t=>({...t,inactive:true}))]:active;
+ const modes=[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']];
+ const options=(rows,value)=>rows.map(([id,name])=>'<option value="'+esc(id)+'" '+(id===value?'selected':'')+'>'+esc(name)+'</option>').join('');
+ const control=(t,key,label,value,type='text')=>'<label>'+esc(label)+'<input type="'+type+'" data-tracker-field="'+key+'" data-tracker-id="'+esc(t.id)+'" value="'+esc(value??'')+'" '+(type==='number'?'min="0" max="99999"':'')+'></label>';
+ const body=trackers.map(t=>{
+  const base=saved.find(row=>row.id===t.id)||t,maximum=Math.max(0,Number(t.max)||0),used=Number(c.resource_tracker_spent?.[t.id])||0;
+  const pick=(key,label,rows,value)=>'<label>'+label+'<select data-tracker-field="'+key+'" data-tracker-id="'+esc(t.id)+'">'+options(rows,value)+'</select></label>';
+  const actions=!t.inactive?'<div class="row"><button class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'">Ripristina 1</button><button class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'">Consuma 1</button>'+(t.recharge==='d6'?'<button class="btn small" data-act="tracker-recharge" data-tracker-id="'+esc(t.id)+'">Ricarica d6 · '+esc(t.recharge_min||6)+'+</button>':'')+'</div>':'';
+  const optional=(t.partial_recoveries||[]).filter(rule=>rule.mode==='optional_partial'&&c.resource_recovery_ready?.[rule.id]&&!c.resource_recovery_used?.[rule.id]);
+  const optionalButton=optional.map(rule=>'<button type="button" class="btn small" data-act="tracker-optional-recovery" data-rule-id="'+esc(rule.id)+'">Recupero speciale · '+esc(rule.feature||rule.resource_name)+'</button>').join('');
+  const edit=configure&&!t.automatic?'<div class="columns">'+control(t,'name','Nome',base.name)+control(t,'max','Massimo base',base.max,'number')+control(t,'max_formula','Formula del massimo',base.max_formula)+pick('origin_id','Origine',[['','Senza origine'],...(!origins.some(o=>o.id===base.origin_id)&&base.origin_id?[[base.origin_id,base.origin_name||base.origin_id]]:[]),...origins.map(o=>[o.id,o.name])],base.origin_id||'')+pick('recharge','Recupero',modes,base.recharge||'manual')+control(t,'recharge_min','Ricarica d6 da (1–6)',base.recharge_min||6,'number')+'<label class="check"><input type="checkbox" data-tracker-field="disabled" data-tracker-id="'+esc(t.id)+'" '+(base.disabled?'checked':'')+'>Disattivato</label></div>'+benefitRequirements(base,'data-benefit-tracker="'+esc(t.id)+'"')+(base.max_formula?'<p class="hint">'+esc(formulaPreview(base.max_formula,state.calculated))+'</p>':'')+'<button class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'';
+  return '<article class="list-item"><strong>'+esc(t.name)+'</strong><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
+ }).join('');
+ return panel('Risorse','<p class="hint">I massimi includono formule e bonus attivi. Riposo breve: risorse previste e slot del Patto; riposo lungo: anche gli slot di classe. Il nuovo turno recupera solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
+}
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
-function equipmentView(c){
+function equipmentView(c,slots=['main','off','body'],boxed=true){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
   const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
-  return panel("Equipaggiamento",
-    '<p class="hint">Gli oggetti equipaggiati occupano slot effettivi, usati per i calcoli di CA e attacchi di Godot. Le armi a due mani escludono la mano secondaria.</p>'+
-    '<div class="columns">'+labels.map(([slot,label])=>{
+  const body='<div class="columns">'+labels.filter(([slot])=>slots.includes(slot)).map(([slot,label])=>{
       const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
       const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
       return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
-        '<option value="-1"'+(index<0?' selected':'')+'>Nessuno</option>'+
+        '<option value="-1"'+(index<0&&(!c['hand_'+slot+'_special']||c['hand_'+slot+'_special']==='none')?' selected':'')+'>'+(slot==='body'?'Naturale':'Nessuno')+'</option>'+
+        (slot!=='body'?[['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']].map(([id,name])=>'<option value="'+id+'" '+(index<0&&c['hand_'+slot+'_special']===id?'selected':'')+'>'+name+'</option>').join(''):'')+
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
-    }).join('')+'</div>');
+    }).join('')+'</div>';
+  return boxed?panel('Equipaggiamento',body):body;
+}
+function attacksView(calculated){
+ return '<div data-attack-list>'+((calculated.attacks||[]).map(attack=>'<article class="native-entry"><h3>'+esc(attack.name)+'</h3><div class="row between"><span>Tiro per colpire '+formulaReadout(calculated,'attack_hit:'+attack.id,'Tiro per colpire',{signed:true})+'</span><span>Danni: '+esc(attack.damage)+' '+esc(attack.damage_type||'')+'</span></div><p class="hint">'+esc(attack.explanation)+(attack.offhand_bonus?' · Attacco secondario con azione bonus':'')+'</p><div class="row"><span>'+ (attack.melee?'Portata':'Gittata')+' '+formulaReadout(calculated,'attack_range:'+attack.id,'Portata', {suffix:' ft'})+'</span>'+(attack.long_range_feet?'<span>Lunga '+formulaReadout(calculated,'attack_long_range:'+attack.id,'Gittata lunga',{suffix:' ft'})+'</span>':'')+'</div></article>').join('')||'<p class="hint">Seleziona un’arma in una mano per renderne disponibile l’attacco.</p>')+'</div>';
+}
+async function traitsView(c){
+ const groups=[],warnings=[];
+ const load=async category=>{
+  if(!state.referenceCatalogs[category])try{state.referenceCatalogs[category]=await catalogEntries(category);}
+  catch{warnings.push('Riferimenti '+category+' non disponibili offline.');return [];}
+  return state.referenceCatalogs[category];
+ };
+ const linked='<div class="actions">'+[['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']].map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
+ const card=entry=>'<details class="trait-card"><summary>'+esc(entry.name||'Descrizione')+'</summary><p class="trait-description">'+esc(flattenDescription(entry)||'Descrizione non presente nel catalogo locale.')+'</p>'+linked+'</details>';
+ const addReference=async(category,name,source,title)=>{
+  if(!name)return;
+  const candidates=(await load(category)).filter(r=>r.name?.toLowerCase()===name.toLowerCase()&&(!source||r.source?.toLowerCase()===source.toLowerCase()));
+  const row=candidates.length===1?candidates[0]:null;
+  const entry=row?await detailedEntry(category,row):{name,entries:['Riferimento importato senza una descrizione univoca nel catalogo locale.']};
+  groups.push('<h3>'+esc(title)+' · '+esc(name)+'</h3>'+card(entry));
+ };
+ const projected=state.calculated?.features||[];
+ if(projected.length){
+  const byOrigin=new Map();
+  for(const feature of projected){
+   const origin=feature.origin_key||'Altro';
+   if(!byOrigin.has(origin))byOrigin.set(origin,[]);
+   const active=!feature.disabled;
+   byOrigin.get(origin).push('<details class="trait-card"><summary>'+esc(feature.name)+
+    (feature.level>1?' · livello '+esc(feature.level):'')+
+    (!active?' · disattivato':'')+'</summary><p class="trait-description">'+
+    esc(flattenDescription(feature)||'Nessuna descrizione disponibile.')+
+    '</p><label class="check"><input type="checkbox" data-feature-origin="'+
+    esc(feature.origin_id)+'" '+(active?'checked':'')+'>Beneficio attivo</label>'+
+    '<p class="hint">Gli effetti non strutturati restano descrittivi.</p>'+
+    linked+'</details>');
+  }
+  for(const [origin,rows] of byOrigin)
+   groups.push('<h3>Privilegi · '+esc(origin.replaceAll('|',' · '))+'</h3>'+rows.join(''));
+ }
+ if(c.kind==='monster'&&!projected.length)for(const t of c.stat_block?.trait||[])groups.push(card(t));
+ else{
+  await addReference('races',c.species,c.species_source,'Razza / Specie');
+  if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
+ }
+ await addReference('backgrounds',c.background,c.background_source,'Background');
+ if(!projected.some(f=>f.origin_key?.startsWith('class|'))){
+ const features=await load('class_features'),subfeatures=await load('subclass_features');
+ for(const member of localClasses(c)){
+  const source=member.source||(c.rules_version==='2024'?'XPHB':'PHB');
+  const selected=features.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&Number(f.level||0)<=Number(member.level));
+  groups.push('<h3>Classe · '+esc(member.name)+' · '+esc(source)+'</h3>'+selected.map(card).join(''));
+  const subclass=member.subclass||'',subsource=member.subclass_source||'';
+  if(subclass){
+    const selected=subfeatures.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&[f.subclass_name,f.subclass_short_name].some(name=>name?.toLowerCase()===subclass.toLowerCase())&&(!subsource||f.subclass_source?.toLowerCase()===subsource.toLowerCase())&&Number(f.level||0)<=Number(member.level));
+    groups.push('<h3>Sottoclasse · '+esc(subclass)+'</h3>'+selected.map(card).join(''));
+  }
+ }
+ }
+ for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled)await addReference('feats',feat.name,feat.source,'Talento');
+ return panel('Tratti',(groups.join('')||'<p class="hint">Seleziona le origini della creatura per leggerne i tratti.</p>')+warnings.map(w=>'<p class="hint">'+esc(w)+'</p>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -382,9 +479,34 @@ function documentRow(item,index,stored){
     '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
     '</div></details>';
 }
+function infusionPanel(c,calculated){
+  const caps=infusionLimits(c,calculated.infusion_mechanics);
+  if(!caps.level)return "";
+  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
+  const options=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2));
+  const select=(id,rows)=>'<select id="'+id+'">'+rows.map(([value,label])=>
+    '<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select>';
+  const itemRows=(c.inventory||[]).map((item,index)=>[index,(item.name||item.id||"Oggetto")+
+    (item.infusion?.id?' · ✦ '+(item.infusion.name||'Infuso'):'')]);
+  const learned=known.map((entry,index)=>[index,entry.name+
+    (entry.plan_item_name?' · '+entry.plan_item_name:'')]);
+  const active=(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length;
+  return panel('Infusioni · Artefice (TCE)',
+    '<p class="hint">Conosciute '+known.length+'/'+caps.known+
+    ' · Oggetti infusi '+active+'/'+caps.active+' · Livello Artefice '+caps.level+
+    '. Gli effetti numerici sono calcolati in locale, i poteri descrittivi restano consultabili.</p>'+
+    '<div class="columns"><label>Nuova infusione'+select('infusion-available',options.map(row=>[row.id,row.name]))+'</label>'+
+    '<label>Oggetto dell’inventario'+select('infusion-item',itemRows)+'</label>'+
+    '<label>Infusione conosciuta'+select('infusion-known',learned)+'</label></div>'+
+    '<div class="actions">'+btn('infusion-learn','Impara')+
+    btn('infusion-apply','Infondi oggetto')+
+    btn('infusion-forget','Dimentica')+
+    btn('infusion-clear','Termina infusione')+'</div>'+
+    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
+}
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
-  const kind=itemKind(obj),catalog=isCatalogItem(obj);
+  const kind=itemKind(obj),catalog=isCatalogItem(obj),effective=resolveOwnedItem(obj);
   const checked=(key)=>obj[key]===true?' checked':'';
   const enabled=(key,label)=>'<label class="check"><input type="checkbox" data-item-index="'+index+
     '" data-item-key="'+key+'"'+checked(key)+'>'+label+'</label>';
@@ -405,6 +527,18 @@ function inventoryRow(item,index) {
     (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
     enabled("active","Attivo")+'</div>'+
     (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
+    '<details><summary>Proprietà della singola copia</summary>'+
+    (kind==='weapon'?'<label>Taglia arma<select data-item-override="weapon_size" data-item-index="'+index+'">'+
+      [['','Come la creatura'],...WEAPON_SIZES.map(size=>[size,size])].map(([v,label])=>'<option value="'+esc(v)+'" '+((obj.instance_overrides?.weapon_size||'')===v?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>'+
+      [['damage','Dadi danno'],['versatile_damage','Dadi versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico arma']].map(([k,label])=>
+        '<label>'+label+'<input data-item-override="'+k+'" data-item-index="'+index+'" placeholder="'+esc(String(obj[k]??''))+
+          '" value="'+esc(obj.instance_overrides?.[k]??'')+'"></label>').join(''):
+     ['armor','shield'].includes(kind)?
+      [['ac','CA base'],['bonus_ac','Bonus CA']].map(([k,label])=>'<label>'+label+
+        '<input data-item-override="'+k+'" data-item-index="'+index+'" placeholder="'+esc(String(obj[k]??''))+
+        '" value="'+esc(obj.instance_overrides?.[k]??'')+'"></label>').join(''):'')+
+    '<p class="hint">Valori effettivi: '+esc([effective.damage,effective.range,effective.ac].filter(x=>x!==undefined&&x!=='').join(' · ')||'Nessuna personalizzazione')+
+    '. Per modificare una copia in una pila, la PWA la separa senza cambiare le altre.</p></details>'+
     '<details><summary>Dettagli oggetto</summary>'+desc+
     '<p class="hint">Identificativo: '+esc(obj.id||"Locale")+'</p></details></article>';
 }
@@ -412,16 +546,60 @@ function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
-function spellList(c,key) {
+function castingStatistics(c,section,ability){
+ const selected=c.spellcasting_section_abilities?.[section]||ability;
+ return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
+}
+function slotCounter(level,total,spent){
+ const key=level===0?'pact_slot':'slot:'+level;
+ return '<div class="slot-counter">'+(total>0?'<button class="btn small" data-act="slot-use" data-level="'+level+'" '+(spent>=total?'disabled':'')+' aria-label="Consuma slot '+level+'">−</button><button class="btn small" data-act="slot-recover" data-level="'+level+'" '+(spent<=0?'disabled':'')+' aria-label="Recupera slot '+level+'">＋</button>':'')+'<span>'+Math.max(0,total-spent)+' / </span><button class="btn small slot-total" data-act="edit-bonus" data-target="'+key+'" data-calculated="'+key+'" aria-label="Bonus massimo slot '+level+'">'+total+'</button></div>';
+}
+function originPowersView(c,calculated){
+ const groups=new Map();
+ for(const grant of calculated.origin_spells){
+  const id=grant.id;
+  const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
+  const mode=grant.payment_mode|| (grant.tracker_id?'tracker':'free'),tracker=calculated.trackers.find(t=>t.id===grant.tracker_id);
+  const cost=Math.max(1,Number(grant.tracker_cost)||1),remaining=tracker?Math.floor((tracker.max-tracker.spent)/cost):0;
+  const options=calculated.spell_slots.filter(s=>s.level>=Number(spell?.level||0)&&s.total>s.spent).map(s=>[s.level,'Livello '+s.level]);
+  if(calculated.pact_slots.level>=Number(spell?.level||0)&&calculated.pact_slots.total>calculated.pact_slots.spent)options.push([0,'Patto']);
+  const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+(grant.automatic?' · Da origine':'')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+esc(id)+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
+   (spell&&c.linked_token_sync_id?'<button class="btn primary small" data-act="cast-origin-spell" data-grant-id="'+esc(id)+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia · bersagli</button>':'')+
+   (mode!=='free'?'<button class="btn" data-act="origin-spend" data-grant-id="'+esc(id)+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+
+   '<details><summary>Configura consumo</summary><label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label><label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label><label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(id)+'"></label></details>'+
+   (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(id)+'">Cambia questa scelta</button>':'')+'</article>';
+  const key=grant.origin_id;if(!groups.has(key))groups.set(key,{name:grant.origin_name||key,ability:grant.spellcasting_ability||'int',items:[]});groups.get(key).items.push(content);
+ }
+ return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,castingStatistics(c,'origin:'+key,group.ability)+group.items.join(''))).join('');
+}
+function originChoicesView(calculated){
+ const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
+ if(!choices.length)return '';
+ return panel('Scelte da origini',choices.map(choice=>{
+  const eligible=choice.spell_options?.length?state.spellCatalog||[]:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
+  const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
+  const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
+  return '<article class="native-entry"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
+   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+offered.map(spell=>'<option value="'+esc(spell.id)+'">'+esc(spell.name)+' · '+esc(spell.source)+' · liv. '+spell.level+'</option>').join('')+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
+     '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
+ }).join(''));
+}
+function spellList(c,key,classId=null,classes=[]) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
-  return '<div class="stack">'+(rows.length?rows.map((spell,i)=>{
+  const visible=rows.map((spell,i)=>({spell,i})).filter(({spell})=>!classId||
+    (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):castingSources(spell,classes,state.spellCatalog||[]).includes(classId)));
+  return '<div class="stack">'+(visible.length?visible.map(({spell,i})=>{
     const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
     const meta=typeof spell==="object"&&spell?
       ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
+    const id=typeof spell==="string"?spell:spell?.id||"";
     return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
-      '<span class="hint">'+meta+'</span></div><button type="button" class="btn danger small" '+
-      'data-act="remove-spell" data-key="'+key+'" data-index="'+i+'">Rimuovi</button></div>';
+      '<span class="hint">'+meta+'</span></div>'+
+      (key==="prepared_spells"&&c.linked_token_sync_id&&id?
+        '<button type="button" class="btn primary small" data-act="cast-sheet-spell" data-spell-id="'+esc(id)+'" data-casting-class="'+esc(classId||'')+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia</button>':'')+
+      '<button type="button" class="btn danger small" '+
+      'data-act="remove-spell" data-key="'+key+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'">Rimuovi</button></div>';
   }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
 }
 function renderSpellResults(){
@@ -429,8 +607,11 @@ function renderSpellResults(){
   if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
   const query=state.spellQuery.trim().toLocaleLowerCase();
   if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
+  const editionSpells=new Set(spellsForEdition(rows,state.editor?.read().rules_version||'2014'));
   const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
-    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)).slice(0,40);
+    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)&&
+    editionSpells.has(spell)&&
+    (state.spellClass==='manual'||!state.calculated?.casting_classes.some(member=>member.id===state.spellClass)||spellEligible(spell,state.calculated.casting_classes.find(member=>member.id===state.spellClass)))).slice(0,40);
   return found.length?found.map(({spell,index})=>
     '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
     '<span>'+esc(spell.name||"Incantesimo")+'</span><span class="tag">Liv. '+esc(spell.level??0)+
@@ -515,16 +696,8 @@ function sessionView() {
     const selectedCaster = (state.cachedCreatures||[]).find(c=>c.id===state.castCreatureId)
       || (state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===selected.id)
       || (state.cachedCreatures||[])[0];
-    const allSpells=[...(selectedCaster?.prepared_spells||[]),...(selectedCaster?.spells||[]),
-      ...(selectedCaster?.origin_spell_grants||[])];
-    const spells=[],seen=new Set();
-    for(const raw of allSpells){
-      const item=typeof raw==="string"?{id:raw,name:raw}:raw;
-      if(!item||typeof item!=="object")continue;
-      const id=String(item.id||item.spell_id||"");
-      if(!id||seen.has(id))continue;
-      seen.add(id);spells.push({id,name:item.name||id,source:item.source||""});
-    }
+    const calculated=state.castSheets?.get(selectedCaster?.id);
+    const spells=selectedCaster&&calculated?sessionSpellEntries(selectedCaster,calculated,state.spellCatalog||[]):[];
     state.visibleSpells=spells;
     html+=panel("Mappa e bersagli",
       '<p class="hint">Richiedi la vista 2D esistente: zoom con due dita, trascinamento e selezione dei token. Per attacchi e incantesimi la risoluzione resta sul desktop.</p>'+
@@ -539,9 +712,10 @@ function sessionView() {
         '<option value="'+esc(c.id)+'" '+(selectedCaster?.id===c.id?'selected':'')+'>'+
         esc(c.name)+'</option>').join("")+'</select></label>'+
       '<label>Incantesimo<select id="cast-spell">'+spells.map((sp,i)=>
-        '<option value="'+i+'">'+esc(sp.name)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
+        '<option value="'+i+'">'+esc(sp.name)+' · '+esc(sp.casting_label)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
       '</select></label><div class="columns">'+
-      field("Livello slot / 0 trucchetto","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
+      field("Livello slot / 0 automatico","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
+      '<label>Risorsa<select id="cast-payment"><option value="auto">Automatica (classe o origine)</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label>'+
       '</div><p class="hint">Puoi lanciare soltanto incantesimi già presenti nella scheda. Il desktop ne verifica l’effetto e il targeting.</p>'+
       '<div class="actions">'+btn("begin-spell","Avvia incantesimo",spells.length?"primary":"")+'</div>');
   }
@@ -579,8 +753,9 @@ async function refreshConnection(quiet=false) {
 }
 function startMap() {
   state.stopMap?.();
+  const generation=++mapGeneration;
   state.stopMap = subscribeMap(data=>{
-    if(state.page!=="session") return;
+    if(generation!==mapGeneration)return;
     const recovered=!state.online;
     state.map = data;
     state.online=true;
@@ -594,16 +769,45 @@ function startMap() {
       }).catch(()=>{});
     }
     const entries=data?.tokens||[];
+    // Match Android's local ownership boundary: public token status is
+    // projected into the linked sheet only, never the server's private data.
+    const fingerprint=JSON.stringify(entries.map(row=>[row.id,row.conditions,
+      row.concentrating_spell_id,row.active_spell_ids,row.current_miniature_id,row.default_miniature_id]));
+    if(fingerprint!==tokenStatusFingerprint){
+      tokenSyncQueue=tokenSyncQueue.then(async()=>{
+        if(generation!==mapGeneration)return;
+        const current=state.editor&&state.creatureId?
+          {id:state.creatureId,editor:state.editor}:null;
+        const changed=await syncLinkedTokenStatuses(data,{liveEditor:current,spells:state.spellCatalog||[]});
+        if(generation!==mapGeneration)return;
+        tokenStatusFingerprint=fingerprint;
+        if(changed.length){
+          if(state.page==='session'){
+            state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+            state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
+          }else if(state.editor&&changed.includes(state.creatureId)){
+            if(!app.contains(document.activeElement)||document.activeElement.tagName==='BUTTON')
+              await render();
+            else{
+              state.calculated=await computeLocalData(state.editor.read());
+              refreshCalculatedValues(app,state.calculated);
+            }
+          }else if(state.page==='library')await render();
+        }
+      }).catch(error=>{message("Sincronizzazione effetti: "+errorMessage(error),true);});
+    }
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
-    // Avoid replacing focused inputs while a player interacts.
-    if(!app.contains(document.activeElement) || document.activeElement?.tagName==="BUTTON"){
+    // Rebuild only the session panel: sheet/chat/library views must never
+    // be replaced by a background tactical polling response.
+    if(state.page==="session" && (!app.contains(document.activeElement) ||
+       document.activeElement?.tagName==="BUTTON")){
       const scrollY=window.scrollY;
       app.innerHTML=sessionView();
       window.scrollTo(0,scrollY);
     }
   },error=>{
-    if(state.page!=="session")return;
+    if(generation!==mapGeneration)return;
     const wasOnline=state.online;
     state.online=false;
     state.hostReachable=!!error?.status;
@@ -611,6 +815,7 @@ function startMap() {
     // network loss is recoverable: subscribeMap continues retrying.
     state.map=null;
     state.tokenId="";
+    tokenStatusFingerprint="";
     if(error?.status===401){
       state.paired=false;state.session=null;
       state.stopMap?.();state.stopMap=null;
@@ -619,7 +824,7 @@ function startMap() {
       return;
     }
     syncNav();
-    app.innerHTML=sessionView();
+    if(state.page==='session')app.innerHTML=sessionView();
     if(wasOnline)message("Connessione persa. Riconnessione automatica in corso.");
   },2500);
 }
@@ -683,8 +888,8 @@ async function shareRoll() {
   if(!state.roll) return;
   if(!state.paired) throw new Error("Collega prima una partita.");
   const r=state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:"Giocatore",
-    timestamp:Math.floor(Date.now()/1000),label:r.notation,die:"d"+r.sides,
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:r.author||"Giocatore",
+    timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,die:"d"+r.sides,
     count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total};
   const result=await action("chat_send",{event});
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
@@ -696,10 +901,14 @@ async function patch(patchValue) {
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
     await state.editor.update(patchValue);
-    const oldProjection=app.querySelector(".derived-local");
-    if(oldProjection){
-      const fresh=await computeLocalView(state.editor.read(),state.sheet);
-      if(fresh)oldProjection.outerHTML=fresh;
+    const editor=state.editor,revision=editor.revision;
+    const calculated=await computeLocalData(editor.read());
+    if(state.editor===editor&&revision===editor.revision){
+      state.calculated=calculated;
+      refreshCalculatedValues(app,calculated);
+      const attacks=app.querySelector('[data-attack-list]');if(attacks)attacks.outerHTML=attacksView(calculated);
+      const note=app.querySelector('[data-calculation-note]');
+      if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
     }
     state.saveError="";
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
@@ -760,13 +969,24 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.featureOrigin){
+    const id=target.dataset.featureOrigin;
+    if(!state.calculated?.features?.some(row=>row.origin_id===id))throw Error('Privilegio non disponibile');
+    await patch({origin_enabled:{...creature.origin_enabled,[id]:target.checked}});
+    await render();return;
+  }
+  if(target.dataset.itemOverride){
+    await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
+    await render();return;
+  }
   if(target.dataset.documentIndex!==undefined){
     await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
     return;
   }
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
-    await patch({inventory:equipSlot(creature.inventory||[],slot,index)});
+    const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
+    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),...(slot==='body'?{}:{['hand_'+slot+'_special']:special})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -777,20 +997,88 @@ async function handleField(target) {
     const selection=rows.find(r=>String(r.id||r.name+'|'+(r.source||''))===target.value);
     if(target.value&&!selection)throw Error('Riferimento non presente nel catalogo');
     const selected=selection||{};
-    const changes={...identityPatch(creature,key,String(selected.name||'')),
-      [key+'_id']:String(selected.id||''),[key+'_source']:String(selected.source||'')};
-    if(key==='class'&&String(creature.class||'')!==String(selected.name||'')){
-      Object.assign(changes,{subclass:'',subclass_id:'',subclass_source:''});
-      if(Array.isArray(changes.classes)&&changes.classes.length)
-        Object.assign(changes.classes[0],{subclass:'',subclass_id:'',subclass_source:''});
-    }
+    const changes={...referencePatch(creature,key,selected),...(key==="background"?quickGrantPatch(creature,selected):{})};
     await patch(changes);
-    if(key==='species'||key==='class')await render();
+    await render();
     return;
   }
   if(target.dataset.nativeList){
-    await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
+    const key=target.dataset.nativeList,field=target.dataset.key;
+    if(key==='dice_bonuses'&&field==='dice'&&!validBonusDice(target.value))throw Error('Dadi: da 1 a 100 dadi d4, d6, d8, d10, d12, d20 o d100; modificatore opzionale');
+    const changes=nativeRowPatch(creature,key,Number(target.dataset.index),field,target.type==="checkbox"?target.checked:target.value);
+    if(field==='origin_id')changes[key][Number(target.dataset.index)].origin_name=state.calculated.origins.find(o=>o.id===target.value)?.name||'';
+    await patch(changes);
+    if(key==='formula_bonuses'&&field==='expression'){
+      const preview=app.querySelector('[data-formula-preview="'+target.dataset.index+'"]');
+      if(preview)preview.textContent=formulaPreview(target.value,state.calculated);
+    }
+    if(target.dataset.key==='kind')await render();
     return;
+  }
+  if(target.dataset.originConfig){
+    const id=target.dataset.grantId,key=target.dataset.originConfig;
+    if(!['payment_mode','tracker_id','tracker_cost'].includes(key)||!state.calculated.origin_spells.some(g=>g.id===id))throw Error('Concessione non disponibile');
+    let value=target.value;
+    if(key==='tracker_cost'){value=Number(value);if(!Number.isInteger(value)||value<1||value>999)throw Error('Costo da 1 a 999');}
+    if(key==='payment_mode'&&!['free','slot','tracker'].includes(value))throw Error('Consumo non valido');
+    const configs=structuredClone(creature.origin_spell_configs||{});configs[id]={...configs[id],[key]:value};
+    await patch({origin_spell_configs:configs});await render();return;
+  }
+  if(target.dataset.trackerField){
+    const key=target.dataset.trackerField,rows=structuredClone(creature.resource_trackers||[]),row=rows.find(t=>t.id===target.dataset.trackerId);
+    if(!row||!['name','max','max_formula','recharge','origin_id','disabled','recharge_min'].includes(key))throw Error('Tracker non modificabile');
+    let value=target.type==='checkbox'?target.checked:target.value;
+    if(key==='name'&&(!value.trim()||value.length>120))throw Error('Nome tracker non valido');
+    if(key==='recharge_min'){value=Number(value);if(!Number.isInteger(value)||value<1||value>6)throw Error('Soglia da 1 a 6');}
+    if(key==='max'){value=Number(value);if(!Number.isInteger(value)||value<0||value>99999)throw Error('Massimo non valido');}
+    if(key==='recharge'&&!['manual','short_rest','long_rest','turn','d6'].includes(value))throw Error('Recupero non valido');
+    if(key==='origin_id')row.origin_name=state.calculated.origins.find(o=>o.id===value)?.name||'';
+    row[key]=value;await patch({resource_trackers:rows});await render();return;
+  }
+  if(target.dataset.requirement){
+    if(target.dataset.benefitTracker){
+      const rows=structuredClone(creature.resource_trackers||[]),row=rows.find(t=>t.id===target.dataset.benefitTracker);if(!row)throw Error('Tracker non disponibile');
+      row.requirements=requirementPatch(row,target.dataset.requirement,target.value);await patch({resource_trackers:rows});
+    }else{
+      const key=target.dataset.benefitList,rows=rowsFor(creature,key),row=rows[Number(target.dataset.index)];
+      if(!['formula_bonuses','dice_bonuses'].includes(key)||!row||row.automatic)throw Error('Beneficio non modificabile');
+      row.requirements=requirementPatch(row,target.dataset.requirement,target.value);await patch(collectionPatch(creature,key,rows));
+    }
+    await render();return;
+  }
+  if(target.dataset.originEnabled){
+    const id=target.dataset.originEnabled,rows=structuredClone(creature.proficiency_origins||[]),row=rows.find(o=>o.id===id);
+    if(row)row.disabled=!target.checked;else rows.push({id,name:state.calculated.origins.find(o=>o.id===id)?.name||id,disabled:!target.checked});
+    await patch({proficiency_origins:rows,origin_enabled:{...creature.origin_enabled,[id]:target.checked}});await render();return;
+  }
+  if(target.dataset.autoBonus){
+    const id=target.dataset.autoBonus,rows=rowsFor(creature,'formula_bonuses'),index=rows.findIndex(row=>row.id===id);
+    const automatic=state.calculated.automatic_bonuses.find(row=>row.id===id);if(!automatic)throw Error('Bonus non disponibile');
+    const row={...automatic,automatic:true,disabled:!target.checked};if(index>=0)rows[index]=row;else rows.push(row);
+    await patch({formula_bonuses:rows});await render();return;
+  }
+  if(target.dataset.nativePick){
+    if(target.value==='__current__')return;
+    const rows=state.referenceCatalogs[target.dataset.category]||[];
+    const selected=rows.find(row=>String(row.id||row.name+'|'+row.source)===target.value);
+    if(target.value&&!selected)throw Error('Riferimento non valido');
+    await patch(rowReferencePatch(creature,target.dataset.nativePick,Number(target.dataset.index),target.dataset.key,selected));
+    await render();return;
+  }
+  if(target.dataset.castingSection){
+    if(!Object.hasOwn(abilities,target.value))throw Error('Caratteristica non valida');
+    await patch({spellcasting_section_abilities:{...creature.spellcasting_section_abilities,[target.dataset.castingSection]:target.value}});
+    await render();return;
+  }
+  if(target.hasAttribute('data-slot-total')||target.hasAttribute('data-pact-total')){
+    const value=Number(target.value);
+    if(!Number.isInteger(value)||value<0||value>99)throw Error('Massimo slot non valido');
+    const out=await computeLocalData(creature);
+    // Freeze both groups when entering manual mode, retaining current totals.
+    const totals=[0,...out.spell_slots.map(s=>s.base)],changes={spell_slots_manual:true,spell_slots_total:totals,pact_slots_total:out.pact_slots.base,pact_slot_level:out.pact_slots.level};
+    if(target.hasAttribute('data-pact-total'))changes.pact_slots_total=value;
+    else totals[Number(target.dataset.slotTotal)]=value;
+    await patch(changes);await render();return;
   }
   if(target.hasAttribute("data-native-cr")){
     const value=target.value.trim();
@@ -808,12 +1096,17 @@ async function handleField(target) {
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
     const changes=identityPatch(creature,key,value);
+    if(key==='pact_slot_level'){
+      const calculated=await computeLocalData(creature);
+      Object.assign(changes,{spell_slots_manual:true,spell_slots_total:[0,...calculated.spell_slots.map(s=>s.base)],pact_slots_total:calculated.pact_slots.base});
+    }
     const category=({species:"races",subrace:"races",class:"classes",subclass:"subclasses",background:"backgrounds"})[key];
     if(category){
       const matches=(state.referenceCatalogs[category]||[]).filter(r=>r.name===value);
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
+    if(key==='rules_version')await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -837,33 +1130,236 @@ async function handleField(target) {
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
-    await patch({conditions:[...entries]});
+    await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
   }
 }
 async function refreshMapOnce() {
   state.map=await map();
   if(state.page==="session"){const scroll=window.scrollY;app.innerHTML=sessionView();window.scrollTo(0,scroll);}
 }
-async function consumeAcceptedSlot(level,spell) {
-  if(level<1)return; // Cantrip or free use does not expend a class slot.
-  const id=document.querySelector("#cast-creature")?.value;
-  // The modal is rendered outside the main session page, but the session
-  // selector remains mounted underneath.
-  if(!id)return;
-  const editor=await openCreatureEditor(id);
-  const saved=editor.read();
-  const slots=Array.isArray(saved.spell_slots_spent)?[...saved.spell_slots_spent]:[];
-  while(slots.length<10)slots.push(0);
-  slots[level]=Number(slots[level]||0)+1;
-  await editor.update({spell_slots_spent:slots});
-  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-}
 
+// Android and PWA use the same native targeting commands, not independent
+// spell/area calculations. Never send a private creature sheet to the host.
+async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken=''){
+  if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
+  const stored=await loadCreature(casterId);
+  if(!stored)throw Error("Scheda locale non trovata.");
+  const tokenId=String(stored.data.linked_token_sync_id||"");
+  if(!tokenId||expectedToken&&expectedToken!==tokenId)
+    throw Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
+  if(!state.map?.tokens?.some(row=>row.id===tokenId))
+    throw Error("Il token della creatura non è sulla mappa attiva.");
+  const calculated=await computeLocalData(stored.data);
+  const plan=spellCastPlan(stored.data,selection,requestedLevel,calculated,payment);
+  if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+  let charged=false;
+  tacticalViewer.onCastAccepted=async()=>{
+    if(charged)return;
+    const editor=state.editor&&state.creatureId===casterId?
+      state.editor:await openCreatureEditor(casterId);
+    const current=editor.read();
+    const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
+    if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
+    charged=true;
+    if(state.page==='session'){
+      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      state.castSheets?.set(casterId,await computeLocalData(editor.read()));
+    }else if(state.editor===editor)state.calculated=await computeLocalData(editor.read());
+  };
+  try{
+    await tacticalViewer.open(tokenId);
+    await tacticalViewer.beginSpell({spell:selection,slotLevel:plan.slotLevel,context:plan.context});
+  }catch(error){
+    tacticalViewer.close();
+    throw error;
+  }
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='action-open-spells'){
+    state.sheet='magic';await render();return;
+  }
+  if(act==='action-cast-spell'){
+    const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
+    const calculated=await computeLocalData(record);
+    const entry=sessionSpellEntries(record,calculated,state.spellCatalog||[])
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+    if(!entry)throw Error('Incantesimo non disponibile nella scheda.');
+    const options=[];
+    const level=Number(entry.level||0);
+    const grant=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
+    const mode=grant?.payment_mode||'slot';
+    if(level===0||mode==='free'||mode==='tracker'){
+      options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Nessuno slot']);
+    }else{
+      for(const slot of calculated.spell_slots||[]){
+        if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
+          options.push(['slot:'+slot.level,slot.level+'° livello · '+(slot.total-slot.spent)+' disponibili']);
+      }
+      if(mode!=='slot'||!grant){
+        if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+          options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
+      }
+    }
+    if(!options.length)throw Error('Non ci sono slot disponibili per questo incantesimo.');
+    app.querySelector('#action-cast-dialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='action-cast-dialog';
+    dialog.innerHTML='<h2>Lancia '+esc(entry.name||entry.id)+'</h2>'+
+      '<p class="hint">Scegli la risorsa da consumare. Se la partita non è collegata, il lancio registra solo il consumo sulla scheda locale.</p>'+
+      '<label>Risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>'+
+      '<div class="actions"><button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'">Conferma lancio</button>'+
+      '<button type="button" class="btn" data-act="action-cast-cancel">Annulla</button></div>';
+    app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return;
+  }
+  if(act==='action-cast-cancel'){
+    app.querySelector('#action-cast-dialog')?.close();return;
+  }
+  if(act==='action-cast-confirm'){
+    const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
+    const calculated=await computeLocalData(record);
+    const selection=sessionSpellEntries(record,calculated,state.spellCatalog||[])
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+    if(!selection)throw Error('Incantesimo non più disponibile.');
+    const choice=app.querySelector('#action-cast-choice')?.value||'';
+    const [payment,levelText]=choice.split(':');const level=Number(levelText);
+    if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
+      throw Error('Risorsa di lancio non valida.');
+    if(record.linked_token_sync_id&&state.paired&&state.online){
+      app.querySelector('#action-cast-dialog')?.close();
+      await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
+    }
+    const plan=spellCastPlan(record,selection,level,calculated,payment);
+    app.querySelector('#action-cast-dialog')?.close();
+    if(Object.keys(plan.patch).length)await patch(plan.patch);
+    await render();
+    message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
+    return;
+  }
+  if(act==='combat-action'){
+    const mode=target.dataset.mode;
+    if(!['help','shove','prone','grapple'].includes(mode))throw Error('Azione non valida.');
+    const record=state.editor?.read();
+    if(!record?.id)throw Error('Seleziona prima una creatura.');
+    const tokenId=record.linked_token_sync_id;
+    if(!tokenId)throw Error('Piazza o associa la creatura a un token prima di scegliere il bersaglio.');
+    const calculated=await computeLocalData(record);
+    const kind=mode==='grapple'?'La presa':mode==='prone'?'Buttare prono':'Spingere';
+    const rule=record.rules_version==='2024'?
+      '2024 · '+kind+': TS Forza o Destrezza a scelta del bersaglio, CD '+
+       (8+Number(calculated.abilities?.str?.modifier??0)+Number(calculated.stats?.proficiency??0))+
+       '. Sostituisce un attacco con un colpo senz’armi'+(mode==='grapple'?' e richiede una mano libera.':'.'):
+      '2014 · '+kind+': Atletica '+(Number(calculated.skills?.athletics??0)>=0?'+':'')+
+       Number(calculated.skills?.athletics??0)+' contro Atletica o Acrobazia (a scelta del bersaglio). Sostituisce un attacco'+
+       (mode==='grapple'?' e richiede una mano libera.':'.');
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+    await tacticalViewer.open(tokenId,{});
+    tacticalViewer.setBasicAction({mode,rule});
+    return;
+  }
+  if(act==='sheet-roll'){
+    const calculated=await computeLocalData(state.editor.read()),modifier=calculated.values[target.dataset.target];
+    if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
+    const die=randomDie(20),notation='1d20'+(modifier>=0?'+':'')+modifier;
+    const label=target.dataset.label||'Tiro',author=selectedName();
+    state.roll={sides:20,count:1,modifier,rolls:[die],total:die+modifier,notation,label:label+' · '+notation,author,detail:die+' '+(modifier>=0?'+ ':'− ')+Math.abs(modifier)};
+    state.rollHistory.unshift(state.roll);
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='sheet-roll-dialog';
+    dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2><div class="dice-result">'+state.roll.total+'</div><p>'+esc(state.roll.detail)+'</p><div class="actions">'+(state.paired?btn('share-roll','Invia in chat'):'')+btn('close-sheet-roll','Chiudi')+'</div>';
+    const bonuses=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]);
+    if(bonuses.length){
+      const choices=document.createElement('div');
+      choices.innerHTML='<p>Scegli i dadi da aggiungere al risultato. I bonus monouso saranno consumati.</p>'+bonuses.map((row,i)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+i+'">'+esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'<button type="button" class="btn">Applica bonus</button>';
+      choices.querySelector('button').addEventListener('click',async()=>{
+        const apply=choices.querySelector('button');if(apply.disabled)return;apply.disabled=true;
+        try{
+          const available=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]),selected=[...choices.querySelectorAll('input:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(row=>available.some(a=>a.id===row.id));
+          if(!selected.length){apply.disabled=false;return;}
+          const consumed=new Set(),parts=[];let addition=0;
+          for(const row of selected){
+            const match=String(row.dice).replaceAll(' ','').match(/^(\d+)d(\d+)([+-]\d+)?$/i),rolls=Array.from({length:Number(match[1])},()=>randomDie(Number(match[2]))),value=rolls.reduce((sum,n)=>sum+n,0)+Number(match[3]||0);
+            addition+=value;parts.push(row.dice+' ['+rolls.join(', ')+'] = '+value);if(row.consumes_spell)consumed.add(row.consumes_spell);
+          }
+          state.roll={...state.roll,total:state.roll.total+addition,detail:state.roll.detail+' · '+parts.join(' · '),notation:state.roll.notation+'+'+selected.map(r=>r.dice).join('+')};
+          state.roll.label=label+' · risultato con bonus · '+state.roll.notation;
+          state.rollHistory.unshift({...state.roll});
+          if(consumed.size){
+            const record=state.editor.read(),contexts={...record.active_spell_context},enabled={...record.origin_enabled};for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
+            await patch({proficiency_origins:(record.proficiency_origins||[]).filter(o=>!consumed.has(String(o.id).slice(6))||o.group!=='spell'),active_spell_context:contexts,origin_enabled:enabled});
+          }
+          dialog.querySelector('.dice-result').textContent=state.roll.total;dialog.querySelector('p').textContent=state.roll.detail;choices.remove();
+        }catch(error){apply.disabled=false;message(errorMessage(error),true);}
+      });
+      dialog.append(choices);
+    }
+    document.body.append(dialog);dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});
+    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    return;
+  }
+  if(act==='close-sheet-roll'){document.querySelector('#sheet-roll-dialog')?.remove();return;}
+  if(act==='origin-choice-pick'){
+    const c=state.editor.read(),calculated=await computeLocalData(c),choice=calculated.origin_choices.find(row=>row.id===target.dataset.choiceId);
+    if(!choice)throw Error('Scelta non disponibile');
+    const picker=[...app.querySelectorAll('[data-origin-choice]')].find(el=>el.dataset.originChoice===choice.id);
+    const ability=[...app.querySelectorAll('[data-choice-ability]')].find(el=>el.dataset.choiceAbility===choice.id)?.value||'';
+    const spell=state.spellCatalog?.find(row=>row.id===picker?.value);if(!spell)throw Error('Scegli un incantesimo');
+    await patch(applyOriginSpellChoice(c,choice,spell,{ability}));await render();return;
+  }
+  if(act==='origin-choice-remove'){
+    const c=state.editor.read();
+    const rows=(c.origin_spell_grants||[]).filter(g=>g.id!==target.dataset.grantId);
+    await patch({origin_spell_grants:rows});await render();return;
+  }
+  if(act==='origin-spend'){
+    const c=state.editor.read(),calculated=await computeLocalData(c),grant=calculated.origin_spells.find(row=>row.id===target.dataset.grantId);
+    if(!grant)throw Error('Concessione non disponibile');
+    if(grant.payment_mode==='slot'){
+      const picker=[...app.querySelectorAll('[data-origin-slot]')].find(el=>el.dataset.originSlot===grant.id);if(!picker||picker.value==='')throw Error('Nessuno slot disponibile');
+      await patch(slotUsePatch(c,Number(picker.value),1,calculated));
+    }else{
+      const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1);
+      if(!tracker||tracker.max-tracker.spent<cost)throw Error('Utilizzi esauriti');
+      await patch({resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:tracker.spent+cost}});
+    }
+    await render();return;
+  }
+  if(act==='stop-concentration'){
+    const c=state.editor.read();await patch({conditions:(c.conditions||[]).filter(id=>id!=='concentrating'),concentrating_spell_id:''});await render();return;
+  }
+  if(['slot-use','slot-recover','slots-restore','slots-automatic'].includes(act)){
+    const c=state.editor.read();
+    if(act==='slots-automatic')await patch({spell_slots_manual:false,spell_slots_automatic:true});
+    else if(act==='slots-restore')await patch({spell_slots_spent:Array(10).fill(0),pact_slots_spent:0});
+    else await patch(slotUsePatch(c,Number(target.dataset.level),act==='slot-use'?1:-1,await computeLocalData(c)));
+    await render();return;
+  }
+  if(['hp-damage','hp-heal','hp-restore','hp-automatic'].includes(act)){
+    const c=state.editor.read(),calculated=await computeLocalData(c);
+    if(act==='hp-automatic'){
+      if(!calculated.stats.automatic_hp.available)throw Error('PF automatici non disponibili');
+      await patch({max_hp_base:calculated.stats.automatic_hp.value});
+    }else if(act==='hp-restore')await patch({current_hp:Math.max(0,calculated.stats.max_hp)});
+    else{
+      const amount=Number(app.querySelector('#hp-amount')?.value);
+      if(!Number.isInteger(amount)||amount<0||amount>99999)throw Error('Quantità PF non valida');
+      await patch(hitPointPatch(c,amount*(act==='hp-damage'?-1:1),calculated));
+    }
+    await render();return;
+  }
   if(act==="sheet-details"){
     if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
     state.sheet="origins";state.detail=target.dataset.detail;await render();return;
+  }
+  if(act==='edit-bonus'){
+    const c=state.editor.read(),targetKey=target.dataset.target;
+    const rows=rowsFor(c,'formula_bonuses');
+    if(!rows.some(row=>row.target===targetKey&&!row.automatic)){
+      rows.push({id:'bonus_'+crypto.randomUUID(),target:targetKey,expression:'0',origin_id:'',origin_name:'',disabled:false,automatic:false});
+      await patch({formula_bonuses:rows});
+    }
+    state.sheet='origins';state.detail='formula_bonuses';await render();
+    const index=rows.findIndex(row=>row.target===targetKey&&!row.automatic);
+    app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"][data-key="expression"]')?.focus();
+    return;
   }
   if(act==="native-add"||act==="native-remove"){
     const key=target.dataset.list;if(!ROW_FIELDS[key])throw Error("Elenco non valido");
@@ -877,11 +1373,35 @@ async function handleAction(target){
         proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
+        dice_bonuses:{id:'dice_'+crypto.randomUUID(),target:'ability_check',dice:'1d4',origin_id:'',origin_name:'',disabled:false},
         damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
-        origin_spell_grants:{origin_id:"",origin_name:"",disabled:false}};
+        origin_spell_grants:{id:'grant_'+crypto.randomUUID(),origin_id:state.calculated.origins[0]?.id||'pwa_manual',origin_name:state.calculated.origins[0]?.name||'Personalizzato',spell_id:'',payment_mode:'free',tracker_id:'',tracker_cost:1,disabled:false}};
       rows.push(defaults[key]);
     }
-    await patch(collectionPatch(c,key,rows));await render();return;
+    const changes=collectionPatch(c,key,rows);
+    if(key==='origin_spell_grants'&&!state.calculated.origins.length)changes.proficiency_origins=[...(c.proficiency_origins||[]),{id:'pwa_manual',name:'Personalizzato',group:'custom',disabled:false}];
+    await patch(changes);await render();return;
+  }
+  if(act==='quick-create'){
+    const name=text(app.querySelector('#quick-name')?.value);
+    const description=app.querySelector('#quick-description')?.value||'';
+    const grants=[...app.querySelectorAll('[data-quick-kind]')].map(select=>{
+      const key=app.querySelector('[data-quick-key="'+select.dataset.quickKind+'"]')?.value?.trim()||'';
+      return {kind:select.value,key};
+    }).filter(row=>row.kind&&row.key);
+    const details=state.catalogCategory==='items'?{
+      custom_item_type:app.querySelector('#quick-type')?.value,
+      rarity:app.querySelector('#quick-rarity')?.value,
+      value:Number(app.querySelector('#quick-value')?.value)
+    }:{};
+    const created=await createQuickHomebrew(state.catalogCategory,name,description,grants,details);
+    state.catalogSelected=-1;state.catalogQuery=created.name;
+    await render();message('Contenuto personalizzato salvato in locale.');return;
+  }
+  if(act==='quick-delete'){
+    if(!window.confirm('Eliminare questo contenuto personalizzato?'))return;
+    await deleteQuickHomebrew(target.dataset.id);
+    state.catalogSelected=-1;state.catalogQuery='';await render();message('Contenuto eliminato.');return;
   }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
@@ -904,14 +1424,14 @@ async function handleAction(target){
       const current=Array.isArray(sheet.feats_catalog)?sheet.feats_catalog:[];
       if(current.some(row=>row.id===feat.id&&row.name===feat.name&&row.source===feat.source))
         throw new Error("Talento già presente in questa scheda.");
-      await editor.update({feats_catalog:[...current,feat]});
+      await editor.update({feats_catalog:[...current,feat],...quickGrantPatch(sheet,entry)});
     }else if(category==="backgrounds"){
-      await editor.update({background:entry.name,background_source:entry.source||""});
+      await editor.update({background:entry.name,background_id:entry.id||"",background_source:entry.source||"",...quickGrantPatch(sheet,entry)});
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-    message("Contenuto aggiunto. Eventuali bonus vengono elaborati dalla versione Godot.");
+    message("Contenuto aggiunto; i benefici strutturati sono calcolati localmente.");
     return;
   }
   if(act==="refresh"){await render();return;}
@@ -989,23 +1509,31 @@ async function handleAction(target){
     const name=text(document.querySelector("#tracker-name")?.value);
     const maximum=Number(document.querySelector("#tracker-max")?.value);
     const recharge=document.querySelector("#tracker-recharge")?.value||"manual";
-    if(!name||name.length>120||!Number.isInteger(maximum)||maximum<1||maximum>99999)
+    if(!name||name.length>120||!Number.isInteger(maximum)||maximum<0||maximum>99999)
       throw new Error("Specifica nome e massimo valido della risorsa.");
     const record=state.editor.read();
     const trackers=structuredClone(record.resource_trackers||[]);
     trackers.push({id:"pwa_tracker_"+crypto.randomUUID(),name,max:maximum,
-      max_formula:"",origin_name:"Personalizzato",recharge});
+      max_formula:text(document.querySelector('#tracker-formula')?.value),origin_id:document.querySelector('#tracker-origin')?.value||'',origin_name:state.calculated.origins.find(o=>o.id===document.querySelector('#tracker-origin')?.value)?.name||'',recharge});
     await patch({resource_trackers:trackers});await render();return;
   }
-  if(["tracker-more","tracker-less","tracker-delete"].includes(act)){
+  if(["tracker-more","tracker-less","tracker-delete","tracker-recharge"].includes(act)){
     const record=state.editor.read(),trackers=structuredClone(record.resource_trackers||[]);
-    const index=Number(target.dataset.index),row=trackers[index];
+    const calculated=await computeLocalData(record);
+    const row=calculated.trackers.find(t=>t.id===target.dataset.trackerId)||(act==='tracker-delete'?trackers.find(t=>t.id===target.dataset.trackerId):null),index=trackers.findIndex(t=>t.id===row?.id);
     if(!row)throw new Error("Tracker non disponibile.");
     if(act==="tracker-delete"){
+      if(index<0||row.automatic)throw Error('Modifica questa risorsa dalla sua origine');
       trackers.splice(index,1);
       const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
       await patch({resource_trackers:trackers,resource_tracker_spent:spent});
     }else{
+      if(act==='tracker-recharge'){
+        if(row.recharge!=='d6')throw Error('Questa risorsa non usa la ricarica d6');
+        const die=randomDie(6),success=die>=Number(row.recharge_min||6),spent={...(record.resource_tracker_spent||{})};
+        if(success){delete spent[row.id];await patch({resource_tracker_spent:spent});}
+        await render();message(row.name+': d6 = '+die+' · '+(success?'Ricaricata':'Non ricaricata'));return;
+      }
       const maximum=Math.max(0,Number(row.max)||0);
       const spent={...(record.resource_tracker_spent||{})};
       const delta=act==="tracker-more"?1:-1;
@@ -1014,13 +1542,29 @@ async function handleAction(target){
     }
     await render();return;
   }
-  if(act==="tracker-short"||act==="tracker-long"){
-    const record=state.editor.read(),spent={...(record.resource_tracker_spent||{})};
-    for(const row of record.resource_trackers||[]){
-      if(row.recharge==="short_rest" ||
-        (act==="tracker-long"&&row.recharge==="long_rest")) delete spent[row.id];
-    }
-    await patch({resource_tracker_spent:spent});await render();return;
+  if(act==='tracker-optional-recovery'){
+    const record=state.editor.read(),calculated=await computeLocalData(record);
+    const change=optionalRecoveryPatch(record,target.dataset.ruleId,calculated.trackers);
+    if(!change)throw Error('Questo recupero è già stato usato o non è disponibile dopo un riposo breve.');
+    await patch(change);await render();return;
+  }
+  if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
+    const record=state.editor.read(),calculated=await computeLocalData(record);
+    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':act==='tracker-turn'?'turn':'short_rest',calculated.trackers));await render();return;
+  }
+  if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
+    const creature=state.editor.read(),calculated=await computeLocalData(creature);
+    const definitions=calculated.infusion_catalog,mechanics=calculated.infusion_mechanics;
+    const index=Number(app.querySelector('#infusion-item')?.value);
+    const known=learnedInfusions(creature,definitions);
+    const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
+    const learned=known[Number(app.querySelector('#infusion-known')?.value)];
+    let changes;
+    if(act==='infusion-learn')changes=learnInfusionPatch(creature,option,definitions,mechanics,index);
+    else if(act==='infusion-apply')changes=applyInfusionPatch(creature,learned,definitions,mechanics,index);
+    else if(act==='infusion-forget')changes=forgetInfusionPatch(creature,learned);
+    else changes=clearInfusionPatch(creature,index);
+    await patch(changes);await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
@@ -1057,12 +1601,13 @@ async function handleAction(target){
     const index=Number(target.dataset.index);
     const spell=state.spellCatalog?.[index];
     if(!spell)throw Error("Seleziona un incantesimo valido.");
-    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget));
+    const classes=state.calculated?.casting_classes||[],member=classes.find(row=>row.id===state.spellClass);
+    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget,{member,classes,catalog:state.spellCatalog||[]}));
     await render();return;
   }
   if(act==="remove-spell"){
     const key=target.dataset.key,index=Number(target.dataset.index);
-    await patch(removeSelectedSpell(state.editor.read(),key,index));await render();return;
+    await patch(removeSelectedSpell(state.editor.read(),key,index,{classId:target.dataset.classId==='manual'?null:target.dataset.classId,classes:state.calculated?.casting_classes||[],catalog:state.spellCatalog||[]}));await render();return;
   }
   if(act==="save-json"){
     const raw=document.getElementById("json-editor")?.value;
@@ -1091,6 +1636,7 @@ async function handleAction(target){
       current_miniature_id:sheet.current_miniature_id||"",
       default_miniature_id:sheet.default_miniature_id||"",
       size_name:sheet.size_name||"Medium",footprint:sheet.footprint??1,
+      rules_version:sheet.rules_version==="2024"?"2024":"2014",
       reach_feet:sheet.reach_feet??5,conditions:sheet.conditions||[],
       rules_version:sheet.rules_version||"2014",
       visual_front_quarter_turns:sheet.visual_front_quarter_turns??0};
@@ -1100,6 +1646,7 @@ async function handleAction(target){
     const editor=await openCreatureEditor(selectedId);
     await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
     await refreshMapOnce();return;
   }
@@ -1108,29 +1655,34 @@ async function handleAction(target){
     const attack=isAttack?{range_feet:state.attackRange,
       long_range_feet:state.attackLongRange,melee:state.attackMelee}:{};
     if(!tacticalViewer)tacticalViewer=new TacticalViewer({
-      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
+      send:action,ownerId,notify:message
     });
     await tacticalViewer.open(state.tokenId,attack);
     return;
   }
+  if(act==="cast-sheet-spell"||act==="cast-origin-spell"){
+    const c=state.editor?.read();if(!c)throw Error("Apri una scheda prima del lancio.");
+    const calculated=await computeLocalData(c);
+    const selections=sessionSpellEntries(c,calculated,state.spellCatalog||[]);
+    const spell=act==="cast-origin-spell"?
+      selections.find(row=>row.grant_id===target.dataset.grantId):
+      selections.find(row=>row.id===target.dataset.spellId&&
+        (!target.dataset.castingClass||target.dataset.castingClass==='manual'||
+         row.casting_class===target.dataset.castingClass));
+    if(!spell)throw Error("Incantesimo non disponibile nella scheda.");
+    const level=Number(app.querySelector('#sheet-cast-level')?.value??state.castLevel);
+    if(!Number.isInteger(level)||level<0||level>9)throw Error("Livello di slot non valido.");
+    state.castLevel=level;
+    await startTargetedCast(c.id,structuredClone(spell),level,
+      app.querySelector('#sheet-cast-payment')?.value||'auto');
+    return;
+  }
   if(act==="begin-spell"){
     const casterId=document.querySelector("#cast-creature")?.value;
-    const caster=await loadCreature(casterId);
-    if(!caster)throw new Error("Scegli una scheda locale.");
-    if(caster.data.linked_token_sync_id!==state.tokenId)
-      throw new Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
     const spell=state.visibleSpells?.[Number(document.querySelector("#cast-spell")?.value)];
     if(!spell)throw new Error("Scegli un incantesimo della creatura.");
-    if(!Number.isInteger(state.castLevel)||state.castLevel<0||state.castLevel>9)
-      throw new Error("Livello di slot non valido.");
-    if(!tacticalViewer)tacticalViewer=new TacticalViewer({
-      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
-    });
-    await tacticalViewer.open(state.tokenId);
-    await tacticalViewer.beginSpell({spell,slotLevel:state.castLevel,
-      context:{spellcasting_ability:caster.data.spellcasting_ability||"",
-        spell_attack_bonus:caster.data.spell_attack_bonus||0,
-        spell_save_dc:caster.data.spell_save_dc||0}});
+    await startTargetedCast(casterId,structuredClone(spell),state.castLevel,
+      document.querySelector('#cast-payment')?.value||'auto',state.tokenId);
     return;
   }
   if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
@@ -1149,6 +1701,7 @@ async function handleSubmit(form){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
+    realtimeStopped=false;
     state.paired=true;state.online=true;
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
@@ -1195,7 +1748,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){
@@ -1210,7 +1763,7 @@ function listen(){
       if(results)results.innerHTML=renderCatalogRows();
       return;
     }
-    if(!target?.matches("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index]"))return;
+    if(!target?.matches("[data-document-index],[data-field],[data-native-list],[data-native-cr],[data-item-index],[data-item-override]"))return;
     if(target.type==="number")return; // Partial numeric input is not valid until committed.
     clearTimeout(pendingFieldTimers.get(target));
     const editor=state.editor;
@@ -1234,6 +1787,10 @@ function listen(){
     }
     if(target?.id==="spell-target"){
       state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
+    }
+    if(target?.id==='spell-class'){
+      state.spellClass=target.value;
+      const matches=app.querySelector('#spell-results');if(matches)matches.innerHTML=renderSpellResults();return;
     }
     if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
@@ -1259,6 +1816,11 @@ function listen(){
     }
     if(target?.dataset?.field==="attack_melee_ui"){
       state.attackMelee=target.checked;return;
+    }
+    if(target?.id==="sheet-cast-level"){
+      const level=Number(target.value);
+      if(Number.isInteger(level)&&level>=0&&level<=9)state.castLevel=level;
+      return;
     }
     if(target?.dataset?.field==="cast_slot_ui"){
       state.castLevel=Number(target.value);return;
@@ -1302,9 +1864,10 @@ function listen(){
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
-export function stopRealtime() { stopSubscriptions(); }
+export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
 export async function mount(){
+  realtimeStopped=false;
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
@@ -1321,7 +1884,7 @@ export async function mount(){
       message("QR non valido o scaduto: "+errorMessage(error),true);
     }
   }
-  state.cachedCreatures=(await listCreatures()).map(row=>({name:row.creature.name,id:row.creature.id}));
+  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
   if(state.qrCode && state.page==="session"){
     const input=document.querySelector("#pair-secret");
