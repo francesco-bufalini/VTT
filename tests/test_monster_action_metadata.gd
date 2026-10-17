@@ -56,6 +56,17 @@ func run() -> void:
 	assert(int(_tracker(record, "Fire Breath").get("recharge_min", 0)) == 5)
 	assert(int(_tracker(record, "Azioni leggendarie").get("max", 0)) == 3)
 	assert(Metadata.prepare(normalized) == normalized, "Prepared metadata is idempotent")
+	var revised: Dictionary = normalized.duplicate(true)
+	(revised["action"][2] as Dictionary)["entries"] = [
+		"{@atk mw,rw} {@hit +10} to hit, reach 10 ft. or range 30/120 ft. {@damage 1d10+4}."
+	]
+	revised = Metadata.prepare(revised)
+	assert(int(_attack({"kind": "monster", "stat_block": revised},
+		"Versatile Lance").get("base_hit", 0)) == 10,
+		"Editing a bestiary action must invalidate its old cached metadata")
+	assert(Metadata.prepare(revised) == revised,
+		"Revision tracking must not trigger repeated conversions")
+
 
 	# Deleting the source prose after import must not cause any new regex or
 	# change the attack/recharge result. The typed fields are authoritative.
