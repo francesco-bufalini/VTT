@@ -43,8 +43,11 @@ static func _feature_supplements() -> Array[Dictionary]:
 	return _supplement_cache
 
 # Original vector pictograms: fixed atlas cells avoid font/emoji differences across devices.
-const ACTION_ICONS: Texture2D = preload("res://vtt/icons/action_dashboard.svg")
+# Both atlases live in pwa/ so Godot and the offline browser render identical glyphs.
+const ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_dashboard_gloss.svg")
+const EXTRA_ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_extras.svg")
 const ICON_KEYS := ["action", "bonus", "free", "movement", "reaction", "sword", "help", "shove", "prone", "stealth", "eye", "object", "speech", "target", "shield", "book", "spark", "flag", "skill", "hand"]
+const EXTRA_ICON_KEYS := ["dash", "disengage", "dodge", "hide", "search", "ready", "misty_step", "concentration", "sleight_of_hand", "athletics", "potion", "wild_shape", "arcana", "fire", "healing", "mark_enemy"]
 const GOLD := Color("edbd77")
 const INK := Color("f5eee5")
 const MUTED := Color("c7bdb1")
@@ -135,12 +138,12 @@ func _ready() -> void:
 		var panel := PanelContainer.new()
 		panel.name = "Actions_" + GROUPS[index].replace(" ", "_")
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("201e1df7")
-		style.border_color = Color("c99750")
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(10)
-		style.set_content_margin_all(10)
+		# Subtle bevel and bottom shadow; keep one inexpensive flat stylebox.
+		var style := _surface(Color("221d1cf7"), Color("c99750"), 11, 11)
+		style.border_width_top = 2
+		style.shadow_color = Color(0, 0, 0, 0.42)
+		style.shadow_size = 6
+		style.shadow_offset = Vector2(0, 3)
 		panel.add_theme_stylebox_override("panel", style)
 		var section := VBoxContainer.new()
 		section.add_theme_constant_override("separation", 5)
@@ -504,15 +507,30 @@ func _surface(background: Color, border: Color, radius: int = 7, padding: int = 
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(radius)
 	style.set_content_margin_all(padding)
+	# Shared lightweight surface treatment: gold edge, depth and a softer shadow.
+	style.shadow_color = Color(0, 0, 0, 0.24)
+	style.shadow_size = 2
+	style.shadow_offset = Vector2(0, 1)
+	style.anti_aliasing = true
 	return style
 
 func _action_style() -> StyleBoxFlat:
-	return _surface(Color("2c2726f7"), Color("89643f"))
+	var style := _surface(Color("352928f7"), Color("89643f"), 8, 8)
+	style.border_color = Color("9c7048")
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(0, 2)
+	return style
 
 func _icon_texture(key: String) -> AtlasTexture:
 	var texture := AtlasTexture.new()
+	var index := ICON_KEYS.find(key)
 	texture.atlas = ACTION_ICONS
-	texture.region = Rect2(maxi(0, ICON_KEYS.find(key)) * 64, 0, 64, 64)
+	if index < 0:
+		index = EXTRA_ICON_KEYS.find(key)
+		if index >= 0:
+			texture.atlas = EXTRA_ACTION_ICONS
+	texture.region = Rect2(maxi(0, index) * 64, 0, 64, 64)
 	return texture
 
 func _icon(key: String, extent: int = 28) -> TextureRect:
@@ -527,22 +545,32 @@ func _icon(key: String, extent: int = 28) -> TextureRect:
 
 func _entry_icon(entry: Dictionary) -> String:
 	var title := String(entry.get("name", "")).to_lower()
-	if "incantesim" in title or title == "magia": return "spark"
+	var kind := String(entry.get("kind", ""))
+	if "nebbios" in title or "teletrasport" in title: return "misty_step"
+	if "concentrazione" in title: return "concentration"
+	if "forma selvatica" in title or "wild shape" in title: return "wild_shape"
+	if "guarig" in title or "curar" in title: return "healing"
+	if "fuoco" in title or "fiamma" in title: return "fire"
+	if "incantesim" in title or title == "magia" or kind == "Incantesimo": return "spark"
+	if "rapidità di mano" in title: return "sleight_of_hand"
 	if "furtiv" in title or "nascond" in title: return "stealth"
 	if "opportunit" in title: return "sword"
 	if "attacc" in title or "disarm" in title: return "sword"
 	if "aiutar" in title: return "help"
 	if "spinger" in title: return "shove"
-	if "prono" in title: return "prone"
+	if "prono" in title or "atterrar" in title: return "prone"
 	if "oggetto" in title or "utilizz" in title or "scudo" in title: return "object"
+	if "pozion" in title: return "potion"
 	if "parlare" in title or "influenz" in title: return "speech"
-	if "concentrazione" in title: return "target"
-	if "schivar" in title or "disimpegn" in title: return "shield"
-	if "cercar" in title: return "eye"
-	if "studiar" in title: return "book"
-	if "marcare" in title or "preparar" in title: return "flag"
-	if "muov" in title or "scatt" in title or int(entry.get("time", 0)) == 3: return "movement"
-	return {"Attacco": "sword", "Incantesimo": "spark", "Capacità": "bonus"}.get(String(entry.get("kind", "")), "action")
+	if "schivar" in title: return "dodge"
+	if "disimpegn" in title: return "disengage"
+	if "cercar" in title or "indagar" in title: return "search"
+	if "studiar" in title or "arcano" in title: return "arcana"
+	if "marcare" in title: return "mark_enemy"
+	if "preparar" in title: return "ready"
+	if "scatt" in title: return "dash"
+	if "muov" in title or int(entry.get("time", 0)) == 3: return "movement"
+	return {"Attacco": "sword", "Incantesimo": "spark", "Capacità": "bonus"}.get(kind, "action")
 
 func _action_button(text: String, help: String = "") -> Button:
 	var button := Button.new()
@@ -553,10 +581,19 @@ func _action_button(text: String, help: String = "") -> Button:
 	button.add_theme_color_override("font_color", INK)
 	button.add_theme_color_override("font_hover_color", Color("fff1cf"))
 	button.add_theme_color_override("font_pressed_color", Color("fff1cf"))
-	button.add_theme_stylebox_override("normal", _surface(Color("392d2c"), Color("987047"), 6, 5))
-	button.add_theme_stylebox_override("hover", _surface(Color("503835"), GOLD, 6, 5))
-	button.add_theme_stylebox_override("pressed", _surface(Color("612d38"), GOLD, 6, 5))
-	button.add_theme_stylebox_override("focus", _surface(Color(0, 0, 0, 0), GOLD, 6, 5))
+	# Raised bevel, stronger edge on hover, recessed feel on press.
+	var normal := _surface(Color("3b302d"), Color("9d754e"), 7, 6)
+	normal.border_width_top = 2
+	var hover := _surface(Color("574039"), Color("f2c779"), 7, 6)
+	hover.border_width_top = 2
+	hover.shadow_color = Color("d69f5040")
+	hover.shadow_size = 4
+	var pressed := _surface(Color("542a33"), Color("e8b76b"), 7, 6)
+	pressed.shadow_size = 1
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("focus", _surface(Color(0, 0, 0, 0), GOLD, 7, 6))
 	return button
 
 func _show_entry(entry: Dictionary) -> void:
@@ -738,7 +775,12 @@ func refresh_top_skills(record: Dictionary) -> void:
 		row.add_theme_constant_override("separation", 12)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(row)
-		var icon_key := "stealth" if key == "stealth" else "hand" if key == "sleight of hand" else "eye" if key in ["insight", "perception", "investigation"] else "skill"
+		var icon_key := {
+			"stealth": "stealth", "sleight of hand": "sleight_of_hand",
+			"insight": "eye", "perception": "eye", "investigation": "search",
+			"athletics": "athletics", "acrobatics": "bonus", "arcana": "arcana",
+			"medicine": "healing", "survival": "search", "nature": "wild_shape"
+		}.get(key, "skill")
 		row.add_child(_icon(icon_key, 26))
 		var caption := Label.new()
 		caption.text = String(skill["label"])
@@ -778,9 +820,11 @@ func _add_subheading(section: VBoxContainer, text: String) -> void:
 	var band := PanelContainer.new()
 	band.set_meta("action_generated", true)
 	var band_style := StyleBoxFlat.new()
-	band_style.bg_color = Color(0, 0, 0, 0)
-	band_style.border_color = Color("735336")
+	band_style.bg_color = Color("392a27")
+	band_style.border_color = Color("92633f")
+	band_style.border_width_top = 1
 	band_style.border_width_bottom = 1
+	band_style.set_corner_radius_all(5)
 	band_style.content_margin_left = 8
 	band_style.content_margin_top = 5
 	band_style.content_margin_bottom = 5
