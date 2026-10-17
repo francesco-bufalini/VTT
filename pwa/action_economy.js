@@ -1,6 +1,6 @@
 // Action availability is projected from the same local creature and calculated
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
-import {availableSpells, spellId} from './spell_selection.js';
+import {spellId,sessionSpellEntries} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
 import {featureActionEntries} from './feature_mechanics.js';
 
@@ -227,13 +227,21 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
       resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
  }
- for(const raw of availableSpells(record)){
+ // Each eligible class has its own casting ability and action, even when
+ // the spell ID is shared. This mirrors the native spellcasting selection.
+ const classChoices=sessionSpellEntries(record,{
+  casting_classes:arr(calculated.casting_classes),origin_spells:[]
+ },spells);
+ for(const raw of classChoices){
   const definition=spellDefinition(raw,spells);
   if(!definition)continue;
   const level=Number(definition.level??raw?.level??0);
   add(definition.name||spellId(raw),definition.time??definition.casting_time??'action','Incantesimo',
       'Livello '+level+' · Tempo di lancio: '+castingTime(definition)+'.\n'+details(definition.entries??definition.description??''),
-      level>0?'Slot incantesimo':'Nessuna risorsa',0,{spell_id:spellId(raw),spell_mode:'class',level});
+      level>0?'Slot incantesimo':'Nessuna risorsa',0,{
+       spell_id:spellId(raw),spell_mode:'class',level,
+       casting_class:raw.casting_class||'',casting_label:raw.casting_label||'Scheda'
+      });
  }
  // Origin-spell grants are already resolved by the local rules engine,
  // including custom payment mode, disabled origins and level requirements.
@@ -266,14 +274,14 @@ function actionRow(item,calculated){
    .filter((id,index,all)=>all.indexOf(id)===index);
  const actionButtons=(isSpell?
    '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
-     '" data-grant-id="'+esc(item.grant_id||'')+'">Lancia incantesimo</button>':
+     '" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+esc(item.casting_class||'')+'">Lancia incantesimo</button>':
    item.name==='Lanciare un incantesimo'||item.name==='Magia'?
      '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
   (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+
     '<span>'+remaining+' / '+esc(t.max)+'</span>'+
     '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
     !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
- const subLabel=isClassSpell?'Slot incantesimo':resource;
+ const subLabel=isClassSpell?('Slot incantesimo'+(item.casting_label&&item.casting_label!=='Scheda'?' · '+item.casting_label:'')):resource;
  return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'">'+
   '<div class="action-economy-main"><details class="action-economy-entry"><summary>'+
   '<span class="action-economy-type-icon" aria-hidden="true">'+glyph+'</span><strong>'+esc(item.name)+

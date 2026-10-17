@@ -7,10 +7,18 @@ export function featureMember(record,rule){
  const edition=record?.rules_version==='2024'?'XPHB':'PHB';
  const classes=rows(record?.classes).length?record.classes:
   record?.class?[{name:record.class,source:record.class_source,level:record.level,subclass:record.subclass}]:[];
- return classes.find(c=>low(c.name)===low(rule.class_name)&&
-   String(c.source||edition).toUpperCase()===String(rule.class_source||'').toUpperCase()&&
-   Number(c.level||0)>=Number(rule.min_level||1)&&
-   (!rule.subclass||subclass(c.subclass||record.subclass)===subclass(rule.subclass)))||null;
+ return classes.find(c=>{
+  const source=String(c.source||edition).toUpperCase();
+  // The legacy top-level subclass belongs only to the primary class. Never
+  // borrow it for another class when a multiclass entry has no subclass.
+  const primary=low(c.name)===low(record.class)&&
+    source===String(record.class_source||edition).toUpperCase();
+  const selectedSubclass=c.subclass||(primary?record.subclass:'');
+  return low(c.name)===low(rule.class_name)&&
+    source===String(rule.class_source||'').toUpperCase()&&
+    Number(c.level||0)>=Number(rule.min_level||1)&&
+    (!rule.subclass||subclass(selectedSubclass)===subclass(rule.subclass));
+ })||null;
 }
 function trackerFor(member,rule,trackers){
  const prefix='class:'+low(rule.class_name)+':'+low(rule.class_source)+':';

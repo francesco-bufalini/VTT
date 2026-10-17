@@ -137,3 +137,18 @@ test('bundled PWA native tables and resource definitions are generated without d
  assert.deepEqual(mechanics.classes,native.classes);
  assert.deepEqual(mechanics.resource_overrides,overrides.classes);
 });
+
+test('removing a spell assigned to another class cannot delete it',()=>{
+ const wizard='class|phb|wizard',warlock='class|phb|warlock';
+ const spell={id:'shield',name:'Shield',level:1,casting_classes:[wizard]};
+ const c={prepared_spells:[spell],spells:[spell]};
+ assert.throws(()=>removeSelectedSpell(c,'prepared_spells',0,{
+  classId:warlock,classes:[{id:wizard,name:'Wizard'},{id:warlock,name:'Warlock'}]
+ }),/non assegnato alla classe/);
+ assert.deepEqual(c.prepared_spells,[spell]);
+ const removed=removeSelectedSpell(c,'prepared_spells',0,{classId:wizard});
+ assert.deepEqual(removed.prepared_spells,[]);
+ const shared={...c,prepared_spells:[{...spell,casting_classes:[wizard,warlock]}]};
+ const onlyWizard=removeSelectedSpell(shared,'prepared_spells',0,{classId:warlock});
+ assert.deepEqual(onlyWizard.prepared_spells[0].casting_classes,[wizard]);
+});

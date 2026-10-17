@@ -261,3 +261,25 @@ test('all 98 generated golden icons are shared, discoverable and cached offline'
  assert(!html.includes('>⚔<'));
  assert(html.includes('data-target="skill:athletics"'));
 });
+
+test('multiclass casting actions preserve distinct spell abilities and button identities',()=>{
+ const wizard='class|phb|wizard',warlock='class|phb|warlock';
+ const spell={id:'shield',name:'Shield',level:1,
+  casting_classes:[wizard,warlock]};
+ const record={prepared_spells:[spell],spells:[spell]};
+ const calculated={casting_classes:[
+  {id:wizard,name:'Wizard',ability:'int'},
+  {id:warlock,name:'Warlock',ability:'cha'}
+ ],origin_spells:[],trackers:[]};
+ const catalog=[{id:'shield',name:'Shield',level:1,classes:['Wizard','Warlock'],
+   time:[{unit:'reaction',number:1}],entries:['Protezione']}];
+ const actions=actionEntries(record,calculated,catalog).filter(a=>a.spell_id==='shield');
+ assert.equal(actions.length,2);
+ assert.deepEqual(actions.map(a=>a.casting_class),[wizard,warlock]);
+ assert(actions.every(a=>a.time==='reaction'));
+ const markup=actionEconomyView(record,calculated,catalog);
+ assert(markup.includes('data-casting-class="'+wizard+'"'));
+ assert(markup.includes('data-casting-class="'+warlock+'"'));
+ assert(markup.includes('Slot incantesimo · Wizard'));
+ assert(markup.includes('Slot incantesimo · Warlock'));
+});

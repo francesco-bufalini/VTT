@@ -93,3 +93,20 @@ test('2024 Sorcerous Restoration is offered after rest and consumed once per lon
  assert.deepEqual(long.resource_recovery_ready,{});
  assert.equal(long.resource_tracker_spent[tracker.id],undefined);
 });
+
+test('a multiclass member never inherits the primary class subclass',()=>{
+ const rogue={kind:'character',rules_version:'2014',class:'Rogue',
+  class_source:'PHB',subclass:'Thief',level:5,classes:[
+   {name:'Rogue',source:'PHB',level:3,subclass:'Thief'},
+   {name:'Druid',source:'PHB',level:2}
+  ]};
+ const actions=featureActionEntries(rogue,[],rules);
+ assert(actions.some(row=>row.rule_id==='rogue_phb_use_object'));
+ assert(actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='action'));
+ assert(!actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
+ const primaryLegacy={...rogue,class:'Druid',subclass:'Circle of the Moon',
+  classes:[{name:'Druid',source:'PHB',level:2},{name:'Rogue',source:'PHB',level:3}]};
+ const legacyActions=featureActionEntries(primaryLegacy,[],rules);
+ assert(legacyActions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
+ assert(!legacyActions.some(row=>row.rule_id==='rogue_phb_use_object'));
+});
