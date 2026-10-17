@@ -90,6 +90,7 @@ jobs:
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
             test_creature_action_economy.gd \
+            test_feature_timing_recovery.gd \
             test_combat_basic_actions.gd \
             test_trait_origins.gd \
             test_structured_numeric_bonuses.gd \
