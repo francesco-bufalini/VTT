@@ -26,6 +26,51 @@ export async function loadFeatureActionOverrides(){
 }
 
 export const GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
+/* Shared with the native Godot tab: 64px transparent cells in two SVG atlases.
+   Inline CSS selects one cell; never depend on OS emoji glyphs. */
+const ACTION_GLYPHS=["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand"];
+const EXTRA_GLYPHS=["dash","disengage","dodge","hide","search","ready","misty_step","concentration","sleight_of_hand","athletics","potion","wild_shape","arcana","fire","healing","mark_enemy"];
+function actionGlyph(key){
+ let index=ACTION_GLYPHS.indexOf(key), count=ACTION_GLYPHS.length, group="base";
+ if(index<0){index=EXTRA_GLYPHS.indexOf(key);count=EXTRA_GLYPHS.length;group="extra";}
+ if(index<0){index=0;count=ACTION_GLYPHS.length;group="base";}
+ return '<span class="vtt-action-glyph vtt-action-glyph--'+group+'" style="--glyph-position:'+
+   (100*index/(count-1)).toFixed(5)+'%" aria-hidden="true"></span>';
+}
+function actionGlyphKey(item){
+ const name=String(item.name||'').toLocaleLowerCase('it');
+ const type=String(item.type||'');
+ if(name.includes('nebbios')||name.includes('teletrasport'))return 'misty_step';
+ if(name.includes('concentrazione'))return 'concentration';
+ if(name.includes('forma selvatica')||name.includes('wild shape'))return 'wild_shape';
+ if(name.includes('guarig')||name.includes('curar'))return 'healing';
+ if(name.includes('fuoco')||name.includes('fiamma'))return 'fire';
+ if(name.includes('incantesim')||name==='magia'||type==='Incantesimo')return 'spark';
+ if(name.includes('rapidità di mano'))return 'sleight_of_hand';
+ if(name.includes('furtiv')||name.includes('nascond'))return 'stealth';
+ if(name.includes('opportunit')||name.includes('attacc')||name.includes('disarm'))return 'sword';
+ if(name.includes('aiutar'))return 'help';
+ if(name.includes('spinger'))return 'shove';
+ if(name.includes('prono')||name.includes('atterrar'))return 'prone';
+ if(name.includes('oggetto')||name.includes('utilizz')||name.includes('scudo'))return 'object';
+ if(name.includes('pozion'))return 'potion';
+ if(name.includes('parlare')||name.includes('influenz'))return 'speech';
+ if(name.includes('schivar'))return 'dodge';
+ if(name.includes('disimpegn'))return 'disengage';
+ if(name.includes('cercar')||name.includes('indagar'))return 'search';
+ if(name.includes('studiar')||name.includes('arcano'))return 'arcana';
+ if(name.includes('marcare'))return 'mark_enemy';
+ if(name.includes('preparar'))return 'ready';
+ if(name.includes('scatt'))return 'dash';
+ if(name.includes('muov')||item.time==='movement')return 'movement';
+ return ({Attacco:'sword',Incantesimo:'spark',Capacità:'bonus'})[type]||'action';
+}
+function skillGlyphKey(skill){
+ return ({stealth:'stealth','sleight of hand':'sleight_of_hand',insight:'eye',
+ perception:'eye',investigation:'search',athletics:'athletics',acrobatics:'bonus',
+ arcana:'arcana',medicine:'healing',survival:'search',nature:'wild_shape'})[skill]||'skill';
+}
+
 const SRD_2014=[
  ["Attaccare","action","Attacco","Effettua un attacco in mischia o a distanza."],
  ["Lanciare un incantesimo","action","Generale","Il tempo di lancio determina il tipo di azione richiesta."],
@@ -196,7 +241,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
 function actionRow(item,calculated){
- const glyph=({'Attacco':'⚔','Incantesimo':'✦','Capacità':'◆','Regola opzionale':'◇'})[item.type]||'•';
+ const glyph=actionGlyph(actionGlyphKey(item));
  const tracker=String(item.tracker||'').trim();
  const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
  const t=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||''));
@@ -244,12 +289,12 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
     '<div class="action-economy-skills"><h3>Prove abilità · 4 migliori</h3>'+
     (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
       '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
-      '" data-label="'+esc(row.label)+'">'+esc(row.label)+' · '+(row.bonus>=0?'+':'')+esc(row.bonus)+'</button>'
+      '" data-label="'+esc(row.label)+'">'+actionGlyph(skillGlyphKey(row.id))+'<span class="action-skill-name">'+esc(row.label)+'</span><span class="action-skill-bonus">'+(row.bonus>=0?'+':'')+esc(row.bonus)+'</span></button>'
      ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>'
   );
   const separated=general.length&&personal.length;
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
-    '<span class="action-economy-icon" aria-hidden="true">'+({action:'⚔',bonus:'✦',free:'✋',movement:'➜',reaction:'↩'}[id])+'</span>'+
+    '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(id)+'</span>'+
     '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
       bonus:'Capacità che usano una azione bonus',free:'Interazioni senza costo in azioni',
       movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div>'+
