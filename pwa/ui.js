@@ -308,7 +308,7 @@ async function editorView() {
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
-      panel("Capacità",'<p class="hint">Privilegi attivabili non magici. Non sono incantesimi e non richiedono scuola, componenti o slot. Le manovre contestuali si risolvono durante l’azione appropriata.</p>'+
+      panel("Capacità",'<p class="hint">Privilegi attivabili distinti dagli incantesimi, senza scuola o componenti. I costi dipendono dal privilegio; le manovre contestuali si risolvono durante l’azione appropriata.</p>'+
         (abilitiesForCreature(c,state.abilityCatalog||[]).map(ability=>
           '<article class="native-entry"><strong>'+esc(ability.name||"Capacità")+
           '</strong><p class="hint">'+esc(ability.origin||"Privilegio")+
