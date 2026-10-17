@@ -70,7 +70,7 @@ func set_formula(result: String, explanation: String) -> void:
 	_readout.tooltip_text += "\nClic destro per gestire i bonus e le loro origini."
 	if roll_on_click:
 		_readout.tooltip_text += "\nClic sinistro per tirare nel roller."
-	value_label.tooltip_text = _readout.tooltip_text
+	value_label.tooltip_text = ""
 
 
 func _on_readout_input(event: InputEvent) -> void:

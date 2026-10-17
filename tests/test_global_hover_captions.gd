@@ -34,6 +34,23 @@ func run() -> void:
 	caption._reset()
 	assert(button.tooltip_text.begins_with("Example hint"), "Native hint is restored after hover")
 
+	var parent := HBoxContainer.new()
+	parent.tooltip_text = "Parent hint"
+	root.add_child(parent)
+	var leaf := Label.new()
+	leaf.tooltip_text = "Value hint"
+	parent.add_child(leaf)
+	caption._target = leaf
+	caption._kind = "control"
+	caption._text = leaf.tooltip_text
+	caption._suppress()
+	assert(leaf.tooltip_text.is_empty() and parent.tooltip_text.is_empty())
+	parent.tooltip_text = "Updated parent hint"
+	caption._suppress()
+	assert(parent.tooltip_text.is_empty())
+	caption._reset()
+	assert(leaf.tooltip_text == "Value hint" and parent.tooltip_text == "Updated parent hint")
+
 	var entries := ItemList.new()
 	entries.add_item("One")
 	entries.set_item_tooltip(0, "List item details")

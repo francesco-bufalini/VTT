@@ -29,6 +29,15 @@ func run() -> void:
 			"level": 1, "time": "action", "entries": ["Una scarica luminosa."]}]
 	}
 	tab.load_record(record)
+	assert(tab._has_closed_groups())
+	tab._expand_all.pressed.emit()
+	assert(not tab._has_closed_groups())
+	assert(tab._expand_all.text == "Comprimi tutto")
+	tab._tree_toggles[0].button_pressed = false
+	assert(tab._expand_all.text == "Espandi tutto")
+	tab._expand_all.pressed.emit()
+	tab._expand_all.pressed.emit()
+	for toggle: Button in tab._tree_toggles: assert(not toggle.button_pressed)
 	assert(tab._panels.size() == 5 and tab._sections.size() == 5)
 	assert(tab._section_counts.size() == 5 and int(tab._section_counts[0].text) > 0,
 		"Each bordered action panel must expose its live action count")

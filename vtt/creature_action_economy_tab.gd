@@ -78,6 +78,8 @@ var _enabled_variants: Array = []
 var _options_path := OPTIONS_PATH
 var _settings_dialog: AcceptDialog
 var _expanded_actions: Dictionary = {}
+var _tree_toggles: Array[Button] = []
+var _expand_all: Button
 var _trackers: Dictionary = {}
 
 static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]:
@@ -107,6 +109,14 @@ func _ready() -> void:
 	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	caption.add_theme_color_override("font_color", GOLD)
 	toolbar.add_child(caption)
+	_expand_all = _action_button("Espandi tutto")
+	_expand_all.name = "ExpandAll"
+	_expand_all.pressed.connect(func() -> void:
+		var expand := _has_closed_groups()
+		for toggle: Button in _tree_toggles:
+			if is_instance_valid(toggle): toggle.button_pressed = expand
+		_sync_expand_all())
+	toolbar.add_child(_expand_all)
 	var options := _action_button("", "Regole varianti 2014")
 	options.name = "VariantSettings"
 	options.icon = _icon_texture("settings")
@@ -988,13 +998,15 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 		var key := String(entry.get("id", ""))
 		var tree_heading := String(entry.get("children_heading", "Attacchi e manovre"))
 		var toggle := _action_button("▸ %s · %d" % [tree_heading, children.size()])
+		_tree_toggles.append(toggle)
 		toggle.toggle_mode = true
 		toggle.button_pressed = bool(_expanded_actions.get(key, false))
 		nested.visible = toggle.button_pressed
 		toggle.toggled.connect(func(open: bool) -> void:
 			toggle.text = "%s %s · %d" % ["▾" if open else "▸", tree_heading, children.size()]
 			nested.visible = open
-			_expanded_actions[key] = open)
+			_expanded_actions[key] = open
+			_sync_expand_all())
 		if group_only:
 			heading.pressed.connect(func() -> void: toggle.button_pressed = not toggle.button_pressed)
 			details.pressed.connect(func() -> void: toggle.button_pressed = not toggle.button_pressed)
@@ -1097,6 +1109,8 @@ func _add_subheading(section: VBoxContainer, text: String) -> void:
 func load_record(record: Dictionary) -> void:
 	if _sections.is_empty():
 		return
+	_tree_toggles.clear()
+	_sync_expand_all.call_deferred()
 	_record = record.duplicate(true)
 	_trackers.clear()
 	for resource: Dictionary in Trackers.for_creature(record):
@@ -1176,3 +1190,13 @@ func load_record(record: Dictionary) -> void:
 			_add_subheading(section, "Dalla scheda")
 		for item: Dictionary in personal:
 			_add_entry(item)
+
+func _has_closed_groups() -> bool:
+	for toggle: Button in _tree_toggles:
+		if is_instance_valid(toggle) and not toggle.button_pressed: return true
+	return false
+
+func _sync_expand_all() -> void:
+	if not is_instance_valid(_expand_all): return
+	_expand_all.disabled = _tree_toggles.is_empty()
+	_expand_all.text = "Espandi tutto" if _has_closed_groups() else "Comprimi tutto"

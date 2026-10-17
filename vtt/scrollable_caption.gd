@@ -14,6 +14,7 @@ var _item_label := ""
 var _tree_item: TreeItem
 var _tree_column := -1
 var _text := ""
+var _suppressed_controls: Dictionary = {}
 var _elapsed := 0.0
 var _leave := 0.0
 
@@ -84,6 +85,7 @@ func _process(delta: float) -> void:
 			_suppress()
 			if _panel.visible:
 				_body.text = _text
+		_suppress()
 		_elapsed += delta
 		if not touch_mode and _elapsed >= APPEAR_DELAY and not _panel.visible:
 			_show_caption()
@@ -149,6 +151,8 @@ func _hint_under_pointer() -> Dictionary:
 				if not value.is_empty():
 					return {"target": candidate, "kind": "tabs", "index": index, "text": value}
 		var message: String = candidate.tooltip_text
+		if message.is_empty() and _suppressed_controls.has(candidate.get_instance_id()):
+			message = String(_suppressed_controls[candidate.get_instance_id()]["text"])
 		if candidate == _target and _kind == "control" and message.is_empty():
 			message = _text
 		if not message.is_empty():
@@ -171,6 +175,12 @@ func _same_item(hint: Dictionary) -> bool:
 func _suppress() -> void:
 	if not is_instance_valid(_target):
 		return
+	var ancestor: Control = _target
+	while ancestor != null:
+		if not ancestor.tooltip_text.is_empty():
+			_suppressed_controls[ancestor.get_instance_id()] = {"ref": weakref(ancestor), "text": ancestor.tooltip_text}
+			ancestor.tooltip_text = ""
+		ancestor = ancestor.get_parent() as Control
 	match _kind:
 		"item":
 			var list: ItemList = _target as ItemList
@@ -211,6 +221,11 @@ func _restore_target() -> void:
 			_:
 				if _target.tooltip_text.is_empty():
 					_target.tooltip_text = _text
+	for saved: Dictionary in _suppressed_controls.values():
+		var control: Control = saved["ref"].get_ref() as Control
+		if is_instance_valid(control) and control.tooltip_text.is_empty():
+			control.tooltip_text = String(saved["text"])
+	_suppressed_controls.clear()
 	_target = null
 	_kind = ""
 	_item_index = -1
