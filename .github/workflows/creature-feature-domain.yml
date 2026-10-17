@@ -13,6 +13,7 @@ on:
       - "vtt/structured_resource_trackers.gd"
       - "vtt/creature_area.gd"
       - "tests/test_creature_action_economy.gd"
+      - "tests/test_action_dashboard_ui.gd"
       - "tests/test_combat_basic_actions.gd"
       - ".github/workflows/creature-feature-domain.yml"
   push:
@@ -90,6 +91,7 @@ jobs:
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
             test_creature_action_economy.gd \
+            test_action_dashboard_ui.gd \
             test_feature_timing_recovery.gd \
             test_combat_basic_actions.gd \
             test_trait_origins.gd \
