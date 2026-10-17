@@ -78,7 +78,7 @@ static func parse_attack(action: Dictionary) -> Dictionary:
 static func _all_reach_in_entry(action: Dictionary) -> int:
 	# Preserve legacy maximum-reach semantics, including all distinct reach
 	# mentions within non-attack actions. Do this only on import/edit.
-	var expression := RegEx.create_from_string("reach\\\\s*(\\\\d+)\\\\s*(?:ft\\\\.?|feet)")
+	var expression := RegEx.create_from_string("reach\\s*(\\d+)\\s*(?:ft\\.?|feet)")
 	if expression == null:
 		return 5
 	var best := 5
