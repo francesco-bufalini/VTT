@@ -840,6 +840,7 @@ func _build_ui() -> void:
 	left.add_child(add_monster)
 
 	_tabs = TabContainer.new()
+	_tabs.resized.connect(_fit_sheet_tabs)
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tabs.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -954,6 +955,7 @@ func _build_ui() -> void:
 	_action_economy_ui.basic_action_requested.connect(_on_basic_action_requested)
 	_action_economy_ui.tracker_change_requested.connect(_on_action_tracker_change)
 	_action_economy_ui.cast_spell_requested.connect(_on_action_cast_requested)
+	_action_economy_ui.class_spell_requested.connect(func(spell_id: String, class_id: String) -> void: _on_action_cast_requested(spell_id, "", class_id))
 	_action_economy_ui.open_spellbook_requested.connect(func() -> void: _show_sheet_tab("Poteri"))
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -2122,6 +2124,24 @@ func _open_touch_sheet() -> void:
 	show_touch_library(false)
 
 
+func _fit_sheet_tabs() -> void:
+	if _tabs == null or _touch_layout: return
+	var bar := _tabs.get_tab_bar()
+	bar.add_theme_constant_override("h_separation", 4)
+	for slot: String in ["tab_selected", "tab_unselected", "tab_hovered"]:
+		var box := bar.get_theme_stylebox(slot).duplicate() as StyleBox
+		box.content_margin_left = 6
+		box.content_margin_right = 6
+		bar.add_theme_stylebox_override(slot, box)
+	var font := bar.get_theme_font("font")
+	for font_size: int in [14, 13, 12, 11]:
+		bar.add_theme_font_size_override("font_size", font_size)
+		var required := 0.0
+		for index: int in range(_tabs.get_tab_count()):
+			required += font.get_string_size(_tabs.get_tab_title(index), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 30
+		if required <= _tabs.size.x: break
+
+
 func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
@@ -2138,7 +2158,9 @@ func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 		"Poteri": "spark", "Inventario": "inventory", "Tratti": "proficiency",
 		"Condizioni": "condition", "Modifica personaggio": "settings"}.get(title, "book")
 	tabs.set_tab_icon(tabs.get_tab_count() - 1, preload("res://vtt/creature_sheet_style.gd").icon(icon_key))
-	tabs.set_tab_icon_max_width(tabs.get_tab_count() - 1, 18)
+	tabs.set_tab_icon_max_width(tabs.get_tab_count() - 1, 14)
+	tabs.get_tab_bar().set_tab_tooltip(tabs.get_tab_count() - 1, title)
+	_fit_sheet_tabs.call_deferred()
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for edge: String in ["margin_left", "margin_right"]:
@@ -2834,10 +2856,10 @@ func _on_action_tracker_change(tracker_id: String, delta: int, maximum: int) -> 
 		_action_economy_ui.call("load_record", _current())
 
 
-func _on_action_cast_requested(spell_id: String, grant_id: String) -> void:
+func _on_action_cast_requested(spell_id: String, grant_id: String, class_id: String = "") -> void:
 	if _spellcasting_ui == null or not _spellcasting_ui.has_method("request_cast_from_actions"):
 		return
-	if not bool(_spellcasting_ui.call("request_cast_from_actions", spell_id, grant_id)):
+	if not bool(_spellcasting_ui.call("request_cast_from_actions", spell_id, grant_id, class_id)):
 		_set_status("Incantesimo non più disponibile. Aggiorna la scheda Poteri.")
 
 

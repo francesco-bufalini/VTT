@@ -4,6 +4,7 @@ signal attack_requested(attack_id: String, damage: bool)
 signal basic_action_requested(action_id: String)
 signal tracker_change_requested(tracker_id: String, delta: int, maximum: int)
 signal cast_spell_requested(spell_id: String, grant_id: String)
+signal class_spell_requested(spell_id: String, class_id: String)
 signal open_spellbook_requested()
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
@@ -11,6 +12,8 @@ const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 ## Local-only action overview. Neither casting nor sheet calculations require a server.
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Features = preload("res://vtt/creature_features.gd")
+const ClassSelections = preload("res://vtt/class_spell_selection.gd")
+const SpellSelections = preload("res://vtt/creature_spellcasting_tab.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
@@ -612,6 +615,70 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		results[index]["position"] = index
 	return _normalize_alternatives(results.filter(func(row: Dictionary) -> bool: return String(row.get("kind", "")) != "Incantesimo"))
 
+static func spell_entries(record: Dictionary) -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	var trackers: Dictionary = {}
+	for tracker: Dictionary in Trackers.for_creature(record): trackers[String(tracker.get("id", ""))] = tracker
+	var members := ClassSelections.classes(record)
+	var selected := SpellSelections._copy_spell_array(record.get("prepared_spells", []))
+	selected.append_array(SpellSelections._copy_spell_array(record.get("spells", [])))
+	for value: Variant in selected:
+		if not value is Dictionary and not value is String: continue
+		var raw: Dictionary = value if value is Dictionary else {"id": value}
+		var spell_id := SpellSelections._entry_id(raw)
+		if spell_id.is_empty(): continue
+		var spell := Spells.catalog_spell(spell_id)
+		if spell.is_empty(): spell = raw
+		spell = spell.duplicate(true)
+		spell["id"] = spell_id
+		if bool(spell.get("internal_grant", false)): continue
+		var owners: Array[Dictionary] = []
+		var sources := ClassSelections.sources(raw, record)
+		for member: Dictionary in members:
+			if member.id in sources: owners.append(member)
+		if owners.is_empty() or "manual" in sources: owners.append({"id": "manual", "name": ""})
+		for owner: Dictionary in owners:
+			var key := spell_id + "|" + String(owner.id)
+			if seen.has(key): continue
+			seen[key] = true
+			for row: Dictionary in _spell_rows(spell):
+				row["class_id"] = owner.id
+				row["tracker"] = (String(owner.get("name", "")) + " · " if owner.id != "manual" else "") + ("Trucchetto · nessuno slot" if int(spell.get("level", 0)) == 0 else "Slot · liv. %d+" % int(spell.get("level", 1)))
+				output.append(row)
+	for grant: Dictionary in OriginSpells.all_grants(record):
+		if bool(grant.get("disabled", false)): continue
+		var spell := Spells.catalog_spell(String(grant.get("spell_id", "")))
+		if spell.is_empty() or bool(spell.get("internal_grant", false)): continue
+		var mode := String(grant.get("payment_mode", "free"))
+		var tracker_id := String(grant.get("tracker_id", "")) if mode == "tracker" else ""
+		for row: Dictionary in _spell_rows(spell):
+			row["grant_id"] = String(grant.get("id", ""))
+			row["tracker_id"] = tracker_id
+			row["tracker"] = _tracker_label(tracker_id, trackers) if mode == "tracker" else "Slot · liv. %d+" % int(spell.get("level", 1)) if mode == "slot" else "Senza consumo · " + String(grant.get("origin_name", "Origine"))
+			output.append(row)
+	return output
+
+static func _spell_rows(spell: Dictionary) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	var time: Variant = spell.get("time", spell.get("casting_time", []))
+	var times: Array = time if time is Array else [time]
+	var seen: Array[int] = []
+	for raw: Variant in times:
+		var unit := String(raw.get("unit", "") if raw is Dictionary else raw).to_lower().strip_edges()
+		if raw is Dictionary and int(raw.get("number", 1)) != 1: continue
+		if unit not in ["action", "bonus", "reaction", "azione", "azione bonus", "reazione", "1 action", "1 bonus action", "1 reaction"]: continue
+		var timing := _timing(unit)
+		if timing in seen: continue
+		seen.append(timing)
+		var row := _entry(String(spell.get("name", "Incantesimo")), timing, "Incantesimo", _description(spell.get("entries", spell.get("description", ""))))
+		row["id"] = String(spell.get("id", ""))
+		row["spell_id"] = String(spell.get("id", ""))
+		row["origin"] = "general"
+		rows.append(row)
+	return rows
+
+
 func _surface(background: Color, border: Color, radius: int = 7, padding: int = 8) -> StyleBoxFlat:
 	return SheetStyle.surface(background, border, radius, padding)
 
@@ -801,7 +868,10 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	if not spell_id.is_empty():
 		var cast := _action_button("Usa" if String(entry.get("kind", "")) == "Capacità" else "Lancia",
 			"Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")
-		cast.pressed.connect(func() -> void: cast_spell_requested.emit(spell_id, grant_id))
+		cast.pressed.connect(func() -> void:
+			var class_id := String(entry.get("class_id", ""))
+			if not class_id.is_empty(): class_spell_requested.emit(spell_id, class_id)
+			else: cast_spell_requested.emit(spell_id, grant_id))
 		controls.add_child(cast)
 	if not tracker_id.is_empty() and _trackers.has(tracker_id):
 		var tracker: Dictionary = _trackers[tracker_id]
@@ -1069,6 +1139,14 @@ func load_record(record: Dictionary) -> void:
 			grouped[timing].append(movement_groups[timing])
 	if not checks["children"].is_empty():
 		grouped[0].append(checks)
+	var spell_groups: Dictionary = {}
+	for spell: Dictionary in spell_entries(record):
+		var timing := int(spell["time"])
+		if not spell_groups.has(timing):
+			spell_groups[timing] = {"id": "spells_%d" % timing, "name": "Incantesimi", "time": timing,
+				"kind": "Incantesimo", "detail": "", "origin": "general", "children": [], "children_heading": "Incantesimi disponibili"}
+		spell_groups[timing]["children"].append(spell)
+	for timing: int in spell_groups: grouped[timing].append(spell_groups[timing])
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
 		_section_counts[i].text = "%d" % (grouped[i] as Array).size()

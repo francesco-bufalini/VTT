@@ -1736,7 +1736,7 @@ func _refresh_view() -> void:
 
 # Action economy uses the same casting dialog, slot controls and dispatch
 # as the ordinary Poteri tab, not an independent spell/spend implementation.
-func request_cast_from_actions(spell_id: String, grant_id: String = "") -> bool:
+func request_cast_from_actions(spell_id: String, grant_id: String = "", class_id: String = "manual") -> bool:
 	if spell_id.is_empty():
 		return false
 	if not grant_id.is_empty():
@@ -1756,6 +1756,12 @@ func request_cast_from_actions(spell_id: String, grant_id: String = "") -> bool:
 	if spell.is_empty():
 		spell = _spell_detail(spell_id)
 	if spell.is_empty():
+		return false
+	if class_id != "manual" and not class_id.is_empty():
+		for member: Dictionary in ClassSelections.classes(_record):
+			if member.id == class_id and spell_id in ClassSelections.selected(_record, _prepared, class_id):
+				_view_cast_class(spell, member)
+				return true
 		return false
 	_view_cast_class(spell, {"id": "manual"})
 	return true
