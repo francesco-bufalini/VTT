@@ -4,6 +4,7 @@
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
+import {modifyFeatureTrackers} from './feature_mechanics.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -410,7 +411,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
   if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch(error){formula_error=error.message;}
   if(row.id&&row.name)add({...row,max,formula_error,automatic:false});
  }
- return [...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false);
+ return modifyFeatureTrackers(record,[...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false),catalog?.feature_rules||{});
 }
 // CreatureAttackData / CreatureItemRules projection: each equipped hand keeps
 // its native stable attack ID. Published monster totals already include PB.
@@ -741,7 +742,7 @@ export function calculateSheet(record={},catalogs={}){
   const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],catalogs.features||[]);
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,classesCatalog,name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
+  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
     if(!trackerMap.has(row.id)&&sourceEnabled(row))trackerMap.set(row.id,row);
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
@@ -785,7 +786,7 @@ export function calculateSheet(record={},catalogs={}){
   }
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
-    casting_classes:spellClasses,trackers,attacks,
+    casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
     automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
@@ -805,14 +806,15 @@ export function loadRuleCatalogs(){
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
     fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
     fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[]),
+    fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,classFeatures,originDetails,
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,classFeatures,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},classFeatures,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;

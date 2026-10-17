@@ -9,6 +9,7 @@ const Features = preload("res://vtt/creature_features.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
+const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
 
 const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
 const GENERAL_ACTIONS_PATH := "res://vtt/data/combat_action_supplements_5etools.json"
@@ -204,10 +205,17 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	if record.is_empty():
 		return results
 	var personal_start := results.size()
+	var tracker_list: Array[Dictionary] = Trackers.for_creature(record)
 	var trackers: Dictionary = {}
-	for resource: Dictionary in Trackers.for_creature(record):
+	for resource: Dictionary in tracker_list:
 		trackers[String(resource.get("id", ""))] = resource
 	var seen: Dictionary = {}
+	# Variant activations never create an extra tracker or spend a use here.
+	for option: Dictionary in FeatureRules.action_entries(record, tracker_list):
+		var rule := _entry(String(option.get("name", "")), _timing(option.get("activation", "action")),
+			"Capacità", String(option.get("detail", "")), String(option.get("tracker", "")), String(option.get("tracker_id", "")))
+		rule["rule_id"] = String(option.get("rule_id", ""))
+		results.append(rule)
 	# These are the same equipped attacks / monster attacks as the combat pane.
 	for attack: Dictionary in Attacks.definitions(record):
 		var id := String(attack.get("id", ""))
@@ -272,6 +280,10 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	# entries contain descriptions but no typed activation. Exact book/class/
 	# feature matches avoid accidentally granting subclass or passive traits.
 	for rule: Dictionary in _feature_supplements():
+		# Cunning Action is represented by the generic alternative activation
+		# rules; avoid another set of identically timed special abilities.
+		if String(rule.get("feature_name", "")) == "Cunning Action":
+			continue
 		var matched_feature: Dictionary = {}
 		for feature: Dictionary in collected:
 			if bool(feature.get("inactive", false)):

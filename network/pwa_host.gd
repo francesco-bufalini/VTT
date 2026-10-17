@@ -32,6 +32,7 @@ const FILES := {
 	"/catalog_data.js": ["res://pwa/catalog_data.js", "text/javascript; charset=utf-8"],
 	"/catalog/action_feature_overrides.json": ["res://vtt/data/action_feature_overrides.json", "application/json; charset=utf-8"],
 	"/catalog/combat_action_supplements_5etools.json": ["res://vtt/data/combat_action_supplements_5etools.json", "application/json; charset=utf-8"],
+	"/catalog/feature_timing_recovery_rules.json": ["res://vtt/data/feature_timing_recovery_rules.json", "application/json; charset=utf-8"],
 	"/catalog/classes.json": ["res://pwa/catalog/classes.json", "application/json; charset=utf-8"],
 	"/catalog/ability_grants.json": ["res://pwa/catalog/ability_grants.json", "application/json; charset=utf-8"],
 	"/catalog/class_mechanics.json": ["res://pwa/catalog/class_mechanics.json", "application/json; charset=utf-8"],
