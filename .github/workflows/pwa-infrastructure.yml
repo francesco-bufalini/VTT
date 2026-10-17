@@ -39,7 +39,7 @@ on:
 jobs:
   browser-assets:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,6 +67,13 @@ jobs:
           cd pwa
           npm install --no-audit --no-fund --no-package-lock
           npm test
+      - name: Verify first-run local archive in real Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          npx playwright install chromium
+          node tests/startup_browser.mjs
       - name: Verify install manifest, precache and PNG files
         shell: python
         run: |
