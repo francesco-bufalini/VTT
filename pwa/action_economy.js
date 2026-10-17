@@ -26,49 +26,63 @@ export async function loadFeatureActionOverrides(){
 }
 
 export const GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
-/* Shared with the native Godot tab: 64px transparent cells in two SVG atlases.
-   Inline CSS selects one cell; never depend on OS emoji glyphs. */
-const ACTION_GLYPHS=["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand"];
-const EXTRA_GLYPHS=["dash","disengage","dodge","hide","search","ready","misty_step","concentration","sleight_of_hand","athletics","potion","wild_shape","arcana","fire","healing","mark_enemy"];
+/* The actual 98 SVG icons generated for VTT. Manifest.json is canonical
+   and the four matching SVG sprites are shared with the Godot client. */
+const GOLD_ICON_GROUPS=[["action","bonus","free","movement","reaction","sword","help","shove","prone","stealth","eye","object","speech","target","shield","book","spark","flag","skill","hand","acrobatics","animal_handling","arcana","armor","athletics"],["attack_bonus","bardic_inspiration","break_concentration","buff","check","coins","concentration","condition","cross","dash","debuff","deception","decrease","details","disengage","dodge","filter","fire","flight","grapple","healing","help_alt","hide","history","ice"],["increase","information","infusion","insight","interact","intimidation","inventory","investigation","invisibility","key","lightning","lock","magic_item","maneuver","map","mark_enemy","medicine","misty_step","nature","necromancy","opportunity_attack","perception","persuasion","poison","potion"],["proficiency","prone_alt","reaction_trigger","ready","religion","reset","rest_long","rest_short","save_throw","scroll","search","settings","sleight_of_hand","speed","spell_cast","spell_slot","stealth_check","summon","survival","talk","teleport","weapon","wild_shape"]];
+const GOLD_ICON_INDEX=new Map(GOLD_ICON_GROUPS.flatMap((keys,group)=>
+ keys.map((key,index)=>[key,{group,index,count:keys.length}])));
+const HEADER_GLYPHS={action:"weapon",bonus:"flight",free:"sleight_of_hand",movement:"dash",reaction:"reaction_trigger"};
 function actionGlyph(key){
- let index=ACTION_GLYPHS.indexOf(key), count=ACTION_GLYPHS.length, group="base";
- if(index<0){index=EXTRA_GLYPHS.indexOf(key);count=EXTRA_GLYPHS.length;group="extra";}
- if(index<0){index=0;count=ACTION_GLYPHS.length;group="base";}
- return '<span class="vtt-action-glyph vtt-action-glyph--'+group+'" style="--glyph-position:'+
-   (100*index/(count-1)).toFixed(5)+'%" aria-hidden="true"></span>';
+ const {group,index,count}=GOLD_ICON_INDEX.get(key)||GOLD_ICON_INDEX.get("weapon");
+ return '<span class="vtt-action-glyph vtt-action-glyph--pack-'+group+'" style="--glyph-position:'+
+   (100*index/(count-1)).toFixed(6)+'%" aria-hidden="true"></span>';
 }
 function actionGlyphKey(item){
  const name=String(item.name||'').toLocaleLowerCase('it');
  const type=String(item.type||'');
- if(name.includes('nebbios')||name.includes('teletrasport'))return 'misty_step';
- if(name.includes('concentrazione'))return 'concentration';
+ const actionId=String(item.action_id||'');
+ if(actionId==='grapple'||name.includes('afferrar')||name.includes('grapple'))return 'grapple';
+ if(actionId==='prone'||name.includes('prono')||name.includes('atterrar'))return 'prone_alt';
+ if(actionId==='shove'||name.includes('spinger'))return 'shove';
+ if(actionId==='help'||name.includes('aiutar'))return 'help_alt';
  if(name.includes('forma selvatica')||name.includes('wild shape'))return 'wild_shape';
- if(name.includes('guarig')||name.includes('curar'))return 'healing';
- if(name.includes('fuoco')||name.includes('fiamma'))return 'fire';
- if(name.includes('incantesim')||name==='magia'||type==='Incantesimo')return 'spark';
+ if(name.includes('ispirazione bardica')||name.includes('bardic inspiration'))return 'bardic_inspiration';
+ if(name==='ira'||name.includes('rage')||name.includes('furia'))return 'fire';
+ if(name.includes('nebbios')||name.includes('teletrasport'))return 'misty_step';
+ if(name.includes('interrompere concentrazione'))return 'break_concentration';
+ if(name.includes('concentrazione'))return 'concentration';
+ if(name.includes('riposo'))return 'rest_short';
+ if(name.includes('guarig')||name.includes('curar')||name.includes('energia'))return 'healing';
+ if(name.includes('incantesim')||name==='magia'||type==='Incantesimo')return 'spell_cast';
  if(name.includes('rapidità di mano'))return 'sleight_of_hand';
- if(name.includes('furtiv')||name.includes('nascond'))return 'stealth';
- if(name.includes('opportunit')||name.includes('attacc')||name.includes('disarm'))return 'sword';
- if(name.includes('aiutar'))return 'help';
- if(name.includes('spinger'))return 'shove';
- if(name.includes('prono')||name.includes('atterrar'))return 'prone';
- if(name.includes('oggetto')||name.includes('utilizz')||name.includes('scudo'))return 'object';
+ if(name.includes('furtiv')||name.includes('nascond'))return 'stealth_check';
+ if(name.includes('opportunit'))return 'opportunity_attack';
+ if(name.includes('disarm'))return 'maneuver';
+ if(name.includes('due armi')||name.includes('attacc')||name.includes('pugnale')||
+    name.includes('spada')||name.includes('sword')||name.includes('arco')||name.includes('bow'))return 'weapon';
+ if(name.includes('oggetto')||name.includes('utilizz'))return 'interact';
+ if(name.includes('scudo'))return 'armor';
  if(name.includes('pozion'))return 'potion';
- if(name.includes('parlare')||name.includes('influenz'))return 'speech';
+ if(name.includes('parlare')||name.includes('comunicar'))return 'talk';
+ if(name.includes('influenz'))return 'persuasion';
  if(name.includes('schivar'))return 'dodge';
  if(name.includes('disimpegn'))return 'disengage';
  if(name.includes('cercar')||name.includes('indagar'))return 'search';
  if(name.includes('studiar')||name.includes('arcano'))return 'arcana';
  if(name.includes('marcare'))return 'mark_enemy';
  if(name.includes('preparar'))return 'ready';
- if(name.includes('scatt'))return 'dash';
- if(name.includes('muov')||item.time==='movement')return 'movement';
- return ({Attacco:'sword',Incantesimo:'spark',Capacità:'bonus'})[type]||'action';
+ if(name.includes('scatt')||name.includes('muov')||item.time==='movement')return 'dash';
+ return ({Attacco:'weapon',Incantesimo:'spell_cast',Capacità:'proficiency'})[type]||'action';
 }
 function skillGlyphKey(skill){
- return ({stealth:'stealth','sleight of hand':'sleight_of_hand',insight:'eye',
- perception:'eye',investigation:'search',athletics:'athletics',acrobatics:'bonus',
- arcana:'arcana',medicine:'healing',survival:'search',nature:'wild_shape'})[skill]||'skill';
+ return ({
+  'stealth':'stealth_check','sleight of hand':'sleight_of_hand',
+  insight:'insight',perception:'perception',investigation:'investigation',
+  athletics:'athletics',acrobatics:'acrobatics',arcana:'arcana',
+  'animal handling':'animal_handling',medicine:'medicine',survival:'survival',
+  nature:'nature',persuasion:'persuasion',deception:'deception',
+  intimidation:'intimidation',religion:'religion',history:'history'
+ })[skill]||'skill';
 }
 
 const SRD_2014=[
@@ -294,7 +308,7 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   );
   const separated=general.length&&personal.length;
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
-    '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(id)+'</span>'+
+    '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(HEADER_GLYPHS[id])+'</span>'+
     '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
       bonus:'Capacità che usano una azione bonus',free:'Interazioni senza costo in azioni',
       movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div>'+

@@ -217,38 +217,47 @@ test('action layout exposes section counts, compact type icons and usable resour
 });
 
 
-test('shared gradient action sprites match both UI clients and stay available offline',()=>{
- const html=actionEconomyView({rules_version:'2014'},{
-   skills:{'sleight of hand':7,athletics:5,arcana:4,perception:3}
- });
- assert(html.includes('vtt-action-glyph--base'),'Core glyphs should use the shared atlas');
- assert(html.includes('vtt-action-glyph--extra'),'Additional skill/action glyphs should render');
- assert(html.includes('style="--glyph-position:'),'Sprite selection is deterministic');
- assert(!html.includes('>⚔<'),'OS-dependent pictogram emoji must not be used');
- const base=readFileSync(new URL('../icons/action_dashboard_gloss.svg',import.meta.url),'utf8');
- const extra=readFileSync(new URL('../icons/action_extras.svg',import.meta.url),'utf8');
- assert.equal((base.match(/<g transform=/g)||[]).length,20);
- assert.equal((extra.match(/<g transform=/g)||[]).length,16);
- for(const svg of [base,extra]){
-   assert(svg.startsWith('<svg '));
-   assert(svg.includes('linearGradient id="gold"'));
-   assert(svg.includes('linearGradient id="rose"'));
-   assert(svg.includes('</svg>'));
+test('all 98 generated golden icons are shared, discoverable and cached offline',()=>{
+ const manifest=JSON.parse(readFileSync(new URL('../icons/gold_generated/manifest.json',import.meta.url),'utf8'));
+ assert.equal(manifest.groups.length,4);
+ const keys=manifest.groups.flatMap(group=>group.keys);
+ assert.equal(keys.length,98);
+ assert.equal(new Set(keys).size,98);
+ for(const key of ['grapple','prone_alt','wild_shape','bardic_inspiration','spell_cast','break_concentration',
+                    'stealth_check','athletics','reaction_trigger','flight','weapon']){
+   assert(keys.includes(key),'Missing generated glyph '+key);
  }
- // The browser-assets CI job intentionally uses sparse checkout without
- // vtt/*.gd or network/*.gd. Validate those integrations when available;
- // native-loopback independently exercises the host in the full checkout.
- const nativeURL=new URL('../../vtt/creature_action_economy_tab.gd',import.meta.url);
- if(existsSync(nativeURL)){
-   const native=readFileSync(nativeURL,'utf8');
-   assert(native.includes('res://pwa/icons/action_dashboard_gloss.svg'));
-   assert(native.includes('res://pwa/icons/action_extras.svg'));
- }
+ const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+ const js=readFileSync(new URL('../action_economy.js',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
  const hostURL=new URL('../../network/pwa_host.gd',import.meta.url);
  const host=existsSync(hostURL)?readFileSync(hostURL,'utf8'):null;
- const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
- for(const path of ['/icons/action_dashboard_gloss.svg','/icons/action_extras.svg']){
-   if(host!==null)assert(host.includes('"'+path+'"'),'PWA host must serve '+path);
+ const nativeURL=new URL('../../vtt/creature_action_economy_tab.gd',import.meta.url);
+ const native=existsSync(nativeURL)?readFileSync(nativeURL,'utf8'):null;
+ for(const [index,group] of manifest.groups.entries()){
+   const path='/icons/gold_generated/'+group.name;
+   const svg=readFileSync(new URL('../icons/gold_generated/'+group.name,import.meta.url),'utf8');
+   assert(svg.startsWith('<svg ')&&svg.includes('</svg>'));
+   assert(svg.includes('linearGradient id="gold"')&&svg.includes('linearGradient id="rose"'));
+   assert.equal(svg.split('<g transform="translate(').length-1,group.count);
+   assert(css.includes(path),'CSS references missing image '+path);
+   assert(js.includes('vtt-action-glyph--pack-'));
    assert(worker.includes('"'+path+'"'),'PWA offline shell must cache '+path);
+   if(host!==null)assert(host.includes('"'+path+'"'),'Native PWA host must serve '+path);
+   if(native!==null)assert(native.includes('res://pwa'+path),'Godot must use '+path);
  }
+ const html=actionEconomyView({
+    rules_version:'2014',
+    action_grants:[
+      {name:'Forma selvatica',action_type:'bonus'},
+      {name:'Ispirazione bardica',action_type:'bonus'},
+      {name:'Afferrare una creatura',action_type:'action'},
+      {name:'Mandare prono',action_type:'action'}]
+ },{skills:{athletics:6,stealth:5,arcana:4,perception:3}});
+ assert(html.includes('vtt-action-glyph--pack-0'));
+ assert(html.includes('vtt-action-glyph--pack-1'));
+ assert(html.includes('vtt-action-glyph--pack-2'));
+ assert(html.includes('vtt-action-glyph--pack-3'));
+ assert(!html.includes('>⚔<'));
+ assert(html.includes('data-target="skill:athletics"'));
 });
