@@ -154,7 +154,7 @@ export function collectStructuredFeatures(record,catalogs={}){
     const key=origin+"|"+id;if(seen.has(key))return;seen.add(key);
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       level,requirements:gate,inactive:inactive||row.inactive===true,
-      bonuses:array(row.bonuses),action_type:row.action_type??row.activation_type??"",
+      bonuses:array(row.bonuses),action_type:row.action_type||row.activation_type||row.activation||row.time||"",
       action_kind:row.action_kind||"Capacità"});
   }
   if(record.kind==="monster"){
@@ -197,7 +197,7 @@ export function collectStructuredFeatures(record,catalogs={}){
       array(entries).forEach((row,i)=>{
         if(row?.name&&(sections||row.entries!==undefined||row.entry!==undefined))
           append({...row,...(!sections&&!row.id?{id:"section-"+i}:{})},origin,
-            Number(row.min_level??1),"character","","",Boolean(feat.disabled));
+            Number(row.requirements?.min_level??row.min_level??1),"character","","",Boolean(feat.disabled));
       });
     }
   }
