@@ -90,7 +90,7 @@ test("typed background, species, feat sections have native origin identities and
  assert.equal(advanced.stats.initiative,4);
  const sharp=advanced.features.find(f=>f.name==="Sharper");
  assert.equal(sharp.origin_key,"feat|keen|phb");
- assert.equal(sharp.key,"feat|keen|phb|section-0");
+ assert.equal(sharp.key,"feat|keen|phb|feat|keen|phb|4|sharper");
  assert.equal(calculateSheet({...upgraded,feats_catalog:[]},{classFeatures,originDetails}).stats.initiative,3);
  assert.equal(calculateSheet({...upgraded,feats_catalog:[{name:"Keen",source:"PHB",disabled:true}]},
    {classFeatures,originDetails}).stats.initiative,3);
