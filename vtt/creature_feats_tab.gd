@@ -146,6 +146,7 @@ func _make_column(parent: HBoxContainer, heading: String, width: float) -> VBoxC
 	title.text = heading
 	title.add_theme_font_size_override("font_size", 15)
 	column.add_child(title)
+	preload("res://vtt/creature_sheet_style.gd").heading(title, "proficiency")
 	return column
 
 

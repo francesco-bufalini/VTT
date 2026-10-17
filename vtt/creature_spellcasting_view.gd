@@ -169,11 +169,7 @@ func _pair() -> Array[VBoxContainer]:
 	for i: int in range(2):
 		var panel := PanelContainer.new()
 		panel.size_flags_vertical = Control.SIZE_FILL
-		var style: StyleBoxFlat = get_theme_stylebox("panel", "PanelContainer").duplicate() as StyleBoxFlat
-		style.border_color = Color(0.43, 0.36, 0.28)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(6)
-		style.set_content_margin_all(10)
+		var style := preload("res://vtt/creature_sheet_style.gd").section_style()
 		panel.add_theme_stylebox_override("panel", style)
 		row.add_child(panel)
 		var box := VBoxContainer.new()
@@ -208,6 +204,7 @@ func _label(parent: Node, text: String) -> Label:
 func _heading(parent: Node, text: String) -> void:
 	var label: Label = _label(parent, text)
 	label.add_theme_font_size_override("font_size", 17)
+	preload("res://vtt/creature_sheet_style.gd").heading(label, "spell_cast")
 
 func _casting_statistics(parent: Node, section_id: String, suggested: Array[String]) -> void:
 	var ability: String = String(_actions.section_ability.call(section_id, suggested))

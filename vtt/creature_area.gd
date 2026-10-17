@@ -1045,12 +1045,7 @@ func _build_ui() -> void:
 
 	var health_panel := PanelContainer.new()
 	health_panel.name = "TouchHitPoints"
-	var health_style := StyleBoxFlat.new()
-	health_style.bg_color = Color(0.24, 0.14, 0.15, 0.96)
-	health_style.border_color = Color(0.76, 0.50, 0.30, 0.90)
-	health_style.set_border_width_all(1)
-	health_style.set_corner_radius_all(7)
-	health_style.set_content_margin_all(4)
+	var health_style := preload("res://vtt/creature_sheet_style.gd").section_style()
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "Danni: prima temporanei, poi PF della seconda forma, infine PF normali."
 	combat_column.add_child(health_panel)
@@ -1143,8 +1138,8 @@ func _build_ui() -> void:
 	var defense_panel := PanelContainer.new()
 	defense_panel.name = "TouchDefense"
 	var defense_style := health_style.duplicate() as StyleBoxFlat
-	defense_style.draw_center = false
-	defense_style.border_color = Color(0.48, 0.68, 0.75, 0.85)
+	defense_style.draw_center = true
+	defense_style.border_color = Color("c99750")
 	defense_panel.add_theme_stylebox_override("panel", defense_style)
 	combat_column.add_child(defense_panel)
 	var defense_content := VBoxContainer.new()
@@ -1155,6 +1150,7 @@ func _build_ui() -> void:
 	defense_heading.add_theme_font_size_override("font_size", 15)
 	defense_heading.add_theme_color_override("font_color", Color(0.75, 0.89, 0.98))
 	defense_content.add_child(defense_heading)
+	preload("res://vtt/creature_sheet_style.gd").heading(defense_heading, "shield")
 	# A single non-wrapping row keeps initiative inside the AC panel.
 	var defense_flow := HBoxContainer.new()
 	defense_flow.name = "TouchDefenseLine"
@@ -1314,9 +1310,8 @@ func _build_ui() -> void:
 
 	var abilities_panel := PanelContainer.new()
 	var abilities_style := health_style.duplicate() as StyleBoxFlat
-	# Keep the section outline but no tinted fill behind proficiency emojis.
-	abilities_style.draw_center = false
-	abilities_style.border_color = Color(0.39, 0.61, 0.67, 0.92)
+	abilities_style.draw_center = true
+	abilities_style.border_color = Color("c99750")
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
@@ -1407,26 +1402,20 @@ func _build_ui() -> void:
 	_passive_perception.add_theme_font_size_override("font_size", 18)
 	passive_row.add_child(_passive_perception)
 	_install_formula("passive_perception", _passive_perception, [], [])
+	var skills_section := _info_panel(skills_column, "ABILITÀ")
 	var skills_header := VBoxContainer.new()
 	skills_header.add_theme_constant_override("separation", 1)
-	skills_column.add_child(skills_header)
-	var skills_heading := Label.new()
-	skills_heading.text = "ABILITÀ"
-	skills_heading.add_theme_font_size_override("font_size", 20)
-	skills_heading.add_theme_color_override("font_color", Color(0.85, 0.93, 1.0))
-	_style_statistics_heading(skills_heading)
-	skills_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_header.add_child(skills_heading)
+	skills_section.add_child(skills_header)
 	var skills_legend := Label.new()
 	skills_legend.text = "🎓 Competenza  ·  🎓🎓 Maestria"
 	skills_legend.add_theme_font_size_override("font_size", 11)
 	skills_legend.add_theme_color_override("font_color", Color(0.77, 0.84, 0.90))
 	skills_header.add_child(skills_legend)
 	var skills_divider := HSeparator.new()
-	skills_column.add_child(skills_divider)
+	skills_section.add_child(skills_divider)
 	_skills_panel = VBoxContainer.new()
 	_skills_panel.add_theme_constant_override("separation", 3)
-	skills_column.add_child(_skills_panel)
+	skills_section.add_child(_skills_panel)
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
 		var row := HBoxContainer.new()
@@ -1606,17 +1595,11 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	classes_box.add_child(_multiclass_rows)
-	var tracker_caption := Label.new()
-	tracker_caption.text = "RISORSE"
-	tracker_caption.add_theme_font_size_override("font_size", 15)
-	tracker_caption.add_theme_color_override("font_color", Color(0.85, 0.78, 0.65))
-	_style_statistics_heading(tracker_caption)
-	combat_column.add_child(tracker_caption)
+	var resource_section := _info_panel(combat_column, "RISORSE")
 	_tracker_rows = VBoxContainer.new()
-	combat_column.add_child(_tracker_rows)
-	# Resources precede AC and initiative, directly below the HP panel.
-	combat_column.move_child(tracker_caption, defense_panel.get_index())
-	combat_column.move_child(_tracker_rows, defense_panel.get_index())
+	resource_section.add_child(_tracker_rows)
+	# Keep resources directly below HP and before AC/initiative.
+	combat_column.move_child(resource_section.get_parent(), defense_panel.get_index())
 	var feats_info_box := _info_panel(form, "TALENTI")
 	_info_feats_list = VBoxContainer.new()
 	_info_feats_list.add_theme_constant_override("separation", 5)
@@ -1704,7 +1687,8 @@ func _build_ui() -> void:
 
 
 	_condition_rows = VBoxContainer.new()
-	conditions_tab.add_child(_condition_rows)
+	var conditions_section := _info_panel(conditions_tab, "Condizioni")
+	conditions_section.add_child(_condition_rows)
 
 	# The traits pane has a fixed toolbar and a single dedicated scroll area.
 	traits_tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -2659,6 +2643,7 @@ func _add_formula_label(parent: Node, value: String) -> void:
 
 
 func _style_statistics_heading(label: Label) -> void:
+	preload("res://vtt/creature_sheet_style.gd").heading(label, "information")
 	label.add_theme_font_size_override("font_size", 17)
 	label.add_theme_color_override("font_color", Color("edbd77"))
 	label.add_theme_color_override("font_shadow_color", Color(0.03, 0.05, 0.08, 0.7))
@@ -3174,12 +3159,7 @@ func _physics_field(parent: Node, caption: String, width: float) -> VBoxContaine
 
 func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
 	var frame := PanelContainer.new()
-	var frame_style := StyleBoxFlat.new()
-	frame_style.bg_color = Color(0.11, 0.15, 0.20, 0.56)
-	frame_style.border_color = Color(0.33, 0.47, 0.58, 0.80)
-	frame_style.set_border_width_all(1)
-	frame_style.set_corner_radius_all(7)
-	frame_style.set_content_margin_all(8)
+	var frame_style := preload("res://vtt/creature_sheet_style.gd").section_style()
 	frame.add_theme_stylebox_override("panel", frame_style)
 	parent.add_child(frame)
 	var content := VBoxContainer.new()
@@ -7511,11 +7491,16 @@ func _refresh_origins_overview() -> void:
 			continue
 		var entry := VBoxContainer.new()
 		entry.add_theme_constant_override("separation", 4)
-		_origins_overview.add_child(entry)
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").card_style())
+		_origins_overview.add_child(card)
+		card.add_child(entry)
 		var row := HBoxContainer.new()
 		entry.add_child(row)
 		var label := Label.new()
 		label.text = String(source.get("name", sid))
+		label.add_theme_color_override("font_color", preload("res://vtt/creature_sheet_style.gd").GOLD)
+		label.add_theme_font_size_override("font_size", 16)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(label)

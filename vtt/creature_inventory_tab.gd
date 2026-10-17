@@ -97,6 +97,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	heading.add_theme_font_size_override("font_size", 17)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading_row.add_child(heading)
+	preload("res://vtt/creature_sheet_style.gd").heading(heading, "inventory")
 	_search_toggle = Button.new()
 	_search_toggle.text = "🔍 Cerca oggetti"
 	_search_toggle.toggle_mode = true
@@ -171,6 +172,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_delete_custom_item.pressed.connect(_delete_selected_custom_item)
 	results_row.add_child(_delete_custom_item)
 	_catalog_list = ItemList.new()
+	_catalog_list.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	_catalog_list.mouse_force_pass_scroll_events = false
 	_catalog_list.custom_minimum_size.y = 190
 	_catalog_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -183,6 +185,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	inventory_title.add_theme_font_size_override("font_size", 15)
 	add_child(inventory_title)
 	_inventory_list = ItemList.new()
+	_inventory_list.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	_inventory_list.mouse_force_pass_scroll_events = false
 	_inventory_list.custom_minimum_size.y = 145
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL

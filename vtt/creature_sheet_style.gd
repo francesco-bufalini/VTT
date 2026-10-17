@@ -58,6 +58,7 @@ static func install(root: Control) -> void:
 	_watch(root)
 
 static func _watch(node: Node) -> void:
+	if node.name == "ScrollableCaptions": return
 	# Apply after construction so explicit local styles can keep their geometry.
 	_polish.call_deferred(node)
 	if not node.child_entered_tree.is_connected(_watch):
@@ -76,9 +77,67 @@ static func _polish(node: Node) -> void:
 			box.bg_color = Color("352928f7")
 			box.border_color = Color("9c7048")
 			box.shadow_color = Color(0, 0, 0, 0.24)
-			box.shadow_size = 2
+			box.set_corner_radius_all(8)
+			box.shadow_size = 3
+			box.shadow_offset = Vector2(0, 2)
 			control.add_theme_stylebox_override(slot, box)
 	if control is Label and control.has_theme_color_override("font_color"):
 		var color := control.get_theme_color("font_color")
 		if color.b > color.r:
 			control.add_theme_color_override("font_color", GOLD if control.get_theme_font_size("font_size") >= 17 else MUTED)
+
+static func section_style() -> StyleBoxFlat:
+	var box := surface(Color("221d1cf7"), Color("c99750"), 11, 11)
+	box.border_width_top = 2
+	box.shadow_size = 6
+	return box
+
+static func card_style() -> StyleBoxFlat:
+	var box := surface(Color("352928f7"), Color("9c7048"), 8, 8)
+	box.shadow_size = 3
+	box.shadow_offset = Vector2(0, 2)
+	return box
+
+static func heading(label: Label, icon_key: String = "information") -> void:
+	_heading_later.call_deferred(label, icon_key)
+
+static func _heading_later(label: Label, icon_key: String) -> void:
+	if not is_instance_valid(label) or label.has_meta("sheet_heading"): return
+	label.set_meta("sheet_heading", true)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", GOLD)
+	if label.text == label.text.to_upper():
+		var words := label.text.to_lower().split(" ")
+		for i: int in range(words.size()):
+			if words[i] in ["ca", "pf", "cd", "ts", "xp"]: words[i] = words[i].to_upper()
+		if not words.is_empty() and words[0] not in ["CA", "PF", "CD", "TS", "XP"]: words[0] = words[0].capitalize()
+		label.text = " ".join(words)
+	var parent := label.get_parent()
+	if not (parent is VBoxContainer or parent is HBoxContainer or parent is PanelContainer): return
+	var index := label.get_index()
+	var row: HBoxContainer
+	if parent is VBoxContainer or parent is PanelContainer:
+		row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		parent.remove_child(label)
+		parent.add_child(row)
+		parent.move_child(row, index)
+		row.add_child(label)
+	else:
+		row = parent as HBoxContainer
+	var emblem := TextureRect.new()
+	var key := icon_key
+	if key == "information":
+		var caption := label.text.to_lower()
+		var icons := {"ferita": "healing", "caratteristiche": "proficiency", "abilità": "skill", "risorse": "reset", "attacchi": "sword", "fisico": "movement", "classi": "book", "talenti": "spark", "storia": "scroll", "condizioni": "condition", "linguaggi": "speech"}
+		for word: String in icons:
+			if word in caption:
+				key = String(icons[word])
+				break
+	emblem.texture = icon(key)
+	emblem.custom_minimum_size = Vector2(28, 28)
+	emblem.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	emblem.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(emblem)
+	row.move_child(emblem, label.get_index())

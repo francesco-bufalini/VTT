@@ -207,8 +207,8 @@ func _rebuild() -> void:
 		var level: int = int(feature["level"])
 		if group != last_group:
 			var section := PanelContainer.new()
-			var band := StyleBoxFlat.new()
-			band.bg_color = Color(0.16, 0.22, 0.26, 0.96)
+			var band := preload("res://vtt/creature_sheet_style.gd").section_style()
+			band.bg_color = Color("221d1cf7")
 			band.set_content_margin_all(10)
 			band.set_corner_radius_all(5)
 			section.add_theme_stylebox_override("panel", band)
@@ -219,6 +219,7 @@ func _rebuild() -> void:
 			category_heading.add_theme_font_size_override("font_size", 17)
 			category_heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
 			section.add_child(category_heading)
+			preload("res://vtt/creature_sheet_style.gd").heading(category_heading, "proficiency")
 			_cards_container.add_child(section)
 			last_group = group
 			last_level = -1
@@ -233,7 +234,7 @@ func _rebuild() -> void:
 		var key: String = String(feature["key"])
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var background := StyleBoxFlat.new()
+		var background := preload("res://vtt/creature_sheet_style.gd").card_style()
 		background.bg_color = Color(0.17, 0.14, 0.14, 0.94)
 		background.border_color = Color(0.42, 0.32, 0.26, 0.82)
 		background.set_border_width_all(1)
