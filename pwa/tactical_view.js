@@ -288,6 +288,24 @@ export class TacticalViewer {
     this.selectedId=marker?.id||"";
     const payload={token_id:this.tokenId,owner_id:await this.ownerId(),
       target_id:marker?.id||"",snapshot_id:this.snapshot.snapshot_id,pixel};
+    if(this.basicAction && marker){
+      const basic=this.basicAction;
+      const confirmed=basic.mode==='help'||window.confirm(basic.rule+
+        '\nHai risolto la prova contrapposta/il tiro salvezza e confermi il successo?');
+      if(!confirmed){
+        this.setStatus('Azione annullata: nessuna condizione o posizione modificata.');
+        return;
+      }
+      await this.runAction('battle_action',{
+        token_id:this.tokenId,owner_id:await this.ownerId(),target_id:marker.id,
+        mode:basic.mode,success_confirmed:basic.mode==='help'?false:true
+      });
+      this.basicAction=null;
+      await this.refresh();
+      this.setStatus((basic.mode==='help'?'Aiutato':basic.mode==='prone'?'Prono':'Spinto')+
+        ' · bersaglio: '+marker.name);
+      return;
+    }
     if(isAimStatus(this.targeting) && !marker){
       this.aimPixel=pixel;this.preview=null;this.updateButtons();this.draw();
       try {
