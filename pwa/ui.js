@@ -40,6 +40,7 @@ let tacticalViewer=null;
 let tokenStatusFingerprint="";
 let tokenSyncQueue=Promise.resolve();
 let mapGeneration=0;
+let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
@@ -136,6 +137,7 @@ async function navigate(page, id=null) {
     catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
   }
   stopSubscriptions();
+  if(page==="session")realtimeStopped=false;
   state.page=page; state.creatureId=id; state.editor=null;
   if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
@@ -157,7 +159,7 @@ async function render() {
     }
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
-    if(state.paired && !state.stopMap) startMap();
+    if(state.paired && !realtimeStopped && !state.stopMap) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
@@ -1579,6 +1581,7 @@ async function handleSubmit(form){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
+    realtimeStopped=false;
     state.paired=true;state.online=true;
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
@@ -1741,9 +1744,10 @@ function listen(){
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
-export function stopRealtime() { stopSubscriptions(); }
+export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
 export async function mount(){
+  realtimeStopped=false;
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
