@@ -79,6 +79,7 @@ const COMMON := [
 
 var _sections: Array[VBoxContainer] = []
 var _skill_list: VBoxContainer
+var _skill_buttons: VBoxContainer
 
 static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
@@ -96,12 +97,6 @@ static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]
 	return results.slice(0, mini(count, results.size()))
 
 func _ready() -> void:
-	var skills_heading := Label.new()
-	skills_heading.text = "Prova abilità · 4 bonus più alti"
-	skills_heading.add_theme_font_size_override("font_size", 17)
-	add_child(skills_heading)
-	_skill_list = VBoxContainer.new()
-	add_child(_skill_list)
 	for heading_text: String in GROUPS:
 		var section := VBoxContainer.new()
 		var heading := Label.new()
@@ -110,6 +105,16 @@ func _ready() -> void:
 		section.add_child(heading)
 		add_child(section)
 		_sections.append(section)
+	# The four best skill checks are actions, not a separate top-level section.
+	_skill_list = VBoxContainer.new()
+	_skill_list.name = "ProveAbilita"
+	var skills_heading := Label.new()
+	skills_heading.text = "Prove abilità · 4 migliori"
+	skills_heading.add_theme_font_size_override("font_size", 14)
+	_skill_list.add_child(skills_heading)
+	_skill_buttons = VBoxContainer.new()
+	_skill_list.add_child(_skill_buttons)
+	_sections[0].add_child(_skill_list)
 
 static func _timing(value: Variant) -> int:
 	if value is Array:
@@ -194,9 +199,11 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 			rule["skill_ids"] = supplement.get("skills", [])
 			rule["action_id"] = String(supplement.get("action_id", ""))
 			rule["catalog_id"] = String(supplement.get("id", ""))
+			rule["optional"] = bool(supplement.get("optional", false))
 			results.append(rule)
 	if record.is_empty():
 		return results
+	var personal_start := results.size()
 	var trackers: Dictionary = {}
 	for resource: Dictionary in Trackers.for_creature(record):
 		trackers[String(resource.get("id", ""))] = resource
@@ -350,13 +357,20 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		results.append(_entry(String(spell.get("name", grant.get("spell_id", ""))),
 			_timing(spell.get("time", spell.get("casting_time", "action"))), kind,
 			_description(spell.get("entries", spell.get("description", ""))), tracker, tracker_id if mode == "tracker" else ""))
+	for index: int in range(results.size()):
+		results[index]["origin"] = "personal" if index >= personal_start else "general"
+		results[index]["position"] = index
 	return results
 
 func _add_entry(entry: Dictionary) -> void:
 	var title := String(entry.get("name", ""))
 	var detail := String(entry.get("detail", ""))
+	var row := HBoxContainer.new()
+	row.set_meta("action_generated", true)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var button := Button.new()
 	button.text = title
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.tooltip_text = detail
@@ -374,8 +388,19 @@ func _add_entry(entry: Dictionary) -> void:
 		dialog.confirmed.connect(dialog.queue_free)
 		dialog.close_requested.connect(dialog.queue_free)
 	)
+	var tracker := String(entry.get("tracker", "")).strip_edges()
+	var tracker_label := Label.new()
+	tracker_label.text = "" if tracker in ["Nessuno", "Nessuna risorsa"] else tracker
+	tracker_label.tooltip_text = tracker_label.text
+	tracker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tracker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tracker_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tracker_label.custom_minimum_size = Vector2(110, 0)
+	tracker_label.size_flags_horizontal = Control.SIZE_FILL
+	row.add_child(button)
+	row.add_child(tracker_label)
 	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
-	section.add_child(button)
+	section.add_child(row)
 	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
 		checks.append("stealth")
@@ -398,10 +423,10 @@ func _add_entry(entry: Dictionary) -> void:
 		section.add_child(check)
 
 func refresh_top_skills(record: Dictionary) -> void:
-	if _skill_list == null:
+	if _skill_buttons == null:
 		return
-	for child: Node in _skill_list.get_children():
-		_skill_list.remove_child(child)
+	for child: Node in _skill_buttons.get_children():
+		_skill_buttons.remove_child(child)
 		child.queue_free()
 	for skill: Dictionary in best_skills(record):
 		var key := String(skill["id"])
@@ -409,7 +434,15 @@ func refresh_top_skills(record: Dictionary) -> void:
 		button.text = "%s  %+d" % [skill["label"], int(skill["bonus"])]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.pressed.connect(func() -> void: skill_requested.emit("skill:" + key))
-		_skill_list.add_child(button)
+		_skill_buttons.add_child(button)
+
+func _add_subheading(section: VBoxContainer, text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.set_meta("action_generated", true)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.78, 0.79, 0.69))
+	section.add_child(label)
 
 func load_record(record: Dictionary) -> void:
 	if _sections.is_empty():
@@ -425,22 +458,28 @@ func load_record(record: Dictionary) -> void:
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
-		var group: Array = grouped[i]
-		group.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			var key_a := String(a.get("tracker", "")) + "|" + String(a.get("kind", ""))
-			var key_b := String(b.get("tracker", "")) + "|" + String(b.get("kind", ""))
-			return key_a.nocasecmp_to(key_b) < 0
+		var common: Array[Dictionary] = []
+		var personal: Array[Dictionary] = []
+		for item: Dictionary in grouped[i]:
+			if String(item.get("origin", "general")) == "personal":
+				personal.append(item)
+			else:
+				common.append(item)
+		# Normal actions first, DMG optional alternatives last, within each time.
+		common.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			if bool(a.get("optional", false)) != bool(b.get("optional", false)):
+				return not bool(a.get("optional", false))
+			return int(a.get("position", 0)) < int(b.get("position", 0))
 		)
-		var last_heading := ""
-		for entry: Dictionary in group:
-			var tracker := String(entry.get("tracker", ""))
-			var heading := (tracker if not tracker.is_empty() else "Nessuna risorsa") + " · " + String(entry.get("kind", "Capacità"))
-			if heading != last_heading:
-				var label := Label.new()
-				label.text = heading
-				label.set_meta("action_generated", true)
-				label.add_theme_font_size_override("font_size", 13)
-				label.add_theme_color_override("font_color", Color(0.78, 0.79, 0.69))
-				section.add_child(label)
-				last_heading = heading
-			_add_entry(entry)
+		if not personal.is_empty():
+			_add_subheading(section, "Generali")
+		for item: Dictionary in common:
+			_add_entry(item)
+		# Keep the skills inside Azione, after the common actions, before
+		# attacks/spells and features granted specifically to this creature.
+		if i == 0 and _skill_list != null:
+			section.move_child(_skill_list, section.get_child_count() - 1)
+		if not personal.is_empty():
+			_add_subheading(section, "Dalla scheda")
+		for item: Dictionary in personal:
+			_add_entry(item)
