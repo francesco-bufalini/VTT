@@ -1,6 +1,8 @@
 extends Node
 ## The mobile Partita action forms and the cached snapshot viewer.
 const SnapshotView = preload("res://vtt/mobile/map_snapshot_view.gd")
+const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Owner = preload("res://vtt/creature_owner.gd")
 const TouchLayout = preload("res://vtt/mobile/touch_layout.gd")
 var shell: Control
@@ -28,6 +30,8 @@ var _spell_record_id := ""
 var _spell_slot_choice := 0
 var _movement_buttons: Array[Button] = []
 var _target_note := ""
+var _basic_mode := ""
+var _basic_record: Dictionary = {}
 var _aim_pixel := Vector2.INF
 var _preview_pixel := Vector2.INF
 var _preview_request := ""
@@ -253,6 +257,35 @@ func request_attack_snapshot(record: Dictionary, attack: Dictionary) -> void:
 	_field_feet = clampf(maxf(float(attack.get("range_feet", 5)), float(attack.get("long_range_feet", 0))) * 2.0, 20, 1500)
 	_send_snapshot()
 
+func request_basic_action(record: Dictionary, mode: String) -> void:
+	if mode not in BasicCombat.ACTIONS:
+		return
+	_basic_mode = mode
+	_basic_record = record.duplicate(true)
+	request_attack_snapshot(record, {"range_feet": 5, "long_range_feet": 0, "melee": true})
+
+func _confirm_basic_action(target_id: String) -> void:
+	picker.hide()
+	if _basic_mode.is_empty():
+		return
+	_send_interaction("battle_action", {"mode": _basic_mode, "target_id": target_id, "success_confirmed": true})
+
+func _select_basic_target(target_id: String) -> void:
+	if _basic_mode == "help":
+		_send_interaction("battle_action", {"mode": "help", "target_id": target_id})
+		return
+	var info: Dictionary = BasicCombat.shove_details(_basic_record,
+		Bonuses.value(_basic_record, "skill:athletics"),
+		Bonuses.value(_basic_record, "ability_mod:str"),
+		Bonuses.value(_basic_record, "proficiency"))
+	var rule := String(info.get("check", "")) + "\n" + String(info.get("action", ""))
+	if info.has("dc"):
+		rule += "\nCD: %d" % int(info["dc"])
+	else:
+		rule += "\nBonus Atletica: %+d" % int(info.get("athletics_bonus", 0))
+	_clear_picker(rule + "\nRisolvi la prova o il TS prima di confermare.")
+	_add_choice("Successo confermato · applica", _confirm_basic_action.bind(target_id))
+
 func _reopen_snapshot() -> void:
 	if not _cached:
 		return
@@ -319,6 +352,8 @@ func _on_map_tapped(pixel: Vector2, target_id: String) -> void:
 	if bool(_spell_status.get("active", false)):
 		_send_interaction("target_spell", {"target_id": target_id, "pixel": [pixel.x, pixel.y],
 			"snapshot_id": canvas.snapshot.get("snapshot_id", "")})
+	elif not _basic_mode.is_empty() and not target_id.is_empty():
+		_select_basic_target(target_id)
 	elif not _snapshot_attack.is_empty() and not target_id.is_empty():
 		_send_interaction("target_attack", {"target_id": target_id, "attack": _snapshot_attack})
 	else:
@@ -406,6 +441,10 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 				sheet.finish_mobile_spell(_spell_definition, false)
 				_spell_definition = {}
 			return
+		if action == "battle_action":
+			_basic_mode = ""
+			_basic_record.clear()
+			_target_note = " · azione completata"
 		if action == "target_attack":
 			_target_note = " · bersaglio: %d ft%s" % [int(ceil(float(result.get("distance_feet", 0)))), " · gittata lunga: svantaggio" if bool(result.get("long_range", false)) else ""]
 		if action == "begin_spell":
@@ -435,7 +474,9 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 				caption.text = "%s · gittata %d ft · trascina per mirare · due dita per zoom/spostamento · Conferma per lanciare" % [result.get("title", "Mappa"), int(_spell_status.get("range_feet", 0))]
 			elif bool(_spell_status.get("active", false)):
 				caption.text += " · " + String(_spell_status.get("instruction", "Seleziona sulla mappa"))
-			if not _snapshot_attack.is_empty():
+			if not _basic_mode.is_empty():
+				caption.text += " · tocca un bersaglio per " + ("Aiutare" if _basic_mode == "help" else "Spingere" if _basic_mode == "shove" else "Buttare prono")
+			elif not _snapshot_attack.is_empty():
 				caption.text += " · verde: gittata normale · arancio: lunga" + _target_note
 		else:
 			caption.text = String(result.get("error", "Snapshot non disponibile."))
