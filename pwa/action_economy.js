@@ -196,6 +196,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
 function actionRow(item,calculated){
+ const glyph=({'Attacco':'⚔','Incantesimo':'✦','Capacità':'◆','Regola opzionale':'◇'})[item.type]||'•';
  const tracker=String(item.tracker||'').trim();
  const resource=['Nessuno','Nessuna risorsa'].includes(tracker)?'':tracker;
  const t=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||''));
@@ -214,8 +215,9 @@ function actionRow(item,calculated){
     '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" '+(Number(t.spent||0)<=0||t.disabled?'disabled':'')+'>+</button></div>':
     !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
  const subLabel=isClassSpell?'Slot incantesimo':resource;
- return '<article class="action-economy-row">'+
-  '<div class="action-economy-main"><details class="action-economy-entry"><summary><strong>'+esc(item.name)+
+ return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'">'+
+  '<div class="action-economy-main"><details class="action-economy-entry"><summary>'+
+  '<span class="action-economy-type-icon" aria-hidden="true">'+glyph+'</span><strong>'+esc(item.name)+
   '</strong><span class="action-economy-chevron">›</span></summary><p>'+
   esc(item.description||'Nessuna descrizione disponibile.')+'</p>'+
   (item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'')+
@@ -223,7 +225,9 @@ function actionRow(item,calculated){
    const label=SKILLS.find(([key])=>key===id)?.[1]||id;
    return '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(id)+
     '" data-label="'+esc(label)+'">Tira '+esc(label)+'</button>';
-  }).join('')+'</details><span class="action-economy-preview">'+esc((item.description||'').split('\n')[0].slice(0,108))+'</span></div>'+
+  }).join('')+'</details><span class="action-economy-preview">'+
+  (item.optional?'<span class="action-economy-optional">Opzionale</span> ':'')+
+  esc((item.description||'').split('\n')[0].slice(0,92))+'</span></div>'+
   '<div class="action-economy-controls">'+actionButtons+
   (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div></article>';
 }
@@ -246,9 +250,10 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   const separated=general.length&&personal.length;
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
     '<span class="action-economy-icon" aria-hidden="true">'+({action:'⚔',bonus:'✦',free:'✋',movement:'➜',reaction:'↩'}[id])+'</span>'+
-    '<div><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
+    '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2><p>'+esc(({action:'Attacchi, incantesimi e prove di abilità',
       bonus:'Capacità che usano una azione bonus',free:'Interazioni senza costo in azioni',
-      movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div></header>'+
+      movement:'Utilizza la tua velocità',reaction:'Risposte a eventi e attacchi'}[id]))+'</p></div>'+
+    '<span class="action-economy-count" aria-label="'+matching.length+' opzioni">'+matching.length+'</span></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
       general.map(row=>actionRow(row,calculated)).join(''):'')+
     skillsPanel+
