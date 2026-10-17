@@ -29,6 +29,7 @@ const FILES := {
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
 	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
 	"/catalog_data.js": ["res://pwa/catalog_data.js", "text/javascript; charset=utf-8"],
+	"/catalog/action_feature_overrides.json": ["res://vtt/data/action_feature_overrides.json", "application/json; charset=utf-8"],
 	"/catalog/classes.json": ["res://pwa/catalog/classes.json", "application/json; charset=utf-8"],
 	"/catalog/ability_grants.json": ["res://pwa/catalog/ability_grants.json", "application/json; charset=utf-8"],
 	"/catalog/class_mechanics.json": ["res://pwa/catalog/class_mechanics.json", "application/json; charset=utf-8"],
