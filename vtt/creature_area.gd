@@ -4446,6 +4446,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	)
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells", "resource_tracker_spent",
+		"resource_recovery_ready", "resource_recovery_used",
 		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
