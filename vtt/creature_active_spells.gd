@@ -32,18 +32,53 @@ static func duration_text(spell: Dictionary) -> String:
 	return ""
 
 
+# The 5etools duration[] schema is authoritative: checking its type and
+# concentration booleans needs no serialization or keyword matching.
+# Only legacy text-only spells retain the compatibility heuristic.
 static func has_duration(spell: Dictionary) -> bool:
-	var duration: String = duration_text(spell)
+	if spell.has("has_duration") and spell["has_duration"] is bool:
+		return bool(spell["has_duration"])
+	var raw: Variant = spell.get("duration", "")
+	if raw is Array:
+		for value: Variant in raw:
+			if value is Dictionary:
+				if String((value as Dictionary).get("type", "")).to_lower() != "instant":
+					return true
+			elif value is String and _text_has_duration(String(value)):
+				return true
+		return false
+	if raw is Dictionary:
+		return String((raw as Dictionary).get("type", "")).to_lower() != "instant"
+	return _text_has_duration(String(raw))
+
+
+static func _text_has_duration(raw: String) -> bool:
+	var duration: String = raw.strip_edges().to_lower()
 	return not duration.is_empty() and not (
-		"instant" in duration or "istantan" in duration
-	)
+		"instant" in duration or "istantan" in duration)
 
 
 static func requires_concentration(spell: Dictionary) -> bool:
+	if spell.get("requires_concentration", null) is bool:
+		return bool(spell["requires_concentration"])
 	if bool(spell.get("concentration", false)):
 		return true
-	return "concentration" in duration_text(spell) or "concentrazion" in duration_text(spell)
+	var raw: Variant = spell.get("duration", "")
+	if raw is Dictionary:
+		return bool((raw as Dictionary).get("concentration", false))
+	if raw is Array:
+		for entry: Variant in raw:
+			if entry is Dictionary and bool((entry as Dictionary).get("concentration", false)):
+				return true
+			if entry is String and _text_concentrates(String(entry)):
+				return true
+		return false
+	return _text_concentrates(String(raw))
 
+
+static func _text_concentrates(raw: String) -> bool:
+	var duration: String = raw.strip_edges().to_lower()
+	return "concentration" in duration or "concentrazion" in duration
 
 static func active_origins(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
