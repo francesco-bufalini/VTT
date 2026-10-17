@@ -3030,6 +3030,15 @@ func is_movable_aoe_dragging() -> bool:
 	)
 
 
+func area_drag_preview_offset(root: Node3D) -> Vector3:
+	if root == null or not is_instance_valid(root) or not is_movable_aoe_dragging():
+		return Vector3.ZERO
+	var dragged_root: Node3D = _held_aoe_drag_root
+	if _movable_aoe_drag_index >= 0 and _movable_aoe_drag_index < _aoe_nodes.size():
+		dragged_root = _aoe_nodes[_movable_aoe_drag_index]
+	return _movable_aoe_drag_delta if root == dragged_root else Vector3.ZERO
+
+
 func begin_movable_aoe_drag(index: int, allow_static: bool = false) -> bool:
 	if is_movable_aoe_dragging():
 		return false
