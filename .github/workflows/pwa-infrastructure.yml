@@ -39,8 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
-            pwa
+            /pwa/
+            /vtt/data/class_mechanics_5etools.json
+            /vtt/data/class_resource_overrides.json
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
@@ -148,6 +151,7 @@ jobs:
           }
           for source, target in sources.items():
               copy2(Path("vtt/data") / source, root / "catalog" / target)
+          copy2(Path("vtt/data/action_feature_overrides.json"), root / "catalog/action_feature_overrides.json")
           for file in ("classes", "ability_grants", "class_mechanics", "proficiency_grants"):
               copy2(Path("pwa/catalog") / (file + ".json"), root / "catalog" / (file + ".json"))
           (root / "start-preview.cmd").write_text(

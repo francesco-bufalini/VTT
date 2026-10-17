@@ -424,6 +424,13 @@ static func _append(
 		"book": String(feature.get("source", "")),
 		"class_name": class_label, "class_source": class_book,
 		"entries": description, "bonuses": feature.get("bonuses", []),
+		# Preserve explicit activation/consumption metadata for the action economy.
+		# Never infer an action from descriptive feature prose.
+		"action_type": feature.get("action_type", feature.get("activation_type", "")),
+		"activation": feature.get("activation", null),
+		"time": feature.get("time", null),
+		"action_kind": feature.get("action_kind", "Capacità"),
+		"tracker_id": feature.get("tracker_id", ""),
 		# Preserve only explicit structured 5etools defensive grants. Descriptive
 		# text and conditional resistances are not interpreted as universal.
 		"vulnerable": feature.get("vulnerable", []),

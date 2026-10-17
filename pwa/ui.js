@@ -1,4 +1,5 @@
-import { actionEconomyView, SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
+import { actionEconomyView, loadFeatureActionOverrides } from "./action_economy.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
@@ -268,6 +269,10 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
+  if(state.sheet==="actions"){
+    try{state.featureActionOverrides=await loadFeatureActionOverrides();}
+    catch{state.featureActionOverrides=[];}
+  }
   if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
@@ -296,7 +301,7 @@ async function editorView() {
     break;
   }
   case "actions":
-    body=actionEconomyView(c,calculated,state.spellCatalog||[]);
+    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[]);
     break;
   case "magic":
     body=panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+

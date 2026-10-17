@@ -4275,9 +4275,10 @@ func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 		_update_external_record(record)
 		if String(record.get("id", "")) == _selected_id:
 			_refresh_trackers(record)
-			if _spellcasting_ui != null:
+			if _action_economy_ui != null:
 				_action_economy_ui.call("load_record", record)
-	_spellcasting_ui.call("load_record", record)
+			if _spellcasting_ui != null:
+				_spellcasting_ui.call("load_record", record)
 		return
 
 
