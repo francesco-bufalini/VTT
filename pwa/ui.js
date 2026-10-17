@@ -1087,6 +1087,25 @@ async function refreshMapOnce() {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='combat-action'){
+    const mode=target.dataset.mode;
+    if(!['help','shove','prone'].includes(mode))throw Error('Azione non valida.');
+    const record=state.editor?.read();
+    if(!record?.id)throw Error('Seleziona prima una creatura.');
+    const tokenId=record.linked_token_sync_id;
+    if(!tokenId)throw Error('Piazza o associa la creatura a un token prima di scegliere il bersaglio.');
+    const calculated=await computeLocalData(record);
+    const rule=record.rules_version==='2024'?
+      '2024 · TS Forza o Destrezza, a scelta del bersaglio, CD '+
+       (8+Number(calculated.abilities?.str?.modifier??0)+Number(calculated.stats?.proficiency??0))+
+       '. La spinta sostituisce un attacco.':
+      '2014 · Atletica '+(Number(calculated.skills?.athletics??0)>=0?'+':'')+
+       Number(calculated.skills?.athletics??0)+' contro Atletica o Acrobazia (a scelta del bersaglio). La spinta sostituisce un attacco.';
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+    await tacticalViewer.open(tokenId,{});
+    tacticalViewer.setBasicAction({mode,rule});
+    return;
+  }
   if(act==='sheet-roll'){
     const calculated=await computeLocalData(state.editor.read()),modifier=calculated.values[target.dataset.target];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
