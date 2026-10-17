@@ -227,8 +227,11 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		var mode := String(grant.get("payment_mode", "free"))
 		var tracker := (_tracker_label(tracker_id, trackers) if mode == "tracker" else
 			"Slot incantesimo" if mode == "slot" else "Nessuno")
+		# VTT internal effect templates (e.g. Bardic Inspiration / Wild Shape)
+		# are abilities, not spells: no spell-school or component semantics.
+		var kind := "Capacità" if bool(spell.get("internal_grant", false)) else "Incantesimo"
 		results.append(_entry(String(spell.get("name", grant.get("spell_id", ""))),
-			_timing(spell.get("time", spell.get("casting_time", "action"))), "Incantesimo",
+			_timing(spell.get("time", spell.get("casting_time", "action"))), kind,
 			_description(spell.get("entries", spell.get("description", ""))), tracker, tracker_id if mode == "tracker" else ""))
 	return results
 
