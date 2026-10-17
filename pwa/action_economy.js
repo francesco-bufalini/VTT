@@ -237,7 +237,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(!definition)continue;
   const level=Number(definition.level??raw?.level??0);
   add(definition.name||spellId(raw),definition.time??definition.casting_time??'action','Incantesimo',
-      'Livello '+level+' · Tempo di lancio: '+castingTime(definition)+'.\\n'+details(definition.entries??definition.description??''),
+      'Livello '+level+' · Tempo di lancio: '+castingTime(definition)+'.\n'+details(definition.entries??definition.description??''),
       level>0?'Slot incantesimo':'Nessuna risorsa',0,{
        spell_id:spellId(raw),spell_mode:'class',level,
        casting_class:raw.casting_class||'',casting_label:raw.casting_label||'Scheda'
