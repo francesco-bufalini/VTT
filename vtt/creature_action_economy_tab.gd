@@ -557,23 +557,40 @@ func _add_entry(entry: Dictionary) -> void:
 	var tracker_id := String(entry.get("tracker_id", ""))
 	var spell_id := String(entry.get("spell_id", ""))
 	var grant_id := String(entry.get("grant_id", ""))
+	# Keep spell launchers and resource counters in one stable, right-aligned
+	# control column even in the two-column desktop view.
+	var controls := VBoxContainer.new()
+	controls.add_theme_constant_override("separation", 3)
+	controls.size_flags_horizontal = Control.SIZE_SHRINK_END
+	row.add_child(controls)
 	if not spell_id.is_empty():
-		var cast := _action_button("Lancia", "Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")
+		var cast := _action_button("Lancia · slot" if tracker_name == "Slot incantesimo" else "Lancia",
+			"Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")
 		cast.pressed.connect(func() -> void: cast_spell_requested.emit(spell_id, grant_id))
-		row.add_child(cast)
+		controls.add_child(cast)
 	elif title == "Lanciare un incantesimo" or title == "Magia":
 		var open := _action_button("Incantesimi", "Apri la scheda Poteri per scegliere cosa lanciare")
 		open.pressed.connect(func() -> void: open_spellbook_requested.emit())
-		row.add_child(open)
+		controls.add_child(open)
 	if not tracker_id.is_empty() and _trackers.has(tracker_id):
 		var tracker: Dictionary = _trackers[tracker_id]
 		var base: int = maxi(0, int(tracker.get("max", 0)))
 		var maximum := maxi(0, Bonuses.add(_record, "tracker:" + tracker_id, base))
 		var spent: Dictionary = _record.get("resource_tracker_spent", {})
 		var used := clampi(int(spent.get(tracker_id, 0)), 0, maximum)
+		var tracker_caption := Label.new()
+		tracker_caption.text = tracker_name
+		tracker_caption.tooltip_text = tracker_name
+		tracker_caption.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		tracker_caption.custom_minimum_size.x = 110
+		tracker_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		tracker_caption.add_theme_font_size_override("font_size", 10)
+		tracker_caption.add_theme_color_override("font_color", Color(0.95, 0.76, 0.47))
+		controls.add_child(tracker_caption)
 		var counter := HBoxContainer.new()
 		counter.add_theme_constant_override("separation", 3)
-		row.add_child(counter)
+		counter.alignment = BoxContainer.ALIGNMENT_END
+		controls.add_child(counter)
 		var minus := _action_button("−", "Consuma 1 · " + tracker_name)
 		minus.disabled = used >= maximum or bool(tracker.get("disabled", false))
 		minus.pressed.connect(func() -> void: tracker_change_requested.emit(tracker_id, 1, maximum))
@@ -596,7 +613,7 @@ func _add_entry(entry: Dictionary) -> void:
 		tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		tag.add_theme_font_size_override("font_size", 11)
 		tag.add_theme_color_override("font_color", Color(0.94, 0.72, 0.45))
-		row.add_child(tag)
+		controls.add_child(tag)
 	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
 		checks.append("stealth")
