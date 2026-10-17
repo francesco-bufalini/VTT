@@ -1,0 +1,393 @@
+{
+  "version": 1,
+  "upstream": "5etools/data/actions.json",
+  "description": "Supplementi redazionali in italiano alle azioni di base già disponibili: fonte, edizione, categoria, economia di azioni e prove strutturate. Nessuna inferenza da testo al runtime.",
+  "entries": [
+    {
+      "id": "activate_item",
+      "name": "Attivare un oggetto magico",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "DMG",
+      "page": 141,
+      "description": "L'attivazione di oggetti magici segue il testo dell'oggetto (parola di comando, consumabile, cariche o incantesimo). Non equivale a Usare un oggetto; verifica il tempo effettivo indicato per l'oggetto.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "climb_large",
+      "name": "Arrampicarsi su una creatura più grande",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "DMG",
+      "page": 271,
+      "description": "Regola opzionale: dopo esserti portato in posizione, Atletica o Acrobazia contro Acrobazia del bersaglio. Se riesci, entri nel suo spazio e puoi spostarti con essa; muoverti nel suo spazio è terreno difficile.",
+      "skills": [
+        "athletics",
+        "acrobatics"
+      ],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "disarm",
+      "name": "Disarmare",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "DMG",
+      "page": 271,
+      "description": "Regola opzionale: attacco con arma contrapposto a una prova di Atletica o Acrobazia del bersaglio. Se vinci, fa cadere l'oggetto senza infliggere danni. Svantaggio se l'oggetto è impugnato con due mani; considera la taglia.",
+      "skills": [],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "shield",
+      "name": "Indossare o rimuovere uno scudo",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "PHB",
+      "page": 146,
+      "description": "Indossare o togliere uno scudo richiede un'azione; aggiorna l'equipaggiamento nella scheda per ricalcolare la CA.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "shield",
+      "name": "Indossare o rimuovere uno scudo",
+      "edition": "2024",
+      "timings": [
+        "action"
+      ],
+      "source": "XPHB",
+      "page": 219,
+      "description": "Indossare o togliere uno scudo richiede un'azione; aggiorna l'equipaggiamento per applicare o rimuovere il suo bonus alla CA.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "end_concentration",
+      "name": "Interrompere concentrazione",
+      "edition": "2014",
+      "timings": [
+        "free"
+      ],
+      "source": "PHB",
+      "page": 203,
+      "description": "Puoi interrompere la concentrazione volontariamente in qualsiasi momento: nessuna azione richiesta. Usa la gestione della concentrazione nella scheda per terminare l'effetto.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "end_concentration",
+      "name": "Interrompere concentrazione",
+      "edition": "2024",
+      "timings": [
+        "free"
+      ],
+      "source": "XPHB",
+      "page": 363,
+      "description": "Puoi smettere di concentrarti in qualsiasi momento senza spendere azioni. Termina l'effetto dalla gestione della concentrazione nella scheda.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "escape_grapple",
+      "name": "Liberarsi da una presa",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "PHB",
+      "page": 195,
+      "description": "Una creatura afferrata usa un'azione e supera Atletica o Acrobazia contro Atletica di chi la afferra; al successo termina la condizione Afferrato.",
+      "skills": [
+        "athletics",
+        "acrobatics"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "escape_grapple",
+      "name": "Liberarsi da una presa",
+      "edition": "2024",
+      "timings": [
+        "action"
+      ],
+      "source": "XPHB",
+      "page": 367,
+      "description": "Una creatura Afferrata usa un'azione per tirare Atletica o Acrobazia contro la CD di fuga della presa; al successo termina Afferrato.",
+      "skills": [
+        "athletics",
+        "acrobatics"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "grapple",
+      "name": "Afferrare una creatura",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "PHB",
+      "page": 195,
+      "description": "Sostituisce un attacco dell'azione Attaccare. Devi avere una mano libera e il bersaglio deve essere entro portata e al massimo una taglia più grande. Atletica contrapposta ad Atletica o Acrobazia del bersaglio; al successo applica Afferrato.",
+      "skills": [
+        "athletics"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": "grapple"
+    },
+    {
+      "id": "grapple",
+      "name": "Afferrare una creatura",
+      "edition": "2024",
+      "timings": [
+        "action"
+      ],
+      "source": "XPHB",
+      "page": 377,
+      "description": "Colpo senz'armi che sostituisce un attacco. Con una mano libera, bersaglio entro 5 ft e non oltre una taglia più grande: TS Forza o Destrezza a scelta del bersaglio contro CD 8 + competenza + modificatore Forza; al fallimento applica Afferrato.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": "grapple"
+    },
+    {
+      "id": "healing_surge",
+      "name": "Impulso curativo",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "DMG",
+      "page": 266,
+      "description": "Regola opzionale del DM: spendi fino a metà dei Dadi Vita, aggiungi il modificatore di Costituzione a ciascun tiro e recuperi i punti ferita ottenuti. Una volta per riposo breve o lungo, se la variante è attiva nella campagna.",
+      "skills": [],
+      "optional": true,
+      "tracker": "Dadi Vita",
+      "action_id": ""
+    },
+    {
+      "id": "identify_spell",
+      "name": "Identificare un incantesimo",
+      "edition": "2014",
+      "timings": [
+        "reaction",
+        "action"
+      ],
+      "source": "XGE",
+      "page": 85,
+      "description": "Reazione durante il lancio oppure azione per riconoscere l'effetto dopo il lancio. Prova di Intelligenza (Arcano), CD 15 + livello dell'incantesimo; vantaggio se è un incantesimo della tua classe.",
+      "skills": [
+        "arcana"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "improvise",
+      "name": "Improvvisare un'azione",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "PHB",
+      "page": 193,
+      "description": "Descrivi ciò che vuoi tentare (es. forzare una porta, negoziare, intimidire): il DM decide se è possibile, quale tempo richiede e se serve una prova. Il tempo può variare.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "improvise",
+      "name": "Improvvisare un'azione",
+      "edition": "2024",
+      "timings": [
+        "action"
+      ],
+      "source": "XPHB",
+      "page": 15,
+      "description": "Descrivi un'azione non prevista dalle opzioni standard: il DM decide se è possibile e quale prova o tiro d20, se necessario, determina l'esito. Il tempo può variare.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "mark",
+      "name": "Marcare un avversario",
+      "edition": "2014",
+      "timings": [
+        "free"
+      ],
+      "source": "DMG",
+      "page": 271,
+      "description": "Regola opzionale collegata a un attacco in mischia: marchia il bersaglio fino alla fine del tuo prossimo turno. L'attacco di opportunità contro quel bersaglio ottiene vantaggio e non spende la reazione, ma è limitato a uno per turno e richiede poter reagire.",
+      "skills": [],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "overrun",
+      "name": "Travolgere (attraversare lo spazio nemico)",
+      "edition": "2014",
+      "timings": [
+        "action",
+        "bonus"
+      ],
+      "source": "DMG",
+      "page": 272,
+      "description": "Regola opzionale: Atletica contrapposta ad Atletica di un nemico; vantaggio se sei più grande, svantaggio se più piccolo. Se vinci puoi attraversare il suo spazio una volta nel turno.",
+      "skills": [
+        "athletics"
+      ],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "shove_aside",
+      "name": "Spingere lateralmente",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "DMG",
+      "page": 272,
+      "description": "Regola opzionale: come Spingere, ma sposti il bersaglio di 5 ft lateralmente, in uno spazio entro portata. La prova di Atletica dell'attaccante è effettuata con svantaggio.",
+      "skills": [
+        "athletics"
+      ],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "stabilize",
+      "name": "Stabilizzare una creatura",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "PHB",
+      "page": 197,
+      "description": "Presta primo soccorso a una creatura a 0 PF: prova di Saggezza (Medicina) CD 10. In caso di successo non effettua tiri salvezza contro morte finché resta stabile; aggiorna manualmente la scheda.",
+      "skills": [
+        "medicine"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "stabilize",
+      "name": "Stabilizzare una creatura",
+      "edition": "2024",
+      "timings": [
+        "action"
+      ],
+      "source": "XPHB",
+      "page": 369,
+      "description": "Usa l'azione Aiutare per tentare di stabilizzare una creatura a 0 PF, con prova di Saggezza (Medicina) CD 10. Il risultato va applicato alla scheda della creatura.",
+      "skills": [
+        "medicine"
+      ],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "tumble",
+      "name": "Passare con acrobazia attraverso un nemico",
+      "edition": "2014",
+      "timings": [
+        "action",
+        "bonus"
+      ],
+      "source": "DMG",
+      "page": 272,
+      "description": "Regola opzionale: Acrobazia contrapposta ad Acrobazia del nemico. Se vinci puoi attraversare il suo spazio una volta nel turno.",
+      "skills": [
+        "acrobatics"
+      ],
+      "optional": true,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "two_weapon",
+      "name": "Combattere con due armi",
+      "edition": "2014",
+      "timings": [
+        "bonus"
+      ],
+      "source": "PHB",
+      "page": 195,
+      "description": "Dopo un attacco con un'arma da mischia leggera puoi usare un'azione bonus per attaccare con una seconda arma leggera nell'altra mano. Non aggiungere il modificatore ai danni del secondo attacco, salvo eccezioni.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "two_weapon",
+      "name": "Combattere con due armi",
+      "edition": "2024",
+      "timings": [
+        "bonus"
+      ],
+      "source": "XPHB",
+      "page": 213,
+      "description": "Dopo aver attaccato con un'arma con proprietà Leggera puoi effettuare un attacco aggiuntivo con una diversa arma Leggera come azione bonus; verifica eventuale maestria Nick o altri privilegi.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    },
+    {
+      "id": "wake",
+      "name": "Svegliare una creatura",
+      "edition": "2014",
+      "timings": [
+        "action"
+      ],
+      "source": "XGE",
+      "page": 77,
+      "description": "Usa un'azione per scuotere o dare un colpetto a una creatura che dorme naturalmente. Il sonno magico/chimico segue le proprie regole.",
+      "skills": [],
+      "optional": false,
+      "tracker": "",
+      "action_id": ""
+    }
+  ]
+}
