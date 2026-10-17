@@ -125,3 +125,11 @@ l'archivio sono temporanei; nessun comando di partita viene inviato.
 I due confronti nativi avviano Godot 4.7.2 su dati sintetici: 16 casi per le
 concessioni e 215 casi per le risorse e le formule. Il percorso dell'eseguibile
 si può impostare con `GODOT`. Non aprono né riscrivono gli archivi dell'utente.
+
+## Aggiornamento · dominio di base e modifica scheda PWA (ottobre 2026)
+
+Nuove schede complete secondo i default del nativo (senza normalizzare gli archivi importati), recupero esplicito degli slot del Patto dopo riposo breve e degli slot di classe dopo riposo lungo, creazione homebrew locale per oggetti/talenti/background con competenze tipizzate e riferimenti portatili. Il catalogo permette l'assegnazione e impedisce di eliminare un contenuto rapido ancora usato.
+
+Modifica direttamente nella PWA aspetto, note, personalità, identità e ispirazione; ora sono editabili anche tiri salvezza contro la morte e livello di indebolimento. I valori strutturati restano calcolati in locale. Le azioni leggono gli incantesimi legacy e quelli concessi automaticamente.
+
+**Compatibilità di distribuzione:** `network/pwa_host.gd` continua a servire gli stessi percorsi JS; per mantenere i cambiamenti confinati a `pwa/`, le funzioni di dominio sono state incorporate in moduli già autorizzati. La cache offline usa `v21`. I test di parità proteggono i percorsi importati. Le opzioni che richiedono una modifica della scena 3D, del protocollo di trasferimento o nuovi endpoint nativi sono escluse.

@@ -95,8 +95,13 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
 export function recoveryPatch(c,event,trackers){
  if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
  const spent={...(c.resource_tracker_spent||{})};
- for(const row of trackers)if(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest')delete spent[row.id];
- return {resource_tracker_spent:spent};
+ for(const row of trackers)if(!row.disabled&&(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest'))delete spent[row.id];
+ const patch={resource_tracker_spent:spent};
+ // Pact Magic recharges on a short rest; class spell slots on a long rest.
+ // Opening/recalculating a sheet never triggers recovery.
+ if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
+ if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
+ return patch;
 }
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
@@ -262,16 +267,22 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
       '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows(c,'classes',catalogs)+'</details>')+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>')+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
-     (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
-      '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
-      summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
-        ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
+     '<details><summary>Aspetto, identità e personalità</summary>'+
+     cols(field('Giocatore','player_name',c.player_name)+field('Età','age',c.age)+
+       field('Altezza','height',c.height)+field('Peso','weight',c.weight)+
+       field('Occhi','eyes',c.eyes)+field('Capelli','hair',c.hair)+field('Pelle','skin',c.skin)+field('Sesso','sex',c.sex))+
+     area('Aspetto','appearance',c.appearance)+area('Tratti della personalità','personality_traits',c.personality_traits)+
+     area('Ideali','ideals',c.ideals)+area('Legami','bonds',c.bonds)+area('Difetti','flaws',c.flaws)+
+     area('Appunti','notes',c.notes)+
+     '<label class="check"><input type="checkbox" data-field="inspiration" '+(c.inspiration?'checked':'')+'>Ispirazione</label></details>');
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>')+
   panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
- if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp'))+
+ if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp')+
+      number('TS morte · successi','death_save_successes',c.death_save_successes??0,0,3)+
+      number('TS morte · fallimenti','death_save_failures',c.death_save_failures??0,0,3))+
     (calculated.stats?.automatic_hp?.available?'<p class="hint">PF da progressione: '+calculated.stats.automatic_hp.value+'</p><button class="btn" data-act="hp-automatic">Applica PF automatici</button>':''))+
   resources+panel('CA e iniziativa','<div class="row between"><span>Classe armatura '+read('ac','Classe armatura')+'</span><span>Iniziativa '+read('initiative','Iniziativa',true)+'</span></div>'+armor+
       cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
@@ -287,4 +298,54 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;
+}
+
+// Action overview lives in an existing server-served module so the PWA needs no native route changes.
+// Structured action economy overview; all computations remain local.
+export const ACTION_GROUPS=[["action","Azione"],["bonus","Azione bonus"],["free","Azione gratuita"],["movement","Movimento"],["reaction","Reazione"]];
+const defaults=[
+["Attaccare","action","attacco","Effettua un attacco."],
+["Scattare","action","generale","Ottieni movimento aggiuntivo pari alla tua velocità."],
+["Disimpegnarsi","action","generale","Eviti gli attacchi di opportunità provocati dal movimento."],
+["Schivare","action","generale","Ti concentri sulla difesa fino al turno successivo."],
+["Aiutare","action","generale","Aiuta una creatura in una prova o in un attacco."],
+["Nascondersi","action","prova","Effettua una prova di Furtività."],
+["Cercare","action","prova","Effettua una prova di Percezione o Indagare."],
+["Preparare","action","generale","Prepara un'azione da eseguire con la reazione."],
+["Usare un oggetto","action","generale","Utilizza un oggetto che richiede un'azione."],
+["Interagire con un oggetto","free","generale","Interazione semplice con un oggetto."],
+["Muoversi","movement","movimento","Utilizza il movimento disponibile."],
+["Attacco di opportunità","reaction","attacco","Attacco in mischia come reazione, quando consentito."]
+];
+const actionEsc=v=>String(v??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+function timing(value){
+ const s=String(value||"").toLowerCase();
+ if(/reaction|reazione/.test(s))return "reaction";
+ if(/bonus/.test(s))return "bonus";
+ if(/free|gratuit|interact/.test(s))return "free";
+ if(/move|movimento/.test(s))return "movement";
+ return "action";
+}
+export function actionEntries(record,calculated={},spells=[]){
+ const entries=defaults.map(([name,time,type,description])=>({name,time,type,description,tracker:""}));
+ const add=(name,time,type,description,tracker)=>entries.push({name:String(name||type),time:timing(time),type,description:String(description||""),tracker:String(tracker||"")});
+ for(const a of calculated.attacks||[])add(a.name,"action","attacco",a.description||a.damage,a.tracker_id);
+ const known=new Set([...(record.prepared_spells||[]),...(record.known_spells||[]),...(record.spells||[])].map(x=>typeof x==="string"?x:String(x.id||x.spell_id||"")));
+ for(const grant of [...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])])
+  if(!grant.disabled)known.add(String(grant.spell_id||""));
+ for(const spell of spells){
+  if(!known.has(String(spell.id||"")))continue;
+  const time=Array.isArray(spell.time)?spell.time[0]?.unit:spell.casting_time||spell.time;
+  const grant=[...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])].find(g=>g.spell_id===spell.id&&!g.disabled);
+  add(spell.name||spell.id,time,"incantesimo",spell.description||"",grant?.tracker_id||(Number(spell.level)>0?"Slot incantesimo":""));
+ }
+ for(const feature of [...(record.action_grants||[]),...(calculated.actions||[])])
+  if(feature&&!feature.disabled)add(feature.name||feature.title,feature.action_type||feature.activation||feature.time,"capacità",feature.description||feature.text,feature.tracker_id);
+ return entries;
+}
+export function actionEconomyView(record,calculated,spells=[]){
+ const entries=actionEntries(record,calculated,spells);
+ return ACTION_GROUPS.map(([id,title])=>'<section class="panel"><h2>'+title+'</h2>'+
+  entries.filter(e=>e.time===id).map(e=>'<details class="native-entry"><summary><strong>'+actionEsc(e.name)+'</strong> · '+actionEsc(e.type)+(e.tracker?' · '+actionEsc(e.tracker):'')+'</summary><p>'+actionEsc(e.description)+'</p></details>').join('')+
+  (!entries.some(e=>e.time===id)?'<p class="hint">Nessuna azione.</p>':'')+'</section>').join('');
 }
