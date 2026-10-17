@@ -13,6 +13,8 @@ const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
+const ActionEconomyTab = preload("res://vtt/creature_action_economy_tab.gd")
+const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -171,6 +173,7 @@ var _front: OptionButton
 var _party: LineEdit
 var _alignment: OptionButton
 var _tabs: TabContainer
+var _action_economy_ui: Node
 var _spellcasting_ui: Node
 var _inventory_ui: Node
 var _ac: SpinBox
@@ -942,6 +945,14 @@ func _build_ui() -> void:
 		Callable(self, "_on_formula_bonus_requested"),
 		Callable(self, "_edit_origin_spell_popup")
 	)
+	var actions_tab := _add_sheet_tab(_tabs, "Cosa posso fare?")
+	_action_economy_ui = ActionEconomyTab.new()
+	actions_tab.add_child(_action_economy_ui)
+	_action_economy_ui.skill_requested.connect(_on_formula_roll_requested)
+	_action_economy_ui.basic_action_requested.connect(_on_basic_action_requested)
+	_action_economy_ui.tracker_change_requested.connect(_on_action_tracker_change)
+	_action_economy_ui.cast_spell_requested.connect(_on_action_cast_requested)
+	_action_economy_ui.open_spellbook_requested.connect(func() -> void: _show_sheet_tab("Poteri"))
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
 	inventory_tab.add_child(_inventory_ui)
@@ -952,7 +963,7 @@ func _build_ui() -> void:
 		Callable(self, "_send_item_to_peer")
 	)
 	# The same stable tab order is used by the desktop TabContainer and touch drawer.
-	var ordered_tabs := ["Info", "Statistiche", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
+	var ordered_tabs := ["Info", "Statistiche", "Cosa posso fare?", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
 	for index: int in range(ordered_tabs.size()):
 		for candidate_index: int in range(_tabs.get_tab_count()):
 			var page: Control = _tabs.get_tab_control(candidate_index)
@@ -2766,6 +2777,7 @@ func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
 		return
 	_replace_current_record(record)
 	_origin_spells_stale = false
+	_action_economy_ui.call("load_record", record)
 	_spellcasting_ui.call("load_record", record)
 	_refresh_choice_warnings(record)
 
@@ -2807,6 +2819,81 @@ func _on_formula_bonus_requested(key: String) -> void:
 func _scroll_origins_to_top() -> void:
 	if _origins_scroll != null and is_instance_valid(_origins_scroll):
 		_origins_scroll.scroll_vertical = 0
+
+
+func _on_action_tracker_change(tracker_id: String, delta: int, maximum: int) -> void:
+	_change_tracker(tracker_id, delta, maximum)
+	if _action_economy_ui != null:
+		_action_economy_ui.call("load_record", _current())
+
+
+func _on_action_cast_requested(spell_id: String, grant_id: String) -> void:
+	if _spellcasting_ui == null or not _spellcasting_ui.has_method("request_cast_from_actions"):
+		return
+	if not bool(_spellcasting_ui.call("request_cast_from_actions", spell_id, grant_id)):
+		_set_status("Incantesimo non più disponibile. Aggiorna la scheda Poteri.")
+
+
+func _on_basic_action_requested(action_id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	# The Android shell uses its existing token-selectable 2D map snapshot.
+	if board_root.has_method("request_mobile_basic_action"):
+		board_root.call("request_mobile_basic_action", record, action_id)
+		return
+	var actor: CharacterBody3D = find_linked_token_for_creature(String(record.get("id", "")))
+	if actor == null:
+		_set_status("Associa prima la creatura a un token sulla mappa.")
+		return
+	var candidates: Array[CharacterBody3D] = []
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is CharacterBody3D and board_root.is_ancestor_of(node) and node != actor and node.is_visible_in_tree():
+			candidates.append(node)
+	if candidates.is_empty():
+		_set_status("Nessun token bersaglio presente.")
+		return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Aiutare" if action_id == "help" else "Spingere" if action_id == "shove" else "Afferrare" if action_id == "grapple" else "Buttare prono"
+	dialog.ok_button_text = "Applica" if action_id == "help" else "Confermo il successo"
+	dialog.cancel_button_text = "Annulla"
+	var body := VBoxContainer.new()
+	dialog.add_child(body)
+	var caption := Label.new()
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if action_id == "help":
+		caption.text = "Applica Aiutato al bersaglio. Nessun vantaggio o altro effetto viene calcolato automaticamente."
+	else:
+		var info: Dictionary = BasicCombat.shove_details(record,
+			BonusRules.value(record, "skill:athletics"),
+			BonusRules.value(record, "ability_mod:str"), BonusRules.value(record, "proficiency"))
+		caption.text = String(info.get("check", "")) + "\n" + (("Afferrare: mano libera richiesta; applica Afferrato dopo il successo." if action_id == "grapple" else String(info.get("action", ""))) + "\n" + (
+			"\nCD: %d" % int(info["dc"]) if info.has("dc") else
+			"\nAtletica: %+d" % int(info.get("athletics_bonus", 0))
+		)) + "\nApplica solo se la prova o il TS è stato risolto con successo."
+	body.add_child(caption)
+	if action_id != "help" and String(record.get("rules_version", "2014")) != "2024":
+		var roll := Button.new()
+		roll.text = "Tira Atletica con il roller della scheda"
+		roll.pressed.connect(func() -> void: _on_formula_roll_requested("skill:athletics"))
+		body.add_child(roll)
+	var picker := OptionButton.new()
+	for target: CharacterBody3D in candidates:
+		var target_name := String(target.call("get_display_name")) if target.has_method("get_display_name") else String(target.name)
+		picker.add_item(target_name)
+	body.add_child(picker)
+	dialog.confirmed.connect(func() -> void:
+		var index := picker.selected
+		if index >= 0 and index < candidates.size():
+			var victim: CharacterBody3D = candidates[index]
+			var result: Dictionary = BasicCombat.execute(board_root, actor, victim, action_id, action_id != "help")
+			_set_status("Azione eseguita." if bool(result.get("ok", false)) else String(result.get("error", "Azione non valida.")))
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.close_requested.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered_ratio(0.72)
 
 
 func _on_formula_roll_requested(key: String) -> void:
@@ -2927,6 +3014,8 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 		_update_ability_modifier(ability)
 	_loading = previous_loading
 	_refresh_skill_values(record)
+	if _action_economy_ui != null and _tabs != null and _tabs.get_tab_control(_tabs.current_tab).name == "Cosa posso fare?":
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	_update_max_hp_display()
 	_update_second_max_formula()
 	_update_defense_display()
@@ -3892,6 +3981,7 @@ func _load_form(record: Dictionary) -> void:
 	_level.editable = _class_name.selected > 0
 	_refresh_conditions(record)
 	_refresh_reference(record)
+	_action_economy_ui.call("load_record", record)
 	_spellcasting_ui.call("load_record", record)
 	_origin_spells_stale = true
 	if _origin_spells_ui != null and _origin_spells_ui.visible:
@@ -4268,6 +4358,8 @@ func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 		_update_external_record(record)
 		if String(record.get("id", "")) == _selected_id:
 			_refresh_trackers(record)
+			if _action_economy_ui != null:
+				_action_economy_ui.call("load_record", record)
 			if _spellcasting_ui != null:
 				_spellcasting_ui.call("load_record", record)
 		return
@@ -4370,6 +4462,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	)
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells", "resource_tracker_spent",
+		"resource_recovery_ready", "resource_recovery_used",
 		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
@@ -6152,6 +6245,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
+	if index >= 0 and _tabs.get_tab_control(index).name == "Cosa posso fare?" and _action_economy_ui != null:
+		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	if index >= 0 and _tabs.get_tab_control(index).name == "Modifica personaggio" and _editor_section_picker.selected == 0:
 		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():

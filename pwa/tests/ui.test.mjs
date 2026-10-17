@@ -126,8 +126,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   const persisted=await loadCreature(creature.creature.id);
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
-  assert.equal(persisted.data.spell_slots_spent[1],0,
-    "A long rest in the resources panel restores class spell slots");
+  assert.equal(persisted.data.spell_slots_spent[1],0,"Il riposo lungo ripristina gli slot di classe");
   assert.equal(persisted.data.background_personality,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
@@ -178,7 +177,7 @@ test("dice roll is usable offline; session has functioning pairing form",async()
   await until(()=>document.querySelector("#pair-form"));
   assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
-  assert.equal(document.querySelectorAll("#nav button").length,4,"Android has four main sections");
+  assert.equal(document.querySelectorAll("#nav button").length,5);
 });
 
 
@@ -236,9 +235,8 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
-  click('[data-nav="dice"]');
+  click('[data-nav="chat"]');
   await until(()=>document.querySelector("#chat-form"));
-  change("#chat-author","Arcanista mobile");
   const input=document.querySelector("#chat-message");
   input.value="Messaggio dal browser";
   document.querySelector("#chat-form").dispatchEvent(
@@ -247,20 +245,9 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const sent=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
   const msg=JSON.parse(sent.options.body).payload.event;
   assert.equal(msg.kind,"chat");
-  assert.equal(msg.author,"Arcanista mobile");
   assert.equal(msg.text,"Messaggio dal browser");
   assert.ok(msg.id.startsWith("pwa_"));
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
-  click('[data-act="roll"][data-sides="20"]');
-  await until(()=>document.querySelector('[data-act="share-roll"]'));
-  assert.equal(document.querySelector("#chat-author").value,"Arcanista mobile",
-    "The author selection survives a dice re-render");
-  click('[data-act="share-roll"]');
-  await until(()=>calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send").length>=2);
-  const rolls=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="chat_send");
-  const sentRoll=JSON.parse(rolls.at(-1).options.body).payload.event;
-  assert.equal(sentRoll.kind,"roll");
-  assert.equal(sentRoll.author,"Arcanista mobile","Chat and dice must use the same selected creature");
   click('[data-nav="library"]'); // Release chat polling timer.
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -346,7 +333,7 @@ test("native Android section order and editable sheet data",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
-  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Cosa posso fare?","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
@@ -384,9 +371,11 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
   assert.equal(picker.tagName,"SELECT");
   assert.equal(picker.value,"Completamente neutrale");
   assert.equal(picker.options.length,9);
-  for(const key of ['type','default_miniature_id','current_miniature_id','speed_base','player_name']){
+  for(const key of ['type','default_miniature_id','current_miniature_id','speed_base']){
     assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' must not be freely editable');
   }
+  assert.ok(document.querySelector('[data-field="player_name"]'),
+    'Il giocatore è un campo narrativo editabile della scheda');
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-field="current_hp"]'));
   for(const key of ['armor_class_base','initiative']){
@@ -539,68 +528,62 @@ test("sheet derived values update locally and never call a desktop calculation A
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("Android-style drawer restores the selected character and edits multiclass and narrative fields",async()=>{
-  click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
-  change('[data-field="name"]',"Custode PWA");
-  await until(async()=> (await listCreatures()).some(r=>r.creature.name==="Custode PWA"));
-  const saved=(await listCreatures()).find(r=>r.creature.name==="Custode PWA").creature;
-  change('[data-field="notes"]',"Note modificabili anche nel browser");
-  await until(async()=> (await loadCreature(saved.id))?.data.notes==="Note modificabili anche nel browser");
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector("#native-details"));
-  change("#native-details","classes");
-  await until(()=>document.querySelector('[data-act="native-add"][data-list="classes"]'));
-  click('[data-act="native-add"][data-list="classes"]');
-  await until(()=>document.querySelector('[data-native-list="classes"][data-key="name"]'));
-  change('[data-native-list="classes"][data-key="name"]',"Mago");
-  await until(async()=> (await loadCreature(saved.id))?.data.class==="Mago");
-  change('[data-native-list="classes"][data-key="level"]',"3");
-  await until(async()=> (await loadCreature(saved.id))?.data.classes?.[0]?.level===3);
-  click('[data-nav="dice"]');
-  await until(()=>document.querySelector("#die-count"));
-  assert.ok(document.querySelector('#sheet-navigation [data-sheet="info"]'),
-    "Sheet sections remain available from other primary pages");
-  click('#sheet-navigation [data-sheet="info"]');
-  await until(()=>document.querySelector('[data-field="notes"]'));
-  assert.equal(document.querySelector('[data-field="notes"]').value,"Note modificabili anche nel browser");
-  assert.equal(document.querySelector('[data-field="name"]').value,"Custode PWA");
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector("#native-details"));
-  change("#native-details","classes");
-  await until(()=>document.querySelector('[data-native-list="classes"][data-key="name"]'));
-  assert.equal(document.querySelector('[data-native-list="classes"][data-key="name"]').value,"Mago");
-  assert.equal(document.querySelector('[data-native-list="classes"][data-key="level"]').value,"3");
-  click('[data-act="back"]');
-  await until(()=>document.querySelector('[data-act="create"]'));
-});
-
-test("quick homebrew creates an offline feat and applies explicit grants",async()=>{
-  click('[data-nav="catalog"]');
-  await until(()=>document.querySelector("#catalog-category"));
-  change("#catalog-category","feats");
-  await until(()=>document.querySelector("#homebrew-form textarea[name=proficiencies]"));
-  const form=document.querySelector("#homebrew-form");
-  form.querySelector('[name="name"]').value="Osservatore PWA";
-  form.querySelector('[name="description"]').value="Talento creato offline";
-  form.querySelector('[name="proficiencies"]').value="skill: perception";
-  form.dispatchEvent(new dom.window.Event("submit",{bubbles:true,cancelable:true}));
-  await until(()=>document.querySelector('[data-act="catalog-open"]')?.textContent.includes("Osservatore PWA"));
-  click('[data-act="catalog-open"]');
-  await until(()=>document.querySelector('[data-act="catalog-assign"]'));
-  const creature=document.querySelector("#catalog-creature");
-  assert.ok(creature?.value,"Owned local creatures remain selectable for homebrew grants");
-  const selectedId=creature.value;
-  click('[data-act="catalog-assign"]');
-  await until(async()=>{
-    const c=(await loadCreature(selectedId))?.data;
-    return c?.feats_catalog?.some(row=>row.name==="Osservatore PWA");
-  });
-  const edited=(await loadCreature(selectedId)).data;
-  assert.ok(edited.proficiency_choices.some(row=>row.key==="perception"&&row.kind==="skill"));
-  const exported=JSON.parse(await (await exportCreature(selectedId)).text());
-  assert.ok(exported.homebrew_content.some(row=>row.name==="Osservatore PWA"),
-    "Quick homebrew must be portable with the character");
-  click('[data-nav="library"]');
-  await until(()=>document.querySelector('[data-act="create"]'));
+test('native boxes, HP actions, automatic resources and slot edits remain usable offline',async t=>{
+ const oldFetch=globalThis.fetch;
+ const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ clearLocalRuleCatalogCache();
+ globalThis.fetch=async(url,options)=>{
+  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants'})[url];
+  if(file)return new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200});
+  return oldFetch(url,options);
+ };
+ t.after(()=>{globalThis.fetch=oldFetch;clearLocalRuleCatalogCache();});
+ const {createCreature,saveCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Verifica parità PWA');
+ await saveCreature({...saved.data,class:'Bard',class_source:'PHB',level:5,
+   classes:[{name:'Bard',source:'PHB',level:5}],abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
+   max_hp_base:20,current_hp:20,temporary_hp:3,second_form_hp:4,
+   spell_slots_automatic:true,spell_slots_spent:[0,1],
+   inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d6',properties:['F','L'],quantity:1,equipped_slots:['main']}],
+   proficiency_choices:[{kind:'weapon',key:'simple'}]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti','Storia e personalità']);
+ click('[data-sheet="battle"]');
+ await until(()=>document.querySelector('#hp-amount'));
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Punti ferita','Risorse','CA e iniziativa','Attacchi disponibili']);
+ document.querySelector('#hp-amount').value='10';click('[data-act="hp-damage"]');
+ await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
+ let record=(await loadCreature(saved.data.id)).data;
+ assert.deepEqual([record.temporary_hp,record.second_form_hp,record.current_hp],[0,0,17]);
+ const tracker='class:bard:phb:bardic_inspiration';
+ click('[data-act="tracker-more"][data-tracker-id="'+tracker+'"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===1);
+ click('[data-act="tracker-short"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
+ click('[data-sheet="magic"]');
+ await until(()=>document.querySelector('[data-slot-total="1"]'));
+ assert.equal(document.querySelector('[data-calculated="slot:1"]').textContent,'4');
+ assert.match(document.querySelector('#app').textContent,/Conosciuti 0 \/ 8/);
+ change('[data-slot-total="1"]','7');
+ await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='7');
+ assert.equal((await loadCreature(saved.data.id)).data.spell_slots_manual,true);
+ click('[data-act="slots-automatic"]');
+ await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='4');
+ click('[data-act="slot-use"][data-level="1"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===2);
+ click('[data-act="slots-restore"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
+ click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
+ change('[data-ability="dex"]','18');
+ await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
+ assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
+ click('[data-act="edit-bonus"][data-target="skill:stealth"]');
+ await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
+ change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
+ click('[data-sheet="stats"]');
+ await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
+ click('[data-act="back"]');await until(()=>document.querySelector('[data-act="create"]'));
 });

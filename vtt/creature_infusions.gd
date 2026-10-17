@@ -5,7 +5,7 @@ extends RefCounted
 # Eligibility comes from 5etools' typed optional-feature prerequisites.
 const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
-const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const ItemEnhancements = preload("res://vtt/item_enhancement_rules.gd")
 const INDEX_PATH := "res://vtt/data/artificer_infusions_5etools.json"
 
 static var _rows: Array[Dictionary] = []
@@ -95,54 +95,20 @@ static func active_count(inventory: Array, creator_id: String = "") -> int:
 	return count
 
 
+# Infusion-specific learning/plan identity stays here; physical item
+# eligibility is shared with other item-enhancing features.
 static func item_eligible(option: Dictionary, owned: Dictionary) -> bool:
-	var entry: Dictionary = ItemRules.entry_for(owned)
-	var kind: String = ItemRules.kind(entry)
-	var item_id: String = String(owned.get("id", ""))
-	var replicate: bool = String(option.get("name", "")) == "Replicate Magic Item"
-	if replicate:
-		if String(option.get("plan_item_id", "")).is_empty() or String(option.get("plan_item_id", "")) != item_id:
+	var selector: Dictionary = option.get("item_selector", {}).duplicate(true)
+	if String(option.get("application_kind", "")) == "replicate":
+		var plan_id: String = String(option.get("plan_item_id", ""))
+		if plan_id.is_empty():
 			return false
-		return item_id.begins_with("magic_item:")
-	if item_id.begins_with("magic_item:") or bool(entry.get("magic", false)):
-		return false
-	var rarity: String = String(entry.get("rarity", "")).to_lower()
-	if rarity not in ["", "none", "unknown", "—"]:
-		return false
-	var item: String = String(option.get("item_prerequisite", "")).to_lower()
-	var name: String = String(entry.get("name", owned.get("name", ""))).to_lower()
-	if "armor or a shield" in item:
-		return kind in ["armor", "shield"]
-	if "armor or robes" in item:
-		return kind == "armor" or "robe" in name
-	if "suit of armor" in item:
-		return kind == "armor"
-	if "shield" in item:
-		return kind == "shield"
-	if "weapon" in item:
-		if kind != "weapon":
-			return false
-		var properties: String = str(entry.get("properties", [])).to_upper()
-		if "ammunition" in item and not ("A" in properties or "AMMUNITION" in properties):
-			return false
-		if "thrown" in item and not ("T" in properties or "THROWN" in properties):
-			return false
-		return true
-	if "rod, staff, or wand" in item:
-		return "rod" in name or "staff" in name or "wand" in name
-	if "boots" in item:
-		return "boot" in name
-	if "helmet" in item:
-		return "helm" in name
-	if "ring" in item:
-		return "ring" in name
-	# The structured prerequisite specifies a gem/crystal (or a generic
-	# object). Do not infer additional mechanics from narrative text.
-	return kind in ["other", "tool"]
+		selector["planned_item_id"] = plan_id
+	return ItemEnhancements.item_matches(selector, owned)
 
 
 static func replicable(option: Dictionary, item: Dictionary, level: int) -> bool:
-	if String(option.get("name", "")) != "Replicate Magic Item":
+	if String(option.get("application_kind", "")) != "replicate":
 		return false
 	if not String(item.get("id", "")).begins_with("magic_item:"):
 		return false
@@ -161,7 +127,7 @@ static func numeric_bonuses(record: Dictionary, owned: Dictionary) -> Dictionary
 		return {}
 	var infusion: Dictionary = raw
 	var option: Dictionary = definition(infusion)
-	if option.is_empty() or String(option.get("name", "")) == "Replicate Magic Item":
+	if option.is_empty() or String(option.get("application_kind", "")) == "replicate":
 		return {}
 	var bonus: Variant = option.get("numeric_item_bonuses", {})
 	if not bonus is Dictionary:
@@ -172,15 +138,7 @@ static func numeric_bonuses(record: Dictionary, owned: Dictionary) -> Dictionary
 	if not BenefitRequirements.accepts(record, option, "class",
 		"Artificer", "TCE", "min_level", 2, level):
 		return {}
-	var multiplier := 2 if BenefitRequirements.accepts(record,
+	var upgraded: bool = BenefitRequirements.accepts(record,
 		bonus as Dictionary, "class", "Artificer", "TCE",
-		"upgrade_level", 99, level) else 1
-	var result: Dictionary = {}
-	for key: String in ["bonus_ac", "bonus_weapon", "bonus_spell_attack"]:
-		if (bonus as Dictionary).has(key):
-			if String(option.get("name", "")) == "Repeating Shot":
-				var entry: Dictionary = ItemRules.entry_for(owned)
-				if String(entry.get("type", "")).to_upper() != "R":
-					continue
-			result[key] = int((bonus as Dictionary)[key]) * multiplier
-	return result
+		"upgrade_level", 99, level)
+	return ItemEnhancements.numeric_effects(option, owned, upgraded)

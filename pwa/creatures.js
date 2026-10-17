@@ -2,9 +2,61 @@
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
 import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
   getOrCreateSetting } from "./storage.js";
-import { initialCreature } from "./character_core.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
+
+// Native-compatible defaults for newly created records; imported records remain untouched.
+function initialCreature(kind,name,id,owner_id){
+  if(!["character","monster"].includes(kind)||typeof name!=="string"||!name.trim()||
+     !id||!owner_id)throw Error("Dati iniziali della creatura non validi.");
+  const c={
+    id,name,owner_id,kind,transfer_revision:0,
+    default_miniature_id:"",current_miniature_id:"",size_name:"Medium",
+    footprint:1,reach_feet:5,visual_front_quarter_turns:0,party_id:"",
+    rules_version:"2014",player_name:"",classes:[],class:"",class_source:"",
+    class_id:"",subclass:"",subclass_id:"",subclass_source:"",
+    level:1,xp:0,proficiency_bonus:2,spellcasting_calculation:{},
+    species:"",species_id:"",species_source:"",subrace:"",subrace_id:"",
+    subrace_source:"",subtype:"",subtype_is_custom:false,background:"",
+    background_source:"",alignment:"Completamente neutrale",sex:"",inspiration:false,
+    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},
+    saving_throw_proficiencies:[],skill_proficiencies:[],skill_expertise:[],
+    armor_class:10,armor_class_base:10,armor_natural_formula:"",
+    temporary_ac:0,initiative:0,initiative_base:0,
+    max_hp:1,max_hp_base:1,current_hp:1,temporary_hp:0,
+    second_form_hp:0,second_form_max_hp:0,
+    speed_base:30,speed:30,speed_is_custom:false,darkvision:0,exhaustion:0,
+    hit_dice:"",death_save_successes:0,death_save_failures:0,
+    attacks:"",attack_ability:"str",attack_overrides:{},equipped_attack_id:"",
+    equipped_inventory_index:-1,hand_main_special:"none",hand_off_special:"none",
+    hand_grip_two_handed:false,two_weapon_fighting:false,fighting_styles:[],
+    proficiency_choices:[],formula_bonuses:[],dice_bonuses:[],
+    resource_trackers:[],resource_tracker_spent:{},
+    resource_recovery_ready:{},resource_recovery_used:{},origin_spell_grants:[],
+    origin_spell_configs:{},spellcasting_section_abilities:{},
+    active_spell_context:{},conditions:[],concentrating_spell_id:"",
+    damage_defense_overrides:{},condition_immunity_overrides:{},
+    documents:[],inventory:[],weapons_catalog:[],armor_catalog:[],
+    tools_catalog:[],languages_catalog:[],feats_catalog:[],class_features_catalog:[],
+    species_traits_catalog:[],optional_features_catalog:[],inventory_mundane:[],
+    inventory_magic:[],
+    spellcasting_class:"",spellcasting_ability:"",spell_save_dc:0,
+    spell_attack_bonus:0,spells:[],prepared_spells:[],spellbook_spells:[],
+    spell_slots_total:Array(10).fill(0),spell_slots_spent:Array(10).fill(0),
+    pact_slots_total:0,pact_slots_spent:0,pact_slot_level:1,
+    spell_slots_visible:true,spell_slots_manual:false,spell_slots_automatic:false,
+    pact_slots_visible:true,linked_token_sync_id:"",linked_token_name:"",
+    background_personality:"",notes:"",appearance:"",personality_traits:"",
+    ideals:"",bonds:"",flaws:"",additional_traits:"",
+    faction:"",symbol:"",enemies:"",age:"",height:"",weight:"",eyes:"",
+    skin:"",hair:"",ammunition:"",armor_proficiencies:"",
+    weapon_proficiencies:"",tool_proficiencies:"",languages:"",
+    feats:"",equipment:"",consumables:"",magic_items:"",
+    class_features:"",racial_background_traits:"",limited_features:""
+  };
+  if(kind==="monster")c.stat_block={};
+  return c;
+}
 
 const CREATURE_TYPE = "creature";
 const HOMEBREW_SCOPE = "global";
@@ -60,7 +112,7 @@ export async function saveCreature(creature, scope = "default", expectedRevision
 
 export async function createCreature(kind = "character", name = "Nuova creatura", scope = "default") {
   if (!["character", "monster"].includes(kind)) throw new TypeError("Invalid creature kind");
-  const creature = initialCreature(kind,name,"creature_"+localId(),await ownerId());
+  const creature = initialCreature(kind, name, "creature_" + localId(), await ownerId());
   const saved = await saveCreature(creature, scope, 0);
   return saved;
 }
@@ -199,4 +251,80 @@ export async function openCreatureEditor(id, scope = "default") {
     flush: () => pending,
     get error() { return blocked; }
   };
+}
+
+// Android CreatureArea._copy_public_token_status parity: a token's public
+// status is sufficient to reconcile locally owned spell origins, but NEVER
+// a source of private inventory, hit points, class stats or dice settings.
+export function linkedTokenStatusPatch(record, token, spells=[]){
+  if(!record?.linked_token_sync_id||!token||token.id!==record.linked_token_sync_id)
+    return {};
+  const patch={};
+  for(const key of ["conditions","concentrating_spell_id"]){
+    const value=token[key];
+    if(key==="conditions"&&(!Array.isArray(value)||value.length>64||
+       !value.every(x=>typeof x==="string"&&x.length<=256)))continue;
+    if(key==="concentrating_spell_id"&&typeof value!=="string")continue;
+    if(JSON.stringify(record[key]??(key==="conditions"?[]:""))!==JSON.stringify(value))
+      patch[key]=structuredClone(value);
+  }
+  // The native board publishes spell IDs after resolution on the *specific*
+  // target tokens. Do not mistake temporary targeting previews for effects.
+  if(Array.isArray(token.active_spell_ids)&&token.active_spell_ids.length<=128&&
+    token.active_spell_ids.every(id=>typeof id==="string"&&id.length<=256)){
+    const ids=new Set(token.active_spell_ids.filter(Boolean)),previous=Array.isArray(record.proficiency_origins)?
+      record.proficiency_origins:[];
+    const known=new Map((Array.isArray(spells)?spells:[]).filter(row=>row?.id).map(row=>[row.id,row]));
+    const next=structuredClone(previous),context={...(record.active_spell_context||{})};
+    let originsChanged=false,contextsChanged=false;
+    for(let i=next.length-1;i>=0;i--){
+      const row=next[i],id=String(row?.id||"");
+      if(row?.group!=="spell"||row?.applied!==true||!id.startsWith("spell:")||
+         ids.has(id.slice(6)))continue;
+      next.splice(i,1);originsChanged=true;
+      if(Object.hasOwn(context,id.slice(6))){delete context[id.slice(6)];contextsChanged=true;}
+    }
+    for(const id of ids){
+      const sid="spell:"+id,exists=next.find(row=>row?.id===sid&&row.group==="spell");
+      if(exists){
+        if(exists.applied!==true||exists.disabled===true){
+          exists.applied=true;exists.disabled=false;originsChanged=true;
+        }
+      }else{
+        // Native board already validates duration and resolves the spell ID.
+        // Keep a portable applied-origin even when the full catalog is offline.
+        next.push({id:sid,group:"spell",name:"Incantesimo · "+(known.get(id)?.name||id),
+          disabled:false,automatic:false,applied:true});
+        originsChanged=true;
+      }
+    }
+    if(originsChanged)patch.proficiency_origins=next;
+    if(contextsChanged)patch.active_spell_context=context;
+  }
+  for(const key of ["current_miniature_id","default_miniature_id"]){
+    if(typeof token[key]==="string"&&token[key]&&token[key]!==record[key])
+      patch[key]=token[key];
+  }
+  return patch;
+}
+
+export async function syncLinkedTokenStatuses(mapData,{liveEditor=null,spells=[],scope="default"}={}){
+  if(!Array.isArray(mapData?.tokens))return [];
+  const byId=new Map(mapData.tokens.filter(row=>row&&typeof row.id==="string").map(row=>[row.id,row]));
+  if(!byId.size)return [];
+  const updated=[];
+  // Use the *same* live editor for a currently open sheet. A separate editor
+  // would invalidate its compare-and-swap revision and drop the next edit.
+  for(const {creature} of await listCreatures(scope)){
+    const token=byId.get(creature.linked_token_sync_id);
+    if(!token)continue;
+    const editor=liveEditor?.id===creature.id&&liveEditor.editor?
+      liveEditor.editor:await openCreatureEditor(creature.id,scope);
+    const patch=linkedTokenStatusPatch(editor.read(),token,spells);
+    if(Object.keys(patch).length){
+      await editor.update(patch);
+      updated.push(creature.id);
+    }
+  }
+  return updated;
 }

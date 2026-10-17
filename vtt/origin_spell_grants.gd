@@ -9,6 +9,7 @@ const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Structured5e = preload("res://vtt/structured_origin_spells_5etools.gd")
+const Abilities = preload("res://vtt/activated_ability_catalog.gd")
 
 const BARDIC := "vtt_bardic_inspiration"
 const WILD_SHAPE := "vtt_wild_shape"
@@ -21,6 +22,33 @@ static func _class_level(record: Dictionary, klass: String) -> int:
 	if String(record.get("class", "")).nocasecmp_to(klass) == 0:
 		return int(record.get("level", 0))
 	return 0
+
+
+# Selected maneuvers are already ordinary optional class features. Project
+# their activations from the typed capability catalog; don't parse prose or
+# invent attack effects for contextual maneuvers.
+static func _maneuver_grants(record: Dictionary, trackers: Array[Dictionary]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for ability: Dictionary in Abilities.selected_optional_features(record):
+		var tracker_id := ""
+		var resource: String = String(ability.get("resource_name", ""))
+		for tracker: Dictionary in trackers:
+			if String(tracker.get("name", "")).nocasecmp_to(resource) == 0:
+				tracker_id = String(tracker.get("id", ""))
+				break
+		var ability_id: String = String(ability.get("id", ""))
+		result.append({
+			"id": "auto:optional:" + ability_id,
+			"origin_id": "optional-feature:" + ability_id,
+			"origin_name": "Manovre del Guerriero",
+			"spell_id": ability_id,
+			"tracker_id": tracker_id,
+			"tracker_cost": int(ability.get("resource_cost", 1)),
+			"payment_mode": "tracker",
+			"automatic": true,
+			"action_kind": "ability"
+		})
+	return result
 
 
 static func _builtins(record: Dictionary) -> Array[Dictionary]:
@@ -69,6 +97,7 @@ static func _builtins(record: Dictionary) -> Array[Dictionary]:
 				"spell_id": spell_id, "tracker_id": tracker_id,
 				"automatic": true
 			})
+	result.append_array(_maneuver_grants(record, trackers))
 	return result
 
 
@@ -116,6 +145,10 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 	for raw: Variant in record.get("inventory", []):
 		if raw is Dictionary and int(raw.get("quantity", 1)) > 0:
 			active_origins["item:" + String(raw.get("id", ""))] = true
+	# Automatically projected, selected optional capabilities are live origins.
+	# Other optional features never get a fabricated activation.
+	for ability: Dictionary in Abilities.selected_optional_features(record):
+		active_origins["optional-feature:" + String(ability.get("id", ""))] = true
 	for key: String in ["grants", "choices"]:
 		for value: Variant in additional.get(key, []):
 			if value is Dictionary:

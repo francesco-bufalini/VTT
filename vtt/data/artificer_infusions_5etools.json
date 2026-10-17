@@ -2,7 +2,8 @@
   "meta": {
     "primary": "5etools-src/data/optionalfeatures.json (featureType AI, TCE)",
     "secondary": "vidalvanbergen/fightclub5exml optionalfeatures-tce.xml (Infusion spell tags)",
-    "notes": "Catalog mechanics and eligibility; descriptions remain in the existing 5etools compendium. Numeric mappings transcribed from unambiguous item benefits and exposed through VTT's native item bonus fields."
+    "notes": "Catalog mechanics and eligibility; descriptions remain in the existing 5etools compendium. Numeric mappings transcribed from unambiguous item benefits and exposed through VTT's native item bonus fields.",
+    "item_selectors": "Structured runtime item selectors; display prerequisites retained only for text. Application_kind distinguishes a magic-item replication plan from an enhancement."
   },
   "infusions": [
     {
@@ -12,7 +13,14 @@
       "min_level": 14,
       "item_prerequisite": "A suit of armor (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Arcane Propulsion Armor (Level 14)"
+      "fightclub_name": "Infusion: Arcane Propulsion Armor (Level 14)",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "armor"
+        ]
+      }
     },
     {
       "id": "infusion|tce|armor of magical strength",
@@ -21,7 +29,14 @@
       "min_level": 2,
       "item_prerequisite": "A suit of armor (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Armor of Magical Strength"
+      "fightclub_name": "Infusion: Armor of Magical Strength",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "armor"
+        ]
+      }
     },
     {
       "id": "infusion|tce|boots of the winding path",
@@ -30,7 +45,14 @@
       "min_level": 6,
       "item_prerequisite": "A pair of boots (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Boots of the Winding Path (Level 6)"
+      "fightclub_name": "Infusion: Boots of the Winding Path (Level 6)",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "name_contains_any": [
+          "boot"
+        ]
+      }
     },
     {
       "id": "infusion|tce|enhanced arcane focus",
@@ -43,6 +65,15 @@
       "numeric_item_bonuses": {
         "bonus_spell_attack": 1,
         "upgrade_level": 10
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "name_contains_any": [
+          "rod",
+          "staff",
+          "wand"
+        ]
       }
     },
     {
@@ -56,6 +87,14 @@
       "numeric_item_bonuses": {
         "bonus_ac": 1,
         "upgrade_level": 10
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "armor",
+          "shield"
+        ]
       }
     },
     {
@@ -69,6 +108,13 @@
       "numeric_item_bonuses": {
         "bonus_weapon": 1,
         "upgrade_level": 10
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "weapon"
+        ]
       }
     },
     {
@@ -78,7 +124,14 @@
       "min_level": 10,
       "item_prerequisite": "A helmet (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Helm of Awareness (Level 10)"
+      "fightclub_name": "Infusion: Helm of Awareness (Level 10)",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "name_contains_any": [
+          "helm"
+        ]
+      }
     },
     {
       "id": "infusion|tce|homunculus servant",
@@ -87,7 +140,15 @@
       "min_level": 2,
       "item_prerequisite": "A gem or crystal worth at least 100 gp",
       "requires_attunement": false,
-      "fightclub_name": "Infusion: Homunculus Servant"
+      "fightclub_name": "Infusion: Homunculus Servant",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "other",
+          "tool"
+        ]
+      }
     },
     {
       "id": "infusion|tce|mind sharpener",
@@ -96,7 +157,17 @@
       "min_level": 2,
       "item_prerequisite": "A suit of armor or robes",
       "requires_attunement": false,
-      "fightclub_name": "Infusion: Mind Sharpener"
+      "fightclub_name": "Infusion: Mind Sharpener",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "armor"
+        ],
+        "name_contains_any": [
+          "robe"
+        ]
+      }
     },
     {
       "id": "infusion|tce|radiant weapon",
@@ -108,6 +179,13 @@
       "fightclub_name": "Infusion: Radiant Weapon (Level 6)",
       "numeric_item_bonuses": {
         "bonus_weapon": 1
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "weapon"
+        ]
       }
     },
     {
@@ -119,7 +197,22 @@
       "requires_attunement": true,
       "fightclub_name": "Infusion: Repeating Shot",
       "numeric_item_bonuses": {
-        "bonus_weapon": 1
+        "bonus_weapon": 1,
+        "item_selector": {
+          "item_types": [
+            "R"
+          ]
+        }
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "weapon"
+        ],
+        "properties_all": [
+          "A"
+        ]
       }
     },
     {
@@ -335,7 +428,11 @@
           "name": "Ring of the ram",
           "level": 14
         }
-      ]
+      ],
+      "application_kind": "replicate",
+      "item_selector": {
+        "id_prefix": "magic_item:"
+      }
     },
     {
       "id": "infusion|tce|repulsion shield",
@@ -347,6 +444,13 @@
       "fightclub_name": "Infusion: Repulsion Shield (Level 6)",
       "numeric_item_bonuses": {
         "bonus_ac": 1
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "shield"
+        ]
       }
     },
     {
@@ -356,7 +460,14 @@
       "min_level": 6,
       "item_prerequisite": "A suit of armor (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Resistant Armor (Level 6)"
+      "fightclub_name": "Infusion: Resistant Armor (Level 6)",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "armor"
+        ]
+      }
     },
     {
       "id": "infusion|tce|returning weapon",
@@ -368,6 +479,16 @@
       "fightclub_name": "Infusion: Returning Weapon",
       "numeric_item_bonuses": {
         "bonus_weapon": 1
+      },
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "kinds": [
+          "weapon"
+        ],
+        "properties_all": [
+          "T"
+        ]
       }
     },
     {
@@ -377,7 +498,14 @@
       "min_level": 6,
       "item_prerequisite": "A ring (requires attunement)",
       "requires_attunement": true,
-      "fightclub_name": "Infusion: Spell-Refueling Ring (Level 6)"
+      "fightclub_name": "Infusion: Spell-Refueling Ring (Level 6)",
+      "application_kind": "enhancement",
+      "item_selector": {
+        "nonmagical": true,
+        "name_contains_any": [
+          "ring"
+        ]
+      }
     }
   ]
 }

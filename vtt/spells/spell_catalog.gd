@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const ActivatedAbilities = preload("res://vtt/activated_ability_catalog.gd")
 const GeneratedCatalog = preload(
 	"res://vtt/spells/spell_catalog_5etools.gd"
 )
@@ -58,11 +59,11 @@ const SPELLS: Dictionary = {
 	"vtt_bardic_inspiration": {
 		"id": "vtt_bardic_inspiration", "name": "Bardic Inspiration",
 		"origin": "homebrew", "source": "VTT", "internal_grant": true,
-		"level": 0, "school": "Enchantment", "classes": [],
+		"action_kind": "ability", "classes": [],
 		"casting_time": "Bonus Action", "range": "60 feet",
 		"range_feet": 60, "target": "One other creature",
 		"target_mode": "token_then_token", "persistent_link": true,
-		"duration": "10 minutes", "components": "—",
+		"duration": "10 minutes",
 		"source_class": "Bard", "grant_feature": "Bardic Inspiration",
 		"grant_tracker": "Bardic Inspiration", "grant_level": 1,
 		"dice_progression": [
@@ -76,10 +77,10 @@ const SPELLS: Dictionary = {
 	"vtt_wild_shape": {
 		"id": "vtt_wild_shape", "name": "Wild Shape",
 		"origin": "homebrew", "source": "VTT", "internal_grant": true,
-		"level": 0, "school": "Transmutation", "classes": [],
+		"action_kind": "ability", "classes": [],
 		"casting_time": "Action", "range": "Self", "range_feet": 0,
 		"target": "Self", "target_mode": "transform_self",
-		"duration": "Until ended", "components": "—", "source_class": "Druid", "grant_feature": "Wild Shape",
+		"duration": "Until ended", "source_class": "Druid", "grant_feature": "Wild Shape",
 		"grant_tracker": "Wild Shape", "grant_level": 2,
 		"description": "Assume an available beast form. Uses the standard VTT transformation chooser; form restrictions and duration remain subject to the chosen ruleset."
 	},
@@ -1247,6 +1248,10 @@ static func _manual_spell(spell_id: String) -> Dictionary:
 
 
 static func catalog_spell(spell_id: String) -> Dictionary:
+	# Abilities share targeting and grant plumbing but are not spells.
+	var ability: Dictionary = ActivatedAbilities.definition(spell_id)
+	if not ability.is_empty():
+		return ability
 	if PHB2014.SPELLS.has(spell_id):
 		# Rules stay authoritative from PHB 2014, including the textual range
 		# and spell lists. Map geometry and targeting are inherited from the

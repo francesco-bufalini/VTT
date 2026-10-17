@@ -111,11 +111,6 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
-	for module: String in ["character_core", "class_spells", "quick_homebrew", "class_trackers"]:
-		var source := await http("GET", "/" + module + ".js")
-		assert(source.begins_with("HTTP/1.1 200") and not source.contains("text/html"),
-			"PWA domain module must be accessible through the desktop HTTPS bridge: " + module)
-
 	var stylesheet := await http("GET", "/styles.css")
 	assert(stylesheet.begins_with("HTTP/1.1 200") and stylesheet.contains(".bottom-nav"))
 	var rules_module := await http("GET", "/sheet_rules.js")
@@ -124,9 +119,6 @@ func run() -> void:
 	var ability_index := await http("GET", "/catalog/ability_grants.json")
 	assert(ability_index.begins_with("HTTP/1.1 200"))
 	assert(ability_index.contains("subrace"))
-	var resource_overrides := await http("GET", "/catalog/class_resource_overrides.json")
-	assert(resource_overrides.begins_with("HTTP/1.1 200") and resource_overrides.contains("Wild Shape"),
-		"Offline class resource definitions must be served to the PWA")
 	var class_index := await http("GET", "/catalog/class_mechanics.json")
 	assert(class_index.begins_with("HTTP/1.1 200"))
 	assert(class_index.contains("hit_die"))

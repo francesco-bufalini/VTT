@@ -1,0 +1,73 @@
+name: Item enhancements and nonspell abilities (Godot)
+
+on:
+  pull_request:
+    paths:
+      - "vtt/creature_infusions.gd"
+      - "vtt/item_enhancement_rules.gd"
+      - "vtt/activated_ability_catalog.gd"
+      - "vtt/creature_spellcasting_view.gd"
+      - "vtt/origin_spell_grants.gd"
+      - "vtt/spells/spell_catalog.gd"
+      - "vtt/data/artificer_infusions_5etools.json"
+      - "vtt/data/activated_abilities_5etools.json"
+      - "tests/test_activated_abilities.gd"
+      - "tests/test_artificer_infusions.gd"
+      - ".github/workflows/item-enhancements-abilities.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vtt/**"
+      - ".github/workflows/item-enhancements-abilities.yml"
+
+jobs:
+  native-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /vtt/
+            /network/
+            /homebrew/
+            /tests/test_artificer_infusions.gd
+            /tests/test_activated_abilities.gd
+            /tests/test_origin_granted_spells.gd
+            /tests/test_powers_tracker_layout.gd
+            /tests/test_spellcasting_columns.gd
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Import scripts and run regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'config_version=5\n[autoload]\nTokenPackManager="*res://vtt/token_pack_manager.gd"\n' > project.godot
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          "$GODOT" --headless --path . --editor --import --quit
+          for test in \
+            test_artificer_infusions \
+            test_activated_abilities \
+            test_origin_granted_spells \
+            test_powers_tracker_layout \
+            test_spellcasting_columns
+          do
+            echo "RUN: $test"
+            output=$(timeout 100s "$GODOT" --headless --path . --script "res://tests/${test}.gd" 2>&1) || {
+              printf '%s\n' "$output"
+              exit 1
+            }
+            printf '%s\n' "$output"
+            if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script' <<< "$output" \
+              || ! grep -q 'PASS' <<< "$output"; then
+              echo "Regression failed: $test"
+              exit 1
+            fi
+          done

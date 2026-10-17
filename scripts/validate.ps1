@@ -118,8 +118,11 @@ $fastTests = @(
     "test_mobile_touch_layout.gd",
     "test_mobile_sheet_navigation.gd",
     "test_initiative_tracker.gd",
+    "test_activated_abilities.gd",
+    "test_artificer_infusions.gd",
     "test_spell_catalog_smoke.gd",
     "test_spell_selection_and_multiclass.gd",
+    "test_spell_slot_profiles.gd",
     "test_spellcasting_initial_resources.gd",
     "test_spell_catalog_edition_geometry.gd",
     "test_spell_targeting_lifecycle.gd",
@@ -131,10 +134,12 @@ $fastTests = @(
     # Creature-sheet interactions are a common source of parser/UI regressions:
     # validate them before independent tactical-grid rendering assertions.
     "test_structured_resource_trackers.gd",
+    "test_monster_action_metadata.gd",
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",
     "test_linked_token_motion.gd",
+    "test_token_effects_and_group_movement.gd",
     "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
@@ -188,8 +193,11 @@ $fastTests = @(
 # remain available for broader regression coverage outside the 60s CI gate.
 $ciSmokeTestNames = @(
     "test_spell_catalog_smoke.gd",
+    "test_activated_abilities.gd",
+    "test_spell_slot_profiles.gd",
     "test_origin_granted_spells.gd",
     "test_structured_resource_trackers.gd",
+    "test_monster_action_metadata.gd",
     "test_creature_sheet_controller.gd",
     "test_board_smoke.gd",
     "test_dialog_layout.gd"
@@ -225,7 +233,7 @@ foreach ($test in $testFiles) {
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_creature_gui_layout.gd", "test_mobile_touch_layout.gd", "test_mobile_sheet_navigation.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd",
+    } elseif ($test.Name -in @("test_token_effects_and_group_movement.gd", "test_creature_gui_layout.gd", "test_mobile_touch_layout.gd", "test_mobile_sheet_navigation.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd",
     "test_desktop_menu_navigation.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
         45
     } else {

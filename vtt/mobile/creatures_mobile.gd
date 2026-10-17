@@ -949,6 +949,9 @@ func list_available_miniatures() -> Array[Dictionary]:
 	return result
 
 
+func request_mobile_basic_action(record: Dictionary, mode: String) -> void:
+	_session_actions.request_basic_action(record, mode)
+
 func show_mobile_attack_range(record: Dictionary, attack: Dictionary) -> void:
 	_session_actions.request_attack_snapshot(record, attack)
 

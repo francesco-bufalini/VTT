@@ -32,6 +32,28 @@ NUMERIC_ITEM_BONUSES = {
 }
 
 
+
+# Curated typed target contracts for items, independent of English source prose.
+ITEM_SELECTORS = {
+    "arcane propulsion armor": {"kinds": ["armor"]},
+    "armor of magical strength": {"kinds": ["armor"]},
+    "boots of the winding path": {"name_contains_any": ["boot"]},
+    "enhanced arcane focus": {"name_contains_any": ["rod", "staff", "wand"]},
+    "enhanced defense": {"kinds": ["armor", "shield"]},
+    "enhanced weapon": {"kinds": ["weapon"]},
+    "helm of awareness": {"name_contains_any": ["helm"]},
+    "homunculus servant": {"kinds": ["other", "tool"]},
+    "mind sharpener": {"kinds": ["armor"], "name_contains_any": ["robe"]},
+    "radiant weapon": {"kinds": ["weapon"]},
+    "repeating shot": {"kinds": ["weapon"], "properties_all": ["A"]},
+    "replicate magic item": {"id_prefix": "magic_item:"},
+    "repulsion shield": {"kinds": ["shield"]},
+    "resistant armor": {"kinds": ["armor"]},
+    "returning weapon": {"kinds": ["weapon"], "properties_all": ["T"]},
+    "spell-refueling ring": {"name_contains_any": ["ring"]},
+}
+
+
 def normalized_name(text):
     return re.sub(r"\s*\(Level \d+\)$", "", text.removeprefix("Infusion: ").strip()).casefold()
 
@@ -63,8 +85,16 @@ def build(source: Path, fightclub: Path):
             "requires_attunement": "requires attunement" in target.casefold(),
             "fightclub_name": names[key],
         }
+        if key not in ITEM_SELECTORS:
+            raise ValueError(f"No typed selector for Artificer infusion: {name}")
+        replicate = key == "replicate magic item"
+        row["application_kind"] = "replicate" if replicate else "enhancement"
+        row["item_selector"] = (dict(ITEM_SELECTORS[key]) if replicate
+                               else {"nonmagical": True, **ITEM_SELECTORS[key]})
         if key in NUMERIC_ITEM_BONUSES:
-            row["numeric_item_bonuses"] = NUMERIC_ITEM_BONUSES[key]
+            row["numeric_item_bonuses"] = dict(NUMERIC_ITEM_BONUSES[key])
+            if key == "repeating shot":
+                row["numeric_item_bonuses"]["item_selector"] = {"item_types": ["R"]}
         if name == "Replicate Magic Item":
             replicable = []
             for value in feat.get("entries", []):
@@ -81,12 +111,15 @@ def build(source: Path, fightclub: Path):
                         replicable.append({"name": item.group(1), "level": required_level})
             row["replicable_items"] = replicable
         infusions.append(row)
+    if len(infusions) != len(ITEM_SELECTORS):
+        raise ValueError("Typed item selector coverage differs from infusion catalog")
     if len(names) != len(infusions):
         raise ValueError("FightClub and 5etools Artificer infusion counts differ")
     return {
         "meta": {
             "primary": "5etools-src/data/optionalfeatures.json (featureType AI, TCE)",
             "secondary": "vidalvanbergen/fightclub5exml optionalfeatures-tce.xml (Infusion spell tags)",
+            "item_selectors": "Structured runtime item selectors; display prerequisites retained only for text. Application_kind distinguishes a magic-item replication plan from an enhancement.",
             "notes": "Catalog mechanics and eligibility; descriptions remain in the existing 5etools compendium. Numeric mappings transcribed from unambiguous item benefits and exposed through VTT's native item bonus fields.",
         },
         "infusions": infusions,
