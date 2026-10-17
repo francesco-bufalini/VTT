@@ -60,3 +60,12 @@ test("native Godot receives exact spell/attack/area targeting payloads",async()=
   assert.equal(calls[3].action,"target_attack");
   assert.equal(calls[3].payload.target_id,"enemy");
 });
+test('desktop rejection or transport failure never consumes a local casting resource',async()=>{
+ for(const send of [async()=>({ok:false,error:'Rejected'}),async()=>{throw Error('Disconnected');}]){
+  let charged=0;
+  const viewer=new TacticalViewer({send,ownerId:async()=> 'owner',notify:()=>{},onCastAccepted:async()=>{charged++;}});
+  viewer.root={querySelector:()=>null,querySelectorAll:()=>[]};viewer.tokenId='token';viewer.refresh=async()=>{};
+  await assert.rejects(viewer.beginSpell({spell:{id:'test'},slotLevel:1}));
+  assert.equal(charged,0);
+ }
+});

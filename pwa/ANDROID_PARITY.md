@@ -60,6 +60,12 @@ valore base, come nel nativo. Le formule circolari sono escluse prima del
 calcolo, conservando gli altri bonus additivi. I recuperi sono espliciti:
 riposo breve, riposo lungo, inizio turno e tiro d6 con soglia per le ricariche.
 
+Anche la pagina Partita usa gli attacchi/CD calcolati. Mantiene distinte le
+concessioni di origini diverse e le associazioni alle classi dello stesso
+incantesimo. Prima del comando controlla la disponibilità della risorsa; dopo
+l'accettazione di Godot consuma il contatore, lo slot di classe o quello del
+Patto corretto. Un rifiuto o un errore di trasporto non consuma utilizzi.
+
 ## Dati e rigenerazione
 
 Eseguire dalla cartella `pwa/`:

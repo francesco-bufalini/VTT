@@ -1,6 +1,6 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
-import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
+import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -11,7 +11,7 @@ import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
-import {benefitRequirements,requirementPatch,formulaPreview} from './native_sheet.js';
+import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
 
 const app = document.querySelector("#app");
@@ -143,7 +143,12 @@ async function render() {
     else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "dice") html = diceView();
     else if (state.page === "chat") html = chatView();
-    else if (state.page === "session") html = sessionView();
+    else if (state.page === "session") {
+      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      if(!state.spellCatalog)try{state.spellCatalog=await catalogEntries('spells');}catch{}
+      state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async creature=>[creature.id,await computeLocalData(creature)])));
+      html=sessionView();
+    }
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
     if(state.page === "session" && state.paired) startMap();
@@ -588,16 +593,8 @@ function sessionView() {
     const selectedCaster = (state.cachedCreatures||[]).find(c=>c.id===state.castCreatureId)
       || (state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===selected.id)
       || (state.cachedCreatures||[])[0];
-    const allSpells=[...(selectedCaster?.prepared_spells||[]),...(selectedCaster?.spells||[]),
-      ...(selectedCaster?.origin_spell_grants||[])];
-    const spells=[],seen=new Set();
-    for(const raw of allSpells){
-      const item=typeof raw==="string"?{id:raw,name:raw}:raw;
-      if(!item||typeof item!=="object")continue;
-      const id=String(item.id||item.spell_id||"");
-      if(!id||seen.has(id))continue;
-      seen.add(id);spells.push({id,name:item.name||id,source:item.source||""});
-    }
+    const calculated=state.castSheets?.get(selectedCaster?.id);
+    const spells=selectedCaster&&calculated?sessionSpellEntries(selectedCaster,calculated,state.spellCatalog||[]):[];
     state.visibleSpells=spells;
     html+=panel("Mappa e bersagli",
       '<p class="hint">Richiedi la vista 2D esistente: zoom con due dita, trascinamento e selezione dei token. Per attacchi e incantesimi la risoluzione resta sul desktop.</p>'+
@@ -612,9 +609,10 @@ function sessionView() {
         '<option value="'+esc(c.id)+'" '+(selectedCaster?.id===c.id?'selected':'')+'>'+
         esc(c.name)+'</option>').join("")+'</select></label>'+
       '<label>Incantesimo<select id="cast-spell">'+spells.map((sp,i)=>
-        '<option value="'+i+'">'+esc(sp.name)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
+        '<option value="'+i+'">'+esc(sp.name)+' · '+esc(sp.casting_label)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
       '</select></label><div class="columns">'+
-      field("Livello slot / 0 trucchetto","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
+      field("Livello slot / 0 automatico","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
+      '<label>Risorsa<select id="cast-payment"><option value="auto">Automatica (classe o origine)</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label>'+
       '</div><p class="hint">Puoi lanciare soltanto incantesimi già presenti nella scheda. Il desktop ne verifica l’effetto e il targeting.</p>'+
       '<div class="actions">'+btn("begin-spell","Avvia incantesimo",spells.length?"primary":"")+'</div>');
   }
@@ -995,20 +993,6 @@ async function refreshMapOnce() {
   state.map=await map();
   if(state.page==="session"){const scroll=window.scrollY;app.innerHTML=sessionView();window.scrollTo(0,scroll);}
 }
-async function consumeAcceptedSlot(level,spell) {
-  if(level<1)return; // Cantrip or free use does not expend a class slot.
-  const id=document.querySelector("#cast-creature")?.value;
-  // The modal is rendered outside the main session page, but the session
-  // selector remains mounted underneath.
-  if(!id)return;
-  const editor=await openCreatureEditor(id);
-  const saved=editor.read();
-  const slots=Array.isArray(saved.spell_slots_spent)?[...saved.spell_slots_spent]:[];
-  while(slots.length<10)slots.push(0);
-  slots[level]=Number(slots[level]||0)+1;
-  await editor.update({spell_slots_spent:slots});
-  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-}
 
 async function handleAction(target){
   const act=target.dataset.act;
@@ -1026,22 +1010,24 @@ async function handleAction(target){
       const choices=document.createElement('div');
       choices.innerHTML='<p>Scegli i dadi da aggiungere al risultato. I bonus monouso saranno consumati.</p>'+bonuses.map((row,i)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+i+'">'+esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'<button type="button" class="btn">Applica bonus</button>';
       choices.querySelector('button').addEventListener('click',async()=>{
+        const apply=choices.querySelector('button');if(apply.disabled)return;apply.disabled=true;
         try{
           const available=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]),selected=[...choices.querySelectorAll('input:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(row=>available.some(a=>a.id===row.id));
-          if(!selected.length)return;
+          if(!selected.length){apply.disabled=false;return;}
           const consumed=new Set(),parts=[];let addition=0;
           for(const row of selected){
             const match=String(row.dice).replaceAll(' ','').match(/^(\d+)d(\d+)([+-]\d+)?$/i),rolls=Array.from({length:Number(match[1])},()=>randomDie(Number(match[2]))),value=rolls.reduce((sum,n)=>sum+n,0)+Number(match[3]||0);
             addition+=value;parts.push(row.dice+' ['+rolls.join(', ')+'] = '+value);if(row.consumes_spell)consumed.add(row.consumes_spell);
           }
           state.roll={...state.roll,total:state.roll.total+addition,detail:state.roll.detail+' · '+parts.join(' · '),notation:state.roll.notation+'+'+selected.map(r=>r.dice).join('+')};
+          state.roll.label=label+' · risultato con bonus · '+state.roll.notation;
           state.rollHistory.unshift({...state.roll});
           if(consumed.size){
-            const record=state.editor.read(),contexts={...record.active_spell_context};for(const id of consumed)delete contexts[id];
-            await patch({proficiency_origins:(record.proficiency_origins||[]).filter(o=>!consumed.has(String(o.id).slice(6))||o.group!=='spell'),active_spell_context:contexts});
+            const record=state.editor.read(),contexts={...record.active_spell_context},enabled={...record.origin_enabled};for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
+            await patch({proficiency_origins:(record.proficiency_origins||[]).filter(o=>!consumed.has(String(o.id).slice(6))||o.group!=='spell'),active_spell_context:contexts,origin_enabled:enabled});
           }
           dialog.querySelector('.dice-result').textContent=state.roll.total;dialog.querySelector('p').textContent=state.roll.detail;choices.remove();
-        }catch(error){message(errorMessage(error),true);}
+        }catch(error){apply.disabled=false;message(errorMessage(error),true);}
       });
       dialog.append(choices);
     }
@@ -1366,7 +1352,7 @@ async function handleAction(target){
     const attack=isAttack?{range_feet:state.attackRange,
       long_range_feet:state.attackLongRange,melee:state.attackMelee}:{};
     if(!tacticalViewer)tacticalViewer=new TacticalViewer({
-      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
+      send:action,ownerId,notify:message
     });
     await tacticalViewer.open(state.tokenId,attack);
     return;
@@ -1382,13 +1368,23 @@ async function handleAction(target){
     if(!Number.isInteger(state.castLevel)||state.castLevel<0||state.castLevel>9)
       throw new Error("Livello di slot non valido.");
     if(!tacticalViewer)tacticalViewer=new TacticalViewer({
-      send:action,ownerId,notify:message,onCastAccepted:consumeAcceptedSlot
+      send:action,ownerId,notify:message
     });
+    const requestedLevel=state.castLevel,payment=document.querySelector('#cast-payment')?.value||'auto';
+    const selection=structuredClone(spell),calculated=await computeLocalData(caster.data);
+    const plan=spellCastPlan(caster.data,selection,requestedLevel,calculated,payment);
+    let charged=false;
+    tacticalViewer.onCastAccepted=async()=>{
+      if(charged)return;
+      charged=true;
+      const editor=await openCreatureEditor(casterId),current=editor.read();
+      const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
+      if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
+      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      state.castSheets.set(casterId,await computeLocalData(editor.read()));
+    };
     await tacticalViewer.open(state.tokenId);
-    await tacticalViewer.beginSpell({spell,slotLevel:state.castLevel,
-      context:{spellcasting_ability:caster.data.spellcasting_ability||"",
-        spell_attack_bonus:caster.data.spell_attack_bonus||0,
-        spell_save_dc:caster.data.spell_save_dc||0}});
+    await tacticalViewer.beginSpell({spell:selection,slotLevel:plan.slotLevel,context:plan.context});
     return;
   }
   if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
@@ -1583,7 +1579,7 @@ export async function mount(){
       message("QR non valido o scaduto: "+errorMessage(error),true);
     }
   }
-  state.cachedCreatures=(await listCreatures()).map(row=>({name:row.creature.name,id:row.creature.id}));
+  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
   if(state.qrCode && state.page==="session"){
     const input=document.querySelector("#pair-secret");

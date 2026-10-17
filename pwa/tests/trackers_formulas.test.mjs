@@ -2,7 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet,formulaValue,applicableDiceBonuses,validBonusDice} from '../sheet_rules.js';
-import {recoveryPatch,requirementPatch,nativeRows,nativeRowPatch} from '../native_sheet.js';
+import {recoveryPatch,requirementPatch,nativeRows,nativeRowPatch,spellCastPlan} from '../native_sheet.js';
+import {sessionSpellEntries} from '../spell_selection.js';
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:load('class_mechanics'),abilityGrants:load('ability_grants'),proficiencyGrants:load('proficiency_grants')};
 const base={kind:'character',level:8,class:'Wizard',class_source:'PHB',abilities:{str:10,dex:14,con:12,int:16,wis:10,cha:16}};
@@ -46,4 +47,24 @@ test('formal recharge wins over monster supplements and ambiguous names get no g
  const monster={...base,kind:'monster',class:'',stat_block:{name:'Synthetic',source:'MM',action:[{name:'Breath {@recharge 5}'}]}};
  assert.deepEqual(calculateSheet(monster,{...catalogs,classMechanics:catalog}).trackers.map(t=>[t.id,t.max,t.recharge]),[['recharge:action:0',1,'d6']]);
  monster.stat_block.action=[{name:'Breath'},{name:'Breath'}];assert.equal(calculateSheet(monster,{...catalogs,classMechanics:catalog}).trackers.length,0);
+});
+test('casting choices preserve class and origin identity; counters and effective casting math are validated before sending',()=>{
+ const spell={id:'synthetic',name:'Synthetic spell',level:1,classes:['Wizard'],source:'PHB'};
+ const record={...base,name:'Caster',prepared_spells:[spell],origin_spell_grants:[{id:'daily-grant',spell_id:spell.id,origin_id:'custom',origin_name:'Daily',payment_mode:'tracker',tracker_id:'daily',tracker_cost:2,spellcasting_ability:'cha'}],proficiency_origins:[{id:'custom',name:'Custom'}],resource_trackers:[{id:'daily',name:'Daily',max:3}],resource_tracker_spent:{daily:1},formula_bonuses:[{target:'spell_attack',expression:'2'},{target:'spell_dc',expression:'1'}]};
+ const calculated=calculateSheet(record,catalogs),entries=sessionSpellEntries(record,calculated,[spell]);
+ assert.equal(entries.length,2);assert.equal(entries[1].id,'synthetic');assert.equal(entries[1].grant_id,'daily-grant');
+ const origin=spellCastPlan(record,entries[1],0,calculated);
+ assert.deepEqual(origin.patch,{resource_tracker_spent:{daily:3}});assert.equal(origin.slotLevel,1);
+ assert.equal(origin.context.spell_attack_bonus,8);assert.equal(origin.context.spell_save_dc,15);assert.equal(origin.context.caster_name,'Caster');
+ assert.deepEqual(record.resource_tracker_spent,{daily:1},'preparing a cast must not consume resources');
+ assert.throws(()=>spellCastPlan({...record,resource_tracker_spent:{daily:2}},entries[1],0,calculated),/insufficiente/);
+ const regular=spellCastPlan(record,entries[0],0,calculated);assert.equal(regular.patch.spell_slots_spent[1],1);
+ assert.throws(()=>spellCastPlan({...record,spell_slots_spent:[0,4]},entries[0],1,calculated),/Nessuno slot/);
+});
+test('pact casting charges the pact pool and cantrips charge no slots',()=>{
+ const spell={id:'pact',name:'Pact spell',level:1,classes:['Warlock'],source:'PHB'},cantrip={id:'cantrip',name:'Cantrip',level:0,classes:['Warlock'],source:'PHB'};
+ const record={...base,class:'Warlock',class_source:'PHB',level:5,prepared_spells:[spell,cantrip]};
+ const calculated=calculateSheet(record,catalogs),entries=sessionSpellEntries(record,calculated,[spell,cantrip]);
+ const plan=spellCastPlan(record,entries[0],0,calculated);assert.equal(plan.slotLevel,3);assert.deepEqual(plan.patch,{pact_slots_spent:1});
+ assert.deepEqual(spellCastPlan(record,entries[1],0,calculated).patch,{});
 });

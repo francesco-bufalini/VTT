@@ -10,6 +10,22 @@ export function availableSpells(creature={}){
   }
   return out;
 }
+// Keep independent origins/classes as distinct casting choices: the same spell
+// may use a daily counter, a class slot, or a pact slot.
+export function sessionSpellEntries(creature,calculated,catalog=[]){
+ const entries=[];
+ for(const raw of availableSpells(creature)){
+  const stored=typeof raw==='string'?{id:raw,name:raw}:raw,definition=catalog.find(s=>s.id===stored.id)||stored;
+  const sources=castingSources(stored,calculated.casting_classes,catalog);
+  const members=calculated.casting_classes.filter(c=>sources.includes(c.id));
+  for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',caster_ability:member?.ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
+ }
+ for(const grant of calculated.origin_spells){
+  const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
+  entries.push({...definition,grant_id:grant.id,caster_ability:grant.spellcasting_ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
+ }
+ return entries;
+}
 export function spellRecord(value){
   const id=spellId(value),level=Number(value?.level);
   if(!id||typeof value?.name!=="string"||!value.name.trim()||

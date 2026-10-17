@@ -70,6 +70,28 @@ export function slotUsePatch(c,level,delta,calculated){
  const rows=Array.from({length:10},(_,i)=>Number(c.spell_slots_spent?.[i]||0));rows[level]=next;
  return {spell_slots_spent:rows};
 }
+export function spellCastPlan(c,selection,requestedLevel,calculated,payment='auto'){
+ if(!selection?.id||!Number.isInteger(requestedLevel)||requestedLevel<0||requestedLevel>9||!['auto','slot','pact'].includes(payment))throw Error('Lancio non valido');
+ const level=Number(selection.level);if(!Number.isInteger(level)||level<0||level>9)throw Error('Livello incantesimo non disponibile nel catalogo locale');
+ const grant=selection.grant_id?calculated.origin_spells.find(g=>g.id===selection.grant_id&&g.spell_id===selection.id):null;
+ if(selection.grant_id&&!grant)throw Error('Concessione non più disponibile');
+ if(!grant&&![...list(c.prepared_spells),...list(c.spells)].some(s=>(typeof s==='string'?s:s.id)===selection.id))throw Error('Incantesimo non disponibile nella scheda');
+ const mode=grant?grant.payment_mode:level===0?'free':payment==='pact'||payment==='auto'&&selection.pact?'pact':'slot';
+ let patch={},slotLevel=0;
+ if(mode==='tracker'){
+  const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1),spent=Number(c.resource_tracker_spent?.[grant.tracker_id]||0);
+  if(!tracker||spent+cost>tracker.max)throw Error('Risorsa insufficiente per questo incantesimo');
+  patch={resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:spent+cost}};slotLevel=level;
+ }else if(mode==='slot'||mode==='pact'){
+  slotLevel=mode==='pact'?calculated.pact_slots.level:requestedLevel||level;
+  if(slotLevel<level||slotLevel<1)throw Error('Scegli uno slot almeno del livello dell’incantesimo');
+  patch=slotUsePatch(c,mode==='pact'?0:slotLevel,1,calculated);
+ }else slotLevel=level;
+ const ability=selection.caster_ability||c.spellcasting_ability||'int';
+ const hit=calculated.values['casting_hit:'+ability],dc=calculated.values['casting_dc:'+ability];
+ if(!Number.isFinite(hit)||!Number.isFinite(dc))throw Error('Caratteristica di lancio non disponibile');
+ return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,spell_save_dc:dc,source_level:c.level||1}};
+}
 export function recoveryPatch(c,event,trackers){
  if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
  const spent={...(c.resource_tracker_spent||{})};
