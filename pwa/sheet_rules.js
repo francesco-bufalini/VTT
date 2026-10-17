@@ -2,7 +2,7 @@
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
-import {automaticId,numericGrant,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
+import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
@@ -35,6 +35,7 @@ const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const mod=n=>Math.floor((n-10)/2);
 const godotRound=n=>Math.sign(n)*Math.floor(Math.abs(n)+0.5);
 const arr=v=>Array.isArray(v)?v:[];
+const norm=value=>String(value??"").trim().toLowerCase();
 const same=(a,b)=>String(a??"").trim().toLowerCase()===String(b??"").trim().toLowerCase();
 const key=(row)=>String(row?.name||"").toLowerCase()+"|"+String(row?.source||"").toLowerCase();
 
@@ -505,13 +506,14 @@ export function calculateSheet(record={},catalogs={}){
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
+  const features=collectStructuredFeatures(record,catalogs);
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[]),...structuredFeatureGrants(record)];
+    ...itemRows(record,warnings,index?.artificer_infusions||[]),...structuredFeatureGrants(record,catalogs,features)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id))];
   if(arr(record.feats_catalog).length&&!index)warnings.add("Talenti strutturati non calcolati");
-  if(classes.length)warnings.add("Privilegi di classe e sottoclasse: non tutti i bonus strutturati sono ancora supportati");
+  if(classes.length&&!catalogs.classFeatures)warnings.add("Indice dei privilegi di classe non disponibile");
   if(record.additional_traits||arr(record.stat_block?.trait).length)
     warnings.add("Tratti personalizzati: verificare i bonus non strutturati");
   // Disabled sources are handled by their identities and the parent-feature hierarchy.
@@ -755,6 +757,7 @@ export function calculateSheet(record={},catalogs={}){
   for(const feat of arr(record.feats_catalog))if(feat?.name)addOrigin('feat|'+String(feat.source||'').toLowerCase()+'|'+feat.name.toLowerCase(),feat.name);
   for(const origin of arr(record.proficiency_origins))addOrigin(origin.id,origin.name||origin.label||origin.id);
   for(const tracker of trackers)addOrigin(tracker.origin_id,tracker.origin_name||tracker.name);
+  for(const feature of features)addOrigin(feature.origin_id,"Tratto · "+feature.name);
   const originSpellMap=new Map();
   for(const row of [...arr(record.origin_spell_grants),...additional.grants])if(row?.origin_id&&row.spell_id&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
     const key=row.origin_id+'|'+row.spell_id;
@@ -782,7 +785,9 @@ export function calculateSheet(record={},catalogs={}){
   }
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
-    casting_classes:spellClasses,trackers,attacks,origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
+    casting_classes:spellClasses,trackers,attacks,
+    features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
+    origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
     automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
@@ -799,8 +804,15 @@ export function loadRuleCatalogs(){
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
     fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
-    fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[])
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells])=>({abilityGrants,classMechanics,proficiencyGrants,
+    fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[]),
+    fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
+    Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
+      fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
+        races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
+      }))
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,classFeatures,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,classFeatures,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;

@@ -413,12 +413,32 @@ async function traitsView(c){
   const entry=row?await detailedEntry(category,row):{name,entries:['Riferimento importato senza una descrizione univoca nel catalogo locale.']};
   groups.push('<h3>'+esc(title)+' · '+esc(name)+'</h3>'+card(entry));
  };
- if(c.kind==='monster')for(const t of c.stat_block?.trait||[])groups.push(card(t));
+ const projected=state.calculated?.features||[];
+ if(projected.length){
+  const byOrigin=new Map();
+  for(const feature of projected){
+   const origin=feature.origin_key||'Altro';
+   if(!byOrigin.has(origin))byOrigin.set(origin,[]);
+   const active=!feature.disabled;
+   byOrigin.get(origin).push('<details class="trait-card"><summary>'+esc(feature.name)+
+    (feature.level>1?' · livello '+esc(feature.level):'')+
+    (!active?' · disattivato':'')+'</summary><p class="trait-description">'+
+    esc(flattenDescription(feature)||'Nessuna descrizione disponibile.')+
+    '</p><label class="check"><input type="checkbox" data-feature-origin="'+
+    esc(feature.origin_id)+'" '+(active?'checked':'')+'>Beneficio attivo</label>'+
+    '<p class="hint">Gli effetti non strutturati restano descrittivi.</p>'+
+    linked+'</details>');
+  }
+  for(const [origin,rows] of byOrigin)
+   groups.push('<h3>Privilegi · '+esc(origin.replaceAll('|',' · '))+'</h3>'+rows.join(''));
+ }
+ if(c.kind==='monster'&&!projected.length)for(const t of c.stat_block?.trait||[])groups.push(card(t));
  else{
   await addReference('races',c.species,c.species_source,'Razza / Specie');
   if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
  }
  await addReference('backgrounds',c.background,c.background_source,'Background');
+ if(!projected.some(f=>f.origin_key?.startsWith('class|'))){
  const features=await load('class_features'),subfeatures=await load('subclass_features');
  for(const member of localClasses(c)){
   const source=member.source||(c.rules_version==='2024'?'XPHB':'PHB');
@@ -429,6 +449,7 @@ async function traitsView(c){
     const selected=subfeatures.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&[f.subclass_name,f.subclass_short_name].some(name=>name?.toLowerCase()===subclass.toLowerCase())&&(!subsource||f.subclass_source?.toLowerCase()===subsource.toLowerCase())&&Number(f.level||0)<=Number(member.level));
     groups.push('<h3>Sottoclasse · '+esc(subclass)+'</h3>'+selected.map(card).join(''));
   }
+ }
  }
  for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled)await addReference('feats',feat.name,feat.source,'Talento');
  return panel('Tratti',(groups.join('')||'<p class="hint">Seleziona le origini della creatura per leggerne i tratti.</p>')+warnings.map(w=>'<p class="hint">'+esc(w)+'</p>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
@@ -944,6 +965,12 @@ async function handleField(target) {
   }
   if(!state.editor) return;
   const creature=state.editor.read();
+  if(target.dataset.featureOrigin){
+    const id=target.dataset.featureOrigin;
+    if(!state.calculated?.features?.some(row=>row.origin_id===id))throw Error('Privilegio non disponibile');
+    await patch({origin_enabled:{...creature.origin_enabled,[id]:target.checked}});
+    await render();return;
+  }
   if(target.dataset.itemOverride){
     await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
     await render();return;

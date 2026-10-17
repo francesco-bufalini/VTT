@@ -98,7 +98,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  // Explicit typed grants only. Passive traits are not automatically actions.
  const abilitySeen=new Set();
- for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(record.selected_features),...arr(record.feats_catalog)]){
+ for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
   if(!feature||feature.disabled||feature.inactive)continue;
   const activation=feature.action_type??feature.activation??feature.activation_type??feature.time;
   if(!specified(activation))continue;
