@@ -83,6 +83,7 @@ export function removeSelectedSpell(creature,target,index,{classId,classes=[],ca
   const rows=target==="prepared_spells"?availableSpells(creature):arr(creature.spellbook_spells).slice();
   if(!Number.isInteger(index)||index<0||index>=rows.length)throw Error("Incantesimo assente.");
   const sources=castingSources(rows[index],classes,catalog);
+  if(classId&&!sources.includes(classId))throw Error('Incantesimo non assegnato alla classe.');
   if(classId&&sources.length>1)rows[index]={...rows[index],casting_classes:sources.filter(id=>id!==classId)};
   else rows.splice(index,1);
   return target==="prepared_spells"?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
