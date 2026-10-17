@@ -1,6 +1,7 @@
 extends RefCounted
 
 const CreatureRules = preload("res://vtt/creature_rules.gd")
+const MonsterActions = preload("res://vtt/monster_action_metadata.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
@@ -51,6 +52,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 	if base_name.is_empty():
 		base_name = "Creatura"
 	var hp := _default_hp(stat_block)
+	var prepared_stat: Dictionary = MonsterActions.prepare(stat_block)
 	return {
 		"kind": "monster",
 		"id": "master_creature_%d_%d" % [now, unique],
@@ -118,7 +120,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"second_form_max_hp": 0,
 		"speed_base": CreatureRules.walking_speed(stat_block.get("speed", 30)),
 		"background_personality": "",
-		"stat_block": stat_block.duplicate(true),
+		"stat_block": prepared_stat,
 		"species": String(stat_block.get("name", base_name)),
 		"species_source": String(stat_block.get("source", "")),
 		"subtype": CreatureRules.monster_subtype(stat_block),
@@ -139,6 +141,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		if stat_value is Dictionary
 		else {}
 	)
+	stat_block = MonsterActions.prepare(stat_block)
 	var base_name := String(
 		value.get("base_name", stat_block.get("name", "Creatura"))
 	).strip_edges()
