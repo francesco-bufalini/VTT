@@ -57,6 +57,10 @@ const FILES := {
 	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
 	"/icons/action_dashboard_gloss.svg": ["res://pwa/icons/action_dashboard_gloss.svg", "image/svg+xml"],
 	"/icons/action_extras.svg": ["res://pwa/icons/action_extras.svg", "image/svg+xml"],
+	"/icons/gold_generated/gold_0.svg": ["res://pwa/icons/gold_generated/gold_0.svg", "image/svg+xml"],
+	"/icons/gold_generated/gold_1.svg": ["res://pwa/icons/gold_generated/gold_1.svg", "image/svg+xml"],
+	"/icons/gold_generated/gold_2.svg": ["res://pwa/icons/gold_generated/gold_2.svg", "image/svg+xml"],
+	"/icons/gold_generated/gold_3.svg": ["res://pwa/icons/gold_generated/gold_3.svg", "image/svg+xml"],
 	"/icon-192.png": ["res://pwa/icon-192.png", "image/png"],
 	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
 }
