@@ -326,7 +326,7 @@ async function editorView() {
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
-    body=panel("Condizioni",'<div class="condition-list">'+conditions.map(id=>
+    body=panel("Condizioni",field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+'<div class="condition-list">'+conditions.map(id=>
       '<label class="check"><input type="checkbox" data-condition="'+id+'" '+
       ((c.conditions||[]).includes(id)?'checked':'')+'>'+esc(conditionLabel(id))+'</label>').join('')+'</div>');
     break;

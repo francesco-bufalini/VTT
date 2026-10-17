@@ -267,16 +267,22 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
       '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows(c,'classes',catalogs)+'</details>')+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>')+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
-     (['notes','appearance','personality_traits','ideals','bonds','flaws'].some(k=>c[k])?
-      '<details><summary>Altre annotazioni importate (sola lettura)</summary>'+
-      summary([['Appunti',c.notes],['Descrizione fisica',c.appearance],['Tratti',c.personality_traits],
-        ['Ideali',c.ideals],['Legami',c.bonds],['Difetti',c.flaws]].filter(([,v])=>v))+'</details>':''));
+     '<details><summary>Aspetto, identità e personalità</summary>'+
+     cols(field('Giocatore','player_name',c.player_name)+field('Età','age',c.age)+
+       field('Altezza','height',c.height)+field('Peso','weight',c.weight)+
+       field('Occhi','eyes',c.eyes)+field('Capelli','hair',c.hair)+field('Pelle','skin',c.skin)+field('Sesso','sex',c.sex))+
+     area('Aspetto','appearance',c.appearance)+area('Tratti della personalità','personality_traits',c.personality_traits)+
+     area('Ideali','ideals',c.ideals)+area('Legami','bonds',c.bonds)+area('Difetti','flaws',c.flaws)+
+     area('Appunti','notes',c.notes)+
+     '<label class="check"><input type="checkbox" data-field="inspiration" '+(c.inspiration?'checked':'')+'>Ispirazione</label></details>');
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>')+
   panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
- if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp'))+
+ if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp')+
+      number('TS morte · successi','death_save_successes',c.death_save_successes??0,0,3)+
+      number('TS morte · fallimenti','death_save_failures',c.death_save_failures??0,0,3))+
     (calculated.stats?.automatic_hp?.available?'<p class="hint">PF da progressione: '+calculated.stats.automatic_hp.value+'</p><button class="btn" data-act="hp-automatic">Applica PF automatici</button>':''))+
   resources+panel('CA e iniziativa','<div class="row between"><span>Classe armatura '+read('ac','Classe armatura')+'</span><span>Iniziativa '+read('initiative','Iniziativa',true)+'</span></div>'+armor+
       cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
@@ -324,12 +330,13 @@ export function actionEntries(record,calculated={},spells=[]){
  const entries=defaults.map(([name,time,type,description])=>({name,time,type,description,tracker:""}));
  const add=(name,time,type,description,tracker)=>entries.push({name:String(name||type),time:timing(time),type,description:String(description||""),tracker:String(tracker||"")});
  for(const a of calculated.attacks||[])add(a.name,"action","attacco",a.description||a.damage,a.tracker_id);
- const known=new Set([...(record.prepared_spells||[]),...(record.known_spells||[])].map(x=>typeof x==="string"?x:String(x.id||x.spell_id||"")));
- for(const grant of record.origin_spell_grants||[])if(!grant.disabled)known.add(String(grant.spell_id||""));
+ const known=new Set([...(record.prepared_spells||[]),...(record.known_spells||[]),...(record.spells||[])].map(x=>typeof x==="string"?x:String(x.id||x.spell_id||"")));
+ for(const grant of [...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])])
+  if(!grant.disabled)known.add(String(grant.spell_id||""));
  for(const spell of spells){
   if(!known.has(String(spell.id||"")))continue;
   const time=Array.isArray(spell.time)?spell.time[0]?.unit:spell.casting_time||spell.time;
-  const grant=(record.origin_spell_grants||[]).find(g=>g.spell_id===spell.id&&!g.disabled);
+  const grant=[...(calculated.origin_spells||[]),...(record.origin_spell_grants||[])].find(g=>g.spell_id===spell.id&&!g.disabled);
   add(spell.name||spell.id,time,"incantesimo",spell.description||"",grant?.tracker_id||(Number(spell.level)>0?"Slot incantesimo":""));
  }
  for(const feature of [...(record.action_grants||[]),...(calculated.actions||[])])
