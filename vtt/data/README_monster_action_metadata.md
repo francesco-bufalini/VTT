@@ -10,7 +10,7 @@ alongside each action in the monster's `stat_block`:
   `hit_known`, `damage`, and `source_ability`.
 - `vtt_resource`: `id`, `name`, `max`, `recharge`, optional
   `recharge_min` and provenance.
-- `vtt_action_metadata_version`, `vtt_action_source_revision` and
+- `vtt_max_reach_feet`: precalculated greatest reach, including formal reach\n  mentions in non-attack features; `CreatureRules` uses it directly.\n- `vtt_action_metadata_version`, `vtt_action_source_revision` and
   `vtt_action_override_revision`: allow an unchanged saved monster to bypass
   conversion, while edits to its action titles/descriptions or curated rules
   trigger a re-normalization on load.
