@@ -1,6 +1,7 @@
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
 import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
+import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -30,7 +31,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -256,6 +257,10 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
+  if(state.sheet==="magic"&&!state.abilityCatalog){
+    try{state.abilityCatalog=await loadActivatedAbilities();}
+    catch{state.abilityCatalog=[];}
+  }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c),details:state.detail,catalogs:state.referenceCatalogs})||"";
   switch(state.sheet){
   case "inventory": {
@@ -302,7 +307,15 @@ async function editorView() {
         esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
-      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
+      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
+      panel("Capacità",'<p class="hint">Privilegi attivabili non magici. Non sono incantesimi e non richiedono scuola, componenti o slot. Le manovre contestuali si risolvono durante l’azione appropriata.</p>'+
+        (abilitiesForCreature(c,state.abilityCatalog||[]).map(ability=>
+          '<article class="native-entry"><strong>'+esc(ability.name||"Capacità")+
+          '</strong><p class="hint">'+esc(ability.origin||"Privilegio")+
+          (ability.activation_mode==="contextual"?' · Attivazione contestuale':'')+
+          '</p>'+(ability.description?'<details><summary>Descrizione</summary><p>'+
+          esc(ability.description)+'</p></details>':'')+'</article>').join("")||
+          '<p class="hint">Nessuna capacità disponibile.</p>'));
     break;
   case "conditions":
     body=panel("Condizioni",'<div class="condition-list">'+conditions.map(id=>
