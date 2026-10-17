@@ -8,6 +8,7 @@ const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Features = preload("res://vtt/creature_features.gd")
 const OriginSpells5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 const FightClubMonsters = preload("res://vtt/fightclub_monster_resources.gd")
+const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -29,6 +30,7 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 		if not id.is_empty() and not seen.has(id):
 			seen[id] = true
 			result.append(tracker)
+	FeatureRules.apply_tracker_rules(record, result)
 	return result
 
 
@@ -36,16 +38,15 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 # resources which recharge on a short rest. Manual and d6 trackers stay intact.
 # Callers choose when a rest occurs; merely opening a sheet never resets uses.
 static func spent_after_recovery(record: Dictionary, event: String) -> Dictionary:
-	var saved: Variant = record.get("resource_tracker_spent", {})
-	var spent: Dictionary = (saved as Dictionary).duplicate(true) if saved is Dictionary else {}
-	if event not in ["short_rest", "long_rest", "turn"]:
-		return spent
-	for tracker: Dictionary in for_creature(record):
-		var mode: String = String(tracker.get("recharge", "manual"))
-		if mode == event or (event == "long_rest" and mode == "short_rest"):
-			spent.erase(String(tracker.get("id", "")))
-	return spent
+	return recovery_patch(record, event).get("resource_tracker_spent", {})
 
+# Atomic recovery patch also carries limited-use and optional post-rest flags.
+# Callers must save all returned fields; the legacy spent-only API is retained.
+static func recovery_patch(record: Dictionary, event: String) -> Dictionary:
+	return FeatureRules.recovery_patch(record, event, for_creature(record))
+
+static func optional_recovery_patch(record: Dictionary, rule_id: String) -> Dictionary:
+	return FeatureRules.optional_recovery_patch(record, rule_id, for_creature(record))
 
 # Keep machine-derived counters, but allow additional user-defined resources.
 # Their current uses remain in resource_tracker_spent, keyed by stable ID.
