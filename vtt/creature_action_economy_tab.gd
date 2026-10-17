@@ -160,7 +160,11 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	for feature: Dictionary in Features.collect_features(record):
 		if bool(feature.get("inactive", false)):
 			continue
-		var activation: Variant = feature.get("action_type", feature.get("activation", feature.get("time", null)))
+		var activation: Variant = null
+		for key: String in ["action_type", "activation", "time"]:
+			if _explicit_time(feature.get(key, null)):
+				activation = feature[key]
+				break
 		if not _explicit_time(activation):
 			continue
 		var feature_id := String(feature.get("key", ""))
@@ -189,8 +193,17 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	# Regular selections are distinct from origin-granted casts: the same spell
 	# may appear twice if it can consume two different resource pools.
 	var regular_seen: Dictionary = {}
-	for raw: Variant in (record.get("prepared_spells", []) as Array) + (record.get("spells", []) as Array):
-		var id := String(raw if raw is String else raw.get("id", "") if raw is Dictionary else "")
+	var selected: Array = []
+	for key: String in ["prepared_spells", "spells"]:
+		var raw_selection: Variant = record.get(key, [])
+		if raw_selection is Array:
+			selected.append_array(raw_selection)
+	for raw: Variant in selected:
+		var id := ""
+		if raw is String:
+			id = String(raw)
+		elif raw is Dictionary:
+			id = String(raw.get("id", ""))
 		if id.is_empty() or regular_seen.has(id):
 			continue
 		regular_seen[id] = true
@@ -205,6 +218,8 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		var detail := "Livello: %d\n" % level + _description(spell.get("entries", spell.get("description", "")))
 		results.append(_entry(String(spell.get("name", id)), _timing(time), "Incantesimo", detail, tracker))
 	for grant: Dictionary in OriginSpells.all_grants(record):
+		if bool(grant.get("disabled", false)):
+			continue
 		var spell: Dictionary = Spells.catalog_spell(String(grant.get("spell_id", "")))
 		if spell.is_empty():
 			continue
@@ -250,8 +265,14 @@ func load_record(record: Dictionary) -> void:
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]
+		var group: Array = grouped[i]
+		group.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var key_a := String(a.get("tracker", "")) + "|" + String(a.get("kind", ""))
+			var key_b := String(b.get("tracker", "")) + "|" + String(b.get("kind", ""))
+			return key_a.nocasecmp_to(key_b) < 0
+		)
 		var last_heading := ""
-		for entry: Dictionary in grouped[i]:
+		for entry: Dictionary in group:
 			var tracker := String(entry.get("tracker", ""))
 			var heading := (tracker if not tracker.is_empty() else "Nessuna risorsa") + " · " + String(entry.get("kind", "Capacità"))
 			if heading != last_heading:
