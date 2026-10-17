@@ -13,6 +13,7 @@ const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
+const ActionEconomyTab = preload("res://vtt/creature_action_economy_tab.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
@@ -171,6 +172,7 @@ var _front: OptionButton
 var _party: LineEdit
 var _alignment: OptionButton
 var _tabs: TabContainer
+var _action_economy_ui: Node
 var _spellcasting_ui: Node
 var _inventory_ui: Node
 var _ac: SpinBox
@@ -942,6 +944,9 @@ func _build_ui() -> void:
 		Callable(self, "_on_formula_bonus_requested"),
 		Callable(self, "_edit_origin_spell_popup")
 	)
+	var actions_tab := _add_sheet_tab(_tabs, "Cosa posso fare?")
+	_action_economy_ui = ActionEconomyTab.new()
+	actions_tab.add_child(_action_economy_ui)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
 	inventory_tab.add_child(_inventory_ui)
@@ -952,7 +957,7 @@ func _build_ui() -> void:
 		Callable(self, "_send_item_to_peer")
 	)
 	# The same stable tab order is used by the desktop TabContainer and touch drawer.
-	var ordered_tabs := ["Info", "Statistiche", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
+	var ordered_tabs := ["Info", "Statistiche", "Cosa posso fare?", "Poteri", "Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
 	for index: int in range(ordered_tabs.size()):
 		for candidate_index: int in range(_tabs.get_tab_count()):
 			var page: Control = _tabs.get_tab_control(candidate_index)
@@ -2766,6 +2771,7 @@ func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
 		return
 	_replace_current_record(record)
 	_origin_spells_stale = false
+	_action_economy_ui.call("load_record", record)
 	_spellcasting_ui.call("load_record", record)
 	_refresh_choice_warnings(record)
 
@@ -3892,6 +3898,7 @@ func _load_form(record: Dictionary) -> void:
 	_level.editable = _class_name.selected > 0
 	_refresh_conditions(record)
 	_refresh_reference(record)
+	_action_economy_ui.call("load_record", record)
 	_spellcasting_ui.call("load_record", record)
 	_origin_spells_stale = true
 	if _origin_spells_ui != null and _origin_spells_ui.visible:
@@ -4269,7 +4276,8 @@ func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 		if String(record.get("id", "")) == _selected_id:
 			_refresh_trackers(record)
 			if _spellcasting_ui != null:
-				_spellcasting_ui.call("load_record", record)
+				_action_economy_ui.call("load_record", record)
+	_spellcasting_ui.call("load_record", record)
 		return
 
 
