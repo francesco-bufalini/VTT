@@ -225,7 +225,7 @@ function actionRow(item,calculated){
    .filter((id,index,all)=>all.indexOf(id)===index);
  const actionButtons=(isSpell?
    '<button type="button" class="btn primary small" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+
-     '" data-grant-id="'+esc(item.grant_id||'')+'">Usa capacità</button>':
+     '" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+esc(item.casting_class||'')+'">Usa capacità</button>':
    item.name==='Lanciare un incantesimo'||item.name==='Magia'?
      '<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':'')+
   (t?'<div class="action-resource-control" title="'+esc(t.name)+'"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" '+(remaining<=0||t.disabled?'disabled':'')+'>−</button>'+

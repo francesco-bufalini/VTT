@@ -1218,7 +1218,8 @@ async function handleAction(target){
     const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
     const calculated=await computeLocalData(record);
     const entry=sessionSpellEntries(record,calculated,state.spellCatalog||[])
-      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
+         String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!entry)throw Error('Incantesimo non disponibile nella scheda.');
     const options=[];
     const level=Number(entry.level||0);
@@ -1239,10 +1240,10 @@ async function handleAction(target){
     if(!options.length)throw Error('Non ci sono slot disponibili per questo incantesimo.');
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='action-cast-dialog';
-    dialog.innerHTML='<h2>Lancia '+esc(entry.name||entry.id)+'</h2>'+
+    dialog.innerHTML='<h2>Lancia '+esc(entry.name||entry.id)+(entry.casting_label&&entry.casting_label!=='Scheda'?' · '+esc(entry.casting_label):'')+'</h2>'+
       '<p class="hint">Scegli la risorsa da consumare. Se la partita non è collegata, il lancio registra solo il consumo sulla scheda locale.</p>'+
       '<label>Risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>'+
-      '<div class="actions"><button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'">Conferma lancio</button>'+
+      '<div class="actions"><button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Conferma lancio</button>'+
       '<button type="button" class="btn" data-act="action-cast-cancel">Annulla</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return;
   }
@@ -1253,7 +1254,8 @@ async function handleAction(target){
     const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
     const calculated=await computeLocalData(record);
     const selection=sessionSpellEntries(record,calculated,state.spellCatalog||[])
-      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||''));
+      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
+         String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
     const choice=app.querySelector('#action-cast-choice')?.value||'';
     const [payment,levelText]=choice.split(':');const level=Number(levelText);

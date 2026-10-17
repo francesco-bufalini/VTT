@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
+import {sessionSpellEntries} from '../spell_selection.js';
 import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
@@ -127,4 +128,23 @@ test('all 98 generated golden icons are shared, discoverable and cached offline'
  assert(html.includes('vtt-action-glyph--pack-3'));
  assert(!html.includes('>⚔<'));
  assert(html.includes('data-target="skill:athletics"'));
+});
+
+test('multiclass spell choices preserve casting classes outside the action dashboard',()=>{
+ const wizard='class|phb|wizard',warlock='class|phb|warlock';
+ const spell={id:'shield',name:'Shield',level:1,
+  casting_classes:[wizard,warlock]};
+ const record={prepared_spells:[spell],spells:[spell]};
+ const calculated={casting_classes:[
+  {id:wizard,name:'Wizard',ability:'int'},
+  {id:warlock,name:'Warlock',ability:'cha'}
+ ],origin_spells:[],trackers:[]};
+ const catalog=[{id:'shield',name:'Shield',level:1,classes:['Wizard','Warlock'],
+   time:[{unit:'reaction',number:1}],entries:['Protezione']}];
+ const choices=sessionSpellEntries(record,calculated,catalog).filter(row=>row.id==='shield');
+ assert.equal(choices.length,2);
+ assert.deepEqual(choices.map(row=>row.casting_class),[wizard,warlock]);
+ assert.equal(actionEntries(record,calculated,catalog).filter(row=>row.spell_id==='shield').length,0);
+ const markup=actionEconomyView(record,calculated,catalog);
+ assert(!markup.includes('data-spell-id="shield"'));
 });
