@@ -171,6 +171,14 @@ func _run() -> void:
 	assert(measure._movable_aoe_drag_unrestricted)
 	measure._movable_aoe_drag_delta = Vector3(2, 0, 1)
 	static_root.global_position = measure._movable_aoe_drag_root_origin + Vector3(2, 0, 1)
+	overlay._collect_post_cast_areas()
+	var dragged_static: Dictionary = {}
+	for area: Dictionary in overlay._areas:
+		if area.get("root") == static_root:
+			dragged_static = area
+			break
+	assert(dragged_static.get("start", Vector3.INF) == Vector3(2, 1, 1),
+		"2D area contours must follow an uncommitted drag")
 	assert(measure.finish_movable_aoe_drag(true))
 	assert(measure.persistent_aoes[0].start == [2.0, 1.0, 1.0])
 	var remaining: int = measure.persistent_aoes.size()
@@ -184,6 +192,8 @@ func _run() -> void:
 	assert(measure.is_movable_aoe_dragging())
 	measure._movable_aoe_drag_delta = Vector3(1, 0, 2)
 	held_root.global_position = measure._movable_aoe_drag_root_origin + Vector3(1, 0, 2)
+	overlay._collect_post_cast_areas()
+	assert(overlay._areas[0].start == held_start + Vector3(1, 0, 2))
 	assert(measure.finish_movable_aoe_drag(true))
 	assert(held_root.get_meta("spell_overlay_2d").start == held_start + Vector3(1, 0, 2))
 	overlay._delete_sidebar_area(held_root)
