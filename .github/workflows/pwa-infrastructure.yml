@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           cd pwa
-          npx playwright install chromium
+          node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
       - name: Verify install manifest, precache and PNG files
         shell: python
