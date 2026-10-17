@@ -2,6 +2,7 @@ import { actionEconomyView, loadFeatureActionOverrides, loadGeneralActionSupplem
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
+import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
@@ -33,7 +34,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -288,6 +289,10 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
+  if(state.sheet==="magic"&&!state.abilityCatalog){
+    try{state.abilityCatalog=await loadActivatedAbilities();}
+    catch{state.abilityCatalog=[];}
+  }
   const calculated=await computeLocalData(c);
   state.calculated=calculated;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
@@ -346,7 +351,15 @@ async function editorView() {
         esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
-      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
+      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
+      panel("Capacità",'<p class="hint">Privilegi attivabili distinti dagli incantesimi, senza scuola o componenti. I costi dipendono dal privilegio; le manovre contestuali si risolvono durante l’azione appropriata.</p>'+
+        (abilitiesForCreature(c,state.abilityCatalog||[]).map(ability=>
+          '<article class="native-entry"><strong>'+esc(ability.name||"Capacità")+
+          '</strong><p class="hint">'+esc(ability.origin||"Privilegio")+
+          (ability.activation_mode==="contextual"?' · Attivazione contestuale':'')+
+          '</p>'+(ability.description?'<details><summary>Descrizione</summary><p>'+
+          esc(ability.description)+'</p></details>':'')+'</article>').join("")||
+          '<p class="hint">Nessuna capacità disponibile.</p>'));
     break;
   case "conditions":
     body=panel("Condizioni",field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+'<div class="condition-list">'+conditions.map(id=>
