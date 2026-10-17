@@ -38,8 +38,8 @@ func run() -> void:
 
 	for kind: String in ["Barbarian", "Cleric", "Druid", "Fighter", "Paladin"]:
 		var level := 3
-		var name := {"Barbarian": "Rages", "Cleric": "Channel Divinity",
-			"Druid": "Wild Shape", "Fighter": "Second Wind", "Paladin": "Channel Divinity"}[kind]
+		var name: String = String({"Barbarian": "Rages", "Cleric": "Channel Divinity",
+			"Druid": "Wild Shape", "Fighter": "Second Wind", "Paladin": "Channel Divinity"}[kind])
 		var record := _sheet(kind, "2024", level)
 		var tracker := _tracker(record, name)
 		assert(not tracker.is_empty(), kind + ": missing class resource")
