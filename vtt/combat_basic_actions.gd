@@ -40,7 +40,9 @@ static func validate(board: Node, actor: CharacterBody3D, target: CharacterBody3
 		return {"ok": false, "error": "Il bersaglio supera di oltre una taglia l'attaccante."}
 	var cell := maxf(0.01, float(board.get("cell_size")))
 	var reach := 5.0
-	if actor.has_method("get_reach_feet"):
+	# In 2024 Shove is an Unarmed Strike against a target within 5 ft.
+	# In 2014 the special Attack uses the creature's melee reach.
+	if String(actor.get_meta("rules_version", "2014")) != "2024" and actor.has_method("get_reach_feet"):
 		reach = maxf(5.0, float(actor.call("get_reach_feet")))
 	var a := actor.global_position
 	var b := target.global_position
