@@ -337,3 +337,10 @@ selections, using the packaged numeric progressions without interpreting prose.
 definitions and explicit proficiency grants. All persistence remains in
 `creatures.js`/`storage.js` and all sheet calculations remain in
 `sheet_rules.js`. `network/pwa_host.gd` must allowlist every new module.
+
+`class_trackers.js` combines the built-in 5etools numeric class columns and
+native class-resource supplement to derive stable resource counter IDs and
+recharge modes, including class/subclass gates. The UI displays and changes
+those counters through `character_core.js`, not a second ad-hoc counter
+implementation. `/catalog/class_resource_overrides.json` is served from the
+same packaged native source and pre-cached for offline access.

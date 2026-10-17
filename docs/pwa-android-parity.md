@@ -76,3 +76,13 @@ Non dichiarare «parità completa» finché non sono verificati i gap residui.
 - `network/pwa_host.gd`: distribuisce questi moduli con gli altri asset,
   verificati nel test HTTP reale. Il Service Worker li salva nella cache
   dell'app senza toccare i dati IndexedDB.
+
+### Tracker automatici di classe
+
+`class_trackers.js` unifica la lettura delle colonne numeriche 5etools con
+`class_resource_overrides.json` usato dalla versione Godot. Genera gli stessi
+ID stabili `class:<classe>:<fonte>:<colonna>`, applica le soglie di classe
+e sottoclasse e distingue riposo breve, lungo e turno. Riutilizza le
+operazioni pure di `character_core.js` per modificare gli utilizzi.
+Il catalogo e il modulo sono precaricati dal Service Worker e distribuiti
+dall'host desktop. I privilegi senza quantità strutturate restano esclusi.
