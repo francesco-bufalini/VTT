@@ -16,6 +16,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
+import {changeTrackerUses} from "./character_core.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -1571,11 +1572,8 @@ async function handleAction(target){
         if(success){delete spent[row.id];await patch({resource_tracker_spent:spent});}
         await render();message(row.name+': d6 = '+die+' · '+(success?'Ricaricata':'Non ricaricata'));return;
       }
-      const maximum=Math.max(0,Number(row.max)||0);
-      const spent={...(record.resource_tracker_spent||{})};
-      const delta=act==="tracker-more"?1:-1;
-      spent[row.id]=Math.max(0,Math.min(maximum,(Number(spent[row.id])||0)+delta));
-      await patch({resource_tracker_spent:spent});
+      // Reuse the domain operation; no stale zero-valued spent counters.
+      await patch(changeTrackerUses(record,row.id,act==="tracker-more"?1:-1,calculated.trackers));
     }
     await render();return;
   }
