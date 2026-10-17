@@ -195,8 +195,8 @@ export function collectStructuredFeatures(record,catalogs={}){
         Array.isArray(feat.feature_sections)?feat.feature_sections:null;
       const entries=sections||info?.entries||feat.entries||[];
       array(entries).forEach((row,i)=>{
-        if(row?.name&&(row.entries!==undefined||row.entry!==undefined))
-          append({...row,id:row.id||(sections?"section-"+i:"section-"+i)},origin,
+        if(row?.name&&(sections||row.entries!==undefined||row.entry!==undefined))
+          append({...row,id:row.id||"section-"+i},origin,
             Number(row.min_level??1),"character","","",Boolean(feat.disabled));
       });
     }
