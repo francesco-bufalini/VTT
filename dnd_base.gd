@@ -1639,6 +1639,18 @@ func _input(event: InputEvent) -> void:
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
+		and not _is_pointer_over_area_sidebar(event.position)
+		and bool(measurement_tool.call("is_movable_aoe_dragging"))
+	):
+		# The sidebar arms a move on button release. The next click on
+		# the map must not simultaneously select a token or start a ruler.
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
 		and not _ui_owns_mouse
 		and not _is_pointer_over_area_sidebar(event.position)
 		# Repositioning takes priority over the usual click-to-dismiss AoE.
@@ -2315,6 +2327,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if bool(measurement_tool.call("is_movable_aoe_dragging")):
+		if (
+			event is InputEventMouseButton
+			and event.button_index == MOUSE_BUTTON_LEFT
+			and event.pressed
+		):
+			get_viewport().set_input_as_handled()
+			return
 		if event is InputEventMouseMotion:
 			measurement_tool.call(
 				"update_movable_aoe_drag",
