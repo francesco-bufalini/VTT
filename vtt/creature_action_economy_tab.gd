@@ -343,7 +343,15 @@ func _add_entry(entry: Dictionary) -> void:
 		dialog.confirmed.connect(dialog.queue_free)
 		dialog.close_requested.connect(dialog.queue_free)
 	)
-	_sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)].add_child(button)
+	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
+	section.add_child(button)
+	if title in ["Nascondersi", "Movimento furtivo"]:
+		var stealth := Button.new()
+		stealth.text = "↳ Tira Furtività"
+		stealth.set_meta("action_generated", true)
+		stealth.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		stealth.pressed.connect(func() -> void: skill_requested.emit("skill:stealth"))
+		section.add_child(stealth)
 
 func refresh_top_skills(record: Dictionary) -> void:
 	if _skill_list == null:
