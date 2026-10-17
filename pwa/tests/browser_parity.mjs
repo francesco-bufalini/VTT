@@ -9,7 +9,7 @@ const root=new URL('../',import.meta.url),native=new URL('../../vtt/data/',impor
 const artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],entries:['Test reference.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Bard','Wizard']}]};
-const aliases={'/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
+const aliases={'/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
@@ -29,6 +29,7 @@ const browser=await chromium.launch({headless:true,...(process.platform==='win32
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true});
  const page=await context.newPage(),errors=[],apiWrites=[];
+ page.setDefaultTimeout(10000);
  page.on('pageerror',error=>errors.push(error.message));
  page.on('request',req=>{if(req.url().startsWith(origin+'/api/')&&req.method()!=='GET')apiWrites.push(req.url());});
  await page.goto(origin);
@@ -58,8 +59,8 @@ try{
    const size=await page.evaluate(()=>({width:innerWidth,content:document.documentElement.scrollWidth}));
    assert.ok(size.content<=width,`${key} overflows at ${width}px: ${size.content}`);
    if(key==='traits'){
-     assert.ok(await page.getByText('Font of Inspiration',{exact:true}).count(),'level 5 Bard feature must be visible');
-     assert.equal(await page.getByText('Countercharm',{exact:true}).count(),0,'level 6 Bard feature must not be visible at level 5');
+     assert.ok(await page.locator('.trait-card > summary').filter({hasText:/^Font of Inspiration(?: ·|$)/}).count(),'level 5 Bard feature must be visible');
+     assert.equal(await page.locator('.trait-card > summary').filter({hasText:/^Countercharm(?: ·|$)/}).count(),0,'level 6 Bard feature must not be visible at level 5');
    }
    if(width===390&&['stats','battle','magic','info'].includes(key))await page.screenshot({path:fileURLToPath(new URL(key+'-390.png',artifacts)),fullPage:true});
   }
@@ -115,7 +116,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-act="remove-spell"][data-key="prepared_spells"]'));
  await page.locator('[data-act="slot-use"][data-level="1"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-slot="1"]')?.value==='2');
- await page.evaluate(()=>navigator.serviceWorker.ready);
+ await page.waitForFunction(async()=> (await navigator.serviceWorker.getRegistration())?.active?.state==='activated');
  await context.setOffline(true);await page.reload();
  await page.locator('[data-act="open"]').click();await page.locator('[data-field="name"]').waitFor();
  await section('magic');assert.equal(await page.locator('[data-slot="1"]').inputValue(),'2');
@@ -125,4 +126,4 @@ try{
  assert.equal((await counts()).manual,2,'rests and reopening must preserve manual counters');
  console.log('PASS: 8 sections at 360/390/768/1440px; optional dice, formula trackers, level gates, recovery, origin choices/charges, spellbook/slots and offline persistence.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
-}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+}finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
