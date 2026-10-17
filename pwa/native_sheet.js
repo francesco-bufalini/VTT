@@ -9,7 +9,7 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
-export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],
+export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_hit','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
@@ -36,6 +36,22 @@ export function hitPointPatch(c,delta,calculated){
  const absorb=value=>{const hp=Math.max(0,Number(value)||0),used=Math.min(hp,remaining);remaining-=used;return hp-used;};
  const temporary_hp=absorb(c.temporary_hp),second_form_hp=absorb(c.second_form_hp);
  return {temporary_hp,second_form_hp,current_hp:absorb(c.current_hp)};
+}
+export function slotUsePatch(c,level,delta,calculated){
+ if(!Number.isInteger(level)||level<0||level>9||!Number.isInteger(delta))throw Error('Slot non valido');
+ const total=level===0?calculated.pact_slots.total:calculated.spell_slots[level-1].total;
+ const spent=level===0?Number(c.pact_slots_spent||0):Number(c.spell_slots_spent?.[level]||0);
+ const next=Math.max(0,Math.min(total,spent+delta));
+ if(delta>0&&spent>=total)throw Error('Nessuno slot disponibile');
+ if(level===0)return {pact_slots_spent:next};
+ const rows=Array.from({length:10},(_,i)=>Number(c.spell_slots_spent?.[i]||0));rows[level]=next;
+ return {spell_slots_spent:rows};
+}
+export function recoveryPatch(c,event,trackers){
+ if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
+ const spent={...(c.resource_tracker_spent||{})};
+ for(const row of trackers)if(row.recharge===event||event==='long_rest'&&row.recharge==='short_rest')delete spent[row.id];
+ return {resource_tracker_spent:spent};
 }
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
@@ -99,8 +115,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
    const rows=list(catalogs[category]).filter(r=>r?.name &&
-     (key!=='subrace'||!!r.raceName&&r.raceName===c.species) &&
-     (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)) &&
+     (key!=='species'||!r.raceName) &&
+     (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&(!c.species_source||r.raceSource===c.species_source)) &&
+     (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
      (key!=='class'||c.rules_version!=='2014'||r.source!=='XPHB') &&
      (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
    const current=c[key]||'', source=c[key+'_source']||'';

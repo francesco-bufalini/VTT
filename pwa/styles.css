@@ -90,6 +90,12 @@ h1,h2{font-family:Georgia,"Palatino Linotype",serif;color:var(--text)}h1{font-si
 .base-editor { font-size:.8rem; }
 .base-editor input { max-width:6rem; }
 .calculation-note { margin:1rem 0; font-size:.85rem; }
+.slot-table { display:grid; grid-template-columns:2rem minmax(0,1fr) minmax(0,1fr); gap:.6rem .35rem; align-items:start; }
+.slot-counter,.casting-statistics { display:flex; flex-wrap:wrap; align-items:center; gap:.3rem; }
+.slot-table details { font-size:.8rem; margin-top:.35rem; }
+.slot-counter .btn { min-width:30px; padding:.3rem; }
+.casting-statistics { margin:.4rem 0 .7rem; }
+.casting-statistics label { flex:1 1 10rem; }
 .native-abilities > * { min-width:0; }
 .native-abilities .sheet-formula { flex-wrap:wrap; justify-content:center; }
 @media(max-width:420px) { .native-abilities { gap:.35rem; } .native-abilities .formula-bonus { min-width:26px; } }

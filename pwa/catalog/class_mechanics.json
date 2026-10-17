@@ -1239,5 +1239,2740 @@
         ]
       }
     }
+  ],
+  "resource_overrides": [
+    {
+      "class": "Barbarian",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Rage",
+          "steps": [
+            {
+              "level": 1,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "4",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "6",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "column": "Rages"
+        }
+      ]
+    },
+    {
+      "class": "Bard",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Bardic Inspiration",
+          "steps": [
+            {
+              "level": 1,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "cha_mod",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        }
+      ]
+    },
+    {
+      "class": "Cleric",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Channel Divinity",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 6,
+              "value": "2",
+              "reset": "short_rest"
+            },
+            {
+              "level": 18,
+              "value": "3",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "War Priest",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "War Domain",
+          "minimum": 1
+        },
+        {
+          "name": "Warding Flare",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Light Domain",
+          "minimum": 1
+        },
+        {
+          "name": "Wrath of the Storm",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Tempest Domain",
+          "minimum": 1
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Natural Recovery",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Circle of the Land"
+        },
+        {
+          "name": "Wild Shape",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        }
+      ]
+    },
+    {
+      "class": "Fighter",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Action Surge",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "2",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Indomitable",
+          "steps": [
+            {
+              "level": 9,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Second Wind",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Superiority Die",
+          "steps": [
+            {
+              "level": 3,
+              "value": "4",
+              "reset": "short_rest"
+            },
+            {
+              "level": 7,
+              "value": "5",
+              "reset": "short_rest"
+            },
+            {
+              "level": 15,
+              "value": "6",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Battle Master",
+          "origin_feature": "Combat Superiority"
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Ki",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "short_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "short_rest"
+            },
+            {
+              "level": 4,
+              "value": "4",
+              "reset": "short_rest"
+            },
+            {
+              "level": 5,
+              "value": "5",
+              "reset": "short_rest"
+            },
+            {
+              "level": 6,
+              "value": "6",
+              "reset": "short_rest"
+            },
+            {
+              "level": 7,
+              "value": "7",
+              "reset": "short_rest"
+            },
+            {
+              "level": 8,
+              "value": "8",
+              "reset": "short_rest"
+            },
+            {
+              "level": 9,
+              "value": "9",
+              "reset": "short_rest"
+            },
+            {
+              "level": 10,
+              "value": "10",
+              "reset": "short_rest"
+            },
+            {
+              "level": 11,
+              "value": "11",
+              "reset": "short_rest"
+            },
+            {
+              "level": 12,
+              "value": "12",
+              "reset": "short_rest"
+            },
+            {
+              "level": 13,
+              "value": "13",
+              "reset": "short_rest"
+            },
+            {
+              "level": 14,
+              "value": "14",
+              "reset": "short_rest"
+            },
+            {
+              "level": 15,
+              "value": "15",
+              "reset": "short_rest"
+            },
+            {
+              "level": 16,
+              "value": "16",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "17",
+              "reset": "short_rest"
+            },
+            {
+              "level": 18,
+              "value": "18",
+              "reset": "short_rest"
+            },
+            {
+              "level": 19,
+              "value": "19",
+              "reset": "short_rest"
+            },
+            {
+              "level": 20,
+              "value": "20",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "column": "Ki Points"
+        },
+        {
+          "name": "Wholeness of Body",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Way of the Open Hand"
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Avenging Angel",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of Vengeance"
+        },
+        {
+          "name": "Channel Divinity",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Cleansing Touch",
+          "steps": [
+            {
+              "level": 14,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        },
+        {
+          "name": "Divine Sense",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1+cha_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        },
+        {
+          "name": "Elder Champion",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of the Ancients"
+        },
+        {
+          "name": "Holy Nimbus",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of Devotion"
+        },
+        {
+          "name": "Lay on Hands",
+          "steps": [
+            {
+              "level": 1,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 2,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "20",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "25",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "30",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "35",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "40",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "45",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "50",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "55",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "60",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "65",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "70",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "75",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "80",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "85",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "90",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "95",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "100",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Undying Sentinel",
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of the Ancients"
+        }
+      ]
+    },
+    {
+      "class": "Ranger",
+      "source": "PHB",
+      "resources": []
+    },
+    {
+      "class": "Rogue",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Spell Thief",
+          "steps": [
+            {
+              "level": 17,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Arcane Trickster"
+        },
+        {
+          "name": "Stroke of Luck",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        }
+      ]
+    },
+    {
+      "class": "Sorcerer",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Sorcery Points",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "4",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "6",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "7",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "8",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "9",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "11",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "12",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "13",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "14",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "16",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "17",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "18",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "19",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "20",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Tides of Chaos",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Wild Magic"
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Dark Delirium",
+          "steps": [
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        },
+        {
+          "name": "Dark One's Luck",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Fiend"
+        },
+        {
+          "name": "Eldritch Master",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Entropic Ward",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Great Old One"
+        },
+        {
+          "name": "Fey Presence",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        },
+        {
+          "name": "Hurl Through Hell",
+          "steps": [
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Fiend"
+        },
+        {
+          "name": "Misty Escape",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        }
+      ]
+    },
+    {
+      "class": "Wizard",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Arcane Recovery",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Benign Transposition",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Conjuration"
+        },
+        {
+          "name": "Illusory Step",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Illusion"
+        },
+        {
+          "name": "Portents",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Divination",
+          "origin_feature": "Portent"
+        },
+        {
+          "name": "Shapechanger",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Transmutation"
+        },
+        {
+          "name": "Third Eye",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Divination"
+        }
+      ]
+    },
+    {
+      "class": "Bard",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Bardic Inspiration",
+          "minimum": 1,
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Bardic Inspiration + Font of Inspiration (2024)",
+          "steps": [
+            {
+              "level": 1,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "cha_mod",
+              "reset": "short_rest"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "resource_overrides_meta": {
+    "format": 1,
+    "source": "FightClub5eXML",
+    "repository": "https://github.com/vidalvanbergen/fightclub5exml",
+    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
+    "build_only": true,
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+  },
+  "races": [
+    {
+      "id": "5etools:races:dmg:aarakocra",
+      "name": "Aarakocra",
+      "source": "DMG",
+      "speed": {
+        "walk": 20,
+        "fly": 50
+      }
+    },
+    {
+      "id": "5etools:races:eepc:aarakocra",
+      "name": "Aarakocra",
+      "source": "EEPC",
+      "speed": {
+        "walk": 25,
+        "fly": 50
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:aarakocra",
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "fly": true
+      }
+    },
+    {
+      "id": "5etools:races:dmg:aasimar",
+      "name": "Aasimar",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:aasimar",
+      "name": "Aasimar",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:aasimar",
+      "name": "Aasimar",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:aasimar",
+      "name": "Aasimar",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psk:aetherborn",
+      "name": "Aetherborn",
+      "source": "PSK",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:aag:astral%20elf",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:aag:autognome",
+      "name": "Autognome",
+      "source": "AAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psa:aven",
+      "name": "Aven",
+      "source": "PSA",
+      "speed": {
+        "walk": 25,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:psd:aven",
+      "name": "Aven",
+      "source": "PSD",
+      "speed": {
+        "walk": 25,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:erlw:bugbear",
+      "name": "Bugbear",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:bugbear",
+      "name": "Bugbear",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:bugbear",
+      "name": "Bugbear",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:bullywug",
+      "name": "Bullywug",
+      "source": "DMG",
+      "speed": {
+        "walk": 20,
+        "swim": 40
+      }
+    },
+    {
+      "id": "5etools:races:ggr:centaur",
+      "name": "Centaur",
+      "source": "GGR",
+      "speed": 40
+    },
+    {
+      "id": "5etools:races:mpmm:centaur",
+      "name": "Centaur",
+      "source": "MPMM",
+      "speed": 40
+    },
+    {
+      "id": "5etools:races:efa:changeling",
+      "name": "Changeling",
+      "source": "EFA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:changeling",
+      "name": "Changeling",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:changeling",
+      "name": "Changeling",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:tce:custom%20lineage",
+      "name": "Custom Lineage",
+      "source": "TCE",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:rhw:dhampir",
+      "name": "Dhampir",
+      "source": "RHW",
+      "speed": {
+        "walk": 35,
+        "climb": true
+      }
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir",
+      "name": "Dhampir",
+      "source": "VRGR",
+      "speed": {
+        "walk": 35,
+        "climb": true
+      }
+    },
+    {
+      "id": "5etools:races:phb:dragonborn",
+      "name": "Dragonborn",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:dragonborn",
+      "name": "Dragonborn",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28chromatic%29",
+      "name": "Dragonborn (Chromatic)",
+      "source": "FTD",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28gem%29",
+      "name": "Dragonborn (Gem)",
+      "source": "FTD",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ftd:dragonborn%20%28metallic%29",
+      "name": "Dragonborn (Metallic)",
+      "source": "FTD",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:duergar",
+      "name": "Duergar",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:dwarf",
+      "name": "Dwarf",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:xphb:dwarf",
+      "name": "Dwarf",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psk:dwarf%20%28kaladesh%29",
+      "name": "Dwarf (Kaladesh)",
+      "source": "PSK",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:mpmm:eladrin",
+      "name": "Eladrin",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:elf",
+      "name": "Elf",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:elf",
+      "name": "Elf",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29",
+      "name": "Elf (Kaladesh)",
+      "source": "PSK",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29",
+      "name": "Elf (Zendikar)",
+      "source": "PSZ",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:fairy",
+      "name": "Fairy",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "fly": true
+      }
+    },
+    {
+      "id": "5etools:races:wbtw:fairy",
+      "name": "Fairy",
+      "source": "WBtW",
+      "speed": {
+        "walk": 30,
+        "fly": true
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:firbolg",
+      "name": "Firbolg",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:firbolg",
+      "name": "Firbolg",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:eepc:genasi",
+      "name": "Genasi",
+      "source": "EEPC",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:genasi",
+      "name": "Genasi",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:aag:giff",
+      "name": "Giff",
+      "source": "AAG",
+      "speed": {
+        "walk": 30,
+        "swim": true
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gith",
+      "name": "Gith",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:githyanki",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:githzerai",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:gnoll",
+      "name": "Gnoll",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:gnome",
+      "name": "Gnome",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:xphb:gnome",
+      "name": "Gnome",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:gnome%20%28deep%29",
+      "name": "Gnome (Deep)",
+      "source": "DMG",
+      "speed": 20
+    },
+    {
+      "id": "5etools:races:dmg:goblin",
+      "name": "Goblin",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:goblin",
+      "name": "Goblin",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:goblin",
+      "name": "Goblin",
+      "source": "PSZ",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:vgm:goblin",
+      "name": "Goblin",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:goliath",
+      "name": "Goliath",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:goliath",
+      "name": "Goliath",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:goliath",
+      "name": "Goliath",
+      "source": "XPHB",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:dmg:grimlock",
+      "name": "Grimlock",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:oga:grung",
+      "name": "Grung",
+      "source": "OGA",
+      "speed": {
+        "walk": 25,
+        "climb": 25
+      }
+    },
+    {
+      "id": "5etools:races:aag:hadozee",
+      "name": "Hadozee",
+      "source": "AAG",
+      "speed": {
+        "walk": 30,
+        "climb": true
+      }
+    },
+    {
+      "id": "5etools:races:phb:half-elf",
+      "name": "Half-Elf",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:half-orc",
+      "name": "Half-Orc",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:halfling",
+      "name": "Halfling",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:xphb:halfling",
+      "name": "Halfling",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:harengon",
+      "name": "Harengon",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:wbtw:harengon",
+      "name": "Harengon",
+      "source": "WBtW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:rhw:hexblood",
+      "name": "Hexblood",
+      "source": "RHW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vrgr:hexblood",
+      "name": "Hexblood",
+      "source": "VRGR",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:hobgoblin",
+      "name": "Hobgoblin",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:hobgoblin",
+      "name": "Hobgoblin",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:hobgoblin",
+      "name": "Hobgoblin",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:human",
+      "name": "Human",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:human",
+      "name": "Human",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psi:human%20%28innistrad%29",
+      "name": "Human (Innistrad)",
+      "source": "PSI",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:efa:kalashtar",
+      "name": "Kalashtar",
+      "source": "EFA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:kalashtar",
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dsotdq:kender",
+      "name": "Kender",
+      "source": "DSotDQ",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:kenku",
+      "name": "Kenku",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:kenku",
+      "name": "Kenku",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:kenku",
+      "name": "Kenku",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psa:khenra",
+      "name": "Khenra",
+      "source": "PSA",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:efa:khoravar",
+      "name": "Khoravar",
+      "source": "EFA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:kobold",
+      "name": "Kobold",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:kobold",
+      "name": "Kobold",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:kobold",
+      "name": "Kobold",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:kor",
+      "name": "Kor",
+      "source": "PSZ",
+      "speed": {
+        "walk": 30,
+        "climb": 30
+      }
+    },
+    {
+      "id": "5etools:races:dmg:kuo-toa",
+      "name": "Kuo-Toa",
+      "source": "DMG",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:mot:leonin",
+      "name": "Leonin",
+      "source": "MOT",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:dmg:lizardfolk",
+      "name": "Lizardfolk",
+      "source": "DMG",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:lizardfolk",
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "swim": true
+      }
+    },
+    {
+      "id": "5etools:races:vgm:lizardfolk",
+      "name": "Lizardfolk",
+      "source": "VGM",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:lr:locathah",
+      "name": "Locathah",
+      "source": "LR",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:lfl:lorwyn%20changeling",
+      "name": "Lorwyn Changeling",
+      "source": "LFL",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ggr:loxodon",
+      "name": "Loxodon",
+      "source": "GGR",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:rhw:lupin",
+      "name": "Lupin",
+      "source": "RHW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:merfolk",
+      "name": "Merfolk",
+      "source": "DMG",
+      "speed": {
+        "walk": 10,
+        "swim": 40
+      }
+    },
+    {
+      "id": "5etools:races:psz:merfolk",
+      "name": "Merfolk",
+      "source": "PSZ",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:ggr:minotaur",
+      "name": "Minotaur",
+      "source": "GGR",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:minotaur",
+      "name": "Minotaur",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psa:minotaur%20%28amonkhet%29",
+      "name": "Minotaur (Amonkhet)",
+      "source": "PSA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psa:naga",
+      "name": "Naga",
+      "source": "PSA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:orc",
+      "name": "Orc",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:orc",
+      "name": "Orc",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:orc",
+      "name": "Orc",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:orc",
+      "name": "Orc",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:orc",
+      "name": "Orc",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psx:orc%20%28ixalan%29",
+      "name": "Orc (Ixalan)",
+      "source": "PSX",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scc:owlin",
+      "name": "Owlin",
+      "source": "SCC",
+      "speed": {
+        "walk": 30,
+        "fly": true
+      }
+    },
+    {
+      "id": "5etools:races:aag:plasmoid",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:rhw:reborn",
+      "name": "Reborn",
+      "source": "RHW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vrgr:reborn",
+      "name": "Reborn",
+      "source": "VRGR",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:lfl:rimekin",
+      "name": "Rimekin",
+      "source": "LFL",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mot:satyr",
+      "name": "Satyr",
+      "source": "MOT",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:mpmm:satyr",
+      "name": "Satyr",
+      "source": "MPMM",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:mpmm:sea%20elf",
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "swim": true
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:shadar-kai",
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:efa:shifter",
+      "name": "Shifter",
+      "source": "EFA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:shifter",
+      "name": "Shifter",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:shifter",
+      "name": "Shifter",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ggr:simic%20hybrid",
+      "name": "Simic Hybrid",
+      "source": "GGR",
+      "speed": {
+        "walk": 30
+      }
+    },
+    {
+      "id": "5etools:races:psx:siren",
+      "name": "Siren",
+      "source": "PSX",
+      "speed": {
+        "walk": 25,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:dmg:skeleton",
+      "name": "Skeleton",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:tabaxi",
+      "name": "Tabaxi",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "climb": true
+      }
+    },
+    {
+      "id": "5etools:races:vgm:tabaxi",
+      "name": "Tabaxi",
+      "source": "VGM",
+      "speed": {
+        "walk": 30,
+        "climb": 20
+      }
+    },
+    {
+      "id": "5etools:races:aag:thri-kreen",
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:tiefling",
+      "name": "Tiefling",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:xphb:tiefling",
+      "name": "Tiefling",
+      "source": "XPHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:tortle",
+      "name": "Tortle",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ttp:tortle",
+      "name": "Tortle",
+      "source": "TTP",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:triton",
+      "name": "Triton",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "swim": true
+      }
+    },
+    {
+      "id": "5etools:races:vgm:triton",
+      "name": "Triton",
+      "source": "VGM",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:dmg:troglodyte",
+      "name": "Troglodyte",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:vampire",
+      "name": "Vampire",
+      "source": "PSZ",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ggr:vedalken",
+      "name": "Vedalken",
+      "source": "GGR",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psk:vedalken",
+      "name": "Vedalken",
+      "source": "PSK",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:ai:verdan",
+      "name": "Verdan",
+      "source": "AI",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:efa:warforged",
+      "name": "Warforged",
+      "source": "EFA",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:warforged",
+      "name": "Warforged",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:yuan-ti",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:yuan-ti%20pureblood",
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:zombie",
+      "name": "Zombie",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28fallen%29",
+      "name": "Aasimar (Fallen)",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28protector%29",
+      "name": "Aasimar (Protector)",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:vgm:aasimar%20%28scourge%29",
+      "name": "Aasimar (Scourge)",
+      "source": "VGM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28hawk-headed%29",
+      "name": "Aven (Hawk-Headed)",
+      "source": "PSA",
+      "speed": {
+        "walk": 25,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28ibis-headed%29",
+      "name": "Aven (Ibis-Headed)",
+      "source": "PSA",
+      "speed": {
+        "walk": 25,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:phb:dragonborn%20%28%29",
+      "name": "Dragonborn ()",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28draconblood%29",
+      "name": "Dragonborn (Draconblood)",
+      "source": "EGW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:egw:dragonborn%20%28ravenite%29",
+      "name": "Dragonborn (Ravenite)",
+      "source": "EGW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29",
+      "name": "Dwarf (Duergar)",
+      "source": "MTF",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28hill%29",
+      "name": "Dwarf (Hill)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:erlw:dwarf%20%28mark%20of%20warding%29",
+      "name": "Dwarf (Mark of Warding)",
+      "source": "ERLW",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:dwarf%20%28mountain%29",
+      "name": "Dwarf (Mountain)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28drow%29",
+      "name": "Elf (Drow)",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:dmg:elf%20%28eladrin%29",
+      "name": "Elf (Eladrin)",
+      "source": "DMG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28eladrin%29",
+      "name": "Elf (Eladrin)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28high%29",
+      "name": "Elf (High)",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:elf%20%28mark%20of%20shadow%29",
+      "name": "Elf (Mark of Shadow)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:egw:elf%20%28pallid%29",
+      "name": "Elf (Pallid)",
+      "source": "EGW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28sea%29",
+      "name": "Elf (Sea)",
+      "source": "MTF",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:mtf:elf%20%28shadar-kai%29",
+      "name": "Elf (Shadar-kai)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:elf%20%28wood%29",
+      "name": "Elf (Wood)",
+      "source": "PHB",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28bishatar%20and%20tirahar%29",
+      "name": "Elf (Kaladesh) (Bishatar and Tirahar)",
+      "source": "PSK",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:psk:elf%20%28kaladesh%29%20%28vahadar%29",
+      "name": "Elf (Kaladesh) (Vahadar)",
+      "source": "PSK",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28joraga%20nation%29",
+      "name": "Elf (Zendikar) (Joraga Nation)",
+      "source": "PSZ",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29",
+      "name": "Elf (Zendikar) (Mul Daya Nation)",
+      "source": "PSZ",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28tajuru%20nation%29",
+      "name": "Elf (Zendikar) (Tajuru Nation)",
+      "source": "PSZ",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28air%29",
+      "name": "Genasi (Air)",
+      "source": "EEPC",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28earth%29",
+      "name": "Genasi (Earth)",
+      "source": "EEPC",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28fire%29",
+      "name": "Genasi (Fire)",
+      "source": "EEPC",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:eepc:genasi%20%28water%29",
+      "name": "Genasi (Water)",
+      "source": "EEPC",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28air%29",
+      "name": "Genasi (Air)",
+      "source": "MPMM",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28earth%29",
+      "name": "Genasi (Earth)",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28fire%29",
+      "name": "Genasi (Fire)",
+      "source": "MPMM",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mpmm:genasi%20%28water%29",
+      "name": "Genasi (Water)",
+      "source": "MPMM",
+      "speed": {
+        "walk": 30,
+        "swim": true
+      }
+    },
+    {
+      "id": "5etools:races:mtf:gith%20%28githyanki%29",
+      "name": "Gith (Githyanki)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:gith%20%28githzerai%29",
+      "name": "Gith (Githzerai)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:gnome%20%28deep%29",
+      "name": "Gnome (Deep)",
+      "source": "MTF",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29",
+      "name": "Gnome (Deep/Svirfneblin)",
+      "source": "SCAG",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28forest%29",
+      "name": "Gnome (Forest)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:erlw:gnome%20%28mark%20of%20scribing%29",
+      "name": "Gnome (Mark of Scribing)",
+      "source": "ERLW",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:gnome%20%28rock%29",
+      "name": "Gnome (Rock)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:psx:goblin%20%28ixalan%29",
+      "name": "Goblin (Ixalan)",
+      "source": "PSX",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29",
+      "name": "Goblin (Zendikar; Grotag Tribe)",
+      "source": "PSZ",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20lavastep%20tribe%29",
+      "name": "Goblin (Zendikar; Lavastep Tribe)",
+      "source": "PSZ",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29",
+      "name": "Goblin (Zendikar; Tuktuk Tribe)",
+      "source": "PSZ",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:half-elf%20%28%29",
+      "name": "Half-Elf ()",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20aquatic%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Aquatic Elf Descent)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20drow%20descent%29",
+      "name": "Half-Elf (Variant; Drow Descent)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20detection%29",
+      "name": "Half-Elf (Variant; Mark of Detection)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29",
+      "name": "Half-Elf (Variant; Mark of Storm)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20moon%20elf%20or%20sun%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Moon Elf or Sun Elf Descent)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20wood%20elf%20descent%29",
+      "name": "Half-Elf (Variant; Wood Elf Descent)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:half-orc%20%28%29",
+      "name": "Half-Orc ()",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:half-orc%20%28variant%3B%20mark%20of%20finding%29",
+      "name": "Half-Orc (Variant; Mark of Finding)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:halfling%20%28ghostwise%29",
+      "name": "Halfling (Ghostwise)",
+      "source": "SCAG",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28lightfoot%29",
+      "name": "Halfling (Lightfoot)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:egw:halfling%20%28lotusden%29",
+      "name": "Halfling (Lotusden)",
+      "source": "EGW",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20healing%29",
+      "name": "Halfling (Mark of Healing)",
+      "source": "ERLW",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:erlw:halfling%20%28mark%20of%20hospitality%29",
+      "name": "Halfling (Mark of Hospitality)",
+      "source": "ERLW",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:halfling%20%28stout%29",
+      "name": "Halfling (Stout)",
+      "source": "PHB",
+      "speed": 25
+    },
+    {
+      "id": "5etools:races:phb:human%20%28%29",
+      "name": "Human ()",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psd:human%20%28keldon%29",
+      "name": "Human (Keldon)",
+      "source": "PSD",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:human%20%28mark%20of%20handling%29",
+      "name": "Human (Mark of Handling)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:human%20%28mark%20of%20making%29",
+      "name": "Human (Mark of Making)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:human%20%28mark%20of%20passage%29",
+      "name": "Human (Mark of Passage)",
+      "source": "ERLW",
+      "speed": 35
+    },
+    {
+      "id": "5etools:races:erlw:human%20%28mark%20of%20sentinel%29",
+      "name": "Human (Mark of Sentinel)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:human%20%28variant%29",
+      "name": "Human (Variant)",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:human%20%28variant%3B%20mark%20of%20finding%29",
+      "name": "Human (Variant; Mark of Finding)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28gavony%29",
+      "name": "Human (Innistrad) (Gavony)",
+      "source": "PSI",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28kessig%29",
+      "name": "Human (Innistrad) (Kessig)",
+      "source": "PSI",
+      "speed": 40
+    },
+    {
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28nephalia%29",
+      "name": "Human (Innistrad) (Nephalia)",
+      "source": "PSI",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28stensia%29",
+      "name": "Human (Innistrad) (Stensia)",
+      "source": "PSI",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psx:merfolk%20%28ixalan%3B%20blue%29",
+      "name": "Merfolk (Ixalan; Blue)",
+      "source": "PSX",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:psx:merfolk%20%28ixalan%3B%20green%29",
+      "name": "Merfolk (Ixalan; Green)",
+      "source": "PSX",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20cosi%20creed%29",
+      "name": "Merfolk (Zendikar; Cosi Creed)",
+      "source": "PSZ",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20emeria%20creed%29",
+      "name": "Merfolk (Zendikar; Emeria Creed)",
+      "source": "PSZ",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20ula%20creed%29",
+      "name": "Merfolk (Zendikar; Ula Creed)",
+      "source": "PSZ",
+      "speed": {
+        "walk": 30,
+        "swim": 30
+      }
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28beasthide%29",
+      "name": "Shifter (Beasthide)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28longtooth%29",
+      "name": "Shifter (Longtooth)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28swiftstride%29",
+      "name": "Shifter (Swiftstride)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:erlw:shifter%20%28wildhunt%29",
+      "name": "Shifter (Wildhunt)",
+      "source": "ERLW",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:phb:tiefling%20%28%29",
+      "name": "Tiefling ()",
+      "source": "PHB",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28asmodeus%29",
+      "name": "Tiefling (Asmodeus)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28baalzebul%29",
+      "name": "Tiefling (Baalzebul)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28dispater%29",
+      "name": "Tiefling (Dispater)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28fierna%29",
+      "name": "Tiefling (Fierna)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28glasya%29",
+      "name": "Tiefling (Glasya)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28levistus%29",
+      "name": "Tiefling (Levistus)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28mammon%29",
+      "name": "Tiefling (Mammon)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28mephistopheles%29",
+      "name": "Tiefling (Mephistopheles)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20devil%27s%20tongue%29",
+      "name": "Tiefling (Variant; Devil's Tongue)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20hellfire%29",
+      "name": "Tiefling (Variant; Hellfire)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20infernal%20legacy%29",
+      "name": "Tiefling (Variant; Infernal Legacy)",
+      "source": "SCAG",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:scag:tiefling%20%28variant%3B%20winged%29",
+      "name": "Tiefling (Variant; Winged)",
+      "source": "SCAG",
+      "speed": {
+        "walk": 30,
+        "fly": 30
+      }
+    },
+    {
+      "id": "5etools:races:mtf:tiefling%20%28zariel%29",
+      "name": "Tiefling (Zariel)",
+      "source": "MTF",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psx:vampire%20%28ixalan%29",
+      "name": "Vampire (Ixalan)",
+      "source": "PSX",
+      "speed": 30
+    },
+    {
+      "id": "5etools:races:psz:vampire%20%28zendikar%29",
+      "name": "Vampire (Zendikar)",
+      "source": "PSZ",
+      "speed": 30
+    }
+  ],
+  "subraces": [
+    {
+      "name": "Hawk-Headed",
+      "source": "PSA",
+      "raceName": "Aven",
+      "raceSource": "PSA",
+      "id": "5etools:races:psa:aven%20%28hawk-headed%29"
+    },
+    {
+      "name": "Duergar",
+      "source": "MTF",
+      "raceName": "Dwarf",
+      "raceSource": "PHB",
+      "id": "5etools:races:mtf:dwarf%20%28duergar%29"
+    },
+    {
+      "name": "Mountain",
+      "source": "PHB",
+      "raceName": "Dwarf",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:dwarf%20%28mountain%29"
+    },
+    {
+      "name": "Drow",
+      "source": "PHB",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:elf%20%28drow%29"
+    },
+    {
+      "name": "Eladrin",
+      "source": "DMG",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:dmg:elf%20%28eladrin%29"
+    },
+    {
+      "name": "High",
+      "source": "PHB",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:elf%20%28high%29"
+    },
+    {
+      "name": "Sea",
+      "source": "MTF",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:mtf:elf%20%28sea%29"
+    },
+    {
+      "name": "Wood",
+      "source": "PHB",
+      "raceName": "Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:elf%20%28wood%29"
+    },
+    {
+      "name": "Joraga Nation",
+      "source": "PSZ",
+      "raceName": "Elf (Zendikar)",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28joraga%20nation%29"
+    },
+    {
+      "name": "Mul Daya Nation",
+      "source": "PSZ",
+      "raceName": "Elf (Zendikar)",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:elf%20%28zendikar%29%20%28mul%20daya%20nation%29"
+    },
+    {
+      "name": "Githyanki",
+      "source": "MTF",
+      "raceName": "Gith",
+      "raceSource": "MTF",
+      "id": "5etools:races:mtf:gith%20%28githyanki%29"
+    },
+    {
+      "name": "Deep",
+      "source": "MTF",
+      "raceName": "Gnome",
+      "raceSource": "PHB",
+      "id": "5etools:races:mtf:gnome%20%28deep%29"
+    },
+    {
+      "name": "Deep/Svirfneblin",
+      "source": "SCAG",
+      "raceName": "Gnome",
+      "raceSource": "PHB",
+      "id": "5etools:races:scag:gnome%20%28deep%2Fsvirfneblin%29"
+    },
+    {
+      "name": "Rock",
+      "source": "PHB",
+      "raceName": "Gnome",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:gnome%20%28rock%29"
+    },
+    {
+      "name": "Zendikar; Grotag Tribe",
+      "source": "PSZ",
+      "raceName": "Goblin",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20grotag%20tribe%29"
+    },
+    {
+      "name": "Zendikar; Tuktuk Tribe",
+      "source": "PSZ",
+      "raceName": "Goblin",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:goblin%20%28zendikar%3B%20tuktuk%20tribe%29"
+    },
+    {
+      "name": "Variant; Drow Descent",
+      "source": "SCAG",
+      "raceName": "Half-Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20drow%20descent%29"
+    },
+    {
+      "name": "Variant; Mark of Detection",
+      "source": "ERLW",
+      "raceName": "Half-Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20detection%29"
+    },
+    {
+      "name": "Variant; Mark of Storm",
+      "source": "ERLW",
+      "raceName": "Half-Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:erlw:half-elf%20%28variant%3B%20mark%20of%20storm%29"
+    },
+    {
+      "name": "Variant; Moon Elf or Sun Elf Descent",
+      "source": "SCAG",
+      "raceName": "Half-Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20moon%20elf%20or%20sun%20elf%20descent%29"
+    },
+    {
+      "name": "Variant; Wood Elf Descent",
+      "source": "SCAG",
+      "raceName": "Half-Elf",
+      "raceSource": "PHB",
+      "id": "5etools:races:scag:half-elf%20%28variant%3B%20wood%20elf%20descent%29"
+    },
+    {
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "raceName": "Half-Orc",
+      "raceSource": "PHB",
+      "id": "5etools:races:erlw:half-orc%20%28variant%3B%20mark%20of%20finding%29"
+    },
+    {
+      "name": "Keldon",
+      "source": "PSD",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "id": "5etools:races:psd:human%20%28keldon%29"
+    },
+    {
+      "name": "Mark of Making",
+      "source": "ERLW",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "id": "5etools:races:erlw:human%20%28mark%20of%20making%29"
+    },
+    {
+      "name": "Variant",
+      "source": "PHB",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "id": "5etools:races:phb:human%20%28variant%29"
+    },
+    {
+      "name": "Variant; Mark of Finding",
+      "source": "ERLW",
+      "raceName": "Human",
+      "raceSource": "PHB",
+      "id": "5etools:races:erlw:human%20%28variant%3B%20mark%20of%20finding%29"
+    },
+    {
+      "name": "Kessig",
+      "source": "PSI",
+      "raceName": "Human (Innistrad)",
+      "raceSource": "PSI",
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28kessig%29"
+    },
+    {
+      "name": "Stensia",
+      "source": "PSI",
+      "raceName": "Human (Innistrad)",
+      "raceSource": "PSI",
+      "id": "5etools:races:psi:human%20%28innistrad%29%20%28stensia%29"
+    },
+    {
+      "name": "Ixalan; Blue",
+      "source": "PSX",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psx:merfolk%20%28ixalan%3B%20blue%29"
+    },
+    {
+      "name": "Ixalan; Green",
+      "source": "PSX",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psx:merfolk%20%28ixalan%3B%20green%29"
+    },
+    {
+      "name": "Zendikar; Cosi Creed",
+      "source": "PSZ",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20cosi%20creed%29"
+    },
+    {
+      "name": "Zendikar; Emeria Creed",
+      "source": "PSZ",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20emeria%20creed%29"
+    },
+    {
+      "name": "Zendikar; Ula Creed",
+      "source": "PSZ",
+      "raceName": "Merfolk",
+      "raceSource": "PSZ",
+      "id": "5etools:races:psz:merfolk%20%28zendikar%3B%20ula%20creed%29"
+    },
+    {
+      "name": "Beasthide",
+      "source": "ERLW",
+      "raceName": "Shifter",
+      "raceSource": "ERLW",
+      "id": "5etools:races:erlw:shifter%20%28beasthide%29"
+    },
+    {
+      "name": "Longtooth",
+      "source": "ERLW",
+      "raceName": "Shifter",
+      "raceSource": "ERLW",
+      "id": "5etools:races:erlw:shifter%20%28longtooth%29"
+    },
+    {
+      "name": "Swiftstride",
+      "source": "ERLW",
+      "raceName": "Shifter",
+      "raceSource": "ERLW",
+      "id": "5etools:races:erlw:shifter%20%28swiftstride%29"
+    },
+    {
+      "name": "Wildhunt",
+      "source": "ERLW",
+      "raceName": "Shifter",
+      "raceSource": "ERLW",
+      "id": "5etools:races:erlw:shifter%20%28wildhunt%29"
+    }
   ]
 }

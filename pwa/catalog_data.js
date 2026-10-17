@@ -32,6 +32,12 @@ export async function loadReferenceCatalog() {
 }
 const supplementary = new Map();
 async function supplementalCatalog(category){
+  if(category==='races'){
+    // Descriptive indexes omit speed and stable native race IDs.
+    const {loadRuleCatalogs}=await import('./sheet_rules.js');
+    const rules=await loadRuleCatalogs();
+    if(Array.isArray(rules.classMechanics?.races))return [...rules.classMechanics.races,...(rules.classMechanics.subraces||[])];
+  }
   const path=(category==="classes"||category==="subclasses")?
     "/catalog/classes.json":category==="races"?"/catalog/features.json":"/catalog/backgrounds.json";
   if(!supplementary.has(path)){

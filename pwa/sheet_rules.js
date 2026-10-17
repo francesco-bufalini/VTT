@@ -53,7 +53,7 @@ export function requirementsAllow(record,row){
   const lo=Math.max(0,int(gate.min_level??row?.min_level,0));
   return lvl>=lo&&(gate.max_level===undefined||lvl<=int(gate.max_level));
 }
-export function parseArithmetic(expression,variable){
+export function parseArithmetic(expression,variable,{round=godotRound}={}){
   const raw=String(expression??"").trim().toLowerCase();
   if(!raw||/\d*d\d+\b/.test(raw)||!/^[a-z0-9_ .+*/()-]+$/.test(raw))
     throw Error("Formula aritmetica non valida");
@@ -86,7 +86,7 @@ export function parseArithmetic(expression,variable){
   };
   const value=expr();
   if(i!==tokens.length||!Number.isFinite(value))throw Error("Formula non calcolabile");
-  return godotRound(value);
+  return round(value);
 }
 function symbolTarget(value){
   if(ABILITIES.some(a=>value===a+"_score"))return "ability:"+value.slice(0,3);
@@ -256,6 +256,81 @@ function classHitDice(record,classes,catalog){
   }
   return {available:true,parts};
 }
+export function classMechanicsRow(catalog,name,source=''){
+ const rows=arr(catalog?.classes).filter(r=>same(r.name,name));
+ return rows.find(r=>same(r.source,source))||['PHB','XPHB','TCE'].map(book=>rows.find(r=>same(r.source,book))).find(Boolean)||rows[0];
+}
+// Port of ClassSpellSelection.classes(): actual table data, per-class limits,
+// separate cantrip capacity and class spellcasting ability, including 2024.
+export function castingClasses(record,catalog,abilityModifiers={}){
+ return localClasses(record).flatMap(member=>{
+  const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
+  const row=classMechanicsRow(catalog,member.name,source),data=row?.spellcasting;
+  if(!data||!Object.keys(data).length)return [];
+  const level=clamp(int(member.level,1),1,20),id='class|'+source.toLowerCase()+'|'+member.name.toLowerCase();
+  const ability=({wizard:'int',artificer:'int',cleric:'wis',druid:'wis',ranger:'wis',paladin:'cha',bard:'cha',sorcerer:'cha',warlock:'cha'})[member.name.toLowerCase()]||'int';
+  let limit=-1,mode='Conosciuti';
+  if(Array.isArray(data.preparedSpellsProgression)){limit=int(data.preparedSpellsProgression[level-1]);mode='Preparati';}
+  else if(data.preparedSpells){
+   const expr=data.preparedSpells.replace(/<\$([a-z_]+)\$>/g,(_,key)=>key);
+   try{limit=Math.max(1,parseArithmetic(expr,key=>key==='level'?level:abilityModifiers[key.slice(0,3)]??mod(int(record.abilities?.[key.slice(0,3)],10)),{round:Math.floor}));}catch{limit=-1;}
+   mode='Preparati';
+  }else if(Array.isArray(data.spellsKnownProgression))limit=int(data.spellsKnownProgression[level-1]);
+  const progression=spellProgression(record,[member]);
+  const maxLevel=Math.max(progression.pact_total?progression.pact_level:0,...progression.slots.map((n,i)=>n>0?i:0));
+  if(!maxLevel)limit=0;
+  return [{id,name:member.name,source,mode,limit,cantrips:int(data.cantripProgression?.[level-1]),max_level:maxLevel,book:same(member.name,'wizard'),ability}];
+ });
+}
+function subclassKey(value){
+ return String(value||'').toLowerCase().trim().replace(/^(?:school of |circle of |oath of |college of |domain of |way of the |way of |the )/,'').replace(/ (?:domain|school)$/,'');
+}
+// Same stable tracker IDs and recovery events as StructuredResourceTrackers.
+export function resourceTrackers(record,catalog,resolve=()=>0){
+ const rows=new Map();
+ const add=row=>{if(row.id&&!rows.has(row.id))rows.set(row.id,row);};
+ for(const member of localClasses(record)){
+  const level=int(member.level),base=classMechanicsRow(catalog,member.name,member.source);
+  if(!base||level<1||level>20)continue;
+  const prefix='class:'+member.name.toLowerCase()+':'+base.source.toLowerCase()+':';
+  const makeId=name=>prefix+name.toLowerCase().replaceAll(' ','_');
+  for(const column of arr(base.columns)){
+   const max=column.levels?.[level-1];
+   if(column.kind==='resource'&&typeof max==='number'&&max>0)
+    add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_id:'class|'+base.source.toLowerCase()+'|'+member.name.toLowerCase(),recharge:'manual',automatic:true});
+  }
+  for(const group of arr(catalog?.resource_overrides).filter(r=>same(r.class,member.name)&&same(r.source,base.source))){
+   for(const resource of arr(group.resources)){
+    if(resource.subclass&&subclassKey(resource.subclass)!==subclassKey(member.subclass||record.subclass))continue;
+    const steps=arr(resource.steps).filter(s=>int(s.level)<=level).sort((a,b)=>int(b.level)-int(a.level));
+    const step=steps[0];if(!step)continue;
+    const columnName=resource.column||resource.name,column=arr(base.columns).find(c=>c.name===columnName);
+    if(column&&(typeof column.levels?.[level-1]!=='number'||column.levels[level-1]<=0))continue;
+    const id=makeId(columnName);
+    if(rows.has(id)){rows.get(id).recharge=step.reset||'manual';continue;}
+    try{
+     const max=Math.max(int(resource.minimum),parseArithmetic(step.value,resolve));
+     if(max>0)add({id,name:resource.name,max,origin_name:resource.origin_feature||resource.name,origin_id:'class|'+base.source.toLowerCase()+'|'+member.name.toLowerCase(),recharge:step.reset||'manual',automatic:true});
+    }catch{ /* An unsupported formula cannot invent a resource maximum. */ }
+   }
+  }
+ }
+ if(record.kind==='monster'){
+  const stat=record.stat_block||{};
+  if(int(stat.legendaryActions)>0)add({id:'legendary_actions',name:'Azioni leggendarie',max:int(stat.legendaryActions),recharge:'turn',automatic:true});
+  for(const section of ['trait','action','bonus','reaction','legendary','mythic'])arr(stat[section]).forEach((feature,i)=>{
+   const m=String(feature?.name||'').match(/\{@recharge(?: ([1-6]))?\}/);
+   if(m)add({id:'recharge:'+section+':'+i,name:feature.name.replace(m[0],'').trim(),max:1,recharge:'d6',recharge_min:int(m[1],6),automatic:true});
+  });
+ }
+ for(const row of arr(record.resource_trackers)){
+  if(!row||!requirementsAllow(record,row))continue;
+  let max=Math.max(0,int(row.max));
+  if(row.max_formula)try{max=Math.max(0,parseArithmetic(row.max_formula,resolve));}catch{}
+  add({...row,max,automatic:false});
+ }
+ return [...rows.values()].filter(row=>!row.disabled&&!arr(record.proficiency_origins).some(o=>o?.id===row.origin_id&&o.disabled)&&record.origin_enabled?.[row.origin_id]!==false);
+}
 export function spellProgression(record,classes){
   const edition=String(record.rules_version||"2014"),sources=[];let warlock=0;
   const warnings=[];
@@ -281,6 +356,13 @@ export function calculateSheet(record={},catalogs={}){
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
+  if(kind==='character'){
+    const races=arr(classesCatalog?.races);
+    const race=races.find(row=>record.species_id&&row.id===record.species_id)||races.find(row=>same(row.name,record.species)&&same(row.source,record.species_source));
+    const flattened=record.subrace?races.find(row=>same(row.name,record.species+' ('+record.subrace+')')&&same(row.source,record.subrace_source)):null;
+    const speed=flattened?.speed??race?.speed;
+    if(speed!==undefined)record={...record,species_speed:speed};
+  }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r);
@@ -464,7 +546,7 @@ export function calculateSheet(record={},catalogs={}){
   const slots=Array.from({length:9},(_,i)=>{
     const level=i+1,total=Math.max(0,(useSaved?int(saved[level]):progression.slots[level])+
       (safe("slot:"+level)??0)),spent=Math.max(0,int(record.spell_slots_spent?.[level]));
-    return {level,total,spent:Math.min(spent,total)};
+    return {level,base:Math.max(0,useSaved?int(saved[level]):progression.slots[level]),total,spent:Math.min(spent,total)};
   });
   const pactTotal=Math.max(0,(useSaved?int(record.pact_slots_total):progression.pact_total)+
     (safe("pact_slot")??0));
@@ -489,18 +571,28 @@ export function calculateSheet(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['ac','initiative','hp','second_max','passive_perception'])safe(target);
+  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
+  for(const a of ABILITIES){
+    memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
+    memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_hit')??0));
+  }
+  const trackers=resourceTrackers(record,classesCatalog,name=>resolveSymbol(name,resolve,new Set())).map(row=>{
+    const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
+    return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
+  });
   for(const target of memo.keys()){
     const total=memo.get(target),parts=[...(components[target]?.values()||[])];
     explanations[target]=target+': '+total+(parts.length?' · '+parts.join(' · '):' · Nessun bonus aggiuntivo');
   }
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
+    casting_classes:spellClasses,trackers,
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
       speeds,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
       jumps:{long:Math.max(0,abilities.str.score??0),high:Math.max(0,3+(abilities.str.modifier??0))}},
-    spell_slots:slots,pact_slots:{total:pactTotal,spent:Math.min(pactTotal,int(record.pact_slots_spent)),
+    spell_slots:slots,pact_slots:{base:Math.max(0,useSaved?int(record.pact_slots_total):progression.pact_total),total:pactTotal,spent:Math.max(0,Math.min(pactTotal,int(record.pact_slots_spent))),
       level:useSaved?int(record.pact_slot_level,1):progression.pact_level},
     warnings:[...warnings],complete:warnings.size===0};
 }

@@ -2,6 +2,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch} from '../native_sheet.js';
+import {castingClasses,resourceTrackers} from '../sheet_rules.js';
+import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
+import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
+import {readFileSync} from 'node:fs';
+const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
+const catalogs={classMechanics:mechanics};
 
 test('damage consumes temporary, transformed and normal HP in native order; healing respects effective maximum',()=>{
  const c={temporary_hp:4,second_form_hp:8,current_hp:20,max_hp_base:25,formula_bonuses:[{target:'hp',expression:'5'}]};
@@ -34,4 +40,58 @@ test('all sheet readouts expose effective values and native bonus targets, inclu
  assert.equal(out.values.initiative,3);
  assert.equal(out.values.hp,13);
  assert.match(out.explanations['ability:dex'],/Scelta.*2/);
+});
+test('native casting tables preserve editions, class ownership, cantrip limits and wizard spellbook',()=>{
+ const c={rules_version:'2014',classes:[{name:'Wizard',source:'PHB',level:5},{name:'Warlock',source:'PHB',level:3}],abilities:{int:16,cha:14}};
+ const members=castingClasses(c,mechanics,{int:3,cha:2});
+ const [wizard,warlock]=members;
+ assert.deepEqual([wizard.limit,wizard.cantrips,wizard.max_level,wizard.book],[8,4,3,true]);
+ assert.deepEqual([warlock.limit,warlock.max_level],[4,2]);
+ const modern=castingClasses({...c,rules_version:'2024',classes:[{name:'Wizard',source:'XPHB',level:5}]},mechanics,{int:5});
+ assert.equal(modern[0].limit,9,'2024 uses its table rather than ability + level');
+ const spell={id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard','Warlock']};
+ const options={member:wizard,classes:members,catalog:[spell]};
+ assert.throws(()=>addSelectedSpell(c,spell,'prepared_spells',options),/libro/);
+ const book=addSelectedSpell(c,spell,'spellbook_spells',options);
+ const prepared=addSelectedSpell({...c,...book},spell,'prepared_spells',options);
+ assert.deepEqual(prepared.prepared_spells[0].casting_classes,[wizard.id]);
+ const shared=addSelectedSpell({...c,...prepared},spell,'prepared_spells',{...options,member:warlock});
+ assert.deepEqual(shared.prepared_spells[0].casting_classes,[wizard.id,warlock.id]);
+ const removed=removeSelectedSpell({...c,...shared},'prepared_spells',0,{classId:warlock.id,classes:members,catalog:[spell]});
+ assert.deepEqual(removed.prepared_spells[0].casting_classes,[wizard.id]);
+ assert.equal(shared.prepared_spells[0].casting_classes.length,2,'input never mutated');
+});
+test('slot counters distinguish class/pact, keep manual totals and recover without changing spell selections',()=>{
+ const c={class:'Wizard',level:5,classes:[{name:'Wizard',level:5},{name:'Warlock',level:3}],spell_slots_spent:[0,1],pact_slots_spent:1,prepared_spells:[{id:'keep'}]};
+ const out=calculateSheet(c,catalogs);
+ assert.equal(out.spell_slots[0].total,4);
+ assert.equal(out.pact_slots.total,2);
+ assert.equal(slotUsePatch(c,1,1,out).spell_slots_spent[1],2);
+ assert.deepEqual(slotUsePatch(c,0,-1,out),{pact_slots_spent:0});
+ assert.throws(()=>slotUsePatch({...c,pact_slots_spent:2},0,1,out),/Nessuno/);
+ assert.deepEqual(c.prepared_spells,[{id:'keep'}]);
+ const manual=calculateSheet({...c,spell_slots_manual:true,spell_slots_total:[0,7],pact_slots_total:4,formula_bonuses:[{target:'slot:1',expression:'2'}]},catalogs);
+ assert.equal(manual.spell_slots[0].base,7);
+ assert.equal(manual.spell_slots[0].total,9);
+ assert.equal(manual.pact_slots.total,4);
+});
+test('resources use native IDs, formulas, subclass gating and explicit rest recovery',()=>{
+ const c={class:'Bard',class_source:'PHB',level:5,abilities:{cha:16},resource_trackers:[{id:'custom',name:'Personal',max:1,max_formula:'proficiency + 1',recharge:'manual'}],resource_tracker_spent:{'class:bard:phb:bardic_inspiration':2,custom:1,unknown:4}};
+ const out=calculateSheet(c,catalogs);
+ const inspiration=out.trackers.find(t=>t.id==='class:bard:phb:bardic_inspiration');
+ assert.ok(inspiration);
+ assert.equal(inspiration.max,3);
+ assert.equal(inspiration.recharge,'short_rest');
+ assert.equal(out.trackers.find(t=>t.id==='custom').max,4);
+ assert.deepEqual(recoveryPatch(c,'short_rest',out.trackers).resource_tracker_spent,{custom:1,unknown:4});
+ const monk=resourceTrackers({class:'Monk',class_source:'PHB',level:6,subclass:'Way of Shadow'},mechanics);
+ assert.equal(monk.some(t=>t.name==='Wholeness of Body'),false);
+ const monster=resourceTrackers({kind:'monster',stat_block:{legendaryActions:3,action:[{name:'Breath {@recharge 5}'}]}},mechanics);
+ assert.deepEqual(monster.map(t=>[t.id,t.max,t.recharge]),[['legendary_actions',3,'turn'],['recharge:action:0',1,'d6']]);
+});
+test('species speeds resolve from native identity, replacing stale snapshots and keeping explicit special overrides',()=>{
+ const out=calculateSheet({kind:'character',species:'Aarakocra',species_source:'EEPC',speed_base:99,species_speed:{walk:99},movement_speeds:{swim:15}},catalogs);
+ assert.equal(out.stats.speeds.walk,25);
+ assert.equal(out.stats.speeds.fly,50);
+ assert.equal(out.stats.speeds.swim,15);
 });

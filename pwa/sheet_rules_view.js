@@ -10,13 +10,13 @@ export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   const value=data?.values?.[target];
   return (sign?signed(value):value??"—")+suffix;
 }
-export function formulaReadout(data,target,label,{signed:sign=false,suffix=""}={}){
+export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target}={}){
   return '<span class="sheet-formula"><output data-calculated="'+esc(target)+
     '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
     esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
     esc(calculatedValue(data,target,{signed:sign,suffix}))+'</output>'+
     '<button type="button" class="btn small formula-bonus" data-act="edit-bonus" data-target="'+
-    esc(target)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button></span>';
+    esc(bonusTarget)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button></span>';
 }
 export function calculationNote(data,loadError=""){
   const warnings=[...new Set([...(data?.warnings||[]),...(loadError?[loadError]:[])])];

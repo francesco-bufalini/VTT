@@ -1,6 +1,6 @@
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, hitPointPatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, validSlot, equipSlot } from "./item_controls.js";
-import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId } from "./spell_selection.js";
+import { availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, castingSources, classSelectionCount } from "./spell_selection.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId } from "./creatures.js";
@@ -30,7 +30,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellCatalogError:"", openDocumentInstance:"",
+  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   saving:false, saveError:"", pendingActions:0, busy:false };
@@ -278,23 +278,22 @@ async function editorView() {
     break;
   }
   case "magic":
-    body=panel("Caratteristica degli incantesimi",'<p class="hint">'+
-      esc(abilities[c.spellcasting_ability]||"Determinata dalla classe o dalle origini")+'</p>')+
-      panel("Slot incantesimo",'<p class="hint">Gestisci gli slot usati. I massimi e i bonus vengono calcolati da Godot.</p>'+
-        '<div class="columns three">'+Array.from({length:9},(_,i)=>{
-          const level=i+1,tot=c.spell_slots_total?.[level]??0,spent=c.spell_slots_spent?.[level]??0;
-          return '<div class="ability-box"><label>Liv. '+level+
-            '<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(spent)+
-            '"></label><span class="hint">Usati / '+esc(tot)+'</span></div>';
-        }).join("")+'</div>')+
-      panel("Magia del patto",'<p class="hint">Livello '+esc(c.pact_slot_level??1)+
-        ' · massimo '+esc(c.pact_slots_total??0)+'</p>'+
-        field('Slot usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0"'))+
-      panel("Incantesimi di classe",'<p class="hint">Le disponibilità automatiche dipendono da classe, livello e regole: sono determinate dal motore Godot.</p>')+
-      panel("Incantesimi disponibili",spellList(c,"prepared_spells"))+
+    body=panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+
+      panel("Incantesimi disponibili",calculated.casting_classes.map(member=>{
+        const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
+        return '<article class="native-entry"><h3>'+esc(member.name)+' · '+esc(member.source)+'</h3><p>'+member.mode+' '+count.leveled+' / '+(member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+castingStatistics(c,member.id,member.ability)+spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</article>';
+      }).join('')+'<h3>Altri incantesimi disponibili</h3>'+spellList(c,'prepared_spells','manual',calculated.casting_classes))+
+      panel('Slot · Classi / Patto','<div class="slot-table"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+calculated.spell_slots.map(slot=>{
+        const level=slot.level,pact=calculated.pact_slots;
+        return '<span>'+level+'°</span><div>'+slotCounter(level,slot.total,slot.spent)+
+          '<details><summary>Usati / modifica base</summary><label>Slot usati<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(c.spell_slots_spent?.[level]||0)+'"></label><label>Massimo base<input type="number" min="0" max="99" data-slot-total="'+level+'" value="'+esc(c.spell_slots_total?.[level]??slot.total)+'"></label></details></div><div>'+(pact.level===level?slotCounter(0,pact.total,pact.spent):'—')+'</div>';
+      }).join('')+'</div><details><summary>Impostazioni slot</summary><p>'+((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+btn('slots-automatic','Usa progressione automatica')+
+      '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(c.pact_slots_total??calculated.pact_slots.total)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
+      field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
       panel("Aggiungi dal catalogo",
         '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
+        '<label>Classe / origine<select id="spell-class"><option value="manual">Manuale · altre concessioni</option>'+calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+' · '+esc(member.source)+'</option>').join('')+'</select></label>'+
         '<label>Destinazione<select id="spell-target">'+
         '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
         '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
@@ -321,22 +320,22 @@ async function editorView() {
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
 function resourceView(c,configure=false){
-    const trackers=Array.isArray(c.resource_trackers)?c.resource_trackers:[];
+    const trackers=state.calculated?.trackers||(Array.isArray(c.resource_trackers)?c.resource_trackers:[]);
     const spent=c.resource_tracker_spent && typeof c.resource_tracker_spent==="object"?
       c.resource_tracker_spent:{};
     return panel("Risorse",
-      '<p class="hint">Contatori manuali. I tracker automatici di classe e privilegi non sono ancora coperti integralmente dal motore locale.</p>'+
+      '<p class="hint">Risorse delle classi e tracker personali. I massimi includono formule e bonus attivi.</p>'+
       (trackers.length?trackers.map((t,i)=>{
         const max=Math.max(0,Number(t.max)||0);
         const used=Math.max(0,Number(spent[t.id])||0);
         return '<div class="list-item"><div class="row between"><strong>'+esc(t.name||"Risorsa")+
-          '</strong>'+(configure?'<button type="button" class="btn small danger" data-act="tracker-delete" data-index="'+i+'">Elimina</button>':'')+'</div>'+
+          '</strong>'+(configure&&!t.automatic?'<button type="button" class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'')+'</div>'+
           '<div class="row between"><span class="hint">Disponibili: '+esc(Math.max(0,max-used))+
           ' / '+esc(max)+' · '+esc(t.recharge||"manual")+'</span><span class="row">'+
-          '<button type="button" class="btn small" data-act="tracker-less" data-index="'+i+'" aria-label="Ripristina un utilizzo">−</button>'+
-          '<button type="button" class="btn small" data-act="tracker-more" data-index="'+i+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
-      }).join(""):'<p class="hint">Nessun tracker manuale salvato.</p>')+
-      (configure?'<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>':'') )+
+          '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo">−</button>'+
+          '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo">＋</button></span></div></div>';
+      }).join(""):'<p class="hint">Nessuna risorsa disponibile.</p>')+
+      '<div class="actions">'+btn("tracker-short","Riposo breve")+btn("tracker-long","Riposo lungo")+'</div>')+
       (configure?panel("Aggiungi tracker",'<div class="columns">'+
       '<label>Nome<input type="text" id="tracker-name" maxlength="120" placeholder="Es. Ispirazione bardica"></label>'+
       '<label>Utilizzi massimi<input type="number" id="tracker-max" min="1" max="99999" value="1"></label></div>'+
@@ -411,16 +410,25 @@ function listField(label,index,key,value,type="text") {
   return '<label>'+label+'<input type="'+type+'" data-item-index="'+index+'" data-item-key="'+key+
     '" value="'+esc(value)+'" '+(type==="number"?'min="0"':"")+'></label>';
 }
-function spellList(c,key) {
+function castingStatistics(c,section,ability){
+ const selected=c.spellcasting_section_abilities?.[section]||ability;
+ return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_hit'})+'</span></div>';
+}
+function slotCounter(level,total,spent){
+ return '<div class="slot-counter"><button class="btn small" data-act="slot-use" data-level="'+level+'" '+(spent>=total?'disabled':'')+' aria-label="Consuma slot '+level+'">−</button><button class="btn small" data-act="slot-recover" data-level="'+level+'" '+(spent<=0?'disabled':'')+' aria-label="Recupera slot '+level+'">＋</button><span>'+Math.max(0,total-spent)+' / </span>'+formulaReadout(state.calculated,level===0?'pact_slot':'slot:'+level,'Massimo slot '+level)+'</div>';
+}
+function spellList(c,key,classId=null,classes=[]) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
-  return '<div class="stack">'+(rows.length?rows.map((spell,i)=>{
+  const visible=rows.map((spell,i)=>({spell,i})).filter(({spell})=>!classId||
+    (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):castingSources(spell,classes,state.spellCatalog||[]).includes(classId)));
+  return '<div class="stack">'+(visible.length?visible.map(({spell,i})=>{
     const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
     const meta=typeof spell==="object"&&spell?
       ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
     return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
       '<span class="hint">'+meta+'</span></div><button type="button" class="btn danger small" '+
-      'data-act="remove-spell" data-key="'+key+'" data-index="'+i+'">Rimuovi</button></div>';
+      'data-act="remove-spell" data-key="'+key+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'">Rimuovi</button></div>';
   }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
 }
 function renderSpellResults(){
@@ -429,7 +437,8 @@ function renderSpellResults(){
   const query=state.spellQuery.trim().toLocaleLowerCase();
   if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
   const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
-    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)).slice(0,40);
+    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)&&
+    (state.spellClass==='manual'||!state.calculated?.casting_classes.some(member=>member.id===state.spellClass)||spellEligible(spell,state.calculated.casting_classes.find(member=>member.id===state.spellClass)))).slice(0,40);
   return found.length?found.map(({spell,index})=>
     '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
     '<span>'+esc(spell.name||"Incantesimo")+'</span><span class="tag">Liv. '+esc(spell.level??0)+
@@ -794,6 +803,21 @@ async function handleField(target) {
     await patch(nativeRowPatch(creature,target.dataset.nativeList,Number(target.dataset.index),target.dataset.key,target.type==="checkbox"?target.checked:target.value));
     return;
   }
+  if(target.dataset.castingSection){
+    if(!Object.hasOwn(abilities,target.value))throw Error('Caratteristica non valida');
+    await patch({spellcasting_section_abilities:{...creature.spellcasting_section_abilities,[target.dataset.castingSection]:target.value}});
+    await render();return;
+  }
+  if(target.hasAttribute('data-slot-total')||target.hasAttribute('data-pact-total')){
+    const value=Number(target.value);
+    if(!Number.isInteger(value)||value<0||value>99)throw Error('Massimo slot non valido');
+    const out=await computeLocalData(creature);
+    // Freeze both groups when entering manual mode, retaining current totals.
+    const totals=[0,...out.spell_slots.map(s=>s.base)],changes={spell_slots_manual:true,spell_slots_total:totals,pact_slots_total:out.pact_slots.base,pact_slot_level:out.pact_slots.level};
+    if(target.hasAttribute('data-pact-total'))changes.pact_slots_total=value;
+    else totals[Number(target.dataset.slotTotal)]=value;
+    await patch(changes);await render();return;
+  }
   if(target.hasAttribute("data-native-cr")){
     const value=target.value.trim();
     if(!/^(?:\d+(?:\.\d+)?|\d+\/[1-9]\d*)$/.test(value))throw Error("GS non valido");
@@ -839,7 +863,7 @@ async function handleField(target) {
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
-    await patch({conditions:[...entries]});
+    await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
   }
 }
 async function refreshMapOnce() {
@@ -863,6 +887,16 @@ async function consumeAcceptedSlot(level,spell) {
 
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='stop-concentration'){
+    const c=state.editor.read();await patch({conditions:(c.conditions||[]).filter(id=>id!=='concentrating'),concentrating_spell_id:''});await render();return;
+  }
+  if(['slot-use','slot-recover','slots-restore','slots-automatic'].includes(act)){
+    const c=state.editor.read();
+    if(act==='slots-automatic')await patch({spell_slots_manual:false,spell_slots_automatic:true});
+    else if(act==='slots-restore')await patch({spell_slots_spent:Array(10).fill(0),pact_slots_spent:0});
+    else await patch(slotUsePatch(c,Number(target.dataset.level),act==='slot-use'?1:-1,await computeLocalData(c)));
+    await render();return;
+  }
   if(['hp-damage','hp-heal','hp-restore','hp-automatic'].includes(act)){
     const c=state.editor.read(),calculated=await computeLocalData(c);
     if(act==='hp-automatic'){
@@ -1026,9 +1060,11 @@ async function handleAction(target){
   }
   if(["tracker-more","tracker-less","tracker-delete"].includes(act)){
     const record=state.editor.read(),trackers=structuredClone(record.resource_trackers||[]);
-    const index=Number(target.dataset.index),row=trackers[index];
+    const calculated=await computeLocalData(record);
+    const row=calculated.trackers.find(t=>t.id===target.dataset.trackerId),index=trackers.findIndex(t=>t.id===row?.id);
     if(!row)throw new Error("Tracker non disponibile.");
     if(act==="tracker-delete"){
+      if(index<0||row.automatic)throw Error('Modifica questa risorsa dalla sua origine');
       trackers.splice(index,1);
       const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
       await patch({resource_trackers:trackers,resource_tracker_spent:spent});
@@ -1042,12 +1078,8 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="tracker-short"||act==="tracker-long"){
-    const record=state.editor.read(),spent={...(record.resource_tracker_spent||{})};
-    for(const row of record.resource_trackers||[]){
-      if(row.recharge==="short_rest" ||
-        (act==="tracker-long"&&row.recharge==="long_rest")) delete spent[row.id];
-    }
-    await patch({resource_tracker_spent:spent});await render();return;
+    const record=state.editor.read(),calculated=await computeLocalData(record);
+    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':'short_rest',calculated.trackers));await render();return;
   }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
@@ -1084,12 +1116,13 @@ async function handleAction(target){
     const index=Number(target.dataset.index);
     const spell=state.spellCatalog?.[index];
     if(!spell)throw Error("Seleziona un incantesimo valido.");
-    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget));
+    const classes=state.calculated?.casting_classes||[],member=classes.find(row=>row.id===state.spellClass);
+    await patch(addSelectedSpell(state.editor.read(),spell,state.spellTarget,{member,classes,catalog:state.spellCatalog||[]}));
     await render();return;
   }
   if(act==="remove-spell"){
     const key=target.dataset.key,index=Number(target.dataset.index);
-    await patch(removeSelectedSpell(state.editor.read(),key,index));await render();return;
+    await patch(removeSelectedSpell(state.editor.read(),key,index,{classId:target.dataset.classId==='manual'?null:target.dataset.classId,classes:state.calculated?.casting_classes||[],catalog:state.spellCatalog||[]}));await render();return;
   }
   if(act==="save-json"){
     const raw=document.getElementById("json-editor")?.value;
@@ -1222,7 +1255,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
+  const editable = "[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="spell-search"){
@@ -1261,6 +1294,10 @@ function listen(){
     }
     if(target?.id==="spell-target"){
       state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
+    }
+    if(target?.id==='spell-class'){
+      state.spellClass=target.value;
+      const matches=app.querySelector('#spell-results');if(matches)matches.innerHTML=renderSpellResults();return;
     }
     if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
