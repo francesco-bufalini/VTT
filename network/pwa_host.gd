@@ -55,6 +55,8 @@ const FILES := {
 	"/sw.js": ["res://pwa/sw.js", "text/javascript; charset=utf-8"],
 	"/manifest.webmanifest": ["res://pwa/manifest.webmanifest", "application/manifest+json"],
 	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
+	"/icons/action_dashboard_gloss.svg": ["res://pwa/icons/action_dashboard_gloss.svg", "image/svg+xml"],
+	"/icons/action_extras.svg": ["res://pwa/icons/action_extras.svg", "image/svg+xml"],
 	"/icon-192.png": ["res://pwa/icon-192.png", "image/png"],
 	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
 }
