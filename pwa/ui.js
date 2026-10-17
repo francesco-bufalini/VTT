@@ -1195,7 +1195,7 @@ function decorateSheetHeadings(){
  for(const heading of app.querySelectorAll('.panel > h2, .native-entry > h3, .current-section')){
   if(heading.querySelector('.vtt-action-glyph'))continue;
   const text=heading.textContent.toLocaleLowerCase('it');
-  const key=/inventari|oggett|equipaggia/.test(text)?'inventory':/ferit|salute/.test(text)?'healing':/caratterist|abilit|competenz/.test(text)?'skill':/condizion/.test(text)?'condition':/attacc|battaglia/.test(text)?'weapon':/moviment|velocit/.test(text)?'dash':/poter|incantesim|slot/.test(text)?'spark':/tratt|privileg|talent/.test(text)?'proficiency':'information';
+  const key=/inventari|oggett|equipaggia/.test(text)?'inventory':/ferit|salute/.test(text)?'healing':/caratterist|abilit|competenz/.test(text)?'skill':/condizion/.test(text)?'condition':/attacc|battaglia|cosa posso/.test(text)?'weapon':/moviment|velocit/.test(text)?'dash':/poter|incantesim|slot/.test(text)?'spark':/tratt|privileg|talent/.test(text)?'proficiency':'information';
   heading.insertAdjacentHTML('afterbegin',actionGlyph(key));
   heading.classList.add('sheet-heading');
  }

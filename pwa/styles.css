@@ -453,3 +453,6 @@ input:not([type=checkbox]):not([type=file]),select,textarea{background:#211c1c;b
  .action-tree>ol>li:last-child::after{left:-11px}
  .action-economy-skill-grid{grid-template-columns:1fr}
 }
+
+.action-group-label{display:flex;align-items:center;gap:9px;min-height:34px;color:var(--text)}
+.action-group-label>.vtt-action-glyph{width:29px;height:29px;flex:0 0 29px}

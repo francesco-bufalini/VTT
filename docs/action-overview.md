@@ -1,4 +1,4 @@
-# Action overview (Godot)
+# Action overview (Godot and PWA)
 
 The 2014 action overview reads `vtt/data/combat_actions_5etools.json`.
 Generate it with:
@@ -47,3 +47,11 @@ include them. CI includes the existing shared `pwa/icons` atlases.
 ### Gerarchia della scheda
 
 Su desktop la prima colonna contiene solo Azione; bonus, tiri rapidi, movimento e reazioni sono nella seconda. I figli di Attaccare, Combattere con due armi e Prove di abilità sono rientrati con rami di albero e un controllo di espansione. Il riquadro delle prove raccoglie solo le opzioni con prove esplicite che consumano un’azione e non appartengono ad Attaccare. I quattro tiri rapidi non assegnano autonomamente un costo di azione.
+
+### Movimento e stile condiviso
+
+Spostamento raccoglie Scattare, Disimpegnarsi, le opzioni abilitate per attraversare avversari, arrampicarsi su creature e sfuggire a una lotta, separandole per costo effettivo. Il riquadro compare anche in Azione bonus quando ci sono opzioni disponibili. Movimento furtivo usa il movimento, con il riferimento PHB 2014 al passo lento durante il viaggio; non concede un secondo Nascondersi o movimento aggiuntivo.
+
+`creature_sheet_style.gd` fornisce superfici e icone condivise alla scheda nativa, incluse le sezioni caricate successivamente. La PWA usa lo stesso catalogo generato, atlanti, palette e alberi. Le sue varianti sono preferenze del dispositivo in `vtt.actionVariants.2014`, separate dall’archivio creature. Il service worker aggiorna la cache dell’interfaccia senza cancellare IndexedDB. Le correzioni multiclasse restano nel flusso Poteri.
+
+`npm run test:actions-browser` verifica nove sezioni alle larghezze 360, 390, 768 e 1440, alberi espansi, tiri di Furtività, varianti persistenti e riapertura offline in un profilo isolato. `test_pwa_host.gd` verifica anche la consegna delle risorse condivise dal server nativo.

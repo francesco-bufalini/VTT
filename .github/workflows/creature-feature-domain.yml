@@ -3,6 +3,7 @@ name: Creature Feature Domain Regression
 on:
   pull_request:
     paths:
+      - "vtt/creature_sheet_style.gd"
       - "vtt/creature_action_economy_tab.gd"
       - "vtt/combat_basic_actions.gd"
       - "vtt/data/combat_action_supplements_5etools.json"
@@ -22,6 +23,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "vtt/creature_sheet_style.gd"
       - "vtt/creature_action_economy_tab.gd"
       - "tests/test_action_dashboard_ui.gd"
       - "vtt/feature_timing_recovery_rules.gd"
