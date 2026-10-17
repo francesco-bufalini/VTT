@@ -3,8 +3,6 @@ on:
   pull_request:
     paths:
       - "vtt/creature_area.gd"
-      - "vtt/creature_sheet_style.gd"
-      - "pwa/icons/**"
       - "vtt/mobile/session_actions.gd"
       - "vtt/map_data_controller.gd"
       - "network/board_sync.gd"
@@ -25,7 +23,6 @@ jobs:
             /*.gd
             /*.tscn
             /vtt/
-            /pwa/icons/
             /network/
             /interaction/
             /items/

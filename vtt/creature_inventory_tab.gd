@@ -374,10 +374,8 @@ func configure_touch_layout() -> void:
 	var header: Node = objects_page.get_child(0)
 	if header is HBoxContainer:
 		var title := header.get_child(0) as Label
-		# An HBox may already be the compacted toolbar on a second call.
-		if title != null:
-			title.text = "Inventario"
-			title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.text = "Inventario"
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		touch.replace_box(header, VBoxContainer.new())
 	for field: Control in [_search, _add_button]:
 		var parent: Node = field.get_parent()

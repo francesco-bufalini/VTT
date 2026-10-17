@@ -1795,7 +1795,7 @@ func configure_touch_layout() -> void:
 	_touch_section = OptionButton.new()
 	_touch_section.name = "TouchSheetSection"
 	for index: int in range(_tabs.get_tab_count()):
-		_touch_section.add_icon_item(_tabs.get_tab_icon(index), _tabs.get_tab_title(index))
+		_touch_section.add_item(_tabs.get_tab_title(index))
 	_touch_section.item_selected.connect(func(index: int) -> void: _tabs.current_tab = index)
 	_tabs.tab_changed.connect(func(index: int) -> void: _touch_section.select(index))
 	editor.add_child(_touch_section)
@@ -1828,10 +1828,6 @@ func configure_touch_layout() -> void:
 	for index: int in range(_tabs.get_tab_count()):
 		var button := Button.new()
 		button.text = _tabs.get_tab_title(index)
-		button.icon = _tabs.get_tab_icon(index)
-		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.add_theme_constant_override("icon_max_width", 24)
-		button.custom_minimum_size.y = 48
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.toggle_mode = true
 		button.button_group = group
@@ -2126,7 +2122,7 @@ func _fit_sheet_tabs() -> void:
 		bar.add_theme_font_size_override("font_size", font_size)
 		var required := 0.0
 		for index: int in range(_tabs.get_tab_count()):
-			required += font.get_string_size(_tabs.get_tab_title(index), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 43
+			required += font.get_string_size(_tabs.get_tab_title(index), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 30
 		if required <= _tabs.size.x: break
 
 
@@ -2142,9 +2138,11 @@ func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.follow_focus = true
 	tabs.add_child(scroll)
-	tabs.set_tab_icon(tabs.get_tab_count() - 1,
-		preload("res://vtt/creature_sheet_style.gd").character_tab_icon(title))
-	tabs.set_tab_icon_max_width(tabs.get_tab_count() - 1, 20)
+	var icon_key: String = {"Info": "information", "Statistiche": "skill", "Cosa posso fare?": "weapon",
+		"Poteri": "spark", "Inventario": "inventory", "Tratti": "proficiency",
+		"Condizioni": "condition", "Modifica personaggio": "settings"}.get(title, "book")
+	tabs.set_tab_icon(tabs.get_tab_count() - 1, preload("res://vtt/creature_sheet_style.gd").icon(icon_key))
+	tabs.set_tab_icon_max_width(tabs.get_tab_count() - 1, 14)
 	tabs.get_tab_bar().set_tab_tooltip(tabs.get_tab_count() - 1, title)
 	_fit_sheet_tabs.call_deferred()
 	var margin := MarginContainer.new()

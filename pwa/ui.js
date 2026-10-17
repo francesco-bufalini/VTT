@@ -274,7 +274,7 @@ async function editorView() {
     '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
     '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
     (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
-    '<div class="current-section" data-sheet-icon="'+esc(state.sheet)+'">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
+    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
   let body = "";
   if(['info','origins'].includes(state.sheet)){
     await Promise.all(["races","classes","subclasses","backgrounds",...(state.sheet==='origins'?['feats']:[])].map(async key=>{
