@@ -113,8 +113,10 @@ export function actionEntries(record={},calculated={},spells=[]){
   if(!definition)continue;
   const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
   const tracker=mode==='tracker'?tracked(grant.tracker_id):mode==='slot'?'Slot incantesimo':'Nessuna risorsa';
-  add(definition.name||grant.spell_id,definition.time??definition.casting_time??'action','Incantesimo',
-      'Tempo di lancio: '+castingTime(definition)+'.\n'+details(definition.entries??definition.description??''),
+  const internal=definition.internal_grant===true;
+  add(definition.name||grant.spell_id,definition.time??definition.casting_time??'action',
+      internal?'Capacità':'Incantesimo',
+      (internal?'':'Tempo di lancio: '+castingTime(definition)+'.\n')+details(definition.entries??definition.description??''),
       tracker,mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0);
  }
  return out;
