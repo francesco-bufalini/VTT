@@ -62,3 +62,21 @@ test('passive traits are excluded and all descriptions are escaped',()=>{
  assert(!html.includes('<script>'));
  assert(html.includes('&lt;b&gt;Hello&lt;/b&gt;'));
 });
+
+test('supplemented class privileges require the correct edition and level',()=>{
+ const overrides=[
+  {class_name:'Fighter',feature_name:'Second Wind',book:'PHB',min_level:1,
+   activation:'bonus',display_name:'Recuperare energie',resource_name:'Second Wind',
+   description:'Recupera punti ferita.'},
+  {class_name:'Fighter',feature_name:'Action Surge',book:'PHB',min_level:2,
+   activation:'free',display_name:"Impeto d'azione",resource_name:'Action Surge'}
+ ];
+ const old={rules_version:'2014',class:'Fighter',class_source:'PHB',level:1};
+ const higher={...old,level:2};
+ const newEdition={...higher,class_source:'XPHB',rules_version:'2024'};
+ const opts=actionEntries(old,{trackers:[{name:'Second Wind'}]},[],overrides);
+ assert(opts.some(x=>x.name==='Recuperare energie'&&x.time==='bonus'));
+ assert(!opts.some(x=>x.name==="Impeto d'azione"));
+ assert(actionEntries(higher,{},[],overrides).some(x=>x.name==="Impeto d'azione"));
+ assert(!actionEntries(newEdition,{},[],overrides).some(x=>x.name==='Recuperare energie'));
+});
