@@ -1524,6 +1524,7 @@ async function handleAction(target){
     const editor=await openCreatureEditor(selectedId);
     await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
     await refreshMapOnce();return;
   }
@@ -1692,6 +1693,11 @@ function listen(){
     }
     if(target?.dataset?.field==="attack_melee_ui"){
       state.attackMelee=target.checked;return;
+    }
+    if(target?.id==="sheet-cast-level"){
+      const level=Number(target.value);
+      if(Number.isInteger(level)&&level>=0&&level<=9)state.castLevel=level;
+      return;
     }
     if(target?.dataset?.field==="cast_slot_ui"){
       state.castLevel=Number(target.value);return;
