@@ -6,7 +6,7 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	var old: Array[Dictionary] = Actions.entries({"rules_version": "2014"})
+	var old: Array[Dictionary] = Actions.entries({"rules_version": "2014"}, ["disarm_dmg", "overrun_dmg", "tumble_dmg", "spellcasting_xge"])
 	var modern: Array[Dictionary] = Actions.entries({"rules_version": "2024"})
 	assert(_contains(old, "Usare un oggetto", 0))
 	assert(not _contains(old, "Studiare", 0))
@@ -18,10 +18,8 @@ func run() -> void:
 	assert(_contains(old, "Attivare un oggetto magico", 0))
 	assert(not _contains(modern, "Attivare un oggetto magico", 0))
 	assert(_contains(old, "Disarmare", 0))
-	assert(_contains(old, "Travolgere (attraversare lo spazio nemico)", 0))
-	assert(_contains(old, "Travolgere (attraversare lo spazio nemico)", 1))
-	assert(_contains(old, "Passare con acrobazia attraverso un nemico", 0))
-	assert(_contains(old, "Passare con acrobazia attraverso un nemico", 1))
+	assert(_contains(old, "Travolgere", 1))
+	assert(_contains(old, "Passare con acrobazia", 1))
 	assert(_contains(old, "Identificare un incantesimo", 0))
 	assert(_contains(old, "Identificare un incantesimo", 4))
 	assert(_contains(old, "Interrompere concentrazione", 2))

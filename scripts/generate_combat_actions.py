@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = {
+ "Activate an Item": ("activate_item", "Attivare un oggetto magico"),
  "Attack": ("attack", "Attaccare"), "Dash": ("dash", "Scattare"),
  "Disengage": ("disengage", "Disimpegnarsi"), "Dodge": ("dodge", "Schivare"),
  "Help": ("help", "Aiutare"), "Hide": ("hide", "Nascondersi"),
@@ -52,7 +53,7 @@ def plain(value):
  if isinstance(value, str):
   # Explicit display text in tagged references is field three, otherwise name.
   while "{@" in value:
-   new = re.sub(r"\{@[^ {}]+ ([^{}]+)\}", lambda m: (m[1].split("|")[2] if len(m[1].split("|")) > 2 and m[1].split("|")[2] else m[1].split("|")[0]), value)
+   new = re.sub(r"\{@[^ {}]+ ([^{}]+)\}", lambda m: m[1].split("|")[0], value)
    if new == value: break
    value = new
   return value
@@ -75,7 +76,8 @@ def generate(data_root):
   if raw["source"] not in ("PHB", "DMG", "XGE", "XPHB"): continue
   key, title = NAMES[raw["name"]]
   times = [v.get("unit", "action") if isinstance(v, dict) else "free" if v == "Free" else "action" for v in raw.get("time", ["Free"])]
-  variant = key if raw.get("fromVariant") and raw["source"] == "DMG" else "spellcasting_xge" if raw.get("fromVariant") else ""
+  if key == "other_activity": times = ["free"]
+  variant = key if raw.get("fromVariant") and raw["source"] == "DMG" else "spellcasting_xge" if raw.get("fromVariant") and raw["source"] == "XGE" else ""
   if key == "healing_surge": variant = "healing_surges_dmg"
   elif variant: variant = variant + "_dmg" if raw["source"] == "DMG" else variant
   row = dict(id=key, name=title, source_name=raw["name"], source=raw["source"], page=raw.get("page", 0),
@@ -87,6 +89,17 @@ def generate(data_root):
   output.append(row)
   if key == "shove":
    output.append(dict(row, id="prone", name="Mandare prono", action_id="prone", skills=["athletics"]))
+ # Movement is a turn resource, not an extra action. These PHB excerpts are
+ # independently verified against the official 2014 Basic Rules, Combat.
+ for edition, source in [("2014", "PHB"), ("2024", "XPHB")]:
+  if edition == "2014":
+   output.append(dict(id="movement", name="Muoversi", source_name="Movement and Position", source=source, page=190, edition=edition, timings=["movement"], description="On your turn, you can move a distance up to your speed.", source_url="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat#MovementandPosition", variant_id="", skills=[], parent_action="", action_id=""))
+   output.append(dict(id="drop_prone", name="Gettarsi a terra", source_name="Being Prone", source=source, page=190, edition=edition, timings=["free"], description="You can drop prone without using any of your speed.", source_url="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat#BeingProne", variant_id="", skills=[], parent_action="", action_id=""))
+ speed = next(x for x in variants if x["source"] == "XPHB" and x["name"] == "Speed")
+ output.append(dict(id="movement", name="Muoversi", source_name="Speed", source="XPHB", page=speed["page"], edition="2024", timings=["movement"], description=plain(speed["entries"]), source_url=link("variantrules", "Speed", "XPHB"), variant_id="", skills=[], parent_action="", action_id=""))
+ strike = next(x for x in variants if x["source"] == "XPHB" and x["name"] == "Unarmed Strike")
+ for key, title in [("grapple", "Afferrare una creatura"), ("shove", "Spingere"), ("prone", "Mandare prono")]:
+  output.append(dict(id=key, name=title, source_name="Unarmed Strike", source="XPHB", page=strike["page"], edition="2024", timings=["action"], description=plain(strike["entries"]), source_url=link("variantrules", "Unarmed Strike", "XPHB"), variant_id="", skills=[], parent_action="attack", action_id=key))
  variant_rows = []
  for raw in variants:
   if raw["source"] not in ("DMG", "PHB", "XGE") or not raw.get("ruleType"): continue

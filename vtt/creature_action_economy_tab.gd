@@ -1,9 +1,11 @@
 extends VBoxContainer
 signal skill_requested(key: String)
+signal attack_requested(attack_id: String, damage: bool)
 signal basic_action_requested(action_id: String)
 signal tracker_change_requested(tracker_id: String, delta: int, maximum: int)
 signal cast_spell_requested(spell_id: String, grant_id: String)
 signal open_spellbook_requested()
+const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 ## Local-only action overview. Neither casting nor sheet calculations require a server.
@@ -16,6 +18,9 @@ const FeatureRules = preload("res://vtt/feature_timing_recovery_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const ACTION_SUPPLEMENTS_PATH := "res://vtt/data/action_feature_overrides.json"
+const RULES_PATH := "res://vtt/data/combat_actions_5etools.json"
+const OPTIONS_PATH := "user://action_overview.cfg"
+static var _rules_cache: Dictionary = {}
 const GENERAL_ACTIONS_PATH := "res://vtt/data/combat_action_supplements_5etools.json"
 static var _general_actions_cache: Array[Dictionary] = []
 static var _general_actions_loaded := false
@@ -48,50 +53,13 @@ const ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_dashboard_gloss.
 const EXTRA_ACTION_ICONS: Texture2D = preload("res://pwa/icons/action_extras.svg")
 const ICON_KEYS := ["action", "bonus", "free", "movement", "reaction", "sword", "help", "shove", "prone", "stealth", "eye", "object", "speech", "target", "shield", "book", "spark", "flag", "skill", "hand"]
 const EXTRA_ICON_KEYS := ["dash", "disengage", "dodge", "hide", "search", "ready", "misty_step", "concentration", "sleight_of_hand", "athletics", "potion", "wild_shape", "arcana", "fire", "healing", "mark_enemy"]
+const CONTROL_ICONS: Texture2D = preload("res://vtt/icons/action_controls.svg")
+const CONTROL_ICON_KEYS := ["dice", "settings", "alternate"]
 const GOLD := Color("edbd77")
 const INK := Color("f5eee5")
 const MUTED := Color("c7bdb1")
 
 const GROUPS := ["Azione", "Azione bonus", "Azione gratuita", "Movimento", "Reazione"]
-# SRD 5.1 (2014) and SRD 5.2 (2024): edition-specific names are deliberate.
-const BASIC_2014 := [
- ["Attaccare", 0, "Attacco", "Effettua un attacco in mischia o a distanza."],
- ["Lanciare un incantesimo", 0, "Generale", "Il tempo di lancio dell'incantesimo determina l'azione richiesta."],
- ["Scattare", 0, "Generale", "Ottieni movimento aggiuntivo pari alla tua velocità."],
- ["Disimpegnarsi", 0, "Generale", "Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
- ["Schivare", 0, "Generale", "Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare", 0, "Generale", "Seleziona un token bersaglio e applica solo la condizione Aiutato, senza altri effetti automatici."],
- ["Spingere", 0, "Attacco", "2014: sostituisce un attacco. Atletica contrapposta a Atletica/Acrobazia del bersaglio, che sceglie; sposta di 5 ft dopo il successo."],
- ["Buttare prono", 0, "Attacco", "2014: sostituisce un attacco. Atletica contrapposta a Atletica/Acrobazia del bersaglio; al successo applica Prono."],
- ["Nascondersi", 0, "Prova caratteristica", "Effettua una prova di Destrezza (Furtività)."],
- ["Cercare", 0, "Prova caratteristica", "Effettua una prova di Saggezza (Percezione) o Intelligenza (Indagare)."],
- ["Preparare", 0, "Generale", "Definisci una condizione e usa la reazione quando si verifica."],
- ["Usare un oggetto", 0, "Generale", "Utilizza un oggetto che richiede un'azione."]
-]
-const BASIC_2024 := [
- ["Attaccare", 0, "Attacco", "Effettua un attacco con un'arma o un colpo senz'armi."],
- ["Magia", 0, "Generale", "Lancia un incantesimo o attiva un oggetto o privilegio magico."],
- ["Scattare", 0, "Generale", "Ottieni movimento aggiuntivo pari alla tua velocità."],
- ["Disimpegnarsi", 0, "Generale", "Il tuo movimento non provoca attacchi di opportunità per il resto del turno."],
- ["Schivare", 0, "Generale", "Gli attacchi contro di te hanno svantaggio e i TS Destrezza vantaggio, se applicabile."],
- ["Aiutare", 0, "Generale", "Seleziona un token bersaglio e applica solo la condizione Aiutato, senza altri effetti automatici."],
- ["Spingere", 0, "Attacco", "2024: colpo senz'armi invece di un attacco; il bersaglio sceglie TS Forza o Destrezza contro CD 8 + competenza + mod. Forza. Fallimento: 5 ft."],
- ["Buttare prono", 0, "Attacco", "2024: colpo senz'armi invece di un attacco; il bersaglio sceglie TS Forza o Destrezza contro CD 8 + competenza + mod. Forza. Fallimento: Prono."],
- ["Nascondersi", 0, "Prova caratteristica", "Effettua una prova di Destrezza (Furtività)."],
- ["Cercare", 0, "Prova caratteristica", "Effettua una prova di Saggezza (Intuizione, Medicina, Percezione o Sopravvivenza)."],
- ["Studiare", 0, "Prova caratteristica", "Effettua una prova di Intelligenza (Arcano, Storia, Indagare, Natura o Religione)."],
- ["Influenzare", 0, "Prova caratteristica", "Effettua una prova sociale per influenzare una creatura."],
- ["Preparare", 0, "Generale", "Prepara una risposta da eseguire con la reazione."],
- ["Utilizzare", 0, "Generale", "Usa un oggetto non magico."]
-]
-const COMMON := [
- ["Interagire con un oggetto", 2, "Generale", "Una semplice interazione durante il movimento o un'azione."],
- ["Parlare brevemente", 2, "Generale", "Pronuncia poche parole quando puoi comunicare."],
- ["Muoversi", 3, "Movimento", "Usa il movimento disponibile, eventualmente suddividendolo fra le azioni."],
- ["Movimento furtivo", 3, "Movimento", "Muoviti cercando di restare nascosto. Per nasconderti effettua una prova di Destrezza (Furtività) usando Nascondersi; nel 2024 è una prova CD 15. Il movimento usa la normale velocità: non concede automaticamente la condizione Nascosto."],
- ["Attacco di opportunità", 4, "Attacco", "Attacco in mischia come reazione quando una creatura lascia la tua portata."]
-]
-
 var _sections: Array[VBoxContainer] = []
 var _panels: Array[PanelContainer] = []
 var _section_counts: Array[Label] = []
@@ -102,6 +70,10 @@ var _layout_one: VBoxContainer
 var _skill_list: VBoxContainer
 var _skill_buttons: GridContainer
 var _record: Dictionary = {}
+var _enabled_variants: Array = []
+var _options_path := OPTIONS_PATH
+var _settings_dialog: AcceptDialog
+var _expanded_actions: Dictionary = {}
 var _trackers: Dictionary = {}
 
 static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]:
@@ -121,6 +93,24 @@ static func best_skills(record: Dictionary, count: int = 4) -> Array[Dictionary]
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 8)
+	var settings := ConfigFile.new()
+	if settings.load(_options_path) == OK:
+		_enabled_variants = settings.get_value("2014", "variants", [])
+	var toolbar := HBoxContainer.new()
+	add_child(toolbar)
+	var caption := Label.new()
+	caption.text = "Azioni e opzioni"
+	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	caption.add_theme_color_override("font_color", GOLD)
+	toolbar.add_child(caption)
+	var options := _action_button("", "Regole varianti 2014")
+	options.name = "VariantSettings"
+	options.icon = _icon_texture("settings")
+	options.expand_icon = true
+	options.add_theme_constant_override("icon_max_width", 23)
+	options.custom_minimum_size = Vector2(34, 34)
+	options.pressed.connect(_open_variant_settings)
+	toolbar.add_child(options)
 	_layout_two = HBoxContainer.new()
 	_layout_two.add_theme_constant_override("separation", 12)
 	_layout_two.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -173,18 +163,6 @@ func _ready() -> void:
 		count.add_theme_stylebox_override("normal", _surface(Color("2c2724"), Color("785a39"), 6, 4))
 		header.add_child(count)
 		_section_counts.append(count)
-		var rule_hint := Label.new()
-		rule_hint.text = [
-			"Attacchi, incantesimi e prove di abilità",
-			"Capacità che usano un'azione bonus",
-			"Interazioni senza costo in azioni",
-			"Usa la velocità disponibile",
-			"Azioni in risposta a eventi"
-		][index]
-		rule_hint.add_theme_font_size_override("font_size", 12)
-		rule_hint.add_theme_color_override("font_color", MUTED)
-		rule_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		header_text.add_child(rule_hint)
 		_layout_one.add_child(panel)
 		_sections.append(section)
 		_panels.append(panel)
@@ -208,6 +186,78 @@ func _ready() -> void:
 	_sections[0].add_child(_skill_list)
 	resized.connect(_arrange_columns)
 	call_deferred("_arrange_columns")
+
+func _set_variant_enabled(id: String, enabled: bool) -> Error:
+	var next := _enabled_variants.duplicate()
+	if enabled and id not in next: next.append(id)
+	if not enabled: next.erase(id)
+	var config := ConfigFile.new()
+	config.set_value("2014", "variants", next)
+	var error := config.save(_options_path)
+	if error != OK: return error
+	_enabled_variants = next
+	load_record(_record)
+	return OK
+
+func _open_variant_settings() -> void:
+	if is_instance_valid(_settings_dialog):
+		_settings_dialog.queue_free()
+	_settings_dialog = AcceptDialog.new()
+	_settings_dialog.title = "Regole varianti · 2014"
+	_settings_dialog.get_ok_button().text = "Chiudi"
+	var body := VBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 8)
+	_settings_dialog.add_child(body)
+	var hint := Label.new()
+	hint.text = "Le varianti di combattimento aggiungono le relative opzioni alla scheda. Le altre sono promemoria per il tavolo, senza effetti automatici. Le descrizioni originali si aprono dalla fonte."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 13)
+	body.add_child(hint)
+	var filter := LineEdit.new()
+	filter.placeholder_text = "Cerca una variante, fonte o opzione…"
+	body.add_child(filter)
+	var status := Label.new()
+	status.hide()
+	body.add_child(status)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 6)
+	scroll.add_child(list)
+	for rule: Dictionary in _catalog().get("variants", []):
+		var row := HBoxContainer.new()
+		var id := String(rule["id"])
+		row.set_meta("variant_id", id)
+		row.set_meta("search", (String(rule["name"]) + " " + String(rule["source"]) + " " + String(rule.get("category", ""))).to_lower())
+		list.add_child(row)
+		var check := CheckButton.new()
+		check.text = "%s · %s, p. %d" % [rule["name"], rule["source"], int(rule.get("page", 0))]
+		check.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		check.button_pressed = id in _enabled_variants
+		check.toggled.connect(func(enabled: bool) -> void:
+			var error := _set_variant_enabled(id, enabled)
+			if error != OK:
+				check.set_pressed_no_signal(id in _enabled_variants)
+				status.text = "Impossibile salvare la scelta: " + error_string(error)
+				status.show())
+		row.add_child(check)
+		var source := _action_button("", "Apri la fonte 5etools")
+		source.icon = _icon_texture("book")
+		source.expand_icon = true
+		source.add_theme_constant_override("icon_max_width", 22)
+		source.custom_minimum_size = Vector2(34, 34)
+		source.pressed.connect(func() -> void: OS.shell_open(String(rule["source_url"])))
+		row.add_child(source)
+	filter.text_changed.connect(func(query: String) -> void:
+		for row: Control in list.get_children():
+			row.visible = query.strip_edges().to_lower() in String(row.get_meta("search", "")))
+	add_child(_settings_dialog)
+	DialogLayout.popup(_settings_dialog, Vector2i(780, 580), 0.92)
 
 func _arrange_columns() -> void:
 	if _panels.size() != GROUPS.size() or _layout_one == null:
@@ -293,39 +343,102 @@ static func _tracker_label(tracker_id: String, trackers: Dictionary) -> String:
 		return String((trackers[tracker_id] as Dictionary).get("name", tracker_id))
 	return tracker_id
 
-static func entries(record: Dictionary) -> Array[Dictionary]:
-	var results: Array[Dictionary] = []
-	for row: Array in (BASIC_2024 if String(record.get("rules_version", "2014")) == "2024" else BASIC_2014):
-		var entry := _entry(String(row[0]), int(row[1]), String(row[2]), String(row[3]))
-		match String(row[0]):
-			"Aiutare": entry["action_id"] = "help"
-			"Spingere": entry["action_id"] = "shove"
-			"Buttare prono": entry["action_id"] = "prone"
-		results.append(entry)
-	for row: Array in COMMON:
-		results.append(_entry(String(row[0]), int(row[1]), String(row[2]), String(row[3])))
-	# Curated 5etools supplements are driven by a versioned JSON file. The
-	# same file ships with both native builds and the offline/browser client.
-	var selected_edition := "2024" if String(record.get("rules_version", "2014")) == "2024" else "2014"
-	for supplement: Dictionary in _general_supplements():
-		if String(supplement.get("edition", "")) != selected_edition:
+static func _catalog() -> Dictionary:
+	if _rules_cache.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RULES_PATH))
+		if parsed is Dictionary and int(parsed.get("version", 0)) == 1:
+			_rules_cache = parsed
+	return _rules_cache
+
+static func _source_text(text: String) -> String:
+	var tags := RegEx.new()
+	tags.compile("\\{@[^ {}]+ ([^{}|]+)(?:\\|[^{}]*)?\\}")
+	for pass_index: int in range(8):
+		var next := tags.sub(text, "$1", true)
+		if next == text: break
+		text = next
+	return text
+
+static func _feature_text(name: String, collected: Array[Dictionary], book: String = "PHB") -> String:
+	for feature: Dictionary in collected:
+		if not bool(feature.get("inactive", false)) and String(feature.get("name", "")).nocasecmp_to(name) == 0:
+			var text := _source_text(_description(feature.get("entries", "")))
+			if not text.is_empty():
+				return text + "\n\n" + String(feature.get("origin", "")) + " · " + String(feature.get("book", ""))
+	# Exact source/feature lookup also works for minimal legacy class records
+	# whose subclass source metadata was not persisted by older versions.
+	for category: String in ["class_features", "subclass_features"]:
+		for feature: Dictionary in PlayerCatalog.entries(category):
+			if String(feature.get("name", "")).nocasecmp_to(name) != 0 or String(feature.get("source", feature.get("class_source", ""))) != book: continue
+			var detail := PlayerCatalog.detailed_entry(category, feature)
+			var text := _source_text(PlayerCatalog.description_text(category, detail))
+			if not text.is_empty(): return text + "\n\n" + name + " · " + book
+	return ""
+
+static func _base_entries(record: Dictionary, enabled: Array) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var edition := "2024" if String(record.get("rules_version", "2014")) == "2024" else "2014"
+	for raw: Dictionary in _catalog().get("actions", []):
+		if raw.get("edition") != edition: continue
+		var variant := String(raw.get("variant_id", ""))
+		if not variant.is_empty() and variant not in enabled and not (variant == "healing_surges_dmg" and "healing_surges_bonus_dmg" in enabled): continue
+		var times: Array = raw.get("timings", ["action"]).duplicate()
+		if raw.get("id") == "healing_surge" and "healing_surges_bonus_dmg" in enabled:
+			times = ["bonus"]
+		var dual := "action" in times and "bonus" in times
+		for when: Variant in times:
+			if dual and when != "bonus": continue
+			var row := _entry(String(raw["name"]), _timing(when), "Attacco" if not String(raw.get("parent_action", "")).is_empty() else "Generale", String(raw.get("description", "")))
+			row.merge({"id": raw["id"], "catalog_id": raw["id"], "action_id": raw.get("action_id", ""),
+				"skill_ids": raw.get("skills", []), "parent_action": raw.get("parent_action", ""), "alternate_action": dual,
+				"source_label": "%s, p. %d" % [raw.get("source", ""), int(raw.get("page", 0))],
+				"source_url": raw.get("source_url", ""), "optional": not variant.is_empty(), "origin": "general"}, true)
+			result.append(row)
+	return result
+
+static func _normalize_alternatives(rows: Array[Dictionary]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for original: Dictionary in rows:
+		var row := original.duplicate(true)
+		var id := String(row.get("id", ""))
+		if id.is_empty():
+			result.append(row)
 			continue
-		var description := String(supplement.get("description", ""))
-		description += "\nFonte: %s, p. %d" % [String(supplement.get("source", "")), int(supplement.get("page", 0))]
-		if bool(supplement.get("optional", false)):
-			description += "\nRegola opzionale: richiede l'approvazione del DM."
-		for when: Variant in supplement.get("timings", []):
-			var rule := _entry(String(supplement.get("name", "")), _timing(when),
-				"Regola opzionale" if bool(supplement.get("optional", false)) else "Generale",
-				description, String(supplement.get("tracker", "")))
-			rule["skill_ids"] = supplement.get("skills", [])
-			rule["action_id"] = String(supplement.get("action_id", ""))
-			rule["catalog_id"] = String(supplement.get("id", ""))
-			rule["optional"] = bool(supplement.get("optional", false))
-			results.append(rule)
-	if record.is_empty():
-		return results
+		# Separate resources/payments are independent choices, not duplicate timings.
+		var key := id + ":" + String(row.get("tracker_id", ""))
+		if not seen.has(key):
+			seen[key] = result.size()
+			result.append(row)
+			continue
+		var index := int(seen[key])
+		var previous: Dictionary = result[index]
+		var a := int(previous.get("time", 0))
+		var b := int(row.get("time", 0))
+		if a == b:
+			continue
+		if a in [0, 1] and b in [0, 1]:
+			var preferred: Dictionary = row if b == 1 else previous
+			var standard: Dictionary = previous if a == 0 else row
+			preferred["alternate_action"] = true
+			if standard.get("origin", "personal") == "general":
+				preferred["name"] = standard.get("name", preferred["name"])
+			preferred["origin"] = standard.get("origin", "personal")
+			preferred["source_label"] = standard.get("source_label", preferred.get("source_label", ""))
+			preferred["source_url"] = standard.get("source_url", preferred.get("source_url", ""))
+			if preferred.get("detail", "") != standard.get("detail", ""):
+				preferred["detail"] = String(standard.get("detail", "")) + "\n\n" + String(preferred.get("detail", ""))
+			result[index] = preferred
+		else:
+			# Action vs reaction has different triggers; retain both presentations.
+			result.append(row)
+	return result
+
+static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[Dictionary]:
+	var results := _base_entries(record, enabled_variants)
+	if record.is_empty(): return results
 	var personal_start := results.size()
+	var collected := Features.collect_features(record)
 	var tracker_list: Array[Dictionary] = Trackers.for_creature(record)
 	var trackers: Dictionary = {}
 	for resource: Dictionary in tracker_list:
@@ -333,9 +446,13 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	var seen: Dictionary = {}
 	# Variant activations never create an extra tracker or spend a use here.
 	for option: Dictionary in FeatureRules.action_entries(record, tracker_list):
+		var source_detail := _feature_text(String(option.get("feature", "")), collected, "XPHB" if String(record.get("rules_version", "2014")) == "2024" else "PHB")
 		var rule := _entry(String(option.get("name", "")), _timing(option.get("activation", "action")),
-			"Capacità", String(option.get("detail", "")), String(option.get("tracker", "")), String(option.get("tracker_id", "")))
+			"Capacità", source_detail, String(option.get("tracker", "")), String(option.get("tracker_id", "")))
 		rule["rule_id"] = String(option.get("rule_id", ""))
+		rule["id"] = String(option.get("action_id", ""))
+		# Combat Wild Shape preserves the normal action option from Wild Shape.
+		rule["alternate_action"] = rule["id"] == "wild_shape" and rule["time"] == 1 and String(record.get("rules_version", "2014")) == "2014"
 		results.append(rule)
 	# These are the same equipped attacks / monster attacks as the combat pane.
 	for attack: Dictionary in Attacks.definitions(record):
@@ -352,7 +469,10 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		var range_feet := int(attack.get("range_feet", 5))
 		detail += "\nPortata/gittata: %d ft" % range_feet
 		var title := String(attack.get("name", "Attacco"))
-		results.append(_entry(title, time, "Attacco", detail))
+		var attack_row := _entry(title, time, "Attacco", _source_text(detail))
+		attack_row["attack_id"] = id
+		attack_row["parent_action"] = "two_weapon" if time == 1 else "attack" if time == 0 else ""
+		results.append(attack_row)
 	# A monster's actions without attack rolls (breath weapons, special abilities)
 	# still belong here; keep their structured stat-block section.
 	var stat: Variant = record.get("stat_block", {})
@@ -374,7 +494,6 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	# Only explicitly structured activations are classified. Passive features
 	# remain in Tratti rather than being guessed from descriptive prose.
 	var automatic: Dictionary = {}
-	var collected: Array[Dictionary] = Features.collect_features(record)
 	for feature: Dictionary in collected:
 		if bool(feature.get("inactive", false)):
 			continue
@@ -395,7 +514,7 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 					tracker_id = resource_id
 					break
 		results.append(_entry(String(feature.get("name", "Capacità")), _timing(activation),
-			String(feature.get("action_kind", "Capacità")), _description(feature.get("entries", "")),
+			String(feature.get("action_kind", "Capacità")), _source_text(_description(feature.get("entries", ""))),
 			_tracker_label(tracker_id, trackers), tracker_id))
 	# Small hand-checked structured supplements for class features whose 5etools
 	# entries contain descriptions but no typed activation. Exact book/class/
@@ -432,10 +551,12 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 				continue
 			tracker_id = resource_id
 			break
-		results.append(_entry(String(rule.get("display_name", rule.get("feature_name", ""))),
+		var supplement_entry := _entry(String(rule.get("display_name", rule.get("feature_name", ""))),
 			_timing(rule.get("activation", "action")), "Capacità",
-			String(rule.get("description", "")) + "\n" + _description(matched_feature.get("entries", "")),
-			_tracker_label(tracker_id, trackers) if not tracker_id.is_empty() else resource_label, tracker_id))
+			_source_text(_description(matched_feature.get("entries", ""))),
+			_tracker_label(tracker_id, trackers) if not tracker_id.is_empty() else resource_label, tracker_id)
+		if String(rule.get("feature_name", "")) == "Wild Shape": supplement_entry["id"] = "wild_shape"
+		results.append(supplement_entry)
 	for grant in record.get("action_grants", []):
 		if not grant is Dictionary or bool(grant.get("disabled", false)):
 			continue
@@ -447,40 +568,15 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 			_timing(grant.get("action_type", grant.get("activation", "action"))),
 			String(grant.get("type", "Capacità")), _description(grant.get("description", grant.get("entries", ""))),
 			_tracker_label(tracker_id, trackers), tracker_id))
-	# Regular selections are distinct from origin-granted casts: the same spell
-	# may appear twice if it can consume two different resource pools.
-	var regular_seen: Dictionary = {}
-	var selected: Array = []
-	for key: String in ["prepared_spells", "spells"]:
-		var raw_selection: Variant = record.get(key, [])
-		if raw_selection is Array:
-			selected.append_array(raw_selection)
-	for raw: Variant in selected:
-		var id := ""
-		if raw is String:
-			id = String(raw)
-		elif raw is Dictionary:
-			id = String(raw.get("id", ""))
-		if id.is_empty() or regular_seen.has(id):
-			continue
-		regular_seen[id] = true
-		var spell: Dictionary = Spells.catalog_spell(id)
-		if spell.is_empty() and raw is Dictionary:
-			spell = raw
-		if spell.is_empty():
-			continue
-		var time: Variant = spell.get("time", spell.get("casting_time", "action"))
-		var level := int(spell.get("level", 0))
-		var tracker := "Nessuno" if level == 0 else "Slot incantesimo"
-		var detail := "Livello: %d\n" % level + _description(spell.get("entries", spell.get("description", "")))
-		var cast_entry := _entry(String(spell.get("name", id)), _timing(time), "Incantesimo", detail, tracker)
-		cast_entry["spell_id"] = id
-		results.append(cast_entry)
+		var activation: Variant = grant.get("action_type", grant.get("activation", "action"))
+		if activation is Array and "action" in activation and "bonus" in activation:
+			results.back()["time"] = 1
+			results.back()["alternate_action"] = true
 	for grant: Dictionary in OriginSpells.all_grants(record):
 		if bool(grant.get("disabled", false)):
 			continue
 		var spell: Dictionary = Spells.catalog_spell(String(grant.get("spell_id", "")))
-		if spell.is_empty():
+		if spell.is_empty() or not bool(spell.get("internal_grant", false)):
 			continue
 		var tracker_id := String(grant.get("tracker_id", ""))
 		var mode := String(grant.get("payment_mode", "free"))
@@ -492,13 +588,16 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 		var grant_entry := _entry(String(spell.get("name", grant.get("spell_id", ""))),
 			_timing(spell.get("time", spell.get("casting_time", "action"))), kind,
 			_description(spell.get("entries", spell.get("description", ""))), tracker, tracker_id if mode == "tracker" else "")
+		if String(spell.get("name", "")).to_lower() in ["wild shape", "forma selvatica"]:
+			grant_entry["id"] = "wild_shape"
+			grant_entry["detail"] = _feature_text("Wild Shape", collected)
 		grant_entry["spell_id"] = String(grant.get("spell_id", ""))
 		grant_entry["grant_id"] = String(grant.get("id", ""))
 		results.append(grant_entry)
 	for index: int in range(results.size()):
 		results[index]["origin"] = "personal" if index >= personal_start else "general"
 		results[index]["position"] = index
-	return results
+	return _normalize_alternatives(results.filter(func(row: Dictionary) -> bool: return String(row.get("kind", "")) != "Incantesimo"))
 
 func _surface(background: Color, border: Color, radius: int = 7, padding: int = 8) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -524,7 +623,12 @@ func _action_style() -> StyleBoxFlat:
 
 func _icon_texture(key: String) -> AtlasTexture:
 	var texture := AtlasTexture.new()
-	var index := ICON_KEYS.find(key)
+	var index := CONTROL_ICON_KEYS.find(key)
+	if index >= 0:
+		texture.atlas = CONTROL_ICONS
+		texture.region = Rect2(index * 64, 0, 64, 64)
+		return texture
+	index = ICON_KEYS.find(key)
 	texture.atlas = ACTION_ICONS
 	if index < 0:
 		index = EXTRA_ICON_KEYS.find(key)
@@ -597,32 +701,38 @@ func _action_button(text: String, help: String = "") -> Button:
 	return button
 
 func _show_entry(entry: Dictionary) -> void:
-	var action_id := String(entry.get("action_id", ""))
-	if not action_id.is_empty():
-		basic_action_requested.emit(action_id)
-		return
-	if String(entry.get("name", "")) == "Lanciare un incantesimo":
-		open_spellbook_requested.emit()
-		return
 	var dialog := AcceptDialog.new()
 	dialog.title = String(entry.get("name", "Capacità"))
+	var body := VBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dialog.add_child(body)
 	var description := RichTextLabel.new()
-	description.text = String(entry.get("detail", "Nessuna descrizione disponibile."))
+	description.text = _source_text(String(entry.get("detail", "")))
+	if description.text.is_empty(): description.text = "Testo del privilegio non disponibile nel catalogo locale."
+	if not String(entry.get("source_label", "")).is_empty():
+		description.text += "\n\nFonte: " + String(entry["source_label"])
 	description.selection_enabled = true
 	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dialog.add_child(description)
+	body.add_child(description)
+	var source_url := String(entry.get("source_url", ""))
+	if not source_url.is_empty():
+		var source := LinkButton.new()
+		source.text = "Apri il testo originale su 5etools"
+		source.pressed.connect(func() -> void: OS.shell_open(source_url))
+		body.add_child(source)
 	add_child(dialog)
 	DialogLayout.popup(dialog, Vector2i(720, 360), 0.85)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.close_requested.connect(dialog.queue_free)
 
-func _add_entry(entry: Dictionary) -> void:
+func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	var title := String(entry.get("name", ""))
 	var detail := String(entry.get("detail", ""))
-	var section: VBoxContainer = _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
+	var section: VBoxContainer = target if target != null else _sections[clampi(int(entry.get("time", 0)), 0, GROUPS.size() - 1)]
 	var card := PanelContainer.new()
 	card.set_meta("action_generated", true)
+	card.set_meta("action_entry", entry)
 	card.add_theme_stylebox_override("panel", _action_style())
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	section.add_child(card)
@@ -654,7 +764,7 @@ func _add_entry(entry: Dictionary) -> void:
 	info.add_child(heading)
 	if not detail.is_empty():
 		var brief := Label.new()
-		brief.text = detail.get_slice("\n", 0).strip_edges()
+		brief.text = _source_text(detail).get_slice("\n", 0).strip_edges()
 		if brief.text.length() > 82:
 			brief.text = brief.text.substr(0, 79) + "…"
 		brief.max_lines_visible = 1
@@ -675,14 +785,10 @@ func _add_entry(entry: Dictionary) -> void:
 	controls.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(controls)
 	if not spell_id.is_empty():
-		var cast := _action_button("Lancia · slot" if tracker_name == "Slot incantesimo" else "Lancia",
+		var cast := _action_button("Usa" if String(entry.get("kind", "")) == "Capacità" else "Lancia",
 			"Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")
 		cast.pressed.connect(func() -> void: cast_spell_requested.emit(spell_id, grant_id))
 		controls.add_child(cast)
-	elif title == "Lanciare un incantesimo" or title == "Magia":
-		var open := _action_button("Incantesimi", "Apri la scheda Poteri per scegliere cosa lanciare")
-		open.pressed.connect(func() -> void: open_spellbook_requested.emit())
-		controls.add_child(open)
 	if not tracker_id.is_empty() and _trackers.has(tracker_id):
 		var tracker: Dictionary = _trackers[tracker_id]
 		var base: int = maxi(0, int(tracker.get("max", 0)))
@@ -725,6 +831,11 @@ func _add_entry(entry: Dictionary) -> void:
 		tag.add_theme_font_size_override("font_size", 11)
 		tag.add_theme_color_override("font_color", Color(0.94, 0.72, 0.45))
 		controls.add_child(tag)
+	if bool(entry.get("alternate_action", false)):
+		var alternate := _icon("alternate", 24)
+		alternate.tooltip_text = "Disponibile anche come azione"
+		alternate.mouse_filter = Control.MOUSE_FILTER_STOP
+		row.add_child(alternate)
 	var details := _action_button("›", "Mostra dettagli · " + title)
 	details.name = "ActionDetails"
 	details.add_theme_font_size_override("font_size", 22)
@@ -733,6 +844,24 @@ func _add_entry(entry: Dictionary) -> void:
 	details.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	details.pressed.connect(_show_entry.bind(entry))
 	row.add_child(details)
+	var tactical := String(entry.get("action_id", ""))
+	if tactical in ["help", "shove", "prone", "grapple"]:
+		var apply := _action_button("", "Scegli bersaglio · " + title)
+		apply.icon = _icon_texture("target")
+		apply.expand_icon = true
+		apply.add_theme_constant_override("icon_max_width", 20)
+		apply.custom_minimum_size = Vector2(30, 30)
+		apply.pressed.connect(func() -> void: basic_action_requested.emit(tactical))
+		controls.add_child(apply)
+	var attack_id := String(entry.get("attack_id", ""))
+	if not attack_id.is_empty():
+		var roll := _action_button("", "Tira per colpire · " + title)
+		roll.icon = _icon_texture("dice")
+		roll.expand_icon = true
+		roll.add_theme_constant_override("icon_max_width", 22)
+		roll.custom_minimum_size = Vector2(32, 32)
+		roll.pressed.connect(func() -> void: attack_requested.emit(attack_id, false))
+		controls.add_child(roll)
 	var checks: Array = (entry.get("skill_ids", []) as Array).duplicate()
 	if title in ["Nascondersi", "Movimento furtivo"]:
 		checks.append("stealth")
@@ -751,9 +880,30 @@ func _add_entry(entry: Dictionary) -> void:
 				if String(definition.get("id", "")) == skill_id:
 					label = String(definition.get("label", skill_id))
 					break
-			var check := _action_button("↳ Tira " + label)
+			var check := _action_button(label, "Tira " + label)
+			check.icon = _icon_texture("dice")
+			check.expand_icon = true
+			check.add_theme_constant_override("icon_max_width", 20)
 			check.pressed.connect(func() -> void: skill_requested.emit("skill:" + skill_id))
 			checks_row.add_child(check)
+
+	var children: Array = entry.get("children", [])
+	if not children.is_empty():
+		var nested := VBoxContainer.new()
+		nested.add_theme_constant_override("separation", 5)
+		var key := String(entry.get("id", ""))
+		var toggle := _action_button("Attacchi e manovre · %d" % children.size())
+		toggle.toggle_mode = true
+		toggle.button_pressed = bool(_expanded_actions.get(key, false))
+		nested.visible = toggle.button_pressed
+		toggle.toggled.connect(func(open: bool) -> void:
+			nested.visible = open
+			_expanded_actions[key] = open)
+		content.add_child(toggle)
+		content.add_child(nested)
+		for child: Dictionary in children:
+			_add_entry(child, nested)
+
 
 func refresh_top_skills(record: Dictionary) -> void:
 	if _skill_buttons == null:
@@ -775,13 +925,7 @@ func refresh_top_skills(record: Dictionary) -> void:
 		row.add_theme_constant_override("separation", 12)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(row)
-		var icon_key := {
-			"stealth": "stealth", "sleight of hand": "sleight_of_hand",
-			"insight": "eye", "perception": "eye", "investigation": "search",
-			"athletics": "athletics", "acrobatics": "bonus", "arcana": "arcana",
-			"medicine": "healing", "survival": "search", "nature": "wild_shape"
-		}.get(key, "skill")
-		row.add_child(_icon(icon_key, 26))
+		row.add_child(_icon("dice", 26))
 		var caption := Label.new()
 		caption.text = String(skill["label"])
 		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -850,7 +994,18 @@ func load_record(record: Dictionary) -> void:
 				section.remove_child(child)
 				child.queue_free()
 	var grouped: Array = [[], [], [], [], []]
-	for entry: Dictionary in entries(record):
+	var projected := entries(record, _enabled_variants)
+	var parents: Dictionary = {}
+	for entry: Dictionary in projected:
+		if entry.get("id", "") in ["attack", "two_weapon"]:
+			parents[String(entry["id"])] = entry
+	for entry: Dictionary in projected:
+		var parent := String(entry.get("parent_action", ""))
+		if parents.has(parent):
+			var children: Array = parents[parent].get("children", [])
+			children.append(entry)
+			parents[parent]["children"] = children
+			continue
 		grouped[clampi(int(entry.get("time", 0)), 0, 4)].append(entry)
 	for i: int in range(GROUPS.size()):
 		var section: VBoxContainer = _sections[i]

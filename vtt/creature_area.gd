@@ -949,6 +949,7 @@ func _build_ui() -> void:
 	_action_economy_ui = ActionEconomyTab.new()
 	actions_tab.add_child(_action_economy_ui)
 	_action_economy_ui.skill_requested.connect(_on_formula_roll_requested)
+	_action_economy_ui.attack_requested.connect(_roll_attack_from_sheet)
 	_action_economy_ui.basic_action_requested.connect(_on_basic_action_requested)
 	_action_economy_ui.tracker_change_requested.connect(_on_action_tracker_change)
 	_action_economy_ui.cast_spell_requested.connect(_on_action_cast_requested)

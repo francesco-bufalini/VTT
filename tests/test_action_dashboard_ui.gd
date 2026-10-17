@@ -17,6 +17,7 @@ func _find_button(root_node: Node, caption: String) -> Button:
 func run() -> void:
 	root.gui_embed_subwindows = true
 	var tab := Actions.new()
+	tab._options_path = "user://action_overview_test_%d.cfg" % Time.get_ticks_usec()
 	root.add_child(tab)
 	tab.size = Vector2(1250, 880)
 	var record: Dictionary = {
@@ -42,7 +43,14 @@ func run() -> void:
 	assert(help != null)
 	var details := help.get_parent().get_parent().get_node("ActionDetails") as Button
 	details.pressed.emit()
-	assert(basic == ["help"], "The new arrow must route the stable action ID")
+	assert(basic.is_empty(), "Description arrows must not execute tactical actions")
+	for child: Node in tab.get_children():
+		if child is AcceptDialog:
+			child.hide()
+			child.queue_free()
+	var target: Button = help.get_parent().get_parent().get_child(2).get_child(0)
+	target.pressed.emit()
+	assert(basic == ["help"], "Target control must route the stable action ID")
 	# Composite skill rows must still act as one button across their labels/icons.
 	var rolls: Array[String] = []
 	tab.skill_requested.connect(func(key: String) -> void: rolls.append(key))
@@ -59,12 +67,20 @@ func run() -> void:
 		actions.append([id, delta, maximum]))
 	minus.pressed.emit()
 	assert(actions == [["charge", 1, 3]], "Native action tracker uses stable resource ID")
-	var cast := _find_button(tab, "Lancia · slot")
-	assert(cast != null, "Class spells must offer slot casting, not a separate spell tracker")
-	var spells: Array = []
-	tab.cast_spell_requested.connect(func(id: String, grant: String) -> void: spells.append([id, grant]))
-	cast.pressed.emit()
-	assert(spells == [["spell_action_test", ""]])
+	assert(_find_button(tab, "Lancia · slot") == null and _find_button(tab, "Incantesimi") == null)
+	assert(_find_button(tab, "Raggio di prova") == null, "Actual spells stay outside the action overview")
+	var original := record.duplicate(true)
+	tab._open_variant_settings()
+	assert(tab._settings_dialog.find_children("*", "CheckButton", true, false).size() >= 70)
+	tab._settings_dialog.hide()
+	assert(tab._set_variant_enabled("disarm_dmg", true) == OK)
+	assert(record == original, "Choosing a variant must never edit the creature")
+	var saved := ConfigFile.new()
+	assert(saved.load(tab._options_path) == OK)
+	assert("disarm_dmg" in saved.get_value("2014", "variants", []))
+	var attack := _find_button(tab, "Attaccare")
+	var card: Control = attack.get_parent().get_parent().get_parent().get_parent()
+	assert(card.get_meta("action_entry")["children"].any(func(row: Dictionary) -> bool: return row.get("id") == "disarm"))
 	# Real desktop archives expose roughly 830 logical pixels after the sidebar.
 	tab.size.x = 820
 	tab.call("_arrange_columns")
@@ -87,6 +103,7 @@ func run() -> void:
 	var description: RichTextLabel = dialog.find_children("*", "RichTextLabel", true, false)[0]
 	assert(description.scroll_active and description.size.x > 100 and description.size.y > 100)
 	dialog.hide()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(tab._options_path))
 	tab.queue_free()
-	print("PASS: native action boxes, responsive layout, saved tracker signals and class spell casting")
+	print("PASS: native action groups, source descriptions, variant settings, dice routing and no spell launchers")
 	quit(0)

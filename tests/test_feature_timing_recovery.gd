@@ -32,9 +32,9 @@ func run() -> void:
 	assert(_time(_sheet("Druid", "2014", 2, "Circle of the Moon"), "Forma selvatica") == 1)
 	assert(_time(_sheet("Druid", "2024", 2), "Forma selvatica") == 1)
 	assert(_time(_sheet("Druid", "2014", 1), "Forma selvatica") == -1)
-	assert(_time(_sheet("Rogue", "2014", 2), "Scattare (azione scaltra)") == 1)
-	assert(_time(_sheet("Rogue", "2024", 3, "Thief"), "Utilizzare (Mani veloci)") == 1)
-	assert(_time(_sheet("Ranger", "2014", 14), "Nascondersi (Svanire)") == 1)
+	assert(_time(_sheet("Rogue", "2014", 2), "Scattare") == 1)
+	assert(_time(_sheet("Rogue", "2024", 3, "Thief"), "Utilizzare") == 1)
+	assert(_time(_sheet("Ranger", "2014", 14), "Nascondersi") == 1)
 
 	for kind: String in ["Barbarian", "Cleric", "Druid", "Fighter", "Paladin"]:
 		var level := 3
