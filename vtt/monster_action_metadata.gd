@@ -121,12 +121,33 @@ static func _unique_index(stat: Dictionary, section: String, wanted: String) -> 
 	return index
 
 
+static func _source_revision(stat: Dictionary) -> int:
+	# The revision ignores derived vtt_* fields; edits to actions or source
+	# invalidate the cache without imposing regex work on every sheet update.
+	var pieces: PackedStringArray = [
+		String(stat.get("source", "")),
+		String(stat.get("name", "")),
+		str(stat.get("legendaryActions", ""))
+	]
+	for section: String in SECTIONS:
+		var raw: Variant = stat.get(section, [])
+		if not raw is Array:
+			continue
+		for value: Variant in raw:
+			if value is Dictionary:
+				pieces.append(section + "|" + String((value as Dictionary).get("name", ""))
+					+ "|" + JSON.stringify((value as Dictionary).get("entries", [])))
+	return "||".join(pieces).hash()
+
+
 static func prepare(stat_block: Dictionary) -> Dictionary:
-	# Idempotent for records already converted; legacy imports are converted
-	# when constructed/loaded and persist the typed results in stat_block.
-	if int(stat_block.get("vtt_action_metadata_version", 0)) == 1:
-		return stat_block
 	_load()
+	var source_revision: int = _source_revision(stat_block)
+	var override_revision: int = JSON.stringify(_overrides).hash()
+	if (int(stat_block.get("vtt_action_metadata_version", 0)) == 1
+		and int(stat_block.get("vtt_action_source_revision", -1)) == source_revision
+		and int(stat_block.get("vtt_action_override_revision", -1)) == override_revision):
+		return stat_block
 	var stat: Dictionary = stat_block.duplicate(true)
 	for section: String in SECTIONS:
 		var raw: Variant = stat.get(section, [])
@@ -137,6 +158,10 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 			if not rows[index] is Dictionary:
 				continue
 			var action: Dictionary = rows[index]
+			# Never reuse metadata after its source action changed. Re-evaluate
+			# the new formal tags and then apply the curated override.
+			action.erase("vtt_attack")
+			action.erase("vtt_resource")
 			var name: String = String(action.get("name", ""))
 			var generated: Dictionary = parse_attack(action)
 			var resource: Dictionary = parse_recharge(name)
@@ -192,4 +217,6 @@ static func prepare(stat_block: Dictionary) -> Dictionary:
 		rows[index] = action
 		stat[section] = rows
 	stat["vtt_action_metadata_version"] = 1
+	stat["vtt_action_source_revision"] = source_revision
+	stat["vtt_action_override_revision"] = override_revision
 	return stat
