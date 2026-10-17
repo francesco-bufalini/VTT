@@ -60,10 +60,30 @@ func run() -> void:
 	var typed_actions: Array[Dictionary] = Actions.entries(typed)
 	assert(_contains(typed_actions, "Scatto speciale", 1))
 	assert(_contains(typed_actions, "Risposta", 4))
+	var shared_action_position := -1
+	var personal_action_position := -1
+	for index: int in range(typed_actions.size()):
+		var entry: Dictionary = typed_actions[index]
+		if String(entry.get("name", "")) == "Attaccare":
+			shared_action_position = index
+			assert(String(entry.get("origin", "")) == "general")
+		if String(entry.get("name", "")) == "Scatto speciale":
+			personal_action_position = index
+			assert(String(entry.get("origin", "")) == "personal")
+	assert(shared_action_position >= 0 and personal_action_position > shared_action_position)
 	for entry: Dictionary in typed_actions:
 		if entry.get("name", "") == "Scatto speciale":
 			assert(entry.get("tracker", "") == "Cariche")
-	print("PASS: native action economy SRD, monsters and structured trackers")
+			assert(String(entry.get("origin", "")) == "personal")
+	var featured: Dictionary = {}
+	for entry: Dictionary in old:
+		if String(entry.get("name", "")) == "Disarmare":
+			featured = entry
+			break
+	assert(featured.get("optional", false) == true)
+	assert(featured.get("origin", "") == "general")
+	assert(Actions.GROUPS[0] == "Azione")
+	print("PASS: native actions ordered general then personal; tracker labels and skills inside Action")
 	quit(0)
 
 func _contains(rows: Array[Dictionary], name: String, timing: int) -> bool:
