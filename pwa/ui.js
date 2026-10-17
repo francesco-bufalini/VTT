@@ -26,7 +26,7 @@ const sectionMenu = document.querySelector("#section-menu");
 const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
-  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","dead"];
+  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
