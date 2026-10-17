@@ -239,7 +239,7 @@ test('all 98 generated golden icons are shared, discoverable and cached offline'
    const svg=readFileSync(new URL('../icons/gold_generated/'+group.name,import.meta.url),'utf8');
    assert(svg.startsWith('<svg ')&&svg.includes('</svg>'));
    assert(svg.includes('linearGradient id="gold"')&&svg.includes('linearGradient id="rose"'));
-   assert.equal((svg.match(/<g transform="translate\\(/g)||[]).length,group.count);
+   assert.equal(svg.split('<g transform="translate(').length-1,group.count);
    assert(css.includes(path),'CSS references missing image '+path);
    assert(js.includes('vtt-action-glyph--pack-'));
    assert(worker.includes('"'+path+'"'),'PWA offline shell must cache '+path);
