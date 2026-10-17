@@ -25,7 +25,9 @@ static func surface(background: Color, border: Color, radius: int = 7, padding: 
 	style.anti_aliasing = true
 	return style
 
-static func icon(key: String) -> AtlasTexture:
+static func icon(key: String) -> Texture2D:
+	if key.begins_with("info_"):
+		return load("res://assets/creature_info/" + key.trim_prefix("info_") + ".svg") as Texture2D
 	var index := GENERATED_ICON_KEYS.find(key)
 	if index < 0: index = GENERATED_ICON_KEYS.find("information")
 	var texture := AtlasTexture.new()

@@ -61,13 +61,13 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.83, 0.64, 0.35, 1)
-shadow_color = Color(0, 0, 0, 0.3)
-shadow_size = 4
-shadow_offset = Vector2(0, 2)
 corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
 content_margin_left = 9.0
@@ -80,13 +80,12 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.91, 0.72, 0.39, 1)
-shadow_color = Color(0, 0, 0, 0.12)
-shadow_size = 1
-shadow_offset = Vector2(0, 0)
 corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.12)
+shadow_size = 1
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
 content_margin_left = 9.0
@@ -99,13 +98,13 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.54, 0.39, 0.25, 0.98)
-shadow_color = Color(0, 0, 0, 0.22)
-shadow_size = 2
-shadow_offset = Vector2(0, 1)
 corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.22)
+shadow_size = 2
+shadow_offset = Vector2(0, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scroll_grabber"]
 content_margin_left = 0.0
@@ -274,26 +273,7 @@ corner_radius_bottom_left = 6
 font_names = PackedStringArray("Segoe UI", "Noto Sans", "DejaVu Sans")
 font_weight = 450
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_native_hover_caption"]
-content_margin_left = 10.0
-content_margin_top = 10.0
-content_margin_right = 10.0
-content_margin_bottom = 10.0
-bg_color = Color(0.1, 0.11, 0.13, 0.98)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.6, 0.52, 0.38, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [resource]
-TooltipPanel/styles/panel = SubResource("StyleBoxFlat_native_hover_caption")
-TooltipLabel/colors/font_color = Color(0.95, 0.89, 0.78, 1)
-TooltipLabel/font_sizes/font_size = 15
 default_font = SubResource("SystemFont_ui")
 default_font_size = 16
 AcceptDialog/styles/panel = SubResource("StyleBoxFlat_raised")
@@ -366,6 +346,7 @@ TextEdit/colors/selection_color = Color(0.5, 0.26, 0.29, 0.9)
 TextEdit/styles/focus = SubResource("StyleBoxFlat_focus")
 TextEdit/styles/normal = SubResource("StyleBoxFlat_input")
 TooltipLabel/colors/font_color = Color(0.98, 0.91, 0.78, 1)
+TooltipLabel/font_sizes/font_size = 15
 TooltipPanel/styles/panel = SubResource("StyleBoxFlat_raised")
 Tree/colors/font_color = Color(0.95, 0.89, 0.78, 1)
 Tree/styles/panel = SubResource("StyleBoxFlat_panel")

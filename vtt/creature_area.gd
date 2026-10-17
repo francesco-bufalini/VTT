@@ -232,7 +232,8 @@ var _effect_text: RichTextLabel
 var _transfer_users: OptionButton
 var _transfer_hint: Label
 var _export_dialog: FileDialog
-var _options_menu: MenuButton
+var _creature_import_button: Button
+var _creature_import_picker: FileDialog
 var _transfer_dialog: ConfirmationDialog
 var _suggested_miniature_ids: Array[String] = []
 var _import_dialog: AcceptDialog
@@ -640,7 +641,8 @@ func _apply_creature_history(redo: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _panel.visible and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE and not (
-			_import_dialog.visible
+			_creature_import_picker.visible
+			or _import_dialog.visible
 			or _miniature_dialog.visible
 			or _transfer_dialog.visible
 			or _delete_dialog.visible
@@ -686,36 +688,20 @@ func _build_ui() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(spacer)
-	_options_menu = MenuButton.new()
-	_options_menu.text = "Opzioni ▾"
-	var popup := _options_menu.get_popup()
-	popup.add_separator("Contenuti e cataloghi")
-	popup.add_item("Copia il mio ID", 1)
-	popup.add_item("Cartella homebrew", 2)
-	popup.add_item("Cartella integrazioni VTT", 9)
-	popup.add_item("Ricarica homebrew", 3)
-	popup.add_separator("Creatura e condivisione")
-	popup.add_item("Associa a token selezionato", 4)
-	popup.add_item("Cedi controllo…", 5)
-	popup.add_item("Ricevi creatura…", 6)
-	popup.add_item("Scarica creatura…", 8)
-	popup.add_separator("Eliminazione")
-	popup.add_item("Elimina creatura selezionata…", 7)
-	var option_help: Dictionary = {
-		1: "Copia il tuo identificativo per ricevere il controllo di una creatura.",
-		2: "Apri la cartella dei contenuti personalizzati.",
-		9: "Apri la cartella delle integrazioni che arricchiscono i cataloghi.",
-		3: "Ricarica i cataloghi e le integrazioni locali.",
-		4: "Collega questa scheda al token selezionato sulla mappa.",
-		5: "Trasferisci il controllo e i dati privati della creatura al destinatario scelto.",
-		6: "Importa una creatura da un file di trasferimento.",
-		8: "Esporta la creatura selezionata in un file.",
-		7: "Elimina la scheda selezionata dopo conferma."
-	}
-	for item_id: int in option_help:
-		popup.set_item_tooltip(popup.get_item_index(item_id), String(option_help[item_id]))
-	popup.id_pressed.connect(_on_options_selected)
-	header.add_child(_options_menu)
+	_creature_import_button = Button.new()
+	_creature_import_button.name = "ImportCreatures"
+	_creature_import_button.text = "Importa creature…"
+	_creature_import_button.tooltip_text = "Carica uno o più file JSON di creature esportate da VTT, anche da versioni precedenti."
+	_creature_import_button.pressed.connect(_show_creature_import_picker)
+	header.add_child(_creature_import_button)
+	_creature_import_picker = FileDialog.new()
+	_creature_import_picker.title = "Importa creature da JSON"
+	_creature_import_picker.access = FileDialog.ACCESS_FILESYSTEM
+	_creature_import_picker.file_mode = FileDialog.FILE_MODE_OPEN_FILES
+	_creature_import_picker.use_native_dialog = OS.has_feature("mobile")
+	_creature_import_picker.add_filter("*.json", "Creature VTT")
+	_creature_import_picker.files_selected.connect(_import_export_files)
+	ui_root.add_child(_creature_import_picker)
 	var language_label := Label.new()
 	language_label.text = "Lingua scheda"
 	header.add_child(language_label)
@@ -1752,10 +1738,6 @@ func configure_touch_layout() -> void:
 			child.hide()
 		if child == _creature_language_picker or child is Button and child.text == "Chiudi":
 			child.hide()
-	_options_menu.text = "⋯"
-	_options_menu.get_popup().add_separator("Lingua scheda")
-	_options_menu.get_popup().add_radio_check_item("Italiano", 10)
-	_options_menu.get_popup().add_radio_check_item("English", 11)
 	var library_button := Button.new()
 	_touch_library_button = library_button
 	library_button.name = "TouchCreatureList"
@@ -1768,7 +1750,7 @@ func configure_touch_layout() -> void:
 	_touch_section_toggle.pressed.connect(func() -> void:
 		_touch_section_drawer.visible = not _touch_section_drawer.visible)
 	header.add_child(_touch_section_toggle)
-	header.move_child(_options_menu, header.get_child_count() - 1)
+	header.move_child(_creature_import_button, header.get_child_count() - 1)
 	var old_columns := _tabs.get_parent() as HSplitContainer
 	var pages := touch.replace_box(old_columns, VBoxContainer.new()) as VBoxContainer
 	_touch_library = pages.get_child(0) as Control
@@ -1911,19 +1893,6 @@ func configure_touch_layout() -> void:
 	var traits_scroll := _traits_ui.get("_scroll") as ScrollContainer
 	if traits_scroll != null:
 		traits_scroll.follow_focus = false
-	var import_button := Button.new()
-	import_button.text = "Importa JSON dal PC"
-	_touch_library.add_child(import_button)
-	var file_picker := FileDialog.new()
-	file_picker.title = "Importa scheda esportata dal PC"
-	file_picker.access = FileDialog.ACCESS_FILESYSTEM
-	file_picker.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	file_picker.use_native_dialog = OS.has_feature("mobile")
-	file_picker.add_filter("*.json", "Scheda VTT esportata")
-	ui_root.add_child(file_picker)
-	file_picker.file_selected.connect(_import_export_file)
-	import_button.pressed.connect(func() -> void: DialogLayout.popup(file_picker, Vector2i(680, 600), 0.9))
-	touch.style_control(import_button)
 	# Initial sheets may have been populated before mobile mode was enabled.
 	# Rebuild their dynamic multiclass/tracker rows with the touch layout too.
 	var initial_record := _current()
@@ -2011,27 +1980,44 @@ func _configure_touch_statistics() -> void:
 	_natural_ac_formula.custom_minimum_size.x = 0
 
 
+func _show_creature_import_picker() -> void:
+	DialogLayout.popup(_creature_import_picker, Vector2i(760, 600), 0.9)
+
+
+func _import_export_files(paths: PackedStringArray) -> void:
+	var failures: PackedStringArray = []
+	var imported := 0
+	for path: String in paths:
+		var result := _import_export_path(path)
+		if result == OK:
+			imported += 1
+		else:
+			failures.append(path.get_file() + ": " + error_string(result))
+	if imported > 0:
+		_reload()
+	var message := "File importati come copie locali: %d." % imported
+	if not failures.is_empty():
+		message += " Non importati: " + "; ".join(failures)
+	_set_status(message)
+
+
 func _import_export_file(path: String) -> void:
+	_import_export_files(PackedStringArray([path]))
+
+
+func _import_export_path(path: String) -> Error:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		_set_status("Impossibile leggere il file selezionato.")
-		return
+		return FileAccess.get_open_error()
 	if file.get_length() > 16 * 1024 * 1024:
-		_set_status("File scheda troppo grande.")
-		return
+		return ERR_INVALID_DATA
 	var payload: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	if not payload is Dictionary:
-		_set_status("Seleziona un file JSON esportato da VTT sul PC.")
-		return
-	var error: Error = (_archive.import_export_batch(payload)
+		return ERR_INVALID_DATA
+	return (_archive.import_export_batch(payload)
 		if String(payload.get("format", "")) == "vtt_creature_batch_export_v1"
 		else _archive.import_export_copy(payload))
-	if error != OK:
-		_set_status("Importazione non riuscita: " + error_string(error))
-		return
-	_reload()
-	_set_status("Scheda importata come copia locale. Aprila dall'elenco creature.")
 
 
 func _request_touch_section(index: int) -> void:
@@ -2292,12 +2278,6 @@ func _refresh_creature_language() -> void:
 	if _spellcasting_ui != null and _spellcasting_ui.has_method("set_gui_language"):
 		_spellcasting_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
-	if _touch_layout:
-		var menu := _options_menu.get_popup()
-		for choice_id: int in [10, 11]:
-			var menu_index := menu.get_item_index(choice_id)
-			if menu_index >= 0:
-				menu.set_item_checked(menu_index, (_creature_language == "it") == (choice_id == 10))
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
 		_automatic_dialog, _delete_dialog, _miniature_dialog, _transfer_dialog,
@@ -3169,7 +3149,11 @@ func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
 	heading.text = section
 	heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.98))
 	heading.add_theme_font_size_override("font_size", 17)
-	_style_statistics_heading(heading)
+	var info_icons := {"IDENTITÀ": "identity", "FISICO": "physique", "CLASSI E PROGRESSIONE": "progression", "TALENTI": "talents", "STORIA E PERSONALITÀ": "biography"}
+	if info_icons.has(section):
+		preload("res://vtt/creature_sheet_style.gd").heading(heading, "info_" + String(info_icons[section]))
+	else:
+		_style_statistics_heading(heading)
 	content.add_child(heading)
 	return content
 
@@ -3546,11 +3530,6 @@ func _reload() -> void:
 	_refresh_creature_eye_buttons()
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
-	if _options_menu != null:
-		var options_popup := _options_menu.get_popup()
-		options_popup.set_item_disabled(
-			options_popup.get_item_index(7), selected_index < 0
-		)
 	if selected_index >= 0:
 		_on_selected(selected_index)
 	else:

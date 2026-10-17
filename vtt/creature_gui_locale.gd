@@ -194,6 +194,8 @@ const EN: Dictionary = {
 	"Scarica creatura…": "Export creature…",
 	"Elimina creatura selezionata…": "Delete selected creature…",
 	"Copia il mio ID": "Copy my ID",
+	"Importa creature…": "Import creatures…",
+	"Importa creature da JSON": "Import creatures from JSON",
 	"Cartella homebrew": "Homebrew folder",
 	"Cartella integrazioni VTT": "VTT integrations folder",
 	"Ricarica homebrew": "Reload homebrew",
