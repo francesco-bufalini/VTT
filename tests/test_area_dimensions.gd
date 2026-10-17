@@ -158,6 +158,9 @@ func _run() -> void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://area_dimensions_review.png")
 		print("CAPTURE: ", ProjectSettings.globalize_path("user://area_dimensions_review.png"))
+	measure.show_held_spell_aoe(Vector3(0, 1, 0), Vector3(3, 1, 0), "sphere", "fireball")
+	overlay._collect_post_cast_areas()
+	overlay._refresh_area_sidebar()
 	# Sidebar actions must address the selected root rather than a stale row
 	# index: the held area precedes persistent areas in the sidebar.
 	var static_root: Node3D = measure._aoe_nodes[0]
