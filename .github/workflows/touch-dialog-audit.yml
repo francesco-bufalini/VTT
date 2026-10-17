@@ -4,6 +4,8 @@ on:
     paths:
       - "vtt/dialog_layout.gd"
       - "vtt/creature_area.gd"
+      - "vtt/creature_sheet_style.gd"
+      - "pwa/icons/**"
       - "vtt/creature_documents_tab.gd"
       - "vtt/creature_inventory_tab.gd"
       - "tests/test_share_recipients.gd"
@@ -30,6 +32,7 @@ jobs:
             /*.gd
             /*.tscn
             /vtt/
+            /pwa/icons/
             /network/
             /interaction/
             /items/

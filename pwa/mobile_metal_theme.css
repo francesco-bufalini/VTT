@@ -113,3 +113,45 @@ input:not([type=checkbox]):not([type=file]),select,textarea{
 @media(prefers-reduced-motion:reduce){
  .btn,.section-tabs button,.section-menu>summary{transition:none}
 }
+
+
+/* Character sheet: 8 original gold icons, shared with the native TabContainer.
+   Use one translucent, pre-cropped transparent atlas instead of emoji fonts. */
+.drawer-sheet [data-act="sheet"],
+.current-section[data-sheet-icon] {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.drawer-sheet [data-act="sheet"]::before,
+.current-section[data-sheet-icon]::before {
+  content:"";
+  display:inline-block;
+  width:26px;
+  height:26px;
+  flex:0 0 26px;
+  background-image:url("/icons/character_tabs.png");
+  background-size:800% 100%;
+  background-repeat:no-repeat;
+  background-position:var(--sheet-icon-position, 0%) center;
+  filter:drop-shadow(0 1px 1px #000a);
+}
+.current-section[data-sheet-icon]::before { width:27px;height:27px;flex-basis:27px }
+.drawer-sheet [data-sheet="info"],.current-section[data-sheet-icon="info"]{--sheet-icon-position:0.000000%}
+.drawer-sheet [data-sheet="stats"],.current-section[data-sheet-icon="stats"]{--sheet-icon-position:14.285714%}
+.drawer-sheet [data-sheet="actions"],.current-section[data-sheet-icon="actions"]{--sheet-icon-position:28.571429%}
+.drawer-sheet [data-sheet="magic"],.current-section[data-sheet-icon="magic"]{--sheet-icon-position:42.857143%}
+.drawer-sheet [data-sheet="inventory"],.current-section[data-sheet-icon="inventory"]{--sheet-icon-position:57.142857%}
+.drawer-sheet [data-sheet="traits"],.current-section[data-sheet-icon="traits"]{--sheet-icon-position:71.428571%}
+.drawer-sheet [data-sheet="conditions"],.current-section[data-sheet-icon="conditions"]{--sheet-icon-position:85.714286%}
+.drawer-sheet [data-sheet="origins"],.current-section[data-sheet-icon="origins"]{--sheet-icon-position:100.000000%}
+/* Battle is a ninth mobile-only section: keep the matching crossed-swords glyph. */
+.drawer-sheet [data-sheet="battle"]::before,
+.current-section[data-sheet-icon="battle"]::before{
+  background-image:url("/icons/gold_generated/gold_0.svg");
+  background-size:2500% 100%;
+  background-position:0 center;
+}
+@media(max-width:359px){
+  .drawer-sheet [data-act="sheet"]::before{width:22px;height:22px;flex-basis:22px}
+}

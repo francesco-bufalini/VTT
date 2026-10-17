@@ -59,6 +59,7 @@ const FILES := {
 	"/sw.js": ["res://pwa/sw.js", "text/javascript; charset=utf-8"],
 	"/manifest.webmanifest": ["res://pwa/manifest.webmanifest", "application/manifest+json"],
 	"/icon.svg": ["res://pwa/icon.svg", "image/svg+xml"],
+	"/icons/character_tabs.png": ["res://pwa/icons/character_tabs.png", "image/png"],
 	"/icons/action_dashboard_gloss.svg": ["res://pwa/icons/action_dashboard_gloss.svg", "image/svg+xml"],
 	"/icons/action_extras.svg": ["res://pwa/icons/action_extras.svg", "image/svg+xml"],
 	"/icons/gold_generated/gold_0.svg": ["res://pwa/icons/gold_generated/gold_0.svg", "image/svg+xml"],

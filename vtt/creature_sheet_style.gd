@@ -11,6 +11,22 @@ const GENERATED_ICON_ATLASES := [
 	preload("res://pwa/icons/gold_generated/gold_3.svg")
 ]
 
+# Eight sheet-navigation artworks generated specifically for VTT.
+# An 8-frame transparent atlas keeps the same artwork on desktop, Android and web.
+const CHARACTER_TAB_ART: Texture2D = preload("res://pwa/icons/character_tabs.png")
+const CHARACTER_TAB_TITLES := ["Info", "Statistiche", "Cosa posso fare?", "Poteri",
+	"Inventario", "Tratti", "Condizioni", "Modifica personaggio"]
+
+static func character_tab_icon(title: String) -> Texture2D:
+	var label := "Statistiche" if title == "Caratteristiche e abilità" else title
+	var index := CHARACTER_TAB_TITLES.find(label)
+	if index < 0:
+		return icon("weapon") if label == "Battaglia" else icon("information")
+	var frame := AtlasTexture.new()
+	frame.atlas = CHARACTER_TAB_ART
+	frame.region = Rect2(index * 32, 0, 32, 32)
+	return frame
+
 static func surface(background: Color, border: Color, radius: int = 7, padding: int = 8) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background
