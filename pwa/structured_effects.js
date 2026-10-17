@@ -142,7 +142,7 @@ export function numericGrant(sid,name,field,target,value,suffix=""){
 // data-driven projections, not inferred mechanics from English descriptions.
 export function collectStructuredFeatures(record,catalogs={}){
   const results=[],seen=new Set();
-  const members=classMembers(record),total=members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)||Number(record.level)||1;
+  const members=classMembers(record),total=Number(record.level??members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)??1)||1;
   const classLevel=(name,source)=>members.filter(c=>match(c.name,name)&&(!source||!c.source||match(c.source,source)))
     .reduce((n,c)=>Math.max(n,Number(c.level)||0),0);
   function append(row,origin,level=1,scope="character",className="",classSource="",inactive=false){
@@ -154,7 +154,7 @@ export function collectStructuredFeatures(record,catalogs={}){
     const key=origin+"|"+id;if(seen.has(key))return;seen.add(key);
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       level,requirements:gate,inactive:inactive||row.inactive===true,
-      bonuses:array(row.bonuses),action_type:row.action_type??row.activation_type??"",
+      bonuses:array(row.bonuses),action_type:row.action_type||row.activation_type||row.activation||row.time||"",
       action_kind:row.action_kind||"Capacità"});
   }
   if(record.kind==="monster"){
@@ -195,9 +195,9 @@ export function collectStructuredFeatures(record,catalogs={}){
         Array.isArray(feat.feature_sections)?feat.feature_sections:null;
       const entries=sections||info?.entries||feat.entries||[];
       array(entries).forEach((row,i)=>{
-        if(row?.name&&(row.entries!==undefined||row.entry!==undefined))
-          append({...row,id:row.id||(sections?"section-"+i:"section-"+i)},origin,
-            Number(row.min_level??1),"character","","",Boolean(feat.disabled));
+        if(row?.name&&(sections||row.entries!==undefined||row.entry!==undefined))
+          append({...row,...(!sections&&!row.id?{id:"section-"+i}:{})},origin,
+            Number(row.requirements?.min_level??row.min_level??1),"character","","",Boolean(feat.disabled));
       });
     }
   }

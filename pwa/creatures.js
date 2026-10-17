@@ -251,3 +251,79 @@ export async function openCreatureEditor(id, scope = "default") {
     get error() { return blocked; }
   };
 }
+
+// Android CreatureArea._copy_public_token_status parity: a token's public
+// status is sufficient to reconcile locally owned spell origins, but NEVER
+// a source of private inventory, hit points, class stats or dice settings.
+export function linkedTokenStatusPatch(record, token, spells=[]){
+  if(!record?.linked_token_sync_id||!token||token.id!==record.linked_token_sync_id)
+    return {};
+  const patch={};
+  for(const key of ["conditions","concentrating_spell_id"]){
+    const value=token[key];
+    if(key==="conditions"&&(!Array.isArray(value)||value.length>64||
+       !value.every(x=>typeof x==="string"&&x.length<=256)))continue;
+    if(key==="concentrating_spell_id"&&typeof value!=="string")continue;
+    if(JSON.stringify(record[key]??(key==="conditions"?[]:""))!==JSON.stringify(value))
+      patch[key]=structuredClone(value);
+  }
+  // The native board publishes spell IDs after resolution on the *specific*
+  // target tokens. Do not mistake temporary targeting previews for effects.
+  if(Array.isArray(token.active_spell_ids)&&token.active_spell_ids.length<=128&&
+    token.active_spell_ids.every(id=>typeof id==="string"&&id.length<=256)){
+    const ids=new Set(token.active_spell_ids.filter(Boolean)),previous=Array.isArray(record.proficiency_origins)?
+      record.proficiency_origins:[];
+    const known=new Map((Array.isArray(spells)?spells:[]).filter(row=>row?.id).map(row=>[row.id,row]));
+    const next=structuredClone(previous),context={...(record.active_spell_context||{})};
+    let originsChanged=false,contextsChanged=false;
+    for(let i=next.length-1;i>=0;i--){
+      const row=next[i],id=String(row?.id||"");
+      if(row?.group!=="spell"||row?.applied!==true||!id.startsWith("spell:")||
+         ids.has(id.slice(6)))continue;
+      next.splice(i,1);originsChanged=true;
+      if(Object.hasOwn(context,id.slice(6))){delete context[id.slice(6)];contextsChanged=true;}
+    }
+    for(const id of ids){
+      const sid="spell:"+id,exists=next.find(row=>row?.id===sid&&row.group==="spell");
+      if(exists){
+        if(exists.applied!==true||exists.disabled===true){
+          exists.applied=true;exists.disabled=false;originsChanged=true;
+        }
+      }else{
+        // Native board already validates duration and resolves the spell ID.
+        // Keep a portable applied-origin even when the full catalog is offline.
+        next.push({id:sid,group:"spell",name:"Incantesimo · "+(known.get(id)?.name||id),
+          disabled:false,automatic:false,applied:true});
+        originsChanged=true;
+      }
+    }
+    if(originsChanged)patch.proficiency_origins=next;
+    if(contextsChanged)patch.active_spell_context=context;
+  }
+  for(const key of ["current_miniature_id","default_miniature_id"]){
+    if(typeof token[key]==="string"&&token[key]&&token[key]!==record[key])
+      patch[key]=token[key];
+  }
+  return patch;
+}
+
+export async function syncLinkedTokenStatuses(mapData,{liveEditor=null,spells=[],scope="default"}={}){
+  if(!Array.isArray(mapData?.tokens))return [];
+  const byId=new Map(mapData.tokens.filter(row=>row&&typeof row.id==="string").map(row=>[row.id,row]));
+  if(!byId.size)return [];
+  const updated=[];
+  // Use the *same* live editor for a currently open sheet. A separate editor
+  // would invalidate its compare-and-swap revision and drop the next edit.
+  for(const {creature} of await listCreatures(scope)){
+    const token=byId.get(creature.linked_token_sync_id);
+    if(!token)continue;
+    const editor=liveEditor?.id===creature.id&&liveEditor.editor?
+      liveEditor.editor:await openCreatureEditor(creature.id,scope);
+    const patch=linkedTokenStatusPatch(editor.read(),token,spells);
+    if(Object.keys(patch).length){
+      await editor.update(patch);
+      updated.push(creature.id);
+    }
+  }
+  return updated;
+}

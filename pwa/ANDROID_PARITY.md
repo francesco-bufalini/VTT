@@ -143,3 +143,29 @@ La PWA ora applica `instance_overrides` ai valori effettivi degli oggetti nell'i
 I dati tipizzati delle 16 infusioni sono proiettati in `catalog/ability_grants.json` (URL già esposto dal server nativo), con selettori per tipi di oggetto, proprietà, fonte e bonus numerici. `npm run sync-catalogs` li rigenera usando i file strutturati già nel repository, con fallback curati per i selettori delle versioni precedenti; nessun parsing della prosa a runtime.
 
 L'inventario della PWA ora gestisce apprendimento, applicazione, rimozione e dimenticanza, i limiti della classe Artefice, la sintonia e la divisione delle pile. I sette tipi con effetti numerici documentati applicano bonus locali (anche al livello del potenziamento); altri effetti rimangono descrittivi e non vengono applicati senza una rappresentazione strutturata. Nessuna sincronizzazione di schede private è necessaria per il calcolo.
+
+## Proiezione dei privilegi (ottobre 2026)
+
+La PWA legge anche `catalog/classes.json`, `catalog/features.json` e
+`catalog/backgrounds.json` per comporre i privilegi delle origini con gli
+stessi ID stabili di `CreatureFeatures.collect_features()`. Le soglie di
+livello della **singola classe**, la scelta della sottoclasse, la fonte/edizione
+e le scelte di beneficio tipizzate sono conservate. Le sezioni nominate dei
+talenti e i tratti di specie/background sono proiettati dalla struttura JSON,
+senza estrarre meccaniche da frasi. I bonus numerici `bonuses` usano gli ID
+`auto|feature:...` e possono essere esclusi individualmente usando
+`origin_enabled` o i bonus automatici già disattivati. La scheda **Tratti**
+permette di attivare/disattivare i benefici e **Cosa posso fare?** riceve
+le capacità che espongono una dichiarazione esplicita di attivazione.
+
+L'elenco non crea privilegi inesistenti: i tratti puramente descrittivi
+restano descrittivi e i privilegi privi di regole machine-readable possono
+richiedere configurazione manuale. L'esecuzione dei calcoli rimane nella PWA
+e non richiede una chiamata al server.
+
+
+## Selezione bersagli e applicazione effetti dalla PWA
+
+Lancio incantesimi dalla scheda **Magia** (compresi incantesimi concessi dalle origini) e dalla schermata **Partita**: con la creatura collegata a un token, `begin_spell` apre lo snapshot WebP bidimensionale con i marcatori selezionabili. `target_spell`, `preview_spell`, `finish_spell` e `cancel_spell` sono gli stessi comandi autorizzati da Godot per Android; i calcoli di area, portata ed effetti rimangono sul desktop. La PWA addebita la risorsa solo dopo l'accettazione del lancio, non per anteprime o comandi rifiutati.
+
+Ogni snapshot pubblico della mappa espone `conditions`, `concentrating_spell_id` e `active_spell_ids` dei token effettivamente interessati: la PWA riconcilia questi campi con **le sole proprie schede collegate**, anche quando si sta usando la scheda, usando la stessa semantica di `CreatureArea._copy_public_token_status` Android. Gli incantesimi aggiunti diventano origini `spell:<id>` con `applied: true`; quelli dispersi vengono rimossi solo se erano stati applicati. Origini di altre provenienze, bonus volontari, PF, inventario e contesti privati non vengono cancellati. La riconciliazione usa l'editor aperto per evitare conflitti di revisioni su IndexedDB. Nessun dato della scheda viene inviato con la mappa.

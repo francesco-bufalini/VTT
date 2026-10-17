@@ -35,6 +35,7 @@ const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const mod=n=>Math.floor((n-10)/2);
 const godotRound=n=>Math.sign(n)*Math.floor(Math.abs(n)+0.5);
 const arr=v=>Array.isArray(v)?v:[];
+const norm=value=>String(value??"").trim().toLowerCase();
 const same=(a,b)=>String(a??"").trim().toLowerCase()===String(b??"").trim().toLowerCase();
 const key=(row)=>String(row?.name||"").toLowerCase()+"|"+String(row?.source||"").toLowerCase();
 
