@@ -245,3 +245,155 @@ label.check, .native-summary > div { min-height:var(--touch-target); }
  .action-economy-preview{max-height:2.9em}
  .action-economy-skill-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Shared fantasy surface finish for action economy (Godot uses the same palette).
+   Reflections are CSS-only; icons are transparent SVG cells, not image tiles. */
+:root {
+  --action-gold: #f2c779;
+  --action-gold-border: #bf8b4f;
+  --action-ink: #241e1c;
+  --action-shine: #ffe3ad38;
+}
+.btn:not(.ghost) {
+  box-shadow: inset 0 1px 0 #ffe7bd19, 0 2px 4px #0003;
+}
+.action-economy-dashboard>.action-economy-section {
+  background:
+    linear-gradient(180deg,#ffffff13 0%,transparent 42%),
+    linear-gradient(150deg,#302724,#1d1918 88%);
+  border:1px solid var(--action-gold-border);
+  border-top:2px solid #d0a062;
+  box-shadow:
+    inset 0 1px 0 var(--action-shine),
+    inset 0 -2px 3px #0005,
+    0 5px 16px #0008;
+}
+.action-economy-heading {
+  border-bottom-color:#b38a5359;
+  padding-bottom:12px;
+}
+.action-economy-heading .action-economy-icon {
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  margin:0;
+}
+.action-economy-heading h2 {
+  color:var(--action-gold);
+  text-shadow:0 1px 0 #000c,0 0 14px #dc9c2d13;
+}
+.action-economy-count {
+  background:linear-gradient(180deg,#4c382d,#2b221f);
+  border-color:#ac8050;
+  box-shadow:inset 0 1px 0 #fbe2b127,0 2px 4px #0005;
+}
+.vtt-action-glyph {
+  width:100%;
+  height:100%;
+  display:inline-block;
+  flex:0 0 auto;
+  aspect-ratio:1;
+  background-repeat:no-repeat;
+  background-position:var(--glyph-position,0%) center;
+  filter:drop-shadow(0 1px 1px #0008);
+}
+.vtt-action-glyph--base {
+  background-image:url("/icons/action_dashboard_gloss.svg");
+  background-size:2000% 100%;
+}
+.vtt-action-glyph--extra {
+  background-image:url("/icons/action_extras.svg");
+  background-size:1600% 100%;
+}
+.action-economy-type-icon {
+  width:29px;
+  height:29px;
+  flex:0 0 29px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.action-economy-row {
+  background:
+    linear-gradient(180deg,#ffffff0b,transparent 50%),
+    linear-gradient(155deg,#40302e,#2c2524);
+  border:1px solid #97704d;
+  border-top-color:#b08659;
+  box-shadow:inset 0 1px 0 #ffffff13,inset 0 -1px 0 #0005,0 2px 5px #0005;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.action-economy-row:hover {
+  background:
+    linear-gradient(180deg,#ffffff15,transparent 52%),
+    linear-gradient(155deg,#4b3731,#302624);
+  border-color:#dfb277;
+  box-shadow:inset 0 1px 0 #ffe4b441,0 0 9px #d8a25822,0 3px 8px #0006;
+}
+.action-economy-row:focus-within {
+  outline:1px solid #e3bd82;
+  outline-offset:1px;
+}
+.action-economy-controls .btn,
+.action-economy-skill-grid .btn {
+  background:
+    linear-gradient(180deg,#ffffff13,transparent 55%),
+    linear-gradient(180deg,#493632,#2c2523);
+  border-color:#9f734b;
+  box-shadow:inset 0 1px 0 #ffe6b32c,0 2px 4px #0005;
+}
+.action-economy-controls .btn:hover,
+.action-economy-skill-grid .btn:hover {
+  border-color:#f2c779;
+  box-shadow:inset 0 1px 0 #ffe6b34d,0 0 8px #c8974d35;
+}
+.action-economy-controls .btn.primary {
+  background:linear-gradient(180deg,#a04459,#713047);
+  border-color:#ff96bd;
+  box-shadow:inset 0 1px 0 #ffdbf388,0 0 10px #ed65a035;
+}
+.action-economy-group-title {
+  background:linear-gradient(180deg,#4b342c,#342822);
+  box-shadow:inset 0 1px 0 #ffdaa222;
+}
+.action-resource-control {
+  box-shadow:inset 0 2px 4px #0008;
+}
+.action-economy-skills {
+  background:linear-gradient(160deg,#302723,#211d1c);
+  border-color:#8a6743;
+  box-shadow:inset 0 1px 0 #ffdfaa20;
+}
+.action-economy-skill-grid .btn {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.action-economy-skill-grid .vtt-action-glyph {
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+}
+.action-skill-name {
+  min-width:0;
+  flex:1;
+}
+.action-skill-bonus {
+  color:var(--action-gold);
+  border:1px solid #8c6545;
+  padding:3px 5px;
+  border-radius:5px;
+  background:#1f1c1b;
+  font-weight:750;
+}
+@media(max-width:520px) {
+ .action-economy-heading .action-economy-icon{width:29px;height:29px}
+ .action-economy-type-icon{width:25px;height:25px;flex-basis:25px}
+ .action-economy-skill-grid .vtt-action-glyph{width:20px;height:20px;flex-basis:20px}
+ .action-economy-skill-grid .btn{gap:4px}
+}
+@media(prefers-reduced-motion:reduce) {
+ .action-economy-row{transition:none}
+}
