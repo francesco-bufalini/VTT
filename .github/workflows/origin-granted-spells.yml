@@ -47,6 +47,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /vtt/
+            /pwa/icons/
             /network/
             /tests/test_mobile_chat_sync.gd
             /tests/test_share_recipients.gd
@@ -81,6 +82,8 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/vtt-origin-test/tests
           cp -R vtt /tmp/vtt-origin-test/
+          mkdir -p /tmp/vtt-origin-test/pwa
+          cp -R pwa/icons /tmp/vtt-origin-test/pwa/
           cp -R network /tmp/vtt-origin-test/
           cp tests/test_mobile_chat_sync.gd /tmp/vtt-origin-test/tests/
           cp tests/test_share_recipients.gd /tmp/vtt-origin-test/tests/
