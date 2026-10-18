@@ -171,6 +171,10 @@ func run() -> void:
 	assert(free_group_count == 1, "Free spells share one box instead of an origin box")
 	# Two different origins spending the very same tracker must appear together.
 	var shared: Dictionary = conflict.duplicate(true)
+	shared["proficiency_origins"] = [
+		{"id": "custom:example", "name": "Example", "group": "custom"},
+		{"id": "custom:other", "name": "Other", "group": "custom"}
+	]
 	shared["resource_trackers"] = [{"id": "shared-uses", "name": "Cariche condivise", "max": 3}]
 	shared["origin_spell_grants"] = [
 		{"id": "one", "origin_id": "custom:example", "origin_name": "Example",
