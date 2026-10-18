@@ -184,7 +184,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
-      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
+      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
  }
  // Exact 5etools class/feature/source/level supplements, not prose analysis.
  const members=arr(record.classes).length?arr(record.classes):
@@ -462,13 +462,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  if(attack){
   addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+item.name,attack.melee?'Mischia':'Distanza',
    calculated.values?.['attack_hit:'+attack.id]??attack.hit);
- }else if(item.skill_ids?.length){
+ }
+ if(item.skill_ids?.length){
   for(const skill of [...new Set(item.skill_ids)]){
    const label=SKILLS.find(([id])=>id===skill)?.[1]||skill;
    addRoll('skill:'+skill,label,label,
     calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
   }
- }else if(WEAPON_ROLL_ACTION_IDS.has(item.id)){
+ }
+ if(!attack&&!item.skill_ids?.length&&WEAPON_ROLL_ACTION_IDS.has(item.id)){
   const choices=[...attacksById.values()];
   const weapon=item.id==='opportunity'?
    choices.find(row=>row.melee&&(row.slot==='main'||!row.slot))||choices.find(row=>row.melee):
@@ -498,7 +500,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   (rolls.length?'<div class="play-battle-attack-rolls">'+rolls.map(row=>
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
+   (rolls.length>1?'<span class="play-battle-roll-name">'+esc(row.kind)+'</span>':'')+'<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
   '</div>'+battleEffectMarkup(item,attack)+'</article>';
 }
 
