@@ -604,7 +604,7 @@ func _build_token_generation_controls() -> void:
 	size_selector.disabled = false
 	size_selector.tooltip_text = (
 		"La miniatura propone una taglia iniziale, ma puoi cambiarla. "
-		+ "La scelta modifica footprint, collisione e scala del token."
+		+ "La scelta modifica l'ingombro sulla griglia, la collisione e la scala del token."
 	)
 	if not size_selector.item_selected.is_connected(_on_token_size_selected):
 		size_selector.item_selected.connect(_on_token_size_selected)
@@ -613,10 +613,10 @@ func _build_token_generation_controls() -> void:
 	if reach_label == null:
 		reach_label = Label.new()
 		reach_label.name = "ReachLabel"
-		reach_label.text = "Gittata della creatura (ft)"
+		reach_label.text = "Portata della creatura (ft)"
 		reach_label.tooltip_text = (
-			"Default: 5 ft per Medium o inferiore, 10 ft Large, "
-			+ "15 ft Huge, 20 ft Gargantuan. Puoi sovrascriverla."
+			"Predefinita: 5 ft per taglie Medie o inferiori, 10 ft per creature Grandi, "
+			+ "15 ft per Enormi e 20 ft per Mastodontiche. Puoi modificarla."
 		)
 		content_box.add_child(reach_label)
 
@@ -1938,10 +1938,10 @@ func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
 	_sheet_spawn_pending_record = record.duplicate(true)
 	var origin := String(profile.get("_pack_origin", ""))
 	if origin == "remote" and not TokenPackManager.is_downloaded(miniature_id) and not TokenPackManager.is_mounted(miniature_id):
-		_set_identity_placement_hint("Download dell'aspetto attuale in corso: %s" % miniature_id)
+		_set_identity_placement_hint("Scaricamento della miniatura attuale in corso: %s" % miniature_id)
 		var error: Error = TokenPackManager.download_token(miniature_id)
 		if error != OK:
-			_cancel_sheet_spawn_with_notice("Piazzamento annullato: download della miniatura non riuscito (%s)." % error_string(error))
+			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile scaricare la miniatura (%s)." % error_string(error))
 		return
 	_finish_sheet_spawn_without_dialog()
 
@@ -4354,7 +4354,7 @@ func _build_token_state_dialog() -> void:
 	var help := Label.new()
 	help.name = "StatesHelp"
 	help.text = (
-		"Condizioni, malattie ed effetti di 5e.tools e homebrew. "
+		"Condizioni, malattie ed effetti di 5etools e contenuti personalizzati. "
 		+ "Passa il mouse per leggere gli effetti e le versioni."
 	)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
