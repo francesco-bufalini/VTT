@@ -15,7 +15,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -1618,7 +1618,9 @@ async function handleAction(target){
       '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
       '<div class="sheet-roll-math"><span>Formula del tiro</span><strong data-roll-formula>'+
       esc(sheetRollFormula(modifier))+'</strong></div>'+
-      '<p class="hint sheet-roll-provenance"><strong>Come si ottiene il modificatore:</strong> '+
+      '<p class="sheet-roll-components"><strong>Calcolo del modificatore:</strong> '+
+      esc(sheetModifierBreakdown(calculated,key))+'</p>'+
+      '<p class="hint sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
       esc(calculated.explanations?.[key]||'Valore calcolato dalla scheda e dalle origini attive')+'</p>'+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
        '<p class="hint">Seleziona i dadi aggiuntivi prima di tirare. I bonus monouso scelti verranno consumati.</p>'+
