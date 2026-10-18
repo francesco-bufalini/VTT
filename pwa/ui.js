@@ -1,6 +1,6 @@
 import { actionEconomyView, battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -450,7 +450,7 @@ async function editorView() {
     try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
     catch{return {description:''};}
   })):undefined;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -486,7 +486,7 @@ async function editorView() {
             description:detail.description??selected.item.description};
         }
       }
-      body=nav+inventoryEquipmentView(c)+
+      body=nav+inventoryEquipmentView(c,calculated)+
         inventoryAttunementView(c,attunements)+
         inventoryCoinsView(c)+
         panel("Oggetti posseduti",
@@ -787,11 +787,14 @@ function inventoryGold(item){
     obj.value!==undefined?Number(obj.value)/100:NaN;
   return Number.isFinite(gp)?Number((gp*qty).toFixed(2)).toLocaleString("it-IT"):"—";
 }
-function inventoryEquipmentView(c){
+function inventoryEquipmentView(c,calculated={}){
   const inventory=Array.isArray(c.inventory)?c.inventory:[];
   const labels=[["main","Mano principale"],["off","Mano secondaria"],["body","Armatura"]];
-  const main=inventory.find(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes("main"));
-  const blocked=main&&Array.isArray(main.properties)&&main.properties.some(p=>String(p).split("|")[0].toUpperCase()==="2H");
+  const mainRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("main"));
+  const main=mainRow?resolveOwnedItem(mainRow):null;
+  const off=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("off"));
+  const blocked=main&&hasProperty(main,"2H");
+  const versatile=main&&itemKind(main)==="weapon"&&hasProperty(main,"V");
   const rows=labels.map(([slot,label])=>{
     const selected=inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
     const special=slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
@@ -800,7 +803,7 @@ function inventoryEquipmentView(c){
       ...inventory.map((item,index)=>validSlot(item,slot)&&!(slot==="main"&&itemKind(item)==="shield")?
         [index,item.name||"Oggetto"]:null).filter(Boolean)];
     const selector='<select aria-label="'+esc(label)+'" data-equip-slot="'+slot+'"'+
-      (slot==="off"&&blocked?' disabled title="Mano occupata da arma a due mani"':'')+'>'+
+      (slot==="off"&&blocked?' disabled':'')+'>'+
       options.map(([value,name])=>'<option value="'+value+'"'+
       ((selected>=0&&value===selected||selected<0&&(value===special&&special!=="none"||value===-1&&special==="none"))?' selected':'')+'>'+
       esc(name)+'</option>').join('')+'</select>';
@@ -812,7 +815,46 @@ function inventoryEquipmentView(c){
         esc(name)+'</option>').join('')+'</select>');
     return '<div class="inventory-slot-row"><span>'+esc(label)+'</span>'+selector+size+'</div>';
   }).join('');
-  return panel("Equipaggiamento",'<div class="inventory-slots">'+rows+'</div>',"inventory-native-panel inventory-equipment");
+  const wornRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("body")&&itemKind(item)==="armor");
+  const armor=wornRow?resolveOwnedItem(wornRow):null;
+  const shields=inventory.filter(item=>Array.isArray(item?.equipped_slots)&&
+    item.equipped_slots.some(slot=>slot==="main"||slot==="off")&&itemKind(item)==="shield")
+    .map(resolveOwnedItem);
+  const shieldBonus=shields.reduce((value,item)=>Math.max(value,Number(item.ac)||0),0);
+  const dex=Number(calculated.values?.["ability_mod:dex"]??0);
+  const armorType=String(armor?.type||"").split("|")[0].toUpperCase();
+  const dexCap=armor?.dexterity_max!==undefined?Number(armor.dexterity_max):armorType==="MA"?2:armorType==="HA"?0:99;
+  const armorDex=armorType==="HA"&&Number(armor?.dexterity_max)===0?0:Math.min(dex,dexCap);
+  const rawMonsterAc=Array.isArray(c.stat_block?.ac)?
+    c.stat_block.ac.find(row=>typeof row==="number"||row?.ac!==undefined):c.stat_block?.ac;
+  const monsterAc=typeof rawMonsterAc==="object"?rawMonsterAc?.ac:rawMonsterAc;
+  const naturalBase=c.kind==="monster"?(monsterAc??10):(c.armor_class_base??10);
+  const naturalFormula=String(c.armor_natural_formula||
+    ((c.kind==="character"&&Number(naturalBase)===10)?"10 + dex_mod":String(naturalBase)));
+  const formula=armor?
+    String(Number(armor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+
+      (shieldBonus?' + '+shieldBonus+' scudo':''):
+    naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
+  const attackSettings='<div class="equipment-attack-options">'+
+    '<label>Caratteristica attacchi<select data-field="attack_ability">'+
+      [['str','Forza'],['dex','Destrezza']].map(([value,label])=>
+        '<option value="'+value+'"'+((c.attack_ability||"str")===value?' selected':'')+'>'+label+'</option>').join('')+
+    '</select></label>'+
+    '<label class="check"><input type="checkbox" data-field="attack_ability_finesse_only"'+
+      (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo armi con Accurata (Finesse)</label>'+
+    (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
+      (c.hand_grip_two_handed&&!off?' checked':'')+'>Impugnatura a due mani (Versatile)</label>':'')+
+    '</div>';
+  const defense='<div class="equipment-defense">'+
+    '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
+      '</strong><output>'+esc(formula)+'</output></div>'+
+    '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
+      formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
+    '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+    '</div>';
+  return panel("Equipaggiamento",
+    '<div class="inventory-slots">'+rows+'</div>'+attackSettings+defense,
+    "inventory-native-panel inventory-equipment equipment-unified-panel");
 }
 const COIN_LABELS=[["cp","Rame"],["sp","Argento"],["ep","Elettro"],["gp","Oro"],["pp","Platino"]];
 function inventoryCoinsView(c){
@@ -1787,7 +1829,9 @@ async function handleField(target) {
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
     const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
-    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),...(slot==='body'?{}:{['hand_'+slot+'_special']:special})});
+    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),
+      ...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
+      ...(['main','off'].includes(slot)?{hand_grip_two_handed:false}:{})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -1896,6 +1940,19 @@ async function handleField(target) {
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    if(key==='hand_grip_two_handed'){
+      const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
+      const usable=main&&itemKind(main)==='weapon'&&hasProperty(resolveOwnedItem(main),'V');
+      if(!usable)throw Error('Nessuna arma versatile nella mano principale.');
+      const inventory=structuredClone(creature.inventory||[]);
+      if(value)for(const item of inventory)item.equipped_slots=(item.equipped_slots||[]).filter(slot=>slot!=='off');
+      await patch({hand_grip_two_handed:value,...(value?{inventory,hand_off_special:'none'}:{})});
+      await render();return;
+    }
+    if(key==='attack_ability'&&!['str','dex'].includes(value))
+      throw Error('Caratteristica attacchi non valida.');
+    if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
+      throw Error('Ambito caratteristica attacchi non valido.');
     const changes=identityPatch(creature,key,value);
     if(key==='pact_slot_level'){
       const calculated=await computeLocalData(creature);
@@ -1907,7 +1964,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(key==='rules_version'||key==='primary_class_level')await render();
+    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
