@@ -130,8 +130,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  const trackers=new Map(arr(calculated.trackers).map(row=>[String(row.id),row]));
  const add=(name,time,type,description,tracker='',cost=0,extra={})=>out.push({name:String(name||type),time:timing(time),type:String(type),description:details(description),tracker:String(tracker||''),cost,origin:'personal',...extra});
- const tracked=(id)=>trackers.get(String(id))?.name||String(id||'');
- for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{})){
+ const tracked=(id)=>trackers.get(String(id))?.name||'';
+ for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{},arr(calculated.features))){
   const rule=arr(calculated.feature_rules?.actions).find(r=>r.id===row.rule_id);
   const base=out.find(r=>r.id===rule?.action_id);
   if(base){base.alternate_action=base.time==='action'&&timing(row.time)==='bonus';base.time=timing(row.time);}
@@ -163,7 +163,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  // Explicit typed grants only. Passive traits are not automatically actions.
  const abilitySeen=new Set();
  for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
-  if(!feature||feature.disabled||feature.inactive)continue;
+  if(!feature||feature.disabled||feature.inactive||feature.origin_id&&record.origin_enabled?.[feature.origin_id]===false)continue;
   const activation=feature.action_type??feature.activation??feature.activation_type??feature.time;
   if(!specified(activation))continue;
   const identity=String(feature.key||feature.id||'')+'|'+String(feature.name||feature.title||'');
@@ -182,6 +182,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
     String(m?.source||selectedEdition).toUpperCase()===String(rule.book||'').toUpperCase()&&
     Number(m?.level||0)>=Number(rule.min_level||1));
   if(!classMember)continue;
+  const classOrigin='class|'+String(rule.book||'').toLowerCase()+'|'+String(rule.class_name||'').toLowerCase();
+  if(record.origin_enabled?.[classOrigin]===false||arr(record.proficiency_origins).some(o=>o?.id===classOrigin&&o.disabled))continue;
   const resource=arr(calculated.trackers).find(t=>String(t.name).toLowerCase()===String(rule.resource_name||'').toLowerCase()&&
     (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',

@@ -110,3 +110,20 @@ test('a multiclass member never inherits the primary class subclass',()=>{
  assert(legacyActions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
  assert(!legacyActions.some(row=>row.rule_id==='rogue_phb_use_object'));
 });
+
+test('disabled class and subclass feature origins cannot grant alternate actions',()=>{
+ const base=creature('Druid','2014',2,'Circle of the Moon');
+ const classOrigin='class|phb|druid';
+ const combat={name:'Combat Wild Shape',origin_key:classOrigin+'|subclass|circle of the moon|phb',
+   origin_id:'feature:'+classOrigin+'|subclass|circle of the moon|phb|combat_wild_shape',
+   disabled:false};
+ const plain={name:'Wild Shape',origin_key:classOrigin,
+   origin_id:'feature:'+classOrigin+'|wild_shape',disabled:false};
+ const selected=features=>featureActionEntries(base,[],rules,features);
+ assert.equal(selected([plain,combat]).find(x=>x.rule_action_id==='wild_shape')?.time,'bonus');
+ assert.equal(selected([plain,{...combat,disabled:true}]).find(x=>x.rule_action_id==='wild_shape')?.time,'action');
+ assert.equal(selected([{...plain,disabled:true},{...combat,disabled:true}]).some(x=>x.rule_action_id==='wild_shape'),false);
+ assert.equal(selected([plain,combat]).find(x=>x.rule_action_id==='wild_shape')?.origin_id,combat.origin_id);
+ const classDisabled={...base,origin_enabled:{[classOrigin]:false}};
+ assert(!featureActionEntries(classDisabled,[],rules,[plain,combat]).some(x=>x.rule_action_id==='wild_shape'));
+});

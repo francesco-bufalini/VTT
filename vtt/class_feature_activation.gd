@@ -159,12 +159,81 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 		next["conditions"] = conditions
 	return {"ok": true, "record": next, "message": String(action.name) + " attivato."}
 
+# Persistent class abilities share one recorded state and one source identity.
+# They are effects on the Conditions sheet, not ordinary condition flags.
+# Keep stored but currently suppressed effects visible so they can be ended.
+static func active_effects(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var saved: Dictionary = record.get("active_class_features", {})
+	var definitions: Dictionary = {}
+	for action: Dictionary in entries(record):
+		definitions[String(action.get("key", ""))] = action
+	for raw_key: Variant in saved.keys():
+		var key := String(raw_key)
+		var state: Dictionary = saved[key] if saved[key] is Dictionary else {}
+		var definition: Dictionary = definitions.get(key, {})
+		var name := String(definition.get("name", state.get("name", key.capitalize())))
+		var detail := String(definition.get("detail", ""))
+		var summary := ""
+		match key:
+			"rage":
+				var level := class_level(record, "Barbarian")
+				var damage := 4 if level >= 16 else 3 if level >= 9 else 2
+				summary = "Danni con attacchi di Forza validi %+d; vantaggio a prove e TS di Forza; resistenza a contundenti, perforanti e taglienti." % damage
+			"reckless_attack":
+				summary = "Vantaggio agli attacchi di Forza previsti dal privilegio."
+			"patient_defense":
+				summary = "Difesa paziente; vantaggio ai TS di Destrezza quando previsto."
+			"step_of_the_wind":
+				summary = "Passo del vento; consulta il privilegio per il movimento e la versione potenziata."
+			"innate_sorcery":
+				summary = "Stregoneria innata; consulta il privilegio per i benefici e la durata."
+		var effective := is_active(record, key) if not definition.is_empty() else false
+		result.append({
+			"key": key, "name": name,
+			"origin_id": String(definition.get("origin_id", state.get("origin_id", ""))),
+			"description": detail, "summary": summary, "effective": effective,
+			"mode": String(definition.get("mode", "toggle")),
+			"enhanced": bool(state.get("enhanced", false))
+		})
+	return result
+
+
+static func deactivate(record: Dictionary, key: String) -> Dictionary:
+	var active: Dictionary = record.get("active_class_features", {})
+	if not active.has(key):
+		return {"ok": false, "message": "Capacità non attiva."}
+	var next := record.duplicate(true)
+	var updated: Dictionary = active.duplicate(true)
+	updated.erase(key)
+	next["active_class_features"] = updated
+	return {"ok": true, "record": next, "message": "Effetto terminato."}
+
+
+# A structured, inspectable grant, evaluated with the attack context.
+# Eligibility is checked here once for both the actual damage and its formula explanation.
+static func attack_damage_effects(record: Dictionary, attack: Dictionary, ability: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if ability == "str" and is_active(record, "rage"):
+		var ranged := bool(attack.get("thrown", false)) or String(attack.get("weapon_kind", "")) == "R"
+		if String(record.get("rules_version", "2014")) == "2024" or not ranged:
+			var level := class_level(record, "Barbarian")
+			var amount := 4 if level >= 16 else 3 if level >= 9 else 2
+			var state: Dictionary = record.get("active_class_features", {}).get("rage", {})
+			result.append({
+				"key": "rage", "name": String(state.get("name", "Ira")),
+				"origin_id": String(state.get("origin_id", "class_feature:rage")),
+				"target": "attack_damage", "amount": amount
+			})
+	return result
+
+
 static func rage_damage(record: Dictionary, attack: Dictionary, ability: String) -> int:
-	if ability != "str" or not is_active(record, "rage"): return 0
-	var ranged := bool(attack.get("thrown", false)) or String(attack.get("weapon_kind", "")) == "R"
-	if String(record.get("rules_version", "2014")) != "2024" and ranged: return 0
-	var level := class_level(record, "Barbarian")
-	return 4 if level >= 16 else 3 if level >= 9 else 2
+	var total := 0
+	for effect: Dictionary in attack_damage_effects(record, attack, ability):
+		if String(effect.get("key", "")) == "rage":
+			total += int(effect.get("amount", 0))
+	return total
 
 static func roll_advantage(record: Dictionary, key: String) -> bool:
 	if key == "save:dex" and is_active(record, "patient_defense") and "incapacitated" not in record.get("conditions", []):

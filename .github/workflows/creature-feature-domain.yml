@@ -3,6 +3,10 @@ name: Creature Feature Domain Regression
 on:
   pull_request:
     paths:
+      - "vtt/class_feature_activation.gd"
+      - "vtt/creature_attack_data.gd"
+      - "tests/test_class_feature_activation.gd"
+      - "tests/test_class_feature_ui.gd"
       - "vtt/creature_sheet_style.gd"
       - "vtt/creature_action_economy_tab.gd"
       - "vtt/combat_basic_actions.gd"
@@ -24,6 +28,10 @@ on:
   push:
     branches: [main]
     paths:
+      - "vtt/class_feature_activation.gd"
+      - "vtt/creature_attack_data.gd"
+      - "tests/test_class_feature_activation.gd"
+      - "tests/test_class_feature_ui.gd"
       - "vtt/creature_sheet_style.gd"
       - "vtt/creature_action_economy_tab.gd"
       - "tests/test_action_spell_groups.gd"
@@ -108,6 +116,8 @@ jobs:
             test_creature_action_economy.gd \
             test_action_dashboard_ui.gd \
             test_action_spell_groups.gd \
+            test_class_feature_activation.gd \
+            test_class_feature_ui.gd \
             test_feature_timing_recovery.gd \
             test_combat_basic_actions.gd \
             test_trait_origins.gd \

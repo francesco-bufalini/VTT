@@ -355,10 +355,12 @@ async function editorView() {
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
       panel("Capacità",'<p class="hint">Qui trovi le capacità attivabili diverse dagli incantesimi: non hanno scuola o componenti. Costi e utilizzi dipendono dal privilegio; le manovre si risolvono durante l’azione prevista.</p>'+
-        (abilitiesForCreature(c,state.abilityCatalog||[]).map(ability=>
-          '<article class="native-entry"><strong>'+esc(ability.name||"Capacità")+
-          '</strong><p class="hint">'+esc(ability.origin||"Privilegio")+
-          (ability.activation_mode==="contextual"?' · Attivazione contestuale':'')+
+        (abilitiesForCreature(c,state.abilityCatalog||[],calculated).map(ability=>
+          '<article class="native-entry"><strong>'+esc(ability.name)+
+          '</strong><p class="hint">'+esc(ability.origin)+
+          (ability.activation_mode==="contextual"?' · Attivazione contestuale':
+           typeof ability.activation_mode==="string"&&ability.activation_mode?' · '+esc(ability.activation_mode):'')+
+          (ability.tracker_id?' · '+esc(ability.tracker_name)+' '+esc(ability.tracker_remaining)+' / '+esc(ability.tracker_max):'')+
           '</p>'+(ability.description?'<details><summary>Descrizione</summary><p>'+
           esc(ability.description)+'</p></details>':'')+'</article>').join("")||
           '<p class="hint">Nessuna capacità disponibile.</p>'));
@@ -424,12 +426,12 @@ async function traitsView(c){
   return state.referenceCatalogs[category];
  };
  const linked='<div class="actions">'+[['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']].map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
- const card=entry=>'<details class="trait-card"><summary>'+esc(entry.name||'Descrizione')+'</summary><p class="trait-description">'+esc(flattenDescription(entry)||'Descrizione non presente nel catalogo locale.')+'</p>'+linked+'</details>';
+ const card=entry=>{const description=flattenDescription(entry);return '<details class="trait-card"><summary>'+esc(entry.name)+'</summary>'+(description?'<p class="trait-description">'+esc(description)+'</p>':'')+linked+'</details>';};
  const addReference=async(category,name,source,title)=>{
   if(!name)return;
   const candidates=(await load(category)).filter(r=>r.name?.toLowerCase()===name.toLowerCase()&&(!source||r.source?.toLowerCase()===source.toLowerCase()));
   const row=candidates.length===1?candidates[0]:null;
-  const entry=row?await detailedEntry(category,row):{name,entries:['Riferimento importato senza una descrizione univoca nel catalogo locale.']};
+  const entry=row?await detailedEntry(category,row):{name};
   groups.push('<h3>'+esc(title)+' · '+esc(name)+'</h3>'+card(entry));
  };
  const projected=state.calculated?.features||[];
@@ -442,10 +444,9 @@ async function traitsView(c){
    byOrigin.get(origin).push('<details class="trait-card"><summary>'+esc(feature.name)+
     (feature.level>1?' · livello '+esc(feature.level):'')+
     (!active?' · disattivato':'')+'</summary><p class="trait-description">'+
-    esc(flattenDescription(feature)||'Nessuna descrizione disponibile.')+
+    esc(flattenDescription(feature))+
     '</p><label class="check"><input type="checkbox" data-feature-origin="'+
     esc(feature.origin_id)+'" '+(active?'checked':'')+'>Beneficio attivo</label>'+
-    '<p class="hint">Gli effetti non strutturati restano descrittivi.</p>'+
     linked+'</details>');
   }
   for(const [origin,rows] of byOrigin)
@@ -453,10 +454,13 @@ async function traitsView(c){
  }
  if(c.kind==='monster'&&!projected.length)for(const t of c.stat_block?.trait||[])groups.push(card(t));
  else{
-  await addReference('races',c.species,c.species_source,'Razza / Specie');
-  if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
+  if(!projected.some(f=>f.origin_key?.startsWith('species|'))){
+   await addReference('races',c.species,c.species_source,'Razza / Specie');
+   if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
+  }
  }
- await addReference('backgrounds',c.background,c.background_source,'Background');
+ if(!projected.some(f=>f.origin_key?.startsWith('background|')))
+  await addReference('backgrounds',c.background,c.background_source,'Background');
  if(!projected.some(f=>f.origin_key?.startsWith('class|'))){
  const features=await load('class_features'),subfeatures=await load('subclass_features');
  for(const member of localClasses(c)){
@@ -470,7 +474,11 @@ async function traitsView(c){
   }
  }
  }
- for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled)await addReference('feats',feat.name,feat.source,'Talento');
+ for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled&&
+    !projected.some(f=>f.origin_key?.startsWith('feat|')&&
+      (f.origin_key==='feat|'+String(feat.id||'').toLowerCase()||
+       f.origin_key==='feat|'+String(feat.name).toLowerCase()+'|'+String(feat.source||'').toLowerCase())))
+   await addReference('feats',feat.name,feat.source,'Talento');
  return panel('Tratti',(groups.join('')||'<p class="hint">Seleziona le origini della creatura per leggerne i tratti.</p>')+warnings.map(w=>'<p class="hint">'+esc(w)+'</p>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
 }
 function documentRow(item,index,stored){
