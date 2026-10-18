@@ -198,7 +198,8 @@ func _spell_label(owned: Dictionary, entry: Dictionary) -> String:
 	if not spell_name.is_empty():
 		return spell_name
 	var name := String(owned.get("name", entry.get("name", "")))
-	return name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges()
+	var stripped := name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges()
+	return name if stripped.is_empty() else stripped
 
 
 func _spell_level(entry: Dictionary) -> String:
