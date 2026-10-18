@@ -69,11 +69,13 @@ test('secondary classes show only non-primary entries, with source from selected
 test('statistics layout keeps six aligned, individually editable ability rows',()=>{
  const creature={kind:'character',abilities:{str:17,dex:14,con:12,int:10,wis:11,cha:8}};
  const calculated=calculateSheet(creature);
- const markup=nativeSection(creature,'stats',{
+ const opts={
   field:()=>'',area:()=>'',panel:(title,body,className='')=>
    '<section class="'+className+'"><h2>'+title+'</h2>'+body+'</section>',
   catalogs:{},calculated,
- });
+ };
+ const markup=nativeSection(creature,'info',opts);
+ const skills=nativeSection(creature,'stats',opts);
  assert.equal((markup.match(/class="native-ability-row"/g)||[]).length,6);
  assert.match(markup,/class="native-abilities-header" role="row"/);
  for(const ability of ['str','dex','con','int','wis','cha']){
@@ -85,7 +87,8 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
   }
  }
  assert.match(markup,/stats-abilities-panel/);
- assert.match(markup,/stats-skills-panel/);
+ assert.match(skills,/stats-skills-panel/);
+ assert.doesNotMatch(skills,/native-ability-row/);
  assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
  assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');

@@ -3,7 +3,7 @@
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
-export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abilità"],
+export const SHEET_SECTIONS = [["info","Info"],["stats","Abilità"],
  ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
@@ -33,7 +33,7 @@ const list=v=>Array.isArray(v)?v:[];
 export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
- feats_catalog:[["name","Talento"],["source","Fonte"],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  formula_bonuses:[["target","Valore"], ["expression","Formula"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  dice_bonuses:[["target","Tiro",[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']]],["dice","Dadi (es. 1d4)"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
@@ -319,40 +319,19 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const speciesType=speciesCreatureType(c,catalogs);
  const secondaryClasses=rowsFor(c,'classes').slice(1);
- const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
+ const feats=list(c.feats_catalog).map((feat,i)=>{
+  const entry=typeof feat==='string'?{name:feat}:feat||{};
+  const detail=list(catalogs.featDetails)[i]||entry;
+  const level=Number(entry.level??entry.acquired_level??entry.origin_level);
+  const levelText=Number.isInteger(level)&&level>=1&&level<=20?'Livello del privilegio: '+level:'Livello del privilegio: non specificato';
+  const description=String(detail.description||entry.description||'').trim();
+  return '<details class="trait-card info-feat-entry"><summary><strong>'+esc(entry.name||'Talento')+'</strong><span class="info-feat-level">'+esc(levelText)+'</span>'+(entry.disabled?' · disattivato':'')+'</summary>'+
+   (description?'<p class="trait-description">'+esc(description)+'</p>':'<p class="feat-source">'+esc(entry.source||'Descrizione non disponibile')+'</p>')+
+   '</details>';
+ }).join('')||'<p class="play-empty">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='';
- if(section==='info')return panel('Identità',cols(
-    select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
-    field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
-    select('Allineamento','alignment',
-      c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
-        [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
-      c.alignment||'Completamente neutrale'))+reference('Background','background','backgrounds'))+
-   panel('Aspetto',
-    '<p class="sheet-section-description">Specie, sottorazza e tipo definiscono l’identità fisica della creatura. Puoi anche scegliere le miniature per la forma di base e quella attuale, regolare la taglia e orientarne il fronte sulla mappa.</p>'+
-    (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
-      '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
-      cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
-      summary([['Tipo',speciesType]]))+
-    '<h3>Miniature</h3>'+
-    summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
-    '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli la miniatura di base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
-    ''+
-    cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
-      select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
-    '')+
-   panel('Classi e progressione',
-      '<p class="sheet-section-description">Qui trovi la classe principale con la relativa sottoclasse e le eventuali classi aggiuntive. Ogni classe ha un livello indipendente: il livello totale è calcolato automaticamente dalla loro somma, mentre i punti esperienza possono essere aggiornati separatamente.</p>'+
-      '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
-      number('XP','xp')+'</div>'+
-      cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
-       (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
-        '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
-       '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
-       nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
-   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>');
- if(section==='stats')return panel('Caratteristiche',
+ const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
    '<strong role="columnheader">Car.</strong><strong role="columnheader">Punteggio</strong>'+
@@ -365,8 +344,40 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<div class="native-ability-value" role="cell">'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+'</div>'+
     '<div class="native-ability-value" role="cell">'+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)+'</div>'+
     '</div>').join('')+'</div>','stats-abilities-panel')+
-  panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel')+
-  panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
+  panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel');
+ if(section==='info')return panel('Identità',cols(
+    select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
+    field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
+    select('Allineamento','alignment',
+      c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
+        [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
+      c.alignment||'Completamente neutrale')) )+
+   panel('Aspetto',
+    '<p class="sheet-section-description">Specie, sottorazza, taglia, tipo e miniature della creatura.</p>'+
+    (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
+      '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
+      cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
+      summary([['Tipo',speciesType]]))+
+    '<h3>Miniature</h3>'+
+    summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
+    '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli la miniatura di base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
+    ''+
+    cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
+      select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
+    '')+
+   panel('Background',reference('Background','background','backgrounds'))+
+   panel('Classi e progressione',
+      '<p class="sheet-section-description">Classi, sottoclassi, livelli e punti esperienza del personaggio.</p>'+
+      '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
+      number('XP','xp')+'</div>'+
+      cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
+       (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
+        '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
+       '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
+       nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
+   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>')+
+   statsIntro();
+ if(section==='stats')return panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle'){

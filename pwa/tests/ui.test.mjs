@@ -327,7 +327,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.ok(owned,'Test character remains available after pairing');
   click('[data-act="open"][data-id="'+owned.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]')?.value==='Arcanista mobile');
-  click('[data-sheet="stats"]');
+  click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
   const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
     JSON.parse(c.options.body).action==='chat_send'&&
@@ -441,13 +441,13 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Cosa posso fare?","Battaglia","Poteri","Inventario","Caratteristiche e abilità","Condizioni","Tratti","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Cosa posso fare?","Battaglia","Poteri","Inventario","Abilità","Condizioni","Tratti","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="current_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="type"]'),null);
-  click('[data-sheet="stats"]');
+  click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
   await changeScore('str',14);
   click('[data-sheet="conditions"]');
@@ -771,8 +771,10 @@ test("sheet derived values update locally and never call a desktop calculation A
   const initial=document.querySelector('[data-local-sheet-calculations]').textContent;
   assert.doesNotMatch(initial,/Calcoli e copertura della scheda/);
   click('[data-sheet="stats"]');
-  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
+  await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
+  click('[data-sheet="info"]');
+  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
   await changeScore('dex',16);
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("+3"));
   click('[data-sheet="battle"]');
@@ -806,7 +808,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Classi e progressione','Talenti']);
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Background','Classi e progressione','Talenti','Caratteristiche','Riepilogo']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
@@ -894,13 +896,32 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="slots-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
  click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
+ click('[data-sheet="info"]');await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
  await changeScore('dex',18);
  await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
  assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
+ click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
  click('[data-act="edit-bonus"][data-target="skill:stealth"]');
  await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
  change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
  click('[data-sheet="stats"]');
  await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("Info places background and scored characteristics after interactive feats, while Abilità holds skills",async()=>{
+ const {nativeSection}=await import("../native_sheet.js");
+ const sample={kind:"character",name:"Test",species:"Elf",background:"Sage",feats_catalog:[{name:"Alert",source:"PHB",level:4}],abilities:{}};
+ const opts={field:()=>"",area:()=>"",panel:(title,body)=>'<section data-panel="'+title+'">'+body+'</section>',resources:"",calculated:{values:{},proficiencies:[]},
+  catalogs:{featDetails:[{description:"Il talento permette di agire rapidamente."}]}};
+ const info=nativeSection(sample,"info",opts),stats=nativeSection(sample,"stats",opts);
+ const order=[...info.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(order,["Identità","Aspetto","Background","Classi e progressione","Talenti","Caratteristiche","Riepilogo"]);
+ assert.match(info,/Livello del privilegio: 4/);
+ assert.match(info,/Il talento permette di agire rapidamente/);
+ assert.match(info,/<details class="trait-card info-feat-entry">/);
+ assert.doesNotMatch(info,/ft di camminata/);
+ assert.match(stats,/data-panel="Abilità"/);
+ assert.doesNotMatch(stats,/data-panel="Caratteristiche"/);
+ assert.doesNotMatch(stats,/data-panel="Riepilogo"/);
 });

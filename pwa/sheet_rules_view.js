@@ -369,8 +369,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    btn('Gestisci incantesimi','spell_cast','data-act="action-open-spells"','<span>Gestisci</span>'));
  }
  if(sheet==='stats'){
-  html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
-  html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
   html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
   const tools=panelNamed('Strumenti');bind('tools',tools);html+=go('tools','Strumenti e linguaggi','proficiency');
  }
@@ -381,21 +379,25 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
-   '<small>'+esc(c.background||'Background da scegliere')+'</small>'+edit('identity','Modifica identità','settings')+'</section>';
+   edit('identity','Modifica identità','settings')+'</section>';
   html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
+   if(title==='Caratteristiche'||title==='Riepilogo')continue;
    const sub=title==='Aspetto'?
     ['Specie '+(c.species||'da definire'),c.subrace?'Sottorazza '+c.subrace:'',
-     'Taglia '+(c.size_name||'Medium'),(d.values?.speed??30)+' ft di camminata',
+     'Taglia '+(c.size_name||'Medium'),
      c.default_miniature_id?'Miniatura base assegnata':'Miniatura base da assegnare',
      c.current_miniature_id&&c.current_miniature_id!==c.default_miniature_id?'Forma alternativa attiva':''].filter(Boolean).join(' · '):
+    title==='Background'?(c.background||'Nessun background assegnato'):
     title.includes('Classi')?
      [classNames||'Nessuna classe assegnata',c.subclass?'Sottoclasse '+c.subclass:'',
       'Livello totale '+totalClassLevel,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
-   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub||'Apri dettagli e modifica');
+   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
   }
+  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
  }
  if(sheet==='actions'){
   const times=[['action','Azione','weapon'],['bonus','Bonus','flight'],['reaction','Reazione','reaction'],['movement','Movimento','movement'],['free','Gratuite','hand']];
@@ -531,7 +533,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=card('Configurazione del personaggio',options.map(option=>'<button type="button" class="play-list-row" data-act="sheet-origin-editor" data-detail="'+esc(option.value)+'">'+icon(option.value==='resources'?'reset':'settings')+'<span class="play-row-copy"><strong>'+esc(option.textContent)+'</strong></span><span class="play-chevron">›</span></button>').join(''));
   bind('origin-editor',panels[0]);
  }
- const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.innerHTML=html;
+ const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
  const filter=String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(filter);

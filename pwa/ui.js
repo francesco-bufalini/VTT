@@ -126,12 +126,12 @@ const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['stats','Caratteristiche e abilità','Prove, tiri salvezza e competenze'],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],stats:['Caratteristiche e abilità','Tocca un modificatore per effettuare una prova.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
-function navigationButton(key,title,description=''){
+const REFERENCE_SECTIONS=[['stats','Abilità',''],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],stats:['Abilità',''],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
-  return '<button type="button" class="btn '+(description?'navigation-row':'dock-destination')+'" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+current+'" aria-label="'+esc(fullTitle)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span><span class="destination-label">'+esc(title)+'</span>'+(description?'<small>'+esc(description)+'</small>':'')+'</span>'+(description?'<span class="navigation-chevron" aria-hidden="true">›</span>':'')+'</button>';
+  return '<button type="button" class="btn '+(description||menu?'navigation-row':'dock-destination')+'" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+current+'" aria-label="'+esc(fullTitle)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span><span class="destination-label">'+esc(title)+'</span>'+(description?'<small>'+esc(description)+'</small>':'')+'</span>'+(description||menu?'<span class="navigation-chevron" aria-hidden="true">›</span>':'')+'</button>';
 }
 function closeNavigation(restoreFocus=false){
   const dialog=document.querySelector('#navigation-dialog');
@@ -162,7 +162,7 @@ function syncNav(){
   const secondary=state.page==='library'&&!state.libraryMode&&!PLAY_SECTIONS.some(([key])=>key===state.sheet);
   more.classList.toggle('is-current',secondary||state.page!=='library'||state.libraryMode);
   more.setAttribute('aria-label',secondary?'Altro · '+(SECTION_COPY[state.sheet]?.[0]||'Scheda'):'Altro');
-  document.querySelector('#secondary-sheet-navigation').innerHTML=REFERENCE_SECTIONS.map(([key,title,description])=>navigationButton(key,title,description)).join('');
+  document.querySelector('#secondary-sheet-navigation').innerHTML=REFERENCE_SECTIONS.map(([key,title])=>navigationButton(key,title,'',true)).join('');
   const destination=hasCreature?document.querySelector('#global-navigation-slot'):dock;
   if(nav.parentElement!==destination)destination.prepend(nav);
   dock.classList.toggle('has-creature',hasCreature);
@@ -170,7 +170,7 @@ function syncNav(){
     const button=nav.querySelector('[data-nav="'+page+'"]');
     const current=state.page===page&&(page!=='library'||state.libraryMode||!hasCreature);
     button.className='btn '+(hasCreature?'navigation-row':'dock-destination');
-    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span>'+(hasCreature?'<small>'+description+'</small>':'')+'</span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
+    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span></span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
     if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
   connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
@@ -421,7 +421,7 @@ async function editorView() {
   // The persistent header owns creature identity and tab navigation.
   let body = "";
   if(['info','origins'].includes(state.sheet)){
-    await Promise.all(["races","classes","subclasses","backgrounds",...(state.sheet==='origins'?['feats']:[])].map(async key=>{
+    await Promise.all(["races","classes","subclasses","backgrounds",...(['info','origins'].includes(state.sheet)?['feats']:[])].map(async key=>{
       if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
       catch{ /* References stay editable offline. */ }
     }));
@@ -443,7 +443,13 @@ async function editorView() {
   }
   const calculated=await computeLocalData(c);
   state.calculated=calculated;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
+  const featDetails=state.sheet==='info'?await Promise.all((Array.isArray(c.feats_catalog)?c.feats_catalog:[]).map(async feat=>{
+    const name=typeof feat==='string'?feat:feat?.name||'',source=typeof feat==='string'?'':feat?.source||'';
+    const match=(state.referenceCatalogs.feats||[]).find(row=>row.name?.toLowerCase()===name.toLowerCase()&&(!source||row.source?.toLowerCase()===source.toLowerCase()));
+    try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
+    catch{return {description:''};}
+  })):undefined;
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
