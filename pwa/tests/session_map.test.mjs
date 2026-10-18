@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {tokenGroups,snapshotRevision,snapshotSource} from "../session_map.js";
+import {tokenGroups,snapshotRevision,snapshotBlob} from "../session_map.js";
 
 const tokens=[
   {id:"c",name:"Zanna",conditions:[]},
@@ -45,9 +45,13 @@ test("snapshot refresh key tracks desktop revision, conditions and token appeara
   state.tokens[0].conditions=["poisoned"];
   assert.notEqual(snapshotRevision(state),second);
 });
-test("only a bounded valid WebP payload can be embedded in the UI",()=>{
-  assert.equal(snapshotSource({ok:true,format:"webp",image:"d2VicA=="}),"data:image/webp;base64,d2VicA==");
-  assert.equal(snapshotSource({ok:true,format:"png",image:"d2VicA=="}),"");
-  assert.equal(snapshotSource({ok:true,format:"webp",image:'" onload="alert(1)'}),"");
-  assert.equal(snapshotSource({ok:true,format:"webp",image:"A".repeat(1800001)}),"");
+test("base64 WebP becomes a typed Blob, not a CSP-blocked data URI",async()=>{
+  const blob=snapshotBlob({ok:true,format:"webp",image:"d2VicA=="});
+  assert.ok(blob instanceof Blob);
+  assert.equal(blob.type,"image/webp");
+  assert.deepEqual([...new Uint8Array(await blob.arrayBuffer())],[119,101,98,112]);
+  assert.equal(snapshotBlob({ok:true,format:"png",image:"d2VicA=="}),null);
+  assert.equal(snapshotBlob({ok:true,format:"webp",image:'" onload="alert(1)'}),null);
+  assert.equal(snapshotBlob({ok:true,format:"webp",image:"A".repeat(1800001)}),null);
+  assert.equal(snapshotBlob({ok:true,format:"webp",image:"not-base64!"}),null);
 });

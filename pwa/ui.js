@@ -7,7 +7,7 @@ import { status, session, pair, unpair, hasPairingCredential, map, action, subsc
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, snapshotRevision, snapshotSource } from "./session_map.js";
+import { tokenGroups, snapshotRevision, snapshotBlob } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
@@ -33,7 +33,7 @@ const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
-  tokenId:"", editTokenId:"", liveSnapshot:null, snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
+  tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
@@ -52,12 +52,19 @@ let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
 let currentGameSession="";
+function releaseSessionSnapshot(){
+  const url=state.snapshotObjectUrl;
+  state.snapshotObjectUrl="";
+  state.liveSnapshot=null;
+  state.snapshotKey="";
+  if(url)URL.revokeObjectURL(url);
+}
 function acceptSession(info){
   const next=String(info?.session??"");
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
     state.messages=[];state.after="";state.map=null;state.tokenId="";
-    state.liveSnapshot=null;state.snapshotKey="";++snapshotGeneration;
+    releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
   }
@@ -101,7 +108,7 @@ function message(textValue, error=false) {
   clearTimeout(toastTimer);
   toastElement.hidden = false;
   toastElement.textContent = textValue;
-  toastElement.style.borderColor = error ? "#c77b82" : "";
+  toastElement.classList.toggle("error",error);
   toastTimer = setTimeout(() => { toastElement.hidden = true; }, 4500);
 }
 function errorMessage(error) {
@@ -127,7 +134,7 @@ function syncNav() {
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url; link.download = filename; link.style.display = "none";
+  link.href = url; link.download = filename; link.hidden = true;
   document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
@@ -138,6 +145,7 @@ function stopSubscriptions() {
   ++mapGeneration;
   ++snapshotGeneration;
   state.snapshotPending=false;
+  releaseSessionSnapshot();
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -707,7 +715,7 @@ function sessionView() {
     '<button type="submit" class="btn primary full">Collega alla partita</button></form>';
   let html=header('Partita','La tua partita','')+
     panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
-  const image=snapshotSource(state.liveSnapshot);
+  const image=state.snapshotObjectUrl;
   const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
   html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
     '<div class="session-map-stage">'+
@@ -808,8 +816,19 @@ async function refreshSessionSnapshot(force=false) {
       const result=await action("snapshot",{token_id:state.tokenId,
         owner_id:owner,field_feet:120,attack:{}});
       if(generation!==snapshotGeneration)return;
-      if(!snapshotSource(result))throw Error(result?.error||"Snapshot non disponibile.");
-      state.liveSnapshot=result;
+      const blob=snapshotBlob(result);
+      if(!blob)throw Error(result?.error||"Snapshot WebP non valido.");
+      // Generate a new CSP-compatible URL only when fresh bytes arrive, not
+      // every 2.5s poll or during rerenders. Drop the previous allocation.
+      const newUrl=URL.createObjectURL(blob);
+      const oldUrl=state.snapshotObjectUrl;
+      state.snapshotObjectUrl=newUrl;
+      state.liveSnapshot={token_id:result.token_id};
+      // An open token editor deliberately blocks a whole session rerender.
+      // Keep the image current without closing that dialog.
+      const image=app.querySelector("#session-map-image");
+      if(image)image.src=newUrl;
+      if(oldUrl)URL.revokeObjectURL(oldUrl);
     }catch(error){
       if(generation!==snapshotGeneration)return;
       state.snapshotKey="";

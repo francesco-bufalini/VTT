@@ -36,9 +36,9 @@ const GOLD_ICON_INDEX=new Map(GOLD_ICON_GROUPS.flatMap((keys,group)=>
  keys.map((key,index)=>[key,{group,index,count:keys.length}])));
 const HEADER_GLYPHS={action:"weapon",bonus:"flight",free:"sleight_of_hand",movement:"dash",reaction:"reaction_trigger"};
 export function actionGlyph(key){
- const {group,index,count}=GOLD_ICON_INDEX.get(key)||GOLD_ICON_INDEX.get("weapon");
- return '<span class="vtt-action-glyph vtt-action-glyph--pack-'+group+'" style="--glyph-position:'+
-   (100*index/(count-1)).toFixed(6)+'%" aria-hidden="true"></span>';
+ const {group,index}=GOLD_ICON_INDEX.get(key)||GOLD_ICON_INDEX.get("weapon");
+ return '<span class="vtt-action-glyph vtt-action-glyph--pack-'+group+
+   ' vtt-action-glyph--slot-'+index+'" aria-hidden="true"></span>';
 }
 function actionGlyphKey(item){
  const name=String(item.name||'').toLocaleLowerCase('it');
