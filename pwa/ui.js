@@ -15,7 +15,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, formulaReadout } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -700,7 +700,8 @@ function renderEvents() {
     '<article class="event"><div class="meta"><strong>'+esc(e.author||"Giocatore")+'</strong><span>'+
     esc(e.kind==="roll"?"Dadi":e.kind==="action"?"Azione":"Chat")+'</span></div>'+
     '<div class="body">'+esc(e.kind==="roll" ? ((e.label||e.die||"Tiro")+": "+e.total) :
-      (e.text||""))+'</div></article>').join("") :
+      (e.text||""))+(e.kind==="roll"&&e.detail?'<div class="hint roll-event-detail">'+esc(e.detail)+'</div>':'')+
+      '</div></article>').join("") :
     '<p class="hint">Nessun evento recente. La cronologia è disponibile mentre il desktop è collegato.</p>';
 }
 function sessionTokenRows(rows, turnId="") {
@@ -1051,16 +1052,17 @@ async function roll(sides) {
   state.rollHistory.unshift(state.roll);
   await render();
 }
-async function shareRoll() {
+async function shareRoll({quiet=false}={}) {
   if(!state.roll) return;
-  if(!state.paired) throw new Error("Collega prima una partita.");
+  if(!state.paired||!state.online) throw new Error("Collega prima una partita.");
   const r=state.roll;
   const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:r.author||"Giocatore",
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,die:"d"+r.sides,
-    count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total};
+    count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total,
+    notation:r.notation,detail:r.detail};
   const result=await action("chat_send",{event});
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
-  message("Tiro condiviso nella chat.");
+  if(!quiet)message("Tiro condiviso nella chat.");
 }
 async function patch(patchValue) {
   if(!state.editor) return;
@@ -1572,43 +1574,120 @@ async function handleAction(target){
     tacticalViewer.setBasicAction({mode,rule});
     return;
   }
-  if(act==='sheet-roll'){
-    const calculated=await computeLocalData(state.editor.read()),modifier=calculated.values[target.dataset.target];
-    if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
-    const die=randomDie(20),notation='1d20'+(modifier>=0?'+':'')+modifier;
-    const label=target.dataset.label||'Tiro',author=selectedName();
-    state.roll={sides:20,count:1,modifier,rolls:[die],total:die+modifier,notation,label:label+' · '+notation,author,detail:die+' '+(modifier>=0?'+ ':'− ')+Math.abs(modifier)};
-    state.rollHistory.unshift(state.roll);
-    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='sheet-roll-dialog';
-    dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2><div class="dice-result">'+state.roll.total+'</div><p>'+esc(state.roll.detail)+'</p><div class="actions">'+(state.paired?btn('share-roll','Invia in chat'):'')+btn('close-sheet-roll','Chiudi')+'</div>';
-    const bonuses=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]);
-    if(bonuses.length){
-      const choices=document.createElement('div');
-      choices.innerHTML='<p>Scegli i dadi da aggiungere al risultato. I bonus monouso saranno consumati.</p>'+bonuses.map((row,i)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+i+'">'+esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'<button type="button" class="btn">Applica bonus</button>';
-      choices.querySelector('button').addEventListener('click',async()=>{
-        const apply=choices.querySelector('button');if(apply.disabled)return;apply.disabled=true;
-        try{
-          const available=applicableDiceBonuses(state.editor.read(),target.dataset.target,state.spellCatalog||[]),selected=[...choices.querySelectorAll('input:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(row=>available.some(a=>a.id===row.id));
-          if(!selected.length){apply.disabled=false;return;}
-          const consumed=new Set(),parts=[];let addition=0;
-          for(const row of selected){
-            const match=String(row.dice).replaceAll(' ','').match(/^(\d+)d(\d+)([+-]\d+)?$/i),rolls=Array.from({length:Number(match[1])},()=>randomDie(Number(match[2]))),value=rolls.reduce((sum,n)=>sum+n,0)+Number(match[3]||0);
-            addition+=value;parts.push(row.dice+' ['+rolls.join(', ')+'] = '+value);if(row.consumes_spell)consumed.add(row.consumes_spell);
-          }
-          state.roll={...state.roll,total:state.roll.total+addition,detail:state.roll.detail+' · '+parts.join(' · '),notation:state.roll.notation+'+'+selected.map(r=>r.dice).join('+')};
-          state.roll.label=label+' · risultato con bonus · '+state.roll.notation;
-          state.rollHistory.unshift({...state.roll});
-          if(consumed.size){
-            const record=state.editor.read(),contexts={...record.active_spell_context},enabled={...record.origin_enabled};for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
-            await patch({proficiency_origins:(record.proficiency_origins||[]).filter(o=>!consumed.has(String(o.id).slice(6))||o.group!=='spell'),active_spell_context:contexts,origin_enabled:enabled});
-          }
-          dialog.querySelector('.dice-result').textContent=state.roll.total;dialog.querySelector('p').textContent=state.roll.detail;choices.remove();
-        }catch(error){apply.disabled=false;message(errorMessage(error),true);}
-      });
-      dialog.append(choices);
-    }
-    document.body.append(dialog);dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});
+  if(act==='edit-score'){
+    const ability=target.dataset.abilityKey;
+    if(!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
+    const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
+    document.querySelector('#sheet-score-dialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-score-dialog';
+    dialog.id='sheet-score-dialog';dialog.dataset.abilityKey=ability;
+    dialog.innerHTML='<h2>Punteggio base · '+esc(abilities[ability])+'</h2>'+
+      '<p class="hint">Modifica il punteggio della caratteristica. I bonus dalle origini rimangono separati.</p>'+
+      '<label>Valore base<input id="sheet-score-input" type="number" min="1" max="30" step="1" value="'+
+      esc(creature.abilities?.[ability]??10)+'" aria-label="Punteggio base '+esc(abilities[ability])+'"></label>'+
+      '<div class="actions">'+btn('save-score','Salva','primary')+btn('close-score','Annulla')+'</div>';
+    document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    dialog.querySelector('input')?.focus();return;
+  }
+  if(act==='save-score'){
+    const dialog=document.querySelector('#sheet-score-dialog'),ability=dialog?.dataset.abilityKey;
+    if(!ability||!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
+    const input=dialog.querySelector('#sheet-score-input');
+    const score=Number(input?.value);
+    if(!input?.value||!Number.isInteger(score)||score<1||score>30)throw Error('Punteggio da 1 a 30');
+    const creature=state.editor.read();
+    await patch({abilities:{...creature.abilities,[ability]:score}});
+    dialog.close?.();dialog.remove();return;
+  }
+  if(act==='close-score'){
+    const dialog=document.querySelector('#sheet-score-dialog');
+    dialog?.close?.();dialog?.remove();return;
+  }
+  if(act==='sheet-roll'){
+    const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
+    const key=String(target.dataset.target||'');
+    const calculated=await computeLocalData(creature),modifier=calculated.values[key];
+    if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
+    const label=target.dataset.label||'Tiro',author=selectedName();
+    const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
+    document.querySelector('#sheet-roll-dialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-roll-preview';
+    dialog.id='sheet-roll-dialog';dialog.dataset.rollTarget=key;
+    dialog.dataset.rollLabel=label;dialog.dataset.creatureId=creature.id||'';
+    dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2>'+
+      '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
+      '<div class="sheet-roll-math"><span>Formula del tiro</span><strong data-roll-formula>'+
+      esc(sheetRollFormula(modifier))+'</strong></div>'+
+      '<p class="hint sheet-roll-provenance"><strong>Come si ottiene il modificatore:</strong> '+
+      esc(calculated.explanations?.[key]||'Valore calcolato dalla scheda e dalle origini attive')+'</p>'+
+      (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
+       '<p class="hint">Seleziona i dadi aggiuntivi prima di tirare. I bonus monouso scelti verranno consumati.</p>'+
+       bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
+         esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'</fieldset>':'')+
+      '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+
+      '<p class="hint" data-roll-chat-status>'+(state.paired&&state.online?
+       'Il risultato verrà inviato automaticamente alla chat della partita.':'Tiro locale: nessuna partita collegata.')+'</p>'+
+      '<div class="actions sheet-roll-actions">'+btn('roll-sheet-confirm','Tira 1d20','primary')+
+      '<button type="button" class="btn" data-act="sheet-roll-edit-bonus" data-target="'+esc(key)+'">Origini e bonus ±</button>'+
+      btn('close-sheet-roll','Chiudi')+'</div>';
+    dialog.addEventListener('change',event=>{
+      if(!event.target.matches('[data-roll-bonus]'))return;
+      const selected=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+      const formula=dialog.querySelector('[data-roll-formula]');
+      if(formula)formula.textContent=sheetRollFormula(modifier,selected);
+    });
+    document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    return;
+  }
+  if(act==='roll-sheet-confirm'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    if(!dialog||dialog.dataset.rolled==='true')return;
+    const creature=state.editor?.read();
+    if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    const key=dialog.dataset.rollTarget,label=dialog.dataset.rollLabel;
+    const calculated=await computeLocalData(creature),modifier=calculated.values[key];
+    const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
+    const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
+       bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+    const outcome=rollSheetDice(modifier,chosen,randomDie);
+    dialog.dataset.rolled='true';
+    state.roll={...outcome,label,author:selectedName()};
+    state.rollHistory.unshift({...state.roll});
+    const result=dialog.querySelector('[data-roll-result]');
+    result.hidden=false;
+    result.innerHTML='<div class="dice-result">'+esc(outcome.total)+'</div>'+
+      '<p><strong>Formula:</strong> '+esc(outcome.notation)+'</p>'+
+      '<ol class="sheet-roll-breakdown">'+outcome.parts.map(part=>
+       '<li><strong>'+esc(part.name)+'</strong> · '+esc(part.notation)+
+       ' → ['+esc(part.rolls.join(', '))+']'+(part.flat?' '+esc((part.flat>0?'+ ':'− ')+Math.abs(part.flat)):'')+
+       ' = '+esc(part.subtotal)+'</li>').join('')+'</ol>'+
+      '<p class="sheet-roll-total">Modificatore '+esc((modifier>=0?'+':'')+modifier)+
+      ' · risultato finale <strong>'+esc(outcome.total)+'</strong></p>';
+    const rollButton=dialog.querySelector('[data-act="roll-sheet-confirm"]');
+    if(rollButton)rollButton.hidden=true;
+    for(const input of dialog.querySelectorAll('[data-roll-bonus]'))input.disabled=true;
+    const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
+    if(consumed.size){
+      try{
+        const live=state.editor.read(),contexts={...live.active_spell_context},enabled={...live.origin_enabled};
+        for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
+        await patch({proficiency_origins:(live.proficiency_origins||[]).filter(o=>
+           !consumed.has(String(o.id).slice(6))||o.group!=='spell'),
+           active_spell_context:contexts,origin_enabled:enabled});
+      }catch(error){message('Tiro registrato; consumo bonus non salvato: '+errorMessage(error),true);}
+    }
+    const chatStatus=dialog.querySelector('[data-roll-chat-status]');
+    if(state.paired&&state.online){
+      try{
+        await shareRoll({quiet:true});
+        if(chatStatus)chatStatus.textContent='Risultato inviato automaticamente alla chat della partita.';
+      }catch(error){
+        if(chatStatus)chatStatus.textContent='Tiro effettuato, ma invio chat non riuscito: '+errorMessage(error);
+        message('Invio chat non riuscito: '+errorMessage(error),true);
+      }
+    }
     return;
   }
   if(act==='close-sheet-roll'){document.querySelector('#sheet-roll-dialog')?.remove();return;}
@@ -1665,7 +1744,11 @@ async function handleAction(target){
     if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
     state.sheet="origins";state.detail=target.dataset.detail;await render();return;
   }
-  if(act==='edit-bonus'){
+  if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
+    if(act==='sheet-roll-edit-bonus'){
+      const dialog=document.querySelector('#sheet-roll-dialog');
+      dialog?.close?.();dialog?.remove();
+    }
     const c=state.editor.read(),targetKey=target.dataset.target;
     const rows=rowsFor(c,'formula_bonuses');
     if(!rows.some(row=>row.target===targetKey&&!row.automatic)){
