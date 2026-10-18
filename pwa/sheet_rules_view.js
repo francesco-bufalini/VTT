@@ -334,6 +334,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=disclosure('attacks','Attacchi fisici','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
+  html+=disclosure('others','Altre azioni','hand',
+   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
+  html+=disclosure('abilities','Capacità','proficiency',
+   view.battleActions?.abilities||'<p class="play-empty">Nessuna capacità di classe disponibile.</p>');
   html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
   html+=disclosure('spells','Incantesimi','spell_cast',

@@ -184,7 +184,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(abilitySeen.has(identity))continue;
   abilitySeen.add(identity);
   add(feature.name||feature.title,activation,feature.type||feature.action_kind||'Capacità',
-      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost)||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
+      feature.description||feature.entries||feature.text||'',tracked(feature.tracker_id),Number(feature.tracker_cost??(feature.tracker_id?1:0))||0,{id:String(feature.key||feature.id||feature.name||feature.title),tracker_id:String(feature.tracker_id||''),origin_id:String(feature.origin_id||feature.origin_key||''),alternate_action:Array.isArray(activation)&&activation.some(t=>timing(t)==='action')&&activation.some(t=>timing(t)==='bonus')});
  }
  // Exact 5etools class/feature/source/level supplements, not prose analysis.
  const members=arr(record.classes).length?arr(record.classes):
@@ -204,8 +204,14 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const collected=arr(calculated.features).filter(f=>String(f.origin_key||'').startsWith(classOrigin));
   if(collected.length&&!collected.some(f=>String(f.name||'').toLowerCase()===
       String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled))continue;
+  // Prefer the native activation (including persistent conditions) when present.
+  // Otherwise keep a typed, class-owned grant with its actual resource.
+  if(nativeClassFeatureActions(record,calculated).some(row=>
+      String(row.name).toLowerCase()===String(rule.display_name||rule.feature_name).toLowerCase()))continue;
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
-      resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
+      resource?.name||rule.resource_name||'',Number(rule.resource_cost??(resource?1:0))||0,
+      {id:'class_override:'+rule.class_name+':'+(rule.display_name||rule.feature_name)+':'+rule.book,
+       tracker_id:String(resource?.id||''),origin_id:classOrigin});
  }
  // Native class abilities with no typed activation in their 5etools entry.
  for(const row of nativeClassFeatureActions(record,calculated)){
@@ -462,13 +468,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  if(attack){
   addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+item.name,attack.melee?'Mischia':'Distanza',
    calculated.values?.['attack_hit:'+attack.id]??attack.hit);
- }else if(item.skill_ids?.length){
+ }
+ if(item.skill_ids?.length){
   for(const skill of [...new Set(item.skill_ids)]){
    const label=SKILLS.find(([id])=>id===skill)?.[1]||skill;
    addRoll('skill:'+skill,label,label,
     calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
   }
- }else if(WEAPON_ROLL_ACTION_IDS.has(item.id)){
+ }
+ if(!attack&&!item.skill_ids?.length&&WEAPON_ROLL_ACTION_IDS.has(item.id)){
   const choices=[...attacksById.values()];
   const weapon=item.id==='opportunity'?
    choices.find(row=>row.melee&&(row.slot==='main'||!row.slot))||choices.find(row=>row.melee):
@@ -490,7 +498,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
-  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
+  '<div class="play-battle-attack-line'+(rolls.length>1?' has-multiple-rolls':'')+'"><details class="play-battle-attack-details"><summary>'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
@@ -498,11 +506,57 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   (rolls.length?'<div class="play-battle-attack-rolls">'+rolls.map(row=>
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
+   (rolls.length>1?'<span class="play-battle-roll-name">'+esc(row.kind)+'</span>':'')+'<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
   '</div>'+battleEffectMarkup(item,attack)+'</article>';
 }
 
-export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
+
+const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
+ String(row?.origin_id||'').startsWith('feature:class|')||
+ String(row?.id||'').startsWith('class_feature:')||!!row?.class_feature_id;
+const persistentClassFeatures=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
+export function battleAbilityEntries(record={},calculated={},entries=[],activated=[]){
+ const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&classOrigin(row));
+ const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
+ for(const ability of activated){
+  if(!String(ability.origin||'').startsWith('Classe ·')&&
+     !String(ability.feature_id||'').startsWith('feature:class|'))continue;
+  const raw=String(ability.action_type||ability.activation_mode||'').trim().toLowerCase();
+  if(!raw||raw==='passive')continue;
+  if(ability.id==='vtt_wild_shape'&&result.some(row=>row.rule_action_id==='wild_shape'||row.id==='wild_shape'))continue;
+  const name=String(ability.name||'').trim().toLocaleLowerCase('it');
+  if(!name||seen.has(name))continue;
+  result.push({id:'activated:'+ability.id,ability_id:ability.id,name:ability.name,
+   description:ability.description||'',time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
+   origin:'personal',origin_id:ability.feature_id||ability.origin_id||'',
+   tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',
+   cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0)});
+  seen.add(name);
+ }
+ return result;
+}
+function battleAbilityRow(item,record,calculated){
+ const tracker=(calculated.trackers||[]).find(row=>item.tracker_id&&String(row.id)===String(item.tracker_id));
+ const cost=Math.max(0,Number(item.cost??0)||0);
+ const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):null;
+ const resource=tracker?.name||item.tracker||'';
+ const active=!!(item.class_feature_id&&record.active_class_features?.[item.class_feature_id]);
+ const enabled=!(active||(cost>0&&(!tracker||tracker.disabled||remaining<cost)));
+ const caption=resource?resource+' · ':'';
+ const button=item.spell_id?
+  '<button type="button" class="btn small primary" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+'">Lancia</button>':
+  '<button type="button" class="btn small primary" data-act="battle-use-ability" data-ability-id="'+esc(item.id||item.ability_id||item.name)+'"'+(enabled?'':' disabled')+'>'+
+  (persistentClassFeatures.has(item.class_feature_id)?'Attiva':'Usa')+'</button>';
+ return '<article class="play-battle-ability-entry" data-ability-id="'+esc(item.id||item.ability_id||item.name)+'">'+
+  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+
+  actionGlyph(actionGlyphKey(item))+'<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong>'+
+  '<small>'+esc(caption)+(cost?'Costo '+esc(cost):'Nessun consumo')+
+  (tracker?' · '+esc(remaining)+' / '+esc(tracker.max):'')+'</small></span></summary>'+
+  '<div class="play-battle-attack-expanded"><p>'+esc(item.description||'Consulta il privilegio per i dettagli.')+'</p>'+
+  (item.alternate_action?'<span>Utilizzabile anche con un’azione.</span>':'')+'</div></details>'+
+  (active?'<span class="play-badge">Attiva</span>':button)+'</div></article>';
+}
+export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const descriptions={
   main:entries.find(row=>row.id==='attack')?.description||'Attaccare con un’arma o con un colpo senz’armi.',
@@ -511,19 +565,29 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const attacksById=new Map((calculated.attacks||[]).filter(row=>row?.id).map(row=>[String(row.id),row]));
  // The Attack and Two-Weapon Fighting rules describe the actual weapon rows:
  // do not repeat their generic parent actions, or list any weapon a second time.
+
+ const classAbilities=battleAbilityEntries(record,calculated,entries,activatedAbilities);
+ const classIds=new Set(classAbilities.filter(row=>!String(row.id||'').startsWith('activated:')));
  const weapon=entries.filter(row=>row.id!=='attack'&&row.id!=='two_weapon'&&
   (row.type==='Attacco'||row.parent_action==='attack'||row.parent_action==='two_weapon'||row.id==='opportunity'));
- const movement=entries.filter(row=>row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)||
-   row.class_feature_id==='step_of_the_wind');
- const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
+ const weaponIds=new Set(weapon);
+ const movement=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&
+  (row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)));
+ const movementIds=new Set(movement);
+ const other=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
+  !['attack','two_weapon'].includes(row.id)&&row.type!=='Incantesimo'&&
+  !['spell_cast','cast_spell'].includes(row.id));
+ const render=(rows,kind)=>[...BATTLE_TIMINGS,...(kind==='abilities'?[['contextual','Secondo il privilegio']]:[])].map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
-   '<h3>'+actionGlyph(HEADER_GLYPHS[time])+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
+   '<h3>'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?actionRow(row,calculated):
+    kind==='abilities'?battleAbilityRow(row,record,calculated):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></section>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
- return {attacks:render(weapon,'attacks'),movement:render(movement,'movement'),
-  spells:render(spellActionEntries(record,calculated,spells),'spells')};
+ return {attacks:render(weapon,'attacks'),others:render(other,'others'),
+  abilities:render(classAbilities,'abilities'),abilityEntries:classAbilities,
+  movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
 
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
