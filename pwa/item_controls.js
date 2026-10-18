@@ -70,6 +70,32 @@ export function changeItemOverride(inventory,index,key,value){
   return rows;
 }
 
+// Match desktop slot-size editing: a stack's equipped copy is split
+// without resetting the opposite hand or modifying every copy.
+export function changeEquippedWeaponSize(inventory,slot,size){
+  if(!['main','off'].includes(slot)||size&&!WEAPON_SIZES.includes(size))
+    throw Error("Taglia arma non valida.");
+  const rows=structuredClone(array(inventory));
+  const index=rows.findIndex(row=>array(row?.equipped_slots).includes(slot));
+  if(index<0||itemKind(rows[index])!=='weapon')throw Error("Nessuna arma impugnata.");
+  const item=rows[index],previous=String(item.instance_overrides?.weapon_size||'');
+  if(previous===size)return rows;
+  let target=item;
+  if(Number(item.quantity??1)>1){
+    item.quantity=Number(item.quantity)-1;
+    item.equipped_slots=array(item.equipped_slots).filter(s=>s!==slot);
+    target=structuredClone(target);
+    target.quantity=1;
+    target.instance_id="pwa_instance_"+crypto.randomUUID();
+    target.equipped_slots=[slot];
+    rows.splice(index+1,0,target);
+  }
+  target.instance_overrides={...(target.instance_overrides||{})};
+  if(size)target.instance_overrides.weapon_size=size;
+  else delete target.instance_overrides.weapon_size;
+  return rows;
+}
+
 export function requiresAttunement(item={}){
   const v=item.req_attune??item.reqAttune??item.infusion?.requires_attunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
