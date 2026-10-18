@@ -204,10 +204,19 @@ export class TacticalViewer {
     for(const contour of this.snapshot?.contours||[]) {
       const pts=contour.points||[];
       if(pts.length<2)continue;
+      const ink=contour.shared?"#a9bbff":(contour.long?"#ffc57b":"#80e4fc");
+      ctx.save();
       ctx.beginPath();
       pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
-      ctx.closePath();ctx.lineWidth=3/t.scale;
-      ctx.strokeStyle=contour.shared?"#a5bffc":(contour.long?"#ffb75e":"#8bd8b5");ctx.stroke();
+      ctx.closePath();
+      ctx.fillStyle=ink;ctx.globalAlpha=0.025;ctx.fill();
+      ctx.globalAlpha=0.14;ctx.strokeStyle=ink;ctx.lineWidth=9/t.scale;ctx.stroke();
+      ctx.globalAlpha=0.34;ctx.lineWidth=5/t.scale;ctx.stroke();
+      ctx.globalAlpha=0.96;ctx.lineWidth=1.8/t.scale;
+      ctx.shadowColor=ink;ctx.shadowBlur=7/t.scale;ctx.stroke();
+      ctx.shadowBlur=0;ctx.globalAlpha=0.45;ctx.strokeStyle="#fff0d0";
+      ctx.setLineDash([4/t.scale,14/t.scale]);ctx.lineWidth=1/t.scale;ctx.stroke();
+      ctx.restore();
     }
     const preview=this.preview?.points||[];
     if(preview.length>=3){
