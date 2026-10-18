@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
+import {battleResourcePowers} from '../sheet_rules_view.js';
 import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
@@ -296,7 +297,8 @@ test('battle projects all unported actions without duplicating weapons, movement
   resource_cost:1,tracker_id:'inspire',tracker_name:'Ispirazioni'}];
  const result=battleActionPanels(record,calculated,[],[],catalog.actions,[],activated);
  const others=doc(result.others),movement=doc(result.movement);
- const abilities=doc(result.resourceAbilities['tracker:surge'].join(''));
+ const powers=battleResourcePowers(calculated,result.abilityEntries,activated);
+ const surge=powers.find(row=>row.id==='surge');
  assert(others.body.textContent.includes('Cercare'));
  assert(others.body.textContent.includes('Schivare'));
  assert(others.body.textContent.includes('Talento personalizzato'));
@@ -313,17 +315,47 @@ test('battle projects all unported actions without duplicating weapons, movement
  assert(escape.querySelector('[data-target="skill:acrobatics"]'));
  assert.equal(escape.querySelector('[data-multiple-rolls="true"] .play-battle-attack-roll').dataset.target,'skill:athletics');
  assert.equal(escape.querySelectorAll('[data-multiple-rolls="true"] .play-battle-attack-roll').length,2);
- const surge=abilities.querySelector('[data-ability-id="surge"]');
  assert(surge);
- assert.match(surge.textContent,/Cariche guerriero · Costo 2 · 3 \/ 4/);
- assert(surge.querySelector('[data-act="battle-use-ability"]'));
- assert.match(surge.textContent,/Azione bonus/);
- assert(doc(result.resourceAbilities.missing.join('')).body.textContent.includes('Ispirazione'));
+ assert.equal(surge.key,'tracker:surge');
+ assert.equal(surge.cost,2);
+ assert.equal(surge.timing,'bonus');
+ assert(powers.some(row=>row.name==='Ispirazione'&&row.key==='missing'));
  assert.equal(result.abilityEntries.length,2);
  const exhausted=battleActionPanels(record,{...calculated,trackers:[{id:'surge',name:'Cariche guerriero',max:4,spent:3}]},
   [],[],catalog.actions);
- assert(exhausted.resourceAbilities['tracker:surge'].join('').includes('disabled'));
+ assert.equal(battleResourcePowers({trackers:[{id:'surge',max:4,spent:3}]},
+   exhausted.abilityEntries).find(row=>row.id==='surge')?.cost,2);
  assert(!doc(exhausted.others).body.textContent.includes('Impeto di battaglia'));
  assert.equal(others.querySelector('[data-attack-id="help"] .play-battle-effect'),null,'Do not render unknown placeholder effects');
  assert.equal(others.querySelector('[data-attack-id="dodge"] .play-battle-effect'),null);
+});
+
+test('Battle resources deduplicate Wild Shape in favor of catalog popup and group paid/free spells',()=>{
+ const classes=[{id:'class_feature:druid:wild_shape',name:'Forma selvatica',
+  origin_id:'feature:class|phb|druid|wild_shape',rule_action_id:'wild_shape',
+  tracker_id:'wild_shape',cost:1,time:'action'},
+  {id:'arcane_pulse',name:'Impulso arcano',tracker_id:'focus',cost:2,time:'bonus',
+   description:'Attiva un impulso'},
+  {id:'arcane_pulse',name:'Impulso arcano',tracker_id:'focus',cost:2,time:'bonus',
+   description:'Duplicato da action_grant'}];
+ const powers=[{id:'vtt_wild_shape',name:'Wild Shape',feature_id:'feature:class|phb|druid|wild_shape',
+  tracker_id:'wild_shape',resource_cost:1,action_type:'action',description:'Diventa una bestia'},
+  {id:'optional',name:'Aura senza costo',resource_cost:0,action_type:'free'}];
+ const calculated={trackers:[{id:'wild_shape',name:'Wild Shape',max:2,spent:0},
+  {id:'focus',name:'Focus',max:4,spent:1}],
+  origin_spells:[{id:'grant_fire',spell_id:'spell:fire',tracker_id:'focus',payment_mode:'tracker',tracker_cost:2},
+   {id:'grant_light',spell_id:'spell:light',payment_mode:'free'},
+   {id:'grant_slot',spell_id:'spell:shield',payment_mode:'slot'}]};
+ const rows=battleResourcePowers(calculated,classes,powers,
+  [{id:'spell:fire',name:'Fiamma'},{id:'spell:light',name:'Luce'}]);
+ assert.equal(rows.filter(row=>row.kind==='ability'&&/shape|selvatica/i.test(row.name)).length,1);
+ assert.equal(rows.find(row=>row.id==='activated:vtt_wild_shape')?.key,'tracker:wild_shape');
+ assert.equal(rows.find(row=>row.id==='activated:vtt_wild_shape')?.source,'activated');
+ assert.equal(rows.find(row=>row.id==='arcane_pulse')?.key,'tracker:focus');
+ assert.equal(rows.filter(row=>row.id==='arcane_pulse').length,1);
+ assert.equal(rows.find(row=>row.id==='grant_fire')?.key,'tracker:focus');
+ assert.equal(rows.find(row=>row.id==='grant_fire')?.name,'Fiamma');
+ assert.equal(rows.find(row=>row.id==='grant_light')?.key,'free');
+ assert(!rows.some(row=>row.id==='grant_slot'));
+ assert(rows.some(row=>row.name==='Aura senza costo'&&row.key==='free'));
 });
