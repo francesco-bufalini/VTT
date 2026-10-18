@@ -479,8 +479,6 @@ func _documents_changed(inventory: Array) -> void:
 	if _loading:
 		return
 	_loading = true
-	_attunement_max_base = clampi(int(record.get("attunement_max_base", 3)), 0, 99)
-	_attunement_limit_bonus = BonusRules.bonus(record, "attunement_max")
 	_inventory.clear()
 	for raw: Variant in inventory:
 		if raw is Dictionary:
@@ -705,6 +703,8 @@ func load_record(record: Dictionary) -> void:
 		_populate_catalog_options()
 		_filter_catalog()
 	_loading = true
+	_attunement_max_base = clampi(int(record.get("attunement_max_base", 3)), 0, 99)
+	_attunement_limit_bonus = BonusRules.bonus(record, "attunement_max")
 	_inventory.clear()
 	var saved: Variant = record.get("inventory", [])
 	if saved is Array:
