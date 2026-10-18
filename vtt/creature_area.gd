@@ -996,7 +996,7 @@ func _build_ui() -> void:
 	_party = LineEdit.new()
 	_party.custom_minimum_size.x = 85
 	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_party.placeholder_text = "Default"
+	_party.placeholder_text = "Gruppo predefinito"
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
 	var alignment_row := HBoxContainer.new()
@@ -1472,7 +1472,7 @@ func _build_ui() -> void:
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	offhand_row.add_child(_hand_off_picker)
 	_show_offhand_all = CheckButton.new()
-	_show_offhand_all.text = "Only if finesse"
+	_show_offhand_all.text = "Solo armi accurate"
 	_show_offhand_all.tooltip_text = "Filtra la lista della mano secondaria alle armi con proprietà Accurata (Finesse). Non è una regola per l'attacco con azione bonus."
 	_show_offhand_all.button_pressed = true
 	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
