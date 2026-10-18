@@ -1359,7 +1359,12 @@ func _inventory_label(item: Dictionary) -> String:
 
 
 func _show_details(item: Dictionary) -> void:
-	var description: String = Player5eTools.description_text_from_raw_item(item)
+	# The compact item catalog keeps mechanics but not the full 5etools
+	# entries. Resolve the separate indexed compendium prose on selection.
+	# Custom/homebrew items continue to use their own supplied descriptions.
+	var description: String = Player5eTools.description_text("items", item)
+	if description.is_empty():
+		description = Player5eTools.description_text_from_raw_item(item)
 	_details.text = CreatureLocale.text_for(ItemRules.category_name(item), _gui_language) + "\n" + Player5eTools.info_text(item, description)
 	var attached: Variant = item.get("infusion", {})
 	if attached is Dictionary and not (attached as Dictionary).is_empty():
