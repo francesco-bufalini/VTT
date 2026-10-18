@@ -288,8 +288,8 @@ async function render() {
       if(typeof magicDialog.showModal==='function')magicDialog.showModal();else magicDialog.setAttribute('open','');
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
-    if(state.paired && !realtimeStopped && !state.stopMap) startMap();
-    if(state.paired && !realtimeStopped && !state.pollChat) startChat();
+    if(state.paired && state.online && !realtimeStopped && !state.stopMap) startMap();
+    if(state.paired && state.online && !realtimeStopped && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
@@ -1277,7 +1277,7 @@ function sessionTokenRows(rows, turnId="") {
     '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
 }
 function sessionLayout(table,desktop){
-  const pane=state.sessionPane||(state.paired?'table':'connection');
+  const pane=state.sessionPane||(state.paired&&state.online?'table':'connection');
   const choices=[['table','Mappa'],['chat','Chat e dadi'],['connection','Collegamento']];
   return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+
     '<div class="session-switcher" role="group" aria-label="Sezioni della partita">'+choices.map(([key,title])=>'<button type="button" class="btn" data-act="session-pane" data-session-pane="'+key+'" aria-pressed="'+(pane===key)+'">'+title+'</button>').join('')+'</div>'+
@@ -1296,7 +1296,7 @@ function sessionView() {
   const pairing='<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
     '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
-    '<button type="submit" class="btn primary full">Collega alla partita</button></form>';
+    '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Collega alla partita</button></form>';
   const desktop=panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
   let html='';
   const image=state.snapshotObjectUrl;
@@ -1315,7 +1315,7 @@ function sessionView() {
     '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
     '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
     '</section>';
-  if(!state.paired)return sessionLayout(html,desktop);
+  if(!online)return sessionLayout(html,desktop);
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
@@ -1484,6 +1484,11 @@ async function refreshConnection(quiet=false) {
   }
   if(!state.online){state.map=null;state.tokenId="";}
   syncNav();
+  if(state.online && state.paired && !realtimeStopped){
+    if(!state.stopMap)startMap();
+    if(!state.pollChat)startChat();
+  }
+  renderSessionIfIdle();
 }
 function startMap() {
   state.stopMap?.();
@@ -3274,8 +3279,8 @@ function listen(){
     }
   });
   window.addEventListener("online",()=>{
-    if(state.page==="session")
-      refreshConnection(true).then(()=>render()).catch(error=>message(errorMessage(error),true));
+    // The archive remains fully editable; refresh only connection indicators.
+    refreshConnection(true).catch(error=>message(errorMessage(error),true));
   });
 }
 // Allows tests and future app lifecycle handlers to release polling resources.
@@ -3299,24 +3304,31 @@ export async function mount(){
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
-  const qrCode = takeQrPairCode();
-  await refreshConnection(true);
-  if(qrCode){
-    try {
-      acceptSession(await pair(qrCode,{remember:true}));
-      state.paired=true;state.online=true;state.page="session";
-      state.messages=[];state.after="";state.tokenId="";
-      message("Telefono associato tramite QR.");
-    }catch(error){
-      state.page="session";state.qrCode=qrCode;
-      message("QR non valido o scaduto: "+errorMessage(error),true);
-    }
-  }
+  const qrCode=takeQrPairCode();
+  // Possession of a local credential is unrelated to reachability. Render
+  // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
+  state.paired=await hasPairingCredential();
+  if(qrCode){state.page="session";state.sessionPane="connection";}
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
-  if(state.qrCode && state.page==="session"){
+  if(qrCode){
     const input=document.querySelector("#pair-secret");
-    if(input)input.value=state.qrCode;
-    state.qrCode="";
+    if(input)input.value=qrCode;
   }
+  // Reconnection (and a QR pairing request) are background work. A dead proxy
+  // may take seconds to time out, but the local archive is already usable.
+  void (async()=>{
+    await refreshConnection(true);
+    if(qrCode && state.online){
+      try {
+        acceptSession(await pair(qrCode,{remember:true}));
+        state.paired=true;state.online=true;state.page="session";
+        state.sessionPane="table";state.messages=[];state.after="";state.tokenId="";
+        await render();
+        message("Telefono associato tramite QR.");
+      }catch(error){
+        message("QR non valido o scaduto: "+errorMessage(error),true);
+      }
+    }
+  })().catch(error=>console.warn("VTT desktop unavailable; local archive stays open",error));
 }
