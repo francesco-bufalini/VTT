@@ -588,6 +588,8 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
   change('[data-item-key="quantity"]',"0");
   await until(()=>!document.querySelector('.inventory-table-row[role="row"]'));
   assert.ok(document.querySelector(".inventory-slots"),"Equipment slots remain visible with empty inventory");
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
 });
 
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
