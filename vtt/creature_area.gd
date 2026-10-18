@@ -7466,16 +7466,16 @@ func _refresh_conditions(record: Dictionary) -> void:
 		var name_label := Label.new()
 		name_label.text = "✦ " + name + ("" if effective else " (sospesa)")
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.tooltip_text = summary + ("\\nOrigine: " + origin if not origin.is_empty() else "")
+		name_label.tooltip_text = summary + ("\nOrigine: " + origin if not origin.is_empty() else "")
 		row.add_child(name_label)
 		var detail := Button.new()
 		detail.text = "ⓘ" if _touch_layout else "Leggi effetti"
 		if _touch_layout:
 			detail.set_meta("touch_compact_action", true)
 			detail.custom_minimum_size = Vector2(34, 34)
-		var description := summary + ("\\n\\n" + details if not details.is_empty() else "")
+		var description := summary + ("\n\n" + details if not details.is_empty() else "")
 		if not origin.is_empty():
-			description += "\\n\\nOrigine: " + origin
+			description += "\n\nOrigine: " + origin
 		detail.tooltip_text = "Leggi effetti della capacità"
 		detail.pressed.connect(_show_effect_description.bind({"name": name, "description": description}))
 		row.add_child(detail)
