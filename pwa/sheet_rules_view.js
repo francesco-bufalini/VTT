@@ -20,7 +20,7 @@ export function rollSheetDice(modifier,bonuses=[],die){
  const parts=[{name:'d20',notation:'1d20',rolls:[d20],subtotal:d20}];
  for(const bonus of bonuses){
   const notation=String(bonus.dice||'').replaceAll(' ','');
-  const match=notation.match(/^([1-9]\\d*)d(4|6|8|10|12|20|100)([+-]\\d+)?$/i);
+  const match=notation.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(!match||Number(match[1])>100)throw Error('Dadi bonus non validi');
   const count=Number(match[1]),sides=Number(match[2]),flat=Number(match[3]||0);
   const rolls=Array.from({length:count},()=>{
