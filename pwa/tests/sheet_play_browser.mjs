@@ -29,7 +29,11 @@ try{
   await page.setViewportSize(viewport);
   for(const key of ['info','battle','actions','magic','inventory','traits','conditions','origins']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
-   assert.equal(await page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea').count(),0,'Edits belong in contextual windows: '+key);
+   const inlineEditors=page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea');
+   assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
+     'Only the five coin amounts are editable inline: '+key);
+   if(key==='inventory')assert.equal(await page.locator('#sheet-play-view .inventory-play-coins input[data-coin-code]').count(),5,
+     'Visible direct inventory editors must be the five currency inputs');
    if(viewport.width===390)await shot(key);
   }
  }
@@ -182,8 +186,17 @@ try{
  await sheet('inventory');await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
  assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),1);await page.locator('[data-play-search]').fill('');
  await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
- await popup('coins');await page.locator('#sheet-context-dialog [data-coin-code="gp"]').fill('12');await dismiss();
+ const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
+ assert.equal(await inlineCoins.count(),1,'Coin editor must be visible in the shortcut row');
+ assert.equal(await inlineCoins.locator('[data-coin-code]').count(),5,'All five denominations must be editable inline');
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="coins"]').count(),0,'No coin popup trigger');
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Editing coins must not open a dialog');
+ await inlineCoins.locator('[data-coin-code="gp"]').fill('12');
+ await inlineCoins.locator('[data-coin-code="gp"]').press('Tab');
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.coins?.gp===12;});
+ await page.waitForFunction(()=>document.querySelector('#sheet-play-view .inventory-play-coins .inventory-coin-total')?.textContent.includes('12 mo'));
+ assert.match(await inlineCoins.locator('.inventory-coin-total').textContent(),/12 mo/);
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,'Objects must not leak into Documents');
  await popup('inventory-add');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();

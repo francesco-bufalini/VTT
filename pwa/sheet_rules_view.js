@@ -529,14 +529,21 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       '" aria-selected="'+(documentsTab===(key==='documents'))+'">'+label+'</button>').join('')+'</nav>';
   if(!documentsTab){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
-    target('coins','.inventory-coins-panel');
+    // The coin editor is already generated from the saved creature model.
+    // Move its content into the shortcut row instead of hiding it behind a dialog.
+    const coinPanel=bank.querySelector('.inventory-coins-panel');
+    const coinFields=coinPanel?.querySelector('.inventory-coin-grid')?.outerHTML||'';
+    const coinTotal=coinPanel?.querySelector('.inventory-coin-total')?.outerHTML||'';
+    coinPanel?.remove(); // Avoid duplicate hidden controls and stale total updates.
     const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
     html+='<div class="inventory-shortcuts">'+
       go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura')+
       go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+
         ' / '+(c.attunement_max_base??3)+' oggetti')+
-      go('coins','Monete','coins',Object.entries(c.coins||{}).filter(([,n])=>Number(n)>0)
-        .map(([unit,n])=>n+' '+unit.toUpperCase()).join(' · ')||'Portamonete')+'</div>';
+      '<section class="inventory-play-coins" aria-label="Monete possedute">'+
+        '<div class="inventory-play-coins-title">'+icon('coins')+'<strong>Monete</strong></div>'+
+        '<div class="inventory-play-coins-fields">'+coinFields+coinTotal+'</div>'+
+      '</section></div>';
   }
   const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
   const visible=readouts.map((info,i)=>({info,i})).filter(({info})=>(info.kind==='document')===documentsTab);
