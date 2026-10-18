@@ -667,3 +667,36 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .action-toolbar-buttons .vtt-action-glyph{flex:none;width:20px;height:20px}
 .action-catalog-warning{border:1px solid #ad7441;padding:9px;border-radius:7px}
 @media(max-width:420px){.action-toolbar{align-items:flex-start;flex-direction:column;gap:7px}.action-toolbar-buttons{width:100%;justify-content:space-between}.action-toolbar-buttons .btn{font-size:12px}}
+
+
+/* Poteri: elenco compatto, raggruppato per livello, cliccabile anche offline. */
+.magic-panel .magic-source{padding:10px 0;border-top:1px solid var(--line)}
+.magic-panel .magic-source:first-of-type{border-top:0;padding-top:0}
+.magic-source h3{margin:0;font-size:1rem}
+.magic-source-header{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.magic-source-count{margin:2px 0 5px;font-size:.78rem}
+.magic-panel .casting-statistics,.magic-panel + .panel .casting-statistics{margin:4px 0 8px;gap:6px}
+.casting-statistics label{font-size:.8rem}
+.casting-statistics select{min-height:34px!important;padding:4px 8px;font-size:.86rem}
+.casting-statistics .sheet-formula{font-size:.85rem}
+.magic-groups{display:grid;gap:8px}
+.magic-level h4{font-size:.78rem;letter-spacing:.025em;margin:6px 0 2px;color:var(--vtt-gold,#e8bb80)}
+.magic-entries{border-top:1px solid var(--line)}
+.magic-spell-row{display:flex;align-items:center;gap:6px;min-height:36px;border-bottom:1px solid var(--line);padding:2px 0}
+.magic-spell-open{flex:1;text-align:left;min-width:0;min-height:34px;padding:4px 7px;background:transparent;border:0;border-radius:5px;color:inherit;font-weight:550;cursor:pointer;overflow-wrap:anywhere}
+.magic-spell-open:hover,.magic-spell-open:focus-visible{background:#ffffff13;color:var(--vtt-gold,#ebc58c);outline-offset:-2px}
+.magic-remove-spell.btn{flex:0 0 32px;width:32px;min-height:30px;height:30px;padding:0!important;font-size:19px;line-height:1}
+.magic-origin-config{position:relative;flex:0 0 auto}
+.magic-origin-config>summary{list-style:none;cursor:pointer;padding:5px 7px;font-size:14px}
+.magic-origin-config>summary::-webkit-details-marker{display:none}
+.magic-origin-config[open]{flex:1 0 100%;padding:8px}
+.magic-origin-config label{margin:6px 0}
+.magic-concentration{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.magic-concentration .btn{min-height:32px}
+.magic-spell-dialog{width:min(94vw,540px);max-height:85dvh;overflow-y:auto}
+.magic-spell-dialog h2{margin:0 0 3px}
+.magic-spell-metadata{font-size:.8rem;margin:0 0 12px}
+.magic-spell-description{max-height:45dvh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;padding:8px 0;margin-bottom:12px}
+.magic-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+.magic-dialog-actions .btn{min-width:86px;min-height:38px}
+@media(max-width:480px){.magic-panel .magic-source{padding:8px 0}.magic-spell-dialog{padding:14px}.magic-spell-description{max-height:40dvh}}

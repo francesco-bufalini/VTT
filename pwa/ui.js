@@ -353,17 +353,24 @@ async function editorView() {
         state.generalActionSupplements||[],readActionVariants());
     break;
   case "magic":
-    body=panel('Lancio tattico',c.linked_token_sync_id?
-      '<p class="hint">Scegli i bersagli nell’anteprima 2D della mappa. Lo slot viene consumato solo dopo la conferma dal desktop.</p>'+
-      '<div class="columns"><label>Livello slot (0 = automatico)<input id="sheet-cast-level" type="number" min="0" max="9" value="'+esc(state.castLevel)+'"></label>'+
-      '<label>Risorsa<select id="sheet-cast-payment"><option value="auto">Automatica</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label></div>'+
-      (!state.paired||!state.online?'<p class="hint">Collega la partita e piazza il token prima di lanciare.</p>':''):
-      '<p class="hint">Piazza e collega questa creatura a un token dalla sezione Partita.</p>')+
-      panel('Concentrazione','<p>'+esc((c.conditions||[]).includes('concentrating')?c.concentrating_spell_id||'Attiva':'Nessuna')+'</p>'+((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi concentrazione'):'')+castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int'))+
-      panel("Incantesimi disponibili",calculated.casting_classes.map(member=>{
-        const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
-        return '<article class="native-entry"><h3>'+esc(member.name)+' · '+esc(member.source)+'</h3><p>'+member.mode+' '+count.leveled+' / '+(member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+castingStatistics(c,member.id,member.ability)+spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</article>';
-      }).join('')+'<h3>Altri incantesimi disponibili</h3>'+spellList(c,'prepared_spells','manual',calculated.casting_classes))+
+    body=panel('Concentrazione',
+      '<div class="magic-concentration"><span>'+esc((c.conditions||[]).includes('concentrating')?
+        c.concentrating_spell_id||'Attiva':'Nessuna')+'</span>'+
+      ((c.conditions||[]).includes('concentrating')?
+        btn('stop-concentration','Interrompi','small'):'')+'</div>')+
+      panel("Incantesimi disponibili",
+        calculated.casting_classes.map(member=>{
+          const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
+          return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
+            '<span class="hint">'+esc(member.source||'')+'</span></header>'+
+            '<p class="hint magic-source-count">'+esc(member.mode)+' '+count.leveled+' / '+
+            (member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+
+            castingStatistics(c,member.id,member.ability)+
+            spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
+        }).join('')+
+        '<section class="magic-source"><h3>Altri incantesimi</h3>'+
+        castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
+        spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>','magic-panel')+
       panel('Slot · Classi / Patto','<div class="slot-table"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+calculated.spell_slots.map(slot=>{
         const level=slot.level,pact=calculated.pact_slots;
         return '<span>'+level+'°</span><div>'+slotCounter(level,slot.total,slot.spent)+
@@ -372,10 +379,9 @@ async function editorView() {
       '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
       field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
       originChoicesView(calculated)+originPowersView(c,calculated)+
-      panel("Libro degli incantesimi",spellList(c,"spellbook_spells"))+
+      panel("Libro degli incantesimi",spellList(c,"spellbook_spells",null,calculated.casting_classes),'magic-panel')+
       panel("Aggiungi dal catalogo",
-        '<p class="hint">Scegli una voce strutturata: i campi di nome, fonte e livello non vengono inseriti a mano.</p>'+
-        '<label>Classe / origine<select id="spell-class"><option value="manual">Manuale · altre concessioni</option>'+calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+' · '+esc(member.source)+'</option>').join('')+'</select></label>'+
+        '<label>Classe / origine<select id="spell-class"><option value="manual">Altre concessioni</option>'+calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+'</option>').join('')+'</select></label>'+
         '<label>Destinazione<select id="spell-target">'+
         '<option value="prepared_spells"'+(state.spellTarget==="prepared_spells"?' selected':'')+'>Incantesimi disponibili</option>'+
         '<option value="spellbook_spells"'+(state.spellTarget==="spellbook_spells"?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
@@ -384,7 +390,7 @@ async function editorView() {
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
-      panel("Capacità",'<p class="hint">Qui trovi le capacità attivabili diverse dagli incantesimi: non hanno scuola o componenti. Costi e utilizzi dipendono dal privilegio; le manovre si risolvono durante l’azione prevista.</p>'+
+      panel("Capacità",
         (abilitiesForCreature(c,state.abilityCatalog||[],calculated).map(ability=>
           '<article class="native-entry"><strong>'+esc(ability.name)+
           '</strong><p class="hint">'+esc(ability.origin)+
@@ -607,24 +613,53 @@ function slotCounter(level,total,spent){
  const key=level===0?'pact_slot':'slot:'+level;
  return '<div class="slot-counter">'+(total>0?'<button class="btn small" data-act="slot-use" data-level="'+level+'" '+(spent>=total?'disabled':'')+' aria-label="Consuma slot '+level+'">−</button><button class="btn small" data-act="slot-recover" data-level="'+level+'" '+(spent<=0?'disabled':'')+' aria-label="Recupera slot '+level+'">＋</button>':'')+'<span>'+Math.max(0,total-spent)+' / </span><button class="btn small slot-total" data-act="edit-bonus" data-target="'+key+'" data-calculated="'+key+'" aria-label="Bonus massimo slot '+level+'">'+total+'</button></div>';
 }
+function magicSpellInfo(row){
+  const id=spellId(row);
+  const definition=(state.spellCatalog||[]).find(spell=>spell.id===id);
+  const record=typeof row==='object'&&row?row:{};
+  const rawLevel=definition?.level??record.level;
+  const level=rawLevel===undefined||rawLevel===null?null:Number(rawLevel);
+  return {id,name:text(definition?.name||record.name||row||id),level:Number.isInteger(level)&&level>=0&&level<=9?level:null};
+}
+function groupedMagicSpells(items,renderRow){
+  if(!items.length)return '<p class="hint magic-empty">Nessun incantesimo.</p>';
+  const ordered=[...items].sort((a,b)=>(a.info.level??10)-(b.info.level??10)||
+    a.info.name.localeCompare(b.info.name,'it',{sensitivity:'base'}));
+  const groups=new Map();
+  for(const item of ordered){
+    const level=item.info.level;
+    if(!groups.has(level))groups.set(level,[]);
+    groups.get(level).push(item);
+  }
+  return '<div class="magic-groups">'+[...groups.entries()].map(([level,entries])=>
+    '<section class="magic-level"><h4>'+(level===0?'Trucchetti':level===null?'Livello non disponibile':'Livello '+level)+'</h4>'+
+    '<div class="magic-entries">'+entries.map(renderRow).join('')+'</div></section>').join('')+'</div>';
+}
 function originPowersView(c,calculated){
  const groups=new Map();
- for(const grant of calculated.origin_spells){
-  const id=grant.id;
+ for(const grant of calculated.origin_spells||[]){
   const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
-  const mode=grant.payment_mode|| (grant.tracker_id?'tracker':'free'),tracker=calculated.trackers.find(t=>t.id===grant.tracker_id);
-  const cost=Math.max(1,Number(grant.tracker_cost)||1),remaining=tracker?Math.floor((tracker.max-tracker.spent)/cost):0;
-  const options=calculated.spell_slots.filter(s=>s.level>=Number(spell?.level||0)&&s.total>s.spent).map(s=>[s.level,'Livello '+s.level]);
-  if(calculated.pact_slots.level>=Number(spell?.level||0)&&calculated.pact_slots.total>calculated.pact_slots.spent)options.push([0,'Patto']);
-  const content='<article class="native-entry"><h3>'+esc(spell?.name||grant.spell_id)+'</h3><p class="hint">'+(mode==='tracker'?'Costo '+cost+' · Disponibili '+remaining:mode==='slot'?'Usa uno slot':'Gratuito')+(grant.automatic?' · Da origine':'')+'</p>'+ (mode==='slot'?'<label>Slot<select data-origin-slot="'+esc(id)+'">'+options.map(([level,name])=>'<option value="'+level+'">'+name+'</option>').join('')+'</select></label>':'')+
-   (spell&&c.linked_token_sync_id?'<button class="btn primary small" data-act="cast-origin-spell" data-grant-id="'+esc(id)+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia · bersagli</button>':'')+
-   (mode!=='free'?'<button class="btn" data-act="origin-spend" data-grant-id="'+esc(id)+'" '+(!spell||mode==='tracker'&&remaining<1||mode==='slot'&&!options.length?'disabled':'')+'>Consuma '+(mode==='tracker'?'utilizzo':'slot')+'</button>':'')+
-   '<details><summary>Configura consumo</summary><label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label><label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label><label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(id)+'"></label></details>'+
-   (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(id)+'">Cambia questa scelta</button>':'')+'</article>';
-  const key=grant.origin_id;if(!groups.has(key))groups.set(key,{name:grant.origin_name||key,ability:grant.spellcasting_ability||'int',items:[]});groups.get(key).items.push(content);
+  const info=magicSpellInfo(spell||{id:grant.spell_id,name:grant.spell_id});
+  const key=grant.origin_id||'other';
+  if(!groups.has(key))groups.set(key,{name:grant.origin_name||'Origine',ability:grant.spellcasting_ability||'int',items:[]});
+  groups.get(key).items.push({grant,spell,info});
  }
- return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,castingStatistics(c,'origin:'+key,group.ability)+group.items.join(''))).join('');
+ return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,
+   castingStatistics(c,'origin:'+key,group.ability)+
+   groupedMagicSpells(group.items,({grant,spell,info})=>{
+     const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
+     const cost=Math.max(1,Number(grant.tracker_cost)||1);
+     return '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(grant.id)+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name)+'</button>'+
+       '<details class="magic-origin-config"><summary aria-label="Configura '+esc(info.name)+'" title="Consumo e origine">⚙</summary>'+
+       '<p class="hint">'+(mode==='free'?'Gratuito':mode==='slot'?'Slot incantesimo':'Tracker')+'</p>'+
+       '<label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(grant.id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
+       '<label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(grant.id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
+       '<label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(grant.id)+'"></label>'+
+       (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
+       '</details></div>';
+   }),'magic-panel')).join('');
 }
+function originChoicesView(calculated){
 function originChoicesView(calculated){
  const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
  if(!choices.length)return '';
@@ -640,20 +675,13 @@ function originChoicesView(calculated){
 function spellList(c,key,classId=null,classes=[]) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
-  const visible=rows.map((spell,i)=>({spell,i})).filter(({spell})=>!classId||
-    (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):castingSources(spell,classes,state.spellCatalog||[]).includes(classId)));
-  return '<div class="stack">'+(visible.length?visible.map(({spell,i})=>{
-    const name=typeof spell==="string"?spell:text(spell?.name||spell?.id||"");
-    const meta=typeof spell==="object"&&spell?
-      ' · liv. '+esc(spell.level??0)+(spell.source?' · '+esc(spell.source):''):'';
-    const id=typeof spell==="string"?spell:spell?.id||"";
-    return '<div class="row between"><div class="grow">'+tag(name||"Incantesimo senza nome")+
-      '<span class="hint">'+meta+'</span></div>'+
-      (key==="prepared_spells"&&c.linked_token_sync_id&&id?
-        '<button type="button" class="btn primary small" data-act="cast-sheet-spell" data-spell-id="'+esc(id)+'" data-casting-class="'+esc(classId||'')+'" '+(!state.paired||!state.online?'disabled':'')+'>Lancia</button>':'')+
-      '<button type="button" class="btn danger small" '+
-      'data-act="remove-spell" data-key="'+key+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'">Rimuovi</button></div>';
-  }).join(""):'<p class="hint">Nessun incantesimo.</p>')+'</div>';
+  const visible=rows.map((spell,i)=>({spell,i,info:magicSpellInfo(spell)}))
+    .filter(({spell})=>!classId||
+      (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):
+        castingSources(spell,classes,state.spellCatalog||[]).includes(classId)));
+  return groupedMagicSpells(visible,({i,info})=>
+    '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="'+esc(key)+'" data-spell-index="'+i+'" data-casting-class="'+esc(classId||'')+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name||'Incantesimo senza nome')+'</button>'+
+    '<button type="button" class="btn small magic-remove-spell" data-act="remove-spell" data-key="'+esc(key)+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'" title="Rimuovi" aria-label="Rimuovi '+esc(info.name)+'">×</button></div>');
 }
 function renderSpellResults(){
   const rows=state.spellCatalog||[];
@@ -1494,37 +1522,56 @@ async function handleAction(target){
   if(act==='action-open-spells'){
     state.sheet='magic';await render();return;
   }
-  if(act==='action-cast-spell'){
+  if(act==='action-cast-spell'||act==='power-spell'){
     const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
     const calculated=await computeLocalData(record);
-    const entry=sessionSpellEntries(record,calculated,state.spellCatalog||[])
-      .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
-         String(row.casting_class||'')===String(target.dataset.castingClass||''));
-    if(!entry)throw Error('Incantesimo non disponibile nella scheda.');
+    const key=act==='power-spell'?target.dataset.spellKey:'';
+    const index=Number(target.dataset.spellIndex);
+    const grantId=String(target.dataset.grantId||'');
+    const classId=String(target.dataset.castingClass||'');
+    const saved=key==='spellbook_spells'?record.spellbook_spells?.[index]:
+      key==='prepared_spells'?availableSpells(record)[index]:null;
+    const grant=key==='origin'?calculated.origin_spells?.find(row=>row.id===grantId):null;
+    const id=key==='origin'?grant?.spell_id:key?spellId(saved):target.dataset.spellId;
+    if(!id)throw Error('Incantesimo non disponibile.');
+    const entries=sessionSpellEntries(record,calculated,state.spellCatalog||[]);
+    const entry=entries.find(row=>row.id===id&&String(row.grant_id||'')===grantId&&
+      (key==='origin'||String(row.casting_class||'')===(classId==='manual'?'':classId)))||
+      (key==='spellbook_spells'?entries.find(row=>row.id===id):null);
+    const catalogSpell=(state.spellCatalog||[]).find(row=>row.id===id);
+    const stored=typeof saved==='object'&&saved?saved:{};
+    const spell=entry||catalogSpell||stored;
+    const detailed=await detailedEntry('spells',{...catalogSpell,...spell,_category:'spells'});
+    const description=flattenDescription(detailed)||'Descrizione non disponibile nel catalogo locale.';
+    const level=magicSpellInfo({...spell,id}).level;
     const options=[];
-    const level=Number(entry.level||0);
-    const grant=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
-    const mode=grant?.payment_mode||'slot';
-    if(level===0||mode==='free'||mode==='tracker'){
-      options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Nessuno slot']);
-    }else{
-      for(const slot of calculated.spell_slots||[]){
-        if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
-          options.push(['slot:'+slot.level,slot.level+'° livello · '+(slot.total-slot.spent)+' disponibili']);
-      }
-      if(mode!=='slot'||!grant){
-        if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+    if(entry&&level!==null){
+      const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
+      const mode=assigned?.payment_mode||(level===0?'free':'slot');
+      if(level===0||mode==='free'||mode==='tracker'){
+        options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Senza slot']);
+      }else{
+        for(const slot of calculated.spell_slots||[]){
+          if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
+            options.push(['slot:'+slot.level,'Slot '+slot.level+'° · '+(slot.total-slot.spent)+' disponibili']);
+        }
+        if(!assigned&&calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
           options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
       }
     }
-    if(!options.length)throw Error('Non ci sono slot disponibili per questo incantesimo.');
     app.querySelector('#action-cast-dialog')?.remove();
-    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='action-cast-dialog';
-    dialog.innerHTML='<h2>Lancia '+esc(entry.name||entry.id)+(entry.casting_label&&entry.casting_label!=='Scheda'?' · '+esc(entry.casting_label):'')+'</h2>'+
-      '<p class="hint">Scegli la risorsa da consumare. Se la partita non è collegata, il lancio registra solo il consumo sulla scheda locale.</p>'+
-      '<label>Risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>'+
-      '<div class="actions"><button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Conferma lancio</button>'+
-      '<button type="button" class="btn" data-act="action-cast-cancel">Annulla</button></div>';
+    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
+    dialog.innerHTML='<h2>'+esc(spell.name||id)+'</h2>'+
+      '<p class="hint magic-spell-metadata">'+(level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
+      (spell.school?' · '+esc(spell.school):'')+(spell.source?' · '+esc(spell.source):'')+'</p>'+
+      '<div class="magic-spell-description">'+esc(description)+'</div>'+
+      (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
+      (entry&&options.length?
+        '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':
+        '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+      '<div class="actions magic-dialog-actions">'+
+      (entry&&options.length?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
+      '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return;
   }
   if(act==='action-cast-cancel'){

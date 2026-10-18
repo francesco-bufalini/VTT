@@ -18,11 +18,11 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
   const stored=typeof raw==='string'?{id:raw,name:raw}:raw,definition=catalog.find(s=>s.id===stored.id)||stored;
   const sources=castingSources(stored,calculated.casting_classes,catalog);
   const members=calculated.casting_classes.filter(c=>sources.includes(c.id));
-  for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',caster_ability:member?.ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
+  for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
  }
  for(const grant of calculated.origin_spells){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
-  entries.push({...definition,grant_id:grant.id,caster_ability:grant.spellcasting_ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
+  entries.push({...definition,grant_id:grant.id,caster_ability:creature.spellcasting_section_abilities?.['origin:'+grant.origin_id]||grant.spellcasting_ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
  }
  return entries;
 }
