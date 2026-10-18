@@ -351,7 +351,7 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
-  if(state.sheet==="magic"&&!state.abilityCatalog){
+  if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
     try{state.abilityCatalog=await loadActivatedAbilities();}
     catch{state.abilityCatalog=[];}
   }
@@ -417,6 +417,12 @@ async function editorView() {
       actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
         state.generalActionSupplements||[],readActionVariants());
     break;
+  case "battle":
+    // Keep native Poteri tracker panels available as contextual editors,
+    // including the abilities relocated from Poteri into battle resources.
+    body+='<div class="battle-power-archive" hidden>'+
+      originPowersView(c,calculated,abilitiesForCreature(c,state.abilityCatalog||[],calculated),true)+'</div>';
+    break;
   case "magic":
     body=magicToolbar(calculated)+
       panel("Incantesimi disponibili",
@@ -436,7 +442,7 @@ async function editorView() {
           castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
           spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>':''),
         'magic-panel')+
-      originPowersView(c,calculated,abilitiesForCreature(c,state.abilityCatalog||[],calculated))+
+      originPowersView(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
   case "conditions":
@@ -997,7 +1003,7 @@ function groupedMagicOptions(spells){
     items.map(({spell,info})=>'<option value="'+esc(spell.id)+'">'+esc(info.name)+'</option>').join('')+
     '</optgroup>').join('');
 }
-function originPowersView(c,calculated,abilitiesList=[]){
+function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
  const slots=new Map(),resources=new Map();
  const ensureResource=(key,name,tracker)=>{if(!resources.has(key))resources.set(key,{name,tracker,spells:[],abilities:[]});return resources.get(key);};
  const configured=(grant,info)=>{
@@ -1014,6 +1020,10 @@ function originPowersView(c,calculated,abilitiesList=[]){
      '</details></div>';
  };
  const sortGroups=(a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'});
+ // A tracker must have a popup even when it has no spells or activated abilities.
+ if(forBattle)for(const tracker of calculated.trackers||[]){
+   if(!tracker.disabled)ensureResource('tracker:'+tracker.id,tracker.name,tracker);
+ }
  for(const grant of calculated.origin_spells||[]){
    const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
    const info=magicSpellInfo(spell||{id:grant.spell_id,name:grant.spell_id});
@@ -1067,12 +1077,13 @@ function originPowersView(c,calculated,abilitiesList=[]){
          '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+
          '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></details>';
        }).join('')+'</div>':'';
-   return panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
+   const popup=panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
      '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
      castingStatistics(c,'origin:'+origin,meta.ability)+'</div>').join('')+
      spellRows+abilityRows,'magic-panel magic-tracker-panel');
+   return forBattle?'<div data-battle-power-group="'+esc(key)+'">'+popup+'</div>':popup;
  }).join('');
- return slotPanels+resourcePanels;
+ return (forBattle?'':slotPanels)+resourcePanels;
 }
 function originChoicesView(calculated){
  const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
