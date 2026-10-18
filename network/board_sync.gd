@@ -2563,7 +2563,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 			return {"ok": true}
 		return {"ok": true, "events": chat.shared_events_after(String(payload.get("after", "")))}
 	var target := _visible_mobile_token(String(payload.get("token_id", "")))
-	if target == null:
+	if target == null and (action != "snapshot" or not String(payload.get("token_id", "")).is_empty()):
 		return {"ok": false, "error": "Il token non è più presente o visibile sulla mappa."}
 	if action == "set_appearance":
 		var owner := String(payload.get("owner_id", ""))
@@ -2652,11 +2652,13 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		# Reject non-finite geometry before projecting or allocating buffers.
 		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 10000:
 			return {"ok": false, "error": "Gittata non valida."}
-	var spell_status := _mobile_spell_status(target, String(payload.get("owner_id", "")))
+	var spell_status := _mobile_spell_status(target, String(payload.get("owner_id", ""))) if target != null else {}
 	if bool(spell_status.get("active", false)):
 		attack = {"range_feet": float(spell_status.get("range_feet", 5)), "melee": true}
-	var range_feet: float = maxf(float(attack.get("range_feet", target.call("get_reach_feet"))), float(attack.get("long_range_feet", target.get_meta("active_weapon_long_range_feet", 0) if attack.is_empty() else 0)))
-	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else 60.0
+	var default_reach: float = float(target.call("get_reach_feet")) if target != null else 5.0
+	var default_long: float = float(target.get_meta("active_weapon_long_range_feet", 0)) if target != null and attack.is_empty() else 0.0
+	var range_feet: float = maxf(float(attack.get("range_feet", default_reach)), float(attack.get("long_range_feet", default_long)))
+	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else (120.0 if target == null else 60.0)
 	_mobile_capture_busy = true
 	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, field_feet, attack)
 	_mobile_capture_busy = false
