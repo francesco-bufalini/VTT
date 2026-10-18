@@ -367,15 +367,62 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
- if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp')+
-      number('TS morte · successi','death_save_successes',c.death_save_successes??0,0,3)+
-      number('TS morte · fallimenti','death_save_failures',c.death_save_failures??0,0,3))+
-    (calculated.stats?.automatic_hp?.available?'<p class="hint">PF da progressione: '+calculated.stats.automatic_hp.value+'</p><button class="btn" data-act="hp-automatic">Applica PF automatici</button>':''))+
-  resources+panel('CA e iniziativa','<div class="row between"><span>Classe armatura '+read('ac','Classe armatura')+'</span><span>Iniziativa '+read('initiative','Iniziativa',true)+'</span></div>'+armor+
-      cols(field('CA naturale · formula','armor_natural_formula',c.armor_natural_formula))+nativeNote)+
-  panel('Attacchi disponibili',equipment+select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
-   '<label class="check"><input type="checkbox" data-field="hand_grip_two_handed" '+(c.hand_grip_two_handed?'checked':'')+'>Impugnatura a due mani (Versatile)</label>'+attacks+
-   '<button class="btn" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>');
+ if(section==='battle'){
+  const secondMax=Number(calculated.values?.second_max??c.second_form_max_hp??0);
+  const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
+  return '<div class="battle-root">'+
+   panel('Punti ferita',
+    '<div class="battle-hp-grid">'+
+      '<label class="battle-stat battle-current-hp">PF attuali<input data-field="current_hp" type="number" min="-999" max="99999" value="'+esc(c.current_hp??1)+'"></label>'+
+      '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('hp','PF massimi')+'</div>'+
+      '<label class="battle-stat battle-temp-hp">PF temporanei<input data-field="temporary_hp" type="number" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'"></label>'+
+    '</div>'+
+    '<div class="battle-hp-controls">'+
+      '<label class="battle-hp-quantity">Quantità<input id="hp-amount" type="number" inputmode="numeric" min="1" max="99999" value="1"></label>'+
+      '<button type="button" class="btn danger" data-act="hp-damage">− Danni</button>'+
+      '<button type="button" class="btn primary" data-act="hp-heal">＋ Cura</button>'+
+      '<button type="button" class="btn" data-act="hp-restore">↺ PF pieni</button>'+
+    '</div>'+
+    '<details class="battle-second-form"'+(hasSecondForm?' open':'')+'><summary>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</summary>'+
+      '<div class="battle-hp-grid battle-form-stats">'+
+        '<label class="battle-stat">PF attuali<input data-field="second_form_hp" type="number" min="0" max="99999" value="'+esc(c.second_form_hp??0)+'"></label>'+
+        '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('second_max','Massimi seconda forma')+'</div>'+
+      '</div>'+
+      '<button type="button" class="btn small" data-act="hp-restore-second">↺ Ripristina seconda forma</button>'+
+    '</details>'+
+    '<details class="battle-hp-settings"><summary>Imposta PF massimi di base</summary>'+
+      '<div class="battle-base-fields">'+
+        number('PF base','max_hp_base',c.max_hp_base??c.max_hp??1,0,99999)+
+        number('Seconda forma · base','second_form_max_hp',c.second_form_max_hp??0,0,99999)+
+      '</div>'+
+      (calculated.stats?.automatic_hp?.available?
+        '<div class="battle-auto-hp"><span class="hint">PF da progressione: '+esc(calculated.stats.automatic_hp.value)+'</span>'+
+        '<button type="button" class="btn small" data-act="hp-automatic">Applica PF automatici</button></div>':'')+
+    '</details>',
+    'battle-hp-panel')+
+   panel('Classe armatura e iniziativa',
+    '<div class="battle-defense-values">'+
+      '<div class="battle-stat"><span>CA</span>'+read('ac','Classe armatura')+'</div>'+
+      '<div class="battle-stat"><span>Iniziativa</span>'+read('initiative','Iniziativa',true)+'</div>'+
+    '</div>'+
+    armor+
+    '<details class="battle-defense-settings"><summary>Formula CA naturale</summary>'+
+      field('Formula','armor_natural_formula',c.armor_natural_formula)+
+      '<p class="hint">La CA include automaticamente armature, scudi e bonus dalle origini.</p>'+
+    '</details>',
+    'battle-defense-panel')+
+   resources+
+   panel('Attacchi disponibili',
+     equipment+
+     attacks+
+     '<details class="battle-attack-settings"><summary>Impostazioni degli attacchi</summary>'+
+       select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
+       '<label class="check"><input type="checkbox" data-field="hand_grip_two_handed" '+(c.hand_grip_two_handed?'checked':'')+'>Impugnatura a due mani (Versatile)</label>'+
+       '<button type="button" class="btn small" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>'+
+     '</details>',
+     'battle-attacks-panel')+
+   '</div>';
+ }
  if(section==='traits')return panel('Tratti',summary([['Razza / Specie',c.species],['Sottorazza',c.subrace],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+feats+
   list(c.stat_block?.trait).map(t=>'<article class="list-item"><h3>'+esc(t.name)+'</h3><p>'+esc(list(t.entries).filter(x=>typeof x==='string').join(' '))+'</p></article>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
  if(section==='origins'){

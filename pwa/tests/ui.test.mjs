@@ -621,7 +621,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  const saved=await createCreature('character','Verifica parità PWA');
  await saveCreature({...saved.data,class:'Bard',class_source:'PHB',level:5,
    classes:[{name:'Bard',source:'PHB',level:5}],abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
-   max_hp_base:20,current_hp:20,temporary_hp:3,second_form_hp:4,
+   max_hp_base:20,current_hp:20,temporary_hp:3,second_form_hp:4,second_form_max_hp:8,
    spell_slots_automatic:true,spell_slots_spent:[0,1],
    inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d6',properties:['F','L'],quantity:1,equipped_slots:['main']}],
    proficiency_choices:[{kind:'weapon',key:'simple'}]},'default',saved.revision);
@@ -632,11 +632,28 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('#hp-amount'));
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Punti ferita','Risorse','CA e iniziativa','Attacchi disponibili']);
+ assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
+  ['Punti ferita','Classe armatura e iniziativa','Risorse','Attacchi disponibili'],
+  'CA follows HP before resource trackers and attacks');
+ assert.equal(document.querySelectorAll('[data-field="death_save_successes"],[data-field="death_save_failures"]').length,0,
+  'The death-save section is absent');
+ assert.equal(document.querySelectorAll('[data-calculated="second_max"]').length,1,
+  'Second form has one computed maximum and one separately named base editor');
+ assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"]').length,1);
+ assert.ok(document.querySelector('.battle-hp-settings:not([open])'),
+  'Manual HP maxima are folded away by default');
+ assert.ok(document.querySelector('.battle-second-form[open]'),
+  'A populated second form stays visible');
  document.querySelector('#hp-amount').value='10';click('[data-act="hp-damage"]');
  await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
  let record=(await loadCreature(saved.data.id)).data;
  assert.deepEqual([record.temporary_hp,record.second_form_hp,record.current_hp],[0,0,17]);
+ click('[data-act="hp-restore-second"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.second_form_hp===8);
+ document.querySelector('#hp-amount').value='2';click('[data-act="hp-heal"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===19);
+ click('[data-act="hp-restore"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===20);
  const tracker='class:bard:phb:bardic_inspiration';
  click('[data-act="tracker-more"][data-tracker-id="'+tracker+'"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===1);
