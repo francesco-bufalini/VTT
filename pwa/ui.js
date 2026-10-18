@@ -1,6 +1,6 @@
 import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
@@ -39,6 +39,7 @@ const state = { page:"library", creatureId:null, editor:null, sheet:"info", deta
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
+  inventorySelectedIndex:0, inventoryMenuIndex:-1,
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let tokenStatusFingerprint="";
@@ -326,19 +327,39 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
-    const ordinary=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+    const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+    const ordinary=owned.filter(({item})=>!isSpellScroll(item));
+    const scrolls=owned.filter(({item})=>isSpellScroll(item));
+    const attunements=owned.filter(({item})=>requiresAttunement(item));
     const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
     const definitions=await Promise.all(documents.map(({item})=>
       getRecord("global","homebrew",String(item.id||""))));
-    body=panel("Oggetti nell’inventario",
-      '<p class="hint">Gli oggetti del catalogo mantengono le proprietà originali; ogni copia ha quantità e stato di equipaggiamento propri.</p>'+
-      (ordinary.length?ordinary.map(({item,index})=>inventoryRow(item,index)).join(""):
-        '<p class="hint">Nessun oggetto.</p>')+
-      '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
-      btn("add-item","Crea oggetto locale")+btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>')+
-      panel("Documenti",'<p class="hint">Documenti personalizzati condivisi tra le copie della scheda. Stile e data sono specifici di ciascuna copia.</p>'+
-      (documents.length?documents.map(({item,index},i)=>
-        documentRow(item,index,definitions[i])).join(""):
+    let selected=owned.find(({index})=>index===state.inventorySelectedIndex);
+    if(!selected){selected=owned[0];state.inventorySelectedIndex=selected?.index??-1;}
+    let resolvedDetail=selected?.item||{};
+    if(selected&&isCatalogItem(selected.item)){
+      if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
+      const source=state.referenceCatalogs.items.find(row=>String(row.id||"")===String(selected.item.id||""));
+      if(source) {
+        const detail=await detailedEntry("items",source);
+        resolvedDetail={...detail,...selected.item,
+          entries:detail.entries??selected.item.entries,
+          description:detail.description??selected.item.description};
+      }
+    }
+    body=inventoryEquipmentView(c)+
+      inventoryAttunementView(c,attunements)+
+      panel("Oggetti posseduti",
+        inventoryTable(ordinary,false,state.inventorySelectedIndex,state.inventoryMenuIndex)+
+        '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
+        btn("add-item","Crea oggetto locale")+btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
+        "inventory-native-panel")+
+      panel("Pergamene possedute",inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
+        "inventory-native-panel inventory-scroll-panel")+
+      (selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
+        inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"")+
+      panel("Documenti",'<p class="hint">Documenti personalizzati condivisi tra le copie della scheda.</p>'+
+      (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
         '<p class="hint">Nessun documento.</p>')+
       '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>')+
       infusionPanel(c,calculated);
@@ -556,6 +577,161 @@ function infusionPanel(c,calculated){
     btn('infusion-forget','Dimentica')+
     btn('infusion-clear','Termina infusione')+'</div>'+
     (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
+}
+
+const INVENTORY_PROPERTY_LABELS={
+  F:"Accurata",L:"Leggera",T:"Lancio",V:"Versatile",H:"Pesante",
+  "2H":"Due mani",A:"Munizioni",R:"Portata",LD:"Caricamento",RLD:"Ricarica"
+};
+const INVENTORY_RARITIES={
+  common:"Comune",uncommon:"Non comune",rare:"Raro","very rare":"Molto raro",
+  legendary:"Leggendario",artifact:"Artefatto",varies:"Variabile"
+};
+function isSpellScroll(item={}){
+  const type=String(item.type||"").split("|")[0].toUpperCase();
+  const name=String(item.name||"").toLowerCase();
+  return type==="SC"||name.includes("spell scroll")||name.includes("pergamena di incantesimo");
+}
+function inventoryProperties(item={}){
+  const obj=resolveOwnedItem(item),kind=itemKind(obj),parts=[];
+  if(kind==="weapon"){
+    for(const raw of Array.isArray(obj.properties)?obj.properties:[])
+      parts.push(INVENTORY_PROPERTY_LABELS[String(raw).split("|")[0].toUpperCase()]||String(raw));
+  }
+  if(kind==="armor"||kind==="shield"){
+    const ac=obj.ac;
+    if(kind==="shield")parts.push("CA +"+(typeof ac==="number"?ac:2));
+    else if(ac!==undefined)parts.push("CA "+(typeof ac==="object"?ac?.base??"—":ac));
+  }
+  const rarity=String(obj.rarity||"").trim().toLowerCase();
+  if(rarity&&rarity!=="none")parts.push(INVENTORY_RARITIES[rarity]||obj.rarity);
+  return parts.join(" · ")||"—";
+}
+function inventoryGold(item){
+  const obj=resolveOwnedItem(item),qty=Math.max(1,Number(item.quantity)||1);
+  const gp=Number.isFinite(Number(obj.value_gp))&&obj.value_gp!==undefined?Number(obj.value_gp):
+    obj.value!==undefined?Number(obj.value)/100:NaN;
+  return Number.isFinite(gp)?Number((gp*qty).toFixed(2)).toLocaleString("it-IT"):"—";
+}
+function inventoryEquipmentView(c){
+  const inventory=Array.isArray(c.inventory)?c.inventory:[];
+  const labels=[["main","Mano principale"],["off","Mano secondaria"],["body","Armatura"]];
+  const main=inventory.find(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes("main"));
+  const blocked=main&&Array.isArray(main.properties)&&main.properties.some(p=>String(p).split("|")[0].toUpperCase()==="2H");
+  const rows=labels.map(([slot,label])=>{
+    const selected=inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
+    const special=slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
+    const options=[[-1,slot==="body"?"Nessuna armatura":"Nessuno"],
+      ...(slot==="body"?[]:[["unarmed","Colpo senz’armi"],["improvised","Arma improvvisata"]]),
+      ...inventory.map((item,index)=>validSlot(item,slot)&&!(slot==="main"&&itemKind(item)==="shield")?
+        [index,item.name||"Oggetto"]:null).filter(Boolean)];
+    const selector='<select aria-label="'+esc(label)+'" data-equip-slot="'+slot+'"'+
+      (slot==="off"&&blocked?' disabled title="Mano occupata da arma a due mani"':'')+'>'+
+      options.map(([value,name])=>'<option value="'+value+'"'+
+      ((selected>=0&&value===selected||selected<0&&(value===special&&special!=="none"||value===-1&&special==="none"))?' selected':'')+'>'+
+      esc(name)+'</option>').join('')+'</select>';
+    const weapon=inventory[selected],isWeapon=weapon&&itemKind(weapon)==="weapon";
+    const size=slot==="body"?'':('<select aria-label="Taglia arma '+esc(label)+'" '+
+      'data-slot-weapon-size="'+slot+'"'+(isWeapon?'':' disabled')+'>'+
+      [['','Creatura ('+esc(c.size_name||"Medium")+')'],...WEAPON_SIZES.map(v=>[v,v])].map(([v,name])=>
+        '<option value="'+esc(v)+'"'+((weapon?.instance_overrides?.weapon_size||'')===v?' selected':'')+'>'+
+        esc(name)+'</option>').join('')+'</select>');
+    return '<div class="inventory-slot-row"><span>'+esc(label)+'</span>'+selector+size+'</div>';
+  }).join('');
+  return panel("Equipaggiamento",'<div class="inventory-slots">'+rows+'</div>',"inventory-native-panel inventory-equipment");
+}
+function inventoryAttunementView(c,entries){
+  const max=Math.max(0,Math.min(99,Number(c.attunement_max_base??3)||0));
+  const active=entries.filter(({item})=>item.attuned===true).length;
+  const lines=entries.map(({item,index})=>
+    '<label class="inventory-attunement-row"><input type="checkbox" data-item-index="'+index+
+    '" data-item-key="attuned"'+(item.attuned?' checked':'')+'><span>'+esc(item.name||"Oggetto")+
+    '</span></label>').join('');
+  return panel("Oggetti che richiedono sintonia",
+    '<div class="inventory-attunement-meta"><span>Sintonia '+active+'/'+max+' · Base</span>'+
+    '<input type="number" aria-label="Massimo sintonia base" data-inventory-attunement-max min="0" max="99" value="'+max+'"></div>'+
+    (lines||'<p class="hint">Nessun oggetto richiede sintonia.</p>'),
+    "inventory-native-panel inventory-attunement");
+}
+function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
+  if(!entries.length)return '<p class="hint">Nessun '+(scrolls?'incantesimo su pergamena.':'oggetto.')+'</p>';
+  const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Eq.","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
+  return '<div class="inventory-table" role="table" aria-label="'+(scrolls?'Pergamene':'Oggetti')+'">'+
+    '<div class="inventory-table-head" role="row">'+headings.map((x,i)=>
+      '<span class="inventory-col-'+(scrolls?["quantity","level","name"][i]:
+        ["equip","value","weight","quantity","source","property","name"][i])+'" role="columnheader">'+x+'</span>').join('')+'</div>'+
+    entries.map(({item,index})=>{
+      const kind=itemKind(item),slots=Array.isArray(item.equipped_slots)?item.equipped_slots:[],
+        canEquip=!["weapon","shield","armor","document"].includes(kind),
+        eqIcon=canEquip?(item.equipped?"✓":""):(slots.includes("main")?"⚔":"")+
+          (slots.includes("off")?"🛡":"")+(slots.includes("body")?"▣":""),
+        qty=Math.max(1,Number(item.quantity)||1),
+        controls='<div class="inventory-quantity-controls">'+
+        '<button type="button" class="inventory-qty-btn" data-act="inventory-quantity" data-index="'+index+
+        '" data-delta="'+(qty===1?'-1':'-1')+'" aria-label="'+(qty===1?"Rimuovi oggetto":"Diminuisci quantità")+'">'+(qty===1?"×":"−")+'</button>'+
+        '<input type="number" aria-label="Quantità '+esc(item.name)+'" min="0" max="99999" '+
+        'data-item-index="'+index+'" data-item-key="quantity" value="'+qty+'">'+
+        '<button type="button" class="inventory-qty-btn" data-act="inventory-quantity" data-index="'+index+
+        '" data-delta="1" aria-label="Aumenta quantità">+</button></div>',
+        name=isCatalogItem(item)?'<strong>'+esc(item.name||"Oggetto")+'</strong>':
+          '<input class="inventory-item-name-input" aria-label="Nome oggetto" data-item-index="'+index+
+          '" data-item-key="name" value="'+esc(item.name||"")+'">',
+        nameCell='<span class="inventory-col-name">'+
+          '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
+          '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:'Dettagli')+'</button>'+
+          (isCatalogItem(item)?'':name)+
+          (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+
+          '<button type="button" class="inventory-more" data-act="inventory-menu" data-index="'+index+
+          '" aria-label="Opzioni '+esc(item.name)+'" aria-expanded="'+(menuIndex===index)+'">⋯</button>'+
+          (menuIndex===index?'<span class="inventory-context-actions">'+
+             '<button type="button" class="btn small danger" data-act="remove-item" data-index="'+index+'">Rimuovi</button>'+
+             '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button></span>':'')+'</span>',
+        equip='<span class="inventory-col-equip">'+(scrolls?'':canEquip?
+          '<button type="button" class="inventory-equip-toggle" data-act="inventory-equip" data-index="'+index+
+          '" aria-label="'+(item.equipped?"Riponi":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
+          Boolean(item.equipped)+'">'+eqIcon+'</button>':
+          '<span class="inventory-slotted-icon">'+(eqIcon||'')+'</span>')+'</span>';
+      const cells=scrolls?[
+        '<span class="inventory-col-quantity">'+controls+'</span>',
+        '<span class="inventory-col-level">'+esc(item.spell_level??item.spellLevel??item.level??"—")+'</span>',nameCell]:
+        [equip,'<span class="inventory-col-value">'+esc(inventoryGold(item))+'</span>',
+        '<span class="inventory-col-weight">'+esc(item.weight!==undefined?(Number(item.weight)*qty)+' lb':'—')+'</span>',
+        '<span class="inventory-col-quantity">'+controls+'</span>',
+        '<span class="inventory-col-source">'+esc(item.source||'')+'</span>',
+        '<span class="inventory-col-property" title="'+esc(inventoryProperties(item))+'">'+esc(inventoryProperties(item))+'</span>',nameCell];
+      return '<div class="inventory-table-row'+(index===selectedIndex?' selected':'')+
+        (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
+    }).join('')+'</div>';
+}
+function inventoryItemDescription(obj,index){
+  const effective=resolveOwnedItem(obj);
+  const props=[obj.source&&'Fonte: '+obj.source,itemKind(obj),obj.rarity&&obj.rarity!=='none'&&
+    'Rarità: '+(INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity)].filter(Boolean);
+  const facts=[
+    obj.value_gp!==undefined?'Valore: '+obj.value_gp+' mo':obj.value!==undefined?'Valore: '+Number(obj.value)/100+' mo':'',
+    obj.weight!==undefined?'Peso: '+obj.weight+' lb':'',
+    effective.damage&&'Danno: '+effective.damage,
+    effective.ac!==undefined&&'CA: '+(typeof effective.ac==='object'?effective.ac.base:effective.ac),
+    effective.range&&'Gittata: '+effective.range
+  ].filter(Boolean);
+  const prose=flattenDescription(obj)||String(obj.description||'');
+  const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
+    '" data-item-key="description" rows="3">'+esc(obj.description||"")+'</textarea></label>':'';
+  const overrides=itemKind(obj)==="weapon"?'<details class="inventory-overrides"><summary>Personalizza copia</summary>'+
+    [['damage','Dadi danno'],['versatile_damage','Danno versatile'],['range','Gittata (ft)'],['bonus_weapon','Bonus magico']].map(([key,label])=>
+      '<label>'+label+'<input data-item-override="'+key+'" data-item-index="'+index+
+      '" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+'</details>':
+    ["armor","shield"].includes(itemKind(obj))?'<details class="inventory-overrides"><summary>Personalizza CA</summary>'+
+    [['ac','CA base'],['bonus_ac','Bonus CA']].map(([key,label])=>'<label>'+label+
+    '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
+    '</details>':'';
+  return '<div class="inventory-description">'+
+    (props.length?'<p class="inventory-description-meta">'+esc(props.join(" · "))+'</p>':'')+
+    (facts.length?'<p class="inventory-description-meta">'+esc(facts.join(" · "))+'</p>':'')+
+    (inventoryProperties(obj)!=='—'?'<p class="inventory-description-meta">'+esc(inventoryProperties(obj))+'</p>':'')+
+    (prose?'<div class="inventory-prose">'+esc(prose)+'</div>':localEdit?'':
+      '<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+
+    localEdit+overrides+'</div>';
 }
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
@@ -1222,6 +1398,19 @@ async function handleField(target) {
     await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
     await render();return;
   }
+  if(target.dataset.slotWeaponSize){
+    const slot=target.dataset.slotWeaponSize;
+    const changed=changeEquippedWeaponSize(creature.inventory||[],slot,target.value);
+    state.inventorySelectedIndex=changed.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
+    await patch({inventory:changed});
+    await render();return;
+  }
+  if(target.dataset.inventoryAttunementMax!==undefined){
+    const max=Number(target.value);
+    if(!Number.isInteger(max)||max<0||max>99)throw Error("Massimo di sintonia non valido.");
+    await patch({attunement_max_base:max});
+    await render();return;
+  }
   if(target.dataset.documentIndex!==undefined){
     await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
     return;
@@ -1368,7 +1557,24 @@ async function handleField(target) {
   } else if(target.dataset.itemIndex !== undefined){
     const index=Number(target.dataset.itemIndex),key=target.dataset.itemKey;
     const value=target.type==="checkbox"?target.checked:target.value;
-    await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+    if(key==="quantity"&&String(value).trim()==="")throw Error("Inserisci una quantità o 0 per rimuovere.");
+    if(key==="quantity"&&Number(value)===0){
+      const inventory=structuredClone(creature.inventory||[]);
+      inventory.splice(index,1);
+      state.inventorySelectedIndex=index>0?index-1:0;
+      await patch({inventory});
+      await render();
+    }else{
+      await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+      // Text editors are debounced: don't destroy their DOM and caret while
+      // the user is typing a name or a custom description.
+      if(key==="name"||key==="description"){
+        if(key==="name"&&index===state.inventorySelectedIndex){
+          const heading=app.querySelector(".inventory-description-panel>h2");
+          if(heading)heading.textContent="Descrizione · "+value;
+        }
+      }else await render();
+    }
   } else if(target.dataset.condition){
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
@@ -2076,6 +2282,42 @@ async function handleAction(target){
     else changes=clearInfusionPatch(creature,index);
     await patch(changes);await render();return;
   }
+  if(act==="inventory-select"){
+    state.inventorySelectedIndex=Number(target.dataset.index);
+    state.inventoryMenuIndex=-1;
+    await render();return;
+  }
+  if(act==="inventory-menu"){
+    const index=Number(target.dataset.index);
+    state.inventoryMenuIndex=state.inventoryMenuIndex===index?-1:index;
+    await render();return;
+  }
+  if(act==="inventory-view-catalog"){
+    const item=state.editor.read().inventory?.[Number(target.dataset.index)];
+    if(!item)throw Error("Oggetto non trovato.");
+    state.catalogCategory="items";state.catalogQuery=String(item.name||"");
+    state.catalogSelected=-1;await navigate("catalog");return;
+  }
+  if(act==="inventory-equip"){
+    const record=state.editor.read(),index=Number(target.dataset.index);
+    const owned=record.inventory?.[index];
+    if(!owned)throw Error("Oggetto non trovato.");
+    await patch({inventory:changeOwnedItem(record.inventory,index,"equipped",!owned.equipped)});
+    state.inventorySelectedIndex=index;
+    await render();return;
+  }
+  if(act==="inventory-quantity"){
+    const record=state.editor.read(),index=Number(target.dataset.index);
+    const qty=Number(record.inventory?.[index]?.quantity??1)+Number(target.dataset.delta||0);
+    if(!Number.isInteger(qty)||qty<0||qty>99999)throw Error("Quantità fuori intervallo.");
+    if(qty===0){
+      const rows=structuredClone(record.inventory||[]);
+      rows.splice(index,1);
+      state.inventorySelectedIndex=Math.max(0,index-1);
+      await patch({inventory:rows});
+    }else await patch({inventory:changeOwnedItem(record.inventory,index,"quantity",qty)});
+    await render();return;
+  }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
     if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
@@ -2104,7 +2346,10 @@ async function handleAction(target){
   }
   if(act==="remove-item"){
     const c=state.editor.read(),inventory=structuredClone(c.inventory||[]);
-    inventory.splice(Number(target.dataset.index),1);
+    const index=Number(target.dataset.index);
+    inventory.splice(index,1);
+    state.inventorySelectedIndex=Math.max(0,index-1);
+    state.inventoryMenuIndex=-1;
     await patch({inventory});await render();return;
   }
   if(act==="spell-pick"){
@@ -2264,6 +2509,18 @@ function listen(){
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected)button.disabled=false;}
   });
+  // Right-click (and touch long-press where the browser emits contextmenu)
+  // opens the same per-item actions as the explicit touch-friendly ⋯ button.
+  app.addEventListener("contextmenu",e=>{
+    const row=e.target?.closest?.("[data-inventory-row]");
+    if(!row||state.sheet!=="inventory"||!state.editor)return;
+    e.preventDefault();
+    const index=Number(row.dataset.inventoryRow);
+    if(!Number.isInteger(index))return;
+    state.inventoryMenuIndex=index;
+    state.inventorySelectedIndex=index;
+    render().catch(error=>message(errorMessage(error),true));
+  });
   app.addEventListener("submit",async e=>{
     if(!(e.target instanceof HTMLFormElement))return;
     e.preventDefault();
@@ -2271,7 +2528,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  const editable = "[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}

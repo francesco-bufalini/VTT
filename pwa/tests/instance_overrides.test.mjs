@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {resolveOwnedItem,changeItemOverride,WEAPON_SIZES} from "../item_controls.js";
+import {resolveOwnedItem,changeItemOverride,changeEquippedWeaponSize,WEAPON_SIZES} from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
 
 const abilities={str:12,dex:18,con:10,int:10,wis:10,cha:10};
@@ -49,6 +49,21 @@ test("editing one weapon splits stack without losing the untouched copies",()=>{
  assert.throws(()=>changeItemOverride([stack],0,"damage","1d999"),/Valore/);
  assert.throws(()=>changeItemOverride([stack],0,"range","90/30"),/Valore/);
  assert.throws(()=>changeItemOverride([stack],0,"ac",50),/incompatibile/);
+});
+
+test("desktop-style size selector only changes the equipped weapon copy in its own hand",()=>{
+ const stack={id:"weapon:daggers",name:"Daggers",type:"M",properties:["L"],quantity:2,
+   equipped_slots:["main","off"],instance_overrides:{}};
+ const changed=changeEquippedWeaponSize([stack],"main","Large");
+ assert.equal(changed.length,2);
+ assert.equal(changed[0].quantity,1);
+ assert.deepEqual(changed[0].equipped_slots,["off"]);
+ assert.deepEqual(changed[1].equipped_slots,["main"]);
+ assert.equal(changed[1].instance_overrides.weapon_size,"Large");
+ assert.equal(stack.quantity,2);
+ assert.throws(()=>changeEquippedWeaponSize([stack],"body","Huge"),/Taglia/);
+ assert.throws(()=>changeEquippedWeaponSize([stack],"off","Colossal"),/Taglia/);
+ assert.equal(changeEquippedWeaponSize(changed,"main","")[1].instance_overrides.weapon_size,undefined);
 });
 
 test("infusion attunement requirement is respected even without catalog",()=>{
