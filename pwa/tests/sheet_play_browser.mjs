@@ -12,7 +12,10 @@ try{
    resource_trackers:[...(creature.resource_trackers||[]),
      {id:'superiority',name:'Superiority Die',max:4,recharge:'short_rest'}],
    optional_features_catalog:[...(creature.optional_features_catalog||[]),
-     {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}]},
+     {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}],
+   action_grants:[...(creature.action_grants||[]),
+     {id:'arcane_pulse',name:'Impulso arcano',action_type:'bonus',origin_id:'feature:class|phb|wizard|arcane_pulse',
+      tracker_id:'focus',tracker_cost:2,description:'Attiva un impulso magico.'}]},
    'default',row.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
@@ -34,15 +37,19 @@ try{
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
  assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi fisici/);
  const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
- const abilityPanel=page.locator('#sheet-play-view [data-battle-action="abilities"]');
+
  assert.equal(await otherPanel.count(),1);
- assert.equal(await abilityPanel.count(),1);
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities belong beneath resources');
  assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Altre azioni/);
- assert.match(await abilityPanel.locator('summary.play-battle-summary').textContent(),/Capacità/);
  await otherPanel.locator('summary.play-battle-summary').click();
  const searchAction=otherPanel.locator('[data-attack-id="search"]');
  assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
  assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
+ assert.equal(await searchAction.locator('.play-battle-effect').count(),0);
+ const alternativeRolls=await searchAction.locator('.play-battle-attack-roll').evaluateAll(nodes=>
+   nodes.map(node=>{const {x,y,right}=node.getBoundingClientRect();return {x,y,right}}));
+ assert.equal(alternativeRolls.length,2);
+ assert(alternativeRolls[1].y>alternativeRolls[0].y+10,'Alternative dice buttons must stack');
  await otherPanel.locator('summary.play-battle-summary').click();
  const spellPanel=page.locator('#sheet-play-view [data-battle-action="spells"]');
  assert.equal(await spellPanel.count(),1);
@@ -82,6 +89,10 @@ try{
  const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
  assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
+ const escapeRolls=await escapeAction.locator('.play-battle-attack-roll').evaluateAll(nodes=>
+   nodes.map(node=>{const {x,y}=node.getBoundingClientRect();return {x,y}}));
+ assert(escapeRolls[1].y>escapeRolls[0].y+10);
+ assert(Math.abs(escapeRolls[0].x-escapeRolls[1].x)<2,'Alternative rolls align on the right');
  assert(await movementPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Scattare')));
  assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('stats');await sheet('battle');
@@ -96,6 +107,10 @@ try{
  assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
  await resourcesPanel.locator('summary.play-battle-summary').click();
  assert.equal(await resourcesPanel.getAttribute('open'),'');
+ const inlineClass=resourcesPanel.locator('[data-ability-id="arcane_pulse"]');
+ assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
+ assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
+ assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="arcane_pulse"]').count(),0);
  const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
  await focusButton.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Focus arcano|Utilizzi disponibili/);
@@ -103,10 +118,13 @@ try{
  await dismiss();
  const maneuver=resourcesPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
  assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
+ assert.equal(await resourcesPanel.locator('[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
  await dismiss();
  await page.locator('#sheet-play-view [data-tracker-id="focus"]').click();await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
+ await resourcesPanel.locator('[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
