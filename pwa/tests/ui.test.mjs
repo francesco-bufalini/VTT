@@ -447,7 +447,7 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
   assert.equal(document.querySelector('[data-calculation-note]'),null,
     'La copertura dei calcoli non deve essere mostrata in Info');
   const progression=document.querySelector('.native-progression-heading');
-  assert.equal(progression?.querySelector('h2')?.textContent,'Classi e progressione');
+  assert.equal(document.querySelector('.native-progression-panel > h2')?.textContent,'Classi e progressione');
   assert(progression?.querySelector('.native-total-level strong'),
     'Il livello totale deve essere mostrato, senza input modificabili');
   assert(progression?.querySelector('[data-field="xp"]'),
