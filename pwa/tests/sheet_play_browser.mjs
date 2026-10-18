@@ -123,7 +123,7 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
  await dismiss();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
- assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="free_pulse"]').count(),1);
+ assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
  const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  await linkedSpell.locator('[data-act="power-spell"]').click();
