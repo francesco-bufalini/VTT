@@ -1241,8 +1241,13 @@ func _show_owned_item_in_catalog(index: int) -> void:
 	var owned: Dictionary = _inventory[index]
 	var item_id: String = String(owned.get("id", ""))
 	var item_name: String = String(owned.get("name", ""))
+	var catalog_name := item_name
+	for entry: Dictionary in _catalog:
+		if String(entry.get("id", "")) == item_id:
+			catalog_name = String(entry.get("name", item_name))
+			break
 	_reset_catalog_filters()
-	_search.text = item_name
+	_search.text = catalog_name
 	_filter_catalog()
 	_set_search_visible(true)
 	for result_index: int in range(_filtered.size()):
