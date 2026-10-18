@@ -156,21 +156,63 @@ func run() -> void:
 			"spell_id": "cure_wounds", "payment_mode": "free", "spellcasting_ability": ""}
 	]
 	tab.refresh_spell_state(conflict)
-	var matching_origin: int = 0
+	var free_group_count: int = 0
 	for section_row: HBoxContainer in tab._view._rows:
 		var left_section: VBoxContainer = section_row.get_child(0).get_child(0)
-		if left_section.get_child_count() == 0 or not left_section.get_child(0) is HBoxContainer:
+		if left_section.get_child_count() == 0:
 			continue
-		var header: HBoxContainer = left_section.get_child(0)
-		if header.get_child_count() == 0 or not header.get_child(0) is Label:
+		var header: Label = left_section.get_child(0) as Label
+		if header == null or header.text != "Senza consumo":
 			continue
-		if "Origine · Example" not in (header.get_child(0) as Label).text:
-			continue
-		matching_origin += 1
+		free_group_count += 1
 		assert(left_section.find_children("CastingAbility", "OptionButton", true, false).size() == 1
 			and left_section.find_children("CastingStatistics", "Label", true, false).size() == 1,
-			"Conflicting granted spells still produce exactly one ability selector/statistics line")
-	assert(matching_origin == 1, "Two powers from one origin share one editable section")
+			"Free powers from one origin retain a single spellcasting ability inside the resource group")
+	assert(free_group_count == 1, "Free spells share one box instead of an origin box")
+	# Two different origins spending the very same tracker must appear together.
+	var shared: Dictionary = conflict.duplicate(true)
+	shared["resource_trackers"] = [{"id": "shared-uses", "name": "Cariche condivise", "max": 3}]
+	shared["origin_spell_grants"] = [
+		{"id": "one", "origin_id": "custom:example", "origin_name": "Example",
+			"spell_id": "bless", "payment_mode": "tracker", "tracker_id": "shared-uses"},
+		{"id": "two", "origin_id": "custom:other", "origin_name": "Other",
+			"spell_id": "cure_wounds", "payment_mode": "tracker", "tracker_id": "shared-uses"}
+	]
+	tab.refresh_spell_state(shared)
+	var shared_boxes := 0
+	for section_row: HBoxContainer in tab._view._rows:
+		var left: VBoxContainer = section_row.get_child(0).get_child(0)
+		if left.get_child_count() == 0:
+			continue
+		var heading: Label = left.get_child(0) as Label
+		if heading == null or heading.text != "Cariche condivise":
+			continue
+		shared_boxes += 1
+		assert(left.find_children("CastingAbility", "OptionButton", true, false).size() == 2,
+			"Each casting origin retains its spellcasting ability even when sharing a tracker")
+		assert(left.find_children("PowerRow", "HBoxContainer", true, false).size() == 2,
+			"Different origins contribute powers to the same tracker box")
+		assert(section_row.get_child(1).find_children("TrackerRow", "HBoxContainer", true, false).size() == 1,
+			"The tracker counter only appears once per shared resource")
+	assert(shared_boxes == 1, "Powers are grouped by tracker ID rather than origin")
+	# A class/prepared spell list has level headings and alphabetic rows, never
+	# a level or source suffix appended to the action button.
+	var examples: Array[Dictionary] = [
+		{"spell": {"name": "Zephyr", "level": 2}, "member": {}, "grant": {}},
+		{"spell": {"name": "Breeze", "level": 1}, "member": {}, "grant": {}},
+		{"spell": {"name": "Arcane Spark", "level": 0}, "member": {}, "grant": {}},
+		{"spell": {"name": "Aegis", "level": 1}, "member": {}, "grant": {}}
+	]
+	var ordered: VBoxContainer = tab._view._leveled_spell_list(tab._view, examples)
+	var headings: Array[String] = []
+	var buttons: Array[String] = []
+	for node: Node in ordered.get_children():
+		if node.name == "SpellLevelHeader":
+			headings.append((node as Label).text)
+		elif node is HBoxContainer:
+			buttons.append((node.get_child(0) as Button).text)
+	assert(headings == ["Trucchetti", "Livello 1", "Livello 2"])
+	assert(buttons == ["Arcane Spark", "Aegis", "Breeze", "Zephyr"])
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://spellcasting_columns_review.png")
