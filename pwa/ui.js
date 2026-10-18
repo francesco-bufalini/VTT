@@ -54,6 +54,7 @@ let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
 let currentGameSession="";
 let chatNotificationBaseline = false;
+const locallySentEventIds = new Set();
 function releaseSessionSnapshot(){
   const url=state.snapshotObjectUrl;
   state.snapshotObjectUrl="";
@@ -65,7 +66,7 @@ function acceptSession(info){
   const next=String(info?.session??"");
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
-    state.messages=[];state.after="";state.map=null;state.tokenId="";chatNotificationBaseline=false;
+    state.messages=[];state.after="";state.map=null;state.tokenId="";chatNotificationBaseline=false;locallySentEventIds.clear();
     releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
@@ -1436,17 +1437,20 @@ async function fetchChat() {
     if(generation!==chatGeneration)return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     const initialHistory = !chatNotificationBaseline && !state.after;
-    const incomingChat = [];
+    const incomingEvents = [];
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
       for(const entry of reply.events){
         if(!entry || !entry.id) continue;
-        if(!ids.has(entry.id)){ state.messages.push(entry); ids.add(entry.id); if(!initialHistory && entry.kind==="chat") incomingChat.push(entry); }
+        if(!ids.has(entry.id)){ state.messages.push(entry); ids.add(entry.id); if(!initialHistory && (entry.kind==="chat" || entry.kind==="roll") && !locallySentEventIds.has(entry.id)) incomingEvents.push(entry); }
         state.after=entry.id;
       }
       chatNotificationBaseline=true;
        state.messages=state.messages.slice(-100);
-       for(const entry of incomingChat) void notifyIncomingChat(entry, currentGameSession).catch(console.warn);
+       for(const entry of incomingEvents){
+         void notifyIncomingChat(entry, currentGameSession).catch(console.warn);
+         if(document.visibilityState==="visible") message((entry.kind==="roll"?"🎲 ":"💬 ")+(entry.author||"Giocatore")+": "+(entry.kind==="roll"?((entry.label||entry.die||"Tiro")+": "+entry.total):(entry.text||"Messaggio")),false);
+       }
       const container=document.querySelector("#events");
       if(state.page==="session"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
@@ -1506,6 +1510,7 @@ async function shareRoll({quiet=false}={}) {
   const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:(document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
+  locallySentEventIds.add(event.id);
   const result=await action("chat_send",{event});
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
   if(!quiet)message("Tiro condiviso nella chat.");
@@ -2808,7 +2813,17 @@ async function handleAction(target){
     else await refreshMapOnce();
     return;
   }
-  if(act==="toggle-chat-notifications"){try{await toggleChatNotifications();renderSessionIfIdle();}catch(error){message(errorMessage(error),true);}return;}
+  if(act==="toggle-chat-notifications"){
+    try {
+      const enabled=await toggleChatNotifications();
+      // Permission UI can temporarily background the app. Do not rebuild the
+      // entire session screen after the permission prompt closes.
+      const button=document.querySelector('[data-act="toggle-chat-notifications"]');
+      if(button)button.textContent=enabled?"🔔 Attive":"🔕 Notifiche";
+      message(enabled?"Notifiche abilitate.":"Notifiche disabilitate.");
+    } catch(error) { message(errorMessage(error),true); }
+    return;
+  }
   if(act==="open-chat-dice"){openDiceDialog();return;}
   if(act==="close-chat-dice"){const dlg=document.querySelector("#chat-dice-dialog");if(dlg){if(typeof dlg.close==="function")dlg.close();else dlg.remove();}return;}
   if(act==="select-die"){

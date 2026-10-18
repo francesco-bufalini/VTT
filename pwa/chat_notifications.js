@@ -33,14 +33,14 @@ export async function toggleChatNotifications() {
   return true;
 }
 export async function notifyIncomingChat(entry, sessionId = "") {
-  if (!notificationsEnabled() || !entry || entry.kind !== "chat") return;
+  if (!notificationsEnabled() || !entry || !["chat", "roll"].includes(entry.kind)) return;
   // Avoid distracting duplicate alerts while the chat is visible and focused.
   if (document.visibilityState === "visible" && document.hasFocus() &&
       (document.querySelector("#events") && !document.querySelector("#events").closest("[hidden]"))) return;
   const registration = await navigator.serviceWorker.ready;
   const author = String(entry.author || "Giocatore").slice(0, 80);
-  const text = String(entry.text || "Nuovo messaggio").slice(0, 180);
-  await registration.showNotification("VTT · " + author, {
+  const text = String(entry.kind === "roll" ? ((entry.label || entry.die || "Tiro di dado") + ": " + (entry.total ?? "—")) : (entry.text || "Nuovo messaggio")).slice(0, 180);
+  await registration.showNotification((entry.kind === "roll" ? "🎲 VTT · " : "💬 VTT · ") + author, {
     body: text,
     icon: "/icon-192.png",
     badge: "/icon-192.png",
