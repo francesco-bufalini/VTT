@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows} from '../native_sheet.js';
+import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
@@ -64,6 +64,36 @@ test('secondary classes show only non-primary entries, with source from selected
  assert.equal(patch.classes[1].source,'XPHB');
  assert.equal(patch.classes[1].id,'fighter_xphb');
  assert.equal(patch.class_source,'PHB');
+});
+test('species type index retains official edition-specific non-humanoid types',()=>{
+ const typed=JSON.parse(readFileSync(new URL('../catalog/species_types.json',import.meta.url),'utf8'));
+ const base=[{name:'Fairy',source:'WBtW'},{name:'Autognome',source:'AAG'},
+  {name:'Plasmoid',source:'AAG'},{name:'Satyr',source:'MOT'},{name:'Satyr',source:'MPMM'}];
+ const races=base.map(row=>({...row,...(
+   typed.races.find(t=>t.name===row.name&&t.source===row.source)?
+    {creatureTypes:typed.races.find(t=>t.name===row.name&&t.source===row.source).creatureTypes}:{})}));
+ assert.equal(speciesCreatureType({species:'Autognome',species_source:'AAG'}, {races}),'Costrutto');
+ assert.equal(speciesCreatureType({species:'Fairy',species_source:'WBtW'}, {races}),'Folletto');
+ assert.equal(speciesCreatureType({species:'Plasmoid',species_source:'AAG'}, {races}),'Melma');
+ assert.equal(speciesCreatureType({species:'Satyr',species_source:'MOT'}, {races}),'Umanoide');
+ assert.equal(speciesCreatureType({species:'Satyr',species_source:'MPMM'}, {races}),'Folletto');
+});
+test('primary class level can be edited but total is recomputed and cannot be edited',()=>{
+ const c={kind:'character',class:'Wizard',class_source:'PHB',level:6,
+  classes:[{name:'Wizard',source:'PHB',level:4},{name:'Fighter',source:'PHB',level:2}]};
+ assert.equal(primaryClassLevel(c),4);
+ assert.equal(totalClassLevel(c),6);
+ const patch=identityPatch(c,'primary_class_level',7);
+ assert.equal(patch.classes[0].level,7);
+ assert.equal(patch.level,9);
+ assert.equal(c.classes[0].level,4);
+ assert.throws(()=>identityPatch(c,'primary_class_level',19),/somma dei livelli/);
+ assert.throws(()=>identityPatch(c,'level',10),/calcolato automaticamente/);
+ const html=nativeSection(c,'info',{field:(name,key,value)=>'<input data-field="'+key+'" value="'+value+'">',
+   area:()=>'',panel:(_title,body)=>body,catalogs:{},calculated:{stats:{},values:{}}});
+ assert.match(html,/data-field="primary_class_level"/);
+ assert.doesNotMatch(html,/data-field="level"/);
+ assert.match(html,/Livello totale<input type="number" value="6" disabled/);
 });
 test('all sheet readouts expose effective values and native bonus targets, including legacy HP alias',()=>{
  const out=calculateSheet({abilities:{dex:14},max_hp_base:10,formula_bonuses:[
