@@ -12,6 +12,7 @@ import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
+import { collectTraitRows, groupTraitRows } from "./trait_projection.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -643,67 +644,43 @@ function attacksView(calculated,compact=false){
  return '<div data-attack-list>'+ (rows||'<p class="hint">Seleziona un’arma in una mano per renderne disponibile l’attacco.</p>')+'</div>';
 }
 async function traitsView(c){
- const groups=[],warnings=[];
- const load=async category=>{
-  if(!state.referenceCatalogs[category])try{state.referenceCatalogs[category]=await catalogEntries(category);}
-  catch{warnings.push('Riferimenti '+category+' non disponibili offline.');return [];}
+ const warnings=[];
+ const entries=async category=>{
+  if(!state.referenceCatalogs[category]){
+   try{state.referenceCatalogs[category]=await catalogEntries(category);}
+   catch{warnings.push('Catalogo '+category+' non disponibile offline.');return [];}
+  }
   return state.referenceCatalogs[category];
  };
- const linked='<div class="actions">'+[['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']].map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
- const card=entry=>{const description=flattenDescription(entry);return '<details class="trait-card"><summary>'+esc(entry.name)+'</summary>'+(description?'<p class="trait-description">'+esc(description)+'</p>':'')+linked+'</details>';};
- const addReference=async(category,name,source,title)=>{
-  if(!name)return;
-  const candidates=(await load(category)).filter(r=>r.name?.toLowerCase()===name.toLowerCase()&&(!source||r.source?.toLowerCase()===source.toLowerCase()));
-  const row=candidates.length===1?candidates[0]:null;
-  const entry=row?await detailedEntry(category,row):{name};
-  groups.push('<h3>'+esc(title)+' · '+esc(name)+'</h3>'+card(entry));
+ const linked='<div class="actions">'+
+  [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
+   ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
+  .map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
+ const rows=await collectTraitRows(c,state.calculated||{},
+  {entries,detail:detailedEntry,isDocument});
+ const groups=groupTraitRows(rows);
+ const renderCard=trait=>{
+  const description=flattenDescription({entries:trait.entries});
+  const active=!trait.inactive;
+  const toggler=trait.feature_origin?
+    '<label class="check"><input type="checkbox" data-feature-origin="'+
+       esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
+  return '<details class="trait-card'+(active?'':' trait-inactive')+'"><summary>'+
+    esc(trait.name)+(active?'':' · disattivato')+'</summary>'+
+    (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
+    (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
+    toggler+linked+'</details>';
  };
- const projected=state.calculated?.features||[];
- if(projected.length){
-  const byOrigin=new Map();
-  for(const feature of projected){
-   const origin=feature.origin_key||'Altro';
-   if(!byOrigin.has(origin))byOrigin.set(origin,[]);
-   const active=!feature.disabled;
-   byOrigin.get(origin).push('<details class="trait-card"><summary>'+esc(feature.name)+
-    (feature.level>1?' · livello '+esc(feature.level):'')+
-    (!active?' · disattivato':'')+'</summary><p class="trait-description">'+
-    esc(flattenDescription(feature))+
-    '</p><label class="check"><input type="checkbox" data-feature-origin="'+
-    esc(feature.origin_id)+'" '+(active?'checked':'')+'>Beneficio attivo</label>'+
-    linked+'</details>');
-  }
-  for(const [origin,rows] of byOrigin)
-   groups.push('<h3>Privilegi · '+esc(origin.replaceAll('|',' · '))+'</h3>'+rows.join(''));
- }
- if(c.kind==='monster'&&!projected.length)for(const t of c.stat_block?.trait||[])groups.push(card(t));
- else{
-  if(!projected.some(f=>f.origin_key?.startsWith('species|'))){
-   await addReference('races',c.species,c.species_source,'Razza / Specie');
-   if(c.subrace)await addReference('races',c.species+' ('+c.subrace+')',c.subrace_source,'Sottorazza');
-  }
- }
- if(!projected.some(f=>f.origin_key?.startsWith('background|')))
-  await addReference('backgrounds',c.background,c.background_source,'Background');
- if(!projected.some(f=>f.origin_key?.startsWith('class|'))){
- const features=await load('class_features'),subfeatures=await load('subclass_features');
- for(const member of localClasses(c)){
-  const source=member.source||(c.rules_version==='2024'?'XPHB':'PHB');
-  const selected=features.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&Number(f.level||0)<=Number(member.level));
-  groups.push('<h3>Classe · '+esc(member.name)+' · '+esc(source)+'</h3>'+selected.map(card).join(''));
-  const subclass=member.subclass||'',subsource=member.subclass_source||'';
-  if(subclass){
-    const selected=subfeatures.filter(f=>f.class_name?.toLowerCase()===member.name.toLowerCase()&&f.class_source?.toLowerCase()===source.toLowerCase()&&[f.subclass_name,f.subclass_short_name].some(name=>name?.toLowerCase()===subclass.toLowerCase())&&(!subsource||f.subclass_source?.toLowerCase()===subsource.toLowerCase())&&Number(f.level||0)<=Number(member.level));
-    groups.push('<h3>Sottoclasse · '+esc(subclass)+'</h3>'+selected.map(card).join(''));
-  }
- }
- }
- for(const feat of c.feats_catalog||[])if(feat?.name&&!feat.disabled&&
-    !projected.some(f=>f.origin_key?.startsWith('feat|')&&
-      (f.origin_key==='feat|'+String(feat.id||'').toLowerCase()||
-       f.origin_key==='feat|'+String(feat.name).toLowerCase()+'|'+String(feat.source||'').toLowerCase())))
-   await addReference('feats',feat.name,feat.source,'Talento');
- return panel('Tratti',(groups.join('')||'<p class="hint">Seleziona le origini della creatura per leggerne i tratti.</p>')+warnings.map(w=>'<p class="hint">'+esc(w)+'</p>').join(''))+panel('Tratti aggiuntivi',area('Note sui tratti','additional_traits',typeof c.additional_traits==='string'?c.additional_traits:''));
+ const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
+  '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
+  group.levels.map(tier=>
+   (tier.level>=0?'<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
+   tier.origins.map(origin=>
+    '<div class="trait-origin-group"><h4 class="trait-origin-title">'+esc(origin.title)+'</h4>'+
+    origin.rows.map(renderCard).join('')+'</div>').join('')
+  ).join('')+'</section>').join('');
+ return panel('Tratti',content||'<p>Nessun privilegio da mostrare.</p>')+
+   (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);

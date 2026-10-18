@@ -151,7 +151,7 @@ export async function detailedEntry(category,entry) {
   const candidate=index?.[cat]?.[lookup];
   if(!candidate || typeof candidate!=="object")return entry;
   const copy={...entry};
-  for(const field of ["entries","description","text","fluff","feats"]){
+  for(const field of ["entries","description","text","fluff","feats","feature_sections"]){
     if(copy[field]==null||copy[field]===""||(Array.isArray(copy[field])&&!copy[field].length)){
       if(candidate[field]!=null)copy[field]=candidate[field];
     }
