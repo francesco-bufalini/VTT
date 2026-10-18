@@ -1,6 +1,9 @@
 extends Node
 
 signal status_changed(message: String)
+# Local autosave checkpoint: the board records implicit edits in its undo stack.
+signal map_autosave_initialized(snapshot: Dictionary)
+signal map_autosave_committed(snapshot: Dictionary, previous_snapshot: Dictionary, local_change: bool)
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const CreaturePresence = preload("res://network/creature_presence.gd")
@@ -87,6 +90,8 @@ var _map_autosave_candidate := ""
 var _map_autosave_candidate_since := 0
 var _map_autosave_last_poll := 0
 var _map_autosave_retry_after := 0
+var _map_autosave_last_snapshot: Dictionary = {}
+var _restored_map_autosave := false
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
@@ -155,15 +160,39 @@ func initialize_map_autosave(restore_existing: bool = true) -> void:
 		if not valid_snapshot(snapshot) or not apply_snapshot(snapshot):
 			push_warning("Autosave mappa incompatibile; non verrà sovrascritto.")
 			return
+		_restored_map_autosave = true
 		_accept_received_snapshot(snapshot)
 	_map_autosave_ready = true
 	# The first poll creates a baseline even when the user is offline.
 	_map_autosave_last_signature = ""
 	_map_autosave_candidate = ""
 	_map_autosave_retry_after = 0
+	var baseline: Dictionary = create_snapshot()
+	if not baseline.is_empty():
+		_map_autosave_last_snapshot = baseline.duplicate(true)
+		map_autosave_initialized.emit(baseline.duplicate(true))
 
 
-func _persist_map_autosave(snapshot: Dictionary, signature: String = "") -> Error:
+func has_restored_map_autosave() -> bool:
+	return _restored_map_autosave
+
+
+# Used by Save / menu transitions to flush changes without waiting for debounce.
+func save_map_snapshot_now() -> Error:
+	if not _map_autosave_ready or _applying_received_snapshot:
+		return ERR_UNAVAILABLE
+	if board_root != null and board_root.has_method("_history_motion_in_progress"):
+		if bool(board_root.call("_history_motion_in_progress")):
+			return ERR_BUSY
+	var snapshot: Dictionary = create_snapshot()
+	if snapshot.is_empty():
+		return ERR_BUSY
+	return _persist_map_autosave(snapshot)
+
+
+func _persist_map_autosave(
+	snapshot: Dictionary, signature: String = "", local_change: bool = true
+) -> Error:
 	if not _map_autosave_ready or snapshot.is_empty():
 		return ERR_UNAVAILABLE
 	var digest := signature if not signature.is_empty() else _snapshot_signature(snapshot)
@@ -192,13 +221,20 @@ func _persist_map_autosave(snapshot: Dictionary, signature: String = "") -> Erro
 		ProjectSettings.globalize_path(path)
 	)
 	if error == OK:
+		var previous: Dictionary = _map_autosave_last_snapshot.duplicate(true)
 		_map_autosave_last_signature = digest
+		_map_autosave_last_snapshot = snapshot.duplicate(true)
+		map_autosave_committed.emit(snapshot.duplicate(true), previous, local_change)
 	return error
 
 
 func _poll_map_autosave() -> void:
 	if not _map_autosave_ready or _applying_received_snapshot:
 		return
+	# A drag/placement is one user action. Never save intermediate previews.
+	if board_root != null and board_root.has_method("_history_motion_in_progress"):
+		if bool(board_root.call("_history_motion_in_progress")):
+			return
 	var now := Time.get_ticks_msec()
 	if now < _map_autosave_retry_after or now - _map_autosave_last_poll < AUTO_SYNC_POLL_MS:
 		return
@@ -367,7 +403,10 @@ func _snapshot_signature(snapshot: Dictionary) -> String:
 
 
 func _accept_received_snapshot(snapshot: Dictionary) -> void:
-	_persist_map_autosave(snapshot)
+	# Incoming network state is not a local undoable edit.
+	_persist_map_autosave(snapshot, "", false)
+	_map_autosave_last_snapshot = snapshot.duplicate(true)
+	map_autosave_initialized.emit(snapshot.duplicate(true))
 	_auto_sync_initialized = true
 	var local_snapshot := create_snapshot()
 	_auto_sync_last_signature = _snapshot_signature(

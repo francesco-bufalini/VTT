@@ -206,6 +206,9 @@ var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
 var _history_action_scheduled: bool = false
 var _undo_restoring: bool = false
+var _map_history_last_snapshot: Dictionary = {}
+# Existing explicit transaction snapshots take precedence over autosave polling.
+var _explicit_history_since_autosave := false
 
 
 func _ready() -> void:
@@ -270,6 +273,8 @@ func _ready() -> void:
 	board_sync = preload("res://network/board_sync.gd").new()
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
+	board_sync.map_autosave_initialized.connect(_reset_map_history_baseline)
+	board_sync.map_autosave_committed.connect(_on_map_autosave_committed)
 	_build_share_dialog()
 	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
@@ -1707,7 +1712,10 @@ func _input(event: InputEvent) -> void:
 		):
 			get_viewport().set_input_as_handled()
 			return
-		if undo_last_action():
+		var changed: bool = (
+			redo_last_action() if event.shift_pressed else undo_last_action()
+		)
+		if changed:
 			get_viewport().set_input_as_handled()
 			return
 
@@ -2627,6 +2635,70 @@ func _capture_history_state() -> Dictionary:
 	}
 
 
+# The on-disk map snapshot is the baseline for edits without a dedicated
+# begin/commit call (e.g. changes applied by spells or the token editor).
+# Remote snapshots and startup restoration start a new local history.
+func _reset_map_history_baseline(snapshot: Dictionary) -> void:
+	if snapshot.is_empty():
+		return
+	_map_history_last_snapshot = snapshot.duplicate(true)
+	_explicit_history_since_autosave = false
+	_undo_stack.clear()
+	_redo_stack.clear()
+
+
+func _on_map_autosave_committed(
+	snapshot: Dictionary, previous_snapshot: Dictionary, local_change: bool
+) -> void:
+	if snapshot.is_empty():
+		return
+	var before: Dictionary = _map_history_last_snapshot.duplicate(true)
+	if before.is_empty():
+		before = previous_snapshot.duplicate(true)
+	_map_history_last_snapshot = snapshot.duplicate(true)
+	if not local_change:
+		_reset_map_history_baseline(snapshot)
+		return
+	if before.is_empty() or before == snapshot:
+		_explicit_history_since_autosave = false
+		return
+	# Explicit token moves, area edits, and context-menu actions already
+	# captured their exact pre-action state. Do not duplicate those entries.
+	if _explicit_history_since_autosave or _undo_restoring:
+		_explicit_history_since_autosave = false
+		return
+	_append_history_state(_undo_stack, {
+		"snapshot": before,
+		"grid_visible": volumetric_grid.visible,
+		"vision_visible": _vision_cones_visible
+	})
+	_redo_stack.clear()
+
+
+# Ctrl+Z may be pressed before the 280 ms autosave debounce has elapsed.
+# Capture that pending edit on demand rather than silently undoing an older one.
+func _capture_pending_map_edit_for_undo() -> void:
+	if (
+		_map_history_last_snapshot.is_empty()
+		or _explicit_history_since_autosave
+		or _undo_restoring
+		or board_sync == null
+		or not is_instance_valid(board_sync)
+	):
+		return
+	var current: Dictionary = board_sync.call("create_snapshot")
+	if current.is_empty() or current == _map_history_last_snapshot:
+		return
+	_append_history_state(_undo_stack, {
+		"snapshot": _map_history_last_snapshot.duplicate(true),
+		"grid_visible": volumetric_grid.visible,
+		"vision_visible": _vision_cones_visible
+	})
+	_redo_stack.clear()
+	_map_history_last_snapshot = current.duplicate(true)
+	_explicit_history_since_autosave = true
+
+
 func _append_history_state(
 	stack: Array[Dictionary],
 	state: Dictionary
@@ -2796,6 +2868,7 @@ func commit_undo_transaction(state: Dictionary) -> void:
 	if _undo_restoring or state.is_empty():
 		return
 	_append_history_state(_undo_stack, state)
+	_explicit_history_since_autosave = true
 	# Una nuova azione crea una nuova linea temporale: il redo precedente
 	# non e' piu' applicabile.
 	_redo_stack.clear()
@@ -2839,6 +2912,7 @@ func undo_last_action() -> bool:
 
 
 func _undo_last_action_now() -> bool:
+	_capture_pending_map_edit_for_undo()
 	if _undo_stack.is_empty():
 		return false
 	if board_sync == null or not is_instance_valid(board_sync):
@@ -2855,6 +2929,8 @@ func _undo_last_action_now() -> bool:
 		return false
 
 	_append_history_state(_redo_stack, current_state)
+	_map_history_last_snapshot = board_sync.call("create_snapshot")
+	_explicit_history_since_autosave = true
 	return true
 
 
@@ -2882,6 +2958,8 @@ func _redo_last_action_now() -> bool:
 		return false
 
 	_append_history_state(_undo_stack, current_state)
+	_map_history_last_snapshot = board_sync.call("create_snapshot")
+	_explicit_history_since_autosave = true
 	return true
 
 func toggle_compendium() -> void:

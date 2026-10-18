@@ -38,6 +38,8 @@ jobs:
             /encounter/*.gd
             /items/
             /homebrew/
+            /pwa/icons/gold_generated/
+            /assets/creature_info/
             /tests/
             /assets/items/
             /assets/spell_area_geometry.json

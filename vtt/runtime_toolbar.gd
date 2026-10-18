@@ -195,6 +195,12 @@ func _on_game(id: int) -> void:
 		SHARE_OPEN:
 			board_root.call("_on_context_menu_id_pressed", SHARE_CONTEXT_ID)
 		SESSION_MAIN_MENU:
+			var sync: Node = _board_sync()
+			if sync != null and sync.has_method("save_map_snapshot_now"):
+				var save_error: Error = int(sync.call("save_map_snapshot_now")) as Error
+				if save_error != OK:
+					_set_status("Impossibile salvare la mappa: " + error_string(save_error))
+					return
 			var campaign_manager: Node = _campaign_manager()
 			if campaign_manager != null:
 				campaign_manager.call("return_to_main_menu")
@@ -295,16 +301,24 @@ func _save_current_state() -> void:
 	var error: Error = int(
 		campaign_manager.call("save_active_runtime_state", snapshot)
 	) as Error
-	if error == OK:
+	if error != OK:
+		_set_status("Errore salvataggio")
+		return
+	# Keep the automatic, scene-scoped recovery file aligned with manual Save.
+	var autosave_error: Error = int(sync.call("save_map_snapshot_now")) as Error
+	if autosave_error == OK:
 		_set_status("Salvato")
 	else:
-		_set_status("Errore salvataggio")
+		_set_status("Campagna salvata; autosave mappa non riuscito")
 
 
 func _load_saved_state() -> void:
 	var campaign_manager: Node = _campaign_manager()
 	var sync: Node = _board_sync()
 	if campaign_manager == null or sync == null:
+		return
+	# A newer automatic map checkpoint supersedes an older manual campaign Save.
+	if bool(sync.call("has_restored_map_autosave")):
 		return
 
 	var state_value: Variant = campaign_manager.call(
@@ -319,6 +333,11 @@ func _load_saved_state() -> void:
 
 	var applied: bool = bool(sync.call("apply_snapshot", state))
 	if applied:
+		# Startup restores should never create a spurious Ctrl+Z checkpoint.
+		if board_root.has_method("_reset_map_history_baseline"):
+			board_root.call("_reset_map_history_baseline", state)
+		if sync.has_method("save_map_snapshot_now"):
+			sync.call("save_map_snapshot_now")
 		_set_status("Salvataggio caricato")
 
 
