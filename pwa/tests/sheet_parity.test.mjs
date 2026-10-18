@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown} from '../sheet_rules_view.js';
+import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell} from '../sheet_rules_view.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
@@ -303,4 +303,37 @@ test('classes header displays non-editable total level and editable XP on one li
  assert(markup.includes('<output aria-label="Livello totale automatico">5</output>'));
  assert(markup.includes('data-field="xp" value="1250"'));
  assert(!markup.includes('Livello totale<input'));
+});
+
+test('battle context separates movement from identity and displays the equipped AC formula without hiding fields',()=>{
+ const armor={id:'chain-shirt',name:'Cotta di maglia',type:'MA',ac:14,quantity:1,equipped_slots:['body']};
+ const creature={kind:'character',abilities:{str:12,dex:16,con:12,int:10,wis:10,cha:10},
+  armor_natural_formula:'12 + dex_mod',inventory:[armor]};
+ const panel=(title,body,className='')=>'<section class="'+className+'"><h2>'+title+'</h2>'+body+'</section>';
+ const view=(c,section)=>nativeSection(c,section,{panel,field:()=>'',area:()=>'',armor:'<label>Armatura indossata<select data-equip-slot="body"></select></label>',equipment:'',resources:'',attacks:'',calculated:calculateSheet(c,catalogs)});
+ const battle=view(creature,'battle');
+ assert.match(battle,/class="battle-movement-panel"/);
+ assert.match(battle,/class="battle-defense-panel"/);
+ assert.match(battle,/data-equip-slot="body"/);
+ assert.match(battle,/Formula armatura indossata/);
+ assert.match(battle,/14 \+ \(2 DES\)/);
+ assert.doesNotMatch(battle,/data-field="armor_natural_formula"/);
+ assert.doesNotMatch(battle,/<summary>Armatura e CA naturale<\/summary>/);
+ assert.doesNotMatch(battle,/data-calculated="initiative"/);
+ assert.match(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
+ assert.doesNotMatch(view(creature,'info'),/<h3>Velocità<\/h3>/);
+ const natural=view({...creature,inventory:[]},'battle');
+ assert.match(natural,/Formula CA naturale/);
+ assert.match(natural,/12 \+ dex_mod/);
+ assert.doesNotMatch(natural,/Formula armatura indossata/);
+});
+
+test('only spells with duration can remain applied on the conditions sheet',()=>{
+ assert(isPersistentSpell({has_duration:true}));
+ assert(!isPersistentSpell({has_duration:false,duration:'1 hour'}));
+ assert(isPersistentSpell({duration:[{type:'timed',duration:{type:'minute',amount:1}}]}));
+ assert(!isPersistentSpell({duration:[{type:'instant'}]}));
+ assert(isPersistentSpell({duration:'Concentration, up to 1 minute'}));
+ assert(!isPersistentSpell({duration:'Instantaneous'}));
+ assert(!isPersistentSpell({duration:''}));
 });

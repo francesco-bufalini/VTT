@@ -47,14 +47,9 @@ jobs:
           sparse-checkout: |
             /pwa/
             /network/pwa_host.gd
-            /vtt/icons/action_controls.svg
-            /vtt/data/class_mechanics_5etools.json
-            /vtt/data/class_resource_overrides.json
-            /vtt/data/combat_actions_5etools.json
-            /vtt/data/combat_action_supplements_5etools.json
-            /vtt/data/feature_timing_recovery_rules.json
-            /vtt/data/activated_abilities_5etools.json
-            /vtt/data/class_resource_overrides.json
+            /vtt/data/
+            /vtt/icons/
+            /assets/creature_info/
       - name: Parse browser ES modules and Service Worker
         shell: bash
         run: |
@@ -76,6 +71,12 @@ jobs:
           cd pwa
           node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
+      - name: Exercise mobile play sheets and effects in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          node tests/sheet_play_browser.mjs
       - name: Verify install manifest, precache and PNG files
         shell: python
         run: |

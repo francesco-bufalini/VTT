@@ -1,4 +1,4 @@
-import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
+import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
@@ -16,7 +16,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -343,7 +343,7 @@ async function editorView() {
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -1861,7 +1861,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   if(state.sheet==='traits'&&state.sheetPopup.startsWith('trait-origin:')){
     const origin=state.sheetPopup.slice('trait-origin:'.length);
     const matches=[...state.sheetSources].filter(([key,node])=>key.startsWith('trait:')&&node.querySelector('[data-feature-origin]')?.dataset.featureOrigin===origin);
@@ -1895,10 +1895,73 @@ function rememberUtilityDisclosures(){
     details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
   }
 }
+function fillAppliedSpellOptions(query=''){
+ const select=app.querySelector('#condition-spell-picker');if(!select)return;
+ const rules=state.editor?.read()?.rules_version||'2014';
+ const matches=spellsForEdition(state.spellCatalog||[],rules).filter(isPersistentSpell)
+   .filter(row=>row?.id&&row?.name&&String(row.name).toLocaleLowerCase('it').includes(String(query).trim().toLocaleLowerCase('it'))).slice(0,120);
+ select.innerHTML=matches.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('');
+}
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='sheet-context'){state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
+  if(act==='condition-add-spell'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    const id=app.querySelector('#condition-spell-picker')?.value||'';
+    const spell=spellsForEdition(state.spellCatalog||[],c.rules_version).find(row=>row.id===id&&isPersistentSpell(row));
+    if(!spell)throw Error('Scegli un incantesimo con durata non istantanea.');
+    const originId='spell:'+id,origins=structuredClone(c.proficiency_origins||[]);
+    const row=origins.find(row=>row?.id===originId);
+    if(row)Object.assign(row,{group:'spell',name:'Incantesimo · '+spell.name,applied:true,disabled:false});
+    else origins.push({id:originId,group:'spell',name:'Incantesimo · '+spell.name,applied:true,disabled:false,automatic:false});
+    await patch({proficiency_origins:origins,origin_enabled:{...(c.origin_enabled||{}),[originId]:true}});
+    state.sheetPopup='';await render();return;
+  }
+  if(act==='condition-remove-spell'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    const id=String(target.dataset.spellId||''),originId='spell:'+id;
+    if(!(c.proficiency_origins||[]).some(row=>row.id===originId&&row.group==='spell'))throw Error('Incantesimo non applicato');
+    const origins=(c.proficiency_origins||[]).filter(row=>!(row.id===originId&&row.group==='spell'));
+    const contexts={...(c.active_spell_context||{})};delete contexts[id];
+    const enabled={...(c.origin_enabled||{})};delete enabled[originId];
+    const changes={proficiency_origins:origins,active_spell_context:contexts,origin_enabled:enabled};
+    for(const field of ['formula_bonuses','dice_bonuses','resource_trackers','proficiency_choices','damage_defense_entries','origin_spell_grants']){
+      if(Array.isArray(c[field]))changes[field]=c[field].filter(row=>row?.origin_id!==originId&&row?.parent_origin!==originId);
+    }
+    await patch(changes);await render();return;
+  }
+  if(act==='condition-add-ability'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    const key=app.querySelector('#condition-ability-picker')?.value||'';
+    const allowed=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
+    const actions=nativeClassFeatureActions(c,await computeLocalData(c));
+    const ability=actions.find(row=>row.class_feature_id===key&&allowed.has(key));
+    if(!ability||c.active_class_features?.[key])throw Error('Capacità non disponibile o già attiva.');
+    const incapacitated=(c.conditions||[]).includes('unconscious')||(c.rules_version==='2024'&&(c.conditions||[]).includes('incapacitated'));
+    if(key==='rage'&&(incapacitated||(c.inventory||[]).some(item=>item?.equipped_slots?.includes('body')&&String(item.type||'').split('|')[0]==='HA')))throw Error('Ira non disponibile con armatura pesante o incapacità.');
+    const tracker=(state.calculated?.trackers||[]).find(row=>row.id===ability.tracker_id);
+    const requiresTracker=['rage','innate_sorcery'].includes(key)||
+      (c.rules_version!=='2024'&&['patient_defense','step_of_the_wind'].includes(key));
+    if(requiresTracker&&!tracker)throw Error('Tracker della capacità non disponibile.');
+    const cost=requiresTracker?1:Math.max(0,Number(ability.cost)||0);
+    if(cost&&(!tracker||tracker.max-tracker.spent<cost))throw Error('Risorsa insufficiente per attivare la capacità.');
+    const changes={active_class_features:{...(c.active_class_features||{}),[key]:{name:ability.name,origin_id:ability.origin_id||ability.id,rules_version:c.rules_version||'2014',enhanced:false}}};
+    if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+    if(key==='rage'){
+      changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
+      changes.concentrating_spell_id='';
+    }
+    await patch(changes);state.sheetPopup='';await render();return;
+  }
+  if(act==='condition-remove-ability'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    const key=String(target.dataset.abilityKey||'');
+    if(!Object.hasOwn(c.active_class_features||{},key))throw Error('Capacità non attiva.');
+    const effects={...(c.active_class_features||{})};delete effects[key];
+    await patch({active_class_features:effects});await render();return;
+  }
+
   if(act==='sheet-timing'){state.actionTiming=target.dataset.timingChoice;await render();return;}
   if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
   if(act==='sheet-proxy'){
@@ -2847,6 +2910,7 @@ function listen(){
       for(const row of app.querySelectorAll('#sheet-play-view [data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(query);
       return;
     }
+    if(target?.id==="condition-spell-search"){fillAppliedSpellOptions(target.value);return;}
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
     if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){

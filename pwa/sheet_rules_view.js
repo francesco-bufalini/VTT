@@ -200,7 +200,15 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
 
 // Play presentation reuses the existing editors and delegated actions. Only
 // transient layout state lives here; rules, storage and payment stay unchanged.
-export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel,inventoryProperties=()=>'',isSpellScroll=()=>false}){
+export function isPersistentSpell(spell){
+ if(spell?.has_duration===true)return true;
+ if(spell?.has_duration===false)return false;
+ const raw=spell?.duration;
+ if(Array.isArray(raw))return raw.some(row=>typeof row==='object'&&row!==null?row.type!=='instant':typeof row==='string'&&!/instant|istantan/i.test(row));
+ if(raw&&typeof raw==='object')return raw.type!=='instant';
+ return typeof raw==='string'&&!!raw.trim()&&!/instant|istantan/i.test(raw);
+}
+export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel,inventoryProperties=()=>'',isSpellScroll=()=>false,spells=[],classActions=[]}){
  const root=app.querySelector('[data-local-sheet-calculations]');
  if(!root||sheet==='json')return new Map();
  const bank=document.createElement('div');bank.className='sheet-editor-bank';bank.hidden=true;
@@ -220,7 +228,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const card=(title,body,tools='',extra='')=>'<section class="play-card '+extra+'"><header class="play-card-head"><h2>'+esc(title)+'</h2>'+tools+'</header>'+body+'</section>';
  const output=(key,sign=false,suffix='')=>'<output data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</output>';
  const val=(key)=>'<span data-read-field="'+key+'">'+esc(c[key]??0)+'</span>';
- const roll=(key,label,body)=>btn(label,'','data-act="sheet-roll" data-target="'+esc(key)+'" data-label="'+esc(label)+'"',body||output(key,true));
+ const roll=(key,label,body,glyph='')=>btn(label,glyph,'data-act="sheet-roll" data-target="'+esc(key)+'" data-label="'+esc(label)+'"',body||output(key,true));
  const heading=(node)=>node?.querySelector(':scope > h2')?.textContent.trim()||'';
  const panels=[...bank.querySelectorAll(':scope > .panel')];
  panels.forEach((node,i)=>bind('panel:'+i,node));
@@ -228,18 +236,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const list=(title,rows,empty='Nessuna voce.')=>card(title,rows||'<p class="play-empty">'+esc(empty)+'</p>');
  let html='';
  if(sheet==='battle'){
-  target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('equipment','.battle-attack-settings');
+  target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('movement','.battle-movement-panel');target('equipment','.battle-attack-settings');
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
   html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
-  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true))+btn('Movimento e velocità','movement','data-act="sheet" data-sheet="info" data-open-context="panel:1"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
-  html+='<div class="play-status-strip">'+btn('Condizioni e concentrazione','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+'</div>';
+  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','movement','data-act="sheet-context" data-sheet-context="movement"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
+  const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
+  const activeAbilities=Object.entries(c.active_class_features||{});
+  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
   const rest=document.createElement('div');rest.innerHTML='<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';bind('rests',rest);
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent);const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);bind('resource:'+t.id,source);
    return '<div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="resource:'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+'</div>';
   }).join('');
-  html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',edit('rests','Riposi e recuperi','rest_short'));
-  html+=card('Attacchi',(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>',edit('equipment','Equipaggiamento e attacchi','weapon'));
+  html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>'));
+  html+=card('Attacchi',(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>',btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
  }
  if(sheet==='stats'){
   html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
@@ -343,7 +353,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
   html+=card('Stati attivi',(c.conditions||[]).map(id=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="conditions" aria-label="Gestisci '+esc(conditionLabel(id))+'">'+icon('condition')+esc(conditionLabel(id))+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
-  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??0));
+  const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
+  const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
+  const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name).slice(0,80);
+  const picker='<div class="play-effect-add"><label>Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
+  const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
+  html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
+  const active=Object.entries(c.active_class_features||{});
+  const effectRows=active.map(([key,row])=>'<div class="play-effect-row"><span>'+icon('buff')+'<strong>'+esc(row?.name||key)+'</strong></span>'+btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>').join('');
+  const toggleKeys=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
+  const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
+  const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
+  const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
+  html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+go('apply-ability','Applica una capacità','buff','Attiva un privilegio persistente disponibile');
+  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }
  if(sheet==='origins'){

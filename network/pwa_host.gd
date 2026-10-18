@@ -5,6 +5,7 @@ extends Node
 
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -341,6 +342,9 @@ func public_spells_json() -> PackedByteArray:
 				"classes": entry.get("classes", []),
 				"range": String(entry.get("range", "")),
 				"casting_time": String(entry.get("casting_time", "")),
+				"duration": entry.get("duration", ""),
+				"has_duration": ActiveSpells.has_duration(entry),
+				"requires_concentration": ActiveSpells.requires_concentration(entry),
 				"description": String(entry.get("description", ""))
 			})
 		_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
