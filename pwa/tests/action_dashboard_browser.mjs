@@ -37,7 +37,7 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  const names={info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',actions:'Cosa posso fare?',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
- const section=async key=>{const target=page.locator('[data-sheet="'+key+'"]');if(!await target.isVisible())await page.locator('[data-act="navigation-open"]').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
+ const section=async key=>{if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();const target=page.locator('[data-sheet="'+key+'"]').first();if(!await target.isVisible())await page.locator('[data-act="navigation-open"]').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
   for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){
@@ -45,25 +45,15 @@ try{
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='actions'){
     assert.equal(await page.locator('.action-economy-section').count(),5);
-    assert(await page.locator('[data-act="action-expand-all"]').isVisible());
-    assert(await page.locator('[data-act="action-variants"]').textContent().then(t=>t.includes('Regole varianti')));
-    if(width===390){
-     await page.locator('[data-act="action-expand-all"]').click();
-     assert.equal(await page.locator('.action-tree:not([open])').count(),0);
-     await page.locator('[data-act="action-expand-all"]').click();
-     assert(await page.locator('.action-tree:not([open])').count()>0);
-    }
+    assert.equal(await page.locator('.play-timing button').count(),5);
+    assert(await page.getByRole('button',{name:'Regole varianti',exact:true}).isVisible());
     assert.equal(await page.locator('.action-group-label').filter({hasText:'Incantesimi'}).count(),3);
     for(const time of ['action','bonus','reaction'])assert(await page.locator('[data-timing="'+time+'"] [data-spell-id="test_spell_'+time+'"]').count());
     const bonus=page.locator('[data-timing="bonus"]');
     assert((await bonus.textContent()).includes('Spostamento'));
     assert.equal(await page.locator('[data-act="action-open-spells"]').count(),0);
-    const heights=await page.locator('.action-group-label').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
-    assert(heights.every(height=>height<100),'Aggregate glyphs must not stretch their cards');
-    assert.equal(await page.locator('.action-economy-section').evaluateAll(nodes=>new Set(nodes.map(n=>n.getBoundingClientRect().x)).size),1,'Mobile action categories stay in one readable column');
-    await page.locator('.action-economy-section').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
-    await page.locator('.action-tree > summary').evaluateAll(nodes=>nodes.forEach(node=>node.parentElement.open=true));
-    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Expanded trees overflow at '+width);
+    const heights=await page.locator('.play-card .play-list-row').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().height));
+    assert(heights.every(h=>h>=48&&h<115),'Action rows remain compact, readable touch targets');
     if(width===390||width===1440)await page.screenshot({path:fileURLToPath(new URL('actions-'+width+'.png',artifacts))});
    }
    if(width===390&&['info','stats','inventory'].includes(key))await page.screenshot({path:fileURLToPath(new URL('sheet-'+key+'-390.png',artifacts))});
@@ -71,7 +61,7 @@ try{
  }
  await page.setViewportSize({width:390,height:900});await section('actions');
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
- await page.locator('[data-act="action-variants"]').click();
+ await page.getByRole('button',{name:'Regole varianti',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
  await page.locator('[data-variant-search]').fill('Disarmare');
  await page.locator('input[value="disarm_dmg"]').check();await page.locator('[data-save-variants]').click();
@@ -79,10 +69,10 @@ try{
  const after=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});assert.equal(after,before,'Variant preferences must not rewrite creature data');
  await page.reload();await page.locator('[data-act="open"]').click();await section('actions');
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
- await page.locator('[data-timing="movement"] > summary').click();
- await page.locator('[data-timing="movement"] .action-tree > summary').click();
- await page.locator('[data-timing="movement"] .action-economy-entry > summary').filter({hasText:'Movimento furtivo'}).click();
- await page.locator('[data-timing="movement"] [data-target="skill:stealth"]').click();
+ await page.locator('[data-timing-choice="movement"]').click();
+ await page.locator('#sheet-play-view .play-list-row').filter({hasText:'Spostamento'}).click();
+ await page.locator('#sheet-context-dialog .action-economy-entry > summary').filter({hasText:'Movimento furtivo'}).click();
+ await page.locator('#sheet-context-dialog [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
  await page.locator('[data-act="close-sheet-roll"]').click();
  await page.waitForFunction(()=> !!navigator.serviceWorker.controller);

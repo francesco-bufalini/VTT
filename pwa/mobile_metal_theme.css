@@ -883,3 +883,25 @@ input:disabled{opacity:.75;cursor:default}
 .sheet-context-body .magic-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0}
 .sheet-context-body .magic-tool-button{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:72px;width:100%;height:auto;text-align:left;padding:12px}.sheet-context-body .magic-tool-button>span:not(.vtt-action-glyph){font-size:12px;line-height:1.4}.sheet-context-body .magic-tool-button>.vtt-action-glyph{flex:0 0 20px;width:20px;height:20px}
 @media(max-width:359px){.sheet-play-view{gap:12px}.play-abilities{gap:6px}.play-ability header{padding-left:4px}.play-ability header .play-button{min-width:30px}.play-row-copy small{font-size:10px}}
+
+.play-ability header .play-button{min-width:48px;min-height:48px}
+.content .play-search input{min-height:48px!important}
+.play-spell>.play-button>span:not(.vtt-action-glyph){flex:1}
+.play-spell-level{font-size:11px;color:#bda989;flex:none;font-weight:400}
+.play-condition{min-height:48px;font-family:inherit;color:#ead9bb;cursor:pointer}
+.sheet-context-body .inventory-description-panel{border:0;box-shadow:none;background:transparent;margin:12px 0 0;padding:0}
+.sheet-context-body .inventory-description-panel>h2{display:none}
+.sheet-context-body .inventory-more{min-width:48px;min-height:48px}
+
+.play-status-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-5px 0}
+.play-status-strip>.play-button{font-size:12px;padding:8px;color:#cdbb9d}
+.play-status-tag{font:500 11px/1.4 system-ui;color:#e6c188;min-height:48px;padding:8px 10px;border:1px solid #b48c5045;border-radius:9px;background:#67472e20}
+
+.sheet-context-body .play-item-editor>.inventory-table-row{display:block;padding:0;background:transparent;border:0;box-shadow:none}
+.play-item-fields{display:grid;gap:16px;width:100%}
+.play-item-fields label{display:flex;flex-direction:column;gap:8px}
+.sheet-context-body .play-item-fields .inventory-quantity-controls{display:grid;grid-template-columns:48px minmax(64px,1fr) 48px;gap:8px;width:100%}
+.sheet-context-body .play-item-fields .inventory-quantity-controls input{width:100%!important;max-width:none;min-height:48px;font-size:16px}
+.sheet-context-body .play-item-fields .inventory-qty-btn,.sheet-context-body .play-item-fields .inventory-equip-toggle{min-height:48px;min-width:48px;width:auto;font-size:20px;border:1px solid #a37c494d;border-radius:8px;background:#6c4b3526}
+.play-item-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:8px 0}
+.play-item-toolbar .inventory-context-actions{position:static;display:flex;gap:8px;flex-wrap:wrap}

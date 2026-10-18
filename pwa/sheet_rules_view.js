@@ -200,8 +200,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='battle'){
   target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('equipment','.battle-attack-settings');
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
-  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true))+btn('Movimento e velocità','movement','data-act="sheet" data-sheet="info"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
+  html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true))+btn('Movimento e velocità','movement','data-act="sheet" data-sheet="info" data-open-context="panel:1"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
+  html+='<div class="play-status-strip">'+btn('Condizioni e concentrazione','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+'</div>';
   const rest=document.createElement('div');rest.innerHTML='<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';bind('rests',rest);
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent);const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);bind('resource:'+t.id,source);
@@ -213,7 +214,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='stats'){
   html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
-  html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
+  html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
   const tools=panelNamed('Strumenti');bind('tools',tools);html+=go('tools','Strumenti e linguaggi','proficiency');
  }
  if(sheet==='info'){
@@ -240,7 +241,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const title=node.querySelector('.action-economy-entry strong')?.textContent||'Azione';
     const preview=node.querySelector('.action-economy-preview')?.textContent.trim();
     const count=node.querySelectorAll('.action-tree > ol > li').length;
-    rows+=go(key,title,'',count?count+' opzioni':preview||'Dettagli e utilizzo',count?'<span class="play-badge">'+count+'</span>':'');
+    const glyph=node.querySelector('.action-economy-type-icon>.vtt-action-glyph,.action-group-label>.vtt-action-glyph')?.outerHTML||'';
+    rows+=go(key,title,glyph,count?count+' opzioni':preview||'Dettagli e utilizzo',count?'<span class="play-badge">'+count+'</span>':'');
    });
   }
   html+=card(active==='all'?'Tutte le azioni':times.find(([key])=>key===active)?.[1]||'Azioni',rows||'<p class="play-empty">Nessuna opzione disponibile.</p>',proxy(bank.querySelector('[data-act="action-variants"]'),'Regole varianti','settings'));
@@ -256,13 +258,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const titleKey='casting:'+sources.size;bind(titleKey,source.querySelector('.casting-statistics'));
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
     const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
-    return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span>')+'</div>';
+    const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
+    return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span><small class="play-spell-level">'+esc(level==='0'?'Trucchetto':level?level+'°':'')+'</small>')+'</div>';
    }).join('');
    const casting=source.querySelector('.casting-statistics'),ability=casting?.querySelector('select')?.value||'int';
    const stats='CD '+(d.values?.['casting_dc:'+ability]??'—')+' · Attacco '+signed(d.values?.['casting_hit:'+ability]);
-   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
+   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
   }
-  const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>!n.classList.contains('magic-panel'));
+  const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{bind('power:'+i,node);html+=go('power:'+i,heading(node),'spark',node.querySelectorAll('.magic-spell-row,.magic-ability-row').length+' poteri · Apri per utilizzare');});
  }
  if(sheet==='inventory'){
@@ -273,9 +276,17 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const add=document.createElement('div');
   for(const node of bank.querySelectorAll('[data-act="item-catalog"],[data-act="add-item"],[data-act="new-homebrew-item"],[data-act="document-add"]'))add.append(node);
   bind('inventory-add',add);
-  html+=card('Nello zaino','<label class="play-search">'+icon('search')+'<input type="search" data-play-search placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
+  html+=card('Nello zaino','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
    const key='item:'+i;const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
    const node=document.createElement('section');node.className='play-item-editor';
+   if(row&&Number(view.inventorySelectedIndex)===i){
+    const form=document.createElement('div');form.className='play-item-fields';
+    const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
+    const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls'),equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more'),actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
+    field('Nome oggetto',name);field('Quantità',quantity);field('Equipaggiamento',equip);
+    const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';if(more)toolbar.append(more);if(actions)toolbar.append(actions);
+    row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
+   }
    if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
    if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
    bind(key,node);
@@ -290,7 +301,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
-  html+=card('Stati attivi',(c.conditions||[]).map(id=>'<span class="play-condition">'+icon('condition')+esc(conditionLabel(id))+'</span>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
+  html+=card('Stati attivi',(c.conditions||[]).map(id=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="conditions" aria-label="Gestisci '+esc(conditionLabel(id))+'">'+icon('condition')+esc(conditionLabel(id))+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
   html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }
@@ -302,6 +313,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.innerHTML=html;
  root.prepend(main);
+ const filter=String(view.search||'').trim().toLocaleLowerCase('it');
+ for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(filter);
+ for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
  const utilities=app.querySelector(':scope > .archive-tools');
  if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
  const note=bank.querySelector('[data-calculation-note]');if(note)bind('calculation',note);

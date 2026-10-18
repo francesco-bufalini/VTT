@@ -14,19 +14,33 @@ La navigazione della PWA è progettata per smartphone durante la sessione:
 - **Partita** è raggiungibile anche direttamente dall’intestazione e separa **Mappa**, **Chat e dadi**, **Collegamento**. Il collegamento riuscito apre la mappa.
 - Senza una creatura selezionata, la barra propone **Creature**, **Catalogo**, **Partita**.
 
-Le categorie delle azioni, i pannelli secondari di Info, pergamene, documenti e
-infusioni si aprono su richiesta. **Gestisci poteri e incantesimi** contiene
-sei comandi con etichette per concentrazione, slot, libro, catalogo, scelte e
-concessioni delle origini. I dettagli aperti si conservano mentre si naviga.
-Le importazioni, i backup e le selezioni multiple sono in **Importa e gestisci
-l’archivio**; esportazione della singola scheda, editor JSON e cancellazione
-restano in **Opzioni della scheda**, in fondo a ogni sezione. Il catalogo apre
-il dettaglio selezionato con un ritorno esplicito ai risultati.
+Le schede separano la consultazione durante il gioco dalla modifica:
 
-Tutti gli ID delle sezioni, i campi della scheda e i gestori delle azioni
-rimangono quelli esistenti. La navigazione attende il salvataggio degli input
-prima di cambiare schermata. La cache della nuova interfaccia è `v52` e non
-modifica IndexedDB. Il tema bronzo e bordeaux e le icone VTT sono conservati.
+| Scheda | Vista principale | Interazioni aggiuntive |
+| --- | --- | --- |
+| Battaglia | PF e barra salute, temporanei e seconda forma, CA, iniziativa, velocità, stati, risorse, attacchi | Danni/cura in finestra, dettagli PF, armatura, equipaggiamento, riposi e singolo tracker tramite icone; accesso diretto a movimento e condizioni |
+| Caratteristiche e abilità | Sei schede con modificatori, punteggi e TS; competenza, percezione passiva e ricerca abilità | Toccare un valore apre il tiro; icone per punteggi, competenze, strumenti e lingue |
+| Cosa posso fare? | Selettore azione/bonus/reazione/movimento/gratuite e lista di opzioni | Dettagli, azioni figlie, tiri, consumi e varianti in finestre contestuali |
+| Poteri | Slot condivisi, liste per fonte con livello degli incantesimi, CD, attacco e conteggi di preparazione | Gestione slot, concentrazione, libro, catalogo, scelte e concessioni; dettagli e lancio dalla singola riga |
+| Inventario | Equipaggiamento, sintonia e lista ricercabile con quantità e stato | La riga apre la copia con descrizione, quantità e personalizzazioni; aggiunta, documenti e infusioni in finestre dedicate |
+| Info | Identità, origine e riepiloghi di fisico/progressione/talenti | Modifica dei rispettivi dati tramite icona o riga |
+| Tratti | Elenco dei privilegi e accesso alle note | Descrizione, benefici e collegamenti agli editor nel dettaglio del tratto |
+| Condizioni | Soli stati attivi, indebolimento e concentrazione | Selezione/rimozione e gestione tramite finestra |
+| Modifica personaggio | Elenco delle categorie di configurazione | Un editor contestuale per categoria |
+
+`mountPlaySheet()` in `sheet_rules_view.js` compone queste viste riutilizzando
+gli stessi nodi degli editor e gli stessi gestori delle azioni. I riepiloghi
+non introducono regole o scritture alternative. Le finestre salvano gli input
+pendenti prima di chiudersi; ricerca e focus si conservano durante la modifica.
+ID, formato portabile, formule, pagamenti e trasporto restano invariati.
+
+Le importazioni, i backup e le selezioni multiple sono in **Importa e gestisci
+l’archivio**. L’icona **Opzioni della scheda**, in fondo a ogni vista, apre
+esportazione JSON, editor avanzato e cancellazione. L’icona informazione apre
+calcoli e copertura. Il catalogo mantiene un ritorno esplicito ai risultati.
+
+La cache della nuova interfaccia è `v54` e non modifica IndexedDB. Il tema
+bronzo e bordeaux e le icone VTT sono conservati.
 
 | Sezione | Box e contenuto | Implementazione |
 | --- | --- | --- |
@@ -40,10 +54,10 @@ modifica IndexedDB. Il tema bronzo e bordeaux e le icone VTT sono conservati.
 | Condizioni | Selezione e rimozione; terminare concentrazione svuota anche l'incantesimo associato | `handleField()` e azione `stop-concentration` |
 | Modifica personaggio | Panoramica e attivazione origini; Competenze; Talenti; Bonus manuali e interruttori automatici; Tracker; Difese; Incantesimi da origini | `nativeRows()`, mutazioni pure in `native_sheet.js` |
 
-I valori effettivi compaiono nel rispettivo box, senza un riepilogo duplicato
-prima della scheda. Il pulsante **±** apre lo stesso editor dei bonus per tutti
-i valori. Le informazioni sulla copertura rimangono in un dettaglio chiuso in
-fondo. La modifica di un valore aggiorna gli output senza sostituire l'input
+I valori effettivi compaiono nei riepiloghi; gli editor completi si aprono
+quando richiesti. Il pulsante **±**, dentro gli editor o dal dettaglio di un
+tiro, mantiene lo stesso sistema dei bonus. L’icona informazione in fondo
+alla vista apre la copertura dei calcoli. La modifica di un valore aggiorna gli output senza sostituire l'input
 attivo.
 I modificatori, TS, abilità, iniziativa e tiri per colpire si possono anche
 premere per tirare un d20 con il valore effettivo, mantenendo l'attribuzione
@@ -129,6 +143,7 @@ attribuisce silenziosamente benefici che non può calcolare.
 npm test
 npm run test:browser
 npm run test:navigation-browser
+npm run test:sheets-browser
 npm run test:actions-browser
 npm run test:native-origins
 npm run test:native-mechanics
@@ -203,3 +218,17 @@ riapertura dei dettagli, creazione dal catalogo, sezioni Partita, dadi offline
 e riapertura senza rete. Le schermate `navigation-*.png` sono in
 `pwa/.test-artifacts/`, esclusa da Git. Non installa software sul telefono o
 sull’emulatore e non invia comandi a una partita reale.
+
+### Regressione delle viste di gioco e dei popup
+
+`npm run test:sheets-browser` prova le nove schede a 320/360/390/430 px e in
+orizzontale, con un personaggio popolato in un profilo Chrome isolato. Controlla
+assenza di overflow, editor separati dalla lettura, tutti i collegamenti ai
+popup, salvataggio alla chiusura, PF, recuperi, ricerca, quantità, descrizioni,
+documenti, condizioni, strumenti magici e riapertura offline. Le schermate
+`play-*.png` sono in `pwa/.test-artifacts/`, esclusa da Git.
+
+Il test usa le rotte effettive di `PwaHost` tramite `browser_fixture.mjs`.
+Con `VTT_PWA_TEST_ORIGIN=http://localhost:8765` verifica il server desktop
+mantenendo separati il profilo e i dati sintetici. Non invia comandi alla
+partita reale e non installa software sul telefono o sull’emulatore.

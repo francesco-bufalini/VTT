@@ -34,7 +34,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -1848,7 +1848,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex},icon:actionGlyph,conditionLabel});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel});
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
@@ -1858,14 +1858,16 @@ function organizeSheetPanels(){
   dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2><button type="button" class="play-button" data-act="sheet-context-close" aria-label="Chiudi dettagli">'+actionGlyph('cross')+'</button></header><div class="sheet-context-body"></div><footer><button type="button" class="btn primary full" data-act="sheet-context-close">Fatto</button></footer>';
   dialog.querySelector('.sheet-context-body').append(source);
   if(source.tagName==='DETAILS')source.open=true;
-  for(const details of source.querySelectorAll('details.action-economy-entry,details.action-tree'))details.open=true;
+  for(const details of source.querySelectorAll(':scope > .action-economy-main > details.action-economy-entry,:scope > details.action-tree'))details.open=true;
   app.append(dialog);
   dialog.addEventListener('cancel',event=>{event.preventDefault();void closeSheetContext().catch(error=>message(errorMessage(error),true));});
   dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientY<rect.top||event.clientY>rect.bottom||event.clientX<rect.left||event.clientX>rect.right)void closeSheetContext().catch(error=>message(errorMessage(error),true));});
   if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 async function closeSheetContext(){
+  const key=state.sheetPopup;
   await flushPendingFields();state.sheetPopup="";await render();
+  [...app.querySelectorAll('#sheet-play-view [data-sheet-context]')].find(node=>node.dataset.sheetContext===key)?.focus({preventScroll:true});
 }
 function rememberUtilityDisclosures(){
   for(const details of app.querySelectorAll('.archive-tools, .catalog-create')){
@@ -2469,7 +2471,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.sheetPopup="";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
+    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();
@@ -2588,6 +2590,7 @@ async function handleAction(target){
     const owned=createOwnedDocument(definition,"owned_doc_"+crypto.randomUUID().replace(/-/g,""));
     state.openDocumentInstance=owned.instance_id;
     const record=state.editor.read();
+    state.sheetPopup="item:"+(record.inventory||[]).length;state.sheetPopupTitle="Nuovo documento";
     await patch({inventory:[...(record.inventory||[]),owned]});
     await render();return;
   }
@@ -2595,7 +2598,7 @@ async function handleAction(target){
     const index=Number(target.dataset.index),record=state.editor.read();
     const inventory=structuredClone(record.inventory||[]);
     if(!isDocument(inventory[index]))throw Error("Documento non valido.");
-    inventory.splice(index,1);state.openDocumentInstance="";
+    inventory.splice(index,1);state.openDocumentInstance="";state.sheetPopup="";
     await patch({inventory});await render();return;
   }
   if(act==="add-item"){
@@ -2807,6 +2810,12 @@ function listen(){
   const editable = "[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.matches('[data-play-search]')){
+      state.sheetSearch.set(state.creatureId+'|'+state.sheet,target.value);
+      const query=target.value.trim().toLocaleLowerCase('it');
+      for(const row of app.querySelectorAll('#sheet-play-view [data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(query);
+      return;
+    }
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
     if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){

@@ -760,7 +760,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'CA follows HP before resource trackers and attacks');
  assert.equal(document.querySelectorAll('[data-field="death_save_successes"],[data-field="death_save_failures"]').length,0,
   'The death-save section is absent');
- assert.equal(document.querySelectorAll('[data-calculated="second_max"]').length,1,
+ assert.equal(document.querySelectorAll('.battle-root [data-calculated="second_max"]').length,1,
   'Second form has one computed maximum and one separately named base editor');
  assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"]').length,1);
  assert.ok(document.querySelector('.battle-hp-settings:not([open])'),

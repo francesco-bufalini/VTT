@@ -31,7 +31,8 @@ try{
  page.setDefaultTimeout(15000);
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
-  const target=page.locator('button[data-sheet="'+key+'"]');
+  if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
+  const target=page.locator('button[data-sheet="'+key+'"]').first();
   if(!await target.isVisible())await page.locator('#more-navigation').click();
   await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
   assert.equal(await page.locator('#navigation-dialog').evaluate(n=>n.open),false);
@@ -47,14 +48,14 @@ try{
  await page.locator('.library-management > summary').click();
  assert(await page.locator('[data-act="import"]').isVisible());
  await page.locator('.library-management > summary').click();await shot('library');
- await page.locator('[data-act="create"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
+ await page.locator('[data-act="create"]').click();await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  await sheet('actions');await shot('actions');
- assert.equal(await page.locator('.action-economy-section:not([open])').count(),5);
- await page.locator('.action-economy-section[data-timing="action"] > summary').click();
- assert(await page.locator('[data-timing="action"] .action-group-label').first().isVisible());
+ assert.equal(await page.locator('.play-timing button').count(),5);
+ await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();
+ assert(await page.locator('#sheet-context-dialog .action-economy-row').first().isVisible());
  await sheet('battle');await shot('battle');
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
@@ -77,15 +78,16 @@ try{
  assert.equal(await page.locator('#more-navigation').getAttribute('aria-expanded'),'false');
  await sheet('info');
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
- await page.locator('.disclosure-heading').filter({hasText:'Fisico'}).click();
+ await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Fisico'}).click();
  await sheet('battle');await sheet('info');
- assert(await page.locator('[data-miniature-kind="base"]').isVisible(),'Reference disclosure survives navigation');
+ assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
  assert.equal(await page.locator('[data-magic-tool="slots"]').isVisible(),false);
- await page.locator('.magic-utility-menu > summary').click();
+ await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
  assert.equal(await page.locator('.magic-toolbar button:visible').count(),6);
  for(const kind of ['slots','book','catalog','choices','concentration']){
-  await page.locator('[data-magic-tool="'+kind+'"]').click();await page.locator('#magic-tools-dialog').waitFor();
+  if(!await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
+  await page.locator('[data-magic-tool="'+kind+'"]:visible').click();await page.locator('#magic-tools-dialog').waitFor();
   await page.locator('[data-act="magic-tool-close"]').click();
  }
  await shot('powers');
@@ -101,7 +103,7 @@ try{
  await page.locator('[data-session-pane="chat"]').click();await page.locator('[data-act="open-chat-dice"]').click();
  await page.locator('[data-act="roll"][data-sides="20"]').click();await page.locator('.dice-result').waitFor();
  await page.locator('[data-act="close-chat-dice"]').click();await shot('chat');
- await page.locator('[data-session-pane="table"]').click();assert(await page.locator('.session-map-panel').isVisible());
+ await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
  await globalPage('library');
  await page.locator('.library-management > summary').click();await page.locator('[data-act="library-select-all"]').click();
