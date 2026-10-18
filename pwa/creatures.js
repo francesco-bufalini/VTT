@@ -1,7 +1,7 @@
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
 import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
-  getOrCreateSetting } from "./storage.js";
+  localOwnerId } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
 import { initialCreature } from "./character_core.js";
@@ -9,7 +9,6 @@ import { initialCreature } from "./character_core.js";
 const CREATURE_TYPE = "creature";
 const HOMEBREW_SCOPE = "global";
 const HOMEBREW_TYPE = "homebrew";
-const OWNER_SETTING = "local-creature-owner-id";
 
 function requiredScope(scope) {
   if (typeof scope !== "string" || !scope.trim() || scope.length > 256)
@@ -22,7 +21,7 @@ function localId() {
 }
 
 export async function ownerId() {
-  return getOrCreateSetting(OWNER_SETTING, localId);
+  return localOwnerId();
 }
 
 export async function listCreatures(scope = "default") {

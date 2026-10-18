@@ -57,3 +57,20 @@ test("backup rejects duplicate pending actions without importing records",async(
   assert.equal(await getRecord(scope,"creature","new"),null);
   assert.deepEqual(await pendingActions(scope),[]);
 });
+
+
+test('backup merge rejects conflicting homebrew and rolls back new creatures',async()=>{
+  const id='homebrew:personal:items:backup-conflict';
+  const local={scope:'global',type:'homebrew',id,data:{id,name:'Amuleto locale',data:{value:10}}};
+  await insertRecords([local]);
+  const archive={format:'vtt-pwa-backup',version:1,blobs:[],outbox:[],records:[
+    {scope:'backup-conflict',type:'creature',id:'new',revision:1,data:{name:'Importato'}},
+    {...local,revision:1,data:{...local.data,name:'Amuleto differente'}}
+  ]};
+  const file=new Blob([JSON.stringify(archive)]);
+  await assert.rejects(importBackup(file),/homebrew.*conflitto/i);
+  assert.equal(await getRecord('backup-conflict','creature','new'),null);
+  assert.deepEqual((await getRecord('global','homebrew',id)).data,local.data);
+  await importBackup(file,{overwrite:true});
+  assert.equal((await getRecord('global','homebrew',id)).data.name,'Amuleto differente');
+});

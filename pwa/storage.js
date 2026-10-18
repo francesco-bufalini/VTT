@@ -3,6 +3,7 @@
 export const DATABASE_NAME = "vtt-mobile-local";
 export const DATABASE_VERSION = 1;
 const BACKUP_VERSION = 1;
+const LOCAL_OWNER_SETTING = "local-creature-owner-id";
 const MAX_IMPORT_BYTES = 128 * 1024 * 1024;
 
 export function openStorage() {
@@ -115,6 +116,13 @@ export async function getOrCreateSetting(key, makeValue) {
   } finally {
     db.close();
   }
+}
+
+// The installation identity is shared by normal edits and backup recovery.
+export function localOwnerId() {
+  return getOrCreateSetting(LOCAL_OWNER_SETTING, () =>
+    Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      byte => byte.toString(16).padStart(2, "0")).join(""));
 }
 
 export async function getRecord(scope, type, id) {
@@ -322,13 +330,15 @@ function fromBase64(text) {
 // Export user records and binary attachments. Pairing credentials are deliberately excluded.
 export async function exportBackup() {
   const db = await openStorage();
-  let records, blobs, outbox;
+  let records, blobs, outbox, owner;
   try {
-    const tx = db.transaction(["records", "blobs", "outbox"], "readonly");
+    const tx = db.transaction(["records", "blobs", "outbox", "settings"], "readonly");
+    const ownerReq = tx.objectStore("settings").get(LOCAL_OWNER_SETTING);
     const recordReq = tx.objectStore("records").getAll();
     const blobReq = tx.objectStore("blobs").getAll();
     const outboxReq = tx.objectStore("outbox").getAll();
     await completed(tx);
+    owner = ownerReq.result?.value;
     records = recordReq.result;
     blobs = blobReq.result;
     outbox = outboxReq.result;
@@ -342,7 +352,7 @@ export async function exportBackup() {
   }
   return new Blob([JSON.stringify({
     format: "vtt-pwa-backup", version: BACKUP_VERSION,
-    createdAt: new Date().toISOString(), records, blobs: encoded, outbox
+    createdAt: new Date().toISOString(), owner_id: owner, records, blobs: encoded, outbox
   })], { type: "application/json" });
 }
 
@@ -387,18 +397,49 @@ export async function importBackup(file, { overwrite = false } = {}) {
     if (actionIds.has(item.id)) throw new Error("Duplicate action in backup");
     actionIds.add(item.id);
   }
+  // Older backups did not store installation identity. Recover it only when
+  // creature ownership is unambiguous; never claim another owner's records.
+  let sourceOwner = content.owner_id;
+  if (sourceOwner !== undefined) requiredString(sourceOwner, "backup owner");
+  else {
+    const owners = new Set(content.records.filter(row => row.type === "creature")
+      .map(row => row.data?.owner_id).filter(Boolean));
+    if (owners.size > 1) throw new Error("Backup legacy con proprietari ambigui: importa le creature singolarmente.");
+    sourceOwner = owners.values().next().value;
+  }
+  const targetOwner = sourceOwner ? await localOwnerId() : null;
+  const restoreOwnership = record => {
+    if (record.type !== "creature" || !sourceOwner || sourceOwner === targetOwner ||
+        record.data?.owner_id !== sourceOwner) return record;
+    return { ...record, data: { ...record.data, owner_id: targetOwner,
+      transfer_revision: 0, linked_token_sync_id: "", linked_token_name: "" } };
+  };
+  const restoredRecords = content.records.map(restoreOwnership);
   const db = await openStorage();
   try {
     const tx = db.transaction(["records", "blobs", "outbox"], "readwrite");
     for (const entry of attachments) tx.objectStore("blobs").put(entry);
     const records = tx.objectStore("records");
+    let conflict = null;
     const outbox = tx.objectStore("outbox");
-    for (const record of content.records) {
+    for (const record of restoredRecords) {
       if (overwrite) {
         records.put(record);
       } else {
         const check = records.get([record.scope, record.type, record.id]);
-        check.onsuccess = () => { if (!check.result) records.put(record); };
+        check.onsuccess = () => {
+          if (!check.result) records.put(record);
+          else if (record.type === "homebrew" && !sameData(check.result.data, record.data)) {
+            conflict = new Error("Contenuto homebrew in conflitto: " + record.id);
+            tx.abort();
+          } else {
+            // Repair copies left read-only by older recovery versions while
+            // retaining their latest contents. Advance CAS to reject stale tabs.
+            const repaired = restoreOwnership(check.result);
+            if (repaired !== check.result) records.put({ ...repaired,
+              revision: (check.result.revision ?? 0) + 1, updatedAt: Date.now() });
+          }
+        };
       }
     }
     for (const event of content.outbox) {
@@ -409,7 +450,7 @@ export async function importBackup(file, { overwrite = false } = {}) {
         check.onsuccess = () => { if (!check.result) outbox.put(event); };
       }
     }
-    await completed(tx);
+    await completed(tx).catch(error => { throw conflict || error; });
   } finally {
     db.close();
   }
