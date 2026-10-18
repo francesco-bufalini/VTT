@@ -384,6 +384,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='battle'){
   const secondMax=Number(calculated.values?.second_max??c.second_form_max_hp??0);
   const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
+  // Preserve legacy standalone native-section callers; PWA uses the shared
+  // equipment view whenever one was passed.
   const inventory=list(c.inventory).map(resolveOwnedItem);
   const wornArmor=inventory.find(item=>list(item?.equipped_slots).includes('body')&&itemKind(item)==='armor');
   const shields=inventory.filter(item=>list(item?.equipped_slots).some(slot=>slot==='main'||slot==='off')&&itemKind(item)==='shield');
@@ -397,6 +399,13 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const naturalBase=c.kind==='monster'?(monsterAc??10):(c.armor_class_base??10);
   const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(naturalBase)===10)?'10 + dex_mod':String(naturalBase)));
   const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+(shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
+  const legacyDefense='<div class="battle-defense-values"><div class="battle-stat"><span>CA</span>'+
+    formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
+    '<div class="battle-defense-settings">'+armor+
+      '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
+      '<output>'+esc(acFormula)+'</output></div>'+
+      '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+    '</div>';
   return '<div class="battle-root">'+
    panel('Punti ferita',
     '<div class="battle-hp-grid" aria-label="Punti ferita">'+
@@ -437,14 +446,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '</details>',
     'battle-hp-panel')+
    panel('Classe armatura',
-    '<div class="battle-defense-values">'+
-      '<div class="battle-stat"><span>CA</span>'+formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div>'+
-    '</div>'+
-    '<div class="battle-defense-settings">'+armor+
-      '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
-      '<output>'+esc(acFormula)+'</output></div>'+
-      '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
-    '</div>',
+    equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,
     'battle-defense-panel')+
    panel('Movimento',
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
@@ -452,15 +454,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):''),
     'battle-movement-panel')+
    resources+
-   panel('Attacchi disponibili',
-     attacks+
-     '<details class="battle-attack-settings"><summary>Equipaggiamento e impostazioni</summary>'+
-       equipment+
-       select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
-       '<label class="check"><input type="checkbox" data-field="hand_grip_two_handed" '+(c.hand_grip_two_handed?'checked':'')+'>Impugnatura a due mani (Versatile)</label>'+
-       '<button type="button" class="btn small" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>'+
-     '</details>',
-     'battle-attacks-panel')+
+   panel('Attacchi disponibili',attacks,'battle-attacks-panel')+
    '</div>';
  }
  if(section==='traits')return panel('Tratti',summary([['Razza / Specie',c.species],['Sottorazza',c.subrace],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+feats+

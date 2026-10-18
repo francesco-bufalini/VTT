@@ -170,9 +170,28 @@ try{
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
  assert.match(await speedCard.textContent(),/Camminata/);
  await popup('movement');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Salti|Camminata/);await dismiss();
- await popup('defense');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Formula CA naturale/);assert.doesNotMatch(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Iniziativa/);
+ await popup('defense');
+ const shared=page.locator('#sheet-context-dialog .equipment-unified-panel');
+ assert.equal(await shared.count(),1);
+ assert.match(await shared.textContent(),/Formula CA naturale/);
+ assert.match(await shared.textContent(),/CA totale/);
+ assert.equal(await shared.locator('[data-equip-slot]').count(),3);
+ assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
+   'Versatile grip is offered for an equipped main-hand versatile weapon');
+ assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
+ assert.doesNotMatch(await shared.textContent(),/Iniziativa/);
  assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
- assert.equal(await page.locator('#sheet-context-dialog .battle-ac-manage').count(),1);
+ assert.equal(await shared.locator('.battle-ac-manage').count(),1);
+ await dismiss();
+ await popup('equipment');
+ assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
+ await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('dex');
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='dex';});
+ await page.locator('#sheet-context-dialog [data-field="attack_ability_finesse_only"]').uncheck();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability_finesse_only===false;});
+ await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===true;});
+ assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
  await dismiss();
  await page.locator('#sheet-play-view [data-target="initiative"]').click();
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
@@ -187,7 +206,16 @@ try{
  await dismiss();
  await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
- await sheet('inventory');await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
+ await sheet('inventory');
+ await popup('equipment');
+ assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
+ assert.equal(await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').isChecked(),true);
+ assert.equal(await page.locator('#sheet-context-dialog [data-field="attack_ability_finesse_only"]').isChecked(),false);
+ assert.match(await page.locator('#sheet-context-dialog .battle-ac-formula').textContent(),/Formula CA naturale/);
+ await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').uncheck();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===false;});
+ await dismiss();
+ await page.locator('[data-play-search]').fill('pozione');await popup('item:1');await page.locator('#sheet-context-dialog [data-item-key="quantity"]').fill('5');await dismiss();assert.equal((await record()).inventory[1].quantity,5);assert.match(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').textContent(),/×5/);
  assert.equal(await page.locator('[data-play-search]').inputValue(),'pozione');assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),1);await page.locator('[data-play-search]').fill('');
  await popup('item:0');assert(await page.locator('#sheet-context-dialog .inventory-description').isVisible());await shot('item-popup');await dismiss();
  const inlineCoins=page.locator('#sheet-play-view .inventory-play-coins');
@@ -220,7 +248,10 @@ try{
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
-  for(const contextKey of keys){await popup(contextKey);assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();}
+  for(const contextKey of keys){
+   try{await popup(contextKey);}catch(error){throw Error('Popup '+key+' / '+contextKey+': '+error.message);}
+   assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();
+  }
  }
  await sheet('actions');await page.locator('[data-timing-choice="reaction"]').click();assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi/);await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();await shot('action-popup');await dismiss();
  // A persistent class feature must expose a reversible action, not an inert "Attiva" badge.
