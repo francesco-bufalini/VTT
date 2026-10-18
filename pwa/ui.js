@@ -620,11 +620,15 @@ function inventoryEquipmentView(c){
   const blocked=main&&Array.isArray(main.properties)&&main.properties.some(p=>String(p).split("|")[0].toUpperCase()==="2H");
   const rows=labels.map(([slot,label])=>{
     const selected=inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
+    const special=slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
     const options=[[-1,slot==="body"?"Nessuna armatura":"Nessuno"],
-      ...inventory.map((item,index)=>validSlot(item,slot)?[index,item.name||"Oggetto"]:null).filter(Boolean)];
+      ...(slot==="body"?[]:[["unarmed","Colpo senz’armi"],["improvised","Arma improvvisata"]]),
+      ...inventory.map((item,index)=>validSlot(item,slot)&&!(slot==="main"&&itemKind(item)==="shield")?
+        [index,item.name||"Oggetto"]:null).filter(Boolean)];
     const selector='<select aria-label="'+esc(label)+'" data-equip-slot="'+slot+'"'+
       (slot==="off"&&blocked?' disabled title="Mano occupata da arma a due mani"':'')+'>'+
-      options.map(([value,name])=>'<option value="'+value+'"'+(value===selected?' selected':'')+'>'+
+      options.map(([value,name])=>'<option value="'+value+'"'+
+      ((selected>=0&&value===selected||selected<0&&(value===special&&special!=="none"||value===-1&&special==="none"))?' selected':'')+'>'+
       esc(name)+'</option>').join('')+'</select>';
     const weapon=inventory[selected],isWeapon=weapon&&itemKind(weapon)==="weapon";
     const size=slot==="body"?'':('<select aria-label="Taglia arma '+esc(label)+'" '+
@@ -1395,7 +1399,10 @@ async function handleField(target) {
     await render();return;
   }
   if(target.dataset.slotWeaponSize){
-    await patch({inventory:changeEquippedWeaponSize(creature.inventory||[],target.dataset.slotWeaponSize,target.value)});
+    const slot=target.dataset.slotWeaponSize;
+    const changed=changeEquippedWeaponSize(creature.inventory||[],slot,target.value);
+    state.inventorySelectedIndex=changed.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
+    await patch({inventory:changed});
     await render();return;
   }
   if(target.dataset.inventoryAttunementMax!==undefined){
