@@ -59,26 +59,27 @@ func refresh() -> void:
 			if member.id in origins:
 				assigned_to_active_class = true
 		if not assigned_to_active_class or "manual" in origins:
-			unassigned.append(item)
+			unassigned.append({"spell": _definition(item), "member": {}, "grant": {}})
 	if not unassigned.is_empty():
 		_heading(pair[0], "Altri incantesimi disponibili")
 		_casting_statistics(pair[0], "manual", [String(_actions.default_ability.call())])
-		var manual_list: VBoxContainer = _list(pair[0], unassigned.size())
-		for spell: Dictionary in unassigned:
-			_spell_button(manual_list, _definition(spell), {}, {})
+		_leveled_spell_list(pair[0], unassigned)
 	if members.is_empty() and unassigned.is_empty():
 		_label(pair[0], "Nessuna classe con incantesimi. Le concessioni dei privilegi sono qui sotto.")
 	_slots(pair[1], record)
-	var ability_grants: Array[Dictionary] = []
-	var groups: Dictionary = {}
+
+	# Slot-paid grants keep their casting origin. Every other spell/ability
+	# shares a box with the other powers spending its tracker, across origins.
+	var slot_origins: Dictionary = {}
+	var tracker_groups: Dictionary = {}
 	for grant: Dictionary in Grants.all_grants(record):
-		if Abilities.is_ability(Catalog.catalog_spell(String(grant.get("spell_id", "")))):
-			ability_grants.append(grant)
-			continue
-		var sid: String = String(grant.get("origin_id", ""))
-		if not groups.has(sid):
-			groups[sid] = {"grants": [], "choices": [], "name": grant.get("origin_name", sid)}
-		groups[sid].grants.append(grant)
+		if String(grant.get("payment_mode", "")) == "slot":
+			var sid: String = String(grant.get("origin_id", ""))
+			if not slot_origins.has(sid):
+				slot_origins[sid] = {"grants": [], "choices": [], "name": grant.get("origin_name", sid)}
+			slot_origins[sid]["grants"].append(grant)
+		else:
+			_add_tracker_power(tracker_groups, record, grant)
 	for choice: Dictionary in Structured.for_creature(record).get("choices", []):
 		var selected := 0
 		for saved: Variant in record.get("origin_spell_grants", []):
@@ -87,17 +88,20 @@ func refresh() -> void:
 		if selected >= int(choice.get("count", 1)):
 			continue
 		var sid: String = String(choice.get("origin_id", ""))
-		if not groups.has(sid):
-			groups[sid] = {"grants": [], "choices": [], "name": choice.get("origin_name", sid)}
+		if not slot_origins.has(sid):
+			slot_origins[sid] = {"grants": [], "choices": [], "name": choice.get("origin_name", sid)}
 		var pending: Dictionary = choice.duplicate(true)
 		pending["remaining"] = int(choice.get("count", 1)) - selected
-		groups[sid].choices.append(pending)
-	for sid: String in groups:
-		var group: Dictionary = groups[sid]
+		slot_origins[sid]["choices"].append(pending)
+	var origin_ids: Array = slot_origins.keys()
+	origin_ids.sort_custom(func(a: Variant, b: Variant) -> bool:
+		return String(slot_origins[a]["name"]).naturalnocasecmp_to(String(slot_origins[b]["name"])) < 0)
+	for sid: String in origin_ids:
+		var group: Dictionary = slot_origins[sid]
 		pair = _pair()
 		var heading := HBoxContainer.new()
 		pair[0].add_child(heading)
-		var title := _label(heading, "Origine · " + String(group.name))
+		var title := _label(heading, "Origine · " + String(group["name"]))
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var edit := Button.new()
 		edit.text = "✎"
@@ -105,75 +109,115 @@ func refresh() -> void:
 		edit.pressed.connect(_actions.edit_origin.bind(sid))
 		heading.add_child(edit)
 		var suggested: Array[String] = []
-		for grant: Dictionary in group.grants:
+		var spells: Array[Dictionary] = []
+		var abilities: Array[Dictionary] = []
+		for grant: Dictionary in group["grants"]:
 			suggested.append(String(grant.get("spellcasting_ability", "")))
-		for choice: Dictionary in group.choices:
+			var spell: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
+			if Abilities.is_ability(spell):
+				abilities.append({"spell": spell, "grant": grant})
+			else:
+				spells.append({"spell": spell, "member": {}, "grant": grant})
+		for choice: Dictionary in group["choices"]:
 			suggested.append(String(choice.get("spellcasting_ability", "")))
 		_casting_statistics(pair[0], "origin:" + sid, suggested)
-		var list: VBoxContainer = _list(pair[0], group.grants.size())
-		var seen: Dictionary = {}
-		for grant: Dictionary in group.grants:
-			var spell: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
-			_spell_button(list, spell, {}, grant)
-			var id: String = String(grant.get("tracker_id", ""))
-			if String(grant.get("payment_mode", "")) == "tracker" and not id.is_empty() and not seen.has(id):
-				seen[id] = true
-				_tracker(pair[1], record, Grants.tracker_for(record, grant))
-		for choice: Dictionary in group.choices:
-			var tracker_id: String = String(choice.get("tracker_id", ""))
-			if not tracker_id.is_empty() and not seen.has(tracker_id):
-				for tracker: Dictionary in Trackers.for_creature(record):
-					if String(tracker.get("id", "")) == tracker_id:
-						seen[tracker_id] = true
-						_tracker(pair[1], record, tracker)
-						break
+		if not spells.is_empty():
+			_leveled_spell_list(pair[0], spells)
+		for entry: Dictionary in abilities:
+			_spell_button(pair[0], entry["spell"], {}, entry["grant"])
+		for choice: Dictionary in group["choices"]:
 			var choose := Button.new()
 			choose.text = "⚠ Scegli %d incantesimo/i" % int(choice.get("remaining", choice.get("count", 1)))
 			choose.pressed.connect(_actions.choose_origin.bind(choice))
 			pair[0].add_child(choose)
-		if seen.is_empty():
-			_label(pair[1], "Senza tracker · usa gli slot sopra quando previsto")
-	# Nonspell capabilities live at the end of the spellcasting list,
-	# together regardless of which class, feat or item granted them.
-	if not ability_grants.is_empty():
-		ability_grants.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			return String(Catalog.catalog_spell(String(a.get("spell_id", ""))).get("name", "")).naturalnocasecmp_to(
-				String(Catalog.catalog_spell(String(b.get("spell_id", ""))).get("name", ""))) < 0)
+		_label(pair[1], "Usa gli slot di classe o del Patto")
+
+	# Class abilities use the very same tracker grouping as granted spells.
+	var features: Array[Dictionary] = preload("res://vtt/class_feature_activation.gd").entries(record)
+	for feature: Dictionary in features:
+		_add_tracker_feature(tracker_groups, record, feature)
+	var tracker_keys: Array = tracker_groups.keys()
+	tracker_keys.sort_custom(func(a: Variant, b: Variant) -> bool:
+		if String(a) == "free": return false
+		if String(b) == "free": return true
+		return String(tracker_groups[a]["name"]).naturalnocasecmp_to(String(tracker_groups[b]["name"])) < 0)
+	for key: String in tracker_keys:
+		var group: Dictionary = tracker_groups[key]
 		pair = _pair()
-		_heading(pair[0], "Capacità")
-		_heading(pair[1], "Risorse delle capacità")
-		var ability_list: VBoxContainer = _list(pair[0], ability_grants.size())
-		var ability_trackers: Dictionary = {}
-		for grant: Dictionary in ability_grants:
-			var ability: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
-			_spell_button(ability_list, ability, {}, grant)
-			var tracker_id: String = String(grant.get("tracker_id", ""))
-			if String(grant.get("payment_mode", "")) == "tracker" and not tracker_id.is_empty() and not ability_trackers.has(tracker_id):
-				ability_trackers[tracker_id] = true
-				_tracker(pair[1], record, Grants.tracker_for(record, grant))
-		if ability_trackers.is_empty():
-			_label(pair[1], "Nessun tracker associato")
+		_heading(pair[0], String(group["name"]))
+		var suggested_origins: Dictionary = {}
+		var spell_entries: Array[Dictionary] = []
+		var abilities: Array[Dictionary] = []
+		for entry: Dictionary in group["powers"]:
+			var spell: Dictionary = entry["spell"]
+			var grant: Dictionary = entry["grant"]
+			if Abilities.is_ability(spell):
+				abilities.append(entry)
+			else:
+				spell_entries.append({"spell": spell, "member": {}, "grant": grant})
+				var sid: String = String(grant.get("origin_id", ""))
+				if not suggested_origins.has(sid):
+					suggested_origins[sid] = {"name": String(grant.get("origin_name", sid)), "abilities": []}
+				suggested_origins[sid]["abilities"].append(String(grant.get("spellcasting_ability", "")))
+		for sid: String in suggested_origins:
+			var suggested: Array[String] = []
+			suggested.assign(suggested_origins[sid]["abilities"])
+			_label(pair[0], "Lancio · " + String(suggested_origins[sid]["name"]))
+			_casting_statistics(pair[0], "origin:" + sid, suggested)
+		if not spell_entries.is_empty():
+			_leveled_spell_list(pair[0], spell_entries)
+		if not abilities.is_empty() or not (group["features"] as Array).is_empty():
+			_heading(pair[0], "Capacità")
+			abilities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+				return String(a["spell"].get("name", "")).naturalnocasecmp_to(String(b["spell"].get("name", ""))) < 0)
+			for entry: Dictionary in abilities:
+				_spell_button(pair[0], entry["spell"], {}, entry["grant"])
+			for feature: Dictionary in group["features"]:
+				_feature_button(pair[0], feature)
+		var tracker: Dictionary = group["tracker"]
+		if not tracker.is_empty():
+			_tracker(pair[1], record, tracker)
+		elif key == "free":
+			_label(pair[1], "Nessuna risorsa consumata")
+		else:
+			_label(pair[1], "⚠ Tracker non disponibile")
 	_fit()
 	_balance_lists.call_deferred()
 
-	var class_features := preload("res://vtt/class_feature_activation.gd").entries(record)
-	if not class_features.is_empty():
-		pair = _pair()
-		_heading(pair[0], "Privilegi di classe")
-		_heading(pair[1], "Effetti e risorse")
-		var class_trackers: Dictionary = {}
-		for feature: Dictionary in class_features:
-			var button := Button.new()
-			button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.name)
-			button.tooltip_text = String(feature.detail)
-			button.custom_minimum_size.y = 40
-			button.pressed.connect(func() -> void: _actions.class_feature.call(String(feature.id)))
-			pair[0].add_child(button)
-			var resource := String(feature.get("resource_name", ""))
-			if bool(feature.get("active", false)): _label(pair[1], "Attivo · " + String(feature.name))
-			if not resource.is_empty() and not class_trackers.has(resource):
-				class_trackers[resource] = true
-				_tracker(pair[1], record, preload("res://vtt/class_feature_activation.gd").tracker_named(record, resource, String(feature.class_name)))
+func _add_tracker_power(groups: Dictionary, record: Dictionary, grant: Dictionary) -> void:
+	var mode: String = String(grant.get("payment_mode", "free"))
+	var id: String = String(grant.get("tracker_id", "")) if mode == "tracker" else ""
+	var key: String = ("tracker:" + id) if not id.is_empty() else ("missing" if mode == "tracker" else "free")
+	var tracker: Dictionary = Grants.tracker_for(record, grant) if not id.is_empty() else {}
+	if not groups.has(key):
+		groups[key] = {"name": String(tracker.get("name", id)) if not id.is_empty() else ("Tracker non disponibile" if mode == "tracker" else "Senza consumo"),
+			"tracker": tracker, "powers": [], "features": []}
+	var spell: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
+	if not spell.is_empty():
+		groups[key]["powers"].append({"spell": spell, "grant": grant})
+
+func _add_tracker_feature(groups: Dictionary, record: Dictionary, feature: Dictionary) -> void:
+	const Activation = preload("res://vtt/class_feature_activation.gd")
+	var resource: String = String(feature.get("resource_name", ""))
+	var tracker: Dictionary = Activation.tracker_named(record, resource, String(feature.get("class_name", "")))
+	var cost: int = int(feature.get("cost", 0))
+	var id: String = String(tracker.get("id", feature.get("tracker_id", ""))) if cost > 0 and not resource.is_empty() else ""
+	var key: String = ("tracker:" + id) if not id.is_empty() else ("missing" if cost > 0 and not resource.is_empty() else "free")
+	if not groups.has(key):
+		groups[key] = {"name": String(tracker.get("name", resource)) if not id.is_empty() else ("Tracker non disponibile" if key == "missing" else "Senza consumo"),
+			"tracker": tracker, "powers": [], "features": []}
+	groups[key]["features"].append(feature)
+
+func _feature_button(parent: Node, feature: Dictionary) -> void:
+	var button := Button.new()
+	button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.get("name", ""))
+	button.tooltip_text = String(feature.get("detail", ""))
+	button.custom_minimum_size.y = 40
+	button.pressed.connect(_actions.class_feature.bind(String(feature.get("id", ""))))
+	parent.add_child(button)
+	if int(feature.get("cost", 0)) > 0 and not String(feature.get("resource_name", "")).is_empty():
+		var price: Label = _label(parent, "Costo: %d" % int(feature["cost"]))
+		price.add_theme_font_size_override("font_size", 12)
 
 func _pair() -> Array[VBoxContainer]:
 	var row: BoxContainer
@@ -293,13 +337,39 @@ func _class_section(parent: Node, record: Dictionary, member: Dictionary, prepar
 	choose.pressed.connect(_actions.edit_class.bind(member))
 	header.add_child(choose)
 	_casting_statistics(section, String(member.id), [String(_actions.class_ability.call(String(member.name)))])
-	var list: VBoxContainer = _list(section, selected.size())
-	if selected.is_empty():
-		_label(list, "Nessun incantesimo selezionato")
+	var spells: Array[Dictionary] = []
 	for id: String in selected:
-		_spell_button(list, Catalog.catalog_spell(id), member, {})
+		spells.append({"spell": Catalog.catalog_spell(id), "member": member, "grant": {}})
+	if spells.is_empty():
+		_label(section, "Nessun incantesimo selezionato")
+	else:
+		_leveled_spell_list(section, spells)
 	if bool(member.book):
 		_label(section, "📖 Libro: %d incantesimi conosciuti" % (record.get("spellbook_spells", []) as Array).size())
+
+func _leveled_spell_list(parent: Node, entries: Array[Dictionary]) -> VBoxContainer:
+	var list: VBoxContainer = _list(parent, entries.size())
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var sa: Dictionary = a["spell"]
+		var sb: Dictionary = b["spell"]
+		var level_a: int = int(sa.get("level", 0))
+		var level_b: int = int(sb.get("level", 0))
+		if level_a != level_b: return level_a < level_b
+		return String(sa.get("name", "")).naturalnocasecmp_to(String(sb.get("name", ""))) < 0)
+	var previous := -1
+	for entry: Dictionary in entries:
+		var spell: Dictionary = entry["spell"]
+		if spell.is_empty():
+			continue
+		var level: int = int(spell.get("level", 0))
+		if level != previous:
+			var heading: Label = _label(list, "Trucchetti" if level == 0 else "Livello %d" % level)
+			heading.name = "SpellLevelHeader"
+			heading.add_theme_font_size_override("font_size", 14)
+			heading.add_theme_color_override("font_color", Color(0.84, 0.71, 0.49))
+			previous = level
+		_spell_button(list, spell, entry["member"], entry["grant"])
+	return list
 
 func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: Dictionary) -> void:
 	if spell.is_empty():
@@ -310,8 +380,7 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	parent.add_child(row)
 	var button := Button.new()
 	button.set_meta("creature_gui_data", true)
-	button.text = (String(spell.get("name", "")) if Abilities.is_ability(spell)
-		else String(spell.get("name", "")) + (" · 0°" if int(spell.get("level", 0)) == 0 else " · %d°" % int(spell.get("level", 0))))
+	button.text = String(spell.get("name", ""))
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.clip_text = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
