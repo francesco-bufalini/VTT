@@ -29,8 +29,9 @@ func visible_rows(area: Node) -> Array[Button]:
 func _assert_scroll_isolated(node: Node) -> int:
 	var count := 0
 	if node is ScrollContainer or node is ItemList or node is TextEdit or (node is RichTextLabel and (node as RichTextLabel).scroll_active):
-		assert(not (node as Control).mouse_force_pass_scroll_events or _belongs_to_spell_sheet(node),
-			"Wheel scroll must stop at nested scrollable control: " + str(node.get_path()))
+		assert(not (node as Control).mouse_force_pass_scroll_events or _belongs_to_spell_sheet(node)
+			or node.has_meta("pass_wheel_to_sheet"),
+			"Only explicitly sheet-scrolling child controls may pass wheel events: " + str(node.get_path()))
 		count += 1
 	for child: Node in node.get_children():
 		count += _assert_scroll_isolated(child)
