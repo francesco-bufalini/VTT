@@ -3,6 +3,19 @@ extends RefCounted
 # Creature-sheet-only display translations. Never mutate persisted records or the global locale.
 const CONFIG_PATH := "user://creature_gui_locale.cfg"
 const EN: Dictionary = {
+	" · trucchetto": " · cantrip",
+	"Disponibili: %d / %s · Trucchetti: %d / %s": "Available: %d / %s · Cantrips: %d / %s",
+	" · Nel libro: %d": " · In spellbook: %d",
+	"Nel libro: %d": "In spellbook: %d",
+	"Disponibili: ": "Available: ",
+	"Trucchetti: ": "Cantrips: ",
+	"Origine:": "Origin:",
+	"Concessioni dell'origine:": "Grants from origin:",
+	"Base %d + bonus %+d = %d": "Base %d + bonus %+d = %d",
+	"Rimuovi il contenuto": "Remove content",
+	"Selezione manuale": "Manual selection",
+	"Senza costo": "No cost",
+	"Slot disponibili": "Available slots",
 	"Altri incantesimi disponibili": "Other available spells",
 	"Slot · Classi / Patto": "Slots · Classes / Pact",
 	"⚠ Scegli %d incantesimo/i": "⚠ Choose %d spell(s)",
@@ -1191,11 +1204,18 @@ static func text_for(source: String, language: String) -> String:
 	if dictionary.has(source):
 		return String(dictionary[source])
 	if language == "en":
+		# Warnings reuse the same localizable caption after the warning icon.
+		if source.begins_with("⚠ "):
+			var caption := source.trim_prefix("⚠ ")
+			var translated_caption := text_for(caption, "en")
+			if translated_caption != caption:
+				return "⚠ " + translated_caption
 		# Formatted GUI labels keep their variable values (creature names, counts,
 		# spell names, IDs) untouched. Only recognized UI templates are translated.
 		for template: String in [
 			"Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s",
 			"Come creatura (%s)", "Senza origine (%d)",
+			"Disponibili: %d / %s · Trucchetti: %d / %s", " · Nel libro: %d", "Nel libro: %d",
 			"⚠ Scegli %d incantesimo/i", "Scegli fino a %d incantesimo/i · %d selezionati", "%d utilizzi · %s · %d lanci rimasti", "Origine: %s [%s] · lista di classe fino al %d° livello", "Lancia %s. Scegli il consumo.", "Esportazione annullata: mancano %d definizioni homebrew usate dalla scheda (%s).", "Metamagia applicata · %d punti stregoneria.", "Scegli %d incantesimi: ", "Classe: %s", "Categoria: %s", "Specie/Razza: %s", "Tipo di opzione: %s", "Tipo: %s", "Rarità: %s", "Proprietà: %s", "Caratteristica (%s)", "%s: %d incantesimi conosciuti (2014)", "%s: %d incantesimi preparabili (2014)", "%s: richiede regole di classe/sottoclasse (%s)", "Le sottoclassi magiche di %s richiedono il calcolo manuale.",
 			"%d tratti", "%d incantesimi selezionati · Cambia", "%d° livello", "Patto · %d° livello", "Slot %d° livello", "Slot da recuperare · massimo %d livelli totali", "Mostra altri incantesimi (%d rimanenti)", "📖 Libro: %d incantesimi conosciuti", "Slot · liv. %d+", "Esporta (%d)", "Elimina (%d)", "Invia %s: scegli destinatari", "Lancia %s. Gli slot disponibili possono provenire da qualsiasi classe.", "Risultato del tiro: %d. Scegli i dadi da aggiungere adesso; quelli monouso saranno consumati.",
 			"Camminata: base %d + bonus cumulabili %+d = %d ft",
