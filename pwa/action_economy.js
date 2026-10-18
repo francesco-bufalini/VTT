@@ -404,6 +404,54 @@ const WEAPON_ROLL_ACTION_IDS=new Set(['disarm','opportunity']);
 const rollModifier=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
 const rollSign=value=>value<0?'−'+Math.abs(value):'+'+value;
 const rollFormula=value=>'1d20 '+(value<0?'− '+Math.abs(value):'+ '+value);
+const BATTLE_EFFECTS={
+ grapple:['condition','Afferrato','condition'],
+ prone:['condition','Prono','prone_alt'],
+ shove:['condition','Prono oppure spinto di 5 ft','shove'],
+ shove_aside:['movement','Spinto lateralmente','shove'],
+ disarm:['condition','Oggetto lasciato cadere','disengage'],
+ drop_prone:['condition','Prono','prone_alt'],
+ escape_grapple:['condition','Interrompe Afferrato, se riesce','grapple'],
+ disengage:['movement','Nessun attacco di opportunità durante lo spostamento','disengage'],
+ dash:['movement','Movimento aggiuntivo pari alla velocità','dash'],
+ movement:['movement','Spostamento entro la velocità','dash'],
+ stealth_movement:['movement','Spostamento furtivo','stealth_check'],
+ tumble:['movement','Passaggio nello spazio di un avversario','acrobatics'],
+ overrun:['movement','Attraversa lo spazio di un avversario','athletics'],
+ climb_large:['movement','Arrampicata su una creatura grande','athletics'],
+ stand_up:['movement','Termina Prono','prone_alt'],
+ crawl:['movement','Spostamento strisciando','dash'],
+ jump:['movement','Salto','dash'],
+ mount:['movement','Sale in sella','dash'],
+ dismount:['movement','Scende dalla cavalcatura','dash'],
+ difficult_terrain:['movement','Movimento su terreno difficile','dash']
+};
+const DAMAGE_GLYPHS={
+ fire:'fire',fuoco:'fire',cold:'ice',freddo:'ice',lightning:'lightning',fulmine:'lightning',
+ poison:'poison',veleno:'poison',necrotic:'necromancy',necrotico:'necromancy',
+ radiant:'spark',radioso:'spark',acid:'poison',acido:'poison',psychic:'arcana',psichico:'arcana',
+ thunder:'lightning',tuono:'lightning'
+};
+const supportedDamage=formula=>/^\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+)(?:\s*[+-]\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+))*\s*$/i.test(String(formula||''));
+function battleEffectMarkup(item,attack){
+ const effect=attack?.damage&&String(attack.damage).trim()!=='Come da bestiario'?
+  {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
+   glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
+ const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
+ const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
+  item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:
+  item.id==='opportunity'?{kind:'damage',label:'Danni dell’arma impiegata',glyph:'weapon'}:
+  {kind:'other',label:'Effetto secondo le regole dell’azione',glyph:'spark'});
+ // Avoid inventing damage types or rolling formulae absent from the calculation.
+ const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
+ const text=resolved.label+(resolved.type?' · '+resolved.type:'');
+ const glyph=actionGlyph(resolved.glyph);
+ const formula=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
+ return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
+  '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
+  (formula?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-label="'+esc(item.name)+'" aria-label="Tira danni: '+esc(item.name)+'">'+glyph+'<strong>'+esc(text)+'</strong>'+diceGlyph()+'</button>':
+  '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(text)+'</strong></span>')+'</div>';
+}
 function battleAttackRow(item,calculated,attacksById,descriptions){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
  const rolls=[];
@@ -417,7 +465,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  }else if(item.skill_ids?.length){
   for(const skill of [...new Set(item.skill_ids)]){
    const label=SKILLS.find(([id])=>id===skill)?.[1]||skill;
-   addRoll('skill:'+skill,label,'Prova di '+label,
+   addRoll('skill:'+skill,label,label,
     calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
   }
  }else if(WEAPON_ROLL_ACTION_IDS.has(item.id)){
@@ -435,8 +483,6 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const descriptor=rolls.length?rolls.map(row=>rollFormula(row.modifier)+' · '+row.kind).join(' / '):
   item.type==='Attacco'?'Attacco speciale':item.type||'Azione';
  const icon=actionGlyph(actionGlyphKey(item));
- const impact=attack?'<p class="play-battle-attack-impact">Danni: '+esc(attack.damage||'—')+
-  (attack.damage_type?' '+esc(attack.damage_type):'')+' · '+esc(attack.range_feet??5)+' ft</p>':'';
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
@@ -444,18 +490,18 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
-  '<details class="play-battle-attack-details"><summary>'+icon+
+  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
-  '<span class="play-battle-attack-chevron" aria-hidden="true">›</span></summary>'+
-  '<div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli dell’attacco non disponibili.')+'</p>'+
-  impact+source+target+resources+'</div></details>'+
+  '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
+  source+target+resources+'</div></details>'+
   (rolls.length?'<div class="play-battle-attack-rolls">'+rolls.map(row=>
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
    '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
-  '</article>';
+  '</div>'+battleEffectMarkup(item,attack)+'</article>';
 }
+
 export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const descriptions={
@@ -469,14 +515,15 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   (row.type==='Attacco'||row.parent_action==='attack'||row.parent_action==='two_weapon'||row.id==='opportunity'));
  const movement=entries.filter(row=>row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)||
    row.class_feature_id==='step_of_the_wind');
- const render=(rows,attackRows)=>BATTLE_TIMINGS.map(([time,label])=>{
+ const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
    '<h3>'+actionGlyph(HEADER_GLYPHS[time])+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
-   '<div class="play-battle-action-rows">'+matching.map(row=>attackRows?
-    battleAttackRow(row,calculated,attacksById,descriptions):actionRow(row,calculated)).join('')+'</div></section>':'';
+   '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?actionRow(row,calculated):
+    battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></section>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
- return {attacks:render(weapon,true),movement:render(movement,false)};
+ return {attacks:render(weapon,'attacks'),movement:render(movement,'movement'),
+  spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
 
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
