@@ -2911,7 +2911,7 @@ func _on_class_feature_requested(id: String) -> void:
 		if String(_current().get("id", "")) != source_id: return
 		var live := _current()
 		if feature.mode == "metamagic_roll" and board_root.get_node_or_null("DiceRollerChat") == null:
-			_set_status("Il roller della chat non è disponibile.")
+			_set_status("Il lanciatore di dadi della chat non è disponibile.")
 			return
 		var recovery_levels: Array = []
 		for index: int in range(recovery_picks.size()):
@@ -3002,7 +3002,7 @@ func _on_basic_action_requested(action_id: String) -> void:
 	body.add_child(caption)
 	if action_id != "help" and String(record.get("rules_version", "2014")) != "2024":
 		var roll := Button.new()
-		roll.text = "Tira Atletica con il roller della scheda"
+		roll.text = "Tira Atletica con i dadi della scheda"
 		roll.pressed.connect(func() -> void: _on_formula_roll_requested("skill:athletics"))
 		body.add_child(roll)
 	var picker := OptionButton.new()
@@ -3053,7 +3053,7 @@ func _on_formula_roll_requested(key: String) -> void:
 				break
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var modifier: int = BonusRules.value(record, key)
 	_roll_with_optional_dice(label, "1d20%+d" % modifier, key, record)
@@ -3063,7 +3063,7 @@ func _on_formula_roll_requested(key: String) -> void:
 func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary, forced_advantage: bool = false) -> void:
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var applicable: Array[Dictionary] = DiceBonuses.applicable(record, key)
 	# Bardic Inspiration is offered *after* the d20 has been rolled, as in
@@ -4951,7 +4951,7 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 		return
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var label: String = String(record.get("name", "Creatura")) + " · " + String(attack.get("name", "Attacco"))
 	var expression := ""
@@ -5073,7 +5073,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		inspect_range.text = "Vedi gittata" if _touch_layout else "◎ Gittata"
 		inspect_range.tooltip_text = "Chiude la scheda e mostra le creature raggiungibili da questo attacco. Clic per selezionare, Esc per chiudere, nessun danno automatico."
 		if _touch_layout:
-			inspect_range.tooltip_text = "Richiede al desktop uno snapshot della mappa centrato sulla creatura, con la gittata di questo attacco."
+			inspect_range.tooltip_text = "Richiede al desktop un'anteprima della mappa centrata sulla creatura, con la gittata di questo attacco."
 		inspect_range.pressed.connect(_preview_attack_from_sheet.bind(attack_id))
 		hit_row.add_child(inspect_range)
 		var damage_row := HFlowContainer.new()
@@ -5860,7 +5860,7 @@ func _build_hp_delta_dialog() -> void:
 	body.add_theme_constant_override("separation", 10)
 	_hp_delta_dialog.add_child(body)
 	var explanation := Label.new()
-	explanation.text = "Scegli una quantità o tira un dado con il roller."
+	explanation.text = "Scegli una quantità oppure lancia i dadi."
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(explanation)
 	_hp_amount_row = HBoxContainer.new()
@@ -5951,7 +5951,7 @@ func _confirm_hp_delta() -> void:
 	if _hp_use_dice.button_pressed:
 		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 		if roller == null or not roller.has_method("roll_expression_from_sheet"):
-			_set_status("Il roller della chat non è disponibile.")
+			_set_status("Il lanciatore di dadi della chat non è disponibile.")
 			return
 		var actor: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 		var rolled: Variant = roller.call(
