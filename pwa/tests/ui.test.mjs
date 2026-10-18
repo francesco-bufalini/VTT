@@ -91,8 +91,10 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.find(r=>r.creature.inventory?.[0]?.name==="Pozione"&&r.creature.inventory[0].quantity===3);
   });
   click('[data-sheet="magic"]');
-  await until(()=>document.querySelector('[data-slot="1"]'));
-  change('[data-slot="1"]',"2");
+  await until(()=>document.querySelector('[data-act="magic-tool-open"][data-magic-tool="slots"]'));
+  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-slot="1"]'));
+  change('#magic-tools-dialog [data-slot="1"]',"2");
   await until(async()=>{
     const rows=await listCreatures();
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
@@ -470,7 +472,9 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Incantatore PWA");
   click('[data-sheet="magic"]');
-  await until(()=>document.querySelector('#spell-search'));
+  await until(()=>document.querySelector('[data-act="magic-tool-open"][data-magic-tool="catalog"]'));
+  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
   const search=document.querySelector('#spell-search');
   search.value="Shield";
   search.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
@@ -481,6 +485,8 @@ test("inline spell catalog adds available and spellbook choices without divergin
     return current?.prepared_spells?.[0]?.id==="spell:shield|phb" &&
       current?.spells?.[0]?.id==="spell:shield|phb";
   });
+  click('[data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   const preparedRow=document.querySelector('.magic-spell-open[data-spell-key="prepared_spells"]');
   assert.ok(preparedRow,'prepared spell has a detail button');
   assert.equal(preparedRow.closest('.magic-level')?.querySelector('h4')?.textContent,'Livello 1');
@@ -489,12 +495,16 @@ test("inline spell catalog adds available and spellbook choices without divergin
   assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
   click('[data-act="action-cast-cancel"]');
   await until(()=>!document.querySelector('#action-cast-dialog'));
+  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-target'));
   change('#spell-target',"spellbook_spells");
   click('[data-act="spell-pick"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
     return current?.spellbook_spells?.[0]?.id==="spell:shield|phb";
   });
+  click('[data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-act="remove-spell"][data-key="prepared_spells"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
@@ -730,16 +740,22 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="tracker-short"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
  click('[data-sheet="magic"]');
- await until(()=>document.querySelector('[data-slot-total="1"]'));
- assert.equal(document.querySelector('[data-calculated="slot:1"]').textContent,'4');
- assert.match(document.querySelector('#app').textContent,/Conosciuti 0 \/ 8/);
+ await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));
+ assert.match(document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot').textContent,/3\s*\/\s*4/);
+ assert.equal(document.querySelectorAll('.magic-level-slot + .slot-counter .btn').length,0);
+ click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] [data-slot-total="1"]'));
  change('[data-slot-total="1"]','7');
- await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='7');
+ await until(()=>document.querySelector('.magic-level-slot')?.textContent?.includes('/ 7'));
  assert.equal((await loadCreature(saved.data.id)).data.spell_slots_manual,true);
  click('[data-act="slots-automatic"]');
- await until(()=>document.querySelector('[data-calculated="slot:1"]')?.textContent==='4');
+ await until(()=>document.querySelector('.magic-level-slot')?.textContent?.includes('/ 4'));
+ click('[data-act="magic-tool-close"]');
+ await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  click('[data-act="slot-use"][data-level="1"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===2);
+ click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open]'));
  click('[data-act="slots-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
  click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
