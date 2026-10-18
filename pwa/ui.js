@@ -309,6 +309,8 @@ async function editorView() {
     const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
     state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
     state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
+    state.actionCatalogError=generalRules.status==='rejected'?
+      'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
   if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
@@ -343,7 +345,12 @@ async function editorView() {
     break;
   }
   case "actions":
-    body=actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants());
+    body=(state.actionCatalogError?'<p class="hint action-catalog-warning" role="alert">'+
+      esc(state.actionCatalogError)+'</p>':'')+
+      (state.spellCatalogError?'<p class="hint action-catalog-warning" role="alert">Incantesimi non disponibili: '+
+      esc(state.spellCatalogError)+'</p>':'')+
+      actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
+        state.generalActionSupplements||[],readActionVariants());
     break;
   case "magic":
     body=panel('Lancio tattico',c.linked_token_sync_id?
@@ -1462,7 +1469,19 @@ async function handleAction(target){
     search.focus();
     return;
   }
+  if(act==='action-expand-all'){
+    const details=[...app.querySelectorAll('.action-economy-dashboard details.action-tree, .action-economy-dashboard details.action-economy-entry')];
+    const expand=details.some(row=>!row.open);
+    for(const row of details)row.open=expand;
+    target.textContent=expand?'Comprimi tutto':'Espandi tutto';
+    target.setAttribute('aria-expanded',String(expand));
+    return;
+  }
   if(act==='action-variants'){
+    if(!actionVariants().length){
+      try{await loadGeneralActionSupplements();}
+      catch(error){throw Error('Regole varianti non disponibili: '+errorMessage(error));}
+    }
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog action-variants-dialog';
     const enabled=readActionVariants();
     dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
