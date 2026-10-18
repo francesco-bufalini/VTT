@@ -86,6 +86,37 @@ export function rollSheetDice(modifier,bonuses=[],die){
   ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
  return {sides:20,count:1,modifier:base,rolls:[d20],total,notation,detail,parts};
 }
+/** Roll an explicitly calculated weapon-damage formula, never evaluate arbitrary text. */
+export function rollBattleDamage(formula,die){
+ if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
+ const notation=String(formula||'').replace(/\s+/g,'');
+ if(!notation||notation.length>120||!/^[+]?[0-9dD+\-]+$/.test(notation))
+  throw Error('Formula danni non supportata');
+ const terms=notation.match(/[+-]?[^+-]+/g)||[];
+ if(!terms.length||terms.join('')!==notation||terms.length>24)throw Error('Formula danni non valida');
+ let modifier=0,totalCount=0;
+ const parts=[];
+ for(const term of terms){
+  const dice=term.match(/^\+?([1-9]\d*)d(2|3|4|6|8|10|12|20|100)$/i);
+  if(dice){
+   const count=Number(dice[1]),sides=Number(dice[2]);
+   totalCount+=count;
+   if(totalCount>100)throw Error('Troppi dadi nella formula');
+   const rolls=Array.from({length:count},()=>die(sides));
+   if(rolls.some(value=>!Number.isInteger(value)||value<1||value>sides))throw Error('Risultato dado non valido');
+   parts.push({name:'Danni',notation:count+'d'+sides,rolls,subtotal:rolls.reduce((sum,value)=>sum+value,0)});
+  }else if(/^[+-]?\d+$/.test(term)){
+   modifier+=Number(term);
+   if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>9999)throw Error('Modificatore danni fuori limite');
+  }else throw Error('Formula danni non supportata');
+ }
+ if(!parts.length)throw Error('La formula non prevede dadi da tirare');
+ const rolls=parts.flatMap(part=>part.rolls);
+ const total=parts.reduce((sum,part)=>sum+part.subtotal,modifier);
+ return {sides:Number(parts[0].notation.split('d')[1]),count:rolls.length,modifier,rolls,total,
+  notation,parts,detail:parts.map(part=>part.notation+' ['+part.rolls.join(', ')+'] = '+part.subtotal).join(' · ')+
+   (modifier?' · modificatore '+(modifier>=0?'+':'')+modifier:'')+' · totale '+total};
+}
 /** Match the desktop DiceChatSync.valid_event protocol for combined dice rolls. */
 export function sheetRollChatFields(result){
  const base={count:result.count,modifier:result.modifier,rolls:result.rolls,
