@@ -24,7 +24,7 @@ try{
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
  assert.equal(await mainAttack.count(),1);
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null);
- assert.match(await mainAttack.locator('.play-battle-attack-copy small').textContent(),/1d20 \\+ [0-9]+ · Mischia/);
+ assert.match(await mainAttack.locator('.play-battle-attack-copy small').textContent(),/1d20 \+ [0-9]+ · Mischia/);
  assert.equal(await weaponPanel.locator('[data-attack-id="item:local_sword"]').count(),1);
  assert.equal(await weaponPanel.locator('.play-battle-attack-copy strong').filter({hasText:/^Attaccare$/}).count(),0);
  await mainAttack.locator('summary').click();
