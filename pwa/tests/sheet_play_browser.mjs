@@ -4,6 +4,18 @@ const f=await browserFixture({live:true});const {page,context,origin,errors,miss
 const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature;});
 try{
  await seedPlayCreature(page,origin);
+ // The same optional maneuver used by Poteri must now appear only in battle resources.
+ await page.evaluate(async()=>{
+  const {listCreatures,saveCreature}=await import('/creatures.js');
+  const row=(await listCreatures())[0],creature=row.creature;
+  await saveCreature({...creature,
+   resource_trackers:[...(creature.resource_trackers||[]),
+     {id:'superiority',name:'Superiority Die',max:4,recharge:'short_rest'}],
+   optional_features_catalog:[...(creature.optional_features_catalog||[]),
+     {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}]},
+   'default',row.revision);
+ });
+ await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
   for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){
@@ -63,6 +75,23 @@ try{
  await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-confirm').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
  assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
+ const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ assert.equal(await resourcesPanel.count(),1);
+ assert.equal(await resourcesPanel.getAttribute('open'),null,'Risorse starts collapsed');
+ assert.equal(await page.locator('.play-health-tools [data-sheet-context="rests"]').count(),1);
+ assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
+ await resourcesPanel.locator('summary.play-battle-summary').click();
+ assert.equal(await resourcesPanel.getAttribute('open'),'');
+ const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
+ await focusButton.click();
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Focus arcano|Utilizzi disponibili/);
+ assert.equal(await page.locator('#sheet-context-dialog [data-magic-tracker-id="focus"]').count(),1);
+ await dismiss();
+ const maneuver=resourcesPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
+ assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
+ await maneuver.click();
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
+ await dismiss();
  await page.locator('#sheet-play-view [data-tracker-id="focus"]').click();await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
@@ -97,7 +126,9 @@ try{
  await sheet('battle');assert.match(await page.locator('.play-status-strip').textContent(),/Light/);
  await sheet('conditions');await page.locator('[data-act="condition-remove-spell"][data-spell-id="phb2014_light"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light');});
- await sheet('magic');await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
+ await sheet('magic');
+ assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
+ await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
  await sheet('traits');await popup('trait-notes');await page.locator('#sheet-context-dialog textarea').fill('Una promessa mantenuta.');await dismiss();assert.equal((await record()).additional_traits,'Una promessa mantenuta.');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','stats','battle','inventory','traits','conditions']){
