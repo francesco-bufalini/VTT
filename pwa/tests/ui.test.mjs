@@ -298,16 +298,24 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(publicSheet.current_hp,undefined,"Never send private HP to game host");
   click('[data-act="edit-token"]');
   await until(()=>document.querySelector('#session-token-dialog[open]'));
-  const condition=document.querySelector('[data-token-condition="prone"]');
-  assert.ok(condition,"Token popup must expose native conditions");
+  const condition=document.querySelector('[data-token-condition="grappled"]');
+  assert.ok(condition,"Token popup must expose Grappled using its native ID");
   assert.ok(condition.closest('.condition-toggle-grid'),'Token popup must share the condition grid');
-  assert.equal(condition.closest('label').textContent.trim(),'Prono','Popup uses localised condition labels');
-  assert.equal(document.querySelectorAll('#session-token-dialog .condition-toggle').length,20);
+  assert.equal(condition.closest('label').textContent.trim(),'Afferrato');
+  assert.equal(document.querySelector('[data-token-condition="restrained"]').closest('label').textContent.trim(),'Trattenuto');
+  assert.equal(document.querySelector('[data-token-condition="prone"]').closest('label').textContent.trim(),'Prono');
+  const tokenChoices=[...document.querySelectorAll('#session-token-dialog .condition-toggle')];
+  assert.equal(tokenChoices.length,20);
+  const it=new Intl.Collator("it",{sensitivity:"base"});
+  assert.ok(tokenChoices.every((row,index)=>!index||it.compare(tokenChoices[index-1].textContent, row.textContent)<=0),
+    "Native token condition choices must be sorted by their Italian labels");
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
   const changed=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition");
   assert.equal(JSON.parse(changed.options.body).payload.token_id,"token_1");
+  assert.equal(JSON.parse(changed.options.body).payload.condition_id,"grappled",
+    "Afferrato must never be synchronized as Restrained");
   click('[data-act="close-token-dialog"]');
   await until(()=>document.querySelector("#chat-form"));
   const input=document.querySelector("#chat-message");
@@ -452,7 +460,12 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   await changeScore('str',14);
   click('[data-sheet="conditions"]');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
-  assert.equal(document.querySelectorAll('.condition-sheet-panel .condition-toggle').length,20);
+  const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
+  assert.equal(sheetChoices.length,20);
+  assert.ok(sheetChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
+    .compare(sheetChoices[index-1].textContent,row.textContent)<=0));
+  assert.equal(document.querySelector('[data-condition="grappled"]').closest('label').textContent.trim(),'Afferrato');
+  assert.equal(document.querySelector('[data-condition="restrained"]').closest('label').textContent.trim(),'Trattenuto');
   assert.equal(document.querySelector('[data-condition="prone"]').closest('label').textContent.trim(),'Prono');
   assert.ok(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'));
   assert.equal(document.querySelector('[data-condition-count]').textContent,'0');

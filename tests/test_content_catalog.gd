@@ -37,8 +37,8 @@ func run() -> void:
 	assert(Catalog.diagnostics.size() == 1, "Duplicate ID must be diagnosed")
 	var definitions := Catalog.condition_definitions()
 	assert(definitions.size() > 30, "Conditions, diseases and related effects available offline")
-	# Only real 5etools conditions/statuses are selectable, not the old
-	# hidden/dead tactical markers, while historical IDs remain valid.
+	# Standard and tactical markers are selectable in both desktop and PWA;
+	# custom diseases/effects remain selectable through the same catalog.
 	var names_2014: Dictionary = {}
 	for row: Dictionary in definitions:
 		names_2014[String(row.id)] = true
@@ -46,7 +46,7 @@ func run() -> void:
 		if String(row.get("origin", "")) == "5etools" and String(row.get("edition", "")) != "":
 			assert(String(row.edition) == "2014", "No mixed 2014/2024 sources")
 	assert(names_2014.has("blinded") and names_2014.has("concentrating") and names_2014.has("surprised"))
-	assert(not names_2014.has("hidden") and not names_2014.has("dead"))
+	assert(names_2014.has("hidden") and names_2014.has("dead"))
 	assert(Catalog.valid_effect_id("hidden") and Catalog.valid_effect_id("dead"))
 	var definitions_2024 := Catalog.condition_definitions("2024")
 	var names_2024: Dictionary = {}
