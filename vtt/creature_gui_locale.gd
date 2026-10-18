@@ -3,6 +3,8 @@ extends RefCounted
 # Creature-sheet-only display translations. Never mutate persisted records or the global locale.
 const CONFIG_PATH := "user://creature_gui_locale.cfg"
 const EN: Dictionary = {
+	"Tira Atletica con i dadi della scheda": "Roll Athletics with the sheet's dice",
+	"Richiede al desktop un'anteprima della mappa centrata sulla creatura, con la gittata di questo attacco.": "Requests a desktop map preview centered on the creature showing this attack's range.",
 	"Liv.   −  +  Rimasti / totale": "Lvl.   −  +  Remaining / total",
 	"Fai doppio clic sul totale degli slot per modificarlo": "Double-click the total number of slots to edit it",
 	"Azioni e opzioni": "Actions and options",
@@ -258,7 +260,7 @@ const EN: Dictionary = {
 	"Tira 1d20 e il bonus per colpire nel roller": "Roll 1d20 and the attack bonus in the dice roller",
 	"Tira i danni dell'attacco nel roller": "Roll this attack's damage in the dice roller",
 	"Modifica PF": "Edit HP",
-	"Scegli una quantità o tira un dado con il roller.": "Choose an amount or roll dice.",
+	"Scegli una quantità oppure lancia i dadi.": "Choose an amount or roll dice.",
 	"Usa una formula di dadi": "Use a dice formula",
 	"Esempio: 2d6+3": "Example: 2d6+3",
 	"PF della seconda forma": "Second-form HP",
@@ -687,7 +689,7 @@ const EN: Dictionary = {
 	"Seleziona una creatura da scaricare.": "Select a creature to export.",
 	"Esportazione non riuscita: ": "Export failed: ",
 	"Impossibile salvare resistenze/immunità: ": "Could not save resistances/immunities: ",
-	"Il roller della chat non è disponibile.": "The chat dice roller is unavailable.",
+	"Il lanciatore di dadi della chat non è disponibile.": "The chat dice roller is unavailable.",
 	"Impossibile salvare tracker e origini.": "Could not save trackers and origins.",
 	"Impossibile salvare i bonus.": "Could not save bonuses.",
 	"Non definito": "Undefined",
