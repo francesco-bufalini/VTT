@@ -440,7 +440,7 @@ func refresh() -> void:
 				# without turning it into a single-click checkbox.
 				row.set_custom_bg_color(0, Color(0.73, 0.63, 0.43, 0.70), true)
 				row.set_tooltip_text(0, _t("Doppio clic nella casella per (dis)equipaggiare", "Double-click the outlined box to equip or stow"))
-			if ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
+			if kind in ["weapon", "armor", "shield"] and ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
 				icon = "✦"
 			row.set_text(0, icon)
 			row.set_custom_font_size(0, 12)
