@@ -175,6 +175,70 @@ func run() -> void:
 	assert(transient_dialog.title == "Aggiungi un incantesimo attivo"
 		and transient_hint.text == "Nessun incantesimo attivo.")
 
+	# Titles, picker options and contextual hints added by the creature editors
+	# must all work in English without modifying catalog or user-provided names.
+	for row: Array in [
+		["MINIATURE", "MINIATURES"],
+		["TALENTI", "FEATS"],
+		["Caratteristiche e abilità", "Abilities and skills"],
+		["✕  Sezioni", "✕  Sections"],
+		["Incantesimi concessi dalle origini", "Spells granted by origins"],
+		["Incantesimi concessi dalle origini (talenti, razze, privilegi, oggetti)",
+			"Spells granted by origins (feats, races, features, items)"],
+		["Origini che concedono incantesimi", "Spell-granting origins"],
+		["⚙ Origine e dettagli", "⚙ Origin and details"],
+		["Cerca incantesimo...", "Search spells..."],
+		["Scegli incantesimo…", "Choose a spell…"],
+		["Metamagia · seleziona le opzioni da applicare a questo lancio",
+			"Metamagic · choose options to apply to this casting"],
+		["Prove di abilità · 4 bonus più alti", "Skill checks · 4 highest bonuses"],
+		["Regole varianti · 2014", "Variant rules · 2014"],
+		["Bonus con dadi · per origine", "Dice bonuses · by origin"],
+		["Completa il bonus del talento", "Complete feat bonus"],
+		["Cerca per nome…", "Search by name…"],
+		["Mostra i dettagli dell'origine e della lista", "Show details of the origin and spell list"],
+		["Invia una copia…", "Send a copy…"],
+		["Nessuna", "None"],
+		["Scegli base…", "Choose base…"],
+		["Azioni della creatura", "Creature actions"],
+		["Tracker (anche di un'altra origine)", "Tracker (including one from another origin)"],
+		["Apri il testo originale su 5etools", "Open the original text on 5etools"],
+	]:
+		assert(Locale.text_for(String(row[0]), "en") == String(row[1]),
+			"Untranslated English creature UI: " + String(row[0]))
+	for row: Array in [
+		["4 tratti", "4 traits"],
+		["Slot 3° livello", "Level 3 slot"],
+		["Patto · 2° livello", "Pact · level 2"],
+		["Slot · liv. 3+", "Slot · lvl. 3+"],
+		["4 incantesimi selezionati · Cambia", "4 spells selected · Change"],
+		["Mostra altri incantesimi (3 rimanenti)", "Show more spells (3 remaining)"],
+		["Invia Runa del drago: scegli destinatari", "Send Runa del drago: choose recipients"],
+		["Lancia Aria d'Acqua. Gli slot disponibili possono provenire da qualsiasi classe.",
+			"Cast Aria d'Acqua. Available slots may come from any class."],
+		["Lista: Druido", "List: Druido"],
+	]:
+		assert(Locale.text_for(String(row[0]), "en") == String(row[1]),
+			"Untranslated dynamic English UI: " + String(row[0]))
+	var section_panel := VBoxContainer.new()
+	sheet.add_child(section_panel)
+	var section_header := Label.new()
+	section_header.text = "Incantesimi concessi dalle origini"
+	section_panel.add_child(section_header)
+	var section_picker := OptionButton.new()
+	section_picker.add_item("Senza tracker", 42)
+	section_panel.add_child(section_picker)
+	Locale.apply(section_panel, "en")
+	assert(section_header.text == "Spells granted by origins"
+		and section_picker.get_item_text(0) == "No tracker"
+		and section_picker.get_item_id(0) == 42)
+	Locale.apply(section_panel, "it")
+	assert(section_header.text == "Incantesimi concessi dalle origini"
+		and section_picker.get_item_text(0) == "Senza tracker")
+	assert(Locale.text_for("Wild Shape", "en") == "Wild Shape"
+		and Locale.text_for("Runa del drago", "en") == "Runa del drago",
+		"Localized UI must leave catalog and free-form data untouched")
+
 	# Persistence remains a local GUI preference, not a creature-data field.
 	var previous := Locale.read_locale()
 	Locale.write_locale("en")
