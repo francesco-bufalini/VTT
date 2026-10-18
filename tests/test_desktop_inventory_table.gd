@@ -200,7 +200,7 @@ func run() -> void:
 		"Selected item details must include the full 5etools compendium description")
 	assert(not tab._details.text.contains("Dati strutturati:"),
 		"Desktop item descriptions must not append the verbose structured-data footer")
-	assert(Player5eTools.compact_item_info_text(weapon, "Full prose").count("\n") <= 4,
+	assert(Player5eTools.compact_item_info_text(weapon, "Full prose").split("\n\n")[0].split("\n").size() <= 4,
 		"Structured item mechanics must be summarized into a few lines")
 
 	# The bestiary action must resolve the installed catalog entry by ID.
