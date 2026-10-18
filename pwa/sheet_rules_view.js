@@ -321,7 +321,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const classIds=new Set(classes.map(row=>String(row.ability_id||row.id||'')));
    const extras=(powerGroups.get(key)||[]).filter(ability=>
      !names.has(String(ability.name||'').trim().toLocaleLowerCase('it'))&&
-     !classIds.has('activated:'+String(ability.id)));
+     !classIds.has(String(ability.id))&&!classIds.has('activated:'+String(ability.id)));
    const extraHtml=extras.map(ability=>{
     const power=activePowers.get(String(ability.id));
     const cost=Math.max(0,Number(power?.resource_cost??(power?.tracker_id?1:0))||0);
