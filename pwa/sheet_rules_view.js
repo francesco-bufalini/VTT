@@ -4,16 +4,51 @@ const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
 const metric=(label,value)=>'<div class="derived-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';
+/** Preview does not consume randomness: opening a modifier is not a roll. */
+export function sheetRollFormula(modifier,bonuses=[]){
+ const number=Number(modifier);
+ if(!Number.isFinite(number))throw Error('Modificatore del tiro non disponibile');
+ const fixed='1d20'+(number<0?' − '+Math.abs(number):' + '+number);
+ return fixed+bonuses.map(row=>' + '+String(row.dice)).join('');
+}
+export function rollSheetDice(modifier,bonuses=[],die){
+ if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
+ const base=Number(modifier);
+ if(!Number.isFinite(base))throw Error('Modificatore non valido');
+ const d20=die(20);
+ if(!Number.isInteger(d20)||d20<1||d20>20)throw Error('Risultato d20 non valido');
+ const parts=[{name:'d20',notation:'1d20',rolls:[d20],subtotal:d20}];
+ for(const bonus of bonuses){
+  const notation=String(bonus.dice||'').replaceAll(' ','');
+  const match=notation.match(/^([1-9]\\d*)d(4|6|8|10|12|20|100)([+-]\\d+)?$/i);
+  if(!match||Number(match[1])>100)throw Error('Dadi bonus non validi');
+  const count=Number(match[1]),sides=Number(match[2]),flat=Number(match[3]||0);
+  const rolls=Array.from({length:count},()=>{
+   const value=die(sides);
+   if(!Number.isInteger(value)||value<1||value>sides)throw Error('Risultato dado non valido');
+   return value;
+  });
+  parts.push({name:String(bonus.origin_name||'Bonus'),notation,rolls,
+   subtotal:rolls.reduce((sum,value)=>sum+value,flat),flat});
+ }
+ const total=parts.reduce((sum,row)=>sum+row.subtotal,base);
+ const notation=sheetRollFormula(base,bonuses);
+ const detail=parts.map(row=>row.name+' ['+row.rolls.join(', ')+']'+(row.flat?(row.flat>0?' + ':' − ')+Math.abs(row.flat):'')+' = '+row.subtotal).join(' · ')+
+  ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
+ return {sides:20,count:1,modifier:base,rolls:[d20],total,notation,detail,parts};
+}
 // A single readout contract is shared by every native-style section. Refresh
 // only the outputs, leaving focused editors and pending user input in place.
 export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   const value=data?.values?.[target];
   return (sign?signed(value):value??"—")+suffix;
 }
-export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target}={}){
+export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility=''}={}){
   const rollable=/^(?:ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
-  const tag=rollable?'button':'output';
-  return '<span class="sheet-formula"><'+tag+(rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(target)+'" data-label="'+esc(label)+'"':'')+' data-calculated="'+esc(target)+
+  const tag=rollable||scoreAbility?'button':'output';
+  const click=scoreAbility?' type="button" class="sheet-result score-editor-trigger" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'"':
+   rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(target)+'" data-label="'+esc(label)+'"':'';
+  return '<span class="sheet-formula"><'+tag+click+' data-calculated="'+esc(target)+
     '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
     esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
     esc(calculatedValue(data,target,{signed:sign,suffix}))+'</'+tag+'>'+
