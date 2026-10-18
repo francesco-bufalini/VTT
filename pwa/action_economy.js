@@ -396,22 +396,87 @@ export function groupActionEntries(entries){
  }
  return roots;
 }
-// Compact battle views reuse the exact action projection used on the Actions tab.
+// Compact battle sections use the same action projection as the Actions tab.
+// Keep attack buttons separate from description disclosures to avoid accidental dice rolls.
 const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
 const MOVEMENT_ACTION_IDS=new Set(['movement','stealth_movement','dash','disengage','drop_prone','climb_large','overrun','tumble','escape_grapple','stand_up','crawl','jump','mount','dismount','difficult_terrain']);
+const WEAPON_ROLL_ACTION_IDS=new Set(['disarm','opportunity']);
+const rollModifier=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
+const rollSign=value=>value<0?'−'+Math.abs(value):'+'+value;
+const rollFormula=value=>'1d20 '+(value<0?'− '+Math.abs(value):'+ '+value);
+function battleAttackRow(item,calculated,attacksById,descriptions){
+ const attack=attacksById.get(String(item.attack_id||item.id||''));
+ const rolls=[];
+ const addRoll=(target,label,kind,value)=>{
+  const modifier=rollModifier(value);
+  if(modifier!==null)rolls.push({target,label,kind,modifier});
+ };
+ if(attack){
+  addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+item.name,attack.melee?'Mischia':'Distanza',
+   calculated.values?.['attack_hit:'+attack.id]??attack.hit);
+ }else if(item.skill_ids?.length){
+  for(const skill of [...new Set(item.skill_ids)]){
+   const label=SKILLS.find(([id])=>id===skill)?.[1]||skill;
+   addRoll('skill:'+skill,label,'Prova di '+label,
+    calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
+  }
+ }else if(WEAPON_ROLL_ACTION_IDS.has(item.id)){
+  const choices=[...attacksById.values()];
+  const weapon=item.id==='opportunity'?
+   choices.find(row=>row.melee&&(row.slot==='main'||!row.slot))||choices.find(row=>row.melee):
+   choices.find(row=>row.slot==='main')||choices[0];
+  if(weapon)addRoll('attack_hit:'+weapon.id,'Tiro per colpire · '+item.name,
+   weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
+ }
+ const offhand=attack&&(attack.slot==='off'||String(attack.id).startsWith('shield:improvised:off:'));
+ const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
+   attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
+ const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
+ const descriptor=rolls.length?rolls.map(row=>rollFormula(row.modifier)+' · '+row.kind).join(' / '):
+  item.type==='Attacco'?'Attacco speciale':item.type||'Azione';
+ const icon=actionGlyph(actionGlyphKey(item));
+ const impact=attack?'<p class="play-battle-attack-impact">Danni: '+esc(attack.damage||'—')+
+  (attack.damage_type?' '+esc(attack.damage_type):'')+' · '+esc(attack.range_feet??5)+' ft</p>':'';
+ const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
+ const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
+ const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
+ const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
+  item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
+ return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
+  '<details class="play-battle-attack-details"><summary>'+icon+
+  '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
+  (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
+  '<span class="play-battle-attack-chevron" aria-hidden="true">›</span></summary>'+
+  '<div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli dell’attacco non disponibili.')+'</p>'+
+  impact+source+target+resources+'</div></details>'+
+  (rolls.length?'<div class="play-battle-attack-rolls">'+rolls.map(row=>
+   '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
+   '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
+   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
+  '</article>';
+}
 export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
- const weapon=entries.filter(row=>row.type==='Attacco'||row.parent_action==='attack'||
-   row.parent_action==='two_weapon'||['attack','two_weapon','opportunity'].includes(row.id));
+ const descriptions={
+  main:entries.find(row=>row.id==='attack')?.description||'Attaccare con un’arma o con un colpo senz’armi.',
+  off:entries.find(row=>row.id==='two_weapon')?.description||'Effettuare un attacco con l’arma nella mano secondaria.'
+ };
+ const attacksById=new Map((calculated.attacks||[]).filter(row=>row?.id).map(row=>[String(row.id),row]));
+ // The Attack and Two-Weapon Fighting rules describe the actual weapon rows:
+ // do not repeat their generic parent actions, or list any weapon a second time.
+ const weapon=entries.filter(row=>row.id!=='attack'&&row.id!=='two_weapon'&&
+  (row.type==='Attacco'||row.parent_action==='attack'||row.parent_action==='two_weapon'||row.id==='opportunity'));
  const movement=entries.filter(row=>row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)||
    row.class_feature_id==='step_of_the_wind');
- const render=rows=>BATTLE_TIMINGS.map(([time,label])=>{
+ const render=(rows,attackRows)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
-   '<h3>'+esc(label)+' <span class="play-badge">'+matching.length+'</span></h3>'+
-   '<div class="play-battle-action-rows">'+matching.map(row=>actionRow(row,calculated)).join('')+'</div></section>':'';
+   '<h3>'+actionGlyph(HEADER_GLYPHS[time])+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
+   '<div class="play-battle-action-rows">'+matching.map(row=>attackRows?
+    battleAttackRow(row,calculated,attacksById,descriptions):actionRow(row,calculated)).join('')+'</div></section>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
- return {attacks:render(weapon),movement:render(movement)};
+ return {attacks:render(weapon,true),movement:render(movement,false)};
 }
 
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
