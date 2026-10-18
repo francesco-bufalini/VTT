@@ -88,7 +88,7 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
  }
  assert.match(markup,/stats-abilities-panel/);
  assert.match(markup,/stats-skills-panel/);
- assert.match(markup,/Strumenti e linguaggi/);
+ assert.match(markup,/Altre competenze/);
  assert.match(markup,/data-detail="proficiency_choices"/);
  assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
  assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);

@@ -84,6 +84,7 @@ try{
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').innerText(),'Altre competenze');
  await page.locator('#sheet-play-view [data-sheet-context="tools"]').click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
