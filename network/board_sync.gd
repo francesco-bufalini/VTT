@@ -4,6 +4,8 @@ signal status_changed(message: String)
 # Local autosave checkpoint: the board records implicit edits in its undo stack.
 signal map_autosave_initialized(snapshot: Dictionary)
 signal map_autosave_committed(snapshot: Dictionary, previous_snapshot: Dictionary, local_change: bool)
+# Emitted only after every remote peer acknowledges a sync, or after a received map is applied.
+signal map_synchronized()
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const CreaturePresence = preload("res://network/creature_presence.gd")
@@ -856,6 +858,10 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 				_bulk_failed
 			]
 		)
+		# A queued TCP send is NOT a successful synchronization. Only
+		# acknowledge the complete batch after all peers confirm application.
+		if _bulk_total > 0 and _bulk_accepted == _bulk_total:
+			map_synchronized.emit()
 
 
 func _mark_current_state_dirty_for_retry() -> void:
@@ -975,6 +981,7 @@ func _process(_delta: float) -> void:
 						_applying_received_snapshot = false
 						if accepted:
 							_accept_received_snapshot(snapshot)
+							map_synchronized.emit()
 							var sync_event: Variant = message.get("event", {})
 							if sync_event is Dictionary and not (sync_event as Dictionary).is_empty():
 								_replay_sync_event(sync_event as Dictionary)
