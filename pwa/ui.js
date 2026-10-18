@@ -4,6 +4,7 @@ import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwn
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
+import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
@@ -52,6 +53,7 @@ let toastTimer = null;
 let chatPollGenerationInFlight=-1;
 let chatGeneration=0;
 let currentGameSession="";
+let chatNotificationBaseline = false;
 function releaseSessionSnapshot(){
   const url=state.snapshotObjectUrl;
   state.snapshotObjectUrl="";
@@ -63,7 +65,7 @@ function acceptSession(info){
   const next=String(info?.session??"");
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
-    state.messages=[];state.after="";state.map=null;state.tokenId="";
+    state.messages=[];state.after="";state.map=null;state.tokenId="";chatNotificationBaseline=false;
     releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
@@ -223,7 +225,7 @@ async function render() {
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
     if(state.paired && !realtimeStopped && !state.stopMap) startMap();
-    if(state.page === "session" && state.paired && !state.pollChat) startChat();
+    if(state.paired && !realtimeStopped && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
@@ -1107,7 +1109,7 @@ function chatView(){
   return panel("Chat della partita",
     '<div class="row between chat-toolbar"><span class="chat-caption">'+
     (state.paired&&state.online?'Messaggi e tiri della partita':'Chat disponibile con una partita collegata')+
-    '</span><button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
+    '</span>'+(notificationsSupported()?'<button type="button" class="btn chat-notify-toggle" data-act="toggle-chat-notifications" aria-label="Notifiche chat" title="Notifiche di sistema (mentre la PWA è attiva)">'+(notificationsEnabled()?'🔔 Attive':'🔕 Notifiche')+'</button>':'')+'<button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
     (state.paired?
     '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
     '<form id="chat-form" class="stack" autocomplete="off">'+
@@ -1431,21 +1433,25 @@ async function fetchChat() {
   chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
-    if(generation!==chatGeneration || state.page!=="session")return;
+    if(generation!==chatGeneration)return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
+    const initialHistory = !chatNotificationBaseline && !state.after;
+    const incomingChat = [];
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
       for(const entry of reply.events){
         if(!entry || !entry.id) continue;
-        if(!ids.has(entry.id)){ state.messages.push(entry); ids.add(entry.id); }
+        if(!ids.has(entry.id)){ state.messages.push(entry); ids.add(entry.id); if(!initialHistory && entry.kind==="chat") incomingChat.push(entry); }
         state.after=entry.id;
       }
-      state.messages=state.messages.slice(-100);
+      chatNotificationBaseline=true;
+       state.messages=state.messages.slice(-100);
+       for(const entry of incomingChat) void notifyIncomingChat(entry, currentGameSession).catch(console.warn);
       const container=document.querySelector("#events");
       if(state.page==="session"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
   }catch(error){
-    if(generation===chatGeneration && state.page==="session" && error.status===401){
+    if(generation===chatGeneration && error.status===401){
       state.paired=false;
       stopSubscriptions();
       render().catch(e=>message(errorMessage(e),true));
@@ -1459,7 +1465,7 @@ function startChat() {
   ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
-  state.pollChat=setInterval(()=>{ if(state.page==="session") fetchChat(); },2500);
+  state.pollChat=setInterval(()=>{ if(state.paired) fetchChat(); },2500);
 }
 function randomDie(sides) {
   const range=0x100000000;
@@ -2739,6 +2745,7 @@ async function handleAction(target){
     else await refreshMapOnce();
     return;
   }
+  if(act==="toggle-chat-notifications"){try{await toggleChatNotifications();renderSessionIfIdle();}catch(error){message(errorMessage(error),true);}return;}
   if(act==="open-chat-dice"){openDiceDialog();return;}
   if(act==="close-chat-dice"){const dlg=document.querySelector("#chat-dice-dialog");if(dlg){if(typeof dlg.close==="function")dlg.close();else dlg.remove();}return;}
   if(act==="select-die"){
@@ -2957,8 +2964,21 @@ function listen(){
 // Allows tests and future app lifecycle handlers to release polling resources.
 export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
+// Notification taps should return to the live chat, not just focus the page.
+function openChatFromNotification(){
+  if(!state.paired) return;
+  if(state.page!=="session") void navigate("session");
+  else { state.sessionPane="chat"; void render(); }
+}
+window.addEventListener("message", event => {
+  if(event.origin===location.origin && event.data?.type==="OPEN_CHAT") openChatFromNotification();
+});
 export async function mount(){
   realtimeStopped=false;
+  if(new URLSearchParams(location.search).get("open")==="chat") {
+    history.replaceState(null,"",location.pathname);
+    state.sessionPane="chat";
+  }
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
