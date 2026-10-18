@@ -209,14 +209,22 @@ func _add_tracker_feature(groups: Dictionary, record: Dictionary, feature: Dicti
 	groups[key]["features"].append(feature)
 
 func _feature_button(parent: Node, feature: Dictionary) -> void:
+	var row := HBoxContainer.new()
+	row.name = "PowerRow"
+	parent.add_child(row)
 	var button := Button.new()
 	button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.get("name", ""))
 	button.tooltip_text = String(feature.get("detail", ""))
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.custom_minimum_size.y = 40
 	button.pressed.connect(_actions.class_feature.bind(String(feature.get("id", ""))))
-	parent.add_child(button)
+	row.add_child(button)
 	if int(feature.get("cost", 0)) > 0 and not String(feature.get("resource_name", "")).is_empty():
-		var price: Label = _label(parent, "Costo: %d" % int(feature["cost"]))
+		var price: Label = _label(row, "Costo: %d" % int(feature["cost"]))
+		price.name = "PowerCost"
+		price.size_flags_horizontal = Control.SIZE_SHRINK_END
+		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_font_size_override("font_size", 12)
 
 func _pair() -> Array[VBoxContainer]:
