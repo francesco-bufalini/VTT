@@ -294,7 +294,7 @@ static func condition_definitions(edition: String = "2014") -> Array[Dictionary]
 				versions.append(effect)
 		if versions.is_empty():
 			# Local VTT tactical markers must appear even without a 5etools rule.
-			if String(row.id) == "helped":
+			if String(row.id) in ["helped", "hidden", "dead"]:
 				row["category"] = "conditions"
 				row["edition"] = rules_edition
 				row["entries"] = ["Marcatore tattico senza effetti automatici."]
