@@ -53,6 +53,8 @@ var _pending_spell_id: String = ""
 var _pending_spell_data: Dictionary = {}
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
+var _shared_spell_range_signature := ""
+var _shared_spell_range_token_id := ""
 var _directional_pitch_degrees: int = 0
 var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
@@ -3032,13 +3034,46 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 		return
 	var info: Dictionary = targeting_range_info(spell_data)
 	if info.is_empty():
+		_publish_spell_range({})
 		measurement_tool.call("hide_spell_range_preview")
 		return
+	_publish_spell_range(info)
 	var source: Node3D = info["source"] as Node3D
 	measurement_tool.call(
 		"show_spell_range_preview", source.global_position,
 		_spell_range_world(float(info["feet"])), float(info["footprint"])
 	)
+
+
+# Send range start/change/clear, never a full new event for every cursor frame.
+func _publish_spell_range(info: Dictionary) -> void:
+	var source: Node3D = info.get("source") as Node3D
+	var token_id := ""
+	if source != null and is_instance_valid(source) and source.has_method("get_token_id"):
+		token_id = String(source.call("get_token_id")).strip_edges()
+	var active := not token_id.is_empty() and token_id.length() <= 96 and not info.is_empty()
+	var new_signature := (
+		"%s:%.3f:%.3f" % [token_id, float(info.get("feet", 0.0)), float(info.get("footprint", 0.0))]
+		if active else ""
+	)
+	if new_signature == _shared_spell_range_signature:
+		return
+	if board_root == null or not board_root.has_method("broadcast_sync_event"):
+		return
+	if not _shared_spell_range_token_id.is_empty():
+		board_root.call("broadcast_sync_event", {
+			"type": "range_preview", "kind": "spell", "active": false,
+			"token_id": _shared_spell_range_token_id
+		})
+	_shared_spell_range_signature = new_signature
+	_shared_spell_range_token_id = token_id if active else ""
+	if not active:
+		return
+	board_root.call("broadcast_sync_event", {
+		"type": "range_preview", "kind": "spell", "active": true,
+		"token_id": token_id, "normal_feet": float(info["feet"]), "long_feet": 0.0
+	})
+
 
 func _spell_range_world(range_feet: float) -> float:
 	# One conversion for spell range overlays and target validation.
@@ -3442,6 +3477,7 @@ func _hide_spell_preview() -> void:
 
 
 func _hide_spell_range_preview() -> void:
+	_publish_spell_range({})
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
 		measurement_tool.call("hide_spell_range_preview")
@@ -5161,6 +5197,7 @@ func _reset_cast_state(
 	_saving_throw_targets.clear()
 	_saving_throw_index = 0
 	_saving_throw_undo_recorded = false
+	_publish_spell_range({})
 	_hide_all_spell_previews()
 	if not preserve_spell_highlight:
 		_set_spell_affected_targets([], false)
