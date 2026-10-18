@@ -168,8 +168,13 @@ func refresh() -> void:
 			_leveled_spell_list(pair[0], spell_entries)
 		if not abilities.is_empty() or not (group["features"] as Array).is_empty():
 			# The tracker is already the section title; avoid a redundant Abilities heading.
-			# A bounded list gives non-spell abilities the same compact layout as spells.
-			var ability_list: VBoxContainer = _list(pair[0], abilities.size() + (group["features"] as Array).size())
+			# A non-expanding list keeps feature buttons at normal row height.
+			# Avoid a second ScrollContainer here: the surrounding sheet already scrolls.
+			var ability_list := VBoxContainer.new()
+			ability_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			ability_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+			ability_list.add_theme_constant_override("separation", 4)
+			pair[0].add_child(ability_list)
 			abilities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 				return String(a["spell"].get("name", "")).naturalnocasecmp_to(String(b["spell"].get("name", ""))) < 0)
 			for entry: Dictionary in abilities:
