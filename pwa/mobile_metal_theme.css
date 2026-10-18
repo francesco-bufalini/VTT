@@ -113,3 +113,129 @@ input:not([type=checkbox]):not([type=file]),select,textarea{
 @media(prefers-reduced-motion:reduce){
  .btn,.section-tabs button,.section-menu>summary{transition:none}
 }
+
+/* Desktop sheet parity: these are the Godot CreatureSheetStyle.sheet_theme()
+   and dnd5e_theme.tres surfaces/colors, scaled for mobile hit targets.
+   Keep this stylesheet last so older metallic variants cannot override them. */
+:root{
+ --vtt-gold:#edbd77;
+ --vtt-highlight:#edbd77;
+ --vtt-rim:#9c7048;
+ --vtt-edge:#9c7048;
+ --text:#f5eee5;
+ --muted:#c7bdb1;
+ --accent:#edbd77;
+ --panel:#221d1c;
+ --panel2:#352928;
+ --line:#9c7048;
+ font-family:"Segoe UI","Noto Sans","DejaVu Sans",sans-serif;
+ font-weight:450;
+}
+html,body,.app-shell,button,input,select,textarea{
+ font-family:"Segoe UI","Noto Sans","DejaVu Sans",sans-serif;
+}
+body{color:#f5eee5}
+h1,h2,h3,.brand,.page-head h1,.editor-head h1,.action-economy-heading h2,
+.panel h2,.panel h3,.current-section,.drawer-heading{
+ font-family:"Segoe UI","Noto Sans","DejaVu Sans",sans-serif;
+}
+.page-head h1,.editor-head h1{color:#f5eee5}
+.panel,.creature-card,.token-card,.event,.sheet-roll-dialog,.tactical-dialog{
+ background:#221d1cf7;
+ border:1px solid #c99750;
+ border-top:2px solid #c99750;
+ border-radius:11px;
+ box-shadow:inset 0 1px 0 #ffe5b51e,0 4px 12px #0005;
+}
+.panel.soft{background:#221d1cf7}
+.native-entry,.trait-card,.derived-metric,.ability-box,.document-entry,.action-economy-skills{
+ background:#352928f7;
+ border:1px solid #9c7048;
+ border-radius:8px;
+ box-shadow:inset 0 1px 0 #ffe5b518,0 2px 5px #0005;
+}
+.section-menu>summary,.btn,.section-tabs button,.action-tree>summary,.sections-drawer button,
+.action-economy-skill-grid .btn,.action-economy-controls .btn{
+ color:#f5eee5;
+ background:#352928;
+ border:1px solid #89643f;
+ border-radius:7px;
+ box-shadow:0 2px 4px #0004;
+ text-shadow:none;
+}
+.btn.primary,.section-tabs button[aria-pressed=true],.section-menu[open]>summary,
+.sections-drawer button[aria-current=page],.sections-drawer button[aria-pressed=true]{
+ background:#542a33;
+ border:1px solid #edbd77;
+ color:#f5eee5;
+ box-shadow:0 2px 5px #0005;
+}
+input:not([type=checkbox]):not([type=file]),select,textarea{
+ background:#211c1c;
+ border:1px solid #785a39;
+ border-radius:7px;
+ color:#f5eee5;
+ box-shadow:inset 0 1px 2px #0006;
+}
+:where(button,summary,input,select,textarea):focus-visible{
+ outline:2px solid #edbd77;
+ outline-offset:2px;
+}
+@media(hover:hover){
+ .btn:hover:not(:disabled),.section-tabs button:hover,.section-menu>summary:hover{
+  background:#49342e;
+  border-color:#edbd77;
+  filter:none;
+ }
+}
+.panel > h2,.panel > h3{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ color:#edbd77;
+ font-size:20px;
+ font-weight:650;
+}
+.sheet-heading{display:flex;align-items:center;gap:8px}
+.sheet-heading > .vtt-action-glyph,.sheet-heading > .vtt-info-icon{
+ display:inline-block;
+ flex:0 0 28px;
+ width:28px;
+ height:28px;
+ object-fit:contain;
+ filter:drop-shadow(0 1px 1px #0007);
+}
+#sheet-navigation .btn{
+ display:flex;
+ align-items:center;
+ text-align:left;
+ gap:10px;
+}
+#sheet-navigation .btn::before{display:none}
+#sheet-navigation .btn .vtt-action-glyph{
+ display:inline-block;
+ width:24px;
+ height:24px;
+ flex:0 0 24px;
+}
+.native-readonly-source{
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ gap:5px;
+ color:#c7bdb1;
+ min-height:46px;
+}
+.native-readonly-source strong{
+ color:#f5eee5;
+ font-weight:600;
+ overflow-wrap:anywhere;
+}
+input:disabled{opacity:.75;cursor:default}
+@media(max-width:520px){
+ .panel,.creature-card,.token-card{padding:11px}
+ .panel > h2{font-size:19px}
+ .sheet-heading > .vtt-action-glyph,.sheet-heading > .vtt-info-icon{
+  width:26px;height:26px;flex-basis:26px;
+ }
+}
