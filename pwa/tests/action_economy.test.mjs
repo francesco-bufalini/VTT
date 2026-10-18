@@ -50,8 +50,11 @@ test('nested weapon attacks, action checks and movement preserve stable dice tar
  const html=actionEconomyView({},calculated),document=doc(html);
  assert.equal(document.querySelectorAll('.action-economy-section').length,5);
  assert(document.querySelector('.action-tree ol li [data-target="attack_hit:item:off:dagger"]'));
- assert(document.querySelector('[data-timing="free"] [data-target="skill:stealth"]'));
- assert(!document.querySelector('[data-timing="action"] .action-economy-skills'));
+ assert(document.querySelector('[data-timing="action"] .action-economy-skills [data-target="skill:stealth"]'));
+ assert(!document.querySelector('[data-timing="free"] .action-economy-skills'));
+ const skillChecks=document.querySelector('[data-timing="action"] .action-economy-row:has(.action-group-label strong)');
+ assert(skillChecks && skillChecks.nextElementSibling?.classList.contains("action-economy-skills"),
+  "Quick rolls follow the action skill-checks group");
  assert(document.querySelector('.action-dice'));
 });
 
