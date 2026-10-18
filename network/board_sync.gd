@@ -40,6 +40,7 @@ const SYNC_APPEARANCE_KEYS := [
 	"transformation_history"
 ]
 const MobileMapCapture = preload("res://network/mobile_map_capture.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 var _mobile_capture_busy := false
 var _mobile_views: Dictionary = {}
 const MapDataController = preload("res://vtt/map_data_controller.gd")
@@ -2580,6 +2581,22 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		mark_token_appearance_locally_edited(target)
 		board_root.call_deferred("_sync_explicit_token_change", target)
 		return {"ok": true}
+	# Direct token spell badges use the same validated native catalog and synced
+	# token fields as desktop spells. They do not impersonate spellcasting.
+	if action == "set_token_spell":
+		var spell_id := String(payload.get("spell_id", "")).strip_edges()
+		if spell_id.is_empty() or spell_id.length() > 256 or not payload.get("enabled") is bool:
+			return {"ok": false, "error": "Incantesimo non valido."}
+		if SpellCatalog.catalog_spell(spell_id).is_empty():
+			return {"ok": false, "error": "Incantesimo assente dal catalogo."}
+		if bool(payload.enabled):
+			target.call("add_active_spell_id", spell_id)
+		else:
+			target.call("remove_active_spell_id", spell_id)
+			if String(target.call("get_concentrating_spell_id")) == spell_id:
+				target.call("set_concentrating_spell_id", "")
+		board_root.call_deferred("_sync_explicit_token_change", target)
+		return {"ok": true}
 	if action == "move_token":
 		var step: String = String(payload.get("direction", ""))
 		var directions := {"north": Vector3i(0, 0, -1), "south": Vector3i(0, 0, 1), "west": Vector3i(-1, 0, 0), "east": Vector3i(1, 0, 0), "up": Vector3i(0, 1, 0), "down": Vector3i(0, -1, 0)}
@@ -2606,6 +2623,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		for definition: Dictionary in ContentCatalog.condition_definitions(String(target.get_meta("rules_version", "2014"))):
 			if String(definition.get("id", "")) == id:
 				board_root.call("_set_token_status", target, id, payload.enabled)
+				board_root.call_deferred("_sync_explicit_token_change", target)
 				return {"ok": true}
 		return {"ok": false, "error": "Condizione sconosciuta."}
 	if action in ["begin_spell", "target_spell", "cancel_spell", "finish_spell", "preview_spell"]:
@@ -2621,7 +2639,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 				return {"ok": false, "error": "Gittata non valida."}
 		return attack_system.call("select_mobile_preview_target", target, victim, payload.attack)
 	if action == "place_token":
-		return _place_mobile_token(payload.get("creature", {}), target)
+		return _place_mobile_token(payload.get("creature", {}), target, false, String(payload.get("direction", "")))
 	if action == "claim_free_token":
 		return _place_mobile_token(payload.get("creature", {}), target, true)
 	if action != "snapshot":
@@ -2705,7 +2723,9 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		return runtime.call("remote_preview_input", caster, owner, point_data, projection)
 	return runtime.call("remote_target_input", caster, owner, victim, point_data, "select")
 
-func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: bool = false) -> Dictionary:
+func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: bool = false, direction: String = "") -> Dictionary:
+	if not direction.is_empty() and direction not in ["north", "south", "east", "west"]:
+		return {"ok": false, "error": "Direzione cardinale non valida."}
 	if not value is Dictionary:
 		return {"ok": false, "error": "Creatura non valida."}
 	var creature: Dictionary = value
@@ -2778,7 +2798,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 		board_root.call("apply_creature_sheet_properties", token, creature)
 	token.call("set_reach_feet", float(reach), true)
 	token.call("set_conditions", conditions)
-	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support)
+	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support, direction)
 	if claim_free:
 		position.y = old_bottom + float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
 	if position == Vector3.INF:
@@ -2807,7 +2827,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 
 # Check adjacent footprints at the reference token's base level. Keep the
 # reference separate: moving it must not carry the new creature along.
-func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3D) -> Vector3:
+func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3D, direction: String = "") -> Vector3:
 	var cell := float(board_root.get("cell_size"))
 	var width := float(token.call("get_footprint_cells")) * cell
 	var height := float(token.get("token_height_cells")) * cell
@@ -2819,8 +2839,16 @@ func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3
 	query.shape = shape
 	query.collision_mask = token.collision_mask
 	query.exclude = [token.get_rid()]
-	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP, Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-		var candidate := Vector3(reference.global_position.x + direction.x * offset, base + height * 0.5, reference.global_position.z + direction.y * offset)
+	var offsets := {
+		"north": Vector2.UP, "south": Vector2.DOWN,
+		"east": Vector2.RIGHT, "west": Vector2.LEFT
+	}
+	# Explicit mobile placement never silently falls back to another side.
+	var candidates: Array = [offsets[direction]] if offsets.has(direction) else [
+		Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP,
+		Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]
+	for offset_direction: Vector2 in candidates:
+		var candidate := Vector3(reference.global_position.x + offset_direction.x * offset, base + height * 0.5, reference.global_position.z + offset_direction.y * offset)
 		var blocked := false
 		# Include freshly placed bodies before their next physics update.
 		for other: Node in get_tree().get_nodes_in_group("dnd_token"):
