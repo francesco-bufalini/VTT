@@ -408,6 +408,11 @@ func configure_touch_layout() -> void:
 		# Retain touch-specific independent list/description scrolling.
 		_details.mouse_force_pass_scroll_events = false
 		_details.remove_meta("pass_wheel_to_sheet")
+		# Keep the mobile description in its own bounded scrolling widget.
+		_details.fit_content = false
+		_details.scroll_active = true
+		_details.custom_minimum_size.y = 160
+		_details.size_flags_vertical = Control.SIZE_FILL
 		_catalog_list.mouse_force_pass_scroll_events = false
 		_catalog_list.remove_meta("pass_wheel_to_sheet")
 		if _details.get_parent() == _desktop_ui:
@@ -1365,7 +1370,11 @@ func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text("items", item)
 	if description.is_empty():
 		description = Player5eTools.description_text_from_raw_item(item)
-	_details.text = CreatureLocale.text_for(ItemRules.category_name(item), _gui_language) + "\n" + Player5eTools.info_text(item, description)
+	_details.text = (
+		Player5eTools.info_text(item, description)
+		if _desktop_ui == null or not _desktop_ui.visible
+		else Player5eTools.compact_item_info_text(item, description)
+	)
 	var attached: Variant = item.get("infusion", {})
 	if attached is Dictionary and not (attached as Dictionary).is_empty():
 		var option: Dictionary = Infusions.definition(attached as Dictionary)

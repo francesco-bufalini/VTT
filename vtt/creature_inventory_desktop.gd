@@ -52,11 +52,18 @@ func setup(tab: Node, description: Control) -> void:
 	# This matches the other creature-sheet lists and prevents scroll chaining.
 	description.mouse_force_pass_scroll_events = false
 	description.remove_meta("pass_wheel_to_sheet")
+	# The outer sheet is the only scroll viewport for long item prose.
+	description.scroll_active = false
+	description.fit_content = true
+	description.custom_minimum_size.y = 0
+	description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var catalog_list: ItemList = _tab.get("_catalog_list")
 	catalog_list.mouse_force_pass_scroll_events = false
 	catalog_list.remove_meta("pass_wheel_to_sheet")
 	add_theme_constant_override("separation", 8)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Content measured while hidden may use obsolete layout geometry.
+	visibility_changed.connect(_on_inventory_visibility_changed)
 	_minus_icon = _symbol_texture(false)
 	_plus_icon = _symbol_texture(true)
 	_remove_icon = _remove_texture()
@@ -65,7 +72,7 @@ func setup(tab: Node, description: Control) -> void:
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
-	_owned_tree = _make_tree([_t("Eq.", "Eq."), _t("Val. (mo)", "Value (gp)"),
+	_owned_tree = _make_tree([_t("Eq.", "Eq."), _t("mo", "gp"),
 		_t("Peso", "Weight"), _t("Qtà", "Qty"), _t("Fonte", "Source"),
 		_t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
 	_owned_tree.columns = 7
@@ -73,8 +80,9 @@ func setup(tab: Node, description: Control) -> void:
 	for column: int in range(6):
 		_owned_tree.set_column_expand(column, false)
 	for column: int in range(7):
-		_owned_tree.set_column_custom_minimum_width(column, [42, 58, 50, 82, 49, 123, 190][column])
+		_owned_tree.set_column_custom_minimum_width(column, [40, 40, 49, 76, 44, 117, 200][column])
 	# Full properties stay available as a tooltip without stretching the row.
+	_owned_tree.set_column_clip_content(1, true)
 	_owned_tree.set_column_clip_content(5, true)
 	_owned_tree.set_column_clip_content(6, true)
 	_owned_tree.item_selected.connect(_on_owned_selected)
@@ -88,12 +96,15 @@ func setup(tab: Node, description: Control) -> void:
 	scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
 	scroll_heading.add_theme_font_size_override("font_size", 15)
 	add_child(scroll_heading)
-	_scroll_tree = _make_tree([_t("Quantità", "Quantity"), _t("Livello", "Level"), _t("Incantesimo", "Spell")], 100)
+	_scroll_tree = _make_tree([_t("Quantità", "Quantity"), _t("Livello", "Level"), _t("Incantesimo", "Spell")], 28)
 	_scroll_tree.columns = 3
 	_scroll_tree.set_column_expand(0, false)
 	_scroll_tree.set_column_expand(1, false)
 	_scroll_tree.set_column_custom_minimum_width(0, 82)
 	_scroll_tree.set_column_custom_minimum_width(1, 58)
+	_scroll_tree.scroll_vertical_enabled = false
+	_scroll_tree.scroll_horizontal_enabled = false
+	_scroll_tree.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_scroll_tree.item_selected.connect(_on_scroll_selected)
 	_scroll_tree.gui_input.connect(_on_scroll_mouse_event)
 	_scroll_tree.item_edited.connect(_on_scroll_edited)
@@ -155,10 +166,13 @@ func setup(tab: Node, description: Control) -> void:
 	_maximum.custom_minimum_size.x = 65
 	_maximum.value_changed.connect(_on_maximum_changed)
 	attune_heading.add_child(_maximum)
-	_attunement_tree = _make_tree([_t("Sintonia", "Attuned"), _t("Oggetto", "Item")], 0)
+	_attunement_tree = _make_tree([_t("Sintonia", "Attuned"), _t("Oggetto", "Item")], 28)
 	_attunement_tree.columns = 2
 	_attunement_tree.set_column_expand(0, false)
 	_attunement_tree.set_column_custom_minimum_width(0, 74)
+	_attunement_tree.scroll_vertical_enabled = false
+	_attunement_tree.scroll_horizontal_enabled = false
+	_attunement_tree.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_attunement_tree.item_edited.connect(_on_attunement_edited)
 	_attunement_tree.item_selected.connect(_on_attunement_selected)
 	attunement_body.add_child(_attunement_tree)
@@ -178,7 +192,7 @@ func refresh_captions() -> void:
 	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
 	for column: int in range(7):
 		_owned_tree.set_column_title(column, [
-			_t("Eq.", "Eq."), _t("Val. (mo)", "Value (gp)"), _t("Peso", "Weight"),
+			_t("Eq.", "Eq."), _t("mo", "gp"), _t("Peso", "Weight"),
 			_t("Qtà", "Qty"), _t("Fonte", "Source"),
 			_t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")][column])
 	for column: int in range(3):
@@ -216,22 +230,23 @@ func _make_tree(captions: Array, height: float) -> Tree:
 func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionButton:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 7)
+	row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	parent.add_child(row)
 	var caption := Label.new()
 	caption.text = label
-	caption.custom_minimum_size.x = 133
+	caption.custom_minimum_size.x = 116
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(caption)
 	var picker := OptionButton.new()
-	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	picker.custom_minimum_size.x = 135
+	picker.size_flags_horizontal = Control.SIZE_FILL
+	picker.custom_minimum_size.x = 215
 	picker.clip_text = true
 	picker.fit_to_longest_item = false
 	picker.item_selected.connect(_on_slot_selected.bind(slot))
 	row.add_child(picker)
 	if slot in ["main", "off"]:
 		var weapon_size := OptionButton.new()
-		weapon_size.custom_minimum_size.x = 118
+		weapon_size.custom_minimum_size.x = 110
 		weapon_size.fit_to_longest_item = false
 		weapon_size.clip_text = true
 		weapon_size.tooltip_text = _t("Taglia dell'arma impugnata", "Equipped weapon size")
@@ -477,6 +492,7 @@ func refresh() -> void:
 			row.set_custom_font_size(0, 12)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
+			row.set_tooltip_text(1, _value_total(entry, quantity) + " " + _t("mo", "gp"))
 			row.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			row.set_text(2, _weight_total(entry, quantity))
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
@@ -506,9 +522,12 @@ func refresh() -> void:
 				attune_row.select(0)
 			if attuned:
 				attuned_count += 1
-	# Fit only the heading and actual entries. Empty attunement sections
-	# occupy no reserved 100px viewport, while long ones remain bounded.
-	_attunement_tree.custom_minimum_size.y = minf(195.0, 31.0 + 26.0 * attune_root.get_child_count())
+	# Both auxiliary tables expose every row to the outer sheet's scrollbar.
+	# Use an initial estimate before layout, then measure actual row rects.
+	_scroll_tree.custom_minimum_size.y = 29.0 + 27.0 * scroll_root.get_child_count()
+	_attunement_tree.custom_minimum_size.y = 29.0 + 27.0 * attune_root.get_child_count()
+	call_deferred("_fit_full_tree", _scroll_tree, scroll_root.get_child_count())
+	call_deferred("_fit_full_tree", _attunement_tree, attune_root.get_child_count())
 	_record["inventory"] = items.duplicate(true)
 	var bonus: int = BonusRules.bonus(_record, "attunement_max")
 	var maximum: int = maxi(0, int(_record.get("attunement_max_base", 3)) + bonus)
@@ -517,6 +536,36 @@ func refresh() -> void:
 	_maximum_label.text = _t("Sintonia %d/%d · Base" % [attuned_count, maximum], "Attuned %d/%d · Base" % [attuned_count, maximum])
 	_rebuild_pickers(items)
 	_updating = false
+
+
+# Dynamic Tree rows depend on the installed font/theme. Measure after the
+# Tree has drawn its rows; no cap or internal scroll should clip later items.
+func _on_inventory_visibility_changed() -> void:
+	if not is_visible_in_tree() or _scroll_tree == null or _attunement_tree == null:
+		return
+	var scroll_root: TreeItem = _scroll_tree.get_root()
+	var attune_root: TreeItem = _attunement_tree.get_root()
+	if scroll_root != null:
+		call_deferred("_fit_full_tree", _scroll_tree, scroll_root.get_child_count())
+	if attune_root != null:
+		call_deferred("_fit_full_tree", _attunement_tree, attune_root.get_child_count())
+
+
+func _fit_full_tree(tree: Tree, row_count: int) -> void:
+	if not is_instance_valid(tree) or not tree.is_inside_tree():
+		return
+	var root: TreeItem = tree.get_root()
+	if root == null or root.get_child_count() != row_count:
+		return # A newer refresh superseded the queued measurement.
+	var height := 29.0
+	if row_count > 0:
+		var last: TreeItem = root.get_child(row_count - 1)
+		var rect: Rect2 = tree.get_item_area_rect(last)
+		if rect.size.y > 0.0:
+			height = ceilf(rect.end.y) + 6.0
+		else:
+			height += 27.0 * row_count
+	tree.custom_minimum_size.y = height
 
 
 func _rebuild_pickers(items: Array) -> void:
@@ -550,7 +599,7 @@ func _rebuild_pickers(items: Array) -> void:
 		if locked:
 			picker.tooltip_text = _t("La mano è occupata da un'arma impugnata a due mani", "Hand occupied by a two-handed weapon")
 		else:
-			picker.tooltip_text = ""
+			picker.tooltip_text = picker.get_item_text(selected) if selected > 0 else ""
 		if slot in ["main", "off"]:
 			var size_picker: OptionButton = _main_size if slot == "main" else _off_size
 			size_picker.clear()

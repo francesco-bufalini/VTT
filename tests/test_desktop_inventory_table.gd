@@ -60,6 +60,12 @@ func run() -> void:
 	assert(not tab._legacy_actions.visible and not tab._legacy_switches.visible
 		and not tab._legacy_size_row.visible and not tab._item_share_button.visible,
 		"Obsolete remove/activate/send-copy/weapon-size controls must be hidden on desktop")
+	assert(owned_tree.get_column_title(1) == "mo",
+		"Compact value column shows its unit in a two-letter header")
+	assert((desktop.get("_main") as OptionButton).size_flags_horizontal == Control.SIZE_FILL
+		and (desktop.get("_main") as OptionButton).custom_minimum_size.x == 215
+		and (desktop.get("_main") as OptionButton).get_parent().size_flags_horizontal == Control.SIZE_SHRINK_BEGIN,
+		"Hand equipment controls must not stretch across the full sheet width")
 	assert(first.get_text(1) == "30" and first.get_text(2) == "4 lb",
 		"Costs are numeric gold pieces (unit only in header); weights scale with quantity")
 	assert(first.get_text(5) == "Accurata · Leggera" or first.get_text(5) == "Accurata, Leggera",
@@ -90,8 +96,13 @@ func run() -> void:
 		and not tab._details.mouse_force_pass_scroll_events
 		and not tab._catalog_list.mouse_force_pass_scroll_events,
 		"Nested inventory controls must isolate wheel scrolling at their limits")
-	assert(attunement_tree.custom_minimum_size.y <= 60.0,
+	assert(attunement_tree.custom_minimum_size.y <= 90.0,
 		"Attunement table must not reserve empty height beyond the single entry")
+	assert(not attunement_tree.scroll_vertical_enabled and not scroll_tree.scroll_vertical_enabled,
+		"Attunement and scroll rows must never use inner vertical scrolling")
+	assert(not tab._details.scroll_active and tab._details.fit_content
+		and tab._details.custom_minimum_size.y == 0,
+		"Desktop full-length descriptions must grow with their text and use only outer scrolling")
 	var plus_icon: Texture2D = desktop.get("_plus_icon")
 	assert(plus_icon.get_width() == 14,
 		"Equipment and quantity indicators must be compact")
@@ -167,7 +178,7 @@ func run() -> void:
 	assert(tab.attunement_max_base() == 4 and tab.attunement_capacity() == 4,
 		"The editable capacity must be exported through the inventory owner")
 	tab.set_gui_language("en")
-	assert(owned_tree.get_column_title(1) == "Value (gp)" and
+	assert(owned_tree.get_column_title(1) == "gp" and
 		scroll_tree.get_column_title(2) == "Spell",
 		"Desktop table titles must follow the creature language")
 	# 5etools stores long item prose in a separate compendium index.
@@ -187,6 +198,10 @@ func run() -> void:
 	tab.call("_show_details", described_item)
 	assert(tab._details.text.contains(original_prose.substr(0, 80)),
 		"Selected item details must include the full 5etools compendium description")
+	assert(not tab._details.text.contains("Dati strutturati:"),
+		"Desktop item descriptions must not append the verbose structured-data footer")
+	assert(Player5eTools.compact_item_info_text(weapon, "Full prose").split("\n\n")[0].split("\n").size() <= 4,
+		"Structured item mechanics must be summarized into a few lines")
 
 	# The bestiary action must resolve the installed catalog entry by ID.
 	tab._catalog.append(torch.duplicate(true))
@@ -234,6 +249,25 @@ func run() -> void:
 		and String(tab._inventory[1].get("instance_overrides", {}).get("weapon_size", "")) == "Large",
 		"Weapon size overrides must not steal the opposite hand's equipped copy")
 
+	# The attunement and scroll tables should expand for any number of rows,
+	# without fixed caps that hide content behind private scrollbars.
+	var many: Array[Dictionary] = []
+	for i: int in range(11):
+		many.append({"id": "test:attune:%d" % i, "name": "Attune %d" % i,
+			"type": "RG", "reqAttune": true, "quantity": 1})
+		many.append({"id": "test:scroll:%d" % i,
+			"name": "Spell Scroll (3rd Level)", "type": "SC", "quantity": 1})
+	tab.load_record({"inventory": many})
+	await process_frame
+	await process_frame
+	assert(attunement_tree.get_root().get_child_count() == 11
+		and scroll_tree.get_root().get_child_count() == 11,
+		"Large inventory tables must keep every attunement and scroll row")
+	assert(attunement_tree.custom_minimum_size.y > 275.0
+		and scroll_tree.custom_minimum_size.y > 275.0,
+		"All attunement and scroll entries must grow beyond the old fixed height")
+	assert(not attunement_tree.scroll_vertical_enabled and not scroll_tree.scroll_vertical_enabled,
+		"Long auxiliary tables must rely on the outer sheet's scroll viewport")
 	tab.queue_free()
 	await process_frame
 	print("PASS: desktop inventory tables, scrolls, slot icons, shield attacks and attunement")
