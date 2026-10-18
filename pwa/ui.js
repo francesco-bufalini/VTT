@@ -1,4 +1,4 @@
-import { actionEconomyView, battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
+import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
@@ -34,7 +34,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, conditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -121,13 +121,13 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
-const SHEET_TAB_GLYPHS={info:'information',battle:'shield',actions:'weapon',
+const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
-const PLAY_SECTIONS=[['info','Info'],['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
+const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
 const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -204,6 +204,7 @@ function syncBrowserHistory(){
 async function restoreBrowserScreen(screen){
   // Older installed builds stored the retired Abilità tab in browser history.
   if(screen?.sheet==='stats')screen={...screen,sheet:'info'};
+  if(screen?.sheet==='actions')screen={...screen,sheet:'battle'};
   if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
   const ticket=++browserHistoryRestoreTicket;
   restoringBrowserHistory=true;
@@ -428,14 +429,14 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
-  if(state.sheet==="actions"||state.sheet==="battle"){
+  if(state.sheet==="battle"){
     const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
     state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
     state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="actions"||state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -503,14 +504,6 @@ async function editorView() {
     }
     break;
   }
-  case "actions":
-    body=(state.actionCatalogError?'<p class="hint action-catalog-warning" role="alert">'+
-      esc(state.actionCatalogError)+'</p>':'')+
-      (state.spellCatalogError?'<p class="hint action-catalog-warning" role="alert">Incantesimi non disponibili: '+
-      esc(state.spellCatalogError)+'</p>':'')+
-      actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
-        state.generalActionSupplements||[],readActionVariants());
-    break;
   case "battle":
     // Keep native Poteri tracker panels available as contextual editors,
     // including the abilities relocated from Poteri into battle resources.
@@ -2010,7 +2003,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2023,6 +2016,14 @@ function organizeSheetPanels(){
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group')){
     const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
     const key='battle-timing:'+panel+':'+details.dataset.actionTiming;
+    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.addEventListener('toggle',()=>{
+      if(details.isConnected)state.disclosureState.set(key,details.open);
+    });
+  }
+  // Each characteristic inside Prove abilità can be collapsed independently.
+  for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group[data-action-ability]')){
+    const key='battle-ability:'+details.dataset.actionAbility;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{
       if(details.isConnected)state.disclosureState.set(key,details.open);
@@ -2144,7 +2145,6 @@ async function handleAction(target){
     await patch({active_class_features:effects});await render();return;
   }
 
-  if(act==='sheet-timing'){state.actionTiming=target.dataset.timingChoice;await render();return;}
   if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
   if(act==='sheet-proxy'){
     const source=state.sheetSources.get(target.dataset.sheetSource);if(!source)throw Error('Controllo non disponibile');
@@ -2258,14 +2258,6 @@ async function handleAction(target){
     state.magicPopup="";
     const dialog=app.querySelector('#magic-tools-dialog');
     if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.remove();}
-    return;
-  }
-  if(act==='action-expand-all'){
-    const details=[...app.querySelectorAll('.action-economy-dashboard details.action-economy-section, .action-economy-dashboard details.action-tree, .action-economy-dashboard details.action-economy-entry')];
-    const expand=details.some(row=>!row.open);
-    for(const row of details)row.open=expand;
-    target.textContent=expand?'Comprimi tutto':'Espandi tutto';
-    target.setAttribute('aria-expanded',String(expand));
     return;
   }
   if(act==='action-variants'){
@@ -2825,7 +2817,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
+    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet==='actions'?'battle':target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();
