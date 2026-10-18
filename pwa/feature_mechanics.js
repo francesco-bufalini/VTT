@@ -25,18 +25,43 @@ function trackerFor(member,rule,trackers){
  return rows(trackers).find(t=>String(t.id||'').startsWith(prefix)&&
    low(t.name)===low(rule.resource_name||rule.tracker_name))||null;
 }
-export function featureActionEntries(record,trackers,catalog={}){
+// Respect native feature origin switches before selecting action overrides.
+// In particular, disabling Combat Wild Shape must restore the base Wild Shape
+// timing, not leave the subclass bonus action enabled.
+export function featureActionEntries(record,trackers,catalog={},features=[]){
  const selected=new Map();
+ const disabled=id=>record?.origin_enabled?.[id]===false||
+   rows(record?.proficiency_origins).some(o=>o?.id===id&&o.disabled);
  for(const rule of rows(catalog.actions)){
-  if(!rule.action_id||!featureMember(record,rule))continue;
+  if(!rule.action_id)continue;
+  const member=featureMember(record,rule);
+  if(!member)continue;
+  const classOrigin='class|'+low(rule.class_source||member.source)+'|'+low(rule.class_name);
+  if(disabled(classOrigin))continue;
+  const matches=rows(features).filter(f=>low(f.name)===low(rule.feature)&&
+    String(f.origin_key||'').startsWith(classOrigin+'|'));
+  if(matches.length&&!matches.some(f=>!f.disabled))continue;
+  if(rule.subclass){
+   const subclassOrigins=rows(features).filter(f=>String(f.origin_key||'').startsWith(classOrigin+'|subclass|')&&
+     low(f.name)===low(rule.feature));
+   if(subclassOrigins.length&&!subclassOrigins.some(f=>!f.disabled))continue;
+   const selectedSubclass=member.subclass||(low(member.name)===low(record?.class)?record.subclass:'');
+   const subSource=member.subclass_source||'';
+   const specific='|subclass|'+low(selectedSubclass)+'|'+low(subSource);
+   if(disabled(classOrigin+specific))continue;
+  }
   const old=selected.get(rule.action_id);
   if(!old||Number(rule.priority||0)>Number(old.priority||0))selected.set(rule.action_id,rule);
  }
  return [...selected.values()].map(rule=>{
   const tracker=trackerFor(featureMember(record,rule),rule,trackers);
+  const source='class|'+low(rule.class_source)+'|'+low(rule.class_name);
+  const feature=rows(features).find(f=>low(f.name)===low(rule.feature)&&
+    String(f.origin_key||'').startsWith(source+'|')&&!f.disabled);
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
-   tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',cost:0,origin:'personal',
-   action_id:'',rule_id:rule.id,feature:rule.feature};
+   tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
+   cost:tracker?1:0,origin:'personal',origin_id:feature?.origin_id||source,
+   action_id:rule.action_id,rule_id:rule.id,feature:rule.feature};
  });
 }
 export function modifyFeatureTrackers(record,trackers,catalog={}){
