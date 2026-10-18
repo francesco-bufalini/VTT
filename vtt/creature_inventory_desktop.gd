@@ -402,10 +402,24 @@ func _rarity_label(entry: Dictionary) -> String:
 	return String(italian.get(rarity, rarity.capitalize()))
 
 
+func _property_summary(entry: Dictionary) -> String:
+	var parts := PackedStringArray()
+	var characteristics: String = _characteristic(entry)
+	var rarity: String = _rarity_label(entry)
+	if characteristics != "—":
+		parts.append(characteristics)
+	if rarity != "—":
+		parts.append(rarity)
+	return " · ".join(parts) if not parts.is_empty() else "—"
+
+
 func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) -> void:
 	cell.set_cell_mode(column, TreeItem.CELL_MODE_STRING)
 	cell.set_text(column, str(quantity))
 	cell.set_editable(column, not locked)
+	# Outline the editable number without covering the +/-/X controls.
+	cell.set_custom_bg_color(column, Color(0.68, 0.57, 0.38, 0.82), true)
+	cell.set_tooltip_text(column, _t("Quantità modificabile (0 rimuove l'oggetto)", "Editable quantity (0 removes the item)"))
 	if quantity <= 1:
 		cell.add_button(column, _remove_icon, REMOVE_BUTTON, false, _t("Rimuovi oggetto", "Remove item"))
 	else:
@@ -463,13 +477,21 @@ func refresh() -> void:
 			row.set_custom_font_size(0, 12)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
+			row.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			row.set_text(2, _weight_total(entry, quantity))
-			row.set_text(3, _rarity_label(entry))
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
-			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
-			row.set_text(6, _characteristic(entry))
-			row.set_tooltip_text(6, _characteristic(entry))
-			row.set_text(7, String(owned.get("name", "")))
+			row.set_text(4, String(entry.get("source", owned.get("source", ""))).to_upper())
+			row.set_text(5, _property_summary(entry))
+			row.set_tooltip_text(5, _property_summary(entry))
+			row.set_text(6, String(owned.get("name", "")))
+			if bool(owned.get("attuned", false)) and ItemRules.requires_attunement(entry):
+				# Show active attunement on the owned item, not in its editor.
+				for col: int in range(7):
+					row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+				# Preserve the interactive borders on both editable cells.
+				if kind not in ["weapon", "armor", "shield", "document"]:
+					row.set_custom_bg_color(0, Color(0.73, 0.63, 0.43, 0.70), true)
+				row.set_custom_bg_color(QUANTITY_COLUMN, Color(0.68, 0.57, 0.38, 0.82), true)
 		if index == selected_index and _active_view == ("scroll" if is_scroll else "owned"):
 			row.select(0)
 		if ItemRules.requires_attunement(entry):
@@ -484,8 +506,9 @@ func refresh() -> void:
 				attune_row.select(0)
 			if attuned:
 				attuned_count += 1
-				for col: int in range(2):
-					attune_row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+	# Fit only the heading and actual entries. Empty attunement sections
+	# occupy no reserved 100px viewport, while long ones remain bounded.
+	_attunement_tree.custom_minimum_size.y = minf(195.0, 31.0 + 26.0 * attune_root.get_child_count())
 	_record["inventory"] = items.duplicate(true)
 	var bonus: int = BonusRules.bonus(_record, "attunement_max")
 	var maximum: int = maxi(0, int(_record.get("attunement_max_base", 3)) + bonus)
