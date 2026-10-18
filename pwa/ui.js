@@ -1571,10 +1571,14 @@ async function handleAction(target){
       '<div class="actions magic-dialog-actions">'+
       (entry&&options.length?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
-    app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return;
+    app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+    return;
   }
   if(act==='action-cast-cancel'){
-    app.querySelector('#action-cast-dialog')?.close();return;
+    const dialog=app.querySelector('#action-cast-dialog');
+    if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.remove();}
+    return;
   }
   if(act==='action-cast-confirm'){
     const record=state.editor?.read();if(!record)throw Error('Scheda non disponibile.');
