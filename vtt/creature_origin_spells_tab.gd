@@ -117,7 +117,7 @@ func setup(on_change: Callable) -> void:
 	_tracker_cost_picker.min_value = 1
 	_tracker_cost_picker.max_value = 99
 	_tracker_cost_picker.value = 1
-	_tracker_cost_picker.tooltip_text = "Utilizzi consumati da questo singolo incantesimo"
+	_tracker_cost_picker.tooltip_text = "Utilizzi consumati a ogni lancio di questo incantesimo"
 	form.add_child(_tracker_cost_picker)
 	var add := Button.new()
 	add.text = "+ Concedi incantesimo"
@@ -300,7 +300,7 @@ func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 	cost.min_value = 1
 	cost.max_value = 99
 	cost.value = OriginSpells.tracker_cost(grant)
-	cost.tooltip_text = "Utilizzi del tracker consumati da questo incantesimo"
+	cost.tooltip_text = "Utilizzi della risorsa consumati a ogni lancio"
 	settings.add_child(cost)
 	var trackers := OptionButton.new()
 	trackers.add_item("Senza tracker")
