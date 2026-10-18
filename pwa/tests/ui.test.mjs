@@ -124,9 +124,9 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
   });
   click('[data-sheet="info"]');
-  await until(()=>document.querySelector('[data-field="background_personality"]'));
+  await until(()=>document.querySelector('[data-field="party_id"]'));
   const pendingNote=document.querySelector('[data-field="background_personality"]');
-  pendingNote.value="Nota digitata e subito chiusa";
+  pendingNote.value="Gruppo digitato e subito chiuso";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   // No change/blur or delay: a fast mobile tap must flush the debounce.
   click('[data-act="back"]');
@@ -138,7 +138,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],0,"Il riposo lungo ripristina gli slot di classe");
-  assert.equal(persisted.data.background_personality,"Nota digitata e subito chiusa");
+  assert.equal(persisted.data.party_id,"Nota digitata e subito chiusa");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
   click('[data-nav="library"]');
@@ -542,9 +542,10 @@ test("sheet derived values update locally and never call a desktop calculation A
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]'));
   const initial=document.querySelector('[data-local-sheet-calculations]').textContent;
-  assert.match(initial,/Calcolato localmente sul dispositivo/);
+  assert.doesNotMatch(initial,/Calcoli e copertura della scheda/);
   click('[data-sheet="stats"]');
   await until(()=>document.querySelector('[data-ability="dex"]'));
+  assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
   change('[data-ability="dex"]',"16");
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("+3"));
   click('[data-sheet="battle"]');
@@ -578,7 +579,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti','Storia e personalità']);
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('#hp-amount'));
  assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Punti ferita','Risorse','CA e iniziativa','Attacchi disponibili']);
