@@ -15,7 +15,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -34,7 +34,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -191,7 +191,7 @@ async function navigate(page){
   if(!sections.has(page))return;
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   stopSubscriptions();if(page==="session")realtimeStopped=false;
-  state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
 }
@@ -1508,6 +1508,8 @@ async function patch(patchValue) {
     if(state.editor===editor&&revision===editor.revision){
       state.calculated=calculated;
       refreshCalculatedValues(app,calculated);
+      refreshPlayReadouts(app,editor.read(),calculated);
+      syncNav();
       const attacks=app.querySelector('[data-attack-list]');if(attacks)attacks.outerHTML=attacksView(calculated,state.sheet==='battle');
       const note=app.querySelector('[data-calculation-note]');
       if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
@@ -1742,6 +1744,7 @@ async function handleField(target) {
     const value=target.type==="checkbox"?target.checked:target.value;
     if(key==="quantity"&&String(value).trim()==="")throw Error("Inserisci una quantità o 0 per rimuovere.");
     if(key==="quantity"&&Number(value)===0){
+      state.sheetPopup="";
       const inventory=structuredClone(creature.inventory||[]);
       inventory.splice(index,1);
       state.inventorySelectedIndex=index>0?index-1:0;
@@ -1844,23 +1847,25 @@ function decorateSheetHeadings(){
  }
 }
 function organizeSheetPanels(){
-  const root=app.querySelector('[data-local-sheet-calculations]');
-  if(!root)return;
-  for(const panel of root.querySelectorAll(':scope > .panel, .action-economy-dashboard > .panel')){
-    const heading=panel.querySelector(':scope > h2, :scope > .action-economy-heading');
-    if(!heading)continue;
-    const title=heading.textContent.trim();
-    const fold=state.sheet==='actions'||state.sheet==='info'&&title!=='Identità'||state.sheet==='inventory'&&/Pergamene|Documenti|Infusion/i.test(title);
-    if(!fold)continue;
-    const details=document.createElement('details'),summary=document.createElement('summary'),content=document.createElement('div');
-    const key=state.creatureId+'|'+state.sheet+'|'+title;
-    for(const [name,value] of Object.entries(panel.dataset))details.dataset[name]=value;
-    details.className=panel.className+' disclosure-panel';details.open=state.disclosureState.get(key)===true;
-    summary.className='disclosure-heading';summary.append(heading);content.className='disclosure-content';
-    while(panel.firstChild)content.append(panel.firstChild);
-    details.append(summary,content);panel.replaceWith(details);
-    details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
-  }
+  if(state.page!=="library"||state.libraryMode||!state.editor)return;
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex},icon:actionGlyph,conditionLabel});
+  if(!state.sheetPopup)return;
+  const source=state.sheetSources.get(state.sheetPopup);
+  if(!source){state.sheetPopup="";return;}
+  const dialog=document.createElement('dialog');dialog.id='sheet-context-dialog';dialog.className='sheet-context-dialog';
+  const title=state.sheetPopupTitle||source.querySelector('h2,h3,summary,strong')?.textContent.trim()||source.getAttribute('aria-label')||'Dettagli e modifica';
+  dialog.setAttribute('aria-labelledby','sheet-context-title');
+  dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2><button type="button" class="play-button" data-act="sheet-context-close" aria-label="Chiudi dettagli">'+actionGlyph('cross')+'</button></header><div class="sheet-context-body"></div><footer><button type="button" class="btn primary full" data-act="sheet-context-close">Fatto</button></footer>';
+  dialog.querySelector('.sheet-context-body').append(source);
+  if(source.tagName==='DETAILS')source.open=true;
+  for(const details of source.querySelectorAll('details.action-economy-entry,details.action-tree'))details.open=true;
+  app.append(dialog);
+  dialog.addEventListener('cancel',event=>{event.preventDefault();void closeSheetContext().catch(error=>message(errorMessage(error),true));});
+  dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientY<rect.top||event.clientY>rect.bottom||event.clientX<rect.left||event.clientX>rect.right)void closeSheetContext().catch(error=>message(errorMessage(error),true));});
+  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
+async function closeSheetContext(){
+  await flushPendingFields();state.sheetPopup="";await render();
 }
 function rememberUtilityDisclosures(){
   for(const details of app.querySelectorAll('.archive-tools, .catalog-create')){
@@ -1871,6 +1876,16 @@ function rememberUtilityDisclosures(){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='sheet-context'){state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
+  if(act==='sheet-context-close'){await closeSheetContext();return;}
+  if(act==='sheet-timing'){state.actionTiming=target.dataset.timingChoice;await render();return;}
+  if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
+  if(act==='sheet-proxy'){
+    const source=state.sheetSources.get(target.dataset.sheetSource);if(!source)throw Error('Controllo non disponibile');
+    if(source.disabled)return;
+    if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
+    await handleAction(source);return;
+  }
   if(act==='navigation-open'){openNavigation();return;}
   if(act==='navigation-close'){closeNavigation(true);return;}
   if(act==='session-pane'){state.sessionPane=target.dataset.sessionPane;await render();return;}
@@ -1967,6 +1982,7 @@ async function handleAction(target){
     return;
   }
   if(act==='magic-tool-open'){
+    state.sheetPopup='';
     if(state.sheet!=='magic')return;
     const type=target.dataset.magicTool;
     if(!['concentration','slots','book','catalog','choices'].includes(type))return;
@@ -2302,7 +2318,7 @@ async function handleAction(target){
   if(act==="sheet-details"){
     state.magicPopup="";
     if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
-    state.sheet="origins";state.detail=target.dataset.detail;await render();return;
+    state.sheet="origins";state.detail=target.dataset.detail;state.sheetPopup="origin-editor";state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||"Modifica personaggio";await render();return;
   }
   if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
     if(act==='sheet-roll-edit-bonus'){
@@ -2453,7 +2469,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
+    state.sheetPopup="";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();
@@ -2555,6 +2571,7 @@ async function handleAction(target){
     const qty=Number(record.inventory?.[index]?.quantity??1)+Number(target.dataset.delta||0);
     if(!Number.isInteger(qty)||qty<0||qty>99999)throw Error("Quantità fuori intervallo.");
     if(qty===0){
+      state.sheetPopup="";
       const rows=structuredClone(record.inventory||[]);
       rows.splice(index,1);
       state.inventorySelectedIndex=Math.max(0,index-1);
@@ -2584,6 +2601,7 @@ async function handleAction(target){
   if(act==="add-item"){
     const c=state.editor.read();
     const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
+    state.inventorySelectedIndex=inventory.length;state.sheetPopup="item:"+inventory.length;state.sheetPopupTitle="Nuovo oggetto";
     inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:"",
       source:"",custom_item_type:"other",equipped:false,equipped_slots:[],attuned:false,active:true});
     await patch({inventory});await render();return;
@@ -2593,7 +2611,7 @@ async function handleAction(target){
     const index=Number(target.dataset.index);
     inventory.splice(index,1);
     state.inventorySelectedIndex=Math.max(0,index-1);
-    state.inventoryMenuIndex=-1;
+    state.inventoryMenuIndex=-1;state.sheetPopup="";
     await patch({inventory});await render();return;
   }
   if(act==="spell-pick"){

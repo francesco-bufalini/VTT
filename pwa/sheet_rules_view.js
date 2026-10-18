@@ -166,3 +166,151 @@ export function localSheetView(section,data,loadError=""){
   return '<section class="panel derived-local" data-local-sheet-calculations>'+
     '<h2>Valori calcolati sulla scheda</h2>'+note+body+'</section>';
 }
+
+
+// Play presentation reuses the existing editors and delegated actions. Only
+// transient layout state lives here; rules, storage and payment stay unchanged.
+export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel}){
+ const root=app.querySelector('[data-local-sheet-calculations]');
+ if(!root||sheet==='json')return new Map();
+ const bank=document.createElement('div');bank.className='sheet-editor-bank';bank.hidden=true;
+ while(root.firstChild)bank.append(root.firstChild);
+ root.append(bank);
+ const sources=new Map();
+ const bind=(key,node)=>{if(node){if(!node.isConnected)bank.append(node);node.dataset.playSource=key;sources.set(key,node);}return key;};
+ const target=(key,selector)=>bind(key,bank.querySelector(selector));
+ const btn=(title,glyph,attrs='',content='')=>'<button type="button" class="play-button" '+attrs+' aria-label="'+esc(title)+'" title="'+esc(title)+'">'+(glyph?icon(glyph):'')+(content||'<span>'+esc(title)+'</span>')+'</button>';
+ const edit=(key,title,glyph='settings')=>btn(title,glyph,'data-act="sheet-context" data-sheet-context="'+esc(key)+'"','<span class="sr-only">'+esc(title)+'</span>');
+ const go=(key,title,glyph,subtitle='',trailing='')=>'<button type="button" class="play-list-row" data-act="sheet-context" data-sheet-context="'+esc(key)+'">'+(glyph?icon(glyph):'')+'<span class="play-row-copy"><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span>'+(trailing?'<span class="play-row-end">'+trailing+'</span>':'<span class="play-chevron" aria-hidden="true">›</span>')+'</button>';
+ const proxy=(node,title,glyph,content='',className='')=>{
+  if(!node)return '';
+  const key='proxy:'+sources.size;bind(key,node);
+  return btn(title,glyph,'data-act="sheet-proxy" data-sheet-source="'+key+'"'+(node.disabled?' disabled':''),content);
+ };
+ const card=(title,body,tools='',extra='')=>'<section class="play-card '+extra+'"><header class="play-card-head"><h2>'+esc(title)+'</h2>'+tools+'</header>'+body+'</section>';
+ const output=(key,sign=false,suffix='')=>'<output data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</output>';
+ const val=(key)=>'<span data-read-field="'+key+'">'+esc(c[key]??0)+'</span>';
+ const roll=(key,label,body)=>btn(label,'','data-act="sheet-roll" data-target="'+esc(key)+'" data-label="'+esc(label)+'"',body||output(key,true));
+ const heading=(node)=>node?.querySelector(':scope > h2')?.textContent.trim()||'';
+ const panels=[...bank.querySelectorAll(':scope > .panel')];
+ panels.forEach((node,i)=>bind('panel:'+i,node));
+ const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
+ const list=(title,rows,empty='Nessuna voce.')=>card(title,rows||'<p class="play-empty">'+esc(empty)+'</p>');
+ let html='';
+ if(sheet==='battle'){
+  target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('equipment','.battle-attack-settings');
+  const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
+  html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true))+btn('Movimento e velocità','movement','data-act="sheet" data-sheet="info"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
+  const rest=document.createElement('div');rest.innerHTML='<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';bind('rests',rest);
+  const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
+   const left=Math.max(0,t.max-t.spent);const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);bind('resource:'+t.id,source);
+   return '<div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="resource:'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+'</div>';
+  }).join('');
+  html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',edit('rests','Riposi e recuperi','rest_short'));
+  html+=card('Attacchi',(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>',edit('equipment','Equipaggiamento e attacchi','weapon'));
+ }
+ if(sheet==='stats'){
+  html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
+  html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
+  const tools=panelNamed('Strumenti');bind('tools',tools);html+=go('tools','Strumenti e linguaggi','proficiency');
+ }
+ if(sheet==='info'){
+  const identity=panelNamed('Identità');bind('identity',identity);
+  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2><p>'+esc([c.species,c.subrace,c.class,c.level?'Liv. '+c.level:''].filter(Boolean).join(' · '))+'</p><small>'+esc(c.background||'Background da scegliere')+'</small>'+edit('identity','Modifica identità','settings')+'</section>';
+  html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
+  for(const node of panels.filter(n=>n!==identity)){
+   const title=heading(node),i=panels.indexOf(node);
+   const sub=title==='Fisico'?[c.size_name,(d.values?.speed??30)+' ft',c.default_miniature_id?'Miniatura assegnata':'Scegli la miniatura'].filter(Boolean).join(' · '):title.includes('Classi')?[c.class,c.subclass,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
+   html+=go('panel:'+i,title,title==='Fisico'?'movement':title==='Talenti'?'spark':'book',sub||'Apri dettagli e modifica');
+  }
+ }
+ if(sheet==='actions'){
+  const times=[['action','Azione','weapon'],['bonus','Bonus','flight'],['reaction','Reazione','reaction'],['movement','Movimento','movement'],['free','Gratuite','hand']];
+  const active=view.actionTiming||'action';
+  html='<div class="play-timing" role="group" aria-label="Tipo di azione">'+times.map(([key,label,glyph])=>'<button type="button" data-act="sheet-timing" data-timing-choice="'+key+'" aria-pressed="'+(active===key)+'">'+icon(glyph)+'<span>'+label+'</span></button>').join('')+'</div>';
+  let rows='';
+  for(const section of bank.querySelectorAll('.action-economy-section')){
+   const timing=section.dataset.timing;
+   if(active!=='all'&&timing!==active)continue;
+   const entries=[...section.querySelectorAll(':scope > .action-economy-row')];
+   entries.forEach((node,i)=>{
+    const key='action:'+timing+':'+i;bind(key,node);
+    const title=node.querySelector('.action-economy-entry strong')?.textContent||'Azione';
+    const preview=node.querySelector('.action-economy-preview')?.textContent.trim();
+    const count=node.querySelectorAll('.action-tree > ol > li').length;
+    rows+=go(key,title,'',count?count+' opzioni':preview||'Dettagli e utilizzo',count?'<span class="play-badge">'+count+'</span>':'');
+   });
+  }
+  html+=card(active==='all'?'Tutte le azioni':times.find(([key])=>key===active)?.[1]||'Azioni',rows||'<p class="play-empty">Nessuna opzione disponibile.</p>',proxy(bank.querySelector('[data-act="action-variants"]'),'Regole varianti','settings'));
+  html+=btn('Tutte le azioni','book','data-act="sheet-timing" data-timing-choice="all"');
+ }
+ if(sheet==='magic'){
+  const tools=bank.querySelector('.magic-toolbar');bind('magic-tools',tools);
+  html='<div class="play-inline-tools"><span>'+((c.conditions||[]).includes('concentrating')?'Concentrazione attiva':'Nessuna concentrazione')+'</span>'+edit('magic-tools','Gestisci poteri e incantesimi','settings')+'</div>';
+  const slots=[...bank.querySelectorAll('.magic-level-slot')].filter((node,i,all)=>all.findIndex(n=>n.dataset.level===node.dataset.level&&n.dataset.act===node.dataset.act)===i);
+  if(slots.length)html+=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>proxy(node,node.getAttribute('aria-label')||'Consuma slot','', '<small>'+esc(node.dataset.level==='0'?'Patto':node.dataset.level+'°')+'</small><b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',proxy(bank.querySelector('[data-magic-tool="slots"]'),'Gestisci slot','reset'));
+  for(const source of bank.querySelectorAll('.magic-source')){
+   const title=source.querySelector('h3')?.textContent||'Poteri';
+   const titleKey='casting:'+sources.size;bind(titleKey,source.querySelector('.casting-statistics'));
+   const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
+    const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
+    return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span>')+'</div>';
+   }).join('');
+   const casting=source.querySelector('.casting-statistics'),ability=casting?.querySelector('select')?.value||'int';
+   const stats='CD '+(d.values?.['casting_dc:'+ability]??'—')+' · Attacco '+signed(d.values?.['casting_hit:'+ability]);
+   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
+  }
+  const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>!n.classList.contains('magic-panel'));
+  originPanels.forEach((node,i)=>{bind('power:'+i,node);html+=go('power:'+i,heading(node),'spark',node.querySelectorAll('.magic-spell-row,.magic-ability-row').length+' poteri · Apri per utilizzare');});
+ }
+ if(sheet==='inventory'){
+  target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
+  const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
+  html+=go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura');
+  html+=go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+' / '+(c.attunement_max_base??3)+' oggetti');
+  const add=document.createElement('div');
+  for(const node of bank.querySelectorAll('[data-act="item-catalog"],[data-act="add-item"],[data-act="new-homebrew-item"],[data-act="document-add"]'))add.append(node);
+  bind('inventory-add',add);
+  html+=card('Nello zaino','<label class="play-search">'+icon('search')+'<input type="search" data-play-search placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
+   const key='item:'+i;const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
+   const node=document.createElement('section');node.className='play-item-editor';
+   if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
+   if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
+   bind(key,node);
+   return '<div data-play-filter="'+esc(String(item.name||'').toLocaleLowerCase('it'))+'">'+go(key,item.name||'Oggetto',documentRow?'scroll':'inventory',item.equipped_slots?.length?'Equipaggiato':item.attuned?'In sintonia':'', '<span class="play-badge">×'+Math.max(1,Number(item.quantity)||1)+'</span>')+'</div>';
+  }).join(''),edit('inventory-add','Aggiungi oggetti e documenti','increase'));
+  const infusion=panelNamed('Infusioni');if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
+ }
+ if(sheet==='traits'){
+  const groups=[...bank.querySelectorAll('.trait-card')];
+  html+=card('Privilegi e tratti',groups.map((node,i)=>{bind('trait:'+i,node);return go('trait:'+i,node.querySelector('summary')?.textContent||'Tratto','proficiency');}).join('')||'<p class="play-empty">Nessun tratto disponibile.</p>');
+  const notes=panelNamed('aggiuntivi');bind('trait-notes',notes);html+=go('trait-notes','Note sui tratti','scroll',c.additional_traits||'Aggiungi una nota personale');
+ }
+ if(sheet==='conditions'){
+  target('conditions','.condition-sheet-panel');
+  html+=card('Stati attivi',(c.conditions||[]).map(id=>'<span class="play-condition">'+icon('condition')+esc(conditionLabel(id))+'</span>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
+  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??0));
+  if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
+ }
+ if(sheet==='origins'){
+  const select=bank.querySelector('#native-details');
+  const options=[...(select?.options||[])];
+  html+=card('Configurazione del personaggio',options.map(option=>'<button type="button" class="play-list-row" data-act="sheet-origin-editor" data-detail="'+esc(option.value)+'">'+icon(option.value==='resources'?'reset':'settings')+'<span class="play-row-copy"><strong>'+esc(option.textContent)+'</strong></span><span class="play-chevron">›</span></button>').join(''));
+  bind('origin-editor',panels[0]);
+ }
+ const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.innerHTML=html;
+ root.prepend(main);
+ const utilities=app.querySelector(':scope > .archive-tools');
+ if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
+ const note=bank.querySelector('[data-calculation-note]');if(note)bind('calculation',note);
+ const more=document.createElement('div');more.className='play-sheet-tools';more.innerHTML=edit('sheet-tools','Opzioni della scheda','settings')+(note?edit('calculation','Calcoli e copertura','information'):'');main.append(more);
+ // Native dialogs must never inherit hidden from the editor bank.
+ for(const dialog of [...bank.querySelectorAll('dialog')])root.append(dialog);
+ return sources;
+}
+export function refreshPlayReadouts(root,creature,calculated){
+ for(const node of root.querySelectorAll('[data-read-field]'))node.textContent=String(creature[node.dataset.readField]??0);
+ for(const progress of root.querySelectorAll('[data-hp-progress]')){progress.max=Math.max(1,Number(calculated.values?.hp)||1);progress.value=Number(creature.current_hp)||0;}
+}
