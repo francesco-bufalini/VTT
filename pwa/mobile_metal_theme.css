@@ -239,3 +239,173 @@ input:disabled{opacity:.75;cursor:default}
   width:26px;height:26px;flex-basis:26px;
  }
 }
+
+/* Statistics layout: one explicit grid row per ability. The old single grid
+   allowed large bonus controls and the 48px generic <summary> to stretch each
+   ability unpredictably, particularly at 320-420px screen widths. */
+.stats-abilities-panel .native-abilities{
+ display:block;
+ width:100%;
+ max-width:560px;
+ margin-inline:auto;
+ min-width:0;
+}
+.stats-abilities-panel .native-abilities-header,
+.stats-abilities-panel .native-ability-row{
+ display:grid;
+ grid-template-columns:minmax(32px,.55fr) minmax(72px,1.25fr) minmax(53px,.9fr) minmax(53px,.9fr);
+ column-gap:clamp(4px,1.5vw,12px);
+ align-items:center;
+ min-width:0;
+}
+.stats-abilities-panel .native-abilities-header{
+ padding:3px 0 9px;
+ border-bottom:1px solid #c99750;
+ color:#edbd77;
+ text-align:center;
+}
+.stats-abilities-panel .native-abilities-header strong{
+ font-size:clamp(10px,2.7vw,12px);
+ font-weight:650;
+ line-height:1.25;
+ min-width:0;
+ white-space:normal;
+}
+.stats-abilities-panel .native-ability-row{
+ padding:8px 0;
+ min-height:70px;
+ border-bottom:1px solid #9c704860;
+}
+.stats-abilities-panel .native-ability-row:last-child{border-bottom:0}
+.stats-abilities-panel .native-ability-row > *{min-width:0}
+.stats-abilities-panel .native-ability-name{
+ font-size:13px;
+ font-weight:700;
+ text-align:center;
+ color:#edbd77;
+}
+.stats-abilities-panel .native-ability-score,
+.stats-abilities-panel .native-ability-value{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:2px;
+ min-width:0;
+}
+.stats-abilities-panel .native-ability-row .sheet-formula{
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ flex-wrap:nowrap;
+ gap:3px;
+ max-width:100%;
+ min-width:0;
+}
+.stats-abilities-panel .native-ability-row .sheet-formula output,
+.stats-abilities-panel .native-ability-row .sheet-formula .sheet-result{
+ display:inline-flex;
+ justify-content:center;
+ align-items:center;
+ min-width:24px;
+ padding:5px 3px;
+ line-height:18px;
+ font-size:12px;
+ font-variant-numeric:tabular-nums;
+ white-space:nowrap;
+}
+.stats-abilities-panel .native-ability-row .formula-bonus{
+ flex:0 0 auto;
+ min-width:24px;
+ width:26px;
+ height:32px;
+ min-height:32px;
+ padding:3px 2px;
+ font-size:13px;
+ line-height:1;
+}
+.stats-abilities-panel .native-score-editor{
+ margin:0;
+ padding:0;
+ width:100%;
+ text-align:center;
+}
+.stats-abilities-panel .native-score-editor > summary{
+ display:block;
+ min-height:26px;
+ padding:4px 0;
+ margin:0;
+ line-height:18px;
+ font-size:11px;
+ color:#c7bdb1;
+ text-align:center;
+ cursor:pointer;
+}
+.stats-abilities-panel .native-score-editor > summary::marker{color:#edbd77}
+.stats-abilities-panel .native-score-editor > label{
+ margin:0;
+ padding:3px 0 0;
+ min-width:0;
+}
+.stats-abilities-panel .native-score-editor input{
+ width:100%;
+ max-width:110px;
+ min-height:38px;
+ margin:0;
+ padding:5px;
+ font-size:15px;
+ text-align:center;
+}
+/* Compact computed values in the skills and summary rows without shrinking
+   normal form fields or hit targets elsewhere in the PWA. */
+.stats-skills-panel .native-summary > div,
+.stats-summary-panel .native-summary > div{
+ gap:10px;
+ min-height:44px;
+ padding:6px 0;
+ align-items:center;
+}
+.stats-skills-panel .native-summary dt,
+.stats-summary-panel .native-summary dt{
+ flex:1 1 0;
+ min-width:0;
+ line-height:1.35;
+ font-size:12px;
+}
+.stats-skills-panel .native-summary dd,
+.stats-summary-panel .native-summary dd{
+ flex:0 0 auto;
+ min-width:0;
+}
+.stats-skills-panel .native-summary .sheet-formula,
+.stats-summary-panel .native-summary .sheet-formula{
+ display:inline-flex;
+ flex-wrap:nowrap;
+ align-items:center;
+ gap:4px;
+}
+.stats-skills-panel .native-summary .formula-bonus,
+.stats-summary-panel .native-summary .formula-bonus{
+ min-height:34px;
+ min-width:30px;
+ padding:5px 6px;
+}
+.stats-skills-panel > .hint{margin:0 0 9px}
+@media(max-width:360px){
+ .stats-abilities-panel .native-abilities-header,
+ .stats-abilities-panel .native-ability-row{
+  grid-template-columns:minmax(28px,.5fr) minmax(68px,1.3fr) minmax(50px,.9fr) minmax(50px,.9fr);
+  column-gap:4px;
+ }
+ .stats-abilities-panel .native-ability-row .formula-bonus{
+  min-width:22px;
+  width:23px;
+  padding:2px;
+ }
+ .stats-abilities-panel .native-ability-row .sheet-formula output,
+ .stats-abilities-panel .native-ability-row .sheet-formula .sheet-result{
+  padding:5px 2px;
+ }
+ .stats-skills-panel .native-summary > div,
+ .stats-summary-panel .native-summary > div{gap:6px}
+}
