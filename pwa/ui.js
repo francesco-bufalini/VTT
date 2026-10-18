@@ -1990,6 +1990,8 @@ function listen(){
   const editable = "[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
+    if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
+    if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){
       state.spellQuery=target.value;
       const matches=document.querySelector("#spell-results");
