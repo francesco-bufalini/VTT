@@ -22,7 +22,7 @@ try{
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
  assert(await weaponPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Attaccare')));
  assert.equal(await movementPanel.getAttribute('open'),null);
- await movementPanel.locator('summary').click();
+ await movementPanel.locator('summary.play-battle-summary').click();
  assert(await movementPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Scattare')));
  assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('stats');await sheet('battle');
