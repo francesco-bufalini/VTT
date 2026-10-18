@@ -89,7 +89,7 @@ func run() -> void:
 	assert(area._abilities_grid.columns == 4,
 		"Ability headers and each score/modifier/saving throw row must use four columns")
 	assert(area._show_offhand_all.button_pressed
-		and area._show_offhand_all.text in ["Only if finesse", "Solo se accurata"]
+		and area._show_offhand_all.text in ["Only if finesse", "Solo se accurata", "Solo armi accurate"]
 		and area._show_offhand_all.get_parent() == area._hand_off_picker.get_parent(),
 		"Finesse-only offhand filter must be active by default and share the secondary hand row")
 	# Only inner lists may stop scroll chaining; the two full-size columns

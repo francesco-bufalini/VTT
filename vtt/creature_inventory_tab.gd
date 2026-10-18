@@ -1258,6 +1258,8 @@ func set_gui_language(language: String) -> void:
 	_gui_language = language
 	var selected_index: int = _selected_inventory_index()
 	_refresh_inventory(selected_index)
+	if _desktop_ui != null:
+		_desktop_ui.call("refresh_captions")
 
 
 func _inventory_label(item: Dictionary) -> String:
