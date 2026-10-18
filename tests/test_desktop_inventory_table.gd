@@ -91,11 +91,11 @@ func run() -> void:
 	# Wheel events must remain owned by a nested scrollable widget even at
 	# its boundary; the parent sheet must not jump unexpectedly.
 	assert(not owned_tree.mouse_force_pass_scroll_events
-		and not scroll_tree.mouse_force_pass_scroll_events
-		and not attunement_tree.mouse_force_pass_scroll_events
+		and scroll_tree.mouse_force_pass_scroll_events
+		and attunement_tree.mouse_force_pass_scroll_events
 		and not tab._details.mouse_force_pass_scroll_events
 		and not tab._catalog_list.mouse_force_pass_scroll_events,
-		"Nested inventory controls must isolate wheel scrolling at their limits")
+		"Fully expanded scroll and attunement tables must pass wheel input to the parent, unlike bounded lists")
 	assert(attunement_tree.custom_minimum_size.y <= 90.0,
 		"Attunement table must not reserve empty height beyond the single entry")
 	assert(not attunement_tree.scroll_vertical_enabled and not scroll_tree.scroll_vertical_enabled,
