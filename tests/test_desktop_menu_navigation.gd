@@ -56,9 +56,10 @@ func _run() -> void:
 		and deletion.position.y + deletion.size.y <= root.size.y,
 		"Deletion confirmation must remain on screen after layout")
 	deletion.hide()
-	var popup: PopupMenu = sheet._options_menu.get_popup()
-	for id: int in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-		assert(not popup.get_item_tooltip(popup.get_item_index(id)).is_empty())
+	assert(not sheet._creature_import_button.tooltip_text.is_empty())
+	assert(sheet._creature_import_picker.file_mode == FileDialog.FILE_MODE_OPEN_FILES)
+	assert(sheet._creature_import_picker.files_selected.is_connected(sheet._import_export_files))
+
 	sheet._traits_ui.load_record(sheet.fixture)
 	sheet._traits_ui._set_all_expanded(true)
 	assert(not sheet._traits_ui._cards.is_empty())

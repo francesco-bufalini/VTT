@@ -2011,8 +2011,12 @@ func _import_export_path(path: String) -> Error:
 		return FileAccess.get_open_error()
 	if file.get_length() > 16 * 1024 * 1024:
 		return ERR_INVALID_DATA
-	var payload: Variant = JSON.parse_string(file.get_as_text())
+	var parser := JSON.new()
+	var parse_error := parser.parse(file.get_as_text())
 	file.close()
+	if parse_error != OK:
+		return ERR_INVALID_DATA
+	var payload: Variant = parser.data
 	if not payload is Dictionary:
 		return ERR_INVALID_DATA
 	return (_archive.import_export_batch(payload)
