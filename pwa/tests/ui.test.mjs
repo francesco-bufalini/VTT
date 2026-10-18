@@ -449,7 +449,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Cosa posso fare?","Battaglia","Poteri","Inventario","Condizioni","Tratti","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Azioni","Poteri","Inventario","Condizioni","Tratti","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
