@@ -1557,15 +1557,24 @@ async function handleField(target) {
   } else if(target.dataset.itemIndex !== undefined){
     const index=Number(target.dataset.itemIndex),key=target.dataset.itemKey;
     const value=target.type==="checkbox"?target.checked:target.value;
+    if(key==="quantity"&&String(value).trim()==="")throw Error("Inserisci una quantità o 0 per rimuovere.");
     if(key==="quantity"&&Number(value)===0){
       const inventory=structuredClone(creature.inventory||[]);
       inventory.splice(index,1);
       state.inventorySelectedIndex=index>0?index-1:0;
       await patch({inventory});
+      await render();
     }else{
       await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+      // Text editors are debounced: don't destroy their DOM and caret while
+      // the user is typing a name or a custom description.
+      if(key==="name"||key==="description"){
+        if(key==="name"&&index===state.inventorySelectedIndex){
+          const heading=app.querySelector(".inventory-description-panel>h2");
+          if(heading)heading.textContent="Descrizione · "+value;
+        }
+      }else await render();
     }
-    await render();
   } else if(target.dataset.condition){
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
