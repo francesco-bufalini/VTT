@@ -31,7 +31,7 @@ const creature={
 test('trait projection covers owned origins and gates class features by class level',async()=>{
  const rows=await collectTraitRows(creature,{},provider);
  const names=rows.map(r=>r.name);
- for(const name of ['Darkvision','Researcher','Arcane Recovery','Sculpt Spells','Magic Initiate','Descrizione · Wand','Spark'])
+ for(const name of ['Darkvision','Researcher','Arcane Recovery','Sculpt Spells','Magic Initiate','Descrizione · Wand ×3','Spark'])
   assert.ok(names.includes(name),'Missing '+name);
  for(const name of ['Arcane Ward','Empowered Evocation','Fighting Style','Feat section','Descrizione · Journal'])
   assert.ok(!names.includes(name),'Unexpected '+name);
@@ -73,6 +73,6 @@ test('missing offline descriptive indexes preserve projected structured features
  const rows=await collectTraitRows({...creature,background:''},
   {features:[{name:'Portable Bonus',level:3,origin_key:'class|phb|wizard',origin_id:'ability-a'}]},
   {entries:async()=>{throw Error('offline');}});
- assert.equal(rows.length,1);
- assert.equal(rows[0].name,'Portable Bonus');
+ assert.equal(rows.filter(r=>r.name==='Portable Bonus').length,1);
+ assert.equal(rows.find(r=>r.name==='Portable Bonus').feature_origin,'ability-a');
 });
