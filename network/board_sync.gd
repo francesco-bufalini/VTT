@@ -75,6 +75,8 @@ var _auto_sync_last_poll_msec := 0
 var _auto_sync_suppress_until_msec := 0
 var _auto_sync_retry_after_msec := 0
 var _applying_received_snapshot := false
+# Monotonic render invalidation. The PWA reads this value but never echoes snapshots.
+var _mobile_view_revision := 1
 # Disk persistence is independent of peer availability and the network toggle.
 var _map_autosave_ready := false
 var _map_autosave_last_signature := ""
@@ -255,6 +257,7 @@ func sync_local_change_now() -> Error:
 	# edited immediately after a scene/session starts.
 	var error := send_snapshot_to_tailnet(session_key)
 	if error == OK:
+		_mobile_view_revision += 1
 		_auto_sync_initialized = true
 		_auto_sync_last_signature = signature
 		_auto_sync_candidate_signature = ""
@@ -281,6 +284,7 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		_persist_map_autosave(outgoing_snapshot)
 	var error := send_snapshot_to_tailnet(session_key, sync_event)
 	if error == OK:
+		_mobile_view_revision += 1
 		var snapshot := create_snapshot()
 		if not snapshot.is_empty():
 			_auto_sync_initialized = true
@@ -330,6 +334,7 @@ func _poll_auto_sync() -> void:
 
 	var error := send_snapshot_to_tailnet(session_key, {}, true)
 	if error == OK:
+		_mobile_view_revision += 1
 		_auto_sync_last_signature = signature
 		_auto_sync_candidate_signature = ""
 		_auto_sync_candidate_since_msec = 0
@@ -350,6 +355,7 @@ func _snapshot_signature(snapshot: Dictionary) -> String:
 
 
 func _accept_received_snapshot(snapshot: Dictionary) -> void:
+	_mobile_view_revision += 1
 	_persist_map_autosave(snapshot)
 	_auto_sync_initialized = true
 	var local_snapshot := create_snapshot()
@@ -2533,7 +2539,8 @@ func get_tactical_map_data() -> Dictionary:
 				projected_active_index = entries.size() - 1
 		combat["entries"] = entries
 		combat["active_index"] = projected_active_index
-	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3}
+	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3,
+		"revision": _mobile_view_revision}
 
 
 func _visible_mobile_token(id: String) -> CharacterBody3D:
