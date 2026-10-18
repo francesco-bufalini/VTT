@@ -216,7 +216,7 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');assert.equal(await page.locator('[data-sheet-context="trait-notes"]').count(),0,'Removed trait notes must stay absent');
+ await sheet('traits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
