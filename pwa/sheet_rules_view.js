@@ -357,13 +357,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
   const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name).slice(0,80);
   const picker='<div class="play-effect-add"><label>Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
-  html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+card('Applica un incantesimo',picker);
+  const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
+  html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
   const active=Object.entries(c.active_class_features||{});
   const effectRows=active.map(([key,row])=>'<div class="play-effect-row"><span>'+icon('buff')+'<strong>'+esc(row?.name||key)+'</strong></span>'+btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>').join('');
   const toggleKeys=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
   const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
-  html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+card('Applica una capacità',abilityPicker);
+  const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
+  html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+go('apply-ability','Applica una capacità','buff','Attiva un privilegio persistente disponibile');
   html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }
