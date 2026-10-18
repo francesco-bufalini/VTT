@@ -40,8 +40,10 @@ func setup(tab: Node, description: Control) -> void:
 	# The description and search list must not swallow wheel events needed by
 	# the outer creature sheet when their own viewport reaches its boundary.
 	description.mouse_force_pass_scroll_events = true
+	description.set_meta("pass_wheel_to_sheet", true)
 	var catalog_list: ItemList = _tab.get("_catalog_list")
 	catalog_list.mouse_force_pass_scroll_events = true
+	catalog_list.set_meta("pass_wheel_to_sheet", true)
 	add_theme_constant_override("separation", 8)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_minus_icon = _symbol_texture(false)
