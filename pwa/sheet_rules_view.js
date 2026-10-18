@@ -366,7 +366,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
   html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+go('apply-ability','Applica una capacità','buff','Attiva un privilegio persistente disponibile');
-  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion??0));
+  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }
  if(sheet==='origins'){
