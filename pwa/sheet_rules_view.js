@@ -250,7 +250,7 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
 // activated catalog abilities and origin-granted spells. Catalog powers own the
 // detail popup; a native class action supplies a fallback when no catalog row exists.
 const powerName=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
- .trim().toLocaleLowerCase('it').replace(/\\s+/g,' ');
+ .trim().toLocaleLowerCase('it').replace(/\s+/g,' ');
 const powerIdentity=power=>{
  const id=String(power.ability_id||power.id||power.rule_action_id||power.class_feature_id||'');
  const name=powerName(power.name);
