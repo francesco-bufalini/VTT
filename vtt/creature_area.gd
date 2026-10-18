@@ -5657,6 +5657,8 @@ func _on_inventory_updated(inventory: Array) -> void:
 	record["inventory"] = inventory.duplicate(true)
 	if _inventory_ui != null and _inventory_ui.has_method("attunement_max_base"):
 		record["attunement_max_base"] = int(_inventory_ui.call("attunement_max_base"))
+	if _inventory_ui != null and _inventory_ui.has_method("coins"):
+		record["coins"] = _inventory_ui.call("coins")
 	var current_main: Dictionary = ItemRules.occupying(record["inventory"], "main")
 	if String(previous_main.get("id", "")) != String(current_main.get("id", "")):
 		record["hand_grip_two_handed"] = false
