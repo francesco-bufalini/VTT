@@ -380,11 +380,20 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<label class="battle-stat battle-temp-hp">PF temporanei<input data-field="temporary_hp" type="number" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'"></label>'+
     '</div>'+
     '<div class="battle-hp-controls">'+
-      '<label class="battle-hp-quantity">Quantità<input id="hp-amount" type="number" inputmode="numeric" min="1" max="99999" value="1"></label>'+
       '<button type="button" class="btn danger" data-act="hp-damage">− Danni</button>'+
       '<button type="button" class="btn primary" data-act="hp-heal">＋ Cura</button>'+
       '<button type="button" class="btn" data-act="hp-restore" aria-label="Ripristina tutti i punti ferita" title="PF pieni">↺ PF pieni</button>'+
     '</div>'+
+    '<dialog id="hp-adjust-dialog" class="sheet-roll-dialog hp-adjust-dialog" aria-labelledby="hp-adjust-title">'+
+      '<h2 id="hp-adjust-title">Modifica punti ferita</h2>'+
+      '<form id="hp-adjust-form">'+
+        '<label for="hp-adjust-amount">Punti ferita<input id="hp-adjust-amount" type="number" inputmode="numeric" min="1" max="99999" value="1" required></label>'+
+        '<div class="hp-adjust-actions">'+
+          '<button type="button" class="btn" data-act="hp-adjust-cancel">Annulla</button>'+
+          '<button type="submit" class="btn primary" id="hp-adjust-confirm">Applica</button>'+
+        '</div>'+
+      '</form>'+
+    '</dialog>'+
     '<details class="battle-second-form"'+(hasSecondForm?' open':'')+'><summary>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</summary>'+
       '<div class="battle-hp-grid battle-form-stats">'+
         '<label class="battle-stat">PF attuali<input data-field="second_form_hp" type="number" min="0" max="99999" value="'+esc(c.second_form_hp??0)+'"></label>'+
