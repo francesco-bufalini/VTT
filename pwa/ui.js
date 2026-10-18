@@ -454,7 +454,10 @@ function resourceView(c,configure=false,compact=false){
    const compactActions='<div class="battle-resource-actions">'+
      '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo di '+esc(t.name)+'" title="Ripristina 1">−</button>'+
      '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo di '+esc(t.name)+'" title="Consuma 1">＋</button>'+
-     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button></div>';
+     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button>'+
+     '<details class="battle-resource-details"><summary aria-label="Origine e recupero di '+esc(t.name)+'" title="Origine e recupero">ⓘ</summary>'+
+       '<span>'+esc(t.origin_name||'Senza origine')+' · '+
+       esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details></div>';
    return '<article class="battle-resource-row">'+
     '<div class="battle-resource-main"><strong>'+esc(t.name)+'</strong>'+
       '<span class="battle-resource-count"><b>'+esc(remaining)+'</b> / '+
@@ -464,9 +467,6 @@ function resourceView(c,configure=false,compact=false){
       '<div class="battle-resource-extra">'+
         (t.recharge==='d6'?'<button type="button" class="btn small" data-act="tracker-recharge" data-tracker-id="'+esc(t.id)+'">Ricarica d6 · '+esc(t.recharge_min||6)+'+</button>':'')+
         optionalButton+'</div>':'')+
-    '<details class="battle-resource-details"><summary>Origine e recupero</summary>'+
-      '<span>'+esc(t.origin_name||'Senza origine')+' · '+
-      esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details>'+
     '</article>';
   }
   return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Poteri">↗ Poteri</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
