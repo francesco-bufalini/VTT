@@ -39,7 +39,7 @@ func setup(tab: Node, description: Control) -> void:
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
-	_owned_tree = _make_tree(["", "Valore", "Peso", "Rarità", "Quantità", "Fonte", "Proprietà / CA", "Nome"], 185)
+	_owned_tree = _make_tree(["", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
 	_owned_tree.columns = 8
 	_owned_tree.set_column_expand(7, true)
 	for column: int in range(7):
@@ -56,7 +56,7 @@ func setup(tab: Node, description: Control) -> void:
 	scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
 	scroll_heading.add_theme_font_size_override("font_size", 15)
 	add_child(scroll_heading)
-	_scroll_tree = _make_tree(["Quantità", "Livello", "Incantesimo"], 100)
+	_scroll_tree = _make_tree([_t("Quantità", "Quantity"), _t("Livello", "Level"), _t("Incantesimo", "Spell")], 100)
 	_scroll_tree.columns = 3
 	_scroll_tree.set_column_expand(0, false)
 	_scroll_tree.set_column_expand(1, false)
@@ -198,7 +198,7 @@ func _spell_label(owned: Dictionary, entry: Dictionary) -> String:
 	if not spell_name.is_empty():
 		return spell_name
 	var name := String(owned.get("name", entry.get("name", "")))
-	return name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges(" (-)")
+	return name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges()
 
 
 func _spell_level(entry: Dictionary) -> String:
@@ -268,12 +268,12 @@ func refresh() -> void:
 		return
 	_updating = true
 	var selected_index: int = int(_tab.call("_selected_inventory_index"))
-	var owned_root := _owned_tree.create_item() if _owned_tree.get_root() == null else _owned_tree.get_root()
-	var scroll_root := _scroll_tree.create_item() if _scroll_tree.get_root() == null else _scroll_tree.get_root()
-	var attune_root := _attunement_tree.create_item() if _attunement_tree.get_root() == null else _attunement_tree.get_root()
-	owned_root.free_children()
-	scroll_root.free_children()
-	attune_root.free_children()
+	_owned_tree.clear()
+	_scroll_tree.clear()
+	_attunement_tree.clear()
+	var owned_root := _owned_tree.create_item()
+	var scroll_root := _scroll_tree.create_item()
+	var attune_root := _attunement_tree.create_item()
 	var items := _rows()
 	var attuned_count := 0
 	for index: int in range(items.size()):
@@ -327,6 +327,7 @@ func refresh() -> void:
 				attuned_count += 1
 				for col: int in range(2):
 					attune_row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+	_record["inventory"] = items.duplicate(true)
 	var bonus: int = BonusRules.bonus(_record, "attunement_max")
 	var maximum: int = maxi(0, int(_record.get("attunement_max_base", 3)) + bonus)
 	_maximum.set_value_no_signal(int(_record.get("attunement_max_base", 3)))
@@ -418,7 +419,7 @@ func _update_quantity(index: int, requested: int) -> void:
 		return
 	_select_saved(index)
 	var spinner: SpinBox = _tab.get("_quantity")
-	spinner.set_value_no_signal(int(rows[index].get("quantity", 1)))
+	spinner.set_value_no_signal(clampi(requested, 1, 99999))
 	_tab.call("_on_quantity_changed", float(clampi(requested, 1, 99999)))
 	refresh()
 
