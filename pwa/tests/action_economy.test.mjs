@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries,spellActionEntries} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const actionEntries=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>project(record,{feature_rules:featureRules,...calculated},spells,overrides,rules,enabled);
@@ -166,4 +166,54 @@ test('only nonempty action, bonus and reaction spell groups appear with the actu
  assert(!actionEconomyView({}).includes('Incantesimi disponibili'));
  const rows=spellActionEntries({}, {origin_spells:[{id:'grant',spell_id:'reaction',payment_mode:'tracker',tracker_id:'wand'}],trackers:[{id:'wand',name:'Cariche',max:3}]},[make('reaction','reaction')]);
  assert.equal(rows.length,1);assert.equal(rows[0].tracker_id,'wand');assert.equal(rows[0].grant_id,'grant');assert.equal(rows[0].tracker,'Cariche');
+});
+
+test('native class activations use eligible collected features, edition and local tracker',()=>{
+ const make=(name,owner)=>({name,origin_key:'class|phb|'+owner.toLowerCase(),
+  requirements:{class_name:owner},entries:[name+' description']});
+ const rage=make('Rage','Barbarian');
+ const calc={features:[rage,make('Extra Attack','Fighter')],trackers:[{id:'rage-1',name:'Rages',max:3,spent:1,origin_class:'Barbarian'}]};
+ const barbarian={class:'Barbarian',class_source:'PHB',level:5};
+ let actions=nativeClassFeatureActions(barbarian,calc);
+ assert.equal(actions.length,1);assert.equal(actions[0].name,'Ira');
+ assert.equal(actions[0].tracker_id,'rage-1');assert.equal(actions[0].time,'bonus');
+ assert.equal(actions[0].description,'Rage description');
+ assert(!nativeClassFeatureActions(barbarian,{...calc,features:[{...rage,disabled:true}]}).length);
+ const markup=actionEconomyView(barbarian,calc);
+ assert(markup.includes('Ira'));assert(markup.includes('2 / 3'));
+ assert(!actionEconomyView(barbarian,{features:[],trackers:[]}).includes('>Ira<'));
+ const fighter={class:'Fighter',class_source:'PHB',level:5};
+ assert(find(actionEntries(fighter,calc),'attack').name.includes('×2'));
+ const revised={rules_version:'2024'};
+ const paladin={...make('Lay on Hands','Paladin'),origin_key:'class|xphb|paladin'};
+ const ability=nativeClassFeatureActions(revised,{features:[paladin],trackers:[]});
+ assert.equal(ability[0].time,'bonus');
+});
+
+test('variant healing surge bonus timing mirrors desktop and picker is visible',()=>{
+ const healing=actionEntries({}, {},[],[],catalog.actions,['healing_surges_bonus_dmg']);
+ assert.equal(find(healing,'healing_surge')?.time,'bonus');
+ const document=doc(actionEconomyView({}));
+ assert(document.querySelector('[data-act="action-variants"]').textContent.includes('Regole varianti'));
+ assert(document.querySelector('[data-act="action-expand-all"]'));
+ const fighter=doc(actionEconomyView({class:'Fighter',level:5},{features:[
+  {name:'Extra Attack',origin_key:'class|phb|fighter',requirements:{class_name:'Fighter'}}]}));
+ assert(fighter.querySelector('[data-timing="action"] .action-economy-count').textContent.length>0);
+});
+
+test('load both native catalogs without duplicating, auto-enabling or dropping variants',async()=>{
+ const supplementary=JSON.parse(readFileSync(new URL('../../vtt/data/combat_action_supplements_5etools.json',import.meta.url),'utf8'));
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async url=>({
+   ok:true,json:async()=>url.includes('supplements')?supplementary:catalog
+  });
+  const entries=await loadGeneralActionSupplements();
+  assert.equal(entries.filter(row=>row.id==='attack'&&row.edition==='2014').length,1);
+  assert.equal(entries.filter(row=>row.id==='wake'&&row.edition==='2014').length,1);
+  assert.equal(entries.filter(row=>row.id==='disarm'&&row.edition==='2014').length,1);
+  assert.equal(actionVariants().length,78);
+  assert(!actionEntries({}, {},[],[],entries).some(row=>row.id==='disarm'));
+  assert(actionEntries({}, {},[],[],entries).some(row=>row.id==='wake'));
+ }finally{globalThis.fetch=original;}
 });
