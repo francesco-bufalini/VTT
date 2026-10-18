@@ -204,8 +204,14 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const collected=arr(calculated.features).filter(f=>String(f.origin_key||'').startsWith(classOrigin));
   if(collected.length&&!collected.some(f=>String(f.name||'').toLowerCase()===
       String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled))continue;
+  // Prefer the native activation (including persistent conditions) when present.
+  // Otherwise keep a typed, class-owned grant with its actual resource.
+  if(nativeClassFeatureActions(record,calculated).some(row=>
+      String(row.name).toLowerCase()===String(rule.display_name||rule.feature_name).toLowerCase()))continue;
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
-      resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
+      resource?.name||rule.resource_name||'',Number(rule.resource_cost??(resource?1:0))||0,
+      {id:'class_override:'+rule.class_name+':'+(rule.display_name||rule.feature_name)+':'+rule.book,
+       tracker_id:String(resource?.id||''),origin_id:classOrigin});
  }
  // Native class abilities with no typed activation in their 5etools entry.
  for(const row of nativeClassFeatureActions(record,calculated)){
