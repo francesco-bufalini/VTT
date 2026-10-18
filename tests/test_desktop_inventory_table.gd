@@ -52,7 +52,8 @@ func run() -> void:
 	var attune_panel: PanelContainer = desktop.get("_attunement_panel")
 	assert(equipment_panel.get_index() == 0 and attune_panel.get_index() == 1,
 		"Boxed equipment and attunement sections belong at the top of the inventory")
-	assert((desktop.get("_main") as OptionButton).get_parent().get_parent().get_child(0) == equipment_panel.get_child(0).get_child(1),
+	assert((desktop.get("_main") as OptionButton).get_parent().get_parent() == equipment_panel.get_child(0).get_child(1)
+		and (desktop.get("_main") as OptionButton).get_parent() != off_picker.get_parent(),
 		"Main and off-hand selectors must live on distinct equipment rows")
 	assert(menu.get_item_text(0) == "Rimuovi" and menu.get_item_text(1) == "Vedi nel bestiario",
 		"Desktop right-click menu must expose removal and bestiary lookup")
