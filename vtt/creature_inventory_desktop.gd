@@ -6,7 +6,7 @@ const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
-const QUANTITY_COLUMN := 4
+const QUANTITY_COLUMN := 3
 const MINUS_BUTTON := 100
 const PLUS_BUTTON := 101
 const REMOVE_BUTTON := 102
@@ -29,6 +29,8 @@ var _maximum_label: Label
 var _owned_heading: Label
 var _scroll_heading: Label
 var _equipment_heading: Label
+var _equipment_panel: PanelContainer
+var _attunement_panel: PanelContainer
 var _attune_label: Label
 var _slot_indices: Dictionary = {}
 var _record: Dictionary = {}
@@ -46,13 +48,13 @@ func _t(it: String, en: String) -> String:
 
 func setup(tab: Node, description: Control) -> void:
 	_tab = tab
-	# The description and search list must not swallow wheel events needed by
-	# the outer creature sheet when their own viewport reaches its boundary.
-	description.mouse_force_pass_scroll_events = true
-	description.set_meta("pass_wheel_to_sheet", true)
+	# Nested inventory widgets own their scroll events, even at the limit.
+	# This matches the other creature-sheet lists and prevents scroll chaining.
+	description.mouse_force_pass_scroll_events = false
+	description.remove_meta("pass_wheel_to_sheet")
 	var catalog_list: ItemList = _tab.get("_catalog_list")
-	catalog_list.mouse_force_pass_scroll_events = true
-	catalog_list.set_meta("pass_wheel_to_sheet", true)
+	catalog_list.mouse_force_pass_scroll_events = false
+	catalog_list.remove_meta("pass_wheel_to_sheet")
 	add_theme_constant_override("separation", 8)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_minus_icon = _symbol_texture(false)
@@ -63,13 +65,18 @@ func setup(tab: Node, description: Control) -> void:
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
-	_owned_tree = _make_tree([_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
-	_owned_tree.columns = 8
-	_owned_tree.set_column_expand(7, true)
-	for column: int in range(7):
+	_owned_tree = _make_tree([_t("Eq.", "Eq."), _t("Val. (mo)", "Value (gp)"),
+		_t("Peso", "Weight"), _t("Qtà", "Qty"), _t("Fonte", "Source"),
+		_t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
+	_owned_tree.columns = 7
+	_owned_tree.set_column_expand(6, true)
+	for column: int in range(6):
 		_owned_tree.set_column_expand(column, false)
-	for column: int in range(8):
-		_owned_tree.set_column_custom_minimum_width(column, [65, 65, 60, 77, 104, 52, 122, 235][column])
+	for column: int in range(7):
+		_owned_tree.set_column_custom_minimum_width(column, [42, 58, 50, 82, 49, 123, 190][column])
+	# Full properties stay available as a tooltip without stretching the row.
+	_owned_tree.set_column_clip_content(5, true)
+	_owned_tree.set_column_clip_content(6, true)
 	_owned_tree.item_selected.connect(_on_owned_selected)
 	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
@@ -85,7 +92,7 @@ func setup(tab: Node, description: Control) -> void:
 	_scroll_tree.columns = 3
 	_scroll_tree.set_column_expand(0, false)
 	_scroll_tree.set_column_expand(1, false)
-	_scroll_tree.set_column_custom_minimum_width(0, 104)
+	_scroll_tree.set_column_custom_minimum_width(0, 82)
 	_scroll_tree.set_column_custom_minimum_width(1, 58)
 	_scroll_tree.item_selected.connect(_on_scroll_selected)
 	_scroll_tree.gui_input.connect(_on_scroll_mouse_event)
@@ -96,23 +103,26 @@ func setup(tab: Node, description: Control) -> void:
 	var description_parent: Node = description.get_parent()
 	description_parent.remove_child(description)
 	add_child(description)
+	# Both status sections belong above the inventory tables, in compact
+	# styled panels rather than loose controls between inventory and details.
+	_equipment_panel = PanelContainer.new()
+	_equipment_panel.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
+	add_child(_equipment_panel)
+	var equipment_body := VBoxContainer.new()
+	equipment_body.add_theme_constant_override("separation", 5)
+	_equipment_panel.add_child(equipment_body)
 	var equipment_heading := Label.new()
 	_equipment_heading = equipment_heading
 	equipment_heading.text = _t("Equipaggiamento", "Equipment")
 	equipment_heading.add_theme_font_size_override("font_size", 15)
-	add_child(equipment_heading)
-	var triangle := VBoxContainer.new()
-	triangle.add_theme_constant_override("separation", 5)
-	add_child(triangle)
-	var hands := HBoxContainer.new()
-	hands.add_theme_constant_override("separation", 12)
-	triangle.add_child(hands)
-	_main = _slot_picker(hands, _t("Mano principale", "Main hand"), "main")
-	_off = _slot_picker(hands, _t("Mano secondaria", "Off hand"), "off")
-	var armor_row := HBoxContainer.new()
-	armor_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	triangle.add_child(armor_row)
-	_armor = _slot_picker(armor_row, _t("Armatura", "Armor"), "body")
+	equipment_body.add_child(equipment_heading)
+	var slots := VBoxContainer.new()
+	slots.add_theme_constant_override("separation", 5)
+	equipment_body.add_child(slots)
+	# Each hand gets its own horizontal row with its own size control.
+	_main = _slot_picker(slots, _t("Mano principale", "Main hand"), "main")
+	_off = _slot_picker(slots, _t("Mano secondaria", "Off hand"), "off")
+	_armor = _slot_picker(slots, _t("Armatura", "Armor"), "body")
 
 	_context_menu = PopupMenu.new()
 	_context_menu.add_item(_t("Rimuovi", "Remove"), MENU_REMOVE)
@@ -120,8 +130,14 @@ func setup(tab: Node, description: Control) -> void:
 	_context_menu.id_pressed.connect(_on_context_action)
 	add_child(_context_menu)
 
+	_attunement_panel = PanelContainer.new()
+	_attunement_panel.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
+	add_child(_attunement_panel)
+	var attunement_body := VBoxContainer.new()
+	attunement_body.add_theme_constant_override("separation", 5)
+	_attunement_panel.add_child(attunement_body)
 	var attune_heading := HBoxContainer.new()
-	add_child(attune_heading)
+	attunement_body.add_child(attune_heading)
 	var attune_label := Label.new()
 	_attune_label = attune_label
 	attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
@@ -139,13 +155,16 @@ func setup(tab: Node, description: Control) -> void:
 	_maximum.custom_minimum_size.x = 65
 	_maximum.value_changed.connect(_on_maximum_changed)
 	attune_heading.add_child(_maximum)
-	_attunement_tree = _make_tree([_t("Sintonia", "Attuned"), _t("Oggetto", "Item")], 100)
+	_attunement_tree = _make_tree([_t("Sintonia", "Attuned"), _t("Oggetto", "Item")], 0)
 	_attunement_tree.columns = 2
 	_attunement_tree.set_column_expand(0, false)
-	_attunement_tree.set_column_custom_minimum_width(0, 95)
+	_attunement_tree.set_column_custom_minimum_width(0, 74)
 	_attunement_tree.item_edited.connect(_on_attunement_edited)
 	_attunement_tree.item_selected.connect(_on_attunement_selected)
-	add_child(_attunement_tree)
+	attunement_body.add_child(_attunement_tree)
+	# Move the completed panels to the top of this VBox.
+	move_child(_equipment_panel, 0)
+	move_child(_attunement_panel, 1)
 
 
 # Desktop headings are built once; changing the creature language must also
@@ -157,20 +176,20 @@ func refresh_captions() -> void:
 	_scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
 	_equipment_heading.text = _t("Equipaggiamento", "Equipment")
 	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
-	for column: int in range(8):
+	for column: int in range(7):
 		_owned_tree.set_column_title(column, [
-			_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
-			_t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"),
-			_t("Nome", "Name")][column])
+			_t("Eq.", "Eq."), _t("Val. (mo)", "Value (gp)"), _t("Peso", "Weight"),
+			_t("Qtà", "Qty"), _t("Fonte", "Source"),
+			_t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")][column])
 	for column: int in range(3):
 		_scroll_tree.set_column_title(column, [
 			_t("Quantità", "Quantity"), _t("Livello", "Level"), _t("Incantesimo", "Spell")][column])
 	for column: int in range(2):
 		_attunement_tree.set_column_title(column, [
 			_t("Sintonia", "Attuned"), _t("Oggetto", "Item")][column])
-	(_main.get_parent().get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
-	(_off.get_parent().get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
-	(_armor.get_parent().get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
+	(_main.get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
+	(_off.get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
+	(_armor.get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
 	_maximum_label.text = _t("Massimo", "Maximum")
 	_context_menu.set_item_text(0, _t("Rimuovi", "Remove"))
 	_context_menu.set_item_text(1, _t("Vedi nel bestiario", "View in bestiary"))
@@ -186,8 +205,8 @@ func _make_tree(captions: Array, height: float) -> Tree:
 	tree.select_mode = Tree.SELECT_ROW
 	tree.custom_minimum_size.y = height
 	tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# Do not trap the parent sheet's wheel events inside short Tree lists.
-	tree.mouse_force_pass_scroll_events = true
+	# Don't propagate wheel events to the containing creature sheet.
+	tree.mouse_force_pass_scroll_events = false
 	tree.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	for column: int in range(captions.size()):
 		tree.set_column_title(column, _t(String(captions[column]), String(captions[column])))
@@ -195,26 +214,24 @@ func _make_tree(captions: Array, height: float) -> Tree:
 
 
 func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionButton:
-	var group := VBoxContainer.new()
-	group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(group)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+	parent.add_child(row)
 	var caption := Label.new()
 	caption.text = label
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	group.add_child(caption)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	group.add_child(row)
+	caption.custom_minimum_size.x = 133
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(caption)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	picker.custom_minimum_size.x = 148 if slot != "body" else 200
+	picker.custom_minimum_size.x = 135
 	picker.clip_text = true
 	picker.fit_to_longest_item = false
 	picker.item_selected.connect(_on_slot_selected.bind(slot))
 	row.add_child(picker)
 	if slot in ["main", "off"]:
 		var weapon_size := OptionButton.new()
-		weapon_size.custom_minimum_size.x = 116
+		weapon_size.custom_minimum_size.x = 118
 		weapon_size.fit_to_longest_item = false
 		weapon_size.clip_text = true
 		weapon_size.tooltip_text = _t("Taglia dell'arma impugnata", "Equipped weapon size")
@@ -323,10 +340,10 @@ func _formatted_number(value: float) -> String:
 func _value_total(entry: Dictionary, quantity: int) -> String:
 	var raw: Variant = entry.get("value_gp", null)
 	if raw != null and (raw is float or raw is int):
-		return _formatted_number(float(raw) * quantity) + " mo"
+		return _formatted_number(float(raw) * quantity)
 	raw = entry.get("value", null)
 	if raw is float or raw is int:
-		return _formatted_number(float(raw) * quantity / 100.0) + " mo"
+		return _formatted_number(float(raw) * quantity / 100.0)
 	return "—"
 
 
@@ -385,10 +402,24 @@ func _rarity_label(entry: Dictionary) -> String:
 	return String(italian.get(rarity, rarity.capitalize()))
 
 
+func _property_summary(entry: Dictionary) -> String:
+	var parts := PackedStringArray()
+	var characteristics: String = _characteristic(entry)
+	var rarity: String = _rarity_label(entry)
+	if characteristics != "—":
+		parts.append(characteristics)
+	if rarity != "—":
+		parts.append(rarity)
+	return " · ".join(parts) if not parts.is_empty() else "—"
+
+
 func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) -> void:
 	cell.set_cell_mode(column, TreeItem.CELL_MODE_STRING)
 	cell.set_text(column, str(quantity))
 	cell.set_editable(column, not locked)
+	# Outline the editable number without covering the +/-/X controls.
+	cell.set_custom_bg_color(column, Color(0.68, 0.57, 0.38, 0.82), true)
+	cell.set_tooltip_text(column, _t("Quantità modificabile (0 rimuove l'oggetto)", "Editable quantity (0 removes the item)"))
 	if quantity <= 1:
 		cell.add_button(column, _remove_icon, REMOVE_BUTTON, false, _t("Rimuovi oggetto", "Remove item"))
 	else:
@@ -446,13 +477,21 @@ func refresh() -> void:
 			row.set_custom_font_size(0, 12)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
+			row.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			row.set_text(2, _weight_total(entry, quantity))
-			row.set_text(3, _rarity_label(entry))
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
-			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
-			row.set_text(6, _characteristic(entry))
-			row.set_tooltip_text(6, _characteristic(entry))
-			row.set_text(7, String(owned.get("name", "")))
+			row.set_text(4, String(entry.get("source", owned.get("source", ""))).to_upper())
+			row.set_text(5, _property_summary(entry))
+			row.set_tooltip_text(5, _property_summary(entry))
+			row.set_text(6, String(owned.get("name", "")))
+			if bool(owned.get("attuned", false)) and ItemRules.requires_attunement(entry):
+				# Show active attunement on the owned item, not in its editor.
+				for col: int in range(7):
+					row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+				# Preserve the interactive borders on both editable cells.
+				if kind not in ["weapon", "armor", "shield", "document"]:
+					row.set_custom_bg_color(0, Color(0.73, 0.63, 0.43, 0.70), true)
+				row.set_custom_bg_color(QUANTITY_COLUMN, Color(0.68, 0.57, 0.38, 0.82), true)
 		if index == selected_index and _active_view == ("scroll" if is_scroll else "owned"):
 			row.select(0)
 		if ItemRules.requires_attunement(entry):
@@ -467,8 +506,9 @@ func refresh() -> void:
 				attune_row.select(0)
 			if attuned:
 				attuned_count += 1
-				for col: int in range(2):
-					attune_row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+	# Fit only the heading and actual entries. Empty attunement sections
+	# occupy no reserved 100px viewport, while long ones remain bounded.
+	_attunement_tree.custom_minimum_size.y = minf(195.0, 31.0 + 26.0 * attune_root.get_child_count())
 	_record["inventory"] = items.duplicate(true)
 	var bonus: int = BonusRules.bonus(_record, "attunement_max")
 	var maximum: int = maxi(0, int(_record.get("attunement_max_base", 3)) + bonus)
