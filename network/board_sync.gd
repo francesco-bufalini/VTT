@@ -2569,6 +2569,7 @@ func get_tactical_map_data() -> Dictionary:
 				and String(node.get_meta("creature_owner_id", "")).is_empty()
 			),
 			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
+			"rules_version": String(node.get_meta("rules_version", "2014")),
 			"active_spell_ids": node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else [],
 			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else "",
 			"current_miniature_id": String(node.call("get_token_pack_id")) if node.has_method("get_token_pack_id") else "",
