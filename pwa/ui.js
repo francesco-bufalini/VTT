@@ -201,7 +201,7 @@ async function libraryView() {
         btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
         btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
       '</span></div>':'')+list+
-    '<p class="hint">L’archivio usa IndexedDB. Esporta periodicamente un backup: iOS può eliminare i dati dei siti in alcune condizioni.</p>';
+    '<p class="hint">Le creature sono salvate su questo dispositivo. Esporta periodicamente una copia di sicurezza: in alcune condizioni iOS può eliminare i dati locali dei siti.</p>';
 }
 function renderCatalogRows() {
   const filter=state.catalogQuery.trim().toLocaleLowerCase();
@@ -231,7 +231,7 @@ async function catalogView() {
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
       '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
-      '<p class="hint">I benefici strutturati vengono calcolati in locale.</p>':"")+
+      '<p class="hint">Bonus ed effetti strutturati vengono calcolati direttamente sul dispositivo.</p>':"")+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
         '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
@@ -242,7 +242,7 @@ async function catalogView() {
       '<div class="columns"><label>Tipo<select id="quick-type">'+[['other','Altro'],['weapon','Arma'],['shield','Scudo'],['armor','Armatura'],['tool','Strumento'],['magic','Magico']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
       '<label>Rarità<select id="quick-rarity">'+[['none','Nessuna'],['common','Comune'],['uncommon','Non comune'],['rare','Raro'],['very rare','Molto raro'],['legendary','Leggendario'],['artifact','Artefatto']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
       '<label>Valore (mo)<input id="quick-value" type="number" min="0" max="100000000" value="0"></label></div>':
-      '<p class="hint">Competenze concesse (fino a tre). Le scelte aperte non vengono assegnate automaticamente.</p>'+
+      '<p class="hint">Competenze concesse (fino a tre). Le scelte non ancora completate non vengono assegnate automaticamente.</p>'+
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
@@ -306,12 +306,12 @@ async function editorView() {
     const definitions=await Promise.all(documents.map(({item})=>
       getRecord("global","homebrew",String(item.id||""))));
     body=panel("Oggetti nell’inventario",
-      '<p class="hint">Gli oggetti di catalogo mantengono le loro definizioni; le copie hanno quantità ed equipaggiamento propri.</p>'+
+      '<p class="hint">Gli oggetti del catalogo mantengono le proprietà originali; ogni copia ha quantità e stato di equipaggiamento propri.</p>'+
       (ordinary.length?ordinary.map(({item,index})=>inventoryRow(item,index)).join(""):
         '<p class="hint">Nessun oggetto.</p>')+
       '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
       btn("add-item","Crea oggetto locale")+'</div>')+
-      panel("Documenti",'<p class="hint">Documenti homebrew condivisi fra le copie della scheda. Stile e data appartengono alla singola copia.</p>'+
+      panel("Documenti",'<p class="hint">Documenti personalizzati condivisi tra le copie della scheda. Stile e data sono specifici di ciascuna copia.</p>'+
       (documents.length?documents.map(({item,index},i)=>
         documentRow(item,index,definitions[i])).join(""):
         '<p class="hint">Nessun documento.</p>')+
@@ -324,7 +324,7 @@ async function editorView() {
     break;
   case "magic":
     body=panel('Lancio tattico',c.linked_token_sync_id?
-      '<p class="hint">I bersagli si scelgono sullo snapshot 2D della mappa; lo slot è consumato solo dopo l’accettazione del desktop.</p>'+
+      '<p class="hint">Scegli i bersagli nell'anteprima 2D della mappa. Lo slot viene consumato solo dopo la conferma dal desktop.</p>'+
       '<div class="columns"><label>Livello slot (0 = automatico)<input id="sheet-cast-level" type="number" min="0" max="9" value="'+esc(state.castLevel)+'"></label>'+
       '<label>Risorsa<select id="sheet-cast-payment"><option value="auto">Automatica</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label></div>'+
       (!state.paired||!state.online?'<p class="hint">Collega la partita e piazza il token prima di lanciare.</p>':''):
@@ -354,7 +354,7 @@ async function editorView() {
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
-      panel("Capacità",'<p class="hint">Privilegi attivabili distinti dagli incantesimi, senza scuola o componenti. I costi dipendono dal privilegio; le manovre contestuali si risolvono durante l’azione appropriata.</p>'+
+      panel("Capacità",'<p class="hint">Qui trovi le capacità attivabili diverse dagli incantesimi: non hanno scuola o componenti. Costi e utilizzi dipendono dal privilegio; le manovre si risolvono durante l'azione prevista.</p>'+
         (abilitiesForCreature(c,state.abilityCatalog||[]).map(ability=>
           '<article class="native-entry"><strong>'+esc(ability.name||"Capacità")+
           '</strong><p class="hint">'+esc(ability.origin||"Privilegio")+
@@ -395,7 +395,7 @@ function resourceView(c,configure=false){
   const edit=configure&&!t.automatic?'<div class="columns">'+control(t,'name','Nome',base.name)+control(t,'max','Massimo base',base.max,'number')+control(t,'max_formula','Formula del massimo',base.max_formula)+pick('origin_id','Origine',[['','Senza origine'],...(!origins.some(o=>o.id===base.origin_id)&&base.origin_id?[[base.origin_id,base.origin_name||base.origin_id]]:[]),...origins.map(o=>[o.id,o.name])],base.origin_id||'')+pick('recharge','Recupero',modes,base.recharge||'manual')+control(t,'recharge_min','Ricarica d6 da (1–6)',base.recharge_min||6,'number')+'<label class="check"><input type="checkbox" data-tracker-field="disabled" data-tracker-id="'+esc(t.id)+'" '+(base.disabled?'checked':'')+'>Disattivato</label></div>'+benefitRequirements(base,'data-benefit-tracker="'+esc(t.id)+'"')+(base.max_formula?'<p class="hint">'+esc(formulaPreview(base.max_formula,state.calculated))+'</p>':'')+'<button class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'';
   return '<article class="list-item"><strong>'+esc(t.name)+'</strong><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
  }).join('');
- return panel('Risorse','<p class="hint">I massimi includono formule e bonus attivi. Riposo breve: risorse previste e slot del Patto; riposo lungo: anche gli slot di classe. Il nuovo turno recupera solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
+ return panel('Risorse','<p class="hint">I valori massimi includono formule e bonus attivi. Il riposo breve ripristina le risorse previste e gli slot del Patto; quello lungo ripristina anche gli slot di classe. All'inizio del turno si recuperano solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
 }
 
 function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
