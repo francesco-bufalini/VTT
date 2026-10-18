@@ -806,7 +806,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
