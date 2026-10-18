@@ -660,7 +660,6 @@ function originPowersView(c,calculated){
    }),'magic-panel')).join('');
 }
 function originChoicesView(calculated){
-function originChoicesView(calculated){
  const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
  if(!choices.length)return '';
  return panel('Scelte da origini',choices.map(choice=>{
