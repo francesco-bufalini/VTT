@@ -308,7 +308,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    powerGroups.set(key,abilities);
   }
   const abilityButtons=key=>(powerGroups.get(key)||[]).map(ability=>
-   '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'">'+
+   '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'" aria-label="Dettagli '+esc(ability.name)+'">'+
    icon('proficiency')+'<span><strong>'+esc(ability.name)+'</strong>'+
    (ability.info?'<small>'+esc(ability.info)+'</small>':'')+'</span></button>').join('');
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
@@ -316,7 +316,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
-   return '<div class="play-resource-group"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
+   return '<div class="play-resource-group"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
     btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+
     '</div>'+abilityButtons(key)+'</div>';
   }).join('');
