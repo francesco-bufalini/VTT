@@ -36,7 +36,7 @@ export async function notifyIncomingChat(entry, sessionId = "") {
   if (!notificationsEnabled() || !entry || entry.kind !== "chat") return;
   // Avoid distracting duplicate alerts while the chat is visible and focused.
   if (document.visibilityState === "visible" && document.hasFocus() &&
-      document.querySelector('#events:not([hidden])')) return;
+      (document.querySelector("#events") && !document.querySelector("#events").closest("[hidden]"))) return;
   const registration = await navigator.serviceWorker.ready;
   const author = String(entry.author || "Giocatore").slice(0, 80);
   const text = String(entry.text || "Nuovo messaggio").slice(0, 180);
