@@ -214,6 +214,10 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
     if(url==="/api/action"){
       const msg=JSON.parse(options.body);
       if(msg.action==="chat_poll")return new Response(JSON.stringify({ok:true,events:[]}),{status:200});
+       if(msg.action==="snapshot")return new Response(JSON.stringify({
+         ok:true,format:"webp",image:"d2VicA==",width:1536,height:1536,
+         token_id:msg.payload.token_id,snapshot_id:"preview",field_feet:60,markers:[]
+       }),{status:200});
       return new Response(JSON.stringify({ok:true,moved:true}),{status:200});
     }
     return new Response(JSON.stringify({error:"not_found"}),{status:404});
@@ -229,10 +233,18 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(JSON.parse(enrollment.options.body).code,"AB12CD34EF56AB78");
   assert.match(document.querySelector("#app").textContent,/Guardiano/);
   assert.match(document.querySelector("#app").textContent,/Round 2/);
+  await until(()=>document.querySelector("#session-map-image"));
+  const desktop=document.querySelector(".session-desktop");
+  const preview=document.querySelector(".session-map-panel");
+  const roster=document.querySelector(".session-token-panel");
+  assert.ok(desktop.compareDocumentPosition(preview)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
+  assert.ok(preview.compareDocumentPosition(roster)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
+  assert.ok(document.querySelector('[data-act="edit-token"]'));
   click('[data-act="move"][data-direction="north"]');
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token"));
   const moves=calls.filter(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="move_token");
   assert.equal(JSON.parse(moves[0].options.body).payload.token_id,"token_1");
+  click('[data-act="open-place-token"]');
   const pick=document.querySelector("#place-creature");
   assert.ok(pick, "Existing local characters should appear for token placement");
   click('[data-act="place-creature"]');
@@ -242,7 +254,10 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(publicSheet.name,"Arcanista mobile");
   assert.equal(publicSheet.inventory,undefined,"Never send private inventory to game host");
   assert.equal(publicSheet.current_hp,undefined,"Never send private HP to game host");
+  click('[data-act="edit-token"]');
+  await until(()=>document.querySelector('#session-token-dialog[open]'));
   const condition=document.querySelector('[data-token-condition="prone"]');
+  assert.ok(condition,"Token popup must expose native conditions");
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));

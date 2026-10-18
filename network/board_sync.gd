@@ -40,6 +40,8 @@ const SYNC_APPEARANCE_KEYS := [
 	"transformation_history"
 ]
 const MobileMapCapture = preload("res://network/mobile_map_capture.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 var _mobile_capture_busy := false
 var _mobile_views: Dictionary = {}
 const MapDataController = preload("res://vtt/map_data_controller.gd")
@@ -75,6 +77,9 @@ var _auto_sync_last_poll_msec := 0
 var _auto_sync_suppress_until_msec := 0
 var _auto_sync_retry_after_msec := 0
 var _applying_received_snapshot := false
+# Monotonic render invalidation. The PWA reads this value but never echoes snapshots.
+var _mobile_view_revision := 1
+var _mobile_view_signature := ""
 # Disk persistence is independent of peer availability and the network toggle.
 var _map_autosave_ready := false
 var _map_autosave_last_signature := ""
@@ -248,6 +253,7 @@ func sync_local_change_now() -> Error:
 	if snapshot.is_empty():
 		return ERR_BUSY
 	var signature := _snapshot_signature(snapshot)
+	_register_mobile_view_signature(signature)
 	_persist_map_autosave(snapshot, signature)
 
 	# Unlike the polling path, an explicit UI mutation must never become the
@@ -278,6 +284,7 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 	var outgoing_snapshot := create_snapshot()
 	if not outgoing_snapshot.is_empty():
+		_register_mobile_view_signature(_snapshot_signature(outgoing_snapshot))
 		_persist_map_autosave(outgoing_snapshot)
 	var error := send_snapshot_to_tailnet(session_key, sync_event)
 	if error == OK:
@@ -302,8 +309,6 @@ func _poll_auto_sync() -> void:
 	var now := Time.get_ticks_msec()
 	if now < _auto_sync_suppress_until_msec:
 		return
-	if now < _auto_sync_retry_after_msec:
-		return
 	if now - _auto_sync_last_poll_msec < AUTO_SYNC_POLL_MS:
 		return
 	_auto_sync_last_poll_msec = now
@@ -312,6 +317,9 @@ func _poll_auto_sync() -> void:
 	if snapshot.is_empty():
 		return
 	var signature := _snapshot_signature(snapshot)
+	_register_mobile_view_signature(signature)
+	if now < _auto_sync_retry_after_msec:
+		return
 	if not _auto_sync_initialized:
 		_auto_sync_initialized = true
 		_auto_sync_last_signature = signature
@@ -341,6 +349,15 @@ func _poll_auto_sync() -> void:
 		_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
 
 
+func _register_mobile_view_signature(signature: String) -> void:
+	# One-way public invalidation: failed peer delivery still updates the
+	# connected PWA, but its GET/snapshot requests cannot trigger a send.
+	if signature.is_empty() or signature == _mobile_view_signature:
+		return
+	_mobile_view_signature = signature
+	_mobile_view_revision += 1
+
+
 func _snapshot_signature(snapshot: Dictionary) -> String:
 	var comparable := snapshot.duplicate(true)
 	# Snapshot V6 creati da versioni precedenti possono ancora contenere
@@ -356,6 +373,7 @@ func _accept_received_snapshot(snapshot: Dictionary) -> void:
 	_auto_sync_last_signature = _snapshot_signature(
 		local_snapshot if not local_snapshot.is_empty() else snapshot
 	)
+	_register_mobile_view_signature(_auto_sync_last_signature)
 	_auto_sync_candidate_signature = ""
 	_auto_sync_candidate_since_msec = 0
 	_auto_sync_suppress_until_msec = (
@@ -2533,7 +2551,8 @@ func get_tactical_map_data() -> Dictionary:
 				projected_active_index = entries.size() - 1
 		combat["entries"] = entries
 		combat["active_index"] = projected_active_index
-	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3}
+	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3,
+		"revision": _mobile_view_revision}
 
 
 func _visible_mobile_token(id: String) -> CharacterBody3D:
@@ -2554,7 +2573,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 			return {"ok": true}
 		return {"ok": true, "events": chat.shared_events_after(String(payload.get("after", "")))}
 	var target := _visible_mobile_token(String(payload.get("token_id", "")))
-	if target == null:
+	if target == null and (action != "snapshot" or not String(payload.get("token_id", "")).is_empty()):
 		return {"ok": false, "error": "Il token non è più presente o visibile sulla mappa."}
 	if action == "set_appearance":
 		var owner := String(payload.get("owner_id", ""))
@@ -2572,6 +2591,19 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		board_root.call("commit_undo_transaction", undo)
 		mark_token_appearance_locally_edited(target)
 		board_root.call_deferred("_sync_explicit_token_change", target)
+		return {"ok": true}
+	# Direct token spell badges use the same validated native catalog and synced
+	# token fields as desktop spells. They do not impersonate spellcasting.
+	if action == "set_token_spell":
+		var spell_id := String(payload.get("spell_id", "")).strip_edges()
+		if spell_id.is_empty() or spell_id.length() > 256 or not payload.get("enabled") is bool:
+			return {"ok": false, "error": "Incantesimo non valido."}
+		var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
+		if spell.is_empty() or (bool(payload.enabled) and not ActiveSpells.has_duration(spell)):
+			return {"ok": false, "error": "L'incantesimo deve essere un effetto di durata valido."}
+		if not board_root.has_method("_set_token_active_spell"):
+			return {"ok": false, "error": "Effetti degli incantesimi non disponibili."}
+		board_root.call("_set_token_active_spell", target, spell_id, bool(payload.enabled))
 		return {"ok": true}
 	if action == "move_token":
 		var step: String = String(payload.get("direction", ""))
@@ -2614,7 +2646,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 				return {"ok": false, "error": "Gittata non valida."}
 		return attack_system.call("select_mobile_preview_target", target, victim, payload.attack)
 	if action == "place_token":
-		return _place_mobile_token(payload.get("creature", {}), target)
+		return _place_mobile_token(payload.get("creature", {}), target, false, String(payload.get("direction", "")))
 	if action == "claim_free_token":
 		return _place_mobile_token(payload.get("creature", {}), target, true)
 	if action != "snapshot":
@@ -2630,11 +2662,13 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		# Reject non-finite geometry before projecting or allocating buffers.
 		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 10000:
 			return {"ok": false, "error": "Gittata non valida."}
-	var spell_status := _mobile_spell_status(target, String(payload.get("owner_id", "")))
+	var spell_status := _mobile_spell_status(target, String(payload.get("owner_id", ""))) if target != null else {}
 	if bool(spell_status.get("active", false)):
 		attack = {"range_feet": float(spell_status.get("range_feet", 5)), "melee": true}
-	var range_feet: float = maxf(float(attack.get("range_feet", target.call("get_reach_feet"))), float(attack.get("long_range_feet", target.get_meta("active_weapon_long_range_feet", 0) if attack.is_empty() else 0)))
-	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else 60.0
+	var default_reach: float = float(target.call("get_reach_feet")) if target != null else 5.0
+	var default_long: float = float(target.get_meta("active_weapon_long_range_feet", 0)) if target != null and attack.is_empty() else 0.0
+	var range_feet: float = maxf(float(attack.get("range_feet", default_reach)), float(attack.get("long_range_feet", default_long)))
+	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else (120.0 if target == null else 60.0)
 	_mobile_capture_busy = true
 	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, field_feet, attack)
 	_mobile_capture_busy = false
@@ -2698,7 +2732,9 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		return runtime.call("remote_preview_input", caster, owner, point_data, projection)
 	return runtime.call("remote_target_input", caster, owner, victim, point_data, "select")
 
-func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: bool = false) -> Dictionary:
+func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: bool = false, direction: String = "") -> Dictionary:
+	if not direction.is_empty() and direction not in ["north", "south", "east", "west"]:
+		return {"ok": false, "error": "Direzione cardinale non valida."}
 	if not value is Dictionary:
 		return {"ok": false, "error": "Creatura non valida."}
 	var creature: Dictionary = value
@@ -2771,7 +2807,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 		board_root.call("apply_creature_sheet_properties", token, creature)
 	token.call("set_reach_feet", float(reach), true)
 	token.call("set_conditions", conditions)
-	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support)
+	var position: Vector3 = token.global_position if claim_free else _mobile_adjacent_position(token, support, direction)
 	if claim_free:
 		position.y = old_bottom + float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
 	if position == Vector3.INF:
@@ -2800,7 +2836,7 @@ func _place_mobile_token(value: Variant, support: CharacterBody3D, claim_free: b
 
 # Check adjacent footprints at the reference token's base level. Keep the
 # reference separate: moving it must not carry the new creature along.
-func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3D) -> Vector3:
+func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3D, direction: String = "") -> Vector3:
 	var cell := float(board_root.get("cell_size"))
 	var width := float(token.call("get_footprint_cells")) * cell
 	var height := float(token.get("token_height_cells")) * cell
@@ -2812,8 +2848,16 @@ func _mobile_adjacent_position(token: CharacterBody3D, reference: CharacterBody3
 	query.shape = shape
 	query.collision_mask = token.collision_mask
 	query.exclude = [token.get_rid()]
-	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP, Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-		var candidate := Vector3(reference.global_position.x + direction.x * offset, base + height * 0.5, reference.global_position.z + direction.y * offset)
+	var offsets := {
+		"north": Vector2.UP, "south": Vector2.DOWN,
+		"east": Vector2.RIGHT, "west": Vector2.LEFT
+	}
+	# Explicit mobile placement never silently falls back to another side.
+	var candidates: Array = [offsets[direction]] if offsets.has(direction) else [
+		Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP,
+		Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]
+	for offset_direction: Vector2 in candidates:
+		var candidate := Vector3(reference.global_position.x + offset_direction.x * offset, base + height * 0.5, reference.global_position.z + offset_direction.y * offset)
 		var blocked := false
 		# Include freshly placed bodies before their next physics update.
 		for other: Node in get_tree().get_nodes_in_group("dnd_token"):
