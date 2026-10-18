@@ -90,7 +90,10 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
-	if "improvised" in special_hands:
+	# An equipped shield can always be used for an improvised strike.
+	var offhand_shield: Dictionary = Items.occupying(inventory, "off")
+	var shield_as_weapon: bool = not offhand_shield.is_empty() and Items.kind(Items.entry_for(offhand_shield)) == "shield"
+	if "improvised" in special_hands or shield_as_weapon:
 		result.append({
 			"id": "improvised", "name": "Arma improvvisata",
 			"source": "improvised", "melee": true, "range_feet": 5,
