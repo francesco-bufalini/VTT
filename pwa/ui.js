@@ -382,7 +382,7 @@ async function editorView() {
       }).join('')+'</div><details><summary>Impostazioni slot</summary><p>'+((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+btn('slots-automatic','Usa progressione automatica')+
       '<label>Slot del Patto · massimo base<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
       field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+'</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>')+
-      originChoicesView(calculated)+originPowersView(c,calculated)+
+      originChoicesView(calculated)+originPowersView(c,calculated,abilitiesForCreature(c,state.abilityCatalog||[],calculated))+
       panel("Libro degli incantesimi",spellList(c,"spellbook_spells",null,calculated.casting_classes),'magic-panel')+
       panel("Aggiungi dal catalogo",
         '<label>Classe / origine<select id="spell-class"><option value="manual">Altre concessioni</option>'+calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+'</option>').join('')+'</select></label>'+
@@ -393,17 +393,7 @@ async function editorView() {
         esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
         (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
         '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>')+
-      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>'+
-      panel("Capacità",
-        (abilitiesForCreature(c,state.abilityCatalog||[],calculated).map(ability=>
-          '<article class="native-entry"><strong>'+esc(ability.name)+
-          '</strong><p class="hint">'+esc(ability.origin)+
-          (ability.activation_mode==="contextual"?' · Attivazione contestuale':
-           typeof ability.activation_mode==="string"&&ability.activation_mode?' · '+esc(ability.activation_mode):'')+
-          (ability.tracker_id?' · '+esc(ability.tracker_name)+' '+esc(ability.tracker_remaining)+' / '+esc(ability.tracker_max):'')+
-          '</p>'+(ability.description?'<details><summary>Descrizione</summary><p>'+
-          esc(ability.description)+'</p></details>':'')+'</article>').join("")||
-          '<p class="hint">Nessuna capacità disponibile.</p>'));
+      '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
     body=panel("Condizioni",field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+'<div class="condition-list">'+conditions.map(id=>
@@ -653,29 +643,69 @@ function groupedMagicOptions(spells){
     items.map(({spell,info})=>'<option value="'+esc(spell.id)+'">'+esc(info.name)+'</option>').join('')+
     '</optgroup>').join('');
 }
-function originPowersView(c,calculated){
- const groups=new Map();
+function originPowersView(c,calculated,abilitiesList=[]){
+ const slots=new Map(),resources=new Map();
+ const ensureResource=(key,name,tracker)=>{if(!resources.has(key))resources.set(key,{name,tracker,spells:[],abilities:[]});return resources.get(key);};
+ const configured=(grant,info)=>{
+   const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free'),cost=Math.max(1,Number(grant.tracker_cost)||1);
+   return '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(grant.id)+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name)+'</button>'+
+     (mode==='tracker'?'<span class="hint magic-power-cost">−'+cost+'</span>':'')+
+     '<details class="magic-origin-config"><summary aria-label="Configura '+esc(info.name)+'" title="Consumo">⚙</summary>'+
+     '<p class="hint">'+(mode==='free'?'Gratuito':mode==='slot'?'Slot incantesimo':'Tracker')+'</p>'+
+     '<label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(grant.id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
+     '<label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(grant.id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
+     '<label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(grant.id)+'"></label>'+
+     (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
+     '</details></div>';
+ };
+ const sortGroups=(a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'});
  for(const grant of calculated.origin_spells||[]){
-  const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
-  const info=magicSpellInfo(spell||{id:grant.spell_id,name:grant.spell_id});
-  const key=grant.origin_id||'other';
-  if(!groups.has(key))groups.set(key,{name:grant.origin_name||'Origine',ability:grant.spellcasting_ability||'int',items:[]});
-  groups.get(key).items.push({grant,spell,info});
+   const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
+   const info=magicSpellInfo(spell||{id:grant.spell_id,name:grant.spell_id});
+   const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
+   const item={grant,spell,info};
+   if(mode==='slot'){
+     const id=grant.origin_id||'other';
+     if(!slots.has(id))slots.set(id,{name:grant.origin_name||'Origine',ability:grant.spellcasting_ability||'int',items:[]});
+     slots.get(id).items.push(item);
+   }else{
+     const tracker=mode==='tracker'?calculated.trackers.find(t=>t.id===grant.tracker_id):null;
+     const key=mode==='tracker'?(grant.tracker_id?'tracker:'+grant.tracker_id:'missing'):'free';
+     const group=ensureResource(key,tracker?.name|| (mode==='tracker'?'Tracker non disponibile':'Senza consumo'),tracker);
+     group.spells.push(item);
+   }
  }
- return [...groups.entries()].map(([key,group])=>panel('Origine · '+group.name,
+ for(const ability of abilitiesList){
+   const cost=Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0);
+   const tracker=cost>0?calculated.trackers.find(t=>t.id===ability.tracker_id):null;
+   const key=cost>0?(ability.tracker_id?'tracker:'+ability.tracker_id:'missing'):'free';
+   const group=ensureResource(key,tracker?.name||(cost>0?'Tracker non disponibile':'Senza consumo'),tracker);
+   if(!group.abilities.some(other=>other.id===ability.id))group.abilities.push(ability);
+ }
+ const slotPanels=[...slots.entries()].sort(sortGroups).map(([key,group])=>panel('Origine · '+group.name,
    castingStatistics(c,'origin:'+key,group.ability)+
-   groupedMagicSpells(group.items,({grant,spell,info})=>{
-     const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
-     const cost=Math.max(1,Number(grant.tracker_cost)||1);
-     return '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(grant.id)+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name)+'</button>'+
-       '<details class="magic-origin-config"><summary aria-label="Configura '+esc(info.name)+'" title="Consumo e origine">⚙</summary>'+
-       '<p class="hint">'+(mode==='free'?'Gratuito':mode==='slot'?'Slot incantesimo':'Tracker')+'</p>'+
-       '<label>Modalità<select data-origin-config="payment_mode" data-grant-id="'+esc(grant.id)+'">'+[['free','Gratuito'],['slot','Slot incantesimo'],['tracker','Tracker']].map(([value,label])=>'<option value="'+value+'" '+(mode===value?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+
-       '<label>Tracker<select data-origin-config="tracker_id" data-grant-id="'+esc(grant.id)+'"><option value="">Nessuno</option>'+calculated.trackers.map(t=>'<option value="'+esc(t.id)+'" '+(grant.tracker_id===t.id?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
-       '<label>Costo<input type="number" min="1" max="999" value="'+cost+'" data-origin-config="tracker_cost" data-grant-id="'+esc(grant.id)+'"></label>'+
-       (grant.source_choice_id?'<button class="btn small" data-act="origin-choice-remove" data-grant-id="'+esc(grant.id)+'">Cambia scelta</button>':'')+
-       '</details></div>';
-   }),'magic-panel')).join('');
+   groupedMagicSpells(group.items,({grant,info})=>configured(grant,info)),'magic-panel')).join('');
+ const resourcePanels=[...resources.entries()].sort((a,b)=>a[0]==='free'?1:b[0]==='free'?-1:sortGroups(a,b)).map(([key,group])=>{
+   const stats=new Map();
+   for(const item of group.spells){
+     const origin=item.grant.origin_id||'other';
+     if(!stats.has(origin))stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int'});
+   }
+   const header=(group.tracker?'<p class="hint magic-tracker-count">'+esc(Math.max(0,Number(group.tracker.max||0)-Number(group.tracker.spent||0)))+' / '+esc(group.tracker.max||0)+' disponibili</p>':'');
+   const spellRows=group.spells.length?groupedMagicSpells(group.spells,({grant,info})=>configured(grant,info)):'';
+   const abilityRows=group.abilities.length?
+     '<div class="magic-ability-list"><h4>Capacità</h4>'+
+     group.abilities.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it')).map(ability=>
+       '<details class="magic-ability-entry"><summary>'+esc(ability.name)+
+       (ability.resource_cost>0?' · '+esc(ability.resource_cost)+' utilizzi':'')+'</summary>'+
+       '<p class="hint">'+esc(ability.origin||'')+'</p>'+
+       '<p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></details>').join('')+'</div>':'';
+   return panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
+     '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
+     castingStatistics(c,'origin:'+origin,meta.ability)+'</div>').join('')+
+     spellRows+abilityRows,'magic-panel magic-tracker-panel');
+ }).join('');
+ return slotPanels+resourcePanels;
 }
 function originChoicesView(calculated){
  const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
