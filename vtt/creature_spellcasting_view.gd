@@ -130,7 +130,7 @@ func refresh() -> void:
 			choose.text = "⚠ Scegli %d incantesimo/i" % int(choice.get("remaining", choice.get("count", 1)))
 			choose.pressed.connect(_actions.choose_origin.bind(choice))
 			pair[0].add_child(choose)
-		_label(pair[1], "Usa gli slot di classe o del Patto")
+		_label(pair[1], "Use class or Pact slots" if String(_actions.gui_language.call()) == "en" else "Usa gli slot di classe o del Patto")
 
 	# Class abilities use the very same tracker grouping as granted spells.
 	var features: Array[Dictionary] = preload("res://vtt/class_feature_activation.gd").entries(record)
@@ -178,7 +178,7 @@ func refresh() -> void:
 		if not tracker.is_empty():
 			_tracker(pair[1], record, tracker)
 		elif key == "free":
-			_label(pair[1], "Nessuna risorsa consumata")
+			_label(pair[1], "No resource consumed" if String(_actions.gui_language.call()) == "en" else "Nessuna risorsa consumata")
 		else:
 			_label(pair[1], "⚠ Tracker non disponibile")
 	_fit()
