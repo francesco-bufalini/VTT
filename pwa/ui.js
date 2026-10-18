@@ -4,7 +4,7 @@ import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwn
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
-import { conditionOptions } from "./condition_catalog.js";
+import { conditionOptions, conditionLabel } from "./condition_catalog.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
