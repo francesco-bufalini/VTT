@@ -2030,6 +2030,15 @@ function organizeSheetPanels(){
       if(details.isConnected)state.disclosureState.set(key,details.open);
     });
   }
+  // Remember each timing group separately inside its battle panel.
+  for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group')){
+    const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
+    const key='battle-timing:'+panel+':'+details.dataset.actionTiming;
+    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.addEventListener('toggle',()=>{
+      if(details.isConnected)state.disclosureState.set(key,details.open);
+    });
+  }
   if(state.sheet==='traits'&&state.sheetPopup.startsWith('trait-origin:')){
     const origin=state.sheetPopup.slice('trait-origin:'.length);
     const matches=[...state.sheetSources].filter(([key,node])=>key.startsWith('trait:')&&node.querySelector('[data-feature-origin]')?.dataset.featureOrigin===origin);
