@@ -23,6 +23,7 @@ func run() -> void:
 	barbarian["classes"] = [{"name": "Barbarian", "source": "PHB", "level": 9}, {"name": "Fighter", "source": "PHB", "level": 11}]
 	barbarian["rules_version"] = "2014"
 	barbarian["abilities"] = {"str": 18, "dex": 14, "con": 16, "int": 10, "wis": 12, "cha": 14}
+	barbarian["hand_main_special"] = "unarmed" # Explicitly equip a test attack; empty hands do not produce attack cards.
 	assert(area._archive.save(barbarian) == OK)
 	var sorcerer := Store.new().create_character()
 	sorcerer["kind"] = "character"
@@ -54,8 +55,12 @@ func run() -> void:
 				if control is Label and String(control.text).begins_with("✦ Ira"):
 					has_rage_effect = true
 	assert(has_rage_effect, "Rage must appear among active ability effects in Conditions")
+	var damage_label: Label = area._attack_damage_source_labels.get("unarmed")
+	assert(damage_label != null and "Ira +3" in damage_label.text, "Attack damage must visibly explain its Rage contribution")
 	area._end_active_class_effect("rage")
 	assert(not preload("res://vtt/class_feature_activation.gd").is_active(area._current(), "rage"))
+	var after: Label = area._attack_damage_source_labels.get("unarmed")
+	assert(after != null and not after.visible, "Ending Rage must remove the damage origin annotation")
 	assert(preload("res://vtt/class_feature_activation.gd").active_effects(area._current()).is_empty())
 	area._tabs.current_tab = 2
 	area._action_economy_ui.load_record(area._current())
