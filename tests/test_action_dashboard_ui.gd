@@ -47,10 +47,17 @@ func run() -> void:
 	assert(tab._panels[3].get_parent() == tab._layout_right)
 	assert(tab._skill_buttons.columns == 1)
 	assert(tab._layout_left.get_child_count() == 1, "Only actions belong in the first column")
-	assert(tab._skill_list.get_parent() == tab._sections[2], "Quick rolls have no intrinsic action cost")
 	var checks_title := _find_button(tab, "Prove di abilità")
 	assert(checks_title != null)
 	var checks_card := checks_title.get_parent().get_parent().get_parent().get_parent()
+	assert(checks_card.is_ancestor_of(tab._skill_list),
+		"Highest skill checks stay inside the Actions skill-check card")
+	# The card is rebuilt every time an edited creature is refreshed.
+	tab.load_record(record)
+	checks_title = _find_button(tab, "Prove di abilità")
+	assert(checks_title != null and is_instance_valid(tab._skill_list))
+	checks_card = checks_title.get_parent().get_parent().get_parent().get_parent()
+	assert(checks_card.is_ancestor_of(tab._skill_list) and tab._skill_list.get_parent() != tab._sections[2])
 	var checks_entry: Dictionary = checks_card.get_meta("action_entry")
 	var check_ids: Array = []
 	for check: Dictionary in checks_entry["children"]:

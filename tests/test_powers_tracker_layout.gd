@@ -36,7 +36,7 @@ func run() -> void:
 	view.setup({
 		"record": _current, "gui_language": _language,
 		"section_ability": _section_ability, "casting_stats": _stats,
-		"set_section_ability": _ignore, "cast_origin": _ignore, "tracker": _ignore
+		"set_section_ability": _ignore, "cast_origin": _ignore, "class_feature": _ignore, "tracker": _ignore
 	})
 	var pair: Array[VBoxContainer] = view._pair()
 	view._heading(pair[0], "Origine · Talento · Shadow Touched")
@@ -61,6 +61,16 @@ func run() -> void:
 		assert(price.text == ("Costo: 2" if i == 0 else "Costo: 1")
 			and price.size_flags_horizontal == Control.SIZE_SHRINK_END,
 			"Each independent spell charge appears aligned to the right")
+	var ability_list := view._list(pair[0], 1)
+	view._feature_button(ability_list, {"id": "rage", "name": "Ira", "cost": 1,
+		"resource_name": "Rages", "detail": "Rage active"})
+	var ability_row := ability_list.get_child(0) as HBoxContainer
+	assert(ability_row.get_child_count() == 2 and ability_row.size_flags_vertical == Control.SIZE_SHRINK_BEGIN,
+		"Non-magical powers use a single compact, non-expanding row")
+	var rage := ability_row.get_child(0) as Button
+	var rage_cost := ability_row.get_child(1) as Label
+	assert(rage.clip_text and rage.custom_minimum_size.y <= 40 and rage_cost.autowrap_mode == TextServer.AUTOWRAP_OFF,
+		"The Rage button stays short and its cost never wraps vertically")
 	view._tracker(pair[1], _record,
 		{"id": "shared", "name": "Shadow Touched · scelta", "max": 3, "origin_id": "feat:test"})
 	view._tracker(pair[1], _record,
@@ -85,6 +95,9 @@ func run() -> void:
 	var first_row: HBoxContainer = list.get_child(0)
 	assert(spell_scroll.custom_minimum_size.y >= first_row.get_combined_minimum_size().y + 8,
 		"Section must fully display casting stats and at least one power before scrolling")
+	var ability_scroll := ability_list.get_parent() as ScrollContainer
+	assert(ability_scroll.custom_minimum_size.y < 220,
+		"Ability list stays bounded rather than stretching Rage vertically")
 	assert(view._rows[0].get_child(0).size.y >= first_row.size.y,
 		"Paired panel height cannot clip the first spell")
 	print("PASS compact tracker rows, right-aligned individual power costs and minimum visible spell")

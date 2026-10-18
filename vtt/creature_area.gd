@@ -138,6 +138,7 @@ var _biography: TextEdit
 var _info_feats_list: VBoxContainer
 var _subclass_caption: Label
 var _level_caption: Label
+var _total_level_display: Label
 var _xp: SpinBox
 var _initiative_effective: Label
 var _ac_effective: Label
@@ -1571,15 +1572,22 @@ func _build_ui() -> void:
 	_update_reference_tooltip(_background)
 
 	var classes_box := _info_panel(form, "CLASSI E PROGRESSIONE")
-	var classes_title_row := HBoxContainer.new()
-	classes_title_row.add_theme_constant_override("separation", 12)
+	# Reuse the decorated panel heading, with derived level and XP on its line.
+	# Flow layout wraps the controls on narrow mobile screens.
+	var classes_title_row := HFlowContainer.new()
+	classes_title_row.add_theme_constant_override("h_separation", 12)
+	classes_title_row.add_theme_constant_override("v_separation", 6)
 	classes_box.add_child(classes_title_row)
-	var classes_title := Label.new()
-	classes_title.text = "Progressione"
-	classes_title.add_theme_font_size_override("font_size", 17)
-	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
-	_style_statistics_heading(classes_title)
-	classes_title_row.add_child(classes_title)
+	classes_box.move_child(classes_title_row, 0)
+	var classes_heading := classes_box.get_child(1) as Label
+	classes_heading.reparent(classes_title_row)
+	classes_heading.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_total_level_display = Label.new()
+	_total_level_display.name = "TotalClassLevel"
+	_total_level_display.add_theme_font_size_override("font_size", 14)
+	_total_level_display.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
+	_total_level_display.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	classes_title_row.add_child(_total_level_display)
 	_add_label(classes_title_row, "XP")
 	_xp = _spin(classes_title_row, 0, 999999999)
 	_xp.custom_minimum_size.x = 130
@@ -2325,6 +2333,7 @@ func _refresh_creature_language() -> void:
 	if _spellcasting_ui != null and _spellcasting_ui.has_method("set_gui_language"):
 		_spellcasting_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
+	_refresh_total_class_level_label()
 	# The mobile section drawer lives under ui_root, outside the archive panel.
 	# Its buttons must mirror the localized tabs rather than storing display
 	# strings as the source of truth (the selection indices never change).
@@ -4285,7 +4294,14 @@ func _class_xp_level() -> int:
 	return clampi(level, 0, 20)
 
 
+func _refresh_total_class_level_label() -> void:
+	if _total_level_display != null:
+		var title: String = "Total level" if _creature_language == "en" else "Livello totale"
+		_total_level_display.text = "%s: %d" % [title, _class_xp_level()]
+
+
 func _refresh_xp_minimum() -> void:
+	_refresh_total_class_level_label()
 	if _xp == null:
 		return
 	var record: Dictionary = _current()

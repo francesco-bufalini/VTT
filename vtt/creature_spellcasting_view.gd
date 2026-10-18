@@ -167,13 +167,20 @@ func refresh() -> void:
 		if not spell_entries.is_empty():
 			_leveled_spell_list(pair[0], spell_entries)
 		if not abilities.is_empty() or not (group["features"] as Array).is_empty():
-			_heading(pair[0], "Capacità")
+			# The tracker is already the section title; avoid a redundant Abilities heading.
+			# A non-expanding list keeps feature buttons at normal row height.
+			# Avoid a second ScrollContainer here: the surrounding sheet already scrolls.
+			var ability_list := VBoxContainer.new()
+			ability_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			ability_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+			ability_list.add_theme_constant_override("separation", 4)
+			pair[0].add_child(ability_list)
 			abilities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 				return String(a["spell"].get("name", "")).naturalnocasecmp_to(String(b["spell"].get("name", ""))) < 0)
 			for entry: Dictionary in abilities:
-				_spell_button(pair[0], entry["spell"], {}, entry["grant"])
+				_spell_button(ability_list, entry["spell"], {}, entry["grant"])
 			for feature: Dictionary in group["features"]:
-				_feature_button(pair[0], feature)
+				_feature_button(ability_list, feature)
 		var tracker: Dictionary = group["tracker"]
 		if not tracker.is_empty():
 			_tracker(pair[1], record, tracker)
@@ -211,21 +218,27 @@ func _add_tracker_feature(groups: Dictionary, record: Dictionary, feature: Dicti
 func _feature_button(parent: Node, feature: Dictionary) -> void:
 	var row := HBoxContainer.new()
 	row.name = "PowerRow"
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_theme_constant_override("separation", 12)
 	parent.add_child(row)
 	var button := Button.new()
 	button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.get("name", ""))
 	button.tooltip_text = String(feature.get("detail", ""))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size.y = 40
+	button.clip_text = true
+	button.custom_minimum_size.y = 36
 	button.pressed.connect(_actions.class_feature.bind(String(feature.get("id", ""))))
 	row.add_child(button)
 	if int(feature.get("cost", 0)) > 0 and not String(feature.get("resource_name", "")).is_empty():
 		var price: Label = _label(row, "Costo: %d" % int(feature["cost"]))
 		price.name = "PowerCost"
-		price.custom_minimum_size.x = 72
+		price.custom_minimum_size = Vector2(86, 36)
 		price.autowrap_mode = TextServer.AUTOWRAP_OFF
 		price.size_flags_horizontal = Control.SIZE_SHRINK_END
+		price.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_font_size_override("font_size", 12)
 

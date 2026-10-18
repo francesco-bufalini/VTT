@@ -196,6 +196,10 @@ func run() -> void:
 			"Each casting origin retains its spellcasting ability even when sharing a tracker")
 		var displayed := 0
 		for power_scroll: Node in left.find_children("*", "ScrollContainer", true, false):
+			# A refreshed sheet may leave a detached/queued-for-deletion scroll node
+			# visible to find_children until the next rendered frame.
+			if power_scroll.is_queued_for_deletion() or power_scroll.get_child_count() == 0:
+				continue
 			for child: Node in power_scroll.get_child(0).get_children():
 				if child is HBoxContainer:
 					displayed += 1
