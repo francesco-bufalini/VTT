@@ -406,14 +406,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     context=bind('battle-power:'+id,detail);
    }
    const action=row.classAction||{};
+   const persistent=['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id);
    const active=!!(action.class_feature_id&&c.active_class_features?.[action.class_feature_id]);
-   const use=row.source==='activated'?'Usa':(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)?'Attiva':'Usa');
+   const use=persistent?'Attiva':'Usa';
+   // Catalog details may represent native activated class features: invoke
+   // the native action to preserve its persistent effects and tracker updates.
+   const useId=persistent&&action.id?action.id:id;
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
     (active?'<span class="play-resource-power-active">Attiva</span>':
-    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(id)+'"'+(disabled?' disabled':'')+
+    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+(disabled?' disabled':'')+
     ' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
   }).join('');
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
