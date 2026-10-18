@@ -76,6 +76,12 @@ jobs:
           cd pwa
           node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
+      - name: Exercise mobile play sheets and effects in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          node tests/sheet_play_browser.mjs
       - name: Verify install manifest, precache and PNG files
         shell: python
         run: |
