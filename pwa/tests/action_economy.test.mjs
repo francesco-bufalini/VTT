@@ -283,3 +283,43 @@ test('battle spells use the same timed disclosure sections without requiring slo
  assert(!result.spells.includes('undefined'));
  assert.equal(result.attacks.includes('Prova di Atletica'),false);
 });
+
+
+test('battle projects all unported actions without duplicating weapons, movement or class powers',()=>{
+ const record={rules_version:'2014',action_grants:[
+  {id:'surge',name:'Impeto di battaglia',action_type:'bonus',
+   origin_id:'feature:class|phb|fighter|surge',tracker_id:'surge',tracker_cost:2},
+  {id:'personal',name:'Talento personalizzato',action_type:'reaction'}]};
+ const calculated={skills:{athletics:5,acrobatics:4,perception:3,investigation:2},
+  trackers:[{id:'surge',name:'Cariche guerriero',max:4,spent:1}]};
+ const activated=[{id:'inspire',name:'Ispirazione',origin:'Classe · bard · PHB',action_type:'bonus',
+  resource_cost:1,tracker_id:'inspire',tracker_name:'Ispirazioni'}];
+ const result=battleActionPanels(record,calculated,[],[],catalog.actions,[],activated);
+ const others=doc(result.others),abilities=doc(result.abilities),movement=doc(result.movement);
+ assert(others.body.textContent.includes('Cercare'));
+ assert(others.body.textContent.includes('Schivare'));
+ assert(others.body.textContent.includes('Talento personalizzato'));
+ assert(!others.body.textContent.includes('Attaccare'));
+ assert(!others.body.textContent.includes('Scattare'));
+ assert(!others.body.textContent.includes('Impeto di battaglia'));
+ const search=others.querySelector('[data-attack-id="search"]');
+ assert(search.querySelector('[data-target="skill:perception"]'));
+ assert(search.querySelector('[data-target="skill:investigation"]'));
+ assert.equal(search.querySelectorAll('.play-battle-roll-name').length,2);
+ const escape=movement.querySelector('[data-attack-id="escape_grapple"]');
+ assert(escape);
+ assert(escape.querySelector('[data-target="skill:athletics"]'));
+ assert(escape.querySelector('[data-target="skill:acrobatics"]'));
+ assert(escape.querySelector('.has-multiple-rolls'));
+ const surge=abilities.querySelector('[data-ability-id="surge"]');
+ assert(surge);
+ assert.match(surge.textContent,/Cariche guerriero · Costo 2 · 3 \/ 4/);
+ assert(surge.querySelector('[data-act="battle-use-ability"]'));
+ assert(surge.closest('[data-action-timing="bonus"]'));
+ assert(abilities.body.textContent.includes('Ispirazione'));
+ assert.equal(result.abilityEntries.length,2);
+ const exhausted=battleActionPanels(record,{...calculated,trackers:[{id:'surge',name:'Cariche guerriero',max:4,spent:3}]},
+  [],[],catalog.actions);
+ assert(exhausted.abilities.includes('disabled'));
+ assert(!doc(exhausted.others).body.textContent.includes('Impeto di battaglia'));
+});
