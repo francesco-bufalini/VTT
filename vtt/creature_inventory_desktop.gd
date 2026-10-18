@@ -599,7 +599,7 @@ func _rebuild_pickers(items: Array) -> void:
 		if locked:
 			picker.tooltip_text = _t("La mano è occupata da un'arma impugnata a due mani", "Hand occupied by a two-handed weapon")
 		else:
-			picker.tooltip_text = ""
+			picker.tooltip_text = picker.get_item_text(selected) if selected > 0 else ""
 		if slot in ["main", "off"]:
 			var size_picker: OptionButton = _main_size if slot == "main" else _off_size
 			size_picker.clear()
