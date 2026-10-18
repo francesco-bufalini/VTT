@@ -127,7 +127,7 @@ try{
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
- await page.locator('#action-cast-dialog [data-act="action-cast-close"],#action-cast-dialog [data-spell-close]').first().click();
+ await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="arcane_pulse"]').count(),0);
  const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
  await focusButton.click();
