@@ -256,9 +256,8 @@ func _characteristic(entry: Dictionary) -> String:
 
 
 func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) -> void:
-	cell.set_cell_mode(column, TreeItem.CELL_MODE_RANGE)
-	cell.set_range_config(column, 1, 99999, 1)
-	cell.set_range(column, quantity)
+	cell.set_cell_mode(column, TreeItem.CELL_MODE_STRING)
+	cell.set_text(column, str(quantity))
 	cell.set_editable(column, not locked)
 	cell.add_button(column, _minus_icon, MINUS_BUTTON, locked or quantity <= 1, _t("Diminuisci", "Decrease"))
 	cell.add_button(column, _plus_icon, PLUS_BUTTON, locked or quantity >= 99999, _t("Aumenta", "Increase"))
@@ -305,6 +304,8 @@ func refresh() -> void:
 			if kind not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(entry):
 				icon = "✓" if equipped else ""
 				row.set_tooltip_text(0, _t("Doppio clic per equipaggiare o riporre", "Double-click to equip or stow"))
+			if ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
+				icon = "✦"
 			row.set_text(0, icon)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
@@ -441,7 +442,7 @@ func _on_owned_edited() -> void:
 		return
 	var row: TreeItem = _owned_tree.get_edited()
 	if row != null:
-		_update_quantity(int(row.get_metadata(0)), int(row.get_range(QUANTITY_COLUMN)))
+		_update_quantity(int(row.get_metadata(0)), int(row.get_text(QUANTITY_COLUMN)))
 
 
 func _on_scroll_edited() -> void:
@@ -449,7 +450,7 @@ func _on_scroll_edited() -> void:
 		return
 	var row: TreeItem = _scroll_tree.get_edited()
 	if row != null:
-		_update_quantity(int(row.get_metadata(0)), int(row.get_range(0)))
+		_update_quantity(int(row.get_metadata(0)), int(row.get_text(0)))
 
 
 func _on_attunement_edited() -> void:
