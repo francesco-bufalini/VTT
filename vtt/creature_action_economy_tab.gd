@@ -198,7 +198,7 @@ func _ready() -> void:
 	_skill_buttons.add_theme_constant_override("h_separation", 5)
 	_skill_buttons.add_theme_constant_override("v_separation", 5)
 	_skill_list.add_child(_skill_buttons)
-	_sections[2].add_child(_skill_list)
+	_sections[0].add_child(_skill_list)
 	resized.connect(_arrange_columns)
 	call_deferred("_arrange_columns")
 
@@ -1077,6 +1077,9 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 			child_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			branch.add_child(child_slot)
 			_add_entry(children[index], child_slot)
+	# The highest skill bonuses are a part of the action Skill Checks card.
+	if String(entry.get("id", "")) == "ability_checks" and _skill_list != null:
+		_skill_list.reparent(content)
 
 
 func refresh_top_skills(record: Dictionary) -> void:
@@ -1160,6 +1163,9 @@ func load_record(record: Dictionary) -> void:
 	_tree_toggles.clear()
 	_sync_expand_all.call_deferred()
 	_record = record.duplicate(true)
+	# Detach the persistent quick-roll grid before generated cards are freed.
+	if _skill_list != null and _skill_list.get_parent() != _sections[0]:
+		_skill_list.reparent(_sections[0])
 	_trackers.clear()
 	for resource: Dictionary in Trackers.for_creature(record):
 		_trackers[String(resource.get("id", ""))] = resource
@@ -1231,9 +1237,6 @@ func load_record(record: Dictionary) -> void:
 			_add_subheading(section, "Generali")
 		for item: Dictionary in common:
 			_add_entry(item)
-		# Quick rolls do not by themselves spend an action.
-		if i == 2 and _skill_list != null:
-			section.move_child(_skill_list, section.get_child_count() - 1)
 		if not personal.is_empty():
 			_add_subheading(section, "Dalla scheda")
 		for item: Dictionary in personal:
