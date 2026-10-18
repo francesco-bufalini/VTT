@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {structuredSpellGrants,originChoiceMatches,applyOriginSpellChoice,originSpellId} from '../spell_selection.js';
+import {structuredSpellGrants,originChoiceMatches,applyOriginSpellChoice,originSpellId,sessionSpellEntries} from '../spell_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const spells=[
@@ -72,4 +72,23 @@ test('casting readouts include native spell_attack equipment bonuses and legacy 
  assert.equal(calculateSheet(c,{classMechanics:mechanics}).values['casting_hit:int'],9);
  const legacy=calculateSheet(record({inventory:[{id:'armor',type:'HA',ac:16,equipped_slots:['body']}]}));
  assert.equal(legacy.stats.armor_class,16,'old native items default to one owned copy');
+});
+
+
+test('spellcasting ability selection follows the source shown in PWA powers',()=>{
+ const creature={
+  prepared_spells:[{id:'wizard_spell',name:'Wizard spell',level:1,casting_classes:['wizard']}],
+  spellcasting_ability:'int',
+  spellcasting_section_abilities:{wizard:'cha','origin:feat':'wis'}
+ };
+ const calculated={
+  casting_classes:[{id:'wizard',name:'Wizard',ability:'int',max_level:3}],
+  origin_spells:[{id:'feat_grant',origin_id:'feat',origin_name:'Feat',spell_id:'feat_spell',spellcasting_ability:'cha'}]
+ };
+ const rows=sessionSpellEntries(creature,calculated,[
+  {id:'wizard_spell',name:'Wizard spell',level:1,classes:['Wizard']},
+  {id:'feat_spell',name:'Feat spell',level:1}
+ ]);
+ assert.equal(rows.find(s=>s.id==='wizard_spell').caster_ability,'cha');
+ assert.equal(rows.find(s=>s.id==='feat_spell').caster_ability,'wis');
 });
