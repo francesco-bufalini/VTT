@@ -142,9 +142,9 @@ func refresh_captions() -> void:
 	for column: int in range(2):
 		_attunement_tree.set_column_title(column, [
 			_t("Sintonia", "Attuned"), _t("Oggetto", "Item")][column])
-	_main.get_parent().get_child(0).text = _t("Mano principale", "Main hand")
-	_off.get_parent().get_child(0).text = _t("Mano secondaria", "Off hand")
-	_armor.get_parent().get_child(0).text = _t("Armatura", "Armor")
+	(_main.get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
+	(_off.get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
+	(_armor.get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
 	_maximum_label.text = _t("Massimo", "Maximum")
 	refresh()
 
@@ -288,16 +288,16 @@ func _characteristic(entry: Dictionary) -> String:
 		var properties: Variant = entry.get("properties", [])
 		if properties is Array:
 			var names := PackedStringArray()
+			var labels := {
+				"F": _t("Accurata", "Finesse"), "L": _t("Leggera", "Light"),
+				"T": _t("Lancio", "Thrown"), "V": _t("Versatile", "Versatile"),
+				"H": _t("Pesante", "Heavy"), "2H": _t("Due mani", "Two-handed"),
+				"A": _t("Munizioni", "Ammunition"), "R": _t("Portata", "Reach"),
+				"LD": _t("Caricamento", "Loading"), "RLD": _t("Ricarica", "Reload")
+			}
 			for property: Variant in properties:
 				var code: String = String(property).split("|")[0].to_upper()
-				var labels: Dictionary = {
-					"F": [_t("Accurata", "Finesse")], "L": [_t("Leggera", "Light")],
-					"T": [_t("Lancio", "Thrown")], "V": [_t("Versatile", "Versatile")],
-					"H": [_t("Pesante", "Heavy")], "2H": [_t("Due mani", "Two-handed")],
-					"A": [_t("Munizioni", "Ammunition")], "R": [_t("Portata", "Reach")],
-					"LD": [_t("Caricamento", "Loading")], "RLD": [_t("Ricarica", "Reload")]
-				}
-				names.append(String(labels.get(code, [code])[0]))
+				names.append(String(labels.get(code, code)))
 			return ", ".join(names) if not names.is_empty() else "—"
 		return str(properties) if str(properties) != "" else "—"
 	if kind == "shield":
@@ -314,6 +314,20 @@ func _characteristic(entry: Dictionary) -> String:
 			return "CA " + base + " + min(DES, %d)" % limit
 		return "CA " + base + " + DES"
 	return "—"
+
+
+func _rarity_label(entry: Dictionary) -> String:
+	var rarity: String = String(entry.get("rarity", "")).strip_edges().to_lower()
+	if rarity.is_empty() or rarity == "none":
+		return "—"
+	if String(_tab.get("_gui_language")) == "en":
+		return rarity.capitalize()
+	var italian := {
+		"common": "Comune", "uncommon": "Non comune", "rare": "Raro",
+		"very rare": "Molto raro", "legendary": "Leggendario",
+		"artifact": "Artefatto", "varies": "Variabile"
+	}
+	return String(italian.get(rarity, rarity.capitalize()))
 
 
 func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) -> void:
@@ -371,7 +385,7 @@ func refresh() -> void:
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
 			row.set_text(2, _weight_total(entry, quantity))
-			row.set_text(3, String(entry.get("rarity", "—")))
+			row.set_text(3, _rarity_label(entry))
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
 			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
 			row.set_text(6, _characteristic(entry))
