@@ -16,7 +16,8 @@ func _run() -> void:
 	var ui := CanvasLayer.new()
 	ui.name = "UI"
 	board.add_child(ui)
-	var sync: Node = preload("res://network/board_sync.gd").new()
+	# Load after autoload globals are registered in the running SceneTree.
+	var sync: Node = load("res://network/board_sync.gd").new()
 	sync.set_process(false)
 	board.add_child(sync)
 	board.board_sync = sync
