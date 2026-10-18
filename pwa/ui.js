@@ -193,12 +193,12 @@ function screenSnapshot(){
 function syncBrowserHistory(){
   if(restoringBrowserHistory)return;
   const screen=screenSnapshot();
-  const previous=history.state?.__vttMobileScreen;
+  const previous=window.history.state?.__vttMobileScreen;
   if(!browserHistoryReady){
-    history.replaceState({...history.state,__vttMobileScreen:screen},'',location.href);
+    window.history.replaceState({...window.history.state,__vttMobileScreen:screen},'',location.href);
     browserHistoryReady=true;
   }else if(JSON.stringify(previous)!==JSON.stringify(screen)){
-    history.pushState({...history.state,__vttMobileScreen:screen},'',location.href);
+    window.history.pushState({...window.history.state,__vttMobileScreen:screen},'',location.href);
   }
 }
 async function restoreBrowserScreen(screen){
