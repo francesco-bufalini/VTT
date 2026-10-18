@@ -54,6 +54,46 @@ func run() -> void:
 		"Generic scroll titles must not masquerade as spell names")
 	assert(owned_tree.get_root().get_child_count() == 5,
 		"Scrolls are excluded from the ordinary owned item table")
+	# All embedded scrollable controls must let the enclosing creature sheet
+	# receive wheel events (especially once their own scrollbar hits a limit).
+	assert(owned_tree.mouse_force_pass_scroll_events and scroll_tree.mouse_force_pass_scroll_events
+		and attunement_tree.mouse_force_pass_scroll_events and tab._details.mouse_force_pass_scroll_events
+		and tab._catalog_list.mouse_force_pass_scroll_events,
+		"Desktop inventory controls must not trap the sheet's vertical scrolling")
+	var plus_icon: Texture2D = desktop.get("_plus_icon")
+	assert(plus_icon.get_width() == 14 and owned_tree.get_column_custom_minimum_width(0) == 30,
+		"Equipment and quantity indicators must be compact")
+
+	# Only one table can retain a selection, even when it was previously
+	# selected in a different Tree.
+	first.select(0)
+	desktop.call("_on_owned_selected")
+	scroll_row.select(0)
+	desktop.call("_on_scroll_selected")
+	assert(owned_tree.get_selected() == null and scroll_tree.get_selected() != null,
+		"Selecting a scroll must deselect previously highlighted owned items")
+	first.select(0)
+	desktop.call("_on_owned_selected")
+	assert(scroll_tree.get_selected() == null and owned_tree.get_selected() != null,
+		"Selecting an owned item must deselect the scroll")
+	# Dispatch the same Tree button_clicked signal used by mouse selection.
+	# The saved quantity must not change synchronously: rebuilding a Tree
+	# inside that signal causes Godot's blocked > 0 / null-create_item error.
+	owned_tree.button_clicked.emit(first, 4, 101, 1)
+	assert(int(tab._inventory[0].quantity) == 2,
+		"Quantity button should defer the inventory mutation")
+	await process_frame
+	assert(int(tab._inventory[0].quantity) == 3,
+		"Deferred item quantity change must persist on the owner")
+	assert(owned_tree.get_root().get_first_child().get_text(1) == "45 mo",
+		"Deferred refresh must rebuild totals after the mouse event")
+	scroll_row = scroll_tree.get_root().get_first_child()
+	scroll_tree.button_clicked.emit(scroll_row, 0, 101, 1)
+	assert(int(tab._inventory[5].quantity) == 1)
+	await process_frame
+	assert(int(tab._inventory[5].quantity) == 2 and scroll_tree.get_selected() != null,
+		"Scroll quantities must use the same deferred edit path")
+
 	# The hand/armor selectors persist the same item slots used by game rules.
 	tab._inventory_list.select(0)
 	tab._equip_selected("main")
