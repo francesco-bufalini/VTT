@@ -332,41 +332,67 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   originPanels.forEach((node,i)=>{bind('power:'+i,node);const count=node.querySelectorAll('.magic-spell-row,.magic-ability-entry').length;html+=go('power:'+i,heading(node),'spark',count+(count===1?' potere':' poteri')+' · Apri dettagli e risorse');});
  }
  if(sheet==='inventory'){
-  target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
-  const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
-  html+='<div class="inventory-shortcuts">'+go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura')+go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+' / '+(c.attunement_max_base??3)+' oggetti')+'</div>';
+  const documentsTab=view.inventorySubtab==='documents';
+  html+='<nav class="inventory-subtabs" role="tablist" aria-label="Inventario">'+
+    [['items','Oggetti'],['documents','Documenti']].map(([key,label])=>
+      '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+
+      '" aria-selected="'+(documentsTab===(key==='documents'))+'">'+label+'</button>').join('')+'</nav>';
+  if(!documentsTab){
+    target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
+    target('coins','.inventory-coins-panel');
+    const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
+    html+='<div class="inventory-shortcuts">'+
+      go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura')+
+      go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+
+        ' / '+(c.attunement_max_base??3)+' oggetti')+
+      go('coins','Monete','coins',Object.entries(c.coins||{}).filter(([,n])=>Number(n)>0)
+        .map(([unit,n])=>n+' '+unit.toUpperCase()).join(' · ')||'Portamonete')+'</div>';
+  }
   const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
-  const owned=readouts.filter(item=>item.kind!=='document');
-  const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
-  const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
-  if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
+  const visible=readouts.map((info,i)=>({info,i})).filter(({info})=>(info.kind==='document')===documentsTab);
+  if(!documentsTab){
+    const owned=readouts.filter(item=>item.kind!=='document');
+    const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
+    const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
+    if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
+  }
   const add=document.createElement('div');
-  for(const node of bank.querySelectorAll('[data-act="item-catalog"],[data-act="add-item"],[data-act="new-homebrew-item"],[data-act="document-add"]'))add.append(node);
+  for(const node of bank.querySelectorAll(documentsTab?
+    '[data-act="document-add"]':
+    '[data-act="item-catalog"],[data-act="new-homebrew-item"]'))add.append(node);
   bind('inventory-add',add);
-  html+=card('Nello zaino','<p class="inventory-list-count">'+readouts.length+' voci · '+readouts.reduce((total,item)=>total+item.quantity,0)+' unità</p><label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
-   const key='item:'+i;const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
-   const node=document.createElement('section');node.className='play-item-editor';
-   if(row&&Number(view.inventorySelectedIndex)===i){
-    const form=document.createElement('div');form.className='play-item-fields';
-    const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
-    const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls'),equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more'),actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
-    field('Nome oggetto',name);field('Quantità',quantity);field('Equipaggiamento',equip);
-    const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';if(more)toolbar.append(more);if(actions)toolbar.append(actions);
-    row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
-   }
-   if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
-   if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
-   bind(key,node);
-   const info=readouts[i],search=[item.name,info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
-   return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
-     '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
-     '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
-     (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
-     (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
-     (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
-
-  }).join(''),edit('inventory-add','Aggiungi oggetti e documenti','increase'));
-  const infusion=panelNamed('Infusioni');if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
+  html+=card(documentsTab?'Documenti':'Nello zaino',
+    '<p class="inventory-list-count">'+visible.length+' voci · '+
+    visible.reduce((total,{info})=>total+info.quantity,0)+' unità</p>'+
+    '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca '+(documentsTab?'nei documenti':'nello zaino')+'" aria-label="Cerca nell’inventario"></label>'+
+    visible.map(({info,i})=>{
+      const item=c.inventory[i],key='item:'+i;
+      const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
+      const node=document.createElement('section');node.className='play-item-editor';
+      if(row&&Number(view.inventorySelectedIndex)===i){
+        const form=document.createElement('div');form.className='play-item-fields';
+        const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
+        const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls'),equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more'),actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
+        field('Nome oggetto',name);field('Quantità',quantity);field('Equipaggiamento',equip);
+        const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';if(more)toolbar.append(more);if(actions)toolbar.append(actions);
+        row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
+      }
+      if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
+      if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
+      bind(key,node);
+      const search=[item.name,info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
+      return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
+        '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
+        '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
+        (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
+        (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
+        (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
+    }).join('')||'<p class="play-empty">Nessuna voce disponibile.</p>',
+    edit('inventory-add',documentsTab?'Aggiungi documento':'Aggiungi oggetto','increase'));
+  if(!documentsTab){
+    const infusion=panelNamed('Infusioni');
+    if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
+  }
  }
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
