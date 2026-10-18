@@ -306,7 +306,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   await until(()=>rollMessages().length===count+1);
   const event=JSON.parse(rollMessages().at(-1).options.body).payload.event;
   assert.equal(event.kind,'roll');
-  assert.match(event.label,/TS Destrezza/);
+  assert.match(event.label,/Tiro salvezza DEX/);
   assert.match(event.notation,/^1d20/);
   assert.match(event.detail,/d20 \[\d+\] =/);
   assert.ok(Number.isInteger(event.total)&&event.total>=1);
