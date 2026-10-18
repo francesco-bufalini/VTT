@@ -5577,7 +5577,13 @@ func _on_inventory_updated(inventory: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
+	var previous_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
 	record["inventory"] = inventory.duplicate(true)
+	if _inventory_ui != null and _inventory_ui.has_method("attunement_max_base"):
+		record["attunement_max_base"] = int(_inventory_ui.call("attunement_max_base"))
+	var current_main: Dictionary = ItemRules.occupying(record["inventory"], "main")
+	if String(previous_main.get("id", "")) != String(current_main.get("id", "")):
+		record["hand_grip_two_handed"] = false
 	# The inventory editor also owns the existing optional-feature choices
 	# when it edits artificer infusions. Preserve unrelated optional features.
 	if _inventory_ui != null and _inventory_ui.has_method("optional_features"):
