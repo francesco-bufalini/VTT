@@ -33,7 +33,7 @@ const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
-  after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
+  after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
@@ -1078,17 +1078,21 @@ function renderSpellResults(){
     '<p class="hint">Nessun incantesimo corrispondente.</p>';
 }
 function diceResult(){
-  return state.roll?'<div class="dice-result">'+esc(state.roll.total)+'</div>'+
-    '<p class="dice-detail">'+esc(state.roll.notation)+' · '+esc(state.roll.detail)+'</p>'+
-    '<div class="actions"><button type="button" class="btn primary" data-act="share-roll"'+
-    (!state.paired||!state.online?' disabled':'')+'>Invia in chat</button></div>':'';
+  if(!state.roll)return '';
+  return '<div class="chat-dice-outcome"><div class="chat-dice-outcome-label">Risultato</div>'+
+    '<div class="dice-result">'+esc(state.roll.total)+'</div>'+
+    '<div class="chat-dice-formula"><span>Formula</span><strong>'+esc(state.roll.notation)+'</strong></div>'+
+    '<div class="chat-dice-breakdown">Dadi: '+esc(state.roll.detail)+'</div></div>'+
+    '<div class="actions"><button type="button" class="btn" data-act="share-roll"'+
+    (!state.paired||!state.online?' disabled':'')+'>Invia in chat</button></div>';
 }
 function diceView(){
   return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
     '<label>Numero dadi<input id="die-count" type="number" value="1" min="1" max="20"></label>'+
     '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
     '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
-    '<button class="btn" type="button" data-act="roll" data-sides="'+n+'">d'+n+'</button>').join("")+'</div>'+
+    '<button class="btn" type="button" data-act="select-die" data-sides="'+n+'" aria-pressed="'+(state.diceSides===n)+'">d'+n+'</button>').join("")+'</div>'+
+    '<div class="actions"><button type="button" class="btn primary full" data-act="roll">Tira d'+state.diceSides+'</button></div>'+
     '<div id="dice-feedback" aria-live="polite">'+diceResult()+'</div>'+
     '<div class="actions"><button type="button" class="btn" data-act="close-chat-dice">Chiudi</button></div>';
 }
@@ -1108,8 +1112,8 @@ function chatView(){
     (state.paired?
     '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
     '<form id="chat-form" class="stack" autocomplete="off">'+
-    '<label>Scrivi come <select id="chat-author"><option value="">Giocatore</option>'+
-    (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join("")+
+    '<label>Scrivi come <select id="chat-author"><option value=""'+(!state.chatAuthor?' selected':'')+'>Giocatore</option>'+
+    (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'"'+(state.chatAuthor===x.name?' selected':'')+'>'+esc(x.name)+'</option>').join("")+
     '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
     '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Invia messaggio</button></form>':''));
 }
@@ -1482,7 +1486,7 @@ async function shareRoll({quiet=false}={}) {
   if(!state.roll) return;
   if(!state.paired||!state.online) throw new Error("Collega prima una partita.");
   const r=state.roll;
-  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:r.author||"Giocatore",
+  const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:(document.querySelector("#chat-author")?.value||state.chatAuthor||"Giocatore").slice(0,80),
     timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
     ...sheetRollChatFields(r)};
   const result=await action("chat_send",{event});
@@ -2726,7 +2730,15 @@ async function handleAction(target){
   }
   if(act==="open-chat-dice"){openDiceDialog();return;}
   if(act==="close-chat-dice"){const dlg=document.querySelector("#chat-dice-dialog");if(dlg){if(typeof dlg.close==="function")dlg.close();else dlg.remove();}return;}
-  if(act==="roll"){await roll(Number(target.dataset.sides));return;}
+  if(act==="select-die"){
+    state.diceSides=Number(target.dataset.sides);
+    const dlg=document.querySelector("#chat-dice-dialog");
+    dlg?.querySelectorAll("[data-act='select-die']").forEach(button=>button.setAttribute("aria-pressed",String(Number(button.dataset.sides)===state.diceSides)));
+    const rollButton=dlg?.querySelector("[data-act='roll']");
+    if(rollButton)rollButton.textContent="Tira d"+state.diceSides;
+    return;
+  }
+  if(act==="roll"){await roll(state.diceSides);return;}
   if(act==="share-roll"){await shareRoll();return;}
 }
 async function handleSubmit(form){
@@ -2759,6 +2771,7 @@ async function handleSubmit(form){
     const body=text(document.querySelector("#chat-message")?.value);
     if(!body||body.length>1000)throw new Error("Messaggio vuoto o troppo lungo.");
     const author=text(document.querySelector("#chat-author")?.value)||"Giocatore";
+    state.chatAuthor=author==="Giocatore"?"":author;
     const event={id:"pwa_"+crypto.randomUUID(),kind:"chat",author:author.slice(0,80),
       timestamp:Math.floor(Date.now()/1000),text:body};
     const result=await action("chat_send",{event});
