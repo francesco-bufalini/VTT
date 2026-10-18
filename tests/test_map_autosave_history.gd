@@ -25,6 +25,16 @@ func run() -> void:
 	board._reset_map_history_baseline(initial)
 	assert(board._undo_stack.is_empty() and board._redo_stack.is_empty())
 
+	# Ctrl+Z should also work immediately, before any disk debounce fires.
+	token.set_condition("stunned", true)
+	assert(board.undo_last_action(),
+		"Unsaved implicit token edits must be undoable without waiting for disk")
+	assert(not token.has_condition("stunned"))
+	assert(board.redo_last_action())
+	assert(token.has_condition("stunned"))
+	token.set_condition("stunned", false)
+	board._reset_map_history_baseline(sync.create_snapshot())
+
 	# Direct token edits are normally missed by the older manual-only history.
 	token.set_display_name("Changed")
 	token.set_condition("poisoned", true)
