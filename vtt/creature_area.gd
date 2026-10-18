@@ -48,6 +48,7 @@ const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const CreaturePublicStatus = preload("res://vtt/creature_public_status.gd")
 const SheetController = preload("res://vtt/creature_sheet_controller.gd")
 const ALIGNMENT_OPTIONS = ["Legale buono","Neutrale buono","Caotico buono","Legale neutrale","Completamente neutrale","Caotico neutrale","Legale malvagio","Neutrale malvagio","Caotico malvagio"]
+const LAST_CREATURE_SELECTION_PATH := "user://creature_gui_selection.cfg"
 
 var board_root: Node
 var ui_root: CanvasLayer
@@ -59,6 +60,9 @@ var _records: Array[Dictionary] = []
 var _owned_name_index: Dictionary = {}
 var _selected_id := ""
 var _selected_kind := ""
+var _last_selected_id := ""
+var _last_selected_kind := ""
+var _selection_config_path := LAST_CREATURE_SELECTION_PATH
 # Hidden editors are rebuilt only when opened, not during every sheet switch.
 var _traits_stale := true
 var _proficiencies_stale := true
@@ -263,6 +267,7 @@ func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = t
 		return
 	_require_miniatures = require_miniatures
 	_creature_language = CreatureLocale.read_locale()
+	_restore_last_creature_selection()
 	_archive = Archive.new()
 	_archive.setup(get_node_or_null("/root/CampaignManager"))
 	_client = Bestiary.new()
@@ -283,6 +288,38 @@ func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = t
 	_refresh_creature_language()
 	_load_bestiary_catalog(allow_remote_catalog and DisplayServer.get_name() != "headless")
 	call_deferred("refresh_owned_sheets")
+
+
+# The selection is a device-local UI preference, independent of campaign saves.
+# Persist by stable ID and kind, never by list index or creature name.
+func _restore_last_creature_selection() -> void:
+	var config := ConfigFile.new()
+	if config.load(_selection_config_path) != OK:
+		return
+	var creature_id := String(config.get_value("selection", "id", "")).strip_edges()
+	var kind := String(config.get_value("selection", "kind", ""))
+	if creature_id.is_empty() or kind not in ["character", "monster"]:
+		return
+	_last_selected_id = creature_id
+	_last_selected_kind = kind
+	_selected_id = creature_id
+	_selected_kind = kind
+
+
+func _remember_creature_selection() -> void:
+	if _selected_id.is_empty() or _selected_kind not in ["character", "monster"]:
+		return
+	if _selected_id == _last_selected_id and _selected_kind == _last_selected_kind:
+		return
+	var config := ConfigFile.new()
+	config.set_value("selection", "id", _selected_id)
+	config.set_value("selection", "kind", _selected_kind)
+	var error: Error = config.save(_selection_config_path)
+	if error != OK:
+		push_warning("CreatureArea: impossibile salvare la selezione: " + error_string(error))
+		return
+	_last_selected_id = _selected_id
+	_last_selected_kind = _selected_kind
 
 
 func _load_bestiary_catalog(fetch_remote: bool) -> void:
@@ -3602,6 +3639,10 @@ func _reference_entry(option: OptionButton) -> Dictionary:
 
 
 func _reload() -> void:
+	# Preserve the remembered choice if an earlier empty refresh cleared the UI.
+	if _selected_id.is_empty() and not _last_selected_id.is_empty():
+		_selected_id = _last_selected_id
+		_selected_kind = _last_selected_kind
 	_records = _archive.list_owned()
 	_owned_name_index.clear()
 	for record: Dictionary in _records:
@@ -3943,6 +3984,7 @@ func _on_selected(index: int) -> void:
 	var record := _records[index]
 	_selected_id = String(record.get("id", ""))
 	_selected_kind = String(record.get("kind", ""))
+	_remember_creature_selection()
 	for i: int in range(_creature_row_buttons.size()):
 		_creature_row_buttons[i].set_pressed_no_signal(i == index)
 	_load_form(record)
