@@ -105,7 +105,7 @@ try{
  assert(await page.locator('[data-session-content="connection"]').isVisible());
  assert.equal(await page.locator('.session-map-panel').isVisible(),false);
  await page.locator('[data-session-pane="chat"]').click();await page.locator('[data-act="open-chat-dice"]').click();
- await page.locator('[data-act="roll"][data-sides="20"]').click();await page.locator('.dice-result').waitFor();
+ await page.locator('#chat-dice-dialog [data-act="roll"]').click();await page.locator('.dice-result').waitFor();
  await page.locator('[data-act="close-chat-dice"]').click();await shot('chat');
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
