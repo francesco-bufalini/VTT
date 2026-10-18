@@ -4,6 +4,40 @@ const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
 const metric=(label,value)=>'<div class="derived-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';
+/** Expand a modifier using effective abilities, training and residual bonuses. */
+export function sheetModifierBreakdown(data,target){
+ const total=Number(data?.values?.[target]);
+ if(!Number.isFinite(total))return 'Modificatore non disponibile';
+ const sign=value=>(Number(value)>=0?'+':'')+Number(value);
+ const pieces=[];
+ let subtotal=0;
+ const push=(label,value)=>{
+  if(!Number.isFinite(value))return;
+  pieces.push(label+' '+sign(value));subtotal+=value;
+ };
+ const abilityFrom=key=>Number(data?.values?.['ability_mod:'+key]);
+ const proficiency=Number(data?.values?.proficiency||0);
+ if(target.startsWith('ability_mod:')){
+  const key=target.slice('ability_mod:'.length),score=Number(data?.values?.['ability:'+key]);
+  if(Number.isFinite(score))push('⌊('+score+' − 10)/2⌋',Math.floor((score-10)/2));
+ }else if(target==='initiative')push('Mod. DES',abilityFrom('dex'));
+ else if(target.startsWith('save:')){
+  const key=target.slice(5);
+  push('Mod. '+key.toUpperCase(),abilityFrom(key));
+  if(data?.proficiencies?.includes('save:'+key))push('Competenza',proficiency);
+ }else if(target.startsWith('skill:')){
+  const skill=target.slice(6),definition=SKILLS.find(row=>row[0]===skill);
+  if(definition)push('Mod. '+definition[2].toUpperCase(),abilityFrom(definition[2]));
+  const rank=data?.proficiencies?.includes('expertise:'+skill)?2:
+   data?.proficiencies?.includes('skill:'+skill)?1:0;
+  if(rank)push(rank===2?'Maestria':'Competenza',proficiency*rank);
+ }
+ if(!pieces.length)return 'Modificatore calcolato: '+sign(total);
+ const other=total-subtotal;
+ if(Math.abs(other)>0.000001)push('Altri bonus',other);
+ return pieces.join(' + ').replaceAll(' + Altri bonus -',' − Altri bonus ')+
+  ' = '+sign(total);
+}
 /** Preview does not consume randomness: opening a modifier is not a roll. */
 export function sheetRollFormula(modifier,bonuses=[]){
  const number=Number(modifier);
