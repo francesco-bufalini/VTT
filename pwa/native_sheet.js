@@ -133,6 +133,80 @@ export function recoveryPatch(c,event,trackers){
  return patch;
 }
 
+
+/**
+ * Hit Dice remain a portable per-die-size counter. Older desktop exports have
+ * no hit_dice_spent field: treat those pools as fully available, never discard
+ * the native hit_dice string or the class-derived values.
+ */
+export function hitDicePools(record,calculated={}){
+ const expression=String(calculated.stats?.hit_dice||record.hit_dice||'');
+ const counts=new Map();
+ for(const match of expression.matchAll(/(\d+)\s*d\s*(\d+)/gi)){
+  const count=Number(match[1]),die=Number(match[2]);
+  if(!Number.isSafeInteger(count)||count<1||count>1000||![4,6,8,10,12,20].includes(die))continue;
+  counts.set(die,(counts.get(die)||0)+count);
+ }
+ return [...counts].sort(([a],[b])=>b-a).map(([die,total])=>{
+  const value=Number(record.hit_dice_spent?.['d'+die]||0);
+  const spent=Math.max(0,Math.min(total,Number.isFinite(value)?Math.trunc(value):0));
+  return {die,total,spent,available:total-spent};
+ });
+}
+
+/**
+ * A finished rest is a single atomic creature patch, including native feature
+ * recovery, slot usage and the 2014/2024 HP/Hit Die rules. Rest duration and
+ * interruptions are decided at the table rather than guessed from wall time.
+ */
+export function completeRest(record,event,calculated={},spend={},rollDie=sides=>1+Math.floor(Math.random()*sides)){
+ if(!['short_rest','long_rest'].includes(event))throw Error('Tipo di riposo non valido');
+ if(Number(record.current_hp||0)<1)throw Error('Serve almeno 1 PF per iniziare un riposo.');
+ const pools=hitDicePools(record,calculated),version=String(record.rules_version||'2014');
+ const patch=recoveryPatch(record,event,calculated.trackers||[]);
+ const totalHp=Math.max(0,Number(calculated.stats?.max_hp??record.max_hp??0));
+ let healed=0;
+ const rolls=[];
+ const spent={};
+ for(const pool of pools)if(pool.spent)spent['d'+pool.die]=pool.spent;
+ if(event==='short_rest'){
+  const selections=new Map(pools.map(p=>['d'+p.die,p]));
+  for(const [key,raw] of Object.entries(spend||{})){
+   const count=Number(raw),pool=selections.get(key);
+   if(!pool||!Number.isInteger(count)||count<0||count>pool.available)
+    throw Error('Dadi Vita insufficienti o non validi: '+key);
+   if(!count)continue;
+   spent[key]=(spent[key]||0)+count;
+   for(let i=0;i<count;i++){
+    const rolled=rollDie(pool.die);
+    if(!Number.isInteger(rolled)||rolled<1||rolled>pool.die)throw Error('Risultato del Dado Vita non valido');
+    const con=Number(calculated.abilities?.con?.modifier??calculated.values?.['ability_mod:con']??Math.floor((Number(record.abilities?.con||10)-10)/2));
+    const gained=Math.max(version==='2024'?1:0,rolled+(Number.isFinite(con)?con:0));
+    healed+=gained;
+    rolls.push({die:pool.die,roll:rolled,modifier:con,healed:gained});
+   }
+  }
+  patch.current_hp=Math.min(totalHp,Math.max(0,Number(record.current_hp)||0)+healed);
+ }else{
+  patch.current_hp=totalHp;
+  patch.temporary_hp=0; // Temporary HP expire after a long rest.
+  patch.death_save_successes=0;
+  patch.death_save_failures=0;
+  patch.exhaustion=Math.max(0,Math.trunc(Number(record.exhaustion||0))-1);
+  // 2014: half the total Hit Dice (minimum one); 2024: all Hit Dice.
+  let recover=version==='2024'?Infinity:Math.max(1,Math.floor(pools.reduce((sum,p)=>sum+p.total,0)/2));
+  for(const pool of pools){
+   const restored=Math.min(pool.spent,recover);
+   recover-=restored;
+   const leftover=pool.spent-restored;
+   if(leftover)spent['d'+pool.die]=leftover;
+   else delete spent['d'+pool.die];
+  }
+ }
+ patch.hit_dice_spent=spent;
+ return {patch,healed:Math.max(0,patch.current_hp-Math.max(0,Number(record.current_hp)||0)),rolls};
+}
+
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
   const options=type.some(([v])=>String(v)===String(value??''))?type:[[value??'',value||'Non selezionato'],...type];
