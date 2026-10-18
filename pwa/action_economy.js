@@ -492,7 +492,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
-  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
+  '<div class="play-battle-attack-line'+(rolls.length>1?' has-multiple-rolls':'')+'"><details class="play-battle-attack-details"><summary>'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
