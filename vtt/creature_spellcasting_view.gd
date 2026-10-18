@@ -373,6 +373,8 @@ func _leveled_spell_list(parent: Node, entries: Array[Dictionary]) -> VBoxContai
 		if level != previous:
 			var heading: Label = _label(list, "Trucchetti" if level == 0 else "Livello %d" % level)
 			heading.name = "SpellLevelHeader"
+			heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+			heading.custom_minimum_size.x = 100.0
 			heading.add_theme_font_size_override("font_size", 14)
 			heading.add_theme_color_override("font_color", Color(0.84, 0.71, 0.49))
 			previous = level
