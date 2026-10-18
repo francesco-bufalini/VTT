@@ -546,7 +546,7 @@ func _fit_full_tree(tree: Tree, row_count: int) -> void:
 		return # A newer refresh superseded the queued measurement.
 	var height := 29.0
 	if row_count > 0:
-		var last: TreeItem = root.get_last_child()
+		var last: TreeItem = root.get_child(row_count - 1)
 		var rect: Rect2 = tree.get_item_rect(last)
 		if rect.size.y > 0.0:
 			height = ceilf(rect.end.y) + 6.0
