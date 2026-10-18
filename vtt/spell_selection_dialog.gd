@@ -98,6 +98,12 @@ func _ready() -> void:
 	close_requested.connect(hide)
 	Caption.install(self)
 
+func set_gui_language(language: String) -> void:
+	if language not in ["it", "en"]:
+		return
+	_context["gui_language"] = language
+	CreatureLocale.apply(self, language)
+
 func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) -> void:
 	_display_limit = 120
 	_catalog = options.duplicate()
