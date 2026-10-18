@@ -329,6 +329,34 @@ async function computeLocalData(record){
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:catalogs.classMechanics||{}};
 }
+
+function classAbilityActivationPatch(c,calculated,ability){
+ const key=String(ability?.class_feature_id||'');
+ const allowed=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
+ if(!allowed.has(key)||c.active_class_features?.[key])throw Error('Capacità non disponibile o già attiva.');
+ const incapacitated=(c.conditions||[]).includes('unconscious')||
+   (c.rules_version==='2024'&&(c.conditions||[]).includes('incapacitated'));
+ if(key==='rage'&&(incapacitated||(c.inventory||[]).some(item=>
+   item?.equipped_slots?.includes('body')&&String(item.type||'').split('|')[0]==='HA')))
+   throw Error('Ira non disponibile con armatura pesante o incapacità.');
+ const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
+ const requiresTracker=['rage','innate_sorcery'].includes(key)||
+   (c.rules_version!=='2024'&&['patient_defense','step_of_the_wind'].includes(key));
+ if(requiresTracker&&!tracker)throw Error('Tracker della capacità non disponibile.');
+ const cost=requiresTracker?1:Math.max(0,Number(ability.cost)||0);
+ if(cost&&(!tracker||tracker.disabled||tracker.max-tracker.spent<cost))
+   throw Error('Risorsa insufficiente per attivare la capacità.');
+ const changes={active_class_features:{...(c.active_class_features||{}),
+   [key]:{name:ability.name,origin_id:ability.origin_id||ability.id,
+   rules_version:c.rules_version||'2014',enhanced:false}}};
+ if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+ if(key==='rage'){
+   changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
+   changes.concentrating_spell_id='';
+ }
+ return changes;
+}
+
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
@@ -351,7 +379,7 @@ async function editorView() {
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
-  if(state.sheet==="magic"&&!state.abilityCatalog){
+  if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
     try{state.abilityCatalog=await loadActivatedAbilities();}
     catch{state.abilityCatalog=[];}
   }
@@ -1915,7 +1943,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants()):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -1996,25 +2024,36 @@ async function handleAction(target){
   if(act==='condition-add-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const key=app.querySelector('#condition-ability-picker')?.value||'';
-    const allowed=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
-    const actions=nativeClassFeatureActions(c,await computeLocalData(c));
-    const ability=actions.find(row=>row.class_feature_id===key&&allowed.has(key));
-    if(!ability||c.active_class_features?.[key])throw Error('Capacità non disponibile o già attiva.');
-    const incapacitated=(c.conditions||[]).includes('unconscious')||(c.rules_version==='2024'&&(c.conditions||[]).includes('incapacitated'));
-    if(key==='rage'&&(incapacitated||(c.inventory||[]).some(item=>item?.equipped_slots?.includes('body')&&String(item.type||'').split('|')[0]==='HA')))throw Error('Ira non disponibile con armatura pesante o incapacità.');
-    const tracker=(state.calculated?.trackers||[]).find(row=>row.id===ability.tracker_id);
-    const requiresTracker=['rage','innate_sorcery'].includes(key)||
-      (c.rules_version!=='2024'&&['patient_defense','step_of_the_wind'].includes(key));
-    if(requiresTracker&&!tracker)throw Error('Tracker della capacità non disponibile.');
-    const cost=requiresTracker?1:Math.max(0,Number(ability.cost)||0);
-    if(cost&&(!tracker||tracker.max-tracker.spent<cost))throw Error('Risorsa insufficiente per attivare la capacità.');
-    const changes={active_class_features:{...(c.active_class_features||{}),[key]:{name:ability.name,origin_id:ability.origin_id||ability.id,rules_version:c.rules_version||'2014',enhanced:false}}};
-    if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
-    if(key==='rage'){
-      changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
-      changes.concentrating_spell_id='';
+    const calculated=await computeLocalData(c);
+    const ability=nativeClassFeatureActions(c,calculated).find(row=>row.class_feature_id===key);
+    if(!ability)throw Error('Capacità non disponibile.');
+    await patch(classAbilityActivationPatch(c,calculated,ability));
+    state.sheetPopup='';await render();return;
+  }
+  if(act==='battle-use-ability'){
+    const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
+    const calculated=await computeLocalData(c);
+    const panels=battleActionPanels(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
+      state.generalActionSupplements||[],readActionVariants(),
+      abilitiesForCreature(c,state.abilityCatalog||[],calculated));
+    const ability=panels.abilityEntries.find(row=>
+      String(row.id||row.ability_id||row.name)===String(target.dataset.abilityId||''));
+    if(!ability)throw Error('Capacità non disponibile per questa creatura.');
+    if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(ability.class_feature_id)){
+      await patch(classAbilityActivationPatch(c,calculated,ability));
+      await render();return;
     }
-    await patch(changes);state.sheetPopup='';await render();return;
+    const cost=Math.max(0,Number(ability.cost)||0);
+    if(cost){
+      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
+      if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
+        throw Error('Risorsa insufficiente per usare la capacità.');
+      await patch(changeTrackerUses(c,tracker.id,cost,calculated.trackers));
+    }
+    await render();
+    message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':
+      ability.name+': consulta la descrizione per applicarne gli effetti.');
+    return;
   }
   if(act==='condition-remove-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
