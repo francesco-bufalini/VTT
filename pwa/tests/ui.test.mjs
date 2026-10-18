@@ -735,7 +735,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
  assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
- await until(()=>document.querySelector('#hp-amount'));
+ await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
   ['Punti ferita','Classe armatura e iniziativa','Risorse','Attacchi disponibili'],
   'CA follows HP before resource trackers and attacks');
