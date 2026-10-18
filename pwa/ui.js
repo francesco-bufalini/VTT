@@ -16,7 +16,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -2296,6 +2296,50 @@ async function handleAction(target){
     const dialog=document.querySelector('#sheet-score-dialog');
     dialog?.close?.();dialog?.remove();return;
   }
+  if(act==='battle-damage-roll'){
+    const formula=String(target.dataset.damageFormula||'');
+    if(!formula||!state.editor)throw Error('Danni non disponibili.');
+    const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
+    document.querySelector('#battle-damage-dialog')?.remove();
+    const dialog=document.createElement('dialog');
+    dialog.className='sheet-roll-dialog battle-damage-dialog';dialog.id='battle-damage-dialog';
+    dialog.dataset.damageFormula=formula;dialog.dataset.damageLabel=label;
+    dialog.dataset.damageType=type;dialog.dataset.creatureId=state.editor.read().id||'';
+    dialog.innerHTML='<h2>Danni · '+esc(label)+'</h2>'+
+     '<div class="sheet-roll-math"><span>Formula</span><strong>'+esc(formula)+'</strong></div>'+
+     (type?'<div class="sheet-roll-math"><span>Tipo di danno</span><strong>'+esc(type)+'</strong></div>':'')+
+     '<div class="sheet-roll-result" data-damage-result hidden aria-live="polite"></div>'+
+     '<p class="sheet-roll-chat-error" data-damage-chat-status hidden role="status"></p>'+
+     '<div class="actions sheet-roll-actions"><button type="button" class="btn primary" data-act="battle-damage-confirm">Tira danni</button>'+
+     '<button type="button" class="btn" data-act="battle-damage-close">Chiudi</button></div>';
+    document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    return;
+  }
+  if(act==='battle-damage-confirm'){
+    const dialog=document.querySelector('#battle-damage-dialog');
+    if(!dialog||dialog.dataset.rolled==='true')return;
+    if(!state.editor||state.editor.read().id!==dialog.dataset.creatureId)
+      throw Error('La creatura del tiro è cambiata.');
+    const outcome=rollBattleDamage(dialog.dataset.damageFormula,randomDie);
+    dialog.dataset.rolled='true';
+    state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
+     (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName()};
+    state.rollHistory.unshift({...state.roll});
+    const result=dialog.querySelector('[data-damage-result]');
+    result.hidden=false;
+    result.innerHTML='<div class="dice-result">'+esc(outcome.total)+'</div>'+
+     '<p><strong>Formula:</strong> '+esc(outcome.notation)+'</p>'+
+     '<p><strong>Sviluppo:</strong> '+esc(outcome.detail)+'</p>';
+    dialog.querySelector('[data-act="battle-damage-confirm"]').hidden=true;
+    if(state.paired&&state.online){
+      try{await shareRoll({quiet:true});}
+      catch(error){const status=dialog.querySelector('[data-damage-chat-status]');
+       status.hidden=false;status.textContent='Invio chat non riuscito: '+errorMessage(error);}
+    }
+    return;
+  }
+  if(act==='battle-damage-close'){document.querySelector('#battle-damage-dialog')?.remove();return;}
   if(act==='sheet-roll'){
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
     const key=String(target.dataset.target||'');
