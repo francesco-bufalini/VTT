@@ -108,8 +108,12 @@ test("native-style Info keeps derived identity and health editors without option
  assert.doesNotMatch(info,/data-native-list="classes" data-index="0"/);
  assert.doesNotMatch(info,/data-field="(appearance|player_name|inspiration|notes)"/);
  assert.doesNotMatch(info,/Aspetto, identità e personalità/);
- assert.match(battle,/data-field="death_save_successes"/);
- assert.match(battle,/data-field="death_save_failures"/);
+ assert.doesNotMatch(battle,/data-field="death_save_successes"/);
+ assert.doesNotMatch(battle,/data-field="death_save_failures"/);
+ assert.match(battle,/class="battle-hp-grid"/);
+ assert.match(battle,/data-act="hp-restore-second"/);
+ assert.ok(battle.indexOf('battle-hp-controls')<battle.indexOf('battle-defense-values'),
+   'The armor class is displayed immediately after hit points');
  const spells=actionEntries({spells:[{id:"spell_1"}]},
   {attacks:[{id:"bow",name:"Arco",damage:"1d8"}]},
   [{id:"spell_1",name:"Incantesimo",level:1,time:[{unit:"action"}]}]);

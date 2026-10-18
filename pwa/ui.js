@@ -1794,12 +1794,17 @@ async function handleAction(target){
     else await patch(slotUsePatch(c,Number(target.dataset.level),act==='slot-use'?1:-1,await computeLocalData(c)));
     await render();return;
   }
-  if(['hp-damage','hp-heal','hp-restore','hp-automatic'].includes(act)){
+  if(['hp-damage','hp-heal','hp-restore','hp-restore-second','hp-automatic'].includes(act)){
     const c=state.editor.read(),calculated=await computeLocalData(c);
     if(act==='hp-automatic'){
       if(!calculated.stats.automatic_hp.available)throw Error('PF automatici non disponibili');
       await patch({max_hp_base:calculated.stats.automatic_hp.value});
     }else if(act==='hp-restore')await patch({current_hp:Math.max(0,calculated.stats.max_hp)});
+    else if(act==='hp-restore-second'){
+      const maximum=Number(calculated.values?.second_max??c.second_form_max_hp??0);
+      if(!Number.isFinite(maximum)||maximum<=0)throw Error('Imposta prima il massimo della seconda forma.');
+      await patch({second_form_hp:Math.max(0,maximum)});
+    }
     else{
       const amount=Number(app.querySelector('#hp-amount')?.value);
       if(!Number.isInteger(amount)||amount<0||amount>99999)throw Error('Quantità PF non valida');
