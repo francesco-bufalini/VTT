@@ -31,9 +31,36 @@ func run() -> void:
 	assert(Defenses.rank(raging, "slashing") == 1)
 	assert(Defenses.rank(raging, "fire") == 0)
 	assert(Store.new().normalize_character(raging).active_class_features.has("rage"))
+	# The same typed effect must power the sheet state, the actual damage and
+	# the modifier breakdown. A status entry cannot quietly change the total.
+	var effects := Runtime.active_effects(raging)
+	assert(effects.size() == 1 and effects[0].key == "rage")
+	assert(effects[0].name == "Ira" and effects[0].effective)
+	assert(not String(effects[0].origin_id).is_empty())
+	var attack := {"id": "unarmed", "source": "unarmed", "melee": true, "damage": ""}
+	var breakdown := Attacks.damage_modifier_breakdown(raging, attack)
+	assert(int(breakdown.total) == 7, str(breakdown))
+	assert(breakdown.parts.any(func(part: Dictionary) -> bool:
+		return part.get("name", "") == "Ira" and int(part.get("amount", 0)) == 3))
+	assert("Ira: +3" in Attacks.damage_modifier_description(raging, attack))
+	assert(Attacks.damage_label(raging, attack) == "8 contundenti")
+	var suspended := raging.duplicate(true)
+	suspended["conditions"] = ["unconscious"]
+	assert(not Runtime.is_active(suspended, "rage"))
+	assert(Runtime.active_effects(suspended).size() == 1)
+	assert(not Runtime.active_effects(suspended)[0].effective)
+	assert(Runtime.rage_damage(suspended, {"thrown": false}, "str") == 0)
+	var cleared := Runtime.deactivate(raging, "rage")
+	assert(cleared.ok and not Runtime.is_active(cleared.record, "rage"))
+	assert(Runtime.active_effects(cleared.record).is_empty())
+	assert(Attacks.damage_modifier_breakdown(cleared.record, attack).total == 4)
+	assert(cleared.record.resource_tracker_spent == raging.resource_tracker_spent)
 	var stopped := Runtime.activate(raging, "class_feature:rage")
 	assert(stopped.ok and not Runtime.is_active(stopped.record, "rage"))
 	assert(stopped.record.resource_tracker_spent == raging.resource_tracker_spent)
+	var novice := make_record("Barbarian", 1)
+	var novice_rage: Dictionary = Runtime.activate(novice, "class_feature:rage").record
+	assert(Runtime.rage_damage(novice_rage, {"thrown": false}, "str") == 2)
 	var revised := make_record("Barbarian", 9, "XPHB")
 	revised = Runtime.activate(revised, "class_feature:rage").record
 	assert(Runtime.rage_damage(revised, {"thrown": true}, "str") == 3)
@@ -73,7 +100,11 @@ func run() -> void:
 	var rest := preload("res://vtt/structured_resource_trackers.gd").recovery_patch(converted.record, "long_rest")
 	assert(rest.created_spell_slots.is_empty() and rest.active_class_features.is_empty())
 	var revised_sorc := make_record("Sorcerer", 6, "XPHB")
-	assert(Runtime.activate(revised_sorc, "class_feature:innate_sorcery").ok)
+	var innate := Runtime.activate(revised_sorc, "class_feature:innate_sorcery")
+	assert(innate.ok)
+	assert(Runtime.active_effects(innate.record).any(func(effect: Dictionary) -> bool:
+		return effect.get("key", "") == "innate_sorcery"))
+	assert(Runtime.deactivate(innate.record, "innate_sorcery").ok)
 	var monk := make_record("Monk", 4, "XPHB")
 	var monk_options := Runtime.entries(monk)
 	assert(monk_options.any(func(row: Dictionary) -> bool: return row.key == "patient_defense"))

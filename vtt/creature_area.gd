@@ -5235,7 +5235,7 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
+		var damage_detail: String = "Danni: %s\n%s" % [damage, AttackData.damage_modifier_description(record, attack)]
 		if String(attack.get("slot", "")) == "off":
 			if AttackData.offhand_bonus_attack_allowed(record):
 				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
@@ -7416,6 +7416,50 @@ func _refresh_conditions(record: Dictionary) -> void:
 		remove.pressed.connect(_remove_active_spell.bind(sid))
 		row.add_child(remove)
 
+	# Persistent abilities are effects, with an explicit source and an end
+	# action. Do not add them to record.conditions: that array holds rule
+	# conditions and must remain compatible with tokens and spell effects.
+	var feature_heading := Label.new()
+	feature_heading.text = "Capacità attive"
+	feature_heading.add_theme_font_size_override("font_size", 15)
+	_condition_rows.add_child(feature_heading)
+	var features: Array[Dictionary] = ClassFeatures.active_effects(record)
+	if features.is_empty():
+		var empty_features := Label.new()
+		empty_features.text = "Nessuna capacità attiva."
+		empty_features.modulate.a = 0.65
+		_condition_rows.add_child(empty_features)
+	for feature: Dictionary in features:
+		var row := HBoxContainer.new()
+		_condition_rows.add_child(row)
+		var label := Label.new()
+		label.text = "✦ " + String(feature.get("name", "Capacità"))
+		if not bool(feature.get("effective", false)):
+			label.text += " (sospesa)"
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.tooltip_text = String(feature.get("summary", "")) + "\nOrigine: " + String(feature.get("origin_id", ""))
+		row.add_child(label)
+		var detail := Button.new()
+		detail.text = "ⓘ" if _touch_layout else "Leggi effetti"
+		detail.tooltip_text = "Leggi gli effetti e la loro origine"
+		if _touch_layout:
+			detail.set_meta("touch_compact_action", true)
+			detail.custom_minimum_size = Vector2(34, 34)
+		detail.pressed.connect(_show_effect_description.bind({
+			"name": String(feature.get("name", "Capacità")),
+			"description": String(feature.get("summary", "")) + "\n\n" + String(feature.get("description", "")) + "\n\nOrigine: " + String(feature.get("origin_id", ""))
+		}))
+		row.add_child(detail)
+		var end := Button.new()
+		end.text = "×" if _touch_layout else "Termina"
+		end.tooltip_text = "Termina questa capacità e rimuovi i suoi benefici, senza restituire le risorse spese"
+		if _touch_layout:
+			end.set_meta("touch_compact_action", true)
+			end.custom_minimum_size = Vector2(34, 34)
+		end.pressed.connect(_end_active_class_effect.bind(String(feature.get("key", ""))))
+		row.add_child(end)
+
 	# Other Effects immediately follow the spell section; then Conditions and
 	# diseases retain their ordinary checkbox-based management.
 	var active: Array = record.get("conditions", [])
@@ -7461,6 +7505,26 @@ func _refresh_conditions(record: Dictionary) -> void:
 				info.custom_minimum_size = Vector2(34, 34)
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
+
+
+func _end_active_class_effect(key: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var result: Dictionary = ClassFeatures.deactivate(record, key)
+	if not bool(result.get("ok", false)):
+		return
+	var updated: Dictionary = result.get("record", {})
+	_recalculate_bonus_mirrors(updated)
+	var error: Error = _archive.save(updated)
+	if error != OK:
+		_set_status("Impossibile terminare la capacità: " + error_string(error))
+		return
+	_replace_current_record(updated)
+	_load_form(updated)
+	_apply_sheet_properties(updated)
+	_sync_token_health(updated)
+	_set_status(String(result.get("message", "Effetto terminato.")))
 
 
 func _open_add_active_spell() -> void:

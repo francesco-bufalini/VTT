@@ -47,6 +47,16 @@ func run() -> void:
 	activation.confirmed.emit()
 	await process_frame
 	assert(preload("res://vtt/class_feature_activation.gd").is_active(area._current(), "rage"))
+	var has_rage_effect := false
+	for row: Node in area._condition_rows.get_children():
+		if row is HBoxContainer:
+			for control: Node in row.get_children():
+				if control is Label and String(control.text).begins_with("✦ Ira"):
+					has_rage_effect = true
+	assert(has_rage_effect, "Rage must appear among active ability effects in Conditions")
+	area._end_active_class_effect("rage")
+	assert(not preload("res://vtt/class_feature_activation.gd").is_active(area._current(), "rage"))
+	assert(preload("res://vtt/class_feature_activation.gd").active_effects(area._current()).is_empty())
 	area._tabs.current_tab = 2
 	area._action_economy_ui.load_record(area._current())
 	if "--visual" in OS.get_cmdline_user_args():

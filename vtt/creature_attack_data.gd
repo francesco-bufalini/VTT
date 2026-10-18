@@ -262,27 +262,60 @@ static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
 	return main_melee and off_melee and ((main_light and off_light) or has_dual_wielder(record))
 
 
-static func damage_label(record: Dictionary, attack: Dictionary) -> String:
+# One breakdown drives both the displayed number and the explanatory tooltip.
+# Class features return named, origin-linked grants rather than opaque additions.
+static func damage_modifier_breakdown(record: Dictionary, attack: Dictionary) -> Dictionary:
 	var source: String = String(attack.get("source", ""))
-	var base: String = String(attack.get("damage", "")).strip_edges()
-	var modifier: int = (
+	var item: Dictionary = attack.get("item_entry", {})
+	var ability := "str"
+	if not item.is_empty():
+		ability = Items.attack_ability(record, item, bool(attack.get("thrown", false)))
+	var ability_amount: int = (
 		_ability_delta_for_monster(record, attack)
 		if String(record.get("kind", "")) == "monster" and source not in ["item", "unarmed", "improvised"]
 		else _attack_ability_modifier(record, attack)
 	)
-	# The off-hand bonus-action strike keeps its normal attack roll. In 5e
-	# the ability modifier is omitted from DAMAGE, unless negative or the
-	# character has selected the Two-Weapon Fighting style.
+	# The off-hand attack still rolls to hit normally, but its ability
+	# modifier to damage is omitted unless the fighting style permits it.
 	if source == "item" and String(attack.get("slot", "")) == "off":
 		if offhand_bonus_attack_allowed(record) and not has_two_weapon_style(record):
-			modifier = mini(0, modifier)
-	var ability := "str"
-	var item: Dictionary = attack.get("item_entry", {})
-	if not item.is_empty(): ability = Items.attack_ability(record, item, bool(attack.get("thrown", false)))
-	var rage_attack := attack.duplicate()
-	rage_attack["weapon_kind"] = String(item.get("type", "")).split("|")[0]
-	modifier += ClassFeatures.rage_damage(record, rage_attack, ability)
-	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
+			ability_amount = mini(0, ability_amount)
+	var parts: Array[Dictionary] = [{
+		"name": "Caratteristica (%s)" % ability.to_upper(), "amount": ability_amount,
+		"origin_id": "ability:" + ability
+	}]
+	var context := attack.duplicate()
+	context["weapon_kind"] = String(item.get("type", "")).split("|")[0]
+	for effect: Dictionary in ClassFeatures.attack_damage_effects(record, context, ability):
+		parts.append(effect)
+	var target := "attack_damage:" + String(attack.get("id", ""))
+	var other: int = Bonuses.bonus(record, target)
+	if other != 0:
+		parts.append({"name": "Bonus da origini", "amount": other,
+			"origin_id": target, "description": Bonuses.description(record, target)})
+	var total := 0
+	for part: Dictionary in parts:
+		total += int(part.get("amount", 0))
+	return {"total": total, "parts": parts}
+
+
+static func damage_modifier_description(record: Dictionary, attack: Dictionary) -> String:
+	var breakdown := damage_modifier_breakdown(record, attack)
+	var lines := PackedStringArray(["Modificatori ai danni:"])
+	for part: Dictionary in breakdown.get("parts", []):
+		var line := "%s: %+d" % [part.get("name", "Bonus"), int(part.get("amount", 0))]
+		var description := String(part.get("description", ""))
+		if not description.is_empty():
+			line += "\n" + description
+		lines.append(line)
+	lines.append("Totale modificatori: %+d" % int(breakdown.get("total", 0)))
+	return "\n".join(lines)
+
+
+static func damage_label(record: Dictionary, attack: Dictionary) -> String:
+	var source: String = String(attack.get("source", ""))
+	var base: String = String(attack.get("damage", "")).strip_edges()
+	var modifier: int = int(damage_modifier_breakdown(record, attack).get("total", 0))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
 	if String(attack.get("id", "")) == "improvised":
