@@ -559,3 +559,51 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
  .miniature-dialog{padding:14px}
  .miniature-choice{min-height:58px}
 }
+
+
+/* Compact session-first mobile tactical view; preserve map while moving. */
+.session-desktop{margin-bottom:8px}
+.session-desktop h2,.session-token-panel h2{font-size:15px;margin:0 0 8px}
+.session-desktop .actions{margin:5px 0 0}
+.session-map-panel{padding:7px;margin-bottom:8px;overflow:hidden}
+.session-map-stage{position:relative;display:flex;justify-content:center;align-items:center;
+  height:min(51vw,42dvh,390px);min-height:195px;background:#101827;border-radius:6px;overflow:hidden}
+.session-map-stage img{width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.session-map-placeholder{display:grid;justify-items:center;gap:7px;text-align:center;color:var(--muted);font-size:13px;padding:18px}
+.session-map-placeholder:first-letter{font-size:25px;color:var(--accent)}
+.session-map-loading{position:absolute;right:8px;bottom:8px;border-radius:6px;
+  padding:3px 8px;background:#080b11d9;color:var(--accent);font-size:11px}
+.session-selected-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 3px 2px}
+.session-selected-controls strong{min-width:0;max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.session-move-buttons{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px}
+.session-move-buttons .btn,.session-edit-btn{min-height:36px!important;min-width:36px;padding:5px 8px!important;font-size:14px!important}
+.session-token-panel{padding:12px;margin-bottom:12px}
+.session-token-panel h2{margin:0}
+.session-token-row{display:flex;align-items:center;gap:7px;min-height:41px;border-bottom:1px solid #89644055}
+.session-token-row.selected{background:#e3b36b12;border-radius:5px}
+.session-token-name{display:flex;align-items:center;gap:8px;min-width:0;flex:1;text-align:left;
+  padding:8px 4px;background:none;border:0;color:inherit;font-weight:650;font-size:13px;cursor:pointer}
+.session-token-name span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session-token-name small{font-size:11px;color:var(--muted);font-weight:400}
+.session-turn{color:var(--accent);font-size:12px}
+.session-initiative{min-width:24px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+.session-outside-heading{font-size:12px;color:var(--muted);padding-top:11px;margin:6px 0}
+.session-add-token{margin-top:12px}
+.session-dialog{position:fixed;width:min(92vw,510px);max-height:83dvh;overflow:auto;
+  border:1px solid var(--line);border-radius:12px;padding:17px;color:var(--text);background:var(--panel)}
+.session-dialog::backdrop{background:#080a0cd9}
+.session-dialog h2{font-size:18px;margin-bottom:12px}
+.session-dialog h3{margin:15px 0 8px;font-size:13px;color:var(--accent)}
+.session-dialog label{margin-bottom:10px}
+.session-condition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;max-height:25dvh;overflow:auto}
+.session-condition-grid label.check{font-size:12px;min-height:36px;margin:0}
+.session-condition-grid input{width:16px;height:16px}
+.session-applied-spell{padding:5px 0;border-bottom:1px solid #89644055;font-size:13px}
+.session-dialog-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:17px}
+@media(max-width:480px){
+ .session-map-stage{height:min(78vw,39dvh,320px);min-height:190px}
+ .session-selected-controls{gap:5px}
+ .session-selected-controls strong{max-width:24%}
+ .session-move-buttons .btn{min-width:33px;min-height:34px!important;padding:4px!important}
+ .session-token-panel{padding:10px}
+}
