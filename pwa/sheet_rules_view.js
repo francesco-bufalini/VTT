@@ -1,5 +1,6 @@
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
+import {actionGlyphKey} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,requiresAttunement} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
@@ -245,6 +246,68 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
   weight:kind==='document'?null:weight===null?null:weight*quantity,value:kind==='document'?null:value===null?null:value*quantity};
 }
 
+// Share one power identity and resource grouping between structured class actions,
+// activated catalog abilities and origin-granted spells. Catalog powers own the
+// detail popup; a native class action supplies a fallback when no catalog row exists.
+const powerName=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+ .trim().toLocaleLowerCase('it').replace(/\\s+/g,' ');
+const powerIdentity=power=>{
+ const id=String(power.ability_id||power.id||power.rule_action_id||power.class_feature_id||'');
+ const name=powerName(power.name);
+ if(id==='vtt_wild_shape'||id==='wild_shape'||name==='wild shape'||name==='forma selvatica')return 'wild_shape';
+ return name;
+};
+export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
+ const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
+ const keyFor=(cost,trackerId)=>{
+  if(!cost)return 'free';
+  return trackers.some(t=>String(t.id)===String(trackerId||''))?'tracker:'+trackerId:'missing';
+ };
+ const rows=[];
+ for(const power of activated){
+  if(!power?.id||power.action_type==='passive'||power.activation_mode==='passive')continue;
+  const cost=Math.max(0,Number(power.resource_cost??(power.tracker_id?1:0))||0);
+  rows.push({kind:'ability',source:'activated',id:'activated:'+power.id,name:power.name,
+   tracker_id:power.tracker_id||'',cost,key:keyFor(cost,power.tracker_id),
+   timing:power.action_type||power.activation_mode||'contextual',power});
+ }
+ for(const action of classAbilities){
+  const id=String(action.id||action.ability_id||action.name||'');
+  const cost=Math.max(0,Number(action.cost??0)||0);
+  const identity=powerIdentity(action);
+  const same=rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
+   (identity==='wild_shape'&&powerIdentity(row.power)==='wild_shape')||
+   (action.origin_id&&row.power.feature_id===action.origin_id)||
+   (identity&&identity===powerIdentity(row.power)&&
+    String(row.tracker_id||'')===String(action.tracker_id||''))));
+  if(same){
+   // When the action has more accurate resource metadata, keep one catalog
+   // detail row, but use the native power's resolved cost and tracker.
+   if(action.tracker_id&&!same.tracker_id){
+    same.tracker_id=action.tracker_id;
+    same.cost=cost;
+    same.key=keyFor(cost,action.tracker_id);
+   }
+   same.classAction=action;
+   continue;
+  }
+  rows.push({kind:'ability',source:'class',id,name:action.name,
+   tracker_id:action.tracker_id||'',cost,key:keyFor(cost,action.tracker_id),
+   timing:action.time||'contextual',classAction:action});
+ }
+ for(const grant of calculated.origin_spells||[]){
+  if(!grant?.id||!grant.spell_id)continue;
+  const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
+  if(mode==='slot')continue;
+  const cost=mode==='tracker'?Math.max(1,Number(grant.tracker_cost)||1):0;
+  const spell=spells.find(row=>row.id===grant.spell_id);
+  rows.push({kind:'spell',id:String(grant.id),name:spell?.name||grant.name||grant.spell_name||grant.spell_id,
+   tracker_id:grant.tracker_id||'',cost,key:mode==='tracker'?keyFor(cost,grant.tracker_id):'free',
+   timing:'',grant});
+ }
+ return rows;
+}
+
 // Play presentation reuses the existing editors and delegated actions. Only
 // transient layout state lives here; rules, storage and payment stay unchanged.
 export function isPersistentSpell(spell){
@@ -307,48 +370,58 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
-  const classAbilities=view.battleActions?.abilityEntries||[];
-  const trackedKey=ability=>{
-   const cost=Math.max(0,Number(ability.cost)||0);
-   if(!cost)return 'free';
-   const tracker=(d.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
-   return tracker?'tracker:'+tracker.id:'missing';
-  };
-  const activePowers=new Map((view.battleAbilities||[]).map(ability=>[String(ability.id),ability]));
-  const abilityButtons=key=>{
-   const classes=classAbilities.filter(row=>trackedKey(row)===key);
-   const names=new Set(classes.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
-   const classIds=new Set(classes.map(row=>String(row.ability_id||row.id||'')));
-   const extras=(powerGroups.get(key)||[]).filter(ability=>
-     !names.has(String(ability.name||'').trim().toLocaleLowerCase('it'))&&
-     !classIds.has(String(ability.id))&&!classIds.has('activated:'+String(ability.id)));
-   const extraHtml=extras.map(ability=>{
-    const power=activePowers.get(String(ability.id));
-    const cost=Math.max(0,Number(power?.resource_cost??(power?.tracker_id?1:0))||0);
-    const tracker=(d.trackers||[]).find(row=>row.id===power?.tracker_id&&!row.disabled);
-    const left=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
-    const disabled=cost>0&&(!tracker||left<cost);
-    return '<div class="play-resource-ability-row">'+
-     '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'" aria-label="Dettagli '+esc(ability.name)+'">'+
-     icon('proficiency')+'<span><strong>'+esc(ability.name)+'</strong>'+
-     (ability.info?'<small>'+esc(ability.info)+'</small>':'')+'</span></button>'+
-     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'"'+(disabled?' disabled':'')+
-     ' aria-label="Usa '+esc(ability.name)+'">Usa</button></div>';
-   }).join('');
-   return extraHtml+(view.battleActions?.resourceAbilities?.[key]||[]).join('');
-  };
+  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],spells);
+  const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',
+    movement:'Movimento',contextual:'Secondo il privilegio'};
+  const abilityButtons=key=>powerRows.filter(row=>row.key===key).map(row=>{
+   const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
+   const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+   const disabled=row.cost>0&&(!tracker||tracker.disabled||available<row.cost);
+   const glyph=icon(row.kind==='spell'?'spell_cast':
+     actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
+   const caption=row.kind==='spell'?'Incantesimo':
+     (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
+   const note=row.cost>1?' · Costo '+row.cost:'';
+   if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
+    '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
+    ' aria-label="Lancia '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button></div>';
+   const id=row.id;
+   const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(row.power.id));
+   let context=powerDetail?.key;
+   if(!context){
+    const detail=document.createElement('section');
+    detail.className='panel play-battle-power-detail';
+    const action=row.classAction||row.power||{};
+    detail.innerHTML='<h2>'+esc(row.name)+'</h2>'+
+     '<div class="power-privilege-description"><p class="trait-description">'+
+     esc(action.description||'Descrizione non disponibile.')+'</p></div>'+
+     '<div class="power-privilege-facts"><div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
+     '<div><dt>Consumo</dt><dd>'+esc(row.cost?row.cost+' utilizzi':'Nessun costo')+'</dd></div></div>';
+    context=bind('battle-power:'+id,detail);
+   }
+   const action=row.classAction||{};
+   const active=!!(action.class_feature_id&&c.active_class_features?.[action.class_feature_id]);
+   const use=row.source==='activated'?'Usa':(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)?'Attiva':'Usa');
+   return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
+    '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
+    ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
+    '<small>'+esc(caption+note)+'</small></span></button>'+
+    (active?'<span class="play-resource-power-active">Attiva</span>':
+    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(id)+'"'+(disabled?' disabled':'')+
+    ' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
+  }).join('');
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent),key='tracker:'+t.id;
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
    return '<div class="play-resource-group"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
-    btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+
     '</div>'+abilityButtons(key)+'</div>';
   }).join('');
   const untracked=['missing','free'].map(key=>{
-   const abilities=abilityButtons(key);
-   return abilities?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><h3>'+(key==='free'?'Azione gratuita':'Tracker non disponibile')+'</h3>'+abilities+'</div>':'';
+   const powers=abilityButtons(key);
+   return powers?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
+    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+'</div>':'';
   }).join('');
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
