@@ -62,6 +62,8 @@ func setup(tab: Node, description: Control) -> void:
 	catalog_list.remove_meta("pass_wheel_to_sheet")
 	add_theme_constant_override("separation", 8)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Content measured while hidden may use obsolete layout geometry.
+	visibility_changed.connect(_on_inventory_visibility_changed)
 	_minus_icon = _symbol_texture(false)
 	_plus_icon = _symbol_texture(true)
 	_remove_icon = _remove_texture()
@@ -538,6 +540,17 @@ func refresh() -> void:
 
 # Dynamic Tree rows depend on the installed font/theme. Measure after the
 # Tree has drawn its rows; no cap or internal scroll should clip later items.
+func _on_inventory_visibility_changed() -> void:
+	if not is_visible_in_tree() or _scroll_tree == null or _attunement_tree == null:
+		return
+	var scroll_root: TreeItem = _scroll_tree.get_root()
+	var attune_root: TreeItem = _attunement_tree.get_root()
+	if scroll_root != null:
+		call_deferred("_fit_full_tree", _scroll_tree, scroll_root.get_child_count())
+	if attune_root != null:
+		call_deferred("_fit_full_tree", _attunement_tree, attune_root.get_child_count())
+
+
 func _fit_full_tree(tree: Tree, row_count: int) -> void:
 	if not is_instance_valid(tree) or not tree.is_inside_tree():
 		return
