@@ -45,7 +45,7 @@ func run() -> void:
 	var first: TreeItem = owned_tree.get_root().get_first_child()
 	assert(first.get_text(7) == "Stocco", "Owned item name must be the last column")
 	assert(owned_tree.get_column_title(0) == "Equip.", "The outlined equipment column must be titled")
-	assert(owned_tree.get_column_expand(7), "The item name must receive the remaining column width")
+	assert(owned_tree.get_column_title(7) == "Nome", "The final column must be the item name")
 	assert(menu.get_item_text(0) == "Rimuovi" and menu.get_item_text(1) == "Vedi nel bestiario",
 		"Desktop right-click menu must expose removal and bestiary lookup")
 	assert(not tab._legacy_actions.visible and not tab._legacy_switches.visible
