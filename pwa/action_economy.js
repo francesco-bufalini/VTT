@@ -404,7 +404,7 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   const general=matching.filter(row=>row.origin!=='personal')
    .sort((a,b)=>Number(a.optional===true)-Number(b.optional===true));
   const personal=matching.filter(row=>row.origin==='personal');
-  const skillsPanel=id!=='free'?'':(
+  const skillsPanel=id!=='action'?'':(
     '<div class="action-economy-skills"><h3>Tiri rapidi · 4 migliori</h3>'+
     (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
       '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
@@ -418,8 +418,8 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
     '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2></div>'+
     '<span class="action-economy-count" aria-label="'+visibleCount+' opzioni">'+visibleCount+'</span></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
-      general.map(row=>actionRow(row,calculated)).join(''):'')+
-    skillsPanel+
+      general.map(row=>actionRow(row,calculated)+(row.id==='ability_checks'?skillsPanel:'')).join(''):'')+
+    (!general.some(row=>row.id==='ability_checks')?skillsPanel:'')+
     (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
       personal.map(row=>actionRow(row,calculated)).join(''):'')+
     (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
