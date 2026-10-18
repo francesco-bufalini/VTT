@@ -2,6 +2,7 @@
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
+import {itemKind,resolveOwnedItem} from './item_controls.js';
 export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abilità"],
  ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
@@ -339,10 +340,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     ''+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
-    '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
-    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
-    (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
-       ''))+
+    '')+
    panel('Classi e progressione',
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp')+'</div>'+
@@ -372,6 +370,16 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='battle'){
   const secondMax=Number(calculated.values?.second_max??c.second_form_max_hp??0);
   const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
+  const inventory=list(c.inventory).map(resolveOwnedItem);
+  const wornArmor=inventory.find(item=>list(item?.equipped_slots).includes('body')&&itemKind(item)==='armor');
+  const shields=inventory.filter(item=>list(item?.equipped_slots).some(slot=>slot==='main'||slot==='off')&&itemKind(item)==='shield');
+  const shieldBonus=shields.reduce((value,item)=>Math.max(value,Math.max(0,Number(item.ac)||0)),0);
+  const dex=Number(calculated.values?.['ability_mod:dex']??0);
+  const type=String(wornArmor?.type||'').split('|')[0].toUpperCase();
+  const dexCap=wornArmor?.dexterity_max!==undefined?Number(wornArmor.dexterity_max):type==='MA'?2:type==='HA'?0:99;
+  const armorDex=type==='HA'&&Number(wornArmor?.dexterity_max)===0?0:Math.min(dex,dexCap);
+  const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(c.armor_class_base??10)===10)?'10 + dex_mod':String(c.armor_class_base??10)));
+  const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+(shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   return '<div class="battle-root">'+
    panel('Punti ferita',
     '<div class="battle-hp-grid" aria-label="Punti ferita">'+
@@ -411,16 +419,22 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<button type="button" class="btn small" data-act="hp-automatic">Applica PF automatici</button></div>':'')+
     '</details>',
     'battle-hp-panel')+
-   panel('Classe armatura e iniziativa',
+   panel('Classe armatura',
     '<div class="battle-defense-values">'+
       '<div class="battle-stat"><span>CA</span>'+read('ac','Classe armatura')+'</div>'+
-      '<div class="battle-stat"><span>Iniziativa</span>'+read('initiative','Iniziativa',true)+'</div>'+
     '</div>'+
-    '<details class="battle-defense-settings"><summary>Armatura e CA naturale</summary>'+
-      armor+field('Formula CA naturale','armor_natural_formula',c.armor_natural_formula)+
-      ''+
-    '</details>',
+    '<div class="battle-defense-settings">'+armor+
+      '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
+      '<output>'+esc(acFormula)+'</output></div>'+
+      '<p class="hint">La CA naturale e i bonus si modificano attraverso privilegi e origini.</p>'+
+      '<button type="button" class="btn small" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus CA</button>'+
+    '</div>',
     'battle-defense-panel')+
+   panel('Movimento',
+    '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
+    '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
+    (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):''),
+    'battle-movement-panel')+
    resources+
    panel('Attacchi disponibili',
      attacks+
