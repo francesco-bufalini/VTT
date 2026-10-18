@@ -285,24 +285,52 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='battle'){
   target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('movement','.battle-movement-panel');target('equipment','.battle-attack-settings');
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html='<section class="play-health"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span class="sr-only">Riposi</span>')+edit('hp','Gestisci punti ferita','settings')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
   const rest=document.createElement('div');rest.innerHTML='<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';bind('rests',rest);
+  // Link each tracker to the exact power group exposed by the spell/ability
+  // editor, and offer direct ability details in the collapsible list.
+  const powerGroups=new Map();
+  for(const wrapper of bank.querySelectorAll('[data-battle-power-group]')){
+   const key=wrapper.dataset.battlePowerGroup,source=wrapper.querySelector('.magic-tracker-panel');
+   if(!source)continue;
+   bind('power-resource:'+key,source);
+   const abilities=[...source.querySelectorAll('.magic-ability-entry')].map(node=>{
+    const id=node.dataset.abilityId,detailKey='power-ability:'+id;
+    bind(detailKey,node.cloneNode(true));
+    return {key:detailKey,name:node.querySelector('.magic-ability-name')?.textContent||id,
+      info:node.querySelector('.power-privilege-meta')?.textContent||''};
+   });
+   powerGroups.set(key,abilities);
+  }
+  const abilityButtons=key=>(powerGroups.get(key)||[]).map(ability=>
+   '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'">'+
+   icon('proficiency')+'<span><strong>'+esc(ability.name)+'</strong>'+
+   (ability.info?'<small>'+esc(ability.info)+'</small>':'')+'</span></button>').join('');
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
-   const left=Math.max(0,t.max-t.spent);const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);bind('resource:'+t.id,source);
-   return '<div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="resource:'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+'</div>';
+   const left=Math.max(0,t.max-t.spent),key='tracker:'+t.id;
+   const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
+   bind('resource:'+t.id,source);
+   const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
+   return '<div class="play-resource-group"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
+    btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+
+    '</div>'+abilityButtons(key)+'</div>';
   }).join('');
-  html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>'));
-  // Keep header shortcuts outside the native summary; nested buttons inside
-  // summary would toggle the disclosure instead of performing their action.
+  const untracked=['free','missing'].map(key=>{
+   const abilities=abilityButtons(key);
+   return abilities?'<div class="play-resource-ungrouped"><h3>'+(key==='free'?'Senza consumo':'Tracker non disponibile')+'</h3>'+abilities+'</div>':'';
+  }).join('');
+  // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
+  html+=disclosure('resources','Risorse','reset',
+   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
   html+=disclosure('attacks','Attacchi fisici','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
