@@ -170,6 +170,7 @@ var _natural_ac_formula: LineEdit
 var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
+var _attack_damage_source_labels: Dictionary = {}
 var _attack_range_labels: Dictionary = {}
 var _attack_long_range_labels: Dictionary = {}
 var _front: OptionButton
@@ -5000,6 +5001,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 	_refresh_weapon_picker(record)
 	_attack_hit_labels.clear()
 	_attack_damage_labels.clear()
+	_attack_damage_source_labels.clear()
 	_attack_range_labels.clear()
 	_attack_long_range_labels.clear()
 	for key: Variant in _formula_values.keys():
@@ -5099,6 +5101,11 @@ func _refresh_attacks(record: Dictionary) -> void:
 		damage_row.add_child(damage_label)
 		_attack_damage_labels[attack_id] = damage_label
 		_install_formula("attack_damage:" + attack_id, damage_label, [], [])
+		var damage_sources := Label.new()
+		damage_sources.add_theme_font_size_override("font_size", 12)
+		damage_sources.add_theme_color_override("font_color", Color(0.86, 0.78, 0.53))
+		damage_row.add_child(damage_sources)
+		_attack_damage_source_labels[attack_id] = damage_sources
 		box.add_child(HSeparator.new())
 		var settings := HFlowContainer.new()
 		settings.add_theme_constant_override("h_separation", 4)
@@ -5245,7 +5252,16 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
+		var damage_detail: String = "Danni: %s.\n%s" % [damage, AttackData.damage_modifier_description(record, attack)]
+		var source_names := PackedStringArray()
+		for part: Dictionary in AttackData.damage_modifier_breakdown(record, attack).get("parts", []):
+			if not String(part.get("key", "")).is_empty() and int(part.get("amount", 0)) != 0:
+				source_names.append("%s %+d" % [String(part.get("name", "Capacità")), int(part.get("amount", 0))])
+		if _attack_damage_source_labels.has(attack_id):
+			var source_label: Label = _attack_damage_source_labels[attack_id]
+			source_label.text = " · ".join(source_names)
+			source_label.visible = not source_names.is_empty()
+			source_label.tooltip_text = damage_detail
 		if String(attack.get("slot", "")) == "off":
 			if AttackData.offhand_bonus_attack_allowed(record):
 				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
@@ -7426,6 +7442,52 @@ func _refresh_conditions(record: Dictionary) -> void:
 		remove.pressed.connect(_remove_active_spell.bind(sid))
 		row.add_child(remove)
 
+	# All persisted class-ability effects use the same active-state structure
+	# used by the rule engine. They are distinct from D&D conditions.
+	var feature_heading := Label.new()
+	feature_heading.text = "Capacità attive"
+	feature_heading.add_theme_font_size_override("font_size", 15)
+	_condition_rows.add_child(feature_heading)
+	var feature_effects: Array[Dictionary] = ClassFeatures.active_effects(record)
+	if feature_effects.is_empty():
+		var none := Label.new()
+		none.text = "Nessuna capacità attiva."
+		none.modulate.a = 0.65
+		_condition_rows.add_child(none)
+	for effect: Dictionary in feature_effects:
+		var key := String(effect.get("key", ""))
+		var name := String(effect.get("name", key))
+		var summary := String(effect.get("summary", ""))
+		var details := String(effect.get("description", ""))
+		var origin := String(effect.get("origin_id", ""))
+		var effective := bool(effect.get("effective", false))
+		var row := HBoxContainer.new()
+		_condition_rows.add_child(row)
+		var name_label := Label.new()
+		name_label.text = "✦ " + name + ("" if effective else " (sospesa)")
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.tooltip_text = summary + ("\\nOrigine: " + origin if not origin.is_empty() else "")
+		row.add_child(name_label)
+		var detail := Button.new()
+		detail.text = "ⓘ" if _touch_layout else "Leggi effetti"
+		if _touch_layout:
+			detail.set_meta("touch_compact_action", true)
+			detail.custom_minimum_size = Vector2(34, 34)
+		var description := summary + ("\\n\\n" + details if not details.is_empty() else "")
+		if not origin.is_empty():
+			description += "\\n\\nOrigine: " + origin
+		detail.tooltip_text = "Leggi effetti della capacità"
+		detail.pressed.connect(_show_effect_description.bind({"name": name, "description": description}))
+		row.add_child(detail)
+		var terminate := Button.new()
+		terminate.text = "×"
+		terminate.tooltip_text = "Termina " + name + " senza recuperare le risorse già spese."
+		if _touch_layout:
+			terminate.set_meta("touch_compact_action", true)
+			terminate.custom_minimum_size = Vector2(34, 34)
+		terminate.pressed.connect(_end_active_class_effect.bind(key))
+		row.add_child(terminate)
+
 	# Other Effects immediately follow the spell section; then Conditions and
 	# diseases retain their ordinary checkbox-based management.
 	var active: Array = record.get("conditions", [])
@@ -7471,6 +7533,25 @@ func _refresh_conditions(record: Dictionary) -> void:
 				info.custom_minimum_size = Vector2(34, 34)
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
+
+
+func _end_active_class_effect(key: String) -> void:
+	var current: Dictionary = _current()
+	if current.is_empty():
+		return
+	var result: Dictionary = ClassFeatures.deactivate(current, key)
+	if not bool(result.get("ok", false)):
+		_set_status(String(result.get("message", "Impossibile terminare la capacità.")))
+		return
+	var updated: Dictionary = result.record
+	if _archive.save(updated) != OK:
+		_set_status("Impossibile salvare la disattivazione della capacità.")
+		return
+	_replace_current_record(updated)
+	_update_external_record(updated)
+	_load_form(updated)
+	_sync_token_health(updated)
+	_set_status(String(result.get("message", "Capacità terminata.")))
 
 
 func _open_add_active_spell() -> void:
@@ -7576,6 +7657,8 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)
+		_refresh_conditions(record)
+		_refresh_formula_dependents(record)
 		if _touch_layout and _map_data_controller != null and not String(record.get("linked_token_sync_id", "")).is_empty():
 			_map_data_controller.request_action("set_condition", {"token_id": String(record.linked_token_sync_id), "condition_id": id, "enabled": enabled})
 		if id == "concentrating" and _spellcasting_ui != null:
