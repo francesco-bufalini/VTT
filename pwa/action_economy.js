@@ -412,15 +412,16 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
      ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>'
   );
   const separated=general.length&&personal.length;
+  const visibleCount=matching.reduce((total,row)=>total+1+(row.children?.length||0),0);
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
     '<span class="action-economy-icon" aria-hidden="true">'+actionGlyph(HEADER_GLYPHS[id])+'</span>'+
     '<div class="action-economy-heading-copy"><h2>'+esc(title)+'</h2></div>'+
-    '<span class="action-economy-count" aria-label="'+matching.length+' opzioni">'+matching.length+'</span></header>'+
+    '<span class="action-economy-count" aria-label="'+visibleCount+' opzioni">'+visibleCount+'</span></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
       general.map(row=>actionRow(row,calculated)).join(''):'')+
     skillsPanel+
     (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
       personal.map(row=>actionRow(row,calculated)).join(''):'')+
     (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
- }).join('').replace(/^/,'<div class="action-toolbar"><span>Azioni e opzioni</span><button type="button" class="btn small" data-act="action-variants" aria-label="Regole varianti 2014">'+actionGlyph('settings')+'</button></div><div class="action-economy-dashboard">')+'</div>';
+ }).join('').replace(/^/,'<div class="action-toolbar"><span>Azioni e opzioni</span><div class="action-toolbar-buttons"><button type="button" class="btn small" data-act="action-expand-all" aria-expanded="false">Espandi tutto</button><button type="button" class="btn small" data-act="action-variants" aria-label="Regole varianti 2014">'+actionGlyph('settings')+'<span>Regole varianti</span></button></div></div><div class="action-economy-dashboard">')+'</div>';
 }
