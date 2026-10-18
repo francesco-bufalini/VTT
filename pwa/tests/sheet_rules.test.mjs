@@ -46,6 +46,17 @@ test("armor and shield use actual occupied slots and dexterity caps",()=>{
   assert.equal(calculateSheet(character({inventory:[{...armor,equipped_slots:[]},shield]}),catalogs).stats.armor_class,14);
   assert.equal(calculateSheet(character({inventory:[shield,{...shield,id:"local_shield2",equipped_slots:["main"]}]}),catalogs).stats.armor_class,14);
 });
+test("worn shield grants improvised attack and removal withdraws it",()=>{
+ const shield={id:"sh",name:"Scudo",custom_item_type:"shield",type:"S",ac:2,quantity:1,equipped_slots:["off"]};
+ const withShield=calculateSheet(character({inventory:[shield],abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10}}),catalogs);
+ const hit=withShield.attacks.find(a=>a.id==="shield:improvised:off:sh");
+ assert(hit);assert.equal(hit.damage,"1d4 + 3");assert.equal(hit.hit,3);
+ assert.equal(hit.range_feet,5);assert.equal(hit.damage_type,"contundente");
+ assert.equal(withShield.values?.["attack_hit:shield:improvised:off:sh"],3);
+ const without=calculateSheet(character({inventory:[{...shield,equipped_slots:[]}]}),catalogs);
+ assert(!without.attacks.some(a=>a.id.startsWith("shield:improvised:")));
+});
+
 test("2014/2024 full, half, pact and multiclass slot progressions match Godot tables",()=>{
   const wizard=spellProgression(character(),[{name:"Wizard",level:5}]);
   assert.deepEqual(wizard.slots.slice(0,4),[0,4,3,2]);

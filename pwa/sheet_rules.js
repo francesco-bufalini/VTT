@@ -464,6 +464,16 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   append(attack,ability,proficient,damage);
   if(!ranged&&hasProperty(item,'T')&&ranges[0]>0)append({...attack,id:'item:throw:'+slot+':'+item.id,name:attack.name+' · lancio',melee:false,range_feet:ranges[0],long_range_feet:ranges[1]||0},ability,proficient,damage);
  }
+ // A shield can be used as an improvised weapon when actually equipped.
+ // Keep its own stable attack ID for dice, modifiers and the Actions tab.
+ for(const slot of ['main','off']){
+  const shield=occupied(slot);
+  if(!shield||itemKind(shield)!=='shield')continue;
+  append({id:'shield:improvised:'+slot+':'+shield.id,
+    name:(shield.name||'Scudo')+' · arma improvvisata',slot:'shield',
+    melee:true,range_feet:5,long_range_feet:0,damage_type:'contundente'},
+    'str',trained.has('weapon:improvised'),'1d4');
+ }
  const hands=[record.hand_main_special,record.hand_off_special];
  for(const [key,name] of [['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']])if(hands.includes(key)){
   const proficient=key==='unarmed'||trained.has('weapon:improvised');

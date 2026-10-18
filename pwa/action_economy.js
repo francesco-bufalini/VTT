@@ -396,6 +396,24 @@ export function groupActionEntries(entries){
  }
  return roots;
 }
+// Compact battle views reuse the exact action projection used on the Actions tab.
+const BATTLE_TIMINGS=[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Azione gratuita'],['movement','Movimento']];
+const MOVEMENT_ACTION_IDS=new Set(['movement','stealth_movement','dash','disengage','drop_prone','climb_large','overrun','tumble','escape_grapple','stand_up','crawl','jump','mount','dismount','difficult_terrain']);
+export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
+ const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
+ const weapon=entries.filter(row=>row.type==='Attacco'||row.parent_action==='attack'||
+   row.parent_action==='two_weapon'||['attack','two_weapon','opportunity'].includes(row.id));
+ const movement=entries.filter(row=>row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)||
+   row.class_feature_id==='step_of_the_wind');
+ const render=rows=>BATTLE_TIMINGS.map(([time,label])=>{
+  const matching=rows.filter(row=>row.time===time);
+  return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
+   '<h3>'+esc(label)+' <span class="play-badge">'+matching.length+'</span></h3>'+
+   '<div class="play-battle-action-rows">'+matching.map(row=>actionRow(row,calculated)).join('')+'</div></section>':'';
+ }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
+ return {attacks:render(weapon),movement:render(movement)};
+}
+
 export function actionEconomyView(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const entries=groupActionEntries(actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants));
  const spellGroups=new Map();

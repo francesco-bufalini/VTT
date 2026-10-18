@@ -3,13 +3,30 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {actionEntries as project,actionEconomyView as view,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const actionEntries=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>project(record,{feature_rules:featureRules,...calculated},spells,overrides,rules,enabled);
 const actionEconomyView=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>view(record,{feature_rules:featureRules,...calculated},spells,overrides,rules,enabled);
 const find=(rows,id)=>rows.find(row=>row.id===id);
 const doc=html=>new JSDOM(html).window.document;
+
+test('battle panels reuse calculated attacks, optional manoeuvres and timed movement',()=>{
+ const calculated={attacks:[{id:'item:sword',name:'Spada',hit:5,damage:'1d8'},
+  {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',hit:2,damage:'1d4 + 2'}]};
+ const panels=battleActionPanels({rules_version:'2014'},calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
+ const attacks=doc(panels.attacks),movement=doc(panels.movement);
+ assert(attacks.querySelector('[data-target="attack_hit:shield:improvised:off:sh"]'));
+ assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
+ assert(attacks.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
+ assert(attacks.body.textContent.includes('Disarmare'));
+ assert(!attacks.body.textContent.includes('Scattare'));
+ assert(movement.querySelector('[data-action-timing="action"]').textContent.includes('Scattare'));
+ assert(movement.querySelector('[data-action-timing="bonus"]').textContent.includes('Travolgere'));
+ assert(movement.querySelector('[data-action-timing="movement"]').textContent.includes('Muoversi'));
+ assert(!movement.body.textContent.includes('Afferrare una creatura'));
+ assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
+});
 
 test('source catalogue keeps editions distinct and optional rules opt-in',()=>{
  const old=actionEntries({rules_version:'2014'}),modern=actionEntries({rules_version:'2024'});
