@@ -170,7 +170,7 @@ function syncNav(){
     const button=nav.querySelector('[data-nav="'+page+'"]');
     const current=state.page===page&&(page!=='library'||state.libraryMode||!hasCreature);
     button.className='btn '+(hasCreature?'navigation-row':'dock-destination');
-    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span>'++'</span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
+    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span></span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
     if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
   connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
