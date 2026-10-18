@@ -193,9 +193,11 @@ function stopSubscriptions() {
 async function navigate(page){
   if(!sections.has(page))return;
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
+  const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
   state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+  if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
 }
 async function render() {
