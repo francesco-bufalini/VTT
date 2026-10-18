@@ -389,7 +389,10 @@ func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) ->
 	cell.set_cell_mode(column, TreeItem.CELL_MODE_STRING)
 	cell.set_text(column, str(quantity))
 	cell.set_editable(column, not locked)
-	cell.add_button(column, _minus_icon, MINUS_BUTTON, locked or quantity <= 1, _t("Diminuisci", "Decrease"))
+	if quantity <= 1:
+		cell.add_button(column, _remove_icon, REMOVE_BUTTON, false, _t("Rimuovi oggetto", "Remove item"))
+	else:
+		cell.add_button(column, _minus_icon, MINUS_BUTTON, locked, _t("Diminuisci", "Decrease"))
 	cell.add_button(column, _plus_icon, PLUS_BUTTON, locked or quantity >= 99999, _t("Aumenta", "Increase"))
 
 
@@ -431,9 +434,12 @@ func refresh() -> void:
 				icon += "🛡"
 			if "body" in slots:
 				icon += "▣"
-			if kind not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(entry):
+			if kind not in ["weapon", "armor", "shield", "document"]:
 				icon = "✓" if equipped else ""
-				row.set_tooltip_text(0, _t("Doppio clic per equipaggiare o riporre", "Double-click to equip or stow"))
+				# An outlined empty cell makes the double-click target explicit
+				# without turning it into a single-click checkbox.
+				row.set_custom_bg_color(0, Color(0.73, 0.63, 0.43, 0.70), true)
+				row.set_tooltip_text(0, _t("Doppio clic nella casella per (dis)equipaggiare", "Double-click the outlined box to equip or stow"))
 			if ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
 				icon = "✦"
 			row.set_text(0, icon)
@@ -445,6 +451,7 @@ func refresh() -> void:
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
 			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
 			row.set_text(6, _characteristic(entry))
+			row.set_tooltip_text(6, _characteristic(entry))
 			row.set_text(7, String(owned.get("name", "")))
 		if index == selected_index and _active_view == ("scroll" if is_scroll else "owned"):
 			row.select(0)
@@ -504,6 +511,18 @@ func _rebuild_pickers(items: Array) -> void:
 			picker.tooltip_text = _t("La mano è occupata da un'arma impugnata a due mani", "Hand occupied by a two-handed weapon")
 		else:
 			picker.tooltip_text = ""
+		if slot in ["main", "off"]:
+			var size_picker: OptionButton = _main_size if slot == "main" else _off_size
+			size_picker.clear()
+			size_picker.add_item(_t("Creatura", "Creature") + " (" + _t(String(_tab.get("_creature_size_name")), String(_tab.get("_creature_size_name"))) + ")")
+			for size_name: String in ItemRules.WEAPON_SIZES:
+				size_picker.add_item(size_name)
+			var equipped_weapon: Dictionary = ItemRules.occupying(items, slot)
+			var is_weapon := not equipped_weapon.is_empty() and ItemRules.kind(_definition(equipped_weapon)) == "weapon"
+			var overrides: Variant = equipped_weapon.get("instance_overrides", {})
+			var size_name: String = String((overrides as Dictionary).get("weapon_size", "")) if overrides is Dictionary else ""
+			size_picker.select(ItemRules.WEAPON_SIZES.find(size_name) + 1 if is_weapon else 0)
+			size_picker.disabled = not is_weapon or locked
 
 
 func _select_saved(index: int, view: String = "") -> void:
