@@ -331,7 +331,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  }).join('')||'<p class="play-empty">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='';
- const statsIntro=panel('Caratteristiche',
+ const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
    '<strong role="columnheader">Car.</strong><strong role="columnheader">Punteggio</strong>'+
@@ -376,7 +376,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>')+
-   statsIntro;
+   statsIntro();
  if(section==='stats')return panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
