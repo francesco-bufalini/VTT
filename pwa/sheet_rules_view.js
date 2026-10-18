@@ -302,15 +302,41 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const abilities=[...source.querySelectorAll('.magic-ability-entry')].map(node=>{
     const id=node.dataset.abilityId,detailKey='power-ability:'+id;
     bind(detailKey,node.cloneNode(true));
-    return {key:detailKey,name:node.querySelector('.magic-ability-name')?.textContent||id,
+    return {key:detailKey,id,name:node.querySelector('.magic-ability-name')?.textContent||id,
       info:node.querySelector('.power-privilege-meta')?.textContent||''};
    });
    powerGroups.set(key,abilities);
   }
-  const abilityButtons=key=>(powerGroups.get(key)||[]).map(ability=>
-   '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'" aria-label="Dettagli '+esc(ability.name)+'">'+
-   icon('proficiency')+'<span><strong>'+esc(ability.name)+'</strong>'+
-   (ability.info?'<small>'+esc(ability.info)+'</small>':'')+'</span></button>').join('');
+  const classAbilities=view.battleActions?.abilityEntries||[];
+  const trackedKey=ability=>{
+   const cost=Math.max(0,Number(ability.cost)||0);
+   if(!cost)return 'free';
+   const tracker=(d.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
+   return tracker?'tracker:'+tracker.id:'missing';
+  };
+  const activePowers=new Map((view.battleAbilities||[]).map(ability=>[String(ability.id),ability]));
+  const abilityButtons=key=>{
+   const classes=classAbilities.filter(row=>trackedKey(row)===key);
+   const names=new Set(classes.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
+   const classIds=new Set(classes.map(row=>String(row.ability_id||row.id||'')));
+   const extras=(powerGroups.get(key)||[]).filter(ability=>
+     !names.has(String(ability.name||'').trim().toLocaleLowerCase('it'))&&
+     !classIds.has(String(ability.id))&&!classIds.has('activated:'+String(ability.id)));
+   const extraHtml=extras.map(ability=>{
+    const power=activePowers.get(String(ability.id));
+    const cost=Math.max(0,Number(power?.resource_cost??(power?.tracker_id?1:0))||0);
+    const tracker=(d.trackers||[]).find(row=>row.id===power?.tracker_id&&!row.disabled);
+    const left=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+    const disabled=cost>0&&(!tracker||left<cost);
+    return '<div class="play-resource-ability-row">'+
+     '<button type="button" class="play-resource-ability" data-act="sheet-context" data-sheet-context="'+esc(ability.key)+'" aria-label="Dettagli '+esc(ability.name)+'">'+
+     icon('proficiency')+'<span><strong>'+esc(ability.name)+'</strong>'+
+     (ability.info?'<small>'+esc(ability.info)+'</small>':'')+'</span></button>'+
+     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="activated:'+esc(ability.id)+'"'+(disabled?' disabled':'')+
+     ' aria-label="Usa '+esc(ability.name)+'">Usa</button></div>';
+   }).join('');
+   return extraHtml+(view.battleActions?.resourceAbilities?.[key]||[]).join('');
+  };
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent),key='tracker:'+t.id;
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
@@ -320,9 +346,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+
     '</div>'+abilityButtons(key)+'</div>';
   }).join('');
-  const untracked=['free','missing'].map(key=>{
+  const untracked=['missing','free'].map(key=>{
    const abilities=abilityButtons(key);
-   return abilities?'<div class="play-resource-ungrouped"><h3>'+(key==='free'?'Senza consumo':'Tracker non disponibile')+'</h3>'+abilities+'</div>':'';
+   return abilities?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><h3>'+(key==='free'?'Azione gratuita':'Tracker non disponibile')+'</h3>'+abilities+'</div>':'';
   }).join('');
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -336,8 +362,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   html+=disclosure('others','Altre azioni','hand',
    view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
-  html+=disclosure('abilities','Capacità','proficiency',
-   view.battleActions?.abilities||'<p class="play-empty">Nessuna capacità di classe disponibile.</p>');
   html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
   html+=disclosure('spells','Incantesimi','spell_cast',
