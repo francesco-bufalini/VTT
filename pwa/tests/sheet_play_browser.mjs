@@ -31,8 +31,18 @@ try{
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
  assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
  await page.locator('#sheet-play-view [data-tracker-id="focus"]').click();await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
+ const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
+ assert.equal(await speedCard.locator('.vtt-action-glyph--pack-3.vtt-action-glyph--slot-13').count(),1,'Desktop foot icon');
+ assert.match(await speedCard.textContent(),/Camminata/);
  await popup('movement');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Salti|Camminata/);await dismiss();
- await popup('defense');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Formula CA naturale/);assert.doesNotMatch(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Iniziativa/);await dismiss();
+ await popup('defense');assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Formula CA naturale/);assert.doesNotMatch(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Iniziativa/);
+ assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
+ assert.equal(await page.locator('#sheet-context-dialog .battle-ac-manage').count(),1);
+ await dismiss();
+ await page.locator('#sheet-play-view [data-target="initiative"]').click();
+ assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
+ assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
+ await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  await popup('rests');await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();await dismiss();assert.equal((await record()).resource_tracker_spent.focus,undefined);
  await sheet('stats');await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
@@ -44,6 +54,7 @@ try{
  await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="poisoned"]').uncheck();await dismiss();assert.equal((await record()).conditions.includes('poisoned'),false);
  await popup('apply-spell');await page.locator('#condition-spell-picker').selectOption('phb2014_light');await page.locator('#sheet-context-dialog [data-act="condition-add-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light'&&r.applied===true);});
+ await page.waitForFunction(()=>/Incantesimi applicati[\s\S]*Light/.test(document.querySelector('#sheet-play-view')?.textContent||''));
  assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi applicati[\s\S]*Light/);
  await sheet('battle');assert.match(await page.locator('.play-status-strip').textContent(),/Light/);
  await sheet('conditions');await page.locator('[data-act="condition-remove-spell"][data-spell-id="phb2014_light"]').click();

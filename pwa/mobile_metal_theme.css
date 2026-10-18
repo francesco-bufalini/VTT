@@ -971,6 +971,16 @@ input:disabled{opacity:.75;cursor:default}
 .battle-defense-panel .battle-defense-settings{margin-top:12px;display:grid;gap:11px}
 .battle-defense-panel .battle-defense-settings .columns{margin:0}
 .battle-defense-panel .battle-defense-settings .hint{margin:0}
+.sheet-context-dialog[data-context="defense"] .sheet-context-head{padding:10px 14px 8px}
+.sheet-context-dialog[data-context="defense"] .sheet-context-body{padding:9px 14px calc(12px + env(safe-area-inset-bottom))}
+.sheet-context-dialog[data-context="defense"] .battle-defense-settings{margin-top:7px;gap:7px}
+.sheet-context-dialog[data-context="defense"] .battle-defense-settings .columns{gap:7px}
+.sheet-context-dialog[data-context="defense"] .battle-defense-settings label{margin:0}
+.sheet-context-dialog[data-context="defense"] .battle-defense-settings select{min-height:38px}
+.sheet-context-dialog[data-context="defense"] .battle-ac-formula{padding:7px 10px;gap:3px}
+.sheet-context-dialog[data-context="defense"] .battle-ac-manage{min-height:38px;padding:6px 10px;font-size:12px}
+.sheet-roll-chat-error{color:#ffac9e;font-size:13px}
+.sheet-roll-chat-error[hidden]{display:none}
 .battle-ac-formula{display:grid;gap:6px;padding:10px 12px;border:1px solid #a77f4b73;border-radius:9px;background:#2b211ecc}
 .battle-ac-formula strong{font-size:12px;color:#d5b788}
 .battle-ac-formula output{font:600 14px/1.5 system-ui;color:#f2e1c4;overflow-wrap:anywhere}

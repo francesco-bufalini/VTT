@@ -1884,10 +1884,10 @@ function organizeSheetPanels(){
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
-  const dialog=document.createElement('dialog');dialog.id='sheet-context-dialog';dialog.className='sheet-context-dialog';
+  const dialog=document.createElement('dialog');dialog.id='sheet-context-dialog';dialog.className='sheet-context-dialog';dialog.dataset.context=state.sheetPopup;
   const title=state.sheetPopupTitle||source.querySelector('h2,h3,summary,strong')?.textContent.trim()||source.getAttribute('aria-label')||'Dettagli e modifica';
   dialog.setAttribute('aria-labelledby','sheet-context-title');
-  dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2><button type="button" class="play-button" data-act="sheet-context-close" aria-label="Chiudi dettagli">'+actionGlyph('cross')+'</button></header><div class="sheet-context-body"></div><footer><button type="button" class="btn primary full" data-act="sheet-context-close">Fatto</button></footer>';
+  dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2><button type="button" class="play-button" data-act="sheet-context-close" aria-label="Chiudi dettagli">'+actionGlyph('cross')+'</button></header><div class="sheet-context-body"></div>';
   dialog.querySelector('.sheet-context-body').append(source);
   if(source.tagName==='DETAILS')source.open=true;
   for(const details of source.querySelectorAll(':scope > .action-economy-main > details.action-economy-entry,:scope > details.action-tree'))details.open=true;
@@ -2264,15 +2264,14 @@ async function handleAction(target){
       esc(sheetRollFormula(modifier))+'</strong></div>'+
       '<p class="sheet-roll-components"><strong>Calcolo del modificatore:</strong> '+
       esc(sheetModifierBreakdown(calculated,key))+'</p>'+
-      '<p class="hint sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
-      esc(calculated.explanations?.[key]||'Valore calcolato dalla scheda e dalle origini attive')+'</p>'+
+      (key==='initiative'?'':'<p class="sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
+      esc(calculated.explanations?.[key]||'')+'</p>')+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
        ''+
        bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
          esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'</fieldset>':'')+
       '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+
-      '<p class="hint" data-roll-chat-status>'+(state.paired&&state.online?
-       'Il risultato verrà inviato automaticamente alla chat della partita.':'Tiro locale: nessuna partita collegata.')+'</p>'+
+      '<p class="sheet-roll-chat-error" data-roll-chat-status hidden role="alert"></p>'+
       '<div class="actions sheet-roll-actions">'+btn('roll-sheet-confirm','Tira 1d20','primary')+
       '<button type="button" class="btn" data-act="sheet-roll-edit-bonus" data-target="'+esc(key)+'">Origini e bonus ±</button>'+
       btn('close-sheet-roll','Chiudi')+'</div>';
@@ -2327,9 +2326,9 @@ async function handleAction(target){
     if(state.paired&&state.online){
       try{
         await shareRoll({quiet:true});
-        if(chatStatus)chatStatus.textContent='Risultato inviato automaticamente alla chat della partita.';
+        // Successful automatic delivery needs no explanatory footer.
       }catch(error){
-        if(chatStatus)chatStatus.textContent='Tiro effettuato, ma invio chat non riuscito: '+errorMessage(error);
+        if(chatStatus){chatStatus.hidden=false;chatStatus.textContent='Invio chat non riuscito: '+errorMessage(error);}
         message('Invio chat non riuscito: '+errorMessage(error),true);
       }
     }
