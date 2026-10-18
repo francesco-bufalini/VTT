@@ -39,7 +39,7 @@ l’archivio**. L’icona **Opzioni della scheda**, in fondo a ogni vista, apre
 esportazione JSON, editor avanzato e cancellazione. L’icona informazione apre
 calcoli e copertura. Il catalogo mantiene un ritorno esplicito ai risultati.
 
-La cache della nuova interfaccia è `v54` e non modifica IndexedDB. Il tema
+La cache della nuova interfaccia è `v55` e non modifica IndexedDB. Il tema
 bronzo e bordeaux e le icone VTT sono conservati.
 
 | Sezione | Box e contenuto | Implementazione |
@@ -232,3 +232,26 @@ Il test usa le rotte effettive di `PwaHost` tramite `browser_fixture.mjs`.
 Con `VTT_PWA_TEST_ORIGIN=http://localhost:8765` verifica il server desktop
 mantenendo separati il profilo e i dati sintetici. Non invia comandi alla
 partita reale e non installa software sul telefono o sull’emulatore.
+
+### Inventario informativo e privilegi in Poteri
+
+L’inventario distingue identità (tipo e fonte), quantità, proprietà, dati
+meccanici registrati e stato della copia (slot, sintonia, attivazione, infusione).
+Peso e valore delle pile usano i campi effettivi di `resolveOwnedItem()` e i
+valori unitari salvati; i dati mancanti non vengono trattati come zero. I
+riepiloghi segnalano **Dati parziali** quando solo alcune voci hanno peso o valore.
+La ricerca comprende anche tipo, fonte, proprietà e stato. Il dettaglio della
+copia presenta i dati in sezioni etichettate, mantenendo gli editor esistenti.
+
+Nei popup dei privilegi, il gruppo mostra utilizzi rimasti e recupero; ogni
+capacità espone origine, fonte disponibile, attivazione, costo e descrizione.
+I comandi +1/−1 mantengono la regolazione di un singolo utilizzo. Il link al
+tratto di origine apre il dettaglio corrispondente solo se l’ID stabile identifica
+un unico privilegio; negli altri casi mostra l’elenco dei tratti.
+
+`npm run test:inventory-powers-browser` verifica questi elementi a
+320/360/390/430 px, la lettura senza scritture, consumo/recupero e collegamento
+al tratto corretto. Le schermate sono `play-inventory-rich.png` e
+`play-privilege-popup.png` in `pwa/.test-artifacts/`. I test in
+`inventory_presentation.test.mjs` proteggono override, quantità, valori mancanti
+e zero registrati.

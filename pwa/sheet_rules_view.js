@@ -1,5 +1,7 @@
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS} from "./sheet_rules.js";
+import {itemKind,resolveOwnedItem,requiresAttunement} from "./item_controls.js";
+import {isDocument} from "./documents.js";
 const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
@@ -168,9 +170,37 @@ export function localSheetView(section,data,loadError=""){
 }
 
 
+// Display only recorded inventory data; instance overrides use the same resolver
+// as the sheet's equipment calculations. Unknown weight/value stay unknown.
+export function inventoryReadout(item={},propertyText='',spellScroll=false){
+ const effective=resolveOwnedItem(item),kind=isDocument(item)?'document':spellScroll||String(effective.type||'').split('|')[0].toUpperCase()==='SC'?'scroll':itemKind(effective);
+ const kinds={weapon:['Arma','weapon'],shield:['Scudo','shield'],armor:['Armatura','armor'],tool:['Strumento','proficiency'],magic:['Oggetto magico','spark'],document:['Documento','scroll'],scroll:['Pergamena','scroll'],other:['Oggetto','inventory']};
+ const [type,glyph]=kinds[kind]||kinds.other;
+ const numeric=value=>(typeof value==='number'||typeof value==='string')&&value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value))&&Number(value)>=0?Number(value):null;
+ const quantity=Math.max(1,Math.floor(Number(item.quantity)||1));
+ const weight=numeric(effective.weight),gp=numeric(effective.value_gp),copper=numeric(effective.value);
+ const value=gp??(copper===null?null:copper/100);
+ const format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
+ const facts=[];
+ if(kind==='scroll'){const level=numeric(effective.spell_level??effective.spellLevel??effective.level);if(level!==null)facts.push({label:'Incantesimo',value:level===0?'Trucchetto':level+'° livello',glyph:'spark'});}
+ if(kind==='weapon'&&effective.damage)facts.push({label:'Danno',value:String(effective.damage)+(effective.damage_type?' '+effective.damage_type:''),glyph:'weapon'});
+ if(effective.ac!==null&&effective.ac!==undefined){const ac=typeof effective.ac==='object'?effective.ac.base:effective.ac;if(ac!==null&&ac!==undefined&&String(ac)!=='')facts.push({label:'CA',value:(kind==='shield'?'+':'')+ac,glyph:'shield'});}
+ if(effective.range)facts.push({label:'Gittata',value:effective.range+' ft',glyph:'target'});
+ if(weight!==null)facts.push({label:quantity>1?'Peso totale':'Peso',value:format(weight*quantity)+' lb',glyph:'inventory'});
+ if(value!==null)facts.push({label:quantity>1?'Valore totale':'Valore',value:format(value*quantity)+' mo',glyph:'coins'});
+ const slots={main:'Mano principale',off:'Mano secondaria',body:'Indossato'};
+ const status=(Array.isArray(item.equipped_slots)?item.equipped_slots:[]).map(slot=>slots[slot]||slot);
+ if(item.equipped&&!status.length)status.push('Equipaggiato');
+ if(item.attuned)status.push('In sintonia');else if(requiresAttunement(effective))status.push('Richiede sintonia');
+ if(item.active===false)status.push('Disattivato');
+ if(item.infusion)status.push('Infuso');
+ return {kind,type,glyph,quantity,source:String(item.source||''),properties:propertyText==='—'?'':String(propertyText||''),facts,status,
+  weight:kind==='document'?null:weight===null?null:weight*quantity,value:kind==='document'?null:value===null?null:value*quantity};
+}
+
 // Play presentation reuses the existing editors and delegated actions. Only
 // transient layout state lives here; rules, storage and payment stay unchanged.
-export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel}){
+export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel,inventoryProperties=()=>'',isSpellScroll=()=>false}){
  const root=app.querySelector('[data-local-sheet-calculations]');
  if(!root||sheet==='json')return new Map();
  const bank=document.createElement('div');bank.className='sheet-editor-bank';bank.hidden=true;
@@ -266,17 +296,21 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
-  originPanels.forEach((node,i)=>{bind('power:'+i,node);html+=go('power:'+i,heading(node),'spark',node.querySelectorAll('.magic-spell-row,.magic-ability-row').length+' poteri · Apri per utilizzare');});
+  originPanels.forEach((node,i)=>{bind('power:'+i,node);const count=node.querySelectorAll('.magic-spell-row,.magic-ability-entry').length;html+=go('power:'+i,heading(node),'spark',count+(count===1?' potere':' poteri')+' · Apri dettagli e risorse');});
  }
  if(sheet==='inventory'){
   target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
   const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
-  html+=go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura');
-  html+=go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+' / '+(c.attunement_max_base??3)+' oggetti');
+  html+='<div class="inventory-shortcuts">'+go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura')+go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+' / '+(c.attunement_max_base??3)+' oggetti')+'</div>';
+  const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
+  const owned=readouts.filter(item=>item.kind!=='document');
+  const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
+  const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
+  if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
   const add=document.createElement('div');
   for(const node of bank.querySelectorAll('[data-act="item-catalog"],[data-act="add-item"],[data-act="new-homebrew-item"],[data-act="document-add"]'))add.append(node);
   bind('inventory-add',add);
-  html+=card('Nello zaino','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
+  html+=card('Nello zaino','<p class="inventory-list-count">'+readouts.length+' voci · '+readouts.reduce((total,item)=>total+item.quantity,0)+' unità</p><label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca nello zaino" aria-label="Cerca nello zaino"></label>'+(c.inventory||[]).map((item,i)=>{
    const key='item:'+i;const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
    const node=document.createElement('section');node.className='play-item-editor';
    if(row&&Number(view.inventorySelectedIndex)===i){
@@ -290,7 +324,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
    if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
    bind(key,node);
-   return '<div data-play-filter="'+esc(String(item.name||'').toLocaleLowerCase('it'))+'">'+go(key,item.name||'Oggetto',documentRow?'scroll':'inventory',item.equipped_slots?.length?'Equipaggiato':item.attuned?'In sintonia':'', '<span class="play-badge">×'+Math.max(1,Number(item.quantity)||1)+'</span>')+'</div>';
+   const info=readouts[i],search=[item.name,info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
+   return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
+     '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
+     '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
+     (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
+     (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
+     (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
+
   }).join(''),edit('inventory-add','Aggiungi oggetti e documenti','increase'));
   const infusion=panelNamed('Infusioni');if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
  }

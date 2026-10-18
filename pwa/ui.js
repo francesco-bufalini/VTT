@@ -15,7 +15,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields, sheetModifierBreakdown } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -763,20 +763,11 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
     }).join('')+'</div>';
 }
 function inventoryItemDescription(obj,index){
-  const effective=resolveOwnedItem(obj);
-  const props=[obj.source&&'Fonte: '+obj.source,itemKind(obj),obj.rarity&&obj.rarity!=='none'&&
-    'Rarità: '+(INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity)].filter(Boolean);
-  const facts=[
-    obj.value_gp!==undefined?'Valore: '+obj.value_gp+' mo':obj.value!==undefined?'Valore: '+Number(obj.value)/100+' mo':'',
-    obj.weight!==undefined?'Peso: '+obj.weight+' lb':'',
-    effective.damage&&'Danno: '+effective.damage,
-    // 5etools often supplies ac: null for ordinary items. typeof null is
-    // "object", so accessing .base would crash when an item is selected.
-    effective.ac != null && (typeof effective.ac==='object'?
-      effective.ac?.base != null : effective.ac!=='') &&
-      'CA: '+(typeof effective.ac==='object'?effective.ac.base:effective.ac),
-    effective.range&&'Gittata: '+effective.range
-  ].filter(Boolean);
+  const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
+  const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
+    ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
+    ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
+  const properties=inventoryProperties({...obj,rarity:''});
   const prose=flattenDescription(obj)||String(obj.description||'');
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
     '" data-item-key="description" rows="3">'+esc(obj.description||"")+'</textarea></label>':'';
@@ -789,12 +780,9 @@ function inventoryItemDescription(obj,index){
     '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
     '</details>':'';
   return '<div class="inventory-description">'+
-    (props.length?'<p class="inventory-description-meta">'+esc(props.join(" · "))+'</p>':'')+
-    (facts.length?'<p class="inventory-description-meta">'+esc(facts.join(" · "))+'</p>':'')+
-    (inventoryProperties(obj)!=='—'?'<p class="inventory-description-meta">'+esc(inventoryProperties(obj))+'</p>':'')+
-    (prose?'<div class="inventory-prose">'+esc(prose)+'</div>':localEdit?'':
-      '<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+
-    localEdit+overrides+'</div>';
+    '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
+    (properties!=='—'?'<section class="inventory-detail-section"><h3>Proprietà</h3><p>'+esc(properties)+'</p></section>':'')+
+    (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
 }
 function inventoryRow(item,index) {
   const obj=item&&typeof item==="object"?item:{name:String(item??"")};
@@ -1023,23 +1011,27 @@ function originPowersView(c,calculated,abilitiesList=[]){
      const origin=item.grant.origin_id||'other';
      if(!stats.has(origin))stats.set(origin,{name:item.grant.origin_name||'Origine',ability:item.grant.spellcasting_ability||'int'});
    }
-   const header=(group.tracker?'<div class="magic-tracker-controls" data-magic-tracker-id="'+esc(group.tracker.id)+'">'+
+   const header=(group.tracker?'<section class="power-resource-summary"><span class="power-section-label">Utilizzi disponibili</span><div class="magic-tracker-controls" data-magic-tracker-id="'+esc(group.tracker.id)+'">'+
      '<span class="magic-tracker-count"><strong data-tracker-remaining="'+esc(group.tracker.id)+'">'+
        esc(Math.max(0,Number(group.tracker.max||0)-Number(group.tracker.spent||0)))+'</strong> / '+
        esc(group.tracker.max||0)+'</span>'+
      '<button type="button" class="magic-tracker-change" data-act="tracker-less" data-tracker-id="'+esc(group.tracker.id)+'" aria-label="Recupera un utilizzo di '+esc(group.tracker.name)+'" '+
-       (Number(group.tracker.spent||0)<=0?'disabled':'')+'>+</button>'+
+       (Number(group.tracker.spent||0)<=0?'disabled':'')+'>+1</button>'+
      '<button type="button" class="magic-tracker-change" data-act="tracker-more" data-tracker-id="'+esc(group.tracker.id)+'" aria-label="Consuma un utilizzo di '+esc(group.tracker.name)+'" '+
-       (Number(group.tracker.spent||0)>=Number(group.tracker.max||0)?'disabled':'')+'>−</button></div>':'');
+       (Number(group.tracker.spent||0)>=Number(group.tracker.max||0)?'disabled':'')+'>−1</button></div><p class="power-recovery">Recupero: '+esc(({short_rest:'Riposo breve',long_rest:'Riposo lungo',turn:'Inizio turno',manual:'Manuale',d6:'Ricarica d6'})[group.tracker.recharge]||group.tracker.recharge||'Manuale')+'</p></section>':'');
    const spellRows=group.spells.length?groupedMagicSpells(group.spells,({grant,info})=>configured(grant,info)):'';
    const abilityRows=group.abilities.length?
      '<div class="magic-ability-list">'+
-     group.abilities.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it')).map(ability=>
-       '<details class="magic-ability-entry"><summary><span class="magic-ability-name">'+esc(ability.name)+'</span>'+
-       '<button type="button" class="btn small" data-act="power-trait" aria-label="Apri il tratto di '+esc(ability.name)+'">↗</button>'+
-       (Number(ability.resource_cost)>0?'<span class="magic-power-cost">Costo: '+esc(ability.resource_cost)+'</span>':'')+'</summary>'+
-       '<div class="magic-ability-detail"><p class="hint">'+esc(ability.origin||'')+'</p>'+
-       '<p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div></details>').join('')+'</div>':'';
+     group.abilities.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it')).map(ability=>{
+       const activation=({action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',passive:'Passivo',contextual:'Secondo il privilegio'})[ability.action_type||ability.activation_mode]||ability.action_type||ability.activation_mode||'Secondo il privilegio';
+       const cost=Math.max(0,Number(ability.resource_cost)||0),resource=ability.tracker_name||ability.resource_name||group.tracker?.name||'';
+       return '<details class="magic-ability-entry power-privilege" data-ability-id="'+esc(ability.id)+'"'+(group.abilities.length===1?' open':'')+'><summary><span class="power-privilege-title"><span class="magic-ability-name">'+esc(ability.name)+'</span><span class="power-privilege-meta">'+esc(activation)+(cost?' · '+cost+' per uso':'')+'</span></span><span class="power-privilege-chevron" aria-hidden="true">⌄</span></summary>'+
+         '<div class="magic-ability-detail"><dl class="power-privilege-facts"><div><dt>Origine</dt><dd>'+esc(ability.origin||'Origine non specificata')+'</dd></div>'+
+         (ability.source?'<div><dt>Fonte</dt><dd>'+esc(ability.source)+'</dd></div>':'')+
+         '<div><dt>Consumo</dt><dd>'+esc(cost?cost+' utilizzi'+(resource?' · '+resource:' · Risorsa non collegata'):'Nessun consumo di utilizzi')+'</dd></div></dl>'+
+         '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+
+         '<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(ability.feature_id||ability.origin_id||'')+'">'+actionGlyph('proficiency')+'<span>Apri il tratto di origine</span></button></div></details>';
+       }).join('')+'</div>':'';
    return panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
      '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
      castingStatistics(c,'origin:'+origin,meta.ability)+'</div>').join('')+
@@ -1848,7 +1840,13 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll});
+  if(state.sheet==='traits'&&state.sheetPopup.startsWith('trait-origin:')){
+    const origin=state.sheetPopup.slice('trait-origin:'.length);
+    const matches=[...state.sheetSources].filter(([key,node])=>key.startsWith('trait:')&&node.querySelector('[data-feature-origin]')?.dataset.featureOrigin===origin);
+    state.sheetPopup=matches.length===1?matches[0][0]:'';
+    if(matches.length===1)state.sheetPopupTitle=matches[0][1].querySelector('summary')?.textContent||'Privilegio';
+  }
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
@@ -2308,7 +2306,7 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
-  if(act==="power-trait"){state.sheet="traits";await render();return;}
+  if(act==="power-trait"){state.sheet="traits";state.sheetPopup=target.dataset.originId?"trait-origin:"+target.dataset.originId:"";state.sheetPopupTitle="";await render();return;}
   if(act==="new-homebrew-item"){
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
     await navigate("catalog");

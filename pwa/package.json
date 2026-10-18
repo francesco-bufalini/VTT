@@ -6,6 +6,7 @@
     "sync-catalogs": "node tools/sync_native_catalogs.mjs",
     "test:browser": "node tests/browser_parity.mjs",
     "test:navigation-browser": "node tests/navigation_browser.mjs",
+    "test:inventory-powers-browser": "node tests/inventory_powers_browser.mjs",
     "test:sheets-browser": "node tests/sheet_play_browser.mjs",
     "test:actions-browser": "node tests/action_dashboard_browser.mjs",
     "test:native-origins": "node tests/compare_native_origins.mjs",
