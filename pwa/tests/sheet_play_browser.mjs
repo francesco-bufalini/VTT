@@ -184,6 +184,7 @@ try{
  await inlineCoins.locator('[data-coin-code="gp"]').fill('12');
  await inlineCoins.locator('[data-coin-code="gp"]').press('Tab');
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.coins?.gp===12;});
+ await page.waitForFunction(()=>document.querySelector('#sheet-play-view .inventory-play-coins .inventory-coin-total')?.textContent.includes('12 mo'));
  assert.match(await inlineCoins.locator('.inventory-coin-total').textContent(),/12 mo/);
  assert.equal(await page.locator('#sheet-context-dialog').count(),0,'Saving coins must stay on the page');
  await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();
