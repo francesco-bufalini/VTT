@@ -233,7 +233,28 @@ export function rowReferencePatch(c,key,index,field,selected={}){
  }
  return collectionPatch(c,key,rows);
 }
+// The total is derived from class rows; only individual class levels are editable.
+export function primaryClassLevel(creature){
+ const primary=rowsFor(creature,'classes')[0];
+ return creature?.class?Math.max(1,Number(primary?.level||creature?.level||1)):0;
+}
+export function totalClassLevel(creature){
+ const classes=rowsFor(creature,'classes').filter(row=>row?.name);
+ return classes.length?classes.reduce((total,row)=>total+Number(row.level||1),0):
+  (creature?.class?Number(creature?.level||1):0);
+}
 export function identityPatch(c,key,value){
+ if(key==='level')throw Error('Il livello totale è calcolato automaticamente dalle classi');
+ if(key==='primary_class_level'){
+  if(!c.class)throw Error('Seleziona prima la classe principale');
+  const n=Number(value);
+  if(!Number.isInteger(n)||n<1||n>20)throw Error('Livello della classe principale non valido');
+  const classes=rowsFor(c,'classes');
+  const others=classes.slice(1).filter(row=>row.name).reduce((total,row)=>total+Number(row.level||1),0);
+  if(n+others>20)throw Error('La somma dei livelli delle classi non può superare 20');
+  classes[0].level=n;
+  return {classes,level:n+others};
+ }
  const patch={[key]:value};
  if(['species','subrace','background','class','subclass'].includes(key)&&value!==c[key])patch[key+'_id']='';
  if(key==='species'&&value!==c.species)Object.assign(patch,{subrace:'',subrace_id:'',subrace_source:''});
@@ -266,10 +287,10 @@ export function speciesCreatureType(creature,catalogs={}){
   (!subsource||same(r.source,subsource))):null;
  // In 5etools the omitted creatureTypes property means Humanoid.
  const raw=flattened?.creatureTypes??parent?.creatureTypes;
- const values=Array.isArray(raw)?raw:raw?[raw]:parent?['humanoid']:[];
+ const values=Array.isArray(raw)?(raw.length?raw:['humanoid']):raw?[raw]:parent?['humanoid']:[];
  const names={aberration:'Aberrazione',beast:'Bestia',celestial:'Celestiale',construct:'Costrutto',
   dragon:'Drago',elemental:'Elementale',fey:'Folletto',fiend:'Immondo',giant:'Gigante',
-  humanoid:'Umanoide',monstrosity:'Mostruosità',ooze:'Melma',plant:'Pianta',undead:'Non morto'};
+  humanoid:'Umanoide',monstrosity:'Mostruosità',ooze:'Melma',plant:'Vegetale',undead:'Non morto'};
  return values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
   .map(v=>names[v.toLowerCase()]||v).join(', ')||'—';
 }
@@ -324,8 +345,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
        '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
    panel('Classi e progressione',cols(number('XP','xp')+
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
-      (c.class?number('Livello totale','level',c.level??1,1,20):
-        '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
+      (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
+        '<label>Livello classe principale<input type="number" value="0" disabled></label>'))+
+      '<label>Livello totale<input type="number" value="'+esc(totalClassLevel(c))+'" disabled aria-label="Livello totale automatico"></label>'+
       '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1))+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>');
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
