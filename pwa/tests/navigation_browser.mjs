@@ -63,7 +63,7 @@ try{
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,5);
+   assert.equal(dock.length,6);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
@@ -78,7 +78,7 @@ try{
  assert.equal(await page.locator('#more-navigation').getAttribute('aria-expanded'),'false');
  await sheet('info');
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
- await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Fisico'}).click();
+ await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
@@ -112,7 +112,7 @@ try{
  await page.locator('[data-act="open"]').click();await sheet('actions');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('actions');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 9 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
