@@ -76,8 +76,12 @@ async function installOfflineShell() {
   if (!("serviceWorker" in navigator) || !self.isSecureContext) return;
   try {
     const registration = await deadline(navigator.serviceWorker.register("/sw.js"), 10000, "Registrazione offline");
-    // Updating the optional offline shell must NEVER gate local creature access.
+    // Updating the offline shell must NEVER gate local creature access.
     registration.update().catch(error => console.warn("VTT offline update unavailable", error));
+    // Preload optional reference data once the required, atomic shell is ready.
+    navigator.serviceWorker.ready.then(ready => {
+      ready.active?.postMessage({ type: "CACHE_OPTIONAL" });
+    }).catch(error => console.warn("VTT optional offline catalogs unavailable", error));
   } catch (error) {
     console.warn("VTT offline shell unavailable; local archive remains usable", error);
   }
@@ -85,6 +89,8 @@ async function installOfflineShell() {
 
 async function boot() {
   let phase = "Caricamento dei moduli";
+  // Begin offline installation immediately, in parallel with local startup.
+  void installOfflineShell();
   try {
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
@@ -103,7 +109,6 @@ async function boot() {
       console.warn("VTT persistent storage unavailable", error));
     Promise.resolve().then(() => storageEstimate()).then(estimate =>
       console.info("VTT mobile storage ready", estimate)).catch(() => {});
-    void installOfflineShell();
   } catch (error) {
     showFailure(phase, error);
   }
