@@ -629,7 +629,8 @@ function inventoryProperties(item={}){
   if(kind==="armor"||kind==="shield"){
     const ac=obj.ac;
     if(kind==="shield")parts.push("CA +"+(typeof ac==="number"?ac:2));
-    else if(ac!==undefined)parts.push("CA "+(typeof ac==="object"?ac?.base??"—":ac));
+    else if(ac != null && (typeof ac!=="object"||ac.base != null))
+      parts.push("CA "+(typeof ac==="object"?ac.base:ac));
   }
   const rarity=String(obj.rarity||"").trim().toLowerCase();
   if(rarity&&rarity!=="none")parts.push(INVENTORY_RARITIES[rarity]||obj.rarity);
@@ -739,7 +740,11 @@ function inventoryItemDescription(obj,index){
     obj.value_gp!==undefined?'Valore: '+obj.value_gp+' mo':obj.value!==undefined?'Valore: '+Number(obj.value)/100+' mo':'',
     obj.weight!==undefined?'Peso: '+obj.weight+' lb':'',
     effective.damage&&'Danno: '+effective.damage,
-    effective.ac!==undefined&&'CA: '+(typeof effective.ac==='object'?effective.ac.base:effective.ac),
+    // 5etools often supplies ac: null for ordinary items. typeof null is
+    // "object", so accessing .base would crash when an item is selected.
+    effective.ac != null && (typeof effective.ac==='object'?
+      effective.ac?.base != null : effective.ac!=='') &&
+      'CA: '+(typeof effective.ac==='object'?effective.ac.base:effective.ac),
     effective.range&&'Gittata: '+effective.range
   ].filter(Boolean);
   const prose=flattenDescription(obj)||String(obj.description||'');
