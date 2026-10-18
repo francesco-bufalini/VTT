@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell} from '../sheet_rules_view.js';
+import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell,fastestMovement} from '../sheet_rules_view.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
@@ -124,6 +124,15 @@ test('roll preview never rolls automatically; explicit roll returns full dice br
  assert.doesNotMatch(score,/data-act="sheet-roll"/);
  const save=formulaReadout({values:{'save:dex':4}},'save:dex','TS Destrezza',{signed:true});
  assert.match(save,/data-act="sheet-roll"/);
+});
+test('fastest visible speed selects the highest calculated movement mode',()=>{
+ const stats={values:{speed:30,'speed:fly':60,'speed:swim':20,'speed:climb':15,'speed:burrow':0}};
+ assert.deepEqual(fastestMovement(stats),{key:'speed:fly',label:'Volo',value:60});
+ assert.deepEqual(fastestMovement({values:{...stats.values,'speed:swim':60}}),{key:'speed:swim',label:'Nuoto',value:60});
+ assert.deepEqual(fastestMovement({stats:{speeds:{walk:35,fly:0,swim:15}}}),{key:'speed',label:'Camminata',value:35});
+ assert.deepEqual(fastestMovement({values:{speed:0,'speed:burrow':10}}),{key:'speed:burrow',label:'Scavo',value:10});
+ const ac=formulaReadout({values:{ac:16}},'ac','Classe armatura',{showBonus:false});
+ assert.match(ac,/data-calculated="ac"/);assert.doesNotMatch(ac,/formula-bonus|data-act="edit-bonus"/);
 });
 test('saving throw preview explains ability modifier, proficiency and extra origin bonuses',()=>{
  const record={kind:'character',abilities:{dex:18},
