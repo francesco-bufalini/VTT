@@ -804,6 +804,9 @@ input:disabled{opacity:.75;cursor:default}
 .play-health{padding:12px 18px 14px;border-radius:18px;border:1px solid #c3995c8a;background:radial-gradient(ellipse at top right,#a16b3a25,transparent 65%),linear-gradient(140deg,#3d2b29,#251e1e)}
 .play-health header{display:flex;align-items:center;justify-content:space-between;font-size:12px;letter-spacing:.03em;color:#ddc8a5}
 .play-health header>.play-button{margin:-5px -8px -5px 0}
+.play-health-tools{display:flex;align-items:center;gap:4px;margin:-5px -8px -5px 0}
+.play-health-tools>.play-button{min-width:40px;min-height:40px;padding:8px}
+.play-health-tools>.play-button .vtt-action-glyph{width:19px;height:19px;flex:0 0 19px}
 .play-hp-number{font-size:52px;font-weight:600;line-height:1.1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin:6px 0 14px;color:#fff0d3}
 .play-hp-number small{font-size:20px;letter-spacing:0;font-weight:400;color:#b9a78c}
 .play-health progress{appearance:none;-webkit-appearance:none;display:block;width:100%;height:6px;border:0;border-radius:8px;overflow:hidden;background:#110f0f}
@@ -823,6 +826,16 @@ input:disabled{opacity:.75;cursor:default}
 .play-resource-info{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:52px;flex:1;min-width:0;padding:4px 4px 4px 0;border:0;background:transparent;text-align:left;color:#eedbbd;font:500 13px/1.4 system-ui}
 .play-resource-info strong{font-weight:500;overflow-wrap:anywhere}.play-resource-info>span{font-size:20px;color:#edce97;white-space:nowrap}.play-resource-info small{font-size:12px;color:#a99d8c}
 .play-resource>.play-button{border:1px solid #ad835140;background:#5d463329}
+.play-resource-group{border-bottom:1px solid #9d784826}
+.play-resource-group>.play-resource{border-bottom:0}
+.play-resource-ability{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;padding:9px 12px 9px 23px;border:0;border-top:1px solid #9d784823;background:#32272366;color:#eedbbd;text-align:left;font:500 12px/1.4 system-ui}
+.play-resource-ability>span:last-child{display:grid;gap:2px;min-width:0}
+.play-resource-ability strong{font-size:13px;font-weight:550;overflow-wrap:anywhere}
+.play-resource-ability small{color:#c5af8d;font-size:11px}
+.play-resource-ability .vtt-action-glyph{width:20px;height:20px;flex:0 0 20px}
+.play-resource-ungrouped>h3{margin:0;padding:10px 14px 5px;font-size:12px}
+.play-resource-ungrouped>.play-resource-ability{padding-left:15px}
+.play-resource-ungrouped{border-top:1px solid #9d784843}
 .play-attack{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid #9d784826}
 .play-attack>span{min-width:0}.play-attack strong{display:block;font-size:14px;font-weight:550}.play-attack small{display:block;font-size:11px;color:#bdad94;margin-top:4px}
 .play-attack>.play-button{background:#8a644c24;border:1px solid #a77c493f;flex:none;font-size:20px}
