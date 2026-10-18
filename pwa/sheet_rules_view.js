@@ -37,6 +37,23 @@ export function rollSheetDice(modifier,bonuses=[],die){
   ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
  return {sides:20,count:1,modifier:base,rolls:[d20],total,notation,detail,parts};
 }
+/** Match the desktop DiceChatSync.valid_event protocol for combined dice rolls. */
+export function sheetRollChatFields(result){
+ const base={count:result.count,modifier:result.modifier,rolls:result.rolls,
+   total:result.total,notation:result.notation,detail:result.detail};
+ if(!Array.isArray(result.parts)||result.parts.length<=1)
+  return {...base,die:'d'+result.sides};
+ const terms=result.parts.map(part=>{
+  const match=String(part.notation||'').match(/d([0-9]+)/i);
+  const sides=Number(match?.[1]);
+  if(!Number.isInteger(sides)||sides<2||sides>1000)throw Error('Dado del tiro non valido');
+  return {count:part.rolls.length,sides,sign:1,rolls:[...part.rolls]};
+ });
+ const count=terms.reduce((n,row)=>n+row.count,0);
+ if(count<1||count>100)throw Error('Il limite di condivisione è 100 dadi per tiro');
+ return {...base,die:'formula',terms,count,
+   modifier:Number(result.modifier)+result.parts.reduce((sum,row)=>sum+Number(row.flat||0),0)};
+}
 // A single readout contract is shared by every native-style section. Refresh
 // only the outputs, leaving focused editors and pending user input in place.
 export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
