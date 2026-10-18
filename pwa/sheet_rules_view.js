@@ -401,7 +401,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
-  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],spells);
+  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells);
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
   const featureFor=(ids=[],name='')=>{
