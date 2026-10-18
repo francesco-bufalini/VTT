@@ -28,6 +28,7 @@ func _active() -> bool:
 		and camera != null and is_instance_valid(camera)
 		and (
 			bool(attack.call("is_targeting"))
+			or not attack.call("shared_range_previews").is_empty()
 			or (board.has_method("is_2d_view_enabled")
 				and bool(board.call("is_2d_view_enabled"))
 				and bool(attack.call("are_all_reaches_visible")))
@@ -138,8 +139,10 @@ func _draw_target_panel() -> void:
 func _draw() -> void:
 	if not _active():
 		return
+	_draw_shared_ranges()
 	if not bool(attack.call("is_targeting")):
-		_draw_all_reaches()
+		if bool(attack.call("are_all_reaches_visible")):
+			_draw_all_reaches()
 		return
 	var show_2d: bool = board.has_method("is_2d_view_enabled") and bool(board.call("is_2d_view_enabled"))
 	if bool(attack.get("_preview_only")):
@@ -168,6 +171,21 @@ func _draw() -> void:
 		NORMAL_COLOR, 0.055
 	)
 
+
+
+# Light shared outlines do not obscure tokens or consume map input.
+func _draw_shared_ranges() -> void:
+	if not board.has_method("is_2d_view_enabled") or not bool(board.call("is_2d_view_enabled")):
+		return
+	var cell := maxf(float(board.get("cell_size")), 0.001)
+	for preview: Dictionary in attack.call("shared_range_previews"):
+		var center: Vector3 = preview["center"]
+		var half := float(preview["half"])
+		var normal := float(preview["normal"])
+		var long_feet := float(preview["long"])
+		if long_feet > normal:
+			_paint_range(_screen_polygon(center, half, long_feet / 5.0 * cell), LONG_COLOR, 0.012)
+		_paint_range(_screen_polygon(center, half, normal / 5.0 * cell), NORMAL_COLOR, 0.025)
 
 
 func _draw_all_reaches() -> void:
