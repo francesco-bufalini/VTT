@@ -337,7 +337,8 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(event.notation,/^1d20/);
   assert.match(event.detail,/d20 \[\d+\] =/);
   assert.ok(Number.isInteger(event.total)&&event.total>=1);
-  await until(()=>document.querySelector('[data-roll-chat-status]')?.textContent.includes('inviato automaticamente'));
+  assert.equal(document.querySelector('[data-roll-chat-status]')?.hidden,true,
+    'Successful chat delivery does not add explanatory text');
   assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,true,
     'A completed roll cannot accidentally be sent twice');
   click('[data-act="sheet-roll-edit-bonus"]');
