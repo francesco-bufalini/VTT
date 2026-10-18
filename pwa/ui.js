@@ -2185,7 +2185,25 @@ async function handleAction(target){
     else await patch(slotUsePatch(c,Number(target.dataset.level),act==='slot-use'?1:-1,await computeLocalData(c)));
     await render();return;
   }
-  if(['hp-damage','hp-heal','hp-restore','hp-restore-second','hp-automatic'].includes(act)){
+  if(act==='hp-damage'||act==='hp-heal'){
+    const dialog=app.querySelector('#hp-adjust-dialog');
+    if(!dialog)throw Error('Pannello punti ferita non disponibile.');
+    const damage=act==='hp-damage';
+    dialog.dataset.hpMode=damage?'damage':'heal';
+    dialog.querySelector('#hp-adjust-title').textContent=damage?'Infliggi danni':'Cura punti ferita';
+    dialog.querySelector('#hp-adjust-confirm').textContent=damage?'Applica danni':'Applica cura';
+    const amount=dialog.querySelector('#hp-adjust-amount');
+    amount.value='1';
+    openSessionDialog(dialog);
+    amount.focus();
+    amount.select();
+    return;
+  }
+  if(act==='hp-adjust-cancel'){
+    closeSessionDialog(app.querySelector('#hp-adjust-dialog'));
+    return;
+  }
+  if(['hp-restore','hp-restore-second','hp-automatic'].includes(act)){
     const c=state.editor.read(),calculated=await computeLocalData(c);
     if(act==='hp-automatic'){
       if(!calculated.stats.automatic_hp.available)throw Error('PF automatici non disponibili');
@@ -2195,11 +2213,6 @@ async function handleAction(target){
       const maximum=Number(calculated.values?.second_max??c.second_form_max_hp??0);
       if(!Number.isFinite(maximum)||maximum<=0)throw Error('Imposta prima il massimo della seconda forma.');
       await patch({second_form_hp:Math.max(0,maximum)});
-    }
-    else{
-      const amount=Number(app.querySelector('#hp-amount')?.value);
-      if(!Number.isInteger(amount)||amount<0||amount>99999)throw Error('Quantità PF non valida');
-      await patch(hitPointPatch(c,amount*(act==='hp-damage'?-1:1),calculated));
     }
     await render();return;
   }
@@ -2625,6 +2638,19 @@ async function handleAction(target){
   if(act==="share-roll"){await shareRoll();return;}
 }
 async function handleSubmit(form){
+  if(form.id==='hp-adjust-form'){
+    const dialog=form.closest('#hp-adjust-dialog');
+    const mode=dialog?.dataset.hpMode;
+    if(mode!=='damage'&&mode!=='heal')throw Error('Operazione sui PF non valida.');
+    const amount=Number(form.querySelector('#hp-adjust-amount')?.value);
+    if(!Number.isSafeInteger(amount)||amount<1||amount>99999)throw Error('Inserisci un valore di PF tra 1 e 99999.');
+    if(!state.editor)throw Error('Apri prima una scheda.');
+    const creature=state.editor.read(),calculated=await computeLocalData(creature);
+    await patch(hitPointPatch(creature,mode==='damage'?-amount:amount,calculated));
+    closeSessionDialog(dialog);
+    await render();
+    return;
+  }
   if(form.id==="pair-form"){
     const token=document.querySelector("#pair-secret")?.value.trim()||"";
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
