@@ -13,7 +13,6 @@ var _limit := -1
 var _cantrips := -1
 var _search: LineEdit
 var _level: OptionButton
-var _sort: OptionButton
 var _class_only: CheckBox
 var _class_spell_ids: Dictionary = {}
 var _rows: VBoxContainer
@@ -72,12 +71,6 @@ func _ready() -> void:
 	_class_only.text = "Incantesimi di classe"
 	_class_only.toggled.connect(func(_on: bool) -> void: _display_limit = 120; _rebuild())
 	sorting.add_child(_class_only)
-	_sort = OptionButton.new()
-	_sort.add_item("Nome A–Z", 0)
-	_sort.add_item("Livello, poi nome", 1)
-	_sort.add_item("Livello decrescente, poi nome", 2)
-	_sort.item_selected.connect(func(_index: int) -> void: _rebuild())
-	sorting.add_child(_sort)
 	var guide := Label.new()
 	guide.size.x = 460
 	guide.custom_minimum_size.x = 140
@@ -143,13 +136,14 @@ func _rebuild() -> void:
 	_catalog.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var left := int(a.get("level", 0))
 		var right := int(b.get("level", 0))
-		if _sort.get_selected_id() != 0 and left != right:
-			return left < right if _sort.get_selected_id() == 1 else left > right
+		if left != right:
+			return left < right
 		var names := String(a.get("name", "")).naturalnocasecmp_to(String(b.get("name", "")))
 		return names < 0 if names != 0 else String(a.get("id", "")) < String(b.get("id", ""))
 	)
 	var displayed := 0
 	var matches := 0
+	var previous_level := -1
 	for spell: Dictionary in _catalog:
 		var id: String = String(spell.get("id", ""))
 		if _class_only.visible and _class_only.button_pressed and not _class_spell_ids.has(id):
@@ -162,6 +156,14 @@ func _rebuild() -> void:
 		matches += 1
 		if displayed >= _display_limit:
 			continue
+		if previous_level != level:
+			var level_heading := Label.new()
+			level_heading.name = "SpellLevelHeader"
+			level_heading.text = "Trucchetti" if level == 0 else "Livello %d" % level
+			level_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+			level_heading.add_theme_font_size_override("font_size", 16)
+			_rows.add_child(level_heading)
+			previous_level = level
 		var row := HBoxContainer.new()
 		_rows.add_child(row)
 		var selected := CheckBox.new()
@@ -187,8 +189,7 @@ func _rebuild() -> void:
 		)
 		var name_label := Label.new()
 		name_label.size.x = 280
-		# Keep the catalogue name untouched. The level/cantrip suffix is UI
-		# text, so it needs a separate localizable label.
+		# Level lives in the heading, not beside each spell name.
 		name_label.text = String(spell.get("name", id))
 		name_label.set_meta("creature_gui_data", true)
 		name_label.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -196,9 +197,6 @@ func _rebuild() -> void:
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
-		var level_badge := Label.new()
-		level_badge.text = " · trucchetto" if level == 0 else " · %d°" % level
-		row.add_child(level_badge)
 		if _wizard and level > 0:
 			var book := CheckBox.new()
 			book.text = "Nel libro"
