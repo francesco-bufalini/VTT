@@ -455,7 +455,11 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const ranged=String(item.type||'').split('|')[0].toUpperCase()==='R';
   const ranges=String(item.range||'').split('/').map(Number),reach=hasProperty(item,'R')?10:5;
   const proficient=trained.has('weapon:'+String(item.name).toLowerCase())||trained.has('weapon:'+String(item.weapon_category).toLowerCase())||trained.has('weapon:all');
-  const ability=hasProperty(item,'F')?(record.attack_ability==='dex'?'dex':'str'):ranged?'dex':'str';
+  // By default, the selected ability only overrides Finesse weapons.
+  // When the scope toggle is off, it applies to every equipped weapon.
+  const chosen=record.attack_ability==='dex'?'dex':'str';
+  const ability=record.attack_ability_finesse_only===false?chosen:
+    hasProperty(item,'F')?chosen:ranged?'dex':'str';
   let damage=item.damage||'';
   if(slot==='main'&&!off&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
   const size=item.instance_overrides?.weapon_size||record.size_name||'Medium',factor=({Large:2,Huge:3,Gargantuan:4})[size]||1;
