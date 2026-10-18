@@ -1698,7 +1698,7 @@ func set_gui_language(language: String) -> void:
 		return
 	_gui_language = language
 	if _selection_dialog != null and is_instance_valid(_selection_dialog):
-		_selection_dialog.set_gui_language(language)
+		_selection_dialog.call("set_gui_language", language)
 	_refresh_casting_summary()
 	_refresh_view()
 	_update_spell_controls()
