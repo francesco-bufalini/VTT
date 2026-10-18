@@ -616,7 +616,12 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   await addHomebrewToInventory("Test personalizzato");
   change('[data-item-key="quantity"]',"3");
   assert.ok(document.querySelector('.inventory-equipment'),"Desktop-style equipment panel in mobile inventory");
-  assert.ok(document.querySelector('.inventory-coins-panel'),"Coins must be available in the objects subtab");
+  assert.ok(document.querySelector('#sheet-play-view .inventory-play-coins'),
+    "Coins must be editable directly in the inventory shortcut row");
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-coins [data-coin-code]').length,5,
+    "All five denomination inputs must be visible without a popup");
+  assert.equal(document.querySelector('[data-sheet-context="coins"]'),null,
+    "The former coin popup shortcut must not be displayed");
   assert.equal(document.querySelector('[data-act="document-add"]'),null,
     "Document operations stay inside their own subtab");
   assert.ok(document.querySelector('.inventory-attunement'),"Dedicated attunement list in mobile inventory");
