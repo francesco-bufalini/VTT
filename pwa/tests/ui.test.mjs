@@ -284,6 +284,40 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(String(sent.options.headers.Authorization),/^Bearer a{64}$/);
   click('[data-nav="library"]'); // Release chat polling timer.
   await until(()=>document.querySelector('[data-act="create"]'));
+  const owned=(await listCreatures()).find(row=>row.creature.name==="Arcanista mobile")?.creature;
+  assert.ok(owned,'Test character remains available after pairing');
+  click('[data-act="open"][data-id="'+owned.id+'"]');
+  await until(()=>document.querySelector('[data-field="name"]')?.value==='Arcanista mobile');
+  click('[data-sheet="stats"]');
+  await until(()=>document.querySelector('[data-act="sheet-roll"][data-target="save:dex"]'));
+  const rollMessages=()=>calls.filter(c=>c.url==='/api/action'&&
+    JSON.parse(c.options.body).action==='chat_send'&&
+    JSON.parse(c.options.body).payload?.event?.kind==='roll');
+  const count=rollMessages().length;
+  click('[data-act="sheet-roll"][data-target="save:dex"]');
+  await until(()=>document.querySelector('#sheet-roll-dialog [data-roll-formula]'));
+  assert.match(document.querySelector('[data-roll-formula]').textContent,/^1d20/);
+  assert.equal(document.querySelector('[data-roll-result]').hidden,true,
+    'Opening a modifier only previews the dice and does not roll them');
+  assert.equal(rollMessages().length,count,
+    'Opening the preview must not publish anything to the chat');
+  click('[data-act="roll-sheet-confirm"]');
+  await until(()=>!document.querySelector('[data-roll-result]').hidden);
+  await until(()=>rollMessages().length===count+1);
+  const event=JSON.parse(rollMessages().at(-1).options.body).payload.event;
+  assert.equal(event.kind,'roll');
+  assert.match(event.label,/TS Destrezza/);
+  assert.match(event.notation,/^1d20/);
+  assert.match(event.detail,/d20 \[\d+\] =/);
+  assert.ok(Number.isInteger(event.total)&&event.total>=1);
+  await until(()=>document.querySelector('[data-roll-chat-status]')?.textContent.includes('inviato automaticamente'));
+  assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,true,
+    'A completed roll cannot accidentally be sent twice');
+  click('[data-act="sheet-roll-edit-bonus"]');
+  await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
+  assert.equal(document.querySelector('#sheet-roll-dialog'),null);
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
 });
 
 test("importing multiple creatures stays in library and exposes only selected bulk actions",async()=>{
