@@ -91,6 +91,11 @@ export async function map() {
   return exchange("/api/map", await currentToken());
 }
 
+// Match the native desktop condition/effect selection by stable ID and rules edition.
+export async function conditionDefinitions() {
+  return exchange("/api/conditions", await currentToken());
+}
+
 export async function action(name, payload = {}) {
   if (typeof name !== "string" || !name) throw new TypeError("Missing action name");
   return exchange("/api/action", await currentToken(), { action: name, payload });
