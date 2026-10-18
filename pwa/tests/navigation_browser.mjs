@@ -130,7 +130,7 @@ try{
  await page.locator('[data-act="open"]').click();
  await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
  assert.match(await page.locator('#creature-classes').textContent(),/Guerriero 3 · Mago 2/);
- assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\\. totale 5/);
+ assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
  assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),5);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
