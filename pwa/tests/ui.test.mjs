@@ -190,7 +190,8 @@ test("native reference catalog can add an item to an offline creature",async()=>
   const sword=(await listCreatures()).find(row=>row.creature.id===owner.creature.id).creature.inventory
     .findIndex(item=>item.name==="Spada lunga");
   click('[data-act="inventory-select"][data-index="'+sword+'"]');
-  await until(()=>document.querySelector('.inventory-description-panel'));
+  await until(()=>document.querySelector('.inventory-description-panel')?.textContent.includes("Spada lunga"),
+    5000); // Wait for the asynchronous selected-item render to finish.
   assert.ok(document.querySelector('.inventory-description-panel').textContent.includes("Spada lunga"),
     "Opening item with ac:null must render its description rather than crash");
   assert.ok(!document.querySelector('.inventory-description-panel').textContent.includes("CA: null"),
