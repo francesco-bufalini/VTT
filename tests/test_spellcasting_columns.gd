@@ -194,13 +194,13 @@ func run() -> void:
 		shared_boxes += 1
 		assert(left.find_children("CastingAbility", "OptionButton", true, false).size() == 2,
 			"Each casting origin retains its spellcasting ability even when sharing a tracker")
-		var power_rows: Array[Node] = left.find_children("PowerRow", "HBoxContainer", true, false)
-		var debug_layout := PackedStringArray()
-		for control: Node in left.find_children("*", "", true, false):
-			if control is Label or control is Button:
-				debug_layout.append("%s:%s" % [control.name, control.text])
-		assert(power_rows.size() >= 2,
-			"Different origins contribute powers to the same tracker box; got %d rows: %s" % [power_rows.size(), ", ".join(debug_layout)])
+		var displayed := 0
+		for power_scroll: Node in left.find_children("*", "ScrollContainer", true, false):
+			for child: Node in power_scroll.get_child(0).get_children():
+				if child is HBoxContainer:
+					displayed += 1
+		assert(displayed >= 2,
+			"Different origins contribute at least two spell rows to the same tracker box")
 		assert(section_row.get_child(1).find_children("TrackerRow", "HBoxContainer", true, false).size() == 1,
 			"The tracker counter only appears once per shared resource")
 	assert(shared_boxes == 1, "Powers are grouped by tracker ID rather than origin")
