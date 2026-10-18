@@ -89,7 +89,7 @@ func run() -> void:
 	var progression_header: HFlowContainer = area._total_level_display.get_parent()
 	assert(progression_header == area._xp.get_parent()
 		and progression_header.get_child(0) is Label
-		and progression_header.get_child(0).text.to_lower().contains("progress"),
+		and (progression_header.get_child(0) as Label).text.to_lower().contains("progress"),
 		"Total class level and XP must share the decorated progression heading")
 	assert(area._total_level_display.text.ends_with(str(area._class_xp_level()))
 		and area._total_level_display is Label,
