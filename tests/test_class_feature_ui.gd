@@ -23,6 +23,7 @@ func run() -> void:
 	barbarian["classes"] = [{"name": "Barbarian", "source": "PHB", "level": 9}, {"name": "Fighter", "source": "PHB", "level": 11}]
 	barbarian["rules_version"] = "2014"
 	barbarian["abilities"] = {"str": 18, "dex": 14, "con": 16, "int": 10, "wis": 12, "cha": 14}
+	barbarian["hand_main_special"] = "unarmed" # Explicitly equip a test attack; empty hands do not produce attack cards.
 	assert(area._archive.save(barbarian) == OK)
 	var sorcerer := Store.new().create_character()
 	sorcerer["kind"] = "character"
