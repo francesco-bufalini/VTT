@@ -1266,3 +1266,14 @@ input:disabled{opacity:.75;cursor:default}
 .sheet-roll-dialog.chat-dice-dialog .dice-options .btn[aria-pressed="true"]{
  border-color:#c99c61;background:#9066383a;color:#f1d39e;
 }
+
+/* Traits follow the native sheet: origins within categories, class levels first. */
+.trait-category{margin:0 0 16px}
+.trait-category+.trait-category{border-top:1px solid #a579486b;padding-top:15px}
+.trait-category-title{font:700 15px Georgia,serif;letter-spacing:.055em;color:#d4e1e6;margin:4px 0 12px}
+.trait-level{font-size:12px;font-weight:750;letter-spacing:.09em;color:#e3b36b;margin:14px 0 9px}
+.trait-origin-group{margin:8px 0 15px}
+.trait-origin-title{font-size:13px;font-weight:700;color:#d6b990;margin:10px 0 7px}
+.trait-card.trait-inactive{opacity:.68}
+.trait-book{display:block;font-size:11px;color:var(--muted);margin:5px 0 0}
+.trait-catalog-warnings{font-size:12px;color:var(--muted)}
