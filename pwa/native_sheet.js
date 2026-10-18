@@ -1,3 +1,4 @@
+import {hitDicePools} from './character_core.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
@@ -133,26 +134,6 @@ export function recoveryPatch(c,event,trackers){
  return patch;
 }
 
-
-/**
- * Hit Dice remain a portable per-die-size counter. Older desktop exports have
- * no hit_dice_spent field: treat those pools as fully available, never discard
- * the native hit_dice string or the class-derived values.
- */
-export function hitDicePools(record,calculated={}){
- const expression=String(calculated.stats?.hit_dice||record.hit_dice||'');
- const counts=new Map();
- for(const match of expression.matchAll(/(\d+)\s*d\s*(\d+)/gi)){
-  const count=Number(match[1]),die=Number(match[2]);
-  if(!Number.isSafeInteger(count)||count<1||count>1000||![4,6,8,10,12,20].includes(die))continue;
-  counts.set(die,(counts.get(die)||0)+count);
- }
- return [...counts].sort(([a],[b])=>b-a).map(([die,total])=>{
-  const value=Number(record.hit_dice_spent?.['d'+die]||0);
-  const spent=Math.max(0,Math.min(total,Number.isFinite(value)?Math.trunc(value):0));
-  return {die,total,spent,available:total-spent};
- });
-}
 
 /**
  * A finished rest is a single atomic creature patch, including native feature
