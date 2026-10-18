@@ -368,9 +368,13 @@ async function editorView() {
             castingStatistics(c,member.id,member.ability)+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
         }).join('')+
-        '<section class="magic-source"><h3>Altri incantesimi</h3>'+
-        castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
-        spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>','magic-panel')+
+        (!calculated.casting_classes.length||availableSpells(c).some(spell=>
+          !castingSources(spell,calculated.casting_classes,state.spellCatalog||[]).some(id=>
+            calculated.casting_classes.some(member=>member.id===id)))?
+          '<section class="magic-source"><h3>Altri incantesimi</h3>'+
+          castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
+          spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>':''),
+        'magic-panel')+
       panel('Slot · Classi / Patto','<div class="slot-table"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+calculated.spell_slots.map(slot=>{
         const level=slot.level,pact=calculated.pact_slots;
         return '<span>'+level+'°</span><div>'+slotCounter(level,slot.total,slot.spent)+
@@ -635,6 +639,20 @@ function groupedMagicSpells(items,renderRow){
     '<section class="magic-level"><h4>'+(level===0?'Trucchetti':level===null?'Livello non disponibile':'Livello '+level)+'</h4>'+
     '<div class="magic-entries">'+entries.map(renderRow).join('')+'</div></section>').join('')+'</div>';
 }
+function groupedMagicOptions(spells){
+  const rows=spells.map(spell=>({spell,info:magicSpellInfo(spell)})).sort((a,b)=>
+    (a.info.level??10)-(b.info.level??10)||
+    a.info.name.localeCompare(b.info.name,'it',{sensitivity:'base'}));
+  const groups=new Map();
+  for(const item of rows){
+    if(!groups.has(item.info.level))groups.set(item.info.level,[]);
+    groups.get(item.info.level).push(item);
+  }
+  return [...groups.entries()].map(([level,items])=>
+    '<optgroup label="'+(level===0?'Trucchetti':level===null?'Livello non disponibile':'Livello '+level)+'">'+
+    items.map(({spell,info})=>'<option value="'+esc(spell.id)+'">'+esc(info.name)+'</option>').join('')+
+    '</optgroup>').join('');
+}
 function originPowersView(c,calculated){
  const groups=new Map();
  for(const grant of calculated.origin_spells||[]){
@@ -667,7 +685,7 @@ function originChoicesView(calculated){
   const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
   return '<article class="native-entry"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
-   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+offered.map(spell=>'<option value="'+esc(spell.id)+'">'+esc(spell.name)+' · '+esc(spell.source)+' · liv. '+spell.level+'</option>').join('')+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
+   (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
 }
@@ -692,10 +710,8 @@ function renderSpellResults(){
     (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)&&
     editionSpells.has(spell)&&
     (state.spellClass==='manual'||!state.calculated?.casting_classes.some(member=>member.id===state.spellClass)||spellEligible(spell,state.calculated.casting_classes.find(member=>member.id===state.spellClass)))).slice(0,40);
-  return found.length?found.map(({spell,index})=>
-    '<button class="btn full catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+
-    '<span>'+esc(spell.name||"Incantesimo")+'</span><span class="tag">Liv. '+esc(spell.level??0)+
-    ' · '+esc(spell.source||"")+'</span></button>').join(""):
+  return found.length?groupedMagicSpells(found.map(({spell,index})=>({spell,index,info:magicSpellInfo(spell)})),({spell,index,info})=>
+    '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+esc(info.name)+'</button>'):
     '<p class="hint">Nessun incantesimo corrispondente.</p>';
 }
 function diceView() {
