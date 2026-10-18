@@ -838,3 +838,15 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .magic-slot-settings{padding:9px 0}
 .magic-tools-dialog .catalog-results{max-height:48dvh;overflow:auto}
 @media(max-width:400px){.magic-tool-button{width:34px;height:34px;flex-basis:34px}.magic-level-slot{font-size:.77rem;padding:4px 5px}.magic-tools-dialog{padding:10px}.magic-tools-head{top:-10px}}
+
+
+/* Inventory's native-style object/document secondary navigation and purse. */
+.inventory-subtabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0 0 10px;border-bottom:1px solid var(--line);padding:0 0 6px}
+.inventory-subtabs button{min-height:39px;border:1px solid #886a48;border-radius:7px;background:#291f1c;color:var(--text);font-weight:700;font:inherit;cursor:pointer}
+.inventory-subtabs button[aria-selected="true"]{background:linear-gradient(180deg,#75414a,#4f2932);border-color:var(--accent);color:#fff0ca}
+.inventory-coin-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;max-width:560px}
+.inventory-coin{min-width:0;gap:4px!important;margin:0!important;text-align:center}
+.inventory-coin>span{color:var(--accent);font-weight:750;font-size:12px;letter-spacing:.06em}
+.inventory-coin input{min-width:0;width:100%;padding:8px 3px!important;text-align:center;font-size:14px!important;font-variant-numeric:tabular-nums}
+.inventory-coin-total{color:var(--muted);font-size:12px;margin:7px 0 0}
+@media(max-width:380px){.inventory-coin-grid{gap:3px}.inventory-coin input{padding:7px 0!important;font-size:12px!important}}
