@@ -481,6 +481,14 @@ test("inline spell catalog adds available and spellbook choices without divergin
     return current?.prepared_spells?.[0]?.id==="spell:shield|phb" &&
       current?.spells?.[0]?.id==="spell:shield|phb";
   });
+  const preparedRow=document.querySelector('.magic-spell-open[data-spell-key="prepared_spells"]');
+  assert.ok(preparedRow,'prepared spell has a detail button');
+  assert.equal(preparedRow.closest('.magic-level')?.querySelector('h4')?.textContent,'Livello 1');
+  click('.magic-spell-open[data-spell-key="prepared_spells"]');
+  await until(()=>document.querySelector('#action-cast-dialog[open]'));
+  assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
+  click('[data-act="action-cast-cancel"]');
+  await until(()=>!document.querySelector('#action-cast-dialog'));
   change('#spell-target',"spellbook_spells");
   click('[data-act="spell-pick"]');
   await until(async()=>{
