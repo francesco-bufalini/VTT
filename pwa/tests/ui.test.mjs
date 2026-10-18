@@ -207,7 +207,8 @@ test("dice roll is usable offline; session has functioning pairing form",async()
   await until(()=>document.querySelector('[data-act="open-chat-dice"]'));
   click('[data-act="open-chat-dice"]');
   await until(()=>document.querySelector('#chat-dice-dialog [data-act="roll"]'));
-  click('[data-act="roll"][data-sides="20"]');
+  click('#chat-dice-dialog [data-act="select-die"][data-sides="20"]');
+  click('#chat-dice-dialog [data-act="roll"]');
   await until(()=>document.querySelector(".dice-result"));
   const total=Number(document.querySelector(".dice-result").textContent);
   assert.ok(Number.isInteger(total)&&total>=1&&total<=20);
