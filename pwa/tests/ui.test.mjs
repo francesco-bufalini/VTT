@@ -526,7 +526,8 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-act="open"][data-id="'+id+'"]');
   await until(()=>document.querySelector('[data-sheet="magic"]'));
   click('[data-sheet="magic"]');
-  await until(()=>document.querySelector('.magic-tracker-panel'));
+  try{await until(()=>document.querySelector('.magic-tracker-panel'));}
+  catch(error){throw new Error("Powers panel missing: "+document.querySelector('#app')?.textContent?.slice(0,1400)+" | "+document.querySelector('#toast')?.textContent, {cause:error});}
   const groups=[...document.querySelectorAll('.magic-tracker-panel')].filter(el=>el.querySelector('h2')?.textContent==="Cariche condivise");
   assert.equal(groups.length,1,"one box for one shared tracker");
   const group=groups[0];
