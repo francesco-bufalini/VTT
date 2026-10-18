@@ -6,7 +6,7 @@ export async function browserFixture({live=false}={}){
  const root=new URL('../../',import.meta.url),artifacts=new URL('../.test-artifacts/',import.meta.url);
  await mkdir(artifacts,{recursive:true});
  const routes=new Map([...String(await readFile(new URL('network/pwa_host.gd',root))).matchAll(/"([^"\n]+)":\s*\["res:\/\/([^"\n]+)",\s*"([^"\n]+)"\]/g)].map(m=>[m[1],[m[2],m[3]]]));
- const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],time:[{unit:'reaction',number:1}],entries:['Protezione di prova.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Wizard'],time:[{unit:'action',number:1}],duration:[{type:'timed',duration:{type:'hour',amount:1}}],has_duration:true,entries:['Luce di prova.']}]};
+ const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],time:[{unit:'reaction',number:1}],entries:['Protezione di prova.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Wizard'],time:[{unit:'action',number:1}],duration:[{type:'timed',duration:{type:'hour',amount:1}}],has_duration:true,entries:['Luce di prova.']},{id:'phb2014_light',name:'Light (2014)',source:'PHB',level:0,classes:['Wizard'],time:[{unit:'action',number:1}],duration:[{type:'timed',duration:{type:'hour',amount:1}}],has_duration:true,entries:['Luce di prova per le regole 2014.']}]};
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
