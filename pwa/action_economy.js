@@ -14,8 +14,20 @@ export async function loadGeneralActionSupplements(){
  if(!response.ok)throw Error('Catalogo azioni 5etools non disponibile');
  const payload=await response.json();
  if(payload?.version!==1||!Array.isArray(payload.actions))throw Error('Catalogo azioni 5etools non valido');
- generalActionsCache=payload.actions;
- variantsCache=payload.variants||[];
+ // Extra actions also exist in the native supplement catalog. The canonical
+ // catalog owns variant gating, so never duplicate or auto-enable its rules.
+ const known=new Set(payload.actions.map(row=>String(row.edition)+'|'+String(row.id)));
+ let extras=[];
+ try{
+  const response=await fetch('/catalog/combat_action_supplements_5etools.json',{cache:'no-store'});
+  if(response.ok){
+   const extra=await response.json();
+   if(extra?.version===1&&Array.isArray(extra.entries))
+    extras=extra.entries.filter(row=>!row.optional&&!known.has(String(row.edition)+'|'+String(row.id)));
+  }
+ }catch{ /* Core actions and the variant picker remain usable offline. */ }
+ generalActionsCache=[...payload.actions,...extras];
+ variantsCache=Array.isArray(payload.variants)?payload.variants:[];
  return generalActionsCache;
 }
 export async function loadFeatureActionOverrides(){
@@ -117,7 +129,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  const out=[];
  const edition=record.rules_version==='2024'?'2024':'2014';
  for(const rule of arr(generalActions)){
-  if(rule.edition!==edition||rule.variant_id&&!enabledVariants.includes(rule.variant_id))continue;
+  if(rule.edition!==edition||rule.variant_id&&!enabledVariants.includes(rule.variant_id)&&
+    !(rule.variant_id==='healing_surges_dmg'&&enabledVariants.includes('healing_surges_bonus_dmg')))continue;
   let times=arr(rule.timings);
   const alternate=times.includes('action')&&times.includes('bonus');
   if(alternate)times=['bonus'];
@@ -145,7 +158,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   already.add(attack.id);
   const section=String(attack.id).split(':')[1];
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
-  const hit=Number.isFinite(Number(attack.hit))?'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
+  const hit=attack.hit!==null&&attack.hit!==undefined&&attack.hit!==''&&Number.isFinite(Number(attack.hit))?
+   'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
   add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
@@ -186,8 +200,34 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(record.origin_enabled?.[classOrigin]===false||arr(record.proficiency_origins).some(o=>o?.id===classOrigin&&o.disabled))continue;
   const resource=arr(calculated.trackers).find(t=>String(t.name).toLowerCase()===String(rule.resource_name||'').toLowerCase()&&
     (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
+  // Do not grant missing or disabled features solely from class/level.
+  const collected=arr(calculated.features).filter(f=>String(f.origin_key||'').startsWith(classOrigin));
+  if(collected.length&&!collected.some(f=>String(f.name||'').toLowerCase()===
+      String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled))continue;
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
       resource?.name||rule.resource_name||'',0,{tracker_id:String(resource?.id||'')});
+ }
+ // Native class abilities with no typed activation in their 5etools entry.
+ for(const row of nativeClassFeatureActions(record,calculated)){
+  if(out.some(existing=>existing.origin==='personal'&&
+      String(existing.name).toLowerCase()===String(row.name).toLowerCase()))continue;
+  out.push(row);
+ }
+ // Extra Attack modifies the Attack action; it is not a separate action.
+ const attackAction=out.find(row=>row.id==='attack');
+ if(attackAction){
+  const counts={'extra attack':2,'extra attack (2)':3,'extra attack (3)':4,
+   'two extra attacks':3,'three extra attacks':4,'thirsting blade':2,'devouring blade':3};
+  let amount=1;
+  for(const feature of arr(calculated.features)){
+   if(feature.inactive||feature.disabled)continue;
+   amount=Math.max(amount,counts[String(feature.name||'').toLowerCase()]||1);
+  }
+  if(amount>1){
+   attackAction.name+=' ×'+amount;
+   attackAction.attack_count=amount;
+   attackAction.description+='\nAttacchi per azione: '+amount+'.';
+  }
  }
  // Origin-spell grants are already resolved by the local rules engine,
  // including custom payment mode, disabled origins and level requirements.
@@ -213,6 +253,52 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   if(same.time!==row.time){same.time='bonus';same.alternate_action=true;}
  }
  return normalized;
+}
+// Exact native class_feature_activation.gd/RULES mapping. Project only
+// features that the local rules engine actually collected and enabled.
+const NATIVE_CLASS_ACTIONS=[
+ ['rage','Barbarian','Rage','Ira','Rages','bonus'],
+ ['reckless_attack','Barbarian','Reckless Attack','Attacco irruento','','free'],
+ ['second_wind','Fighter','Second Wind','Recuperare energie','Second Wind','bonus'],
+ ['action_surge','Fighter','Action Surge',"Impeto d'azione",'Action Surge','free'],
+ ['lay_on_hands','Paladin','Lay on Hands','Imposizione delle mani','Lay on Hands','action'],
+ ['divine_sense','Paladin','Divine Sense','Percezione del divino','Divine Sense','action'],
+ ['turn_undead','Cleric','Turn Undead','Scacciare non morti','Channel Divinity','action'],
+ ['channel_divinity','Paladin','Channel Divinity','Incanalare divinità','Channel Divinity','action'],
+ ['font_of_magic','Sorcerer','Font of Magic','Fonte di magia','Sorcery Points','bonus'],
+ ['innate_sorcery','Sorcerer','Innate Sorcery','Stregoneria innata','Innate Sorcery','bonus'],
+ ['arcane_recovery','Wizard','Arcane Recovery','Recupero arcano','Arcane Recovery','free'],
+ ['flurry_of_blows','Monk','Ki','Raffica di colpi','Ki Points','bonus'],
+ ['patient_defense','Monk','Ki','Difesa paziente','Ki Points','bonus'],
+ ['step_of_the_wind','Monk','Ki','Passo del vento','Ki Points','bonus'],
+ ['stunning_strike','Monk','Stunning Strike','Colpo stordente','Ki Points','free'],
+ ['uncanny_dodge','Rogue','Uncanny Dodge','Schivata prodigiosa','','reaction'],
+ ['deflect_missiles','Monk','Deflect Missiles','Deviare proiettili','','reaction'],
+ ['deflect_attacks','Monk','Deflect Attacks','Deviare attacchi','','reaction']
+];
+export function nativeClassFeatureActions(record={},calculated={}){
+ const revised=record.rules_version==='2024',features=arr(calculated.features),trackers=arr(calculated.trackers);
+ const output=[];
+ for(const [key,owner,sourceName,label,baseResource,baseTime] of NATIVE_CLASS_ACTIONS){
+  const parent=revised&&sourceName==='Ki'?'Monk’s Focus':sourceName;
+  const feature=features.find(row=>!row.inactive&&!row.disabled&&
+   String(row.name||'').replaceAll("'",'’').toLowerCase()===parent.toLowerCase()&&
+   String(row.origin_key||'').startsWith('class|')&&
+   String(row.requirements?.class_name||row.class_name||'').toLowerCase()===owner.toLowerCase());
+  if(!feature)continue;
+  let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
+  if(revised&&key==='divine_sense')resource='Channel Divinity';
+  const tracker=resource?trackers.find(row=>String(row.name||'').toLowerCase()===resource.toLowerCase()&&
+   (!row.origin_class||String(row.origin_class).toLowerCase()===owner.toLowerCase())):null;
+  const time=revised&&key==='lay_on_hands'?'bonus':baseTime;
+  const active=!!record.active_class_features?.[key];
+  const cost=revised&&['patient_defense','step_of_the_wind'].includes(key)?0:tracker?1:0;
+  output.push({id:'class_feature:'+key,name:label,time,type:'Capacità',
+   description:details(feature.entries??feature.description??'')+(active?'\nAttiva sulla scheda.':''),
+   tracker:tracker?.name||resource||'',tracker_id:tracker?.id||'',cost,
+   origin:'personal',active,class_feature_id:key});
+ }
+ return output;
 }
 export function spellActionEntries(record={},calculated={},spells=[]){
  const output=[];
