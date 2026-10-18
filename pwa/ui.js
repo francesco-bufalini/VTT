@@ -3,7 +3,8 @@ import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, row
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
-import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode } from "./client.js";
+import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
+import { conditionOptions } from "./condition_catalog.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
@@ -28,15 +29,12 @@ const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
 const sheetSections = SHEET_SECTIONS;
 const sections = new Set(["library", "catalog", "session"]);
-const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
-  "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
-  "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
-  hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, conditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', pendingItemOwner:'',
@@ -70,6 +68,7 @@ function acceptSession(info){
     releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
+    state.conditionCatalog=null;
   }
   if(next)currentGameSession=next;
   state.session=info;
@@ -542,10 +541,10 @@ async function editorView() {
   case "conditions":
     body=panel('Condizioni',
       '<div class="condition-sheet-header"><span class="condition-count"><strong data-condition-count>'+
-        (c.conditions||[]).filter(id=>conditions.includes(id)).length+
+        (c.conditions||[]).length+
         '</strong> attive</span>'+
         field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+
-      '</div>'+conditionGrid(c.conditions,'data-condition'),'condition-sheet-panel');
+      '</div>'+conditionGrid(c.conditions,'data-condition',c.rules_version),'condition-sheet-panel');
     break;
   case 'traits':body=await traitsView(c);break;
   case "json":
@@ -604,13 +603,13 @@ function resourceView(c,configure=false,compact=false){
  return panel('Risorse','<p class="hint">I valori massimi includono formule e bonus attivi. Il riposo breve ripristina le risorse previste e gli slot del Patto; quello lungo ripristina anche gli slot di classe. All’inizio del turno si recuperano solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
 }
 
-function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",helped:"Aiutato",dead:"Morto"})[id]||id;}
-function conditionGrid(active,attribute){
+function conditionGrid(active,attribute,edition="2014"){
  const applied=new Set(Array.isArray(active)?active:[]);
+ const options=conditionOptions(state.conditionCatalog,edition,active);
  return '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="Condizioni">'+
-  conditions.map(id=>'<label class="check condition-toggle">'+
+  options.map(({id,label})=>'<label class="check condition-toggle">'+
    '<input type="checkbox" '+attribute+'="'+esc(id)+'" '+(applied.has(id)?'checked':'')+'>'+
-   '<span>'+esc(conditionLabel(id))+'</span></label>').join('')+'</div>';
+   '<span>'+esc(label)+'</span></label>').join('')+'</div>';
 }
 function equipmentView(c,slots=['main','off','body'],boxed=true){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
@@ -1336,7 +1335,7 @@ function sessionView() {
           '<button type="button" class="btn small" data-act="remove-token-spell" data-spell-id="'+esc(id)+'">✕</button></div>';
       }).join('');
       html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><h2>⚙ '+esc(edited.name)+'</h2>'+
-        '<h3>Condizioni</h3>'+conditionGrid(edited.conditions,'data-token-condition')+
+        '<h3>Condizioni</h3>'+conditionGrid(edited.conditions,'data-token-condition',edited.rules_version||linked?.rules_version)+
         '<h3>Incantesimi applicati</h3>'+ (active||'<p class="hint">Nessun incantesimo attivo.</p>')+
         '<label>Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
         '<label>Incantesimo<select id="token-spell-select"></select></label>'+
@@ -1483,6 +1482,14 @@ async function refreshConnection(quiet=false) {
     state.hostReachable=false;state.online=false;state.session=null;
   }
   if(!state.online){state.map=null;state.tokenId="";}
+  // Fetch the same edition-dependent catalog used by the native token dialog.
+  // Network failure cannot block offline creature editing.
+  if(state.online && state.paired && !state.conditionCatalog){
+    try{
+      state.conditionCatalog=await conditionDefinitions();
+      if(state.page==="library"&&!state.libraryMode&&state.sheet==="conditions")void render();
+    }catch(error){console.warn("Desktop condition catalog unavailable; using offline labels",error);}
+  }
   syncNav();
   if(state.online && state.paired && !realtimeStopped){
     if(!state.stopMap)startMap();
@@ -1944,7 +1951,7 @@ async function handleField(target) {
     else entries.delete(target.dataset.condition);
     await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
     const count=app.querySelector('[data-condition-count]');
-    if(count)count.textContent=String([...entries].filter(id=>conditions.includes(id)).length);
+    if(count)count.textContent=String(entries.size);
   }
 }
 async function refreshMapOnce() {
@@ -2977,7 +2984,7 @@ async function handleAction(target){
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
     await unpair();stopSubscriptions();state.sessionPane='connection';state.paired=false;state.session=null;state.map=null;
-    state.messages=[];state.after="";state.tokenId="";currentGameSession="";
+    state.messages=[];state.after="";state.tokenId="";currentGameSession="";state.conditionCatalog=null;
     await render();return;
   }
   if(act==="place-creature"||act==="claim-creature"){
