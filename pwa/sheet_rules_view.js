@@ -266,13 +266,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    return '<div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="resource:'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+'</div>';
   }).join('');
   html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>'));
-  const disclosure=(key,title,glyph,body,open=false)=>'<details class="play-card play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
-   '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2><span class="play-chevron" aria-hidden="true">⌄</span></summary>'+body+'</details>';
+  // Keep header shortcuts outside the native summary; nested buttons inside
+  // summary would toggle the disclosure instead of performing their action.
+  const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
+   '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
+   '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
+   (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
   html+=disclosure('attacks','Attacchi fisici','weapon',
-   (view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>')+
-   '<div class="play-battle-equipment">'+btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>')+'</div>',true);
+   view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
+   btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
+  html+=disclosure('spells','Incantesimi','spell_cast',
+   view.battleActions?.spells||'<p class="play-empty">Nessun incantesimo disponibile.</p>',false,
+   btn('Gestisci incantesimi','spell_cast','data-act="action-open-spells"','<span>Gestisci</span>'));
  }
  if(sheet==='stats'){
   html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
