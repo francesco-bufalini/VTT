@@ -111,6 +111,15 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
+	var condition_script := await http("GET", "/condition_catalog.js")
+	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
+	var condition_catalog: Dictionary = host.call("_condition_public_catalog")
+	var conditions_2014: Array = condition_catalog.editions["2014"]
+	var conditions_2024: Array = condition_catalog.editions["2024"]
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and row.name == "Grappled"))
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "restrained" and row.name == "Restrained"))
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "hidden"))
+	assert(conditions_2024.any(func(row: Dictionary) -> bool: return row.id == "5etools:effects:xphb:bloodied"))
 	# Concurrent module fetches must not be disconnected when more than twelve
 	# resources arrive in the same frame (old PWA_HOST active-client limit).
 	var burst := {"done": 0, "failed": 0}
@@ -185,6 +194,7 @@ func run() -> void:
 	var qr_texture: Texture2D = generator.call("get_texture", "https://example.ts.net/#pair=0123456789ABCDEF")
 	assert(qr_texture != null and qr_texture.get_width() > 20, "QR texture failed")
 	generator.free()
+	assert((await http("GET", "/api/conditions")).begins_with("HTTP/1.1 401"), "Native condition catalog must require pairing")
 	assert((await http("GET", "/api/map")).begins_with("HTTP/1.1 401"))
 	assert((await http("POST", "/api/action", "{\"action\":\"chat_poll\",\"payload\":{}}")).begins_with("HTTP/1.1 401"))
 	assert((await http("GET", "/../project.godot")).begins_with("HTTP/1.1 404"))
