@@ -61,6 +61,8 @@ func run() -> void:
 	ui.name = "UI"
 	board.add_child(ui)
 	var area: Node = load("res://vtt/creature_area.gd").new()
+	var isolated_selection := "user://creature_gui_layout_selection_%d.cfg" % Time.get_ticks_usec()
+	area._selection_config_path = isolated_selection
 	board.add_child(area)
 	area.setup(board)
 	# The creature panel is placed under the board UI CanvasLayer, not under area.
@@ -265,6 +267,41 @@ func run() -> void:
 		assert(dialog.position.y + confirm_rect.end.y <= bounds.size.y,
 			"First-open miniature Confirm must be on screen")
 		dialog.hide()
+	# The highlighted sheet must survive closing the panel and restarting the UI.
+	var remembered_id: String = String(area._current().get("id", ""))
+	var remembered_kind: String = String(area._current().get("kind", ""))
+	assert(not remembered_id.is_empty())
+	area.hide_panel()
+	area.show_panel()
+	assert(String(area._current().get("id", "")) == remembered_id,
+		"Reopening the desktop creature panel must keep the last selection")
+	var selection_file := ConfigFile.new()
+	assert(selection_file.load(isolated_selection) == OK)
+	assert(String(selection_file.get_value("selection", "id", "")) == remembered_id
+		and String(selection_file.get_value("selection", "kind", "")) == remembered_kind,
+		"Selection preference must store stable ID and kind, not list position or name")
+	# A new app instance loads the preference before rebuilding the archive rows.
+	area._selected_id = ""
+	area._selected_kind = ""
+	area._last_selected_id = ""
+	area._last_selected_kind = ""
+	area._restore_last_creature_selection()
+	area._reload()
+	assert(String(area._current().get("id", "")) == remembered_id
+		and String(area._current().get("kind", "")) == remembered_kind,
+		"The last creature must be restored from disk after runtime state is reset")
+	# Deleted/transfered creatures must never leave the editor on a broken sheet.
+	assert(area._archive.delete(area._current()) == OK)
+	area._reload()
+	assert(not area._current().is_empty()
+		and String(area._current().get("id", "")) != remembered_id,
+		"Missing remembered creatures must fall back to a valid available sheet")
+	var fallback_file := ConfigFile.new()
+	assert(fallback_file.load(isolated_selection) == OK)
+	assert(String(fallback_file.get_value("selection", "id", "")) ==
+		String(area._current().get("id", "")),
+		"The fallback must replace the stale saved selection")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_selection))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_archive))
 	board.queue_free()
 	campaign.queue_free()
