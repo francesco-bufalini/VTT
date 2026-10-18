@@ -690,11 +690,11 @@ input:disabled{opacity:.75;cursor:default}
 .page-head .eyebrow{font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.16em;color:#d5ae78}
 .page-head .page-description{font-size:13px;line-height:1.5;color:#c4b9ab;max-width:38ch}
 .play-dock{position:fixed;inset:auto 0 0;z-index:20;width:min(100%,600px);margin:auto;display:flex;align-items:stretch;padding:7px 8px calc(7px + env(safe-area-inset-bottom));gap:2px;background:linear-gradient(180deg,#332824f5,#211b1b);border-top:1px solid #ab8050;box-shadow:0 -5px 24px #0007;backdrop-filter:blur(14px)}
-.play-destinations,.global-destinations{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:1;min-width:0;gap:3px}
+.play-destinations,.global-destinations{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));flex:1;min-width:0;gap:3px}
 .play-dock>.global-destinations{grid-template-columns:repeat(3,minmax(0,1fr))}
 .play-dock .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:60px;padding:6px 2px;border:1px solid transparent;border-radius:10px;background:transparent;box-shadow:none;text-shadow:none;font-size:11px;line-height:1.2;font-weight:600;color:#cfc1ae}
 .play-dock .btn .vtt-action-glyph{width:23px;height:23px;object-fit:contain}
-.play-dock .dock-more{flex:0 0 19%}
+.play-dock .dock-more{flex:0 0 max(48px,15%)}
 .play-dock .btn[aria-pressed=true],.play-dock .btn[aria-current=page],.play-dock .btn.is-current{background:linear-gradient(180deg,#70414b65,#542c3650);border-color:#bb8a555f;color:#ffe3ae}
 .play-dock .btn[aria-pressed=true]::after,.play-dock .btn[aria-current=page]::after,.play-dock .btn.is-current::after{content:"";position:absolute;top:0;width:24px;height:3px;background:#edbd78;border-radius:0 0 3px 3px}
 .play-dock .btn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
@@ -1084,3 +1084,10 @@ input:disabled{opacity:.75;cursor:default}
 }
 @media(prefers-reduced-motion:reduce){.play-battle-attack-chevron{transition:none}}
 @media(prefers-reduced-motion:reduce){.play-battle-disclosure>.play-battle-summary>.play-chevron{transition:none}}
+
+/* All multiclass levels remain readable below the character name. */
+.topbar .brand-identity{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
+.topbar #creature-name{display:block}
+.topbar #creature-classes{display:block;color:#d9bea0;font:500 11px/1.35 system-ui,sans-serif;letter-spacing:0;overflow-wrap:anywhere}
+.topbar #creature-classes[hidden]{display:none}
+.sheet-section-description{color:#cbbdad;font-size:13px;line-height:1.55;margin:0 0 14px;max-width:65ch}

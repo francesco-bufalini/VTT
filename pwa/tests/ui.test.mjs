@@ -441,7 +441,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Cosa posso fare?","Battaglia","Poteri","Inventario","Caratteristiche e abilità","Condizioni","Tratti","Info","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Cosa posso fare?","Battaglia","Poteri","Inventario","Caratteristiche e abilità","Condizioni","Tratti","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
@@ -806,7 +806,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
- assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
+ assert.deepEqual([...document.querySelectorAll('#app .panel > h2, #app .disclosure-heading > h2')].map(e=>e.textContent),['Identità','Aspetto','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),

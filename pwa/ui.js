@@ -123,10 +123,10 @@ function errorMessage(error) {
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions:'weapon',
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
-const INFO_HEADING_ICONS={'Identità':'identity','Fisico':'physique',
+const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
-const PLAY_SECTIONS=[['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['stats','Caratteristiche e abilità','Prove, tiri salvezza e competenze'],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['info','Info','Identità, miniature e progressione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const PLAY_SECTIONS=[['info','Info'],['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
+const REFERENCE_SECTIONS=[['stats','Caratteristiche e abilità','Prove, tiri salvezza e competenze'],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
 const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],stats:['Caratteristiche e abilità','Tocca un modificatore per effettuare una prova.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description=''){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
@@ -147,8 +147,13 @@ function openNavigation(){
 }
 function syncNav(){
   const creature=state.editor?.read()||(state.cachedCreatures||[]).find(x=>x.id===state.creatureId);
-  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),symbol=document.querySelector('#creature-symbol');
+  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes'),symbol=document.querySelector('#creature-symbol');
   if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):'VTT Mobile';
+  if(classLabel){
+    const members=hasCreature?localClasses(creature||{}):[];
+    classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+    classLabel.hidden=!members.length;
+  }
   if(symbol){symbol.textContent=hasCreature&&creature?.kind==='monster'?'◆':'♜';symbol.setAttribute('aria-label',hasCreature&&creature?.kind==='monster'?'Mostro':'Personaggio');}
   const dock=document.querySelector('#mobile-tabs'),primary=document.querySelector('#sheet-navigation'),more=document.querySelector('#more-navigation');
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
@@ -172,6 +177,58 @@ function syncNav(){
   connection.title=state.paired&&state.online?'Partita collegata':state.online?'Desktop in partita':state.hostReachable?'Nessuna partita aperta':'Archivio locale disponibile offline';
   connection.classList.toggle('connected',state.paired&&state.online);
 }
+
+/* A phone's system Back button traverses browser history. Keep each visible
+   screen in the same history stack, including the library and secondary tabs. */
+let browserHistoryReady=false;
+let restoringBrowserHistory=false;
+let browserHistoryRestoreTicket=0;
+function screenSnapshot(){
+  return {
+    page:state.page,libraryMode:state.libraryMode,creatureId:state.creatureId,
+    sheet:state.sheet,detail:state.detail,sessionPane:state.sessionPane,
+    inventorySubtab:state.inventorySubtab,catalogSelected:state.catalogSelected
+  };
+}
+function syncBrowserHistory(){
+  if(restoringBrowserHistory)return;
+  const screen=screenSnapshot();
+  const previous=window.history.state?.__vttMobileScreen;
+  if(!browserHistoryReady){
+    window.history.replaceState({...window.history.state,__vttMobileScreen:screen},'',location.href);
+    browserHistoryReady=true;
+  }else if(JSON.stringify(previous)!==JSON.stringify(screen)){
+    window.history.pushState({...window.history.state,__vttMobileScreen:screen},'',location.href);
+  }
+}
+async function restoreBrowserScreen(screen){
+  if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
+  const ticket=++browserHistoryRestoreTicket;
+  restoringBrowserHistory=true;
+  try{
+    await flushPendingFields();
+    if(ticket!==browserHistoryRestoreTicket)return;
+    if(state.page!==screen.page)stopSubscriptions();
+    if(screen.page==='session')realtimeStopped=false;
+    const oldCreatureId=state.creatureId;
+    state.page=screen.page;
+    state.libraryMode=Boolean(screen.libraryMode);
+    state.creatureId=screen.creatureId||null;
+    state.sheet=screen.sheet;
+    state.detail=screen.detail||'overview';
+    state.sessionPane=screen.sessionPane||'';
+    state.inventorySubtab=screen.inventorySubtab||'items';
+    state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
+    if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
+    state.sheetPopup='';state.magicPopup='';
+    closeNavigation();
+    await render();
+    window.scrollTo(0,0);
+    app.focus({preventScroll:true});
+  }catch(error){message('Impossibile ripristinare la scheda: '+errorMessage(error),true);}
+  finally{if(ticket===browserHistoryRestoreTicket)restoringBrowserHistory=false;}
+}
+
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -222,6 +279,7 @@ async function render() {
     decorateSheetHeadings();
     organizeSheetPanels();
     rememberUtilityDisclosures();
+    syncBrowserHistory();
     const magicDialog=app.querySelector('#magic-tools-dialog');
     if(magicDialog){
       magicDialog.addEventListener('close',()=>{state.magicPopup="";},{once:true});
@@ -1892,7 +1950,8 @@ function decorateSheetHeadings(){
   if(heading.querySelector('.vtt-action-glyph,.vtt-info-icon'))continue;
   const title=heading.textContent.trim();
   const icon=INFO_HEADING_ICONS[title];
-  if(icon)heading.insertAdjacentHTML('afterbegin','<img class="vtt-info-icon" src="/icons/info/'+icon+'.svg" alt="" aria-hidden="true">');
+  if(title==='Aspetto')heading.insertAdjacentHTML('afterbegin',actionGlyph('eye'));
+  else if(icon)heading.insertAdjacentHTML('afterbegin','<img class="vtt-info-icon" src="/icons/info/'+icon+'.svg" alt="" aria-hidden="true">');
   else {
    const text=title.toLocaleLowerCase('it');
    const key=heading.classList.contains('current-section')?SHEET_TAB_GLYPHS[state.sheet]||'information':
@@ -2991,6 +3050,7 @@ async function handleSubmit(form){
   }
 }
 function listen(){
+  window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
   });

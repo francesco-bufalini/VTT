@@ -52,7 +52,11 @@ try{
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
- await sheet('actions');await shot('actions');
+ assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','actions','battle','magic','inventory']);
+ await sheet('actions');
+ await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');
+ await page.goForward();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='actions');
+ await shot('actions');
  assert.equal(await page.locator('.play-timing button').count(),5);
  await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();
  assert(await page.locator('#sheet-context-dialog .action-economy-row').first().isVisible());
@@ -63,7 +67,7 @@ try{
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,5);
+   assert.equal(dock.length,6);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
@@ -71,14 +75,14 @@ try{
  await page.setViewportSize({width:390,height:844});await sheet('stats');
  assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
  await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),9);
+ assert.equal(await page.locator('#navigation-dialog button:visible').count(),8);
  assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
  assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
  await shot('menu');await page.keyboard.press('Escape');
- assert.equal(await page.locator('#more-navigation').getAttribute('aria-expanded'),'false');
+ await page.waitForFunction(()=>document.querySelector('#more-navigation')?.getAttribute('aria-expanded')==='false');
  await sheet('info');
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
- await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Fisico'}).click();
+ await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
  await sheet('magic');
@@ -101,7 +105,7 @@ try{
  assert(await page.locator('[data-session-content="connection"]').isVisible());
  assert.equal(await page.locator('.session-map-panel').isVisible(),false);
  await page.locator('[data-session-pane="chat"]').click();await page.locator('[data-act="open-chat-dice"]').click();
- await page.locator('[data-act="roll"][data-sides="20"]').click();await page.locator('.dice-result').waitFor();
+ await page.locator('#chat-dice-dialog [data-act="roll"]').click();await page.locator('.dice-result').waitFor();
  await page.locator('[data-act="close-chat-dice"]').click();await shot('chat');
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
@@ -112,7 +116,23 @@ try{
  await page.locator('[data-act="open"]').click();await sheet('actions');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('actions');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
+ // Opening a multiclass character shows every class both in the persistent
+ // header and directly below the name on the Info tab.
+ await globalPage('library');
+ await page.evaluate(async()=>{
+   const {listCreatures,openCreatureEditor}=await import('/creatures.js');
+   const id=(await listCreatures())[0].creature.id;
+   const editor=await openCreatureEditor(id);
+   await editor.update({class:'Guerriero',classes:[{name:'Guerriero',level:3},{name:'Mago',level:2}],level:5});
+   await editor.flush();
+ });
+ await page.locator('[data-act="open"]').click();
+ await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
+ assert.match(await page.locator('#creature-classes').textContent(),/Guerriero 3 · Mago 2/);
+ assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
+ assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
+ assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),5);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 9 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
  console.log('Screenshots: '+fileURLToPath(artifacts));

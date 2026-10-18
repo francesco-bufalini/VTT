@@ -1,5 +1,5 @@
 // Render local/offline calculations; no desktop sessions or API calls.
-import {ABILITIES,SKILLS} from "./sheet_rules.js";
+import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {itemKind,resolveOwnedItem,requiresAttunement} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
@@ -320,12 +320,25 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  if(sheet==='info'){
   const identity=panelNamed('Identità');bind('identity',identity);
-  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2><p>'+esc([c.species,c.subrace,c.class,c.level?'Liv. '+c.level:''].filter(Boolean).join(' · '))+'</p><small>'+esc(c.background||'Background da scegliere')+'</small>'+edit('identity','Modifica identità','settings')+'</section>';
+  const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
+  const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+   '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
+   (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
+   '<small>'+esc(c.background||'Background da scegliere')+'</small>'+edit('identity','Modifica identità','settings')+'</section>';
   html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
-   const sub=title==='Fisico'?[c.size_name,(d.values?.speed??30)+' ft',c.default_miniature_id?'Miniatura assegnata':'Scegli la miniatura'].filter(Boolean).join(' · '):title.includes('Classi')?[c.class,c.subclass,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
-   html+=go('panel:'+i,title,title==='Fisico'?'movement':title==='Talenti'?'spark':'book',sub||'Apri dettagli e modifica');
+   const sub=title==='Aspetto'?
+    ['Specie '+(c.species||'da definire'),c.subrace?'Sottorazza '+c.subrace:'',
+     'Taglia '+(c.size_name||'Medium'),(d.values?.speed??30)+' ft di camminata',
+     c.default_miniature_id?'Miniatura base assegnata':'Miniatura base da assegnare',
+     c.current_miniature_id&&c.current_miniature_id!==c.default_miniature_id?'Forma alternativa attiva':''].filter(Boolean).join(' · '):
+    title.includes('Classi')?
+     [classNames||'Nessuna classe assegnata',c.subclass?'Sottoclasse '+c.subclass:'',
+      'Livello totale '+totalClassLevel,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
+    title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
+   html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub||'Apri dettagli e modifica');
   }
  }
  if(sheet==='actions'){
