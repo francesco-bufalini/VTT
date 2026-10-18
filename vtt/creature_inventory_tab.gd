@@ -393,6 +393,9 @@ func configure_touch_layout() -> void:
 	# Mobile retains the established touch list and controls, not the wide desktop tables.
 	if _desktop_ui != null:
 		_desktop_ui.hide()
+		# Retain touch-specific independent list/description scrolling.
+		_details.mouse_force_pass_scroll_events = false
+		_catalog_list.mouse_force_pass_scroll_events = false
 		if _details.get_parent() == _desktop_ui:
 			_desktop_ui.remove_child(_details)
 			objects_page.add_child(_details)
