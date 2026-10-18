@@ -49,6 +49,14 @@ function change(selector,value){
   elem.value=value;
   elem.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
 }
+async function changeScore(ability,value){
+  click('[data-act="edit-score"][data-ability-key="'+ability+'"]');
+  await until(()=>document.querySelector('#sheet-score-input'));
+  const input=document.querySelector('#sheet-score-input');
+  input.value=String(value);
+  click('[data-act="save-score"]');
+  await until(()=>!document.querySelector('#sheet-score-dialog'));
+}
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
   assert.match(document.querySelector("#app").textContent,/Le tue creature/);
@@ -366,8 +374,8 @@ test("native Android section order and editable sheet data",async()=>{
   assert.equal(document.querySelector('[data-field="current_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="type"]'),null);
   click('[data-sheet="stats"]');
-  await until(()=>document.querySelector('[data-ability="str"]'));
-  change('[data-ability="str"]',"14");
+  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
+  await changeScore('str',14);
   click('[data-sheet="conditions"]');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   document.querySelector('[data-condition="poisoned"]').click();
@@ -544,9 +552,9 @@ test("sheet derived values update locally and never call a desktop calculation A
   const initial=document.querySelector('[data-local-sheet-calculations]').textContent;
   assert.doesNotMatch(initial,/Calcoli e copertura della scheda/);
   click('[data-sheet="stats"]');
-  await until(()=>document.querySelector('[data-ability="dex"]'));
+  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
-  change('[data-ability="dex"]',"16");
+  await changeScore('dex',16);
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("+3"));
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("Classe armatura"));
@@ -606,7 +614,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="slots-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
  click('[data-sheet="stats"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- change('[data-ability="dex"]','18');
+ await changeScore('dex',18);
  await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
  assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
  click('[data-act="edit-bonus"][data-target="skill:stealth"]');
