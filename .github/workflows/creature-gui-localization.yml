@@ -5,6 +5,9 @@ on:
     paths:
       - "vtt/creature_gui_locale.gd"
       - "vtt/creature_area.gd"
+      - "vtt/creature_*.gd"
+      - "vtt/spell_selection_dialog.gd"
+      - "scripts/check_creature_gui_localization.py"
       - "tests/test_creature_gui_locale.gd"
       - ".github/workflows/creature-gui-localization.yml"
   push:
@@ -12,6 +15,9 @@ on:
     paths:
       - "vtt/creature_gui_locale.gd"
       - "vtt/creature_area.gd"
+      - "vtt/creature_*.gd"
+      - "vtt/spell_selection_dialog.gd"
+      - "scripts/check_creature_gui_localization.py"
       - "tests/test_creature_gui_locale.gd"
   workflow_dispatch:
 
@@ -25,8 +31,11 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /project.godot
-            /vtt/creature_gui_locale.gd
+            /vtt/*.gd
+            /scripts/check_creature_gui_localization.py
             /tests/test_creature_gui_locale.gd
+      - name: Audit hardcoded creature GUI strings
+        run: python3 scripts/check_creature_gui_localization.py
       - name: Install Godot 4.7.2
         shell: bash
         run: |
