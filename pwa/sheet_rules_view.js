@@ -447,7 +447,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   html+=disclosure('others','Altre azioni','hand',
-   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
+   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>',false,
+   c.rules_version==='2024'?'':btn('Regole varianti','settings','data-act="action-variants"','<span class="sr-only">Regole varianti</span>'));
+  html+=disclosure('checks','Prove abilità','skill',
+   view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
   html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
   html+=disclosure('spells','Incantesimi','spell_cast',
@@ -482,27 +485,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
   html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
   const tools=panelNamed('Altre competenze');bind('tools',tools);html+=go('tools','Altre competenze','proficiency');
- }
- if(sheet==='actions'){
-  const times=[['action','Azione','weapon'],['bonus','Bonus','flight'],['reaction','Reazione','reaction'],['movement','Movimento','movement'],['free','Gratuite','hand']];
-  const active=view.actionTiming||'action';
-  html='<div class="play-timing" role="group" aria-label="Tipo di azione">'+times.map(([key,label,glyph])=>'<button type="button" data-act="sheet-timing" data-timing-choice="'+key+'" aria-pressed="'+(active===key)+'">'+icon(glyph)+'<span>'+label+'</span></button>').join('')+'</div>';
-  let rows='';
-  for(const section of bank.querySelectorAll('.action-economy-section')){
-   const timing=section.dataset.timing;
-   if(active!=='all'&&timing!==active)continue;
-   const entries=[...section.querySelectorAll(':scope > .action-economy-row')];
-   entries.forEach((node,i)=>{
-    const key='action:'+timing+':'+i;bind(key,node);
-    const title=node.querySelector('.action-economy-entry strong')?.textContent||'Azione';
-    const preview=node.querySelector('.action-economy-preview')?.textContent.trim();
-    const count=node.querySelectorAll('.action-tree > ol > li').length;
-    const glyph=node.querySelector('.action-economy-type-icon>.vtt-action-glyph,.action-group-label>.vtt-action-glyph')?.outerHTML||'';
-    rows+=go(key,title,glyph,count?count+' opzioni':preview||'Dettagli e utilizzo',count?'<span class="play-badge">'+count+'</span>':'');
-   });
-  }
-  html+=card(active==='all'?'Tutte le azioni':times.find(([key])=>key===active)?.[1]||'Azioni',rows||'<p class="play-empty">Nessuna opzione disponibile.</p>',proxy(bank.querySelector('[data-act="action-variants"]'),'Regole varianti','settings'));
-  html+=btn('Tutte le azioni','book','data-act="sheet-timing" data-timing-choice="all"');
  }
  if(sheet==='magic'){
   const tools=bank.querySelector('.magic-toolbar');bind('magic-tools',tools);
