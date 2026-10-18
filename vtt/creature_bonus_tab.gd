@@ -208,6 +208,7 @@ func _all_targets() -> Array[Dictionary]:
 		{"key": "hp", "name": "PF massimi"},
 		{"key": "second_max", "name": "PF seconda forma"},
 		{"key": "ac", "name": "Classe Armatura"},
+		{"key": "attunement_max", "name": "Sintonia · Numero massimo"},
 		{"key": "initiative", "name": "Iniziativa"},
 		{"key": "speed", "name": "Velocità · Camminata"},
 		{"key": "speed:climb", "name": "Velocità · Scalata"},
