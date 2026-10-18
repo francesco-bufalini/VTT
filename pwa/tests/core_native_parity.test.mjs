@@ -89,17 +89,25 @@ test("server-served JS paths contain every imported runtime module",()=>{
  assert.match(ui,/from\s+["']\.\/action_economy\.js/);
 });
 
-test("native-style panels expose baseline health and narrative editors",()=>{
- const c={kind:"character",name:"Arciere",abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
+test("native-style Info keeps derived identity and health editors without optional narrative details",()=>{
+ const c={kind:"character",name:"Arciere",species:"Elf",species_source:"PHB",
+   class:"Wizard",class_source:"PHB",classes:[
+     {name:"Wizard",source:"PHB",level:4},{name:"Fighter",source:"PHB",level:1}],
+   abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
  const field=(name,key,value,type="text")=>'<input data-field="'+key+'" value="'+(value??"")+'" type="'+type+'">';
  const area=(name,key)=>'<textarea data-field="'+key+'"></textarea>';
  const panel=(name,content)=>'<section>'+content+'</section>';
  const calculated={values:{},stats:{max_hp:5},automatic_bonuses:[],origins:[]};
- const options={field,area,panel,resources:"",equipment:"",armor:"",attacks:"",calculated};
+ const options={field,area,panel,resources:"",equipment:"",armor:"",attacks:"",calculated,
+   catalogs:{races:[{name:"Elf",source:"PHB"}]}};
  const info=nativeSection(c,"info",options);
  const battle=nativeSection(c,"battle",options);
- assert.match(info,/data-field="inspiration"/);
- assert.match(info,/data-field="appearance"/);
+ assert.match(info,/<dt>Tipo<\/dt><dd>Umanoide<\/dd>/);
+ assert.match(info,/Classi secondarie/);
+ assert.match(info,/data-native-list="classes" data-index="1"/);
+ assert.doesNotMatch(info,/data-native-list="classes" data-index="0"/);
+ assert.doesNotMatch(info,/data-field="(appearance|player_name|inspiration|notes)"/);
+ assert.doesNotMatch(info,/Aspetto, identità e personalità/);
  assert.match(battle,/data-field="death_save_successes"/);
  assert.match(battle,/data-field="death_save_failures"/);
  const spells=actionEntries({spells:[{id:"spell_1"}]},
