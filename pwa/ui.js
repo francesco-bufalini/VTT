@@ -767,6 +767,16 @@ function sessionView() {
   return html;
 }
 
+function openSessionDialog(dialog) {
+  if(!dialog)return;
+  if(typeof dialog.showModal==="function")dialog.showModal();
+  else dialog.setAttribute("open","");
+}
+function closeSessionDialog(dialog) {
+  if(!dialog)return;
+  if(typeof dialog.close==="function")dialog.close();
+  else dialog.removeAttribute("open");
+}
 function renderSessionIfIdle() {
   if(state.page!=="session")return;
   // A live poll must not close a modal or destroy a focused mobile editor.
@@ -830,7 +840,7 @@ async function reopenTokenEditor() {
   renderSessionIfIdle();
   const dialog=app.querySelector("#session-token-dialog");
   if(dialog){
-    dialog.showModal();
+    openSessionDialog(dialog);
     fillSessionSpells();
     if(app.querySelector("#token-mini-select")){
       try{await loadSessionMiniatures();fillSessionMiniatures();}
@@ -912,7 +922,7 @@ function startMap() {
     }
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
-    if(changed||recovered){
+    if(changed||recovered||!state.snapshotKey){
       renderSessionIfIdle();
       void refreshSessionSnapshot();
     }
@@ -1249,7 +1259,7 @@ async function handleField(target) {
 }
 async function refreshMapOnce() {
   const editing=Boolean(app.querySelector("#session-token-dialog[open]"));
-  if(editing)app.querySelector("#session-token-dialog")?.close();
+  if(editing)closeSessionDialog(app.querySelector("#session-token-dialog"));
   state.map=await map();
   if(state.page==="session"){
     renderSessionIfIdle();
@@ -1311,10 +1321,10 @@ async function handleAction(target){
   if(act==="open-place-token"){
     if(!state.map?.tokens?.length)throw Error("Serve almeno un token di riferimento sulla mappa.");
     const dialog=app.querySelector("#session-place-dialog");
-    if(dialog)dialog.showModal();
+    openSessionDialog(dialog);
     return;
   }
-  if(act==="close-place-dialog"){app.querySelector("#session-place-dialog")?.close();return;}
+  if(act==="close-place-dialog"){closeSessionDialog(app.querySelector("#session-place-dialog"));renderSessionIfIdle();return;}
   if(act==="edit-token"){
     const tokenId=String(target.dataset.id||"");
     if(!state.map?.tokens?.some(row=>row.id===tokenId))throw Error("Token non più presente.");
@@ -1324,7 +1334,7 @@ async function handleAction(target){
     await reopenTokenEditor();
     return;
   }
-  if(act==="close-token-dialog"){app.querySelector("#session-token-dialog")?.close();return;}
+  if(act==="close-token-dialog"){closeSessionDialog(app.querySelector("#session-token-dialog"));renderSessionIfIdle();return;}
   if(act==="apply-token-spell"||act==="remove-token-spell"){
     const spellId=act==="remove-token-spell"?String(target.dataset.spellId||""):
       String(app.querySelector("#token-spell-select")?.value||"");
@@ -1883,7 +1893,7 @@ async function handleAction(target){
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
-    app.querySelector("#session-place-dialog")?.close();
+    closeSessionDialog(app.querySelector("#session-place-dialog"));
     state.tokenId=result.token_id;
     await refreshMapOnce();return;
   }
