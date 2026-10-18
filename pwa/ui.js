@@ -1899,7 +1899,7 @@ async function handleAction(target){
     if(row)Object.assign(row,{group:'spell',name:'Incantesimo · '+spell.name,applied:true,disabled:false});
     else origins.push({id:originId,group:'spell',name:'Incantesimo · '+spell.name,applied:true,disabled:false,automatic:false});
     await patch({proficiency_origins:origins,origin_enabled:{...(c.origin_enabled||{}),[originId]:true}});
-    await render();return;
+    state.sheetPopup='';await render();return;
   }
   if(act==='condition-remove-spell'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
@@ -1932,7 +1932,7 @@ async function handleAction(target){
       changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
       changes.concentrating_spell_id='';
     }
-    await patch(changes);await render();return;
+    await patch(changes);state.sheetPopup='';await render();return;
   }
   if(act==='condition-remove-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
