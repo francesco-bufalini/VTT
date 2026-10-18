@@ -125,7 +125,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   });
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-field="party_id"]'));
-  const pendingNote=document.querySelector('[data-field="background_personality"]');
+  const pendingNote=document.querySelector('[data-field="party_id"]');
   pendingNote.value="Gruppo digitato e subito chiuso";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   // No change/blur or delay: a fast mobile tap must flush the debounce.
@@ -138,7 +138,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(persisted.data.current_hp,17);
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],0,"Il riposo lungo ripristina gli slot di classe");
-  assert.equal(persisted.data.party_id,"Nota digitata e subito chiusa");
+  assert.equal(persisted.data.party_id,"Gruppo digitato e subito chiuso");
 });
 test("prototype sample creature is editable, private and persists offline",async()=>{
   click('[data-nav="library"]');
