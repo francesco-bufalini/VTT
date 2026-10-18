@@ -1414,12 +1414,15 @@ func _set_attunement(value: bool) -> void:
 		for item: Dictionary in _inventory:
 			if bool(item.get("attuned", false)) and ItemRules.requires_attunement(_catalog_entry(item)):
 				occupied += 1
-		if occupied >= maxi(0, attunement_max_base() + _attunement_limit_bonus):
+		if occupied >= attunement_capacity():
 			if _on_status.is_valid():
 				_on_status.call("Limite di sintonia raggiunto.")
 			_refresh_inventory(index)
 			return
 	_inventory[index]["attuned"] = value
+	var category: String = ItemRules.kind(_catalog_entry(_inventory[index]))
+	if category not in ["weapon", "armor", "shield", "document"]:
+		_inventory[index]["equipped"] = value
 	_refresh_inventory(index)
 	_publish()
 
@@ -1462,6 +1465,13 @@ func attunement_max_base() -> int:
 	if _desktop_ui != null and _desktop_ui.visible:
 		return int(_desktop_ui.call("maximum_base"))
 	return _attunement_max_base
+
+
+func attunement_capacity() -> int:
+	var record: Dictionary = _infusion_record.duplicate(true)
+	record["inventory"] = _inventory.duplicate(true)
+	record["attunement_max_base"] = attunement_max_base()
+	return maxi(0, BonusRules.value(record, "attunement_max"))
 
 
 func _publish_migration(expected_creature_id: String) -> void:
