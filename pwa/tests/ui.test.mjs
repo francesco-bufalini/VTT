@@ -268,7 +268,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.ok(condition,"Token popup must expose native conditions");
   assert.ok(condition.closest('.condition-toggle-grid'),'Token popup must share the condition grid');
   assert.equal(condition.closest('label').textContent.trim(),'Prono','Popup uses localised condition labels');
-  assert.equal(document.querySelectorAll('#session-token-dialog .condition-toggle').length,19);
+  assert.equal(document.querySelectorAll('#session-token-dialog .condition-toggle').length,20);
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
@@ -417,7 +417,7 @@ test("native Android section order and editable sheet data",async()=>{
   await changeScore('str',14);
   click('[data-sheet="conditions"]');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
-  assert.equal(document.querySelectorAll('.condition-sheet-panel .condition-toggle').length,19);
+  assert.equal(document.querySelectorAll('.condition-sheet-panel .condition-toggle').length,20);
   assert.equal(document.querySelector('[data-condition="prone"]').closest('label').textContent.trim(),'Prono');
   assert.ok(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'));
   assert.equal(document.querySelector('[data-condition-count]').textContent,'0');
