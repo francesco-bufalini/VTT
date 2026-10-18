@@ -1177,6 +1177,8 @@ func set_weapon_size_at(index: int, choice: int) -> void:
 	# Preserve every other weapon copy when editing one from an equipped slot.
 	if int(row.get("quantity", 1)) > 1:
 		_inventory[index]["quantity"] = int(row["quantity"]) - 1
+		# Keep the equipped instance in the new single-item stack.
+		_inventory[index]["equipped_slots"] = []
 		row["quantity"] = 1
 		index += 1
 		_inventory.insert(index, row)
@@ -1265,7 +1267,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
 		var item_index: int = _inventory_list.item_count - 1
 		var category: String = ItemRules.kind(_catalog_entry(item))
-		if category not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(_catalog_entry(item)):
+		if category not in ["weapon", "armor", "shield", "document"] and String(_catalog_entry(item).get("type", "")).split("|")[0].to_upper() != "SC":
 			_inventory_list.set_item_icon(item_index, get_theme_icon("checked" if bool(item.get("equipped", false)) else "unchecked", "CheckBox"))
 			_inventory_list.set_item_icon_modulate(item_index, Color(0.79, 0.92, 0.97))
 			_inventory_list.set_item_tooltip(item_index, "Clicca sulla casella a sinistra per equipaggiare o riporre l’oggetto.")
@@ -1393,7 +1395,7 @@ func _update_equip_buttons() -> void:
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
 	var kind: String = ItemRules.kind(entry) if present else ""
-	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry)
+	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"]
 	_generic_equip.set_pressed_no_signal(present and bool(_inventory[index].get("equipped", false)))
 	_generic_equip.tooltip_text = (
 		"Armi, scudi e armature si equipaggiano in Statistiche."
@@ -1449,7 +1451,7 @@ func _set_generic_equipment(value: bool) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
-	if kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
+	if kind in ["weapon", "armor", "shield", "document"]:
 		_generic_equip.set_pressed_no_signal(bool(_inventory[index].get("equipped", false)))
 		return
 	if bool(_inventory[index].get("equipped", false)) == value:
