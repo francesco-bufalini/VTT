@@ -1,0 +1,471 @@
+extends VBoxContainer
+# Desktop-only presentation. The owning inventory tab remains the single
+# authority for saved item state, equipped slots, infusions and notifications.
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const DocumentStore = preload("res://vtt/document_homebrew.gd")
+const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
+
+const QUANTITY_COLUMN := 4
+const MINUS_BUTTON := 100
+const PLUS_BUTTON := 101
+
+var _tab: Node
+var _owned_tree: Tree
+var _scroll_tree: Tree
+var _attunement_tree: Tree
+var _main: OptionButton
+var _off: OptionButton
+var _armor: OptionButton
+var _maximum: SpinBox
+var _maximum_label: Label
+var _slot_indices: Dictionary = {}
+var _record: Dictionary = {}
+var _minus_icon: Texture2D
+var _plus_icon: Texture2D
+var _updating := false
+
+
+func _t(it: String, en: String) -> String:
+	return en if String(_tab.get("_gui_language")) == "en" else it
+
+
+func setup(tab: Node, description: Control) -> void:
+	_tab = tab
+	add_theme_constant_override("separation", 8)
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_minus_icon = _symbol_texture(false)
+	_plus_icon = _symbol_texture(true)
+	var heading := Label.new()
+	heading.text = _t("Oggetti posseduti", "Owned items")
+	heading.add_theme_font_size_override("font_size", 15)
+	add_child(heading)
+	_owned_tree = _make_tree(["", "Valore", "Peso", "Rarità", "Quantità", "Fonte", "Proprietà / CA", "Nome"], 185)
+	_owned_tree.columns = 8
+	_owned_tree.set_column_expand(7, true)
+	for column: int in range(7):
+		_owned_tree.set_column_expand(column, false)
+	for column: int in range(8):
+		_owned_tree.set_column_custom_minimum_width(column, [35, 95, 75, 115, 135, 65, 180, 190][column])
+	_owned_tree.item_selected.connect(_on_owned_selected)
+	_owned_tree.item_activated.connect(_on_owned_activated)
+	_owned_tree.item_edited.connect(_on_owned_edited)
+	_owned_tree.button_clicked.connect(_on_quantity_button)
+	add_child(_owned_tree)
+
+	var scroll_heading := Label.new()
+	scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
+	scroll_heading.add_theme_font_size_override("font_size", 15)
+	add_child(scroll_heading)
+	_scroll_tree = _make_tree(["Quantità", "Livello", "Incantesimo"], 100)
+	_scroll_tree.columns = 3
+	_scroll_tree.set_column_expand(0, false)
+	_scroll_tree.set_column_expand(1, false)
+	_scroll_tree.set_column_custom_minimum_width(0, 125)
+	_scroll_tree.set_column_custom_minimum_width(1, 75)
+	_scroll_tree.item_selected.connect(_on_scroll_selected)
+	_scroll_tree.item_edited.connect(_on_scroll_edited)
+	_scroll_tree.button_clicked.connect(_on_quantity_button)
+	add_child(_scroll_tree)
+
+	var description_parent: Node = description.get_parent()
+	description_parent.remove_child(description)
+	add_child(description)
+	var equipment_heading := Label.new()
+	equipment_heading.text = _t("Equipaggiamento", "Equipment")
+	equipment_heading.add_theme_font_size_override("font_size", 15)
+	add_child(equipment_heading)
+	var triangle := VBoxContainer.new()
+	triangle.add_theme_constant_override("separation", 5)
+	add_child(triangle)
+	var hands := HBoxContainer.new()
+	hands.add_theme_constant_override("separation", 12)
+	triangle.add_child(hands)
+	_main = _slot_picker(hands, _t("Mano principale", "Main hand"), "main")
+	_off = _slot_picker(hands, _t("Mano secondaria", "Off hand"), "off")
+	var armor_row := HBoxContainer.new()
+	armor_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	triangle.add_child(armor_row)
+	_armor = _slot_picker(armor_row, _t("Armatura", "Armor"), "body")
+
+	var attune_heading := HBoxContainer.new()
+	add_child(attune_heading)
+	var attune_label := Label.new()
+	attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
+	attune_label.add_theme_font_size_override("font_size", 15)
+	attune_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	attune_heading.add_child(attune_label)
+	_maximum_label = Label.new()
+	_maximum_label.text = _t("Massimo", "Maximum")
+	attune_heading.add_child(_maximum_label)
+	_maximum = SpinBox.new()
+	_maximum.min_value = 0
+	_maximum.max_value = 99
+	_maximum.step = 1
+	_maximum.rounded = true
+	_maximum.custom_minimum_size.x = 65
+	_maximum.value_changed.connect(_on_maximum_changed)
+	attune_heading.add_child(_maximum)
+	_attunement_tree = _make_tree([_t("Sintonia", "Attuned"), _t("Oggetto", "Item")], 100)
+	_attunement_tree.columns = 2
+	_attunement_tree.set_column_expand(0, false)
+	_attunement_tree.set_column_custom_minimum_width(0, 95)
+	_attunement_tree.item_edited.connect(_on_attunement_edited)
+	_attunement_tree.item_selected.connect(_on_attunement_selected)
+	add_child(_attunement_tree)
+
+
+func _make_tree(captions: Array, height: float) -> Tree:
+	var tree := Tree.new()
+	tree.hide_root = true
+	tree.hide_folding = true
+	tree.columns = captions.size()
+	tree.column_titles_visible = true
+	tree.select_mode = Tree.SELECT_ROW
+	tree.custom_minimum_size.y = height
+	tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tree.mouse_force_pass_scroll_events = false
+	for column: int in range(captions.size()):
+		tree.set_column_title(column, _t(String(captions[column]), String(captions[column])))
+	return tree
+
+
+func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionButton:
+	var group := VBoxContainer.new()
+	group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(group)
+	var caption := Label.new()
+	caption.text = label
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	group.add_child(caption)
+	var picker := OptionButton.new()
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picker.custom_minimum_size.x = 200
+	picker.clip_text = true
+	picker.item_selected.connect(_on_slot_selected.bind(slot))
+	group.add_child(picker)
+	return picker
+
+
+func _symbol_texture(plus: bool) -> Texture2D:
+	var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	for x: int in range(3, 13):
+		for y: int in range(7, 9):
+			img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
+	if plus:
+		for x: int in range(7, 9):
+			for y: int in range(3, 13):
+				img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
+	return ImageTexture.create_from_image(img)
+
+
+func load_record(record: Dictionary) -> void:
+	_record = record.duplicate(true)
+	refresh()
+
+
+func maximum_base() -> int:
+	return int(_maximum.value) if _maximum != null else 3
+
+
+func _on_maximum_changed(value: float) -> void:
+	if _updating:
+		return
+	_record["attunement_max_base"] = int(value)
+	_tab.call("_publish")
+	refresh()
+
+
+func _rows() -> Array:
+	var raw: Variant = _tab.get("_inventory")
+	return raw if raw is Array else []
+
+
+func _definition(owned: Dictionary) -> Dictionary:
+	return _tab.call("_catalog_entry", owned)
+
+
+func _is_spell_scroll(owned: Dictionary, entry: Dictionary) -> bool:
+	if DocumentStore.is_document(owned):
+		return false
+	var kind_code := String(entry.get("type", "")).split("|")[0].to_upper()
+	var name := String(entry.get("name", owned.get("name", ""))).to_lower()
+	return kind_code == "SC" or name.contains("spell scroll") or name.contains("pergamena di incantesimo")
+
+
+func _spell_label(owned: Dictionary, entry: Dictionary) -> String:
+	var spell_name := String(entry.get("spell_name", entry.get("spellName", entry.get("spell", ""))))
+	if not spell_name.is_empty():
+		return spell_name
+	var name := String(owned.get("name", entry.get("name", "")))
+	return name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges(" (-)")
+
+
+func _spell_level(entry: Dictionary) -> String:
+	var raw: Variant = entry.get("spell_level", entry.get("spellLevel", entry.get("level", "")))
+	if raw != null and str(raw) != "":
+		return str(raw)
+	var name := String(entry.get("name", ""))
+	var regex := RegEx.create_from_string("(\\d+)(?:st|nd|rd|th|°|º)?[- ]level")
+	var match_result := regex.search(name.to_lower())
+	return match_result.get_string(1) if match_result != null else "—"
+
+
+func _formatted_number(value: float) -> String:
+	return str(int(value)) if is_equal_approx(value, float(int(value))) else "%.2f" % value
+
+
+func _value_total(entry: Dictionary, quantity: int) -> String:
+	var raw: Variant = entry.get("value_gp", null)
+	if raw != null and (raw is float or raw is int):
+		return _formatted_number(float(raw) * quantity) + " mo"
+	raw = entry.get("value", null)
+	if raw is float or raw is int:
+		return _formatted_number(float(raw) * quantity / 100.0) + " mo"
+	return "—"
+
+
+func _weight_total(entry: Dictionary, quantity: int) -> String:
+	var raw: Variant = entry.get("weight", null)
+	if raw is float or raw is int:
+		return _formatted_number(float(raw) * quantity) + " lb"
+	return "—"
+
+
+func _characteristic(entry: Dictionary) -> String:
+	var kind: String = ItemRules.kind(entry)
+	if kind == "weapon":
+		var properties: Variant = entry.get("properties", [])
+		if properties is Array:
+			var names := PackedStringArray()
+			for property: Variant in properties:
+				names.append(String(property))
+			return ", ".join(names) if not names.is_empty() else "—"
+		return str(properties) if str(properties) != "" else "—"
+	if kind == "shield":
+		return "CA +%s" % str(entry.get("ac", 2))
+	if kind == "armor":
+		var base: String = str(entry.get("ac", 10))
+		match String(entry.get("type", "")).split("|")[0].to_upper():
+			"LA": return "CA " + base + " + DES"
+			"MA": return "CA " + base + " + min(DES, 2)"
+			"HA": return "CA " + base
+		return "CA " + base
+	return "—"
+
+
+func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) -> void:
+	cell.set_cell_mode(column, TreeItem.CELL_MODE_RANGE)
+	cell.set_range_config(column, 1, 99999, 1)
+	cell.set_range(column, quantity)
+	cell.set_editable(column, not locked)
+	cell.add_button(column, _minus_icon, MINUS_BUTTON, locked or quantity <= 1, _t("Diminuisci", "Decrease"))
+	cell.add_button(column, _plus_icon, PLUS_BUTTON, locked or quantity >= 99999, _t("Aumenta", "Increase"))
+
+
+func refresh() -> void:
+	if _tab == null or _owned_tree == null or not is_inside_tree():
+		return
+	_updating = true
+	var selected_index: int = int(_tab.call("_selected_inventory_index"))
+	var owned_root := _owned_tree.create_item() if _owned_tree.get_root() == null else _owned_tree.get_root()
+	var scroll_root := _scroll_tree.create_item() if _scroll_tree.get_root() == null else _scroll_tree.get_root()
+	var attune_root := _attunement_tree.create_item() if _attunement_tree.get_root() == null else _attunement_tree.get_root()
+	owned_root.free_children()
+	scroll_root.free_children()
+	attune_root.free_children()
+	var items := _rows()
+	var attuned_count := 0
+	for index: int in range(items.size()):
+		if not items[index] is Dictionary:
+			continue
+		var owned: Dictionary = items[index]
+		var entry: Dictionary = _definition(owned)
+		var quantity: int = maxi(1, int(owned.get("quantity", 1)))
+		var is_scroll: bool = _is_spell_scroll(owned, entry)
+		var row: TreeItem = (scroll_root if is_scroll else owned_root).create_child()
+		row.set_metadata(0, index)
+		var locked: bool = DocumentStore.is_document(owned) or (owned.get("infusion", {}) is Dictionary and not (owned.get("infusion", {}) as Dictionary).is_empty())
+		if is_scroll:
+			_quantity_cell(row, 0, quantity, locked)
+			row.set_text(1, _spell_level(entry))
+			row.set_text(2, _spell_label(owned, entry))
+		else:
+			var kind: String = ItemRules.kind(entry)
+			var slots: Array = ItemRules.slots(owned)
+			var equipped := bool(owned.get("equipped", false))
+			var icon := ""
+			if "main" in slots:
+				icon += "⚔"
+			if "off" in slots:
+				icon += "🛡"
+			if "body" in slots:
+				icon += "▣"
+			if kind not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(entry):
+				icon = "✓" if equipped else ""
+				row.set_tooltip_text(0, _t("Doppio clic per equipaggiare o riporre", "Double-click to equip or stow"))
+			row.set_text(0, icon)
+			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
+			row.set_text(1, _value_total(entry, quantity))
+			row.set_text(2, _weight_total(entry, quantity))
+			row.set_text(3, String(entry.get("rarity", "—")))
+			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
+			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
+			row.set_text(6, _characteristic(entry))
+			row.set_text(7, String(owned.get("name", "")))
+		if index == selected_index:
+			row.select(0)
+		if ItemRules.requires_attunement(entry):
+			var attune_row := attune_root.create_child()
+			attune_row.set_metadata(0, index)
+			attune_row.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
+			attune_row.set_editable(0, true)
+			var attuned: bool = bool(owned.get("attuned", false))
+			attune_row.set_checked(0, attuned)
+			attune_row.set_text(1, String(owned.get("name", "")))
+			if attuned:
+				attuned_count += 1
+				for col: int in range(2):
+					attune_row.set_custom_bg_color(col, Color(0.22, 0.38, 0.29, 0.62))
+	var bonus: int = BonusRules.bonus(_record, "attunement_max")
+	var maximum: int = maxi(0, int(_record.get("attunement_max_base", 3)) + bonus)
+	_maximum.set_value_no_signal(int(_record.get("attunement_max_base", 3)))
+	_maximum.tooltip_text = _t("Base modificabile; bonus dei privilegi: %+d" % bonus, "Editable base; feature bonuses: %+d" % bonus)
+	_maximum_label.text = _t("Sintonia %d/%d · Base" % [attuned_count, maximum], "Attuned %d/%d · Base" % [attuned_count, maximum])
+	_rebuild_pickers(items)
+	_updating = false
+
+
+func _rebuild_pickers(items: Array) -> void:
+	for slot: String in ["main", "off", "body"]:
+		var picker: OptionButton = _main if slot == "main" else (_off if slot == "off" else _armor)
+		picker.clear()
+		_slot_indices[slot] = [-1]
+		picker.add_item(_t("Nessuno", "None"))
+		var selected := 0
+		var main_owned: Dictionary = ItemRules.occupying(items, "main")
+		var locked: bool = slot == "off" and not main_owned.is_empty() and (
+			ItemRules.is_two_handed(_definition(main_owned)) or bool(_record.get("hand_grip_two_handed", false)))
+		for index: int in range(items.size()):
+			if not items[index] is Dictionary:
+				continue
+			var owned: Dictionary = items[index]
+			var entry: Dictionary = _definition(owned)
+			if int(owned.get("quantity", 0)) <= 0 or not ItemRules.valid_slot(entry, slot):
+				continue
+			if slot == "main" and ItemRules.kind(entry) == "shield":
+				continue
+			picker.add_item(String(owned.get("name", "")))
+			(_slot_indices[slot] as Array).append(index)
+			if slot in ItemRules.slots(owned):
+				selected = picker.item_count - 1
+		picker.select(selected)
+		picker.disabled = locked
+		if locked:
+			picker.tooltip_text = _t("La mano è occupata da un'arma impugnata a due mani", "Hand occupied by a two-handed weapon")
+		else:
+			picker.tooltip_text = ""
+
+
+func _select_saved(index: int) -> void:
+	var list: ItemList = _tab.get("_inventory_list")
+	list.select(index)
+	_tab.call("_on_inventory_selected", index)
+
+
+func _on_owned_selected() -> void:
+	if _updating:
+		return
+	var selected: TreeItem = _owned_tree.get_selected()
+	if selected != null:
+		_select_saved(int(selected.get_metadata(0)))
+
+
+func _on_scroll_selected() -> void:
+	if _updating:
+		return
+	var selected: TreeItem = _scroll_tree.get_selected()
+	if selected != null:
+		_select_saved(int(selected.get_metadata(0)))
+
+
+func _on_attunement_selected() -> void:
+	if _updating:
+		return
+	var selected: TreeItem = _attunement_tree.get_selected()
+	if selected != null:
+		_select_saved(int(selected.get_metadata(0)))
+
+
+func _on_owned_activated() -> void:
+	if _updating or _owned_tree.get_selected_column() != 0:
+		return
+	var selected: TreeItem = _owned_tree.get_selected()
+	if selected == null:
+		return
+	var index: int = int(selected.get_metadata(0))
+	var owned: Dictionary = _rows()[index]
+	var entry: Dictionary = _definition(owned)
+	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry):
+		return
+	_select_saved(index)
+	_tab.call("_set_generic_equipment", not bool(owned.get("equipped", false)))
+
+
+func _update_quantity(index: int, requested: int) -> void:
+	var rows := _rows()
+	if index < 0 or index >= rows.size():
+		return
+	_select_saved(index)
+	var spinner: SpinBox = _tab.get("_quantity")
+	spinner.set_value_no_signal(int(rows[index].get("quantity", 1)))
+	_tab.call("_on_quantity_changed", float(clampi(requested, 1, 99999)))
+	refresh()
+
+
+func _on_quantity_button(item: TreeItem, _column: int, button_id: int, _mouse_button: int) -> void:
+	if _updating or button_id not in [MINUS_BUTTON, PLUS_BUTTON]:
+		return
+	var index: int = int(item.get_metadata(0))
+	var quantity: int = int(_rows()[index].get("quantity", 1))
+	_update_quantity(index, quantity + (1 if button_id == PLUS_BUTTON else -1))
+
+
+func _on_owned_edited() -> void:
+	if _updating or _owned_tree.get_edited_column() != QUANTITY_COLUMN:
+		return
+	var row: TreeItem = _owned_tree.get_edited()
+	if row != null:
+		_update_quantity(int(row.get_metadata(0)), int(row.get_range(QUANTITY_COLUMN)))
+
+
+func _on_scroll_edited() -> void:
+	if _updating or _scroll_tree.get_edited_column() != 0:
+		return
+	var row: TreeItem = _scroll_tree.get_edited()
+	if row != null:
+		_update_quantity(int(row.get_metadata(0)), int(row.get_range(0)))
+
+
+func _on_attunement_edited() -> void:
+	if _updating or _attunement_tree.get_edited_column() != 0:
+		return
+	var row: TreeItem = _attunement_tree.get_edited()
+	if row == null:
+		return
+	_select_saved(int(row.get_metadata(0)))
+	_tab.call("_set_attunement", row.is_checked(0))
+
+
+func _on_slot_selected(choice: int, slot: String) -> void:
+	if _updating:
+		return
+	var indices: Array = _slot_indices.get(slot, [])
+	if choice < 0 or choice >= indices.size():
+		return
+	var index: int = int(indices[choice])
+	if index < 0:
+		_tab.call("_clear_slot", slot)
+	else:
+		_select_saved(index)
+		_tab.call("_equip_selected", slot)
