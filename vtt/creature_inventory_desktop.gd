@@ -104,6 +104,8 @@ func setup(tab: Node, description: Control) -> void:
 	_scroll_tree.set_column_custom_minimum_width(1, 58)
 	_scroll_tree.scroll_vertical_enabled = false
 	_scroll_tree.scroll_horizontal_enabled = false
+	# No inner scrolling: propagate wheel and pan gestures to the sheet.
+	_scroll_tree.mouse_force_pass_scroll_events = true
 	_scroll_tree.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_scroll_tree.item_selected.connect(_on_scroll_selected)
 	_scroll_tree.gui_input.connect(_on_scroll_mouse_event)
@@ -172,6 +174,8 @@ func setup(tab: Node, description: Control) -> void:
 	_attunement_tree.set_column_custom_minimum_width(0, 74)
 	_attunement_tree.scroll_vertical_enabled = false
 	_attunement_tree.scroll_horizontal_enabled = false
+	# No inner scrolling: propagate wheel and pan gestures to the sheet.
+	_attunement_tree.mouse_force_pass_scroll_events = true
 	_attunement_tree.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_attunement_tree.item_edited.connect(_on_attunement_edited)
 	_attunement_tree.item_selected.connect(_on_attunement_selected)
