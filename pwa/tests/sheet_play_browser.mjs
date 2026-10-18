@@ -135,7 +135,7 @@ try{
  assert(!String(await inlineClass.textContent()).includes(' / '));
  await inlineClass.locator('[data-act="sheet-context"]').click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
- assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\\s\\S]*Attivazione[\\s\\S]*Costo/);
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
  assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
