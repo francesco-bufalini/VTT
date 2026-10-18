@@ -31,28 +31,28 @@ UI_SOURCES = (
 )
 STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
 UI_EXPRESSION = re.compile(
-    r"(?:\\.(?:text|placeholder_text|tooltip_text|title|dialog_text|"
-    r"ok_button_text|cancel_button_text)\\s*=|"
-    r"\\.(?:add_item|set_item_text|set_tab_title|set_text|set_tooltip)\\(|"
-    r"\\b(?:_label|_column|_heading|_info_panel|_physics_field|"
-    r"_add_sheet_tab|_add_stat_box|_set_status|show_message)\\(|"
-    r"EditorUI\\.popup_form\\()"
+    r"(?:\.(?:text|placeholder_text|tooltip_text|title|dialog_text|"
+    r"ok_button_text|cancel_button_text)\s*=|"
+    r"\.(?:add_item|set_item_text|set_tab_title|set_text|set_tooltip)\(|"
+    r"\b(?:_label|_column|_heading|_info_panel|_physics_field|"
+    r"_add_sheet_tab|_add_stat_box|_set_status|show_message)\(|"
+    r"EditorUI\.popup_form\()"
 )
 ITALIAN_UI = re.compile(
     r"[àèéìòùÀÈÉÌÒÙ]|"
-    r"\\b(?:Nessun|Nessuna|Mostra|Cerca|Scegli|Seleziona|Razza|Classe|"
+    r"\b(?:Nessun|Nessuna|Mostra|Cerca|Scegli|Seleziona|Razza|Classe|"
     r"Sottorazza|Incantesimi|Salva|Cancella|Elimina|Aggiungi|Bonus|Usa|"
     r"Tiro|Attacco|Effetti|Lista|Scelta|Origine|Disponibili|Livello|"
     r"Azioni|Arma|Danno|Armi|Mano|Tratti|Attiva|Tutti|Risorse|Massimo|"
     r"Completa|Modifica|Caratteristiche|Competenze|Mancano|Prepara|"
     r"Altri|Altro|Disponibile|Lancia|Slot|Categoria|Punti|Dadi|Stato|"
-    r"Scelta|Trucchetti|razza|talento|privilegi|incantesimo|miniatura)\\b",
+    r"Scelta|Trucchetti|razza|talento|privilegi|incantesimo|miniatura)\b",
     re.IGNORECASE,
 )
 INTERNAL = re.compile(
-    r"^(?:res:|user:|https?:|[A-Za-z0-9_-]+\\.(?:gd|png|json|svg)|[a-z_]+)$"
+    r"^(?:res:|user:|https?:|[A-Za-z0-9_-]+\.(?:gd|png|json|svg)|[a-z_]+)$"
 )
-NUMERIC = re.compile(r"^\\s*(?:[a-z0-9_.-]+|%\\d*[ds]|\\d+)\\s*$")
+NUMERIC = re.compile(r"^\s*(?:[a-z0-9_.-]+|%\d*[ds]|\d+)\s*$")
 
 
 def decoded(quoted: str) -> str:
@@ -67,7 +67,7 @@ def localized_keys() -> set[str]:
     en = source.split("const EN: Dictionary = {", 1)[1].split("const IT: Dictionary", 1)[0]
     keys: set[str] = set()
     for line in en.splitlines():
-        match = re.match(r'^\\s*("(?:[^"\\]|\\.)*")\\s*:', line)
+        match = re.match(r'^\s*("(?:[^"\\]|\\.)*")\s*:', line)
         if match:
             keys.add(json.loads(match.group(1)))
     return keys
@@ -95,7 +95,7 @@ def main() -> int:
                     missing.append(f"{path}:{lineno}: {literal!r}")
     if missing:
         print("Missing explicit English UI translations:")
-        print("\\n".join(missing))
+        print("\n".join(missing))
         return 1
     print(f"PASS: {audited} hardcoded creature GUI literals audited across {len(UI_SOURCES)} source files")
     return 0
