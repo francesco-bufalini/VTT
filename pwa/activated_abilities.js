@@ -60,7 +60,7 @@ export function abilitiesForCreature(creature={},manifest=[],projection={}){
     const id=nativeIds.get(owner+"|"+norm(feature.name));
     const explicit=feature.action_type||feature.activation_type||feature.activation;
     if(!id&&!explicit)continue; // Never turn passive features into actions.
-    const action=timed.find(a=>id==="vtt_wild_shape"&&a.action_id==="wild_shape")||
+    const action=timed.find(a=>id==="vtt_wild_shape"&&a.rule_action_id==="wild_shape")||
       timed.find(a=>norm(a.feature)===norm(feature.name)&&
         (String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|"))||
          String(a.origin_id||"")===parts.slice(0,3).join("|")));
