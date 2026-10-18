@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {battleResourcePowers} from '../sheet_rules_view.js';
+import {battleResourcePowers,persistentBattleAbility} from '../sheet_rules_view.js';
 import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
@@ -374,4 +374,31 @@ test('Battle resources deduplicate Wild Shape in favor of catalog popup and grou
  assert.equal(rows.find(row=>row.id==='grant_light')?.key,'free');
  assert(!rows.some(row=>row.id==='grant_slot'));
  assert(rows.some(row=>row.name==='Aura senza costo'&&row.key==='free'));
+});
+
+test('Battle exposes free general actions in the no-cost resources group, not twice',()=>{
+ const data=battleActionPanels({rules_version:'2014'},{
+  skills:{athletics:2,perception:3},trackers:[]},[],[],catalog.actions);
+ assert(typeof data.freeActions==='string');
+ assert(data.freeActions.length>0,'There should be at least one free general action');
+ const free=doc(data.freeActions);
+ assert(free.querySelector('[data-attack-id]'));
+ const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
+ for(const id of ids)assert(!doc(data.others).querySelector('[data-attack-id="'+id+'"]'));
+});
+test('Only explicit persistent self-powers toggle, not conditions inflicted on targets',()=>{
+ assert(persistentBattleAbility({power:{id:'vtt_wild_shape'}}));
+ assert(persistentBattleAbility({classAction:{class_feature_id:'rage'}}));
+ assert(persistentBattleAbility({power:{effects:[{kind:'condition',target:'self',condition:'invisible'}]}}));
+ assert(!persistentBattleAbility({power:{effects:[{kind:'condition',target:'target',condition:'prone'}]}}));
+ assert(!persistentBattleAbility({classAction:{name:'Attacco ordinario'}}));
+});
+test('Resource-granted spells carry the casting time from actual spell metadata',()=>{
+ const data=battleResourcePowers({trackers:[{id:'focus',max:3,spent:0}],origin_spells:[
+  {id:'quick',spell_id:'bonus_spell',payment_mode:'tracker',tracker_id:'focus',tracker_cost:1},
+  {id:'ordinary',spell_id:'normal_spell',payment_mode:'free'}
+ ]},[],[],[{id:'bonus_spell',name:'Furia',time:[{unit:'bonus',number:1}]},
+  {id:'normal_spell',name:'Luce',time:[{unit:'action',number:1}]}]);
+ assert.equal(data.find(x=>x.id==='quick').timing,'bonus');
+ assert.equal(data.find(x=>x.id==='ordinary').timing,'action');
 });
