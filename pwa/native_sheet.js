@@ -358,13 +358,11 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    ['str','dex','con','int','wis','cha'].map(key=>
     '<div class="native-ability-row" role="row" data-ability-row="'+key+'">'+
     '<strong class="native-ability-name" role="rowheader">'+key.toUpperCase()+'</strong>'+
-    '<div class="native-ability-score" role="cell">'+read('ability:'+key,'Punteggio '+key.toUpperCase())+
-    '<details class="base-editor native-score-editor"><summary>Base</summary>'+
-    '<label><span class="sr-only">Punteggio base '+key.toUpperCase()+'</span>'+
-    '<input type="number" data-ability="'+key+'" aria-label="Punteggio base '+key.toUpperCase()+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+
+    '<div class="native-ability-score" role="cell">'+
+    formulaReadout(calculated,'ability:'+key,'Punteggio '+key.toUpperCase(),{scoreAbility:key})+'</div>'+
     '<div class="native-ability-value" role="cell">'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+'</div>'+
     '<div class="native-ability-value" role="cell">'+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)+'</div>'+
-    '</div>').join('')+'</div>'+nativeNote,'stats-abilities-panel')+
+    '</div>').join('')+'</div>','stats-abilities-panel')+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel')+
   panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
