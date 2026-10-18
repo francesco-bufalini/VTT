@@ -19,13 +19,13 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(attacks.querySelector('[data-target="attack_hit:shield:improvised:off:sh"]'));
  assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
  assert(attacks.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
- assert(attacks.textContent.includes('Disarmare'));
- assert(!attacks.textContent.includes('Scattare'));
+ assert(attacks.body.textContent.includes('Disarmare'));
+ assert(!attacks.body.textContent.includes('Scattare'));
  assert(movement.querySelector('[data-action-timing="action"]').textContent.includes('Scattare'));
  assert(movement.querySelector('[data-action-timing="bonus"]').textContent.includes('Travolgere'));
  assert(movement.querySelector('[data-action-timing="movement"]').textContent.includes('Muoversi'));
- assert(!movement.textContent.includes('Afferrare una creatura'));
- assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).textContent.includes('Disarmare'));
+ assert(!movement.body.textContent.includes('Afferrare una creatura'));
+ assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
 
 test('source catalogue keeps editions distinct and optional rules opt-in',()=>{
