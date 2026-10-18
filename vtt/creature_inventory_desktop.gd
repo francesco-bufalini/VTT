@@ -168,9 +168,9 @@ func refresh_captions() -> void:
 	for column: int in range(2):
 		_attunement_tree.set_column_title(column, [
 			_t("Sintonia", "Attuned"), _t("Oggetto", "Item")][column])
-	(_main.get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
-	(_off.get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
-	(_armor.get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
+	(_main.get_parent().get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
+	(_off.get_parent().get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
+	(_armor.get_parent().get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
 	_maximum_label.text = _t("Massimo", "Maximum")
 	_context_menu.set_item_text(0, _t("Rimuovi", "Remove"))
 	_context_menu.set_item_text(1, _t("Vedi nel bestiario", "View in bestiary"))
