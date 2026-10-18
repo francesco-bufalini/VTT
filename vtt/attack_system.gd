@@ -32,6 +32,11 @@ var _all_reaches_visible: bool = false
 var _all_reach_root: Node3D
 var _all_reach_elapsed: float = 0.0
 var _all_reach_signature: String = ""
+# Transient remote targeting geometry, keyed by type and stable token identity.
+var _shared_ranges: Dictionary = {}
+var _shared_root: Node3D
+var _shared_signature := ""
+var _shared_refresh_time := 0.0
 
 
 func setup(root: Node3D) -> void:
@@ -46,6 +51,9 @@ func setup(root: Node3D) -> void:
 	_all_reach_root = Node3D.new()
 	_all_reach_root.name = "AllCreatureReachSpheres"
 	add_child(_all_reach_root)
+	_shared_root = Node3D.new()
+	_shared_root.name = "RemoteRangePreviews"
+	add_child(_shared_root)
 	set_process(true)
 
 
@@ -76,6 +84,7 @@ func start_attack(
 	_range_normal_feet = limits.x
 	_range_long_feet = limits.y
 	_show_range(_range_normal_feet, _range_long_feet)
+	_publish_range_preview(true)
 	if _range_long_feet > _range_normal_feet:
 		_set_instruction(
 			"%s · gittata %d/%d ft (oltre %d ft: svantaggio) — scegli un token"
@@ -124,6 +133,8 @@ func preview_targets_in_range() -> Array[CharacterBody3D]:
 
 func cancel_attack(show_message: bool = true) -> void:
 	var was_targeting := _targeting
+	if was_targeting:
+		_publish_range_preview(false)
 	_targeting = false
 	_preview_only = false
 	_preview_selected_targets.clear()
@@ -185,6 +196,15 @@ func _process(delta: float) -> void:
 			board_root.has_method("is_2d_view_enabled")
 			and bool(board_root.call("is_2d_view_enabled"))
 		)
+	if _shared_root != null:
+		_shared_root.visible = not (
+			board_root.has_method("is_2d_view_enabled")
+			and bool(board_root.call("is_2d_view_enabled"))
+		)
+	_shared_refresh_time += delta
+	if _shared_refresh_time >= 0.12:
+		_shared_refresh_time = 0.0
+		_refresh_shared_spheres()
 	if _all_reaches_visible:
 		_all_reach_elapsed += delta
 		if _all_reach_elapsed >= 0.12:
@@ -221,6 +241,101 @@ func _process(delta: float) -> void:
 		_set_target_highlight(target)
 	else:
 		_clear_target_highlight()
+
+# Network messages never contain private sheet data or rendered geometry.
+func _publish_range_preview(active: bool) -> void:
+	if _attacker == null or not is_instance_valid(_attacker):
+		return
+	if not _attacker.has_method("get_token_id"):
+		return
+	var token_id := String(_attacker.call("get_token_id")).strip_edges()
+	if token_id.is_empty() or not board_root.has_method("broadcast_sync_event"):
+		return
+	board_root.call("broadcast_sync_event", {
+		"type": "range_preview", "kind": "attack", "active": active,
+		"token_id": token_id, "normal_feet": _range_normal_feet,
+		"long_feet": _range_long_feet
+	})
+
+
+func receive_shared_range_event(event: Dictionary) -> void:
+	var kind := String(event.get("kind", ""))
+	var token_id := String(event.get("token_id", ""))
+	if kind not in ["attack", "spell"] or token_id.is_empty() or token_id.length() > 96:
+		return
+	var key := kind + ":" + token_id
+	if event.get("active") != true:
+		_shared_ranges.erase(key)
+		_shared_signature = ""
+		_refresh_shared_spheres()
+		return
+	var normal_value: Variant = event.get("normal_feet", 0.0)
+	var long_value: Variant = event.get("long_feet", 0.0)
+	if not (normal_value is float or normal_value is int):
+		return
+	if not (long_value is float or long_value is int):
+		return
+	var normal := float(normal_value)
+	var long_feet := float(long_value)
+	if not is_finite(normal) or normal <= 0.0 or normal > 1000.0:
+		return
+	if not is_finite(long_feet) or long_feet < 0.0 or long_feet > 1000.0:
+		return
+	_shared_ranges[key] = {
+		"id": token_id, "normal": normal,
+		"long": long_feet if long_feet > normal else 0.0,
+		"last_seen": Time.get_ticks_msec()
+	}
+	_shared_signature = ""
+	_refresh_shared_spheres()
+
+
+func shared_range_previews() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if board_root == null:
+		return result
+	var cell := maxf(float(board_root.get("cell_size")), 0.001)
+	for key: String in _shared_ranges.keys():
+		var data: Dictionary = _shared_ranges[key]
+		# A disconnect must not leave another player's range permanently visible.
+		if Time.get_ticks_msec() - int(data["last_seen"]) > 600000:
+			_shared_ranges.erase(key)
+			continue
+		for token: CharacterBody3D in _reach_tokens():
+			if token.has_method("get_token_id") and String(token.call("get_token_id")) == String(data["id"]):
+				var entry := data.duplicate()
+				entry["center"] = token.global_position
+				entry["half"] = _token_footprint_world(token, cell) * 0.5
+				result.append(entry)
+				break
+	return result
+
+
+func _refresh_shared_spheres() -> void:
+	if _shared_root == null or board_root == null:
+		return
+	var entries := shared_range_previews()
+	var signature := JSON.stringify(entries)
+	if signature == _shared_signature:
+		return
+	_shared_signature = signature
+	for child: Node in _shared_root.get_children():
+		child.queue_free()
+	var cell := maxf(float(board_root.get("cell_size")), 0.001)
+	for entry: Dictionary in entries:
+		for distance: float in [float(entry["normal"]), float(entry["long"])]:
+			if distance <= 0.0:
+				continue
+			var radius := distance / 5.0 * cell + float(entry["half"])
+			var tint := LONG_RANGE_COLOR if distance == float(entry["long"]) else NORMAL_RANGE_COLOR
+			for equator: bool in [false, true]:
+				var mesh := MeshInstance3D.new()
+				mesh.mesh = (RangeGeometry.sphere_equator_mesh(radius)
+					if equator else RangeGeometry.sphere_wire_mesh(radius))
+				mesh.material_override = _range_material(tint, 0.65 if equator else 0.32)
+				mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				_shared_root.add_child(mesh)
+				mesh.global_position = entry["center"]
 
 
 func set_all_reaches_visible(enabled: bool) -> void:
