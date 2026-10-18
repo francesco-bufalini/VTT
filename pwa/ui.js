@@ -2010,7 +2010,11 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleTraits:state.sheet==="battle"?[
+  ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
+    description:flattenDescription(feature)})),
+  ...(state.editor.read().optional_features_catalog||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_name||'',feature_key:'',
+    description:flattenDescription(feature)}))]:[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2125,6 +2129,21 @@ async function handleAction(target){
       await render();return;
     }
     const cost=Math.max(0,Number(ability.cost)||0);
+    const persistentKey=String(target.dataset.persistentKey||'');
+    if(persistentKey){
+      if(c.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
+      if(cost&&(!tracker||tracker.max-tracker.spent<cost))
+        throw Error('Risorsa insufficiente per attivare la capacità.');
+      const effects={...(c.active_class_features||{}),
+        [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
+          rules_version:c.rules_version||'2014',enhanced:false}};
+      const changes={active_class_features:effects};
+      if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+      await patch(changes);
+      await render();
+      return;
+    }
     if(cost){
       const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
       if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
@@ -2134,6 +2153,19 @@ async function handleAction(target){
     await render();
     message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':
       ability.name+': consulta la descrizione per applicarne gli effetti.');
+    return;
+  }
+  if(act==='tracker-reset'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const id=String(target.dataset.trackerId||'');
+    const row=(calculated.trackers||[]).find(tracker=>String(tracker.id)===id&&!tracker.disabled);
+    if(!row)throw Error('Risorsa non disponibile.');
+    const spent={...(creature.resource_tracker_spent||{})};
+    delete spent[id];
+    await patch({resource_tracker_spent:spent});
+    await render();
     return;
   }
   if(act==='condition-remove-ability'){
