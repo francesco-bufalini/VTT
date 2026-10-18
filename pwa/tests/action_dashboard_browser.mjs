@@ -45,6 +45,14 @@ try{
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='actions'){
     assert.equal(await page.locator('.action-economy-section').count(),5);
+    assert(await page.locator('[data-act="action-expand-all"]').isVisible());
+    assert(await page.locator('[data-act="action-variants"]').textContent().then(t=>t.includes('Regole varianti')));
+    if(width===390){
+     await page.locator('[data-act="action-expand-all"]').click();
+     assert.equal(await page.locator('.action-tree:not([open])').count(),0);
+     await page.locator('[data-act="action-expand-all"]').click();
+     assert(await page.locator('.action-tree:not([open])').count()>0);
+    }
     assert.equal(await page.locator('.action-group-label').filter({hasText:'Incantesimi'}).count(),3);
     for(const time of ['action','bonus','reaction'])assert(await page.locator('[data-timing="'+time+'"] [data-spell-id="test_spell_'+time+'"]').count());
     const bonus=page.locator('[data-timing="bonus"]');
