@@ -262,7 +262,8 @@ const powerIdentity=power=>{
 // explicitly typed self/toggle powers have reversible sheet state.
 export function persistentBattleAbility(row={}){
  const power=row.power||{},action=row.classAction||{};
- if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id))return true;
+ if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
+   power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape')return true;
  const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
  return sources.some(source=>{
   if(source.toggleable===true||source.persistent===true||
@@ -318,7 +319,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
     same.cost=cost;
     same.key=keyFor(cost,action.tracker_id);
    }
-   same.classAction=action;
+   if(!same.classAction?.class_feature_id||action.class_feature_id)same.classAction=action;
    continue;
   }
   rows.push({kind:'ability',source:'class',id,name:action.name,
