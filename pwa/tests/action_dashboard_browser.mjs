@@ -37,7 +37,7 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  const names={info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',actions:'Cosa posso fare?',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
- const section=async key=>{await page.locator('#section-menu > summary').click();await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(name=>document.querySelector('.current-section')?.textContent===name,names[key]);};
+ const section=async key=>{await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true',key);};
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
   for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){

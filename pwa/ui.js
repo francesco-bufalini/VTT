@@ -256,7 +256,7 @@ async function catalogView() {
       '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
       state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+
       '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
-      '<p class="hint">Bonus ed effetti strutturati vengono calcolati direttamente sul dispositivo.</p>':"")+
+      '':"")+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
         '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
@@ -267,7 +267,7 @@ async function catalogView() {
       '<div class="columns"><label>Tipo<select id="quick-type">'+[['other','Altro'],['weapon','Arma'],['shield','Scudo'],['armor','Armatura'],['tool','Strumento'],['magic','Magico']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
       '<label>Rarità<select id="quick-rarity">'+[['none','Nessuna'],['common','Comune'],['uncommon','Non comune'],['rare','Raro'],['very rare','Molto raro'],['legendary','Leggendario'],['artifact','Artefatto']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
       '<label>Valore (mo)<input id="quick-value" type="number" min="0" max="100000000" value="0"></label></div>':
-      '<p class="hint">Competenze concesse (fino a tre). Le scelte non ancora completate non vengono assegnate automaticamente.</p>'+
+      ''+
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
@@ -571,7 +571,7 @@ function documentRow(item,index,stored){
       '<details class="document-edit"><summary>Modifica documento</summary>'+
       '<label>Titolo<input maxlength="160" data-document-index="'+index+'" data-document-part="title" value="'+esc(title)+'"></label>'+
       '<label>Testo<textarea maxlength="3500" rows="10" data-document-index="'+index+'" data-document-part="body">'+esc(body)+'</textarea></label>'+
-      '<p class="hint">Salvataggio automatico. La definizione viaggia con la creatura esportata.</p></details>':
+      '</details>':
       '<p class="warning">Definizione homebrew non installata: documento visibile ma non modificabile.</p>')+
     '<div class="document-paper '+(style==="lettera"?'letter':'parchment')+'"><strong>'+esc(title)+'</strong><p>'+esc(body)+'</p></div>'+
     '<div class="actions"><button type="button" class="btn small danger" data-act="document-remove" data-index="'+index+'">Elimina copia</button></div>'+
@@ -1159,7 +1159,7 @@ function sessionView() {
         '<label>Incantesimo<select id="token-spell-select"></select></label>'+
         '<button type="button" class="btn small" data-act="apply-token-spell">＋ Applica incantesimo</button>'+
         '<h3>Miniatura</h3>'+
-        (linked?'<p class="hint">Puoi cambiare la miniatura dei token associati alla tua scheda.</p>'+
+        (linked?''+
           '<label>Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
           '<label>Miniatura<select id="token-mini-select"></select></label>'+
           '<button type="button" class="btn small" data-act="apply-token-appearance">Applica miniatura</button>':
@@ -1850,7 +1850,7 @@ async function handleAction(target){
     const dialog=document.createElement('dialog');
     dialog.className='sheet-roll-dialog miniature-dialog';
     dialog.innerHTML='<h2>'+(kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
-      '<p class="hint">Cerca per nome o ID. La scelta non scarica file 3D sul telefono.</p>'+
+      ''+
       '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
       '<div class="miniature-results" role="list"></div>'+
       '<div class="actions"><button type="button" class="btn" data-miniature-close>Chiudi</button></div>';
@@ -2034,7 +2034,7 @@ async function handleAction(target){
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-score-dialog';
     dialog.id='sheet-score-dialog';dialog.dataset.abilityKey=ability;
     dialog.innerHTML='<h2>Punteggio base · '+esc(abilities[ability])+'</h2>'+
-      '<p class="hint">Modifica il punteggio della caratteristica. I bonus dalle origini rimangono separati.</p>'+
+      ''+
       '<label>Valore base<input id="sheet-score-input" type="number" min="1" max="30" step="1" value="'+
       esc(creature.abilities?.[ability]??10)+'" aria-label="Punteggio base '+esc(abilities[ability])+'"></label>'+
       '<div class="actions">'+btn('save-score','Salva','primary')+btn('close-score','Annulla')+'</div>';
@@ -2076,7 +2076,7 @@ async function handleAction(target){
       '<p class="hint sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
       esc(calculated.explanations?.[key]||'Valore calcolato dalla scheda e dalle origini attive')+'</p>'+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
-       '<p class="hint">Seleziona i dadi aggiuntivi prima di tirare. I bonus monouso scelti verranno consumati.</p>'+
+       ''+
        bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
          esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'</fieldset>':'')+
       '<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+

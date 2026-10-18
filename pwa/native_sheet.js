@@ -320,7 +320,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const secondaryClasses=rowsFor(c,'classes').slice(1);
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
- const nativeNote='<p class="hint">Modifica i valori di base o usa ± per gestire i bonus. I risultati si aggiornano sulla scheda, anche offline.</p>';
+ const nativeNote='';
  if(section==='info')return panel('Identità',cols(
     select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
     field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
@@ -336,13 +336,13 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<h3>Miniature</h3>'+
     summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
     '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli la miniatura di base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
-    '<p class="hint">La miniatura è identificata dal catalogo del desktop e verrà caricata in 3D quando disponibile. La scheda rimane salvata sul dispositivo.</p>'+
+    ''+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
     '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
-       '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
+       ''))+
    panel('Classi e progressione',
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp')+'</div>'+
@@ -366,7 +366,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<div class="native-ability-value" role="cell">'+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)+'</div>'+
     '</div>').join('')+'</div>','stats-abilities-panel')+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel')+
-  panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
+  panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle'){
@@ -409,7 +409,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '</div>'+
     '<details class="battle-defense-settings"><summary>Armatura e CA naturale</summary>'+
       armor+field('Formula CA naturale','armor_natural_formula',c.armor_natural_formula)+
-      '<p class="hint">La CA include automaticamente armature, scudi e bonus dalle origini.</p>'+
+      ''+
     '</details>',
     'battle-defense-panel')+
    resources+
@@ -429,7 +429,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  if(section==='origins'){
   let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details,catalogs);
   if(details==='overview')content+='<h3>Origini dei benefici</h3>'+list(calculated.origins).map(o=>'<label class="check"><input type="checkbox" data-origin-enabled="'+esc(o.id)+'" '+(!o.disabled?'checked':'')+'>'+esc(o.name)+'</label>').join('');
-  if(details==='formula_bonuses')content='<p class="hint">Formule: str_mod, cha_mod, proficiency, level, max_hp, save_dex, skill_perception; numeri, +, −, *, / e parentesi. I bonus si sommano. Le dipendenze circolari e le formule non valide sono segnalate nei calcoli.</p><details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content+'<h3>Bonus ai tiri con dadi</h3>'+nativeRows(c,'dice_bonuses',catalogs);
+  if(details==='formula_bonuses')content='<details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content+'<h3>Bonus ai tiri con dadi</h3>'+nativeRows(c,'dice_bonuses',catalogs);
   return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;

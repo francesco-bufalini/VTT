@@ -51,7 +51,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('[data-field="name"]').waitFor();
  const names={actions:'Cosa posso fare?',info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
- const section=async key=>{await page.locator('#section-menu').evaluate(node=>node.open=true);await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(name=>document.querySelector('.current-section')?.textContent===name,names[key]);};
+ const section=async key=>{await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true',key);};
  await page.setViewportSize({width:360,height:844});
  await page.locator('[data-miniature-kind="base"]').click();
  await page.locator('[data-miniature-search]').fill('brass dragon');
@@ -123,7 +123,7 @@ try{
  await page.locator('[data-roll-bonus="0"]').check();await page.getByRole('button',{name:'Applica bonus',exact:true}).click();
  const bonusRoll=Number(await page.locator('#sheet-roll-dialog .dice-result').textContent());assert.ok(bonusRoll>baseRoll&&bonusRoll<=baseRoll+4);
  await page.locator('[data-act="close-sheet-roll"]').click();
- assert.equal(await page.locator('.current-section').textContent(),names.stats);
+ assert.equal(await page.locator('[data-sheet="stats"]').getAttribute('aria-pressed'),'true');
  await section('battle');
  assert.equal(await page.locator('[data-calculated="ac"]').textContent(),'17');
  await page.locator('#hp-amount').fill('10');await page.locator('[data-act="hp-damage"]').click();

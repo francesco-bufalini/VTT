@@ -60,12 +60,9 @@ async function changeScore(ability,value){
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
   assert.match(document.querySelector("#app").textContent,/Le tue creature/);
-  const menu=document.querySelector("#section-menu");
-  assert.ok(menu,"Android-style sections menu is available");
-  menu.open=true;
-  document.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"Escape",bubbles:true}));
-  assert.equal(menu.open,false,"Escape closes the sections menu");
-  assert.equal(document.activeElement,menu.querySelector("summary"));
+  assert.equal(document.querySelector("#section-menu"),null);
+  assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
+  assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Arcanista mobile");
@@ -76,11 +73,10 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.find(r=>r.creature.name==="Arcanista mobile"&&r.creature.current_hp===17);
   });
-  menu.open=true;
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="add-item"]'));
-  assert.equal(menu.open,false,"Selecting a sheet section dismisses the drawer");
-  assert.equal(document.querySelector(".current-section").textContent,"Inventario");
+  assert.equal(document.querySelector(".current-section"),null);
+  assert.equal(document.querySelector("#creature-name").textContent,"Arcanista mobile");
   assert.equal(document.querySelector('[data-sheet="inventory"]').getAttribute("aria-pressed"),"true");
   click('[data-act="add-item"]');
   await until(()=>document.querySelector('[data-item-key="name"]'));
@@ -100,7 +96,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.some(r=>r.creature.spell_slots_spent?.[1]===2);
   });
   click('[data-sheet="battle"]');
-  await until(()=>document.querySelector('.current-section')?.textContent==="Battaglia");
+  await until(()=>document.querySelector('[data-sheet="battle"][aria-pressed="true"]'));
   assert.equal(document.querySelector('#tracker-name'),null);
   click('[data-sheet="origins"]');
   await until(()=>document.querySelector('#native-details'));
@@ -188,17 +184,20 @@ test("native reference catalog can add an item to an offline creature",async()=>
 });
 
 test("dice roll is usable offline; session has functioning pairing form",async()=>{
-  click('[data-nav="dice"]');
-  await until(()=>document.querySelector('[data-act="roll"]'));
+  click('[data-nav="session"]');
+  await until(()=>document.querySelector('[data-act="open-chat-dice"]'));
+  click('[data-act="open-chat-dice"]');
+  await until(()=>document.querySelector('#chat-dice-dialog [data-act="roll"]'));
   click('[data-act="roll"][data-sides="20"]');
   await until(()=>document.querySelector(".dice-result"));
   const total=Number(document.querySelector(".dice-result").textContent);
   assert.ok(Number.isInteger(total)&&total>=1&&total<=20);
-  click('[data-nav="session"]');
+  click('[data-act="close-chat-dice"]');
+  await until(()=>!document.querySelector("#chat-dice-dialog"));
   await until(()=>document.querySelector("#pair-form"));
   assert.match(document.querySelector("#app").textContent,/Codice temporaneo del desktop/);
   assert.equal(document.querySelector("#pair-secret").getAttribute("placeholder"),"XXXX-XXXX-XXXX-XXXX");
-  assert.equal(document.querySelectorAll("#nav button").length,5);
+  assert.equal(document.querySelectorAll("#nav button").length,3);
 });
 
 
@@ -276,7 +275,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
   const changed=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition");
   assert.equal(JSON.parse(changed.options.body).payload.token_id,"token_1");
-  click('[data-nav="chat"]');
+  click('[data-act="close-token-dialog"]');
   await until(()=>document.querySelector("#chat-form"));
   const input=document.querySelector("#chat-message");
   input.value="Messaggio dal browser";
@@ -407,7 +406,7 @@ test("successful one-time pairing survives an initial transient map error",async
 test("native Android section order and editable sheet data",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
-  const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.textContent.trim());
+  const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
   assert.deepEqual(sections,["Info","Caratteristiche e abilità","Battaglia","Cosa posso fare?","Poteri","Inventario","Tratti","Condizioni","Modifica personaggio"]);
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
