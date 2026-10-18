@@ -455,8 +455,17 @@ func _rebuild_pickers(items: Array) -> void:
 			picker.tooltip_text = ""
 
 
-func _select_saved(index: int) -> void:
+func _select_saved(index: int, view: String = "") -> void:
 	var list: ItemList = _tab.get("_inventory_list")
+	if index < 0 or index >= _rows().size():
+		return
+	if view in ["owned", "scroll", "attunement"]:
+		_active_view = view
+		# Godot Trees have independent selections. Keep one visible highlight.
+		for other: Tree in [_owned_tree, _scroll_tree, _attunement_tree]:
+			if (view == "owned" and other == _owned_tree) or (view == "scroll" and other == _scroll_tree) or (view == "attunement" and other == _attunement_tree):
+				continue
+			other.deselect_all()
 	list.select(index)
 	_tab.call("_on_inventory_selected", index)
 
@@ -466,7 +475,7 @@ func _on_owned_selected() -> void:
 		return
 	var selected: TreeItem = _owned_tree.get_selected()
 	if selected != null:
-		_select_saved(int(selected.get_metadata(0)))
+		_select_saved(int(selected.get_metadata(0)), "owned")
 
 
 func _on_scroll_selected() -> void:
@@ -474,7 +483,7 @@ func _on_scroll_selected() -> void:
 		return
 	var selected: TreeItem = _scroll_tree.get_selected()
 	if selected != null:
-		_select_saved(int(selected.get_metadata(0)))
+		_select_saved(int(selected.get_metadata(0)), "scroll")
 
 
 func _on_attunement_selected() -> void:
@@ -482,7 +491,7 @@ func _on_attunement_selected() -> void:
 		return
 	var selected: TreeItem = _attunement_tree.get_selected()
 	if selected != null:
-		_select_saved(int(selected.get_metadata(0)))
+		_select_saved(int(selected.get_metadata(0)), "attunement")
 
 
 func _on_owned_mouse_event(event: InputEvent) -> void:
@@ -499,19 +508,28 @@ func _on_owned_mouse_event(event: InputEvent) -> void:
 	var entry: Dictionary = _definition(owned)
 	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry):
 		return
-	_select_saved(index)
-	_tab.call("_set_generic_equipment", not bool(owned.get("equipped", false)))
+	# A click still holds the Tree's mouse selection lock. Deferred mutation
+	# avoids clearing its rows from within that event's synchronous callbacks.
+	call_deferred("_apply_generic_equipment", index, not bool(owned.get("equipped", false)))
+
+
+func _apply_generic_equipment(index: int, equipped: bool) -> void:
+	if index < 0 or index >= _rows().size():
+		return
+	_select_saved(index, "owned")
+	_tab.call("_set_generic_equipment", equipped)
 
 
 func _update_quantity(index: int, requested: int) -> void:
 	var rows := _rows()
 	if index < 0 or index >= rows.size():
 		return
-	_select_saved(index)
+	var entry: Dictionary = _definition(rows[index])
+	_select_saved(index, "scroll" if _is_spell_scroll(rows[index], entry) else "owned")
 	var spinner: SpinBox = _tab.get("_quantity")
 	spinner.set_value_no_signal(clampi(requested, 1, 99999))
 	_tab.call("_on_quantity_changed", float(clampi(requested, 1, 99999)))
-	refresh()
+	# The owning tab refreshes the desktop tables after the event is over.
 
 
 func _on_quantity_button(item: TreeItem, _column: int, button_id: int, _mouse_button: int) -> void:
@@ -519,7 +537,7 @@ func _on_quantity_button(item: TreeItem, _column: int, button_id: int, _mouse_bu
 		return
 	var index: int = int(item.get_metadata(0))
 	var quantity: int = int(_rows()[index].get("quantity", 1))
-	_update_quantity(index, quantity + (1 if button_id == PLUS_BUTTON else -1))
+	call_deferred("_update_quantity", index, quantity + (1 if button_id == PLUS_BUTTON else -1))
 
 
 func _on_owned_edited() -> void:
@@ -527,7 +545,7 @@ func _on_owned_edited() -> void:
 		return
 	var row: TreeItem = _owned_tree.get_edited()
 	if row != null:
-		_update_quantity(int(row.get_metadata(0)), int(row.get_text(QUANTITY_COLUMN)))
+		call_deferred("_update_quantity", int(row.get_metadata(0)), int(row.get_text(QUANTITY_COLUMN)))
 
 
 func _on_scroll_edited() -> void:
@@ -535,17 +553,22 @@ func _on_scroll_edited() -> void:
 		return
 	var row: TreeItem = _scroll_tree.get_edited()
 	if row != null:
-		_update_quantity(int(row.get_metadata(0)), int(row.get_text(0)))
+		call_deferred("_update_quantity", int(row.get_metadata(0)), int(row.get_text(0)))
 
 
 func _on_attunement_edited() -> void:
 	if _updating or _attunement_tree.get_edited_column() != 0:
 		return
 	var row: TreeItem = _attunement_tree.get_edited()
-	if row == null:
+	if row != null:
+		call_deferred("_apply_attunement", int(row.get_metadata(0)), row.is_checked(0))
+
+
+func _apply_attunement(index: int, attuned: bool) -> void:
+	if index < 0 or index >= _rows().size():
 		return
-	_select_saved(int(row.get_metadata(0)))
-	_tab.call("_set_attunement", row.is_checked(0))
+	_select_saved(index, "attunement")
+	_tab.call("_set_attunement", attuned)
 
 
 func _on_slot_selected(choice: int, slot: String) -> void:
