@@ -350,9 +350,23 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<label>Livello totale<input type="number" value="'+esc(totalClassLevel(c))+'" disabled aria-label="Livello totale automatico"></label>'+
       '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1))+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>');
- if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
-  panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>')+
-  panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>')+
+ if(section==='stats')return panel('Caratteristiche',
+   '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
+   '<div class="native-abilities-header" role="row">'+
+   '<strong role="columnheader">Car.</strong><strong role="columnheader">Punteggio</strong>'+
+   '<strong role="columnheader">Mod.</strong><strong role="columnheader">TS</strong></div>'+
+   ['str','dex','con','int','wis','cha'].map(key=>
+    '<div class="native-ability-row" role="row" data-ability-row="'+key+'">'+
+    '<strong class="native-ability-name" role="rowheader">'+key.toUpperCase()+'</strong>'+
+    '<div class="native-ability-score" role="cell">'+read('ability:'+key,'Punteggio '+key.toUpperCase())+
+    '<details class="base-editor native-score-editor"><summary>Base</summary>'+
+    '<label><span class="sr-only">Punteggio base '+key.toUpperCase()+'</span>'+
+    '<input type="number" data-ability="'+key+'" aria-label="Punteggio base '+key.toUpperCase()+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+
+    '<div class="native-ability-value" role="cell">'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+'</div>'+
+    '<div class="native-ability-value" role="cell">'+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)+'</div>'+
+    '</div>').join('')+'</div>'+nativeNote,'stats-abilities-panel')+
+  panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>','stats-summary-panel')+
+  panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
   '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  if(section==='battle')return panel('Punti ferita','<div class="actions"><label>Quantità<input id="hp-amount" type="number" min="0" max="99999" value="1"></label><button class="btn" data-act="hp-damage">− Danni</button><button class="btn" data-act="hp-heal">＋ Cura</button><button class="btn" data-act="hp-restore">↺ Ripristina</button></div>'+cols(number('Attuali','current_hp',c.current_hp??1,-999)+ '<div>Massimi '+read('hp','PF massimi')+'</div>'+number('Massimi base','max_hp_base',c.max_hp_base??c.max_hp??1)+number('Temporanei','temporary_hp')+number('Seconda forma · attuali','second_form_hp')+ '<div>Massimi seconda forma '+read('second_max','Massimi seconda forma')+'</div>'+number('Seconda forma · massimi','second_form_max_hp')+
