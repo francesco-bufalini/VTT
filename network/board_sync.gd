@@ -41,6 +41,7 @@ const SYNC_APPEARANCE_KEYS := [
 ]
 const MobileMapCapture = preload("res://network/mobile_map_capture.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 var _mobile_capture_busy := false
 var _mobile_views: Dictionary = {}
 const MapDataController = preload("res://vtt/map_data_controller.gd")
@@ -2587,15 +2588,12 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		var spell_id := String(payload.get("spell_id", "")).strip_edges()
 		if spell_id.is_empty() or spell_id.length() > 256 or not payload.get("enabled") is bool:
 			return {"ok": false, "error": "Incantesimo non valido."}
-		if SpellCatalog.catalog_spell(spell_id).is_empty():
-			return {"ok": false, "error": "Incantesimo assente dal catalogo."}
-		if bool(payload.enabled):
-			target.call("add_active_spell_id", spell_id)
-		else:
-			target.call("remove_active_spell_id", spell_id)
-			if String(target.call("get_concentrating_spell_id")) == spell_id:
-				target.call("set_concentrating_spell_id", "")
-		board_root.call_deferred("_sync_explicit_token_change", target)
+		var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
+		if spell.is_empty() or (bool(payload.enabled) and not ActiveSpells.has_duration(spell)):
+			return {"ok": false, "error": "L'incantesimo deve essere un effetto di durata valido."}
+		if not board_root.has_method("_set_token_active_spell"):
+			return {"ok": false, "error": "Effetti degli incantesimi non disponibili."}
+		board_root.call("_set_token_active_spell", target, spell_id, bool(payload.enabled))
 		return {"ok": true}
 	if action == "move_token":
 		var step: String = String(payload.get("direction", ""))
@@ -2623,7 +2621,6 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		for definition: Dictionary in ContentCatalog.condition_definitions(String(target.get_meta("rules_version", "2014"))):
 			if String(definition.get("id", "")) == id:
 				board_root.call("_set_token_status", target, id, payload.enabled)
-				board_root.call_deferred("_sync_explicit_token_change", target)
 				return {"ok": true}
 		return {"ok": false, "error": "Condizione sconosciuta."}
 	if action in ["begin_spell", "target_spell", "cancel_spell", "finish_spell", "preview_spell"]:
