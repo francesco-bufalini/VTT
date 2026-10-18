@@ -424,13 +424,12 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     'battle-hp-panel')+
    panel('Classe armatura',
     '<div class="battle-defense-values">'+
-      '<div class="battle-stat"><span>CA</span>'+read('ac','Classe armatura')+'</div>'+
+      '<div class="battle-stat"><span>CA</span>'+formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div>'+
     '</div>'+
     '<div class="battle-defense-settings">'+armor+
       '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
       '<output>'+esc(acFormula)+'</output></div>'+
-      '<p class="hint">La CA naturale e i bonus si modificano attraverso privilegi e origini.</p>'+
-      '<button type="button" class="btn small" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus CA</button>'+
+      '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
     '</div>',
     'battle-defense-panel')+
    panel('Movimento',
