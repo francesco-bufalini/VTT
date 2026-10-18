@@ -47,7 +47,7 @@ func setup(tab: Node, description: Control) -> void:
 	for column: int in range(8):
 		_owned_tree.set_column_custom_minimum_width(column, [35, 95, 75, 115, 135, 65, 180, 190][column])
 	_owned_tree.item_selected.connect(_on_owned_selected)
-	_owned_tree.item_activated.connect(_on_owned_activated)
+	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
 	_owned_tree.button_clicked.connect(_on_quantity_button)
 	add_child(_owned_tree)
@@ -398,10 +398,13 @@ func _on_attunement_selected() -> void:
 		_select_saved(int(selected.get_metadata(0)))
 
 
-func _on_owned_activated() -> void:
-	if _updating or _owned_tree.get_selected_column() != 0:
+func _on_owned_mouse_event(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if _updating or click == null or not click.pressed or not click.double_click or click.button_index != MOUSE_BUTTON_LEFT:
 		return
-	var selected: TreeItem = _owned_tree.get_selected()
+	if _owned_tree.get_column_at_position(click.position) != 0:
+		return
+	var selected: TreeItem = _owned_tree.get_item_at_position(click.position)
 	if selected == null:
 		return
 	var index: int = int(selected.get_metadata(0))
