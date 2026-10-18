@@ -37,7 +37,7 @@ try{
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  const names={info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',actions:'Cosa posso fare?',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
- const section=async key=>{await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true',key);};
+ const section=async key=>{const target=page.locator('[data-sheet="'+key+'"]');if(!await target.isVisible())await page.locator('[data-act="navigation-open"]').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
   for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){
@@ -60,10 +60,8 @@ try{
     assert.equal(await page.locator('[data-act="action-open-spells"]').count(),0);
     const heights=await page.locator('.action-group-label').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
     assert(heights.every(height=>height<100),'Aggregate glyphs must not stretch their cards');
-    if(width>=900){
-     const bounds=await page.locator('.action-economy-section').evaluateAll(nodes=>Object.fromEntries(nodes.map(n=>[n.dataset.timing,n.getBoundingClientRect().x])));
-     assert(bounds.action<bounds.bonus&&bounds.action<bounds.movement&&bounds.bonus===bounds.movement);
-    }
+    assert.equal(await page.locator('.action-economy-section').evaluateAll(nodes=>new Set(nodes.map(n=>n.getBoundingClientRect().x)).size),1,'Mobile action categories stay in one readable column');
+    await page.locator('.action-economy-section').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
     await page.locator('.action-tree > summary').evaluateAll(nodes=>nodes.forEach(node=>node.parentElement.open=true));
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Expanded trees overflow at '+width);
     if(width===390||width===1440)await page.screenshot({path:fileURLToPath(new URL('actions-'+width+'.png',artifacts))});
@@ -81,6 +79,7 @@ try{
  const after=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});assert.equal(after,before,'Variant preferences must not rewrite creature data');
  await page.reload();await page.locator('[data-act="open"]').click();await section('actions');
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
+ await page.locator('[data-timing="movement"] > summary').click();
  await page.locator('[data-timing="movement"] .action-tree > summary').click();
  await page.locator('[data-timing="movement"] .action-economy-entry > summary').filter({hasText:'Movimento furtivo'}).click();
  await page.locator('[data-timing="movement"] [data-target="skill:stealth"]').click();

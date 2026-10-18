@@ -34,7 +34,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
-  librarySelectedIds:new Set(),
+  librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -89,8 +89,8 @@ function text(value) { return String(value ?? "").trim(); }
 function number(value, fallback=0) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }
 function btn(name, label, variant="") { return '<button type="button" class="btn '+variant+'" data-act="'+esc(name)+'">'+label+'</button>'; }
 function header(eyebrow,title,subtitle){
-  return '<div class="page-head"><h1>'+esc(title)+'</h1>'+
-    (eyebrow==="Errore"&&subtitle?'<p class="warning">'+esc(subtitle)+'</p>':'')+'</div>';
+  return '<div class="page-head">'+(eyebrow?'<p class="eyebrow">'+esc(eyebrow)+'</p>':'')+'<h1>'+esc(title)+'</h1>'+
+    (subtitle?'<p class="'+(eyebrow==="Errore"?'warning':'page-description')+'">'+esc(subtitle)+'</p>':'')+'</div>';
 }
 function panel(title, body, className="") {
   return '<section class="panel '+className+'"><h2>'+esc(title)+'</h2>'+body+'</section>';
@@ -122,27 +122,52 @@ const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity','Fisico':'physique',
  'Classi e progressione':'progression','Talenti':'talents'};
+const PLAY_SECTIONS=[['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
+const REFERENCE_SECTIONS=[['stats','Caratteristiche e abilità','Prove, tiri salvezza e competenze'],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['info','Info','Identità, miniature e progressione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],stats:['Caratteristiche e abilità','Tocca un modificatore per effettuare una prova.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+function navigationButton(key,title,description=''){
+  const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
+  const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
+  return '<button type="button" class="btn '+(description?'navigation-row':'dock-destination')+'" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+current+'" aria-label="'+esc(fullTitle)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span><span class="destination-label">'+esc(title)+'</span>'+(description?'<small>'+esc(description)+'</small>':'')+'</span>'+(description?'<span class="navigation-chevron" aria-hidden="true">›</span>':'')+'</button>';
+}
+function closeNavigation(restoreFocus=false){
+  const dialog=document.querySelector('#navigation-dialog');
+  if(dialog.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
+  document.querySelector('#more-navigation').setAttribute('aria-expanded','false');
+  if(restoreFocus)document.querySelector('#more-navigation').focus();
+}
+function openNavigation(){
+  const dialog=document.querySelector('#navigation-dialog');
+  if(dialog.open)return;
+  document.querySelector('#more-navigation').setAttribute('aria-expanded','true');
+  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+}
 function syncNav(){
   const creature=state.editor?.read()||(state.cachedCreatures||[]).find(x=>x.id===state.creatureId);
-  const hasCreature=Boolean(state.creatureId),label=document.querySelector("#creature-name"),symbol=document.querySelector("#creature-symbol");
-  if(label)label.textContent=hasCreature?(creature?.name||"Creatura"):"VTT";
-  if(symbol){symbol.textContent=hasCreature&&creature?.kind==="monster"?"◆":"♜";
-    symbol.setAttribute("aria-label",hasCreature&&creature?.kind==="monster"?"Mostro":"Personaggio");}
-  document.querySelector("#sheet-navigation").innerHTML=sheetSections.map(([key,title])=>
-    '<button type="button" class="btn mobile-tab" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
-    (state.page==="library"&&!state.libraryMode&&state.sheet===key)+'" aria-label="'+esc(title)+'" title="'+esc(title)+'"'+
-    (hasCreature?'':' disabled aria-disabled="true"')+'>'+actionGlyph(SHEET_TAB_GLYPHS[key]||"information")+'</button>').join("");
-  for(const [page,glyph] of [["library","proficiency"],["catalog","book"],["session","map"]]){
+  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),symbol=document.querySelector('#creature-symbol');
+  if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):'VTT Mobile';
+  if(symbol){symbol.textContent=hasCreature&&creature?.kind==='monster'?'◆':'♜';symbol.setAttribute('aria-label',hasCreature&&creature?.kind==='monster'?'Mostro':'Personaggio');}
+  const dock=document.querySelector('#mobile-tabs'),primary=document.querySelector('#sheet-navigation'),more=document.querySelector('#more-navigation');
+  primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
+  primary.hidden=!hasCreature;more.hidden=!hasCreature;
+  more.innerHTML=actionGlyph('details')+'<span>Altro</span>';
+  const secondary=state.page==='library'&&!state.libraryMode&&!PLAY_SECTIONS.some(([key])=>key===state.sheet);
+  more.classList.toggle('is-current',secondary||state.page!=='library'||state.libraryMode);
+  more.setAttribute('aria-label',secondary?'Altro · '+(SECTION_COPY[state.sheet]?.[0]||'Scheda'):'Altro');
+  document.querySelector('#secondary-sheet-navigation').innerHTML=REFERENCE_SECTIONS.map(([key,title,description])=>navigationButton(key,title,description)).join('');
+  const destination=hasCreature?document.querySelector('#global-navigation-slot'):dock;
+  if(nav.parentElement!==destination)destination.prepend(nav);
+  dock.classList.toggle('has-creature',hasCreature);
+  for(const [page,glyph,title,description] of [['library','proficiency','Creature','Cambia personaggio, importa o crea'],['catalog','book','Catalogo','Cerca oggetti, incantesimi e contenuti'],['session','map','Partita','Mappa, chat, dadi e collegamento']]){
     const button=nav.querySelector('[data-nav="'+page+'"]');
-    if(button)button.innerHTML=actionGlyph(glyph);
+    const current=state.page===page&&(page!=='library'||state.libraryMode||!hasCreature);
+    button.className='btn '+(hasCreature?'navigation-row':'dock-destination');
+    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span>'+(hasCreature?'<small>'+description+'</small>':'')+'</span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
+    if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
-  for(const button of nav.querySelectorAll("[data-nav]")){
-    const current=button.dataset.nav===state.page&&(state.page!=="library"||state.libraryMode||!hasCreature);
-    if(current)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
-  }
-  connection.textContent=state.paired&&state.online?"● Partita collegata":state.online?"● Desktop in partita":
-    state.hostReachable?"○ Nessuna partita":"○ Archivio offline";
-  connection.classList.toggle("connected",state.paired&&state.online);
+  connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
+  connection.title=state.paired&&state.online?'Partita collegata':state.online?'Desktop in partita':state.hostReachable?'Nessuna partita aperta':'Archivio locale disponibile offline';
+  connection.classList.toggle('connected',state.paired&&state.online);
 }
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -186,7 +211,11 @@ async function render() {
     if(ticket !== state.renderTicket) return;
     syncNav();
     app.innerHTML = html;
+    app.dataset.page=state.page;
+    app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
+    organizeSheetPanels();
+    rememberUtilityDisclosures();
     const magicDialog=app.querySelector('#magic-tools-dialog');
     if(magicDialog){
       magicDialog.addEventListener('close',()=>{state.magicPopup="";},{once:true});
@@ -222,7 +251,8 @@ async function libraryView() {
     '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
   return header("Archivio delle creature", "Le tue creature")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
-    btn("import","Importa JSON dal PC")+'</div>'+
+    '</div>'+
+    '<details class="archive-tools library-management"><summary>Importa e gestisci l’archivio</summary><div class="actions">'+btn("import","Importa JSON")+'</div>'+
     '<details class="archive-tools"><summary>Backup dell’archivio</summary><div class="actions">'+
     btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div></details>'+
     (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
@@ -230,7 +260,7 @@ async function libraryView() {
         btn("library-select-none","Deseleziona")+
         btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
         btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
-      '</span></div>':'')+list;
+      '</span></div>':'')+'</details>'+list;
 }
 function renderCatalogRows() {
   const filter=state.catalogQuery.trim().toLocaleLowerCase();
@@ -252,7 +282,7 @@ async function catalogView() {
     const description=flattenDescription(full);
     const assignable=["spells","feats","backgrounds","races","weapons","armor","tools",
       "mundane_items","magic_items","items"].includes(chosen._category||state.catalogCategory);
-    detail=panel("Dettagli · "+String(full.name||""),'<p class="hint">'+
+    detail='<button type="button" class="btn catalog-back" data-act="catalog-close">← Risultati del catalogo</button>'+panel("Dettagli · "+String(full.name||""),'<p class="hint">'+
       esc(full.source||"Fonte sconosciuta")+'</p><p class="notable catalog-description">'+
       esc(description||"Descrizione non disponibile nell'archivio locale.")+'</p>'+
       (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
@@ -275,14 +305,14 @@ async function catalogView() {
       Array.from({length:3},(_,i)=>'<div class="columns"><label>Tipo<select data-quick-kind="'+i+'">'+[['','Nessuna'],['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],['weapon','Arma'],['armor','Armatura'],['tool','Strumento'],['language','Linguaggio']].map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label><label>Competenza<input data-quick-key="'+i+'" placeholder="es. perception"></label></div>').join(''))+
     '<div class="actions">'+btn('quick-create','Crea nel catalogo locale','primary')+'</div>'):'';
   return header("Compendio", "Catalogo", "Fonti strutturate incluse in VTT. Il catalogo base è disponibile offline dopo l'installazione.")+
-    panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
+    (chosen?detail:panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
       '</select></label><label>Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
       state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
       '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
-    quickPanel+detail;
+    (quickPanel?'<details class="archive-tools catalog-create"><summary>Crea contenuto personalizzato</summary>'+quickPanel+'</details>':''));
 }
 
 async function computeLocalData(record){
@@ -409,7 +439,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -848,12 +878,12 @@ function magicToolbar(calculated){
   ['catalog','search','Aggiungi incantesimi'],
   ['choices','settings','Scelte dalle origini']
  ];
- return '<nav class="magic-toolbar" aria-label="Strumenti degli incantesimi">'+
+ return '<details class="magic-utility-menu archive-tools"><summary>Gestisci poteri e incantesimi</summary><nav class="magic-toolbar" aria-label="Strumenti degli incantesimi">'+
    actions.map(([key,icon,label])=>'<button type="button" class="magic-tool-button" data-act="magic-tool-open" data-magic-tool="'+key+
     '" aria-label="'+esc(label)+'" title="'+esc(label)+'" aria-haspopup="dialog" aria-expanded="'+(state.magicPopup===key?'true':'false')+'">'+
-    actionGlyph(icon)+'</button>').join('')+
-   '<button type="button" class="magic-tool-button" data-act="sheet-details" data-detail="origin_spell_grants" aria-label="Gestisci incantesimi dalle origini" title="Gestisci incantesimi dalle origini">'+actionGlyph('proficiency')+'</button>'+
-   '</nav>';
+    actionGlyph(icon)+'<span>'+esc(label)+'</span></button>').join('')+
+   '<button type="button" class="magic-tool-button" data-act="sheet-details" data-detail="origin_spell_grants" aria-label="Gestisci incantesimi dalle origini" title="Gestisci incantesimi dalle origini">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
+   '</nav></details>';
 }
 function magicToolsDialog(c,calculated){
  const kind=state.magicPopup;
@@ -1111,6 +1141,15 @@ function sessionTokenRows(rows, turnId="") {
     '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
     '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
 }
+function sessionLayout(table,desktop){
+  const pane=state.sessionPane||(state.paired?'table':'connection');
+  const choices=[['table','Mappa'],['chat','Chat e dadi'],['connection','Collegamento']];
+  return header('Al tavolo','La tua partita','Il tavolo condiviso, sempre a portata di mano.')+
+    '<div class="session-switcher" role="group" aria-label="Sezioni della partita">'+choices.map(([key,title])=>'<button type="button" class="btn" data-act="session-pane" data-session-pane="'+key+'" aria-pressed="'+(pane===key)+'">'+title+'</button>').join('')+'</div>'+
+    '<div data-session-content="connection"'+(pane==='connection'?'':' hidden')+'>'+desktop+'</div>'+
+    '<div data-session-content="table"'+(pane==='table'?'':' hidden')+'>'+table+'</div>'+
+    '<div data-session-content="chat"'+(pane==='chat'?'':' hidden')+'>'+chatView()+'</div>';
+}
 function sessionView() {
   const entries=Array.isArray(state.map?.tokens)?state.map.tokens:[];
   const groups=tokenGroups(state.map);
@@ -1123,8 +1162,8 @@ function sessionView() {
     '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
     '<button type="submit" class="btn primary full">Collega alla partita</button></form>';
-  let html=header('Partita','La tua partita','')+
-    panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
+  const desktop=panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
+  let html='';
   const image=state.snapshotObjectUrl;
   const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
   html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
@@ -1141,7 +1180,7 @@ function sessionView() {
     '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
     '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
     '</section>';
-  if(!state.paired)return html+chatView();
+  if(!state.paired)return sessionLayout(html,desktop);
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
@@ -1184,7 +1223,7 @@ function sessionView() {
     '<label>Direzione<select id="place-direction"><option value="north">Nord</option><option value="east">Est</option><option value="south">Sud</option><option value="west">Ovest</option></select></label>'+
     '<div class="session-dialog-footer"><button class="btn primary" type="button" data-act="place-creature">Piazza token</button>'+
     '<button class="btn" type="button" data-act="close-place-dialog">Annulla</button></div></dialog>';
-  return html+chatView();
+  return sessionLayout(html,desktop);
 }
 
 function openSessionDialog(dialog) {
@@ -1804,8 +1843,38 @@ function decorateSheetHeadings(){
   heading.classList.add('sheet-heading');
  }
 }
+function organizeSheetPanels(){
+  const root=app.querySelector('[data-local-sheet-calculations]');
+  if(!root)return;
+  for(const panel of root.querySelectorAll(':scope > .panel, .action-economy-dashboard > .panel')){
+    const heading=panel.querySelector(':scope > h2, :scope > .action-economy-heading');
+    if(!heading)continue;
+    const title=heading.textContent.trim();
+    const fold=state.sheet==='actions'||state.sheet==='info'&&title!=='Identità'||state.sheet==='inventory'&&/Pergamene|Documenti|Infusion/i.test(title);
+    if(!fold)continue;
+    const details=document.createElement('details'),summary=document.createElement('summary'),content=document.createElement('div');
+    const key=state.creatureId+'|'+state.sheet+'|'+title;
+    for(const [name,value] of Object.entries(panel.dataset))details.dataset[name]=value;
+    details.className=panel.className+' disclosure-panel';details.open=state.disclosureState.get(key)===true;
+    summary.className='disclosure-heading';summary.append(heading);content.className='disclosure-content';
+    while(panel.firstChild)content.append(panel.firstChild);
+    details.append(summary,content);panel.replaceWith(details);
+    details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
+  }
+}
+function rememberUtilityDisclosures(){
+  for(const details of app.querySelectorAll('.archive-tools, .catalog-create')){
+    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+details.querySelector(':scope > summary')?.textContent;
+    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
+  }
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='navigation-open'){openNavigation();return;}
+  if(act==='navigation-close'){closeNavigation(true);return;}
+  if(act==='session-pane'){state.sessionPane=target.dataset.sessionPane;await render();return;}
+  if(act==='catalog-close'){state.catalogSelected=-1;await render();return;}
   if(act==="open-place-token"){
     if(!state.map?.tokens?.length)throw Error("Serve almeno un token di riferimento sulla mappa.");
     const dialog=app.querySelector("#session-place-dialog");
@@ -1910,7 +1979,7 @@ async function handleAction(target){
     return;
   }
   if(act==='action-expand-all'){
-    const details=[...app.querySelectorAll('.action-economy-dashboard details.action-tree, .action-economy-dashboard details.action-economy-entry')];
+    const details=[...app.querySelectorAll('.action-economy-dashboard details.action-economy-section, .action-economy-dashboard details.action-tree, .action-economy-dashboard details.action-economy-entry')];
     const expand=details.some(row=>!row.open);
     for(const row of details)row.open=expand;
     target.textContent=expand?'Comprimi tutto':'Espandi tutto';
@@ -2295,7 +2364,7 @@ async function handleAction(target){
   }
   if(act==="catalog-open"){
     state.catalogSelected=Number(target.dataset.index);
-    await render();return;
+    await render();window.scrollTo(0,0);app.focus({preventScroll:true});return;
   }
   if(act==="catalog-assign"){
     const cId=document.querySelector("#catalog-creature")?.value;
@@ -2548,7 +2617,7 @@ async function handleAction(target){
   if(act==="check"){await refreshConnection();if(state.paired){try{state.map=await map();}catch{state.map=null;}}await render();return;}
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
-    await unpair();stopSubscriptions();state.paired=false;state.session=null;state.map=null;
+    await unpair();stopSubscriptions();state.sessionPane='connection';state.paired=false;state.session=null;state.map=null;
     state.messages=[];state.after="";state.tokenId="";currentGameSession="";
     await render();return;
   }
@@ -2660,7 +2729,7 @@ async function handleSubmit(form){
     const pairedSession=await pair(token,{remember:document.querySelector("#pair-remember")?.checked});
     acceptSession(pairedSession);
     realtimeStopped=false;
-    state.paired=true;state.online=true;
+    state.paired=true;state.online=true;state.sessionPane='table';
     state.messages=[];state.after="";state.tokenId="";
     // Pairing codes are one-time. A momentary map failure must not turn a
     // successful enrollment into a visible failure or require a new QR.
@@ -2680,6 +2749,9 @@ async function handleSubmit(form){
   }
 }
 function listen(){
+  const navigation=document.querySelector('#navigation-dialog');
+  navigation.addEventListener('close',()=>document.querySelector('#more-navigation').setAttribute('aria-expanded','false'));
+  navigation.addEventListener('click',event=>{if(event.target!==navigation)return;const rect=navigation.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeNavigation(true);});
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button)return;
@@ -2687,8 +2759,11 @@ function listen(){
     button.disabled=true;
     try {
       await flushPendingFields();
+      const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
+      if(isDestination)closeNavigation();
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
+      if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected)button.disabled=false;}
   });

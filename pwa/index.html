@@ -17,16 +17,25 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand"><span id="creature-symbol" class="creature-symbol" aria-hidden="true">♜</span><span id="creature-name">VTT</span></div>
-      <div id="connection" class="connection" role="status" aria-live="polite">Archivio offline</div>
+      <button type="button" class="connection-link" data-nav="session" aria-label="Apri partita: mappa, chat e dadi"><span class="connection-label">Partita ↗</span><span id="connection" class="connection" role="status" aria-live="polite">Archivio offline</span></button>
     </header>
-    <nav id="mobile-tabs" class="mobile-tabs" aria-label="Navigazione principale e schede">
-      <div id="nav" class="mobile-primary-tabs" aria-label="Sezioni principali">
-        <button type="button" class="btn" data-nav="library" title="Seleziona creatura" aria-label="Seleziona creatura">♜</button>
-        <button type="button" class="btn" data-nav="catalog" title="Catalogo" aria-label="Catalogo">▤</button>
-        <button type="button" class="btn" data-nav="session" title="Partita" aria-label="Partita">⚔</button>
+    <nav id="mobile-tabs" class="play-dock" aria-label="Navigazione principale">
+      <div id="nav" class="global-destinations">
+        <button type="button" class="btn" data-nav="library" aria-label="Le tue creature">Creature</button>
+        <button type="button" class="btn" data-nav="catalog" aria-label="Catalogo">Catalogo</button>
+        <button type="button" class="btn" data-nav="session" aria-label="Partita">Partita</button>
       </div>
-      <div id="sheet-navigation" class="mobile-sheet-tabs" aria-label="Schede creatura"></div>
+      <div id="sheet-navigation" class="play-destinations"></div>
+      <button type="button" id="more-navigation" class="btn dock-more" data-act="navigation-open" aria-haspopup="dialog" aria-controls="navigation-dialog" aria-expanded="false" hidden>Altro</button>
     </nav>
+    <dialog id="navigation-dialog" class="navigation-sheet" aria-labelledby="navigation-title">
+      <div class="navigation-handle" aria-hidden="true"></div>
+      <div class="navigation-heading"><div><p class="eyebrow">Il tuo spazio di gioco</p><h2 id="navigation-title">Esplora VTT</h2></div><button type="button" class="btn" data-act="navigation-close" aria-label="Chiudi navigazione">✕</button></div>
+      <p class="navigation-group-label">Il personaggio</p>
+      <div id="secondary-sheet-navigation" class="navigation-list"></div>
+      <p class="navigation-group-label">Il tavolo e la biblioteca</p>
+      <div id="global-navigation-slot"></div>
+    </dialog>
     <main id="app" class="content" tabindex="-1" aria-label="Contenuto principale">
       <p class="muted">Apertura archivio locale…</p>
     </main>

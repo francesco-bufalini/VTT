@@ -51,8 +51,9 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('[data-field="name"]').waitFor();
  const names={actions:'Cosa posso fare?',info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
- const section=async key=>{await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true',key);};
+ const section=async key=>{const target=page.locator('[data-sheet="'+key+'"]');if(!await target.isVisible())await page.locator('[data-act="navigation-open"]').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
  await page.setViewportSize({width:360,height:844});
+ await page.locator('.disclosure-heading').filter({hasText:'Fisico'}).click();
  await page.locator('[data-miniature-kind="base"]').click();
  await page.locator('[data-miniature-search]').fill('brass dragon');
  const chosen=page.locator('.miniature-choice').first();
@@ -100,11 +101,11 @@ try{
    assert.ok(size.content<=width,`${key} overflows at ${width}px: ${size.content}`);
    if(width===360&&['info','stats','battle','magic'].includes(key)){
     const touch=await page.evaluate(()=>{
-     const control=document.querySelector('input:not([type=checkbox]):not([type=file]), select');
+     const control=[...document.querySelectorAll('input:not([type=checkbox]):not([type=file]), select')].find(n=>n.getBoundingClientRect().height>0);
      const summary=document.querySelector('.native-summary > div');
      return {control:control?.getBoundingClientRect().height||0,summary:summary?.getBoundingClientRect().height||0};
     });
-    assert.ok(touch.control>=48,`${key} exposes 48px phone controls`);
+    if(touch.control)assert.ok(touch.control>=48,`${key} exposes 48px phone controls`);
     if(touch.summary)assert.ok(touch.summary>=48,`${key} keeps summary rows tappable on phone`);
    }
    if(key==='traits'){
@@ -119,14 +120,18 @@ try{
  await page.locator('[data-act="sheet-roll"][data-target="save:dex"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();
  assert.match(await page.locator('#sheet-roll-dialog h2').textContent(),/Scheda di prova.*Tiro salvezza/);
+ await page.locator('[data-act="roll-sheet-confirm"]').click();
  const baseRoll=Number(await page.locator('#sheet-roll-dialog .dice-result').textContent());
- await page.locator('[data-roll-bonus="0"]').check();await page.getByRole('button',{name:'Applica bonus',exact:true}).click();
- const bonusRoll=Number(await page.locator('#sheet-roll-dialog .dice-result').textContent());assert.ok(bonusRoll>baseRoll&&bonusRoll<=baseRoll+4);
+ assert(baseRoll>=1&&baseRoll<=40);
+ await page.locator('[data-act="close-sheet-roll"]').click();
+ await page.locator('[data-act="sheet-roll"][data-target="save:dex"]').click();
+ await page.locator('[data-roll-bonus="0"]').check();assert.match(await page.locator('[data-roll-formula]').textContent(),/1d4/);await page.locator('[data-act="roll-sheet-confirm"]').click();
+ const bonusRoll=Number(await page.locator('#sheet-roll-dialog .dice-result').textContent());assert.ok(bonusRoll>=2&&bonusRoll<=44);
  await page.locator('[data-act="close-sheet-roll"]').click();
  assert.equal(await page.locator('[data-sheet="stats"]').getAttribute('aria-pressed'),'true');
  await section('battle');
  assert.equal(await page.locator('[data-calculated="ac"]').textContent(),'17');
- await page.locator('#hp-amount').fill('10');await page.locator('[data-act="hp-damage"]').click();
+ await page.locator('[data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-form button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-field="current_hp"]')?.value==='37');
  assert.equal(await page.locator('[data-calculated="tracker:focus"]').textContent(),'9');
  await page.locator('[data-act="tracker-more"][data-tracker-id="focus"]').click();
@@ -147,33 +152,39 @@ try{
  await page.locator('[data-benefit-tracker="focus"][data-requirement="min_level"]').fill('0');await page.locator('[data-benefit-tracker="focus"][data-requirement="min_level"]').press('Tab');
  await page.waitForFunction(()=>document.querySelector('[data-calculated="tracker:focus"]')?.textContent==='6');
  await section('magic');
+ const magicTool=async kind=>{if(!await page.locator('.magic-utility-menu').evaluate(n=>n.open))await page.locator('.magic-utility-menu > summary').click();await page.locator('[data-magic-tool="'+kind+'"]').click();};
+ await magicTool('choices');
  assert.ok(await page.locator('[data-act="origin-choice-pick"]').count(),'Fey Touched must offer an explicit choice');
  const originPicker=page.locator('[data-origin-choice]').first();
  const choiceOptions=await originPicker.locator('option').evaluateAll(rows=>rows.map(row=>row.value).filter(Boolean));
  assert.ok(choiceOptions.length);await originPicker.selectOption(choiceOptions[0]);
  const ability=page.locator('[data-choice-ability]').first();if(await ability.count())await ability.selectOption('int');
  await page.locator('[data-act="origin-choice-pick"]').first().click();
- await page.locator('[data-act="origin-choice-remove"]').waitFor();
- const innate=page.locator('[data-act="origin-spend"]').first();assert.ok(await innate.count());await innate.click();
+ await page.locator('[data-act="origin-choice-remove"]').waitFor({state:'attached'});
+ await page.locator('[data-act="magic-tool-close"]').click();await section('battle');
+ const innate=page.locator('[data-act="tracker-more"][data-tracker-id^="5espell:"]').first();assert.ok(await innate.count());await innate.click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return Object.keys((await listCreatures())[0].creature.resource_tracker_spent).some(id=>id.startsWith('5espell:'));});
+ await section('magic');await magicTool('catalog');
  await page.locator('#spell-class').selectOption('class|phb|wizard');
  await page.locator('#spell-target').selectOption('spellbook_spells');
  await page.locator('#spell-search').fill('Shield');await page.locator('[data-act="spell-pick"]').filter({has:page.getByText('Shield',{exact:true})}).click();
- await page.waitForFunction(()=>document.querySelector('[data-act="remove-spell"][data-key="spellbook_spells"]'));
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.spellbook_spells?.length>0;});
  await page.locator('#spell-target').selectOption('prepared_spells');
  await page.locator('[data-act="spell-pick"]').filter({has:page.getByText('Shield',{exact:true})}).click();
  await page.waitForFunction(()=>document.querySelector('[data-act="remove-spell"][data-key="prepared_spells"]'));
- await page.locator('[data-act="slot-use"][data-level="1"]').click();
+ await page.locator('[data-act="magic-tool-close"]').click();
+ await page.locator('[data-act="slot-use"][data-level="1"]').first().click();
+ await magicTool('slots');
  await page.waitForFunction(()=>document.querySelector('[data-slot="1"]')?.value==='2');
  await page.waitForFunction(async()=> (await navigator.serviceWorker.getRegistration())?.active?.state==='activated');
  await context.setOffline(true);await page.reload();
  await page.locator('[data-act="open"]').click();await page.locator('[data-field="name"]').waitFor();
- await section('magic');assert.equal(await page.locator('[data-slot="1"]').inputValue(),'2');
+ await section('magic');await magicTool('slots');assert.equal(await page.locator('[data-slot="1"]').inputValue(),'2');
  assert.match(await page.locator('#app').textContent(),/Shield/);
  assert.deepEqual(errors,[]);
  assert.deepEqual(apiWrites,[],'sheet edits and tests must not execute desktop game commands');
  assert.equal((await counts()).manual,2,'rests and reopening must preserve manual counters');
- console.log('PASS: 8 sections at 360/390/768/1440px; optional dice, formula trackers, level gates, recovery, origin choices/charges, spellbook/slots and offline persistence.');
+ console.log('PASS: 9 sections at 360/390/768/1440px; optional dice, formula trackers, level gates, recovery, origin choices/charges, spellbook/slots and offline persistence.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
  }
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

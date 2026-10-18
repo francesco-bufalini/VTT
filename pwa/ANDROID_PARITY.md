@@ -7,14 +7,33 @@ esclusivamente `pwa/` e non richiede nuovi endpoint nativi.
 
 ## Mappa delle sezioni
 
-Ordine del menu: **Info**, **Caratteristiche e abilità**, **Battaglia**, **Poteri**,
-**Inventario**, **Tratti**, **Condizioni**, **Modifica personaggio**.
+La navigazione della PWA è progettata per smartphone durante la sessione:
+
+- Barra inferiore sempre visibile: **Azioni**, **Battaglia**, **Poteri**, **Zaino**, **Altro**.
+- **Altro** apre un pannello con etichette e descrizioni: **Caratteristiche e abilità**, **Condizioni**, **Tratti**, **Info**, **Modifica personaggio**; quindi **Creature**, **Catalogo**, **Partita**.
+- **Partita** è raggiungibile anche direttamente dall’intestazione e separa **Mappa**, **Chat e dadi**, **Collegamento**. Il collegamento riuscito apre la mappa.
+- Senza una creatura selezionata, la barra propone **Creature**, **Catalogo**, **Partita**.
+
+Le categorie delle azioni, i pannelli secondari di Info, pergamene, documenti e
+infusioni si aprono su richiesta. **Gestisci poteri e incantesimi** contiene
+sei comandi con etichette per concentrazione, slot, libro, catalogo, scelte e
+concessioni delle origini. I dettagli aperti si conservano mentre si naviga.
+Le importazioni, i backup e le selezioni multiple sono in **Importa e gestisci
+l’archivio**; esportazione della singola scheda, editor JSON e cancellazione
+restano in **Opzioni della scheda**, in fondo a ogni sezione. Il catalogo apre
+il dettaglio selezionato con un ritorno esplicito ai risultati.
+
+Tutti gli ID delle sezioni, i campi della scheda e i gestori delle azioni
+rimangono quelli esistenti. La navigazione attende il salvataggio degli input
+prima di cambiare schermata. La cache della nuova interfaccia è `v52` e non
+modifica IndexedDB. Il tema bronzo e bordeaux e le icone VTT sono conservati.
 
 | Sezione | Box e contenuto | Implementazione |
 | --- | --- | --- |
 | Info | Identità con background; Fisico con specie, sottorazza, miniature, taglia, velocità e salti; Classi e progressione; Talenti; Storia e personalità | `nativeSection()` in `native_sheet.js` |
 | Caratteristiche e abilità | Caratteristiche con base, totale, modificatore e TS; Riepilogo con competenza e percezione passiva; Abilità; Strumenti e linguaggi | `nativeSection()` e `formulaReadout()` |
 | Battaglia | Punti ferita; Risorse; CA e iniziativa con armatura; Attacchi disponibili con selezione delle mani | `nativeSection()`, `resourceView()`, `equipmentView()`, `attacksView()` |
+| Cosa posso fare? | Azioni, azioni bonus, azioni gratuite, movimento e reazioni; categorie apribili, prove, costi e regole varianti | `actionEconomyView()` e `organizeSheetPanels()` |
 | Poteri | Concentrazione; Incantesimi disponibili per classe; Slot · Classi / Patto; Origine per concessioni manuali; Libro; selezione dal catalogo | `editorView()`, `castingStatistics()`, `originPowersView()` |
 | Inventario | Oggetti e documenti, quantità, equipaggiamento, sintonia e stato attivo | `inventoryRow()`, `documentRow()`, `item_controls.js`, `documents.js` |
 | Tratti | Testi da specie, background, classi e sottoclassi al livello attuale, talenti e tratti del mostro; collegamenti agli editor dei benefici | `traitsView()` e `catalog_data.js` |
@@ -109,6 +128,8 @@ attribuisce silenziosamente benefici che non può calcolare.
 ```text
 npm test
 npm run test:browser
+npm run test:navigation-browser
+npm run test:actions-browser
 npm run test:native-origins
 npm run test:native-mechanics
 ```
@@ -171,3 +192,14 @@ e non richiede una chiamata al server.
 Lancio incantesimi dalla scheda **Magia** (compresi incantesimi concessi dalle origini) e dalla schermata **Partita**: con la creatura collegata a un token, `begin_spell` apre lo snapshot WebP bidimensionale con i marcatori selezionabili. `target_spell`, `preview_spell`, `finish_spell` e `cancel_spell` sono gli stessi comandi autorizzati da Godot per Android; i calcoli di area, portata ed effetti rimangono sul desktop. La PWA addebita la risorsa solo dopo l'accettazione del lancio, non per anteprime o comandi rifiutati.
 
 Ogni snapshot pubblico della mappa espone `conditions`, `concentrating_spell_id` e `active_spell_ids` dei token effettivamente interessati: la PWA riconcilia questi campi con **le sole proprie schede collegate**, anche quando si sta usando la scheda, usando la stessa semantica di `CreatureArea._copy_public_token_status` Android. Gli incantesimi aggiunti diventano origini `spell:<id>` con `applied: true`; quelli dispersi vengono rimossi solo se erano stati applicati. Origini di altre provenienze, bonus volontari, PF, inventario e contesti privati non vengono cancellati. La riconciliazione usa l'editor aperto per evitare conflitti di revisioni su IndexedDB. Nessun dato della scheda viene inviato con la mappa.
+
+### Verifica della navigazione smartphone
+
+`npm run test:navigation-browser` usa le rotte effettive di `PwaHost`, Chrome
+con un profilo isolato e dati sintetici. Verifica le nove sezioni a
+320/360/390/430 px e in orizzontale, pulsanti di navigazione con etichette e
+almeno 48 px, focus e chiusura del pannello, salvataggi prima della navigazione,
+riapertura dei dettagli, creazione dal catalogo, sezioni Partita, dadi offline
+e riapertura senza rete. Le schermate `navigation-*.png` sono in
+`pwa/.test-artifacts/`, esclusa da Git. Non installa software sul telefono o
+sull’emulatore e non invia comandi a una partita reale.
