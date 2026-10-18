@@ -24,6 +24,11 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(sword.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 5 · Mischia/);
  assert.equal(sword.querySelector('.play-battle-attack-roll b').textContent,'+5');
  assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
+ assert(sword.querySelector('[data-act="battle-damage-roll"]'));
+ assert.equal(sword.querySelector('[data-damage-formula]').dataset.damageFormula,'1d8');
+ assert.equal(sword.querySelectorAll('.play-battle-effect').length,1);
+ assert(!sword.querySelector('.play-battle-attack-chevron'));
+
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
  const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
  assert.match(dagger.querySelector('.play-battle-attack-copy small').textContent,/Distanza/);
@@ -32,8 +37,14 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
  assert(![...attacks.querySelectorAll('.play-battle-attack-copy strong')].some(node=>/^(Attaccare|Combattere con due armi)$/.test(node.textContent)));
  const grapple=attacks.querySelector('[data-attack-id="grapple"]');
- assert.match(grapple.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 3 · Prova di Atletica/);
+ assert.match(grapple.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 3 · Atletica/);
  assert.equal(grapple.querySelector('[data-target="skill:athletics"]').tagName,'BUTTON');
+ assert.equal(grapple.querySelector('.play-battle-effect').dataset.effectKind,'condition');
+ assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
+ assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
+ assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
+ assert.equal(movement.querySelectorAll('.play-battle-attack-entry:not(:has(.play-battle-effect))').length,0);
+
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
  assert.equal(attacks.querySelector('[data-action-timing="action"] h3>.vtt-action-glyph')?.tagName,'SPAN');
  assert.equal(movement.querySelector('[data-action-timing="movement"] h3>.vtt-action-glyph')?.tagName,'SPAN');
@@ -260,4 +271,15 @@ test('quick skill checks remain with the action skill group when the catalog is 
  const checks=root.querySelector('[data-timing="action"] [data-action-group="skill-checks"]');
  assert(checks);assert.equal(checks.querySelectorAll('[data-target^="skill:"]').length,4);
  assert(!root.querySelector('[data-timing="free"] [data-target^="skill:"]'));
+});
+
+test('battle spells use the same timed disclosure sections without requiring slots to render',()=>{
+ const spell={id:'test_spell',name:'Dardo magico',level:1,time:[{number:1,unit:'action'}]};
+ const result=battleActionPanels({rules_version:'2014',prepared_spells:[spell]},{
+  casting_classes:[{id:'class|phb|wizard',level:3,spellcasting_ability:'int',prepared:true}],
+  origin_spells:[],trackers:[]
+ },[spell],[],catalog.actions);
+ assert.equal(typeof result.spells,'string');
+ assert(!result.spells.includes('undefined'));
+ assert.equal(result.attacks.includes('Prova di Atletica'),false);
 });
