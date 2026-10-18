@@ -343,14 +343,14 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
     (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):
        '<p class="hint">Per i personaggi la velocità deriva dalla specie e dai bonus, come nella scheda nativa.</p>'))+
-   '<section class="panel native-progression-panel">'+
-      '<div class="native-progression-heading"><h2>Classi e progressione</h2>'+
+   '<section class="panel native-progression-panel"><h2>Classi e progressione</h2>'+
+      '<div class="native-progression-heading">'+
       '<span class="native-total-level" aria-label="Livello totale automatico">Livello totale: <strong>'+esc(totalClassLevel(c))+'</strong></span>'+
-      number('XP','xp')+'</div>'+cols(
+      number('XP','xp')+'</div><div class="native-progression-content">'+cols(
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
       (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
         '<label>Livello classe principale<input type="number" value="0" disabled></label>'))+
-      '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1)+'</section>'+
+      '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1)+'</div></section>'+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>');
  if(section==='stats')return panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
