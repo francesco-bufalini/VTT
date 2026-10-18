@@ -395,7 +395,9 @@ func configure_touch_layout() -> void:
 		_desktop_ui.hide()
 		# Retain touch-specific independent list/description scrolling.
 		_details.mouse_force_pass_scroll_events = false
+		_details.remove_meta("pass_wheel_to_sheet")
 		_catalog_list.mouse_force_pass_scroll_events = false
+		_catalog_list.remove_meta("pass_wheel_to_sheet")
 		if _details.get_parent() == _desktop_ui:
 			_desktop_ui.remove_child(_details)
 			objects_page.add_child(_details)
