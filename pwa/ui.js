@@ -117,11 +117,17 @@ function errorMessage(error) {
   if (code === 401) return "Associazione necessaria: inserisci il codice del desktop.";
   return error instanceof Error ? error.message : String(error);
 }
+// Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
+const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions:'weapon',
+ magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
+const INFO_HEADING_ICONS={'Identità':'identity','Fisico':'physique',
+ 'Classi e progressione':'progression','Talenti':'talents'};
 function syncNav() {
   document.querySelector("#sheet-navigation").innerHTML = state.page === "library" && state.creatureId ?
     '<p class="drawer-heading">Scheda creatura</p>'+sheetSections.map(([key,title]) =>
       '<button type="button" class="btn" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
-      (state.sheet===key)+'">'+title+'</button>').join("") : "";
+      (state.sheet===key)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+
+       '<span>'+esc(title)+'</span></button>').join("") : "";
   for(const button of nav.querySelectorAll("[data-nav]")) {
     const current = button.dataset.nav === state.page;
     if(current) button.setAttribute("aria-current","page");
@@ -1166,7 +1172,7 @@ async function handleField(target) {
       const preview=app.querySelector('[data-formula-preview="'+target.dataset.index+'"]');
       if(preview)preview.textContent=formulaPreview(target.value,state.calculated);
     }
-    if(target.dataset.key==='kind')await render();
+    if(target.dataset.key==='kind'||key==='classes'&&field==='level')await render();
     return;
   }
   if(target.dataset.originConfig){
@@ -1260,7 +1266,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(key==='rules_version')await render();
+    if(key==='rules_version'||key==='primary_class_level')await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -1339,10 +1345,27 @@ function readActionVariants(){
 }
 function decorateSheetHeadings(){
  for(const heading of app.querySelectorAll('.panel > h2, .native-entry > h3, .current-section')){
-  if(heading.querySelector('.vtt-action-glyph'))continue;
-  const text=heading.textContent.toLocaleLowerCase('it');
-  const key=/inventari|oggett|equipaggia/.test(text)?'inventory':/ferit|salute/.test(text)?'healing':/caratterist|abilit|competenz/.test(text)?'skill':/condizion/.test(text)?'condition':/attacc|battaglia|cosa posso/.test(text)?'weapon':/moviment|velocit/.test(text)?'dash':/poter|incantesim|slot/.test(text)?'spark':/tratt|privileg|talent/.test(text)?'proficiency':'information';
-  heading.insertAdjacentHTML('afterbegin',actionGlyph(key));
+  if(heading.querySelector('.vtt-action-glyph,.vtt-info-icon'))continue;
+  const title=heading.textContent.trim();
+  const icon=INFO_HEADING_ICONS[title];
+  if(icon)heading.insertAdjacentHTML('afterbegin','<img class="vtt-info-icon" src="/icons/info/'+icon+'.svg" alt="" aria-hidden="true">');
+  else {
+   const text=title.toLocaleLowerCase('it');
+   const key=heading.classList.contains('current-section')?SHEET_TAB_GLYPHS[state.sheet]||'information':
+     /inventari|oggett|equipaggia/.test(text)?'inventory':
+     /ferit|salute|punti ferita/.test(text)?'healing':
+     /risors|tracker/.test(text)?'reset':
+     /caratterist|competenz/.test(text)?'proficiency':
+     /abilit/.test(text)?'skill':
+     /condizion/.test(text)?'condition':
+     /attacc|battaglia|cosa posso/.test(text)?'weapon':
+     /fisico|moviment|velocit/.test(text)?'movement':
+     /classi/.test(text)?'book':
+     /poter|incantesim|slot/.test(text)?'spark':
+     /storia/.test(text)?'scroll':
+     /tratt|privileg/.test(text)?'proficiency':'information';
+   heading.insertAdjacentHTML('afterbegin',actionGlyph(key));
+  }
   heading.classList.add('sheet-heading');
  }
 }
