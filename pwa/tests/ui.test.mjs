@@ -756,7 +756,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-sheet="battle"]');
  await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
-  ['Punti ferita','Classe armatura e iniziativa','Risorse','Attacchi disponibili'],
+  ['Punti ferita','Classe armatura','Movimento','Risorse','Attacchi disponibili'],
   'CA follows HP before resource trackers and attacks');
  assert.equal(document.querySelectorAll('[data-field="death_save_successes"],[data-field="death_save_failures"]').length,0,
   'The death-save section is absent');
@@ -767,8 +767,14 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'Manual HP maxima are folded away by default');
  assert.ok(document.querySelector('.battle-second-form[open]'),
   'A populated second form stays visible');
- assert.ok(document.querySelector('.battle-defense-settings:not([open])'),
-  'Armor can be edited in an expandable area');
+ assert.ok(document.querySelector('.battle-defense-settings [data-equip-slot="body"]'),
+  'Worn armor is editable without expanding an accordion');
+ assert.ok(document.querySelector('.battle-ac-formula output'),
+  'The current armor or natural AC formula is always shown');
+ assert.equal(document.querySelector('.battle-defense-panel [data-calculated="initiative"]'),null,
+  'Initiative is not duplicated inside the AC popup');
+ assert.ok(document.querySelector('.battle-movement-panel [data-calculated="speed"]'),
+  'Movement has its own dedicated panel');
  assert.ok(document.querySelector('.battle-attack-settings:not([open])'),
   'Equipment and attack modifiers remain available without permanent clutter');
  assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
