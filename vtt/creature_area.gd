@@ -2287,6 +2287,16 @@ func _refresh_creature_language() -> void:
 	if _spellcasting_ui != null and _spellcasting_ui.has_method("set_gui_language"):
 		_spellcasting_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
+	# The mobile section drawer lives under ui_root, outside the archive panel.
+	# Its buttons must mirror the localized tabs rather than storing display
+	# strings as the source of truth (the selection indices never change).
+	if _touch_section_drawer != null and is_instance_valid(_touch_section_drawer):
+		CreatureLocale.apply(_touch_section_drawer, _creature_language)
+		for index: int in range(mini(_touch_section_buttons.size(), _tabs.get_tab_count())):
+			_touch_section_buttons[index].text = _tabs.get_tab_title(index)
+	if _touch_section != null and is_instance_valid(_touch_section):
+		for index: int in range(mini(_touch_section.item_count, _tabs.get_tab_count())):
+			_touch_section.set_item_text(index, _tabs.get_tab_title(index))
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
 		_automatic_dialog, _delete_dialog, _miniature_dialog, _transfer_dialog,
