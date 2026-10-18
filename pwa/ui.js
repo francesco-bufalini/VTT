@@ -1935,9 +1935,12 @@ async function handleAction(target){
     const incapacitated=(c.conditions||[]).includes('unconscious')||(c.rules_version==='2024'&&(c.conditions||[]).includes('incapacitated'));
     if(key==='rage'&&(incapacitated||(c.inventory||[]).some(item=>item?.equipped_slots?.includes('body')&&String(item.type||'').split('|')[0]==='HA')))throw Error('Ira non disponibile con armatura pesante o incapacità.');
     const tracker=(state.calculated?.trackers||[]).find(row=>row.id===ability.tracker_id);
-    const cost=Math.max(0,Number(ability.cost)||0);
+    const requiresTracker=['rage','innate_sorcery'].includes(key)||
+      (c.rules_version!=='2024'&&['patient_defense','step_of_the_wind'].includes(key));
+    if(requiresTracker&&!tracker)throw Error('Tracker della capacità non disponibile.');
+    const cost=requiresTracker?1:Math.max(0,Number(ability.cost)||0);
     if(cost&&(!tracker||tracker.max-tracker.spent<cost))throw Error('Risorsa insufficiente per attivare la capacità.');
-    const changes={active_class_features:{...(c.active_class_features||{}),[key]:{name:ability.name,origin_id:ability.origin_id,rules_version:c.rules_version||'2014',enhanced:false}}};
+    const changes={active_class_features:{...(c.active_class_features||{}),[key]:{name:ability.name,origin_id:ability.origin_id||ability.id,rules_version:c.rules_version||'2014',enhanced:false}}};
     if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
     if(key==='rage'){
       changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
