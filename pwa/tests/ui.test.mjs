@@ -28,7 +28,7 @@ globalThis.fetch=async (url,options={})=>{
 };
 const {mount,stopRealtime}=await import("../ui.js");
 const {takeQrPairCode}=await import("../client.js");
-const {listCreatures,loadCreature,exportCreature}=await import("../creatures.js");
+const {listCreatures,loadCreature,exportCreature,openCreatureEditor}=await import("../creatures.js");
 const {getRecord}=await import("../storage.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
@@ -501,6 +501,38 @@ test("inline spell catalog adds available and spellbook choices without divergin
     return current?.prepared_spells?.length===0 && current?.spells?.length===0 &&
       current?.spellbook_spells?.length===1;
   });
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("PWA non-slot spells share tracker panels across different origins",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Poteri tracker condivisi");
+  await until(async()=>(await listCreatures()).some(row=>row.creature.name==="Poteri tracker condivisi"));
+  const id=(await listCreatures()).find(row=>row.creature.name==="Poteri tracker condivisi").creature.id;
+  click('[data-act="back"]');
+  await until(()=>document.querySelector('[data-act="open"][data-id="'+id+'"]'));
+  const editor=await openCreatureEditor(id);
+  await editor.update({
+    resource_trackers:[{id:"shared-power-uses",name:"Cariche condivise",max:3,recharge:"long_rest"}],
+    origin_spell_grants:[
+      {id:"grant:shield",origin_id:"custom:first",origin_name:"Prima origine",
+        spell_id:"spell:shield|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"int"},
+      {id:"grant:light",origin_id:"custom:second",origin_name:"Seconda origine",
+        spell_id:"spell:light|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"cha"}
+    ]
+  });
+  click('[data-act="open"][data-id="'+id+'"]');
+  await until(()=>document.querySelector('[data-sheet="magic"]'));
+  click('[data-sheet="magic"]');
+  await until(()=>document.querySelector('.magic-tracker-panel'));
+  const groups=[...document.querySelectorAll('.magic-tracker-panel')].filter(el=>el.querySelector('h2')?.textContent==="Cariche condivise");
+  assert.equal(groups.length,1,"one box for one shared tracker");
+  const group=groups[0];
+  assert.deepEqual([...group.querySelectorAll('.magic-level h4')].map(n=>n.textContent),["Trucchetti","Livello 1"]);
+  assert.equal(group.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length,2);
+  assert.equal(group.querySelectorAll('[data-casting-section]').length,2,"each source keeps its spellcasting ability");
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
