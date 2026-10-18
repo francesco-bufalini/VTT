@@ -455,7 +455,7 @@ func _refresh_competences() -> void:
 			box.add_child(label)
 			if kind == "skill":
 				var expert := CheckButton.new()
-				expert.text = "Mestria"
+				expert.text = "Maestria"
 				expert.tooltip_text = "Maestria (doppia competenza)"
 				expert.button_pressed = mastered
 				expert.custom_minimum_size.y = 34
