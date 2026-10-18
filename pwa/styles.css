@@ -700,3 +700,7 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .magic-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
 .magic-dialog-actions .btn{min-width:86px;min-height:38px}
 @media(max-width:480px){.magic-panel .magic-source{padding:8px 0}.magic-spell-dialog{padding:14px}.magic-spell-description{max-height:40dvh}}
+
+.magic-spell-row{flex-wrap:wrap}
+.magic-catalog-entry.btn{min-height:36px;padding:6px 9px;margin:2px 0;font-weight:500;text-align:left}
+.magic-entries .magic-catalog-entry{border-radius:5px}
