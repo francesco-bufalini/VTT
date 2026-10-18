@@ -434,7 +434,7 @@ const DAMAGE_GLYPHS={
 };
 const supportedDamage=formula=>/^\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+)(?:\s*[+-]\s*(?:\d+d(?:4|6|8|10|12|20|100)|\d+))*\s*$/i.test(String(formula||''));
 function battleEffectMarkup(item,attack){
- const effect=attack?.damage&&String(attack.damage).trim()!=='Come da bestiario'?
+ const effect=attack?.damage?
   {kind:'damage',label:String(attack.damage).trim(),type:String(attack.damage_type||'').trim(),
    glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
  const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
