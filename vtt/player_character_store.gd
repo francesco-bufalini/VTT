@@ -129,6 +129,7 @@ func create_character() -> Dictionary:
 		"darkvision": 0,
 		"exhaustion": 0,
 		"hit_dice": "",
+		"hit_dice_spent": {},
 		"death_save_successes": 0,
 		"death_save_failures": 0,
 		"attacks": "",
