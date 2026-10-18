@@ -29,7 +29,11 @@ try{
   await page.setViewportSize(viewport);
   for(const key of ['info','battle','actions','magic','inventory','traits','conditions','origins']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
-   assert.equal(await page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea').count(),0,'Edits belong in contextual windows: '+key);
+   const inlineEditors=page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea');
+   assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
+     'Only the five coin amounts are editable inline: '+key);
+   if(key==='inventory')assert.equal(await page.locator('#sheet-play-view .inventory-play-coins input[data-coin-code]').count(),5,
+     'Visible direct inventory editors must be the five currency inputs');
    if(viewport.width===390)await shot(key);
   }
  }
