@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "source": "vtt/data/creature_references_5etools.json",
+  "races": [
+    {
+      "id": "5etools:races:aag:astral%20elf",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:aag:autognome",
+      "name": "Autognome",
+      "source": "AAG",
+      "creatureTypes": [
+        "construct"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:bugbear",
+      "name": "Bugbear",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:centaur",
+      "name": "Centaur",
+      "source": "MPMM",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:changeling",
+      "name": "Changeling",
+      "source": "MPMM",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:tce:custom%20lineage",
+      "name": "Custom Lineage",
+      "source": "TCE",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:deep%20gnome",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:duergar",
+      "name": "Duergar",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:eladrin",
+      "name": "Eladrin",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:fairy",
+      "name": "Fairy",
+      "source": "MPMM",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:wbtw:fairy",
+      "name": "Fairy",
+      "source": "WBtW",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:goblin",
+      "name": "Goblin",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:vrgr:hexblood",
+      "name": "Hexblood",
+      "source": "VRGR",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:hobgoblin",
+      "name": "Hobgoblin",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:aag:plasmoid",
+      "name": "Plasmoid",
+      "source": "AAG",
+      "creatureTypes": [
+        "ooze"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:satyr",
+      "name": "Satyr",
+      "source": "MPMM",
+      "creatureTypes": [
+        "fey"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:sea%20elf",
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:shadar-kai",
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "creatureTypes": [
+        "humanoid"
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:skeleton",
+      "name": "Skeleton",
+      "source": "DMG",
+      "creatureTypes": [
+        "undead"
+      ]
+    },
+    {
+      "id": "5etools:races:aag:thri-kreen",
+      "name": "Thri-kreen",
+      "source": "AAG",
+      "creatureTypes": [
+        "monstrosity"
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:zombie",
+      "name": "Zombie",
+      "source": "DMG",
+      "creatureTypes": [
+        "undead"
+      ]
+    }
+  ]
+}
