@@ -781,7 +781,6 @@ const EN: Dictionary = {
 	"Gittata: ": "Range: ",
 	"livello ": "level ",
 	"Competenza": "Proficiency",
-	"Maestria": "Expertise",
 	"Creatura": "Creature",
 	"Incantesimo": "Spell",
 	"Patto · %d° livello · %d rimasti": "Pact · level %d · %d remaining",
