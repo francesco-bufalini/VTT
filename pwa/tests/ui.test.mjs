@@ -266,9 +266,14 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   await until(()=>document.querySelector('#session-token-dialog[open]'));
   const condition=document.querySelector('[data-token-condition="prone"]');
   assert.ok(condition,"Token popup must expose native conditions");
+  assert.ok(condition.closest('.condition-toggle-grid'),'Token popup must share the condition grid');
+  assert.equal(condition.closest('label').textContent.trim(),'Prono','Popup uses localised condition labels');
+  assert.equal(document.querySelectorAll('#session-token-dialog .condition-toggle').length,19);
   condition.checked=true;
   condition.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   await until(()=>calls.some(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition"));
+  const changed=calls.find(c=>c.url==="/api/action"&&JSON.parse(c.options.body).action==="set_condition");
+  assert.equal(JSON.parse(changed.options.body).payload.token_id,"token_1");
   click('[data-nav="chat"]');
   await until(()=>document.querySelector("#chat-form"));
   const input=document.querySelector("#chat-message");
@@ -412,11 +417,16 @@ test("native Android section order and editable sheet data",async()=>{
   await changeScore('str',14);
   click('[data-sheet="conditions"]');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
+  assert.equal(document.querySelectorAll('.condition-sheet-panel .condition-toggle').length,19);
+  assert.equal(document.querySelector('[data-condition="prone"]').closest('label').textContent.trim(),'Prono');
+  assert.ok(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'));
+  assert.equal(document.querySelector('[data-condition-count]').textContent,'0');
   document.querySelector('[data-condition="poisoned"]').click();
   await until(async()=>{
     const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
     return c?.abilities?.str===14 && c.conditions?.includes("poisoned");
   });
+  assert.equal(document.querySelector('[data-condition-count]').textContent,'1');
   click('[data-sheet="origins"]');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','proficiency_choices');
@@ -714,6 +724,16 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'Manual HP maxima are folded away by default');
  assert.ok(document.querySelector('.battle-second-form[open]'),
   'A populated second form stays visible');
+ assert.ok(document.querySelector('.battle-defense-settings:not([open])'),
+  'Armor can be edited in an expandable area');
+ assert.ok(document.querySelector('.battle-attack-settings:not([open])'),
+  'Equipment and attack modifiers remain available without permanent clutter');
+ assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
+  'Trackers use compact action rows in battle');
+ assert.ok(document.querySelector('.battle-attacks-panel .battle-attack-row'),
+  'Attacks use compact summary rows');
+ assert.ok(document.querySelector('.battle-resources-panel [data-act="tracker-turn"]'),
+  'Turn recovery remains available');
  document.querySelector('#hp-amount').value='10';click('[data-act="hp-damage"]');
  await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
  let record=(await loadCreature(saved.data.id)).data;
