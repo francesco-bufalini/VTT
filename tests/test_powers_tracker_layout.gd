@@ -95,7 +95,8 @@ func run() -> void:
 	var first_row: HBoxContainer = list.get_child(0)
 	assert(spell_scroll.custom_minimum_size.y >= first_row.get_combined_minimum_size().y + 8,
 		"Section must fully display casting stats and at least one power before scrolling")
-	assert(ability_list.get_parent().custom_minimum_size.y < 220,
+	var ability_scroll := ability_list.get_parent() as ScrollContainer
+	assert(ability_scroll.custom_minimum_size.y < 220,
 		"Ability list stays bounded rather than stretching Rage vertically")
 	assert(view._rows[0].get_child(0).size.y >= first_row.size.y,
 		"Paired panel height cannot clip the first spell")
