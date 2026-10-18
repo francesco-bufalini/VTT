@@ -374,7 +374,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
   return '<div class="battle-root">'+
    panel('Punti ferita',
-    '<div class="battle-hp-grid">'+
+    '<div class="battle-hp-grid" aria-label="Punti ferita">'+
       '<label class="battle-stat battle-current-hp">PF attuali<input data-field="current_hp" type="number" min="-999" max="99999" value="'+esc(c.current_hp??1)+'"></label>'+
       '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('hp','PF massimi')+'</div>'+
       '<label class="battle-stat battle-temp-hp">PF temporanei<input data-field="temporary_hp" type="number" min="0" max="99999" value="'+esc(c.temporary_hp??0)+'"></label>'+
@@ -383,7 +383,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<label class="battle-hp-quantity">Quantità<input id="hp-amount" type="number" inputmode="numeric" min="1" max="99999" value="1"></label>'+
       '<button type="button" class="btn danger" data-act="hp-damage">− Danni</button>'+
       '<button type="button" class="btn primary" data-act="hp-heal">＋ Cura</button>'+
-      '<button type="button" class="btn" data-act="hp-restore">↺ PF pieni</button>'+
+      '<button type="button" class="btn" data-act="hp-restore" aria-label="Ripristina tutti i punti ferita" title="PF pieni">↺ PF pieni</button>'+
     '</div>'+
     '<details class="battle-second-form"'+(hasSecondForm?' open':'')+'><summary>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</summary>'+
       '<div class="battle-hp-grid battle-form-stats">'+
@@ -407,17 +407,16 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       '<div class="battle-stat"><span>CA</span>'+read('ac','Classe armatura')+'</div>'+
       '<div class="battle-stat"><span>Iniziativa</span>'+read('initiative','Iniziativa',true)+'</div>'+
     '</div>'+
-    armor+
-    '<details class="battle-defense-settings"><summary>Formula CA naturale</summary>'+
-      field('Formula','armor_natural_formula',c.armor_natural_formula)+
+    '<details class="battle-defense-settings"><summary>Armatura e CA naturale</summary>'+
+      armor+field('Formula CA naturale','armor_natural_formula',c.armor_natural_formula)+
       '<p class="hint">La CA include automaticamente armature, scudi e bonus dalle origini.</p>'+
     '</details>',
     'battle-defense-panel')+
    resources+
    panel('Attacchi disponibili',
-     equipment+
      attacks+
-     '<details class="battle-attack-settings"><summary>Impostazioni degli attacchi</summary>'+
+     '<details class="battle-attack-settings"><summary>Equipaggiamento e impostazioni</summary>'+
+       equipment+
        select('Caratteristica attacchi','attack_ability',[['str','Forza'],['dex','Destrezza']],c.attack_ability||'str')+
        '<label class="check"><input type="checkbox" data-field="hand_grip_two_handed" '+(c.hand_grip_two_handed?'checked':'')+'>Impugnatura a due mani (Versatile)</label>'+
        '<button type="button" class="btn small" data-act="sheet-details" data-detail="formula_bonuses">Bonus iniziativa e attacchi</button>'+
