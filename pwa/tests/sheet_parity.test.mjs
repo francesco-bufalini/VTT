@@ -165,7 +165,8 @@ test('primary class level can be edited but total is recomputed and cannot be ed
    area:()=>'',panel:(_title,body)=>body,catalogs:{},calculated:{stats:{},values:{}}});
  assert.match(html,/data-field="primary_class_level"/);
  assert.doesNotMatch(html,/data-field="level"/);
- assert.match(html,/Livello totale<input type="number" value="6" disabled/);
+ assert.match(html,/<span class="native-total-level"[^>]*>Livello totale: <strong>6<\/strong><\/span>/);
+ assert.doesNotMatch(html,/input[^>]*aria-label="Livello totale automatico"/);
 });
 test('all sheet readouts expose effective values and native bonus targets, including legacy HP alias',()=>{
  const out=calculateSheet({abilities:{dex:14},max_hp_base:10,formula_bonuses:[
