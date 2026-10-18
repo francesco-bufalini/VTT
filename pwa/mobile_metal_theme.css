@@ -961,6 +961,8 @@ input:disabled{opacity:.75;cursor:default}
 .chat-dice-dialog .chat-dice-formula{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--muted);text-align:left}
 .chat-dice-dialog .chat-dice-formula strong{font-size:16px;color:var(--text);overflow-wrap:anywhere}
 .chat-dice-dialog .chat-dice-breakdown{margin-top:7px;color:var(--muted);font-size:12px;text-align:left;overflow-wrap:anywhere}
+.chat-dice-dialog .chat-dice-breakdown{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chat-dice-dialog .chat-dice-breakdown strong{color:var(--text);font-weight:650}
 
 
 /* Battle context popups: armor math and movement stay readable at phone width. */
