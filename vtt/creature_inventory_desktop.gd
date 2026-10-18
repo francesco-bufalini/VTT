@@ -4,10 +4,14 @@ extends VBoxContainer
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const QUANTITY_COLUMN := 4
 const MINUS_BUTTON := 100
 const PLUS_BUTTON := 101
+const REMOVE_BUTTON := 102
+const MENU_REMOVE := 1
+const MENU_CATALOG := 2
 
 var _tab: Node
 var _owned_tree: Tree
@@ -16,6 +20,10 @@ var _attunement_tree: Tree
 var _main: OptionButton
 var _off: OptionButton
 var _armor: OptionButton
+var _main_size: OptionButton
+var _off_size: OptionButton
+var _context_menu: PopupMenu
+var _context_index := -1
 var _maximum: SpinBox
 var _maximum_label: Label
 var _owned_heading: Label
@@ -26,6 +34,7 @@ var _slot_indices: Dictionary = {}
 var _record: Dictionary = {}
 var _minus_icon: Texture2D
 var _plus_icon: Texture2D
+var _remove_icon: Texture2D
 var _updating := false
 # One inventory table owns the current highlight.
 var _active_view := "owned"
@@ -48,18 +57,19 @@ func setup(tab: Node, description: Control) -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_minus_icon = _symbol_texture(false)
 	_plus_icon = _symbol_texture(true)
+	_remove_icon = _remove_texture()
 	var heading := Label.new()
 	_owned_heading = heading
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
-	_owned_tree = _make_tree(["", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
+	_owned_tree = _make_tree([_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
 	_owned_tree.columns = 8
 	_owned_tree.set_column_expand(7, true)
 	for column: int in range(7):
 		_owned_tree.set_column_expand(column, false)
 	for column: int in range(8):
-		_owned_tree.set_column_custom_minimum_width(column, [30, 82, 70, 94, 114, 64, 162, 174][column])
+		_owned_tree.set_column_custom_minimum_width(column, [65, 65, 60, 77, 104, 52, 122, 235][column])
 	_owned_tree.item_selected.connect(_on_owned_selected)
 	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
@@ -75,9 +85,10 @@ func setup(tab: Node, description: Control) -> void:
 	_scroll_tree.columns = 3
 	_scroll_tree.set_column_expand(0, false)
 	_scroll_tree.set_column_expand(1, false)
-	_scroll_tree.set_column_custom_minimum_width(0, 125)
-	_scroll_tree.set_column_custom_minimum_width(1, 75)
+	_scroll_tree.set_column_custom_minimum_width(0, 104)
+	_scroll_tree.set_column_custom_minimum_width(1, 58)
 	_scroll_tree.item_selected.connect(_on_scroll_selected)
+	_scroll_tree.gui_input.connect(_on_scroll_mouse_event)
 	_scroll_tree.item_edited.connect(_on_scroll_edited)
 	_scroll_tree.button_clicked.connect(_on_quantity_button)
 	add_child(_scroll_tree)
@@ -102,6 +113,12 @@ func setup(tab: Node, description: Control) -> void:
 	armor_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	triangle.add_child(armor_row)
 	_armor = _slot_picker(armor_row, _t("Armatura", "Armor"), "body")
+
+	_context_menu = PopupMenu.new()
+	_context_menu.add_item(_t("Rimuovi", "Remove"), MENU_REMOVE)
+	_context_menu.add_item(_t("Vedi nel bestiario", "View in bestiary"), MENU_CATALOG)
+	_context_menu.id_pressed.connect(_on_context_action)
+	add_child(_context_menu)
 
 	var attune_heading := HBoxContainer.new()
 	add_child(attune_heading)
@@ -142,7 +159,7 @@ func refresh_captions() -> void:
 	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
 	for column: int in range(8):
 		_owned_tree.set_column_title(column, [
-			"", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
+			_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
 			_t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"),
 			_t("Nome", "Name")][column])
 	for column: int in range(3):
@@ -151,10 +168,12 @@ func refresh_captions() -> void:
 	for column: int in range(2):
 		_attunement_tree.set_column_title(column, [
 			_t("Sintonia", "Attuned"), _t("Oggetto", "Item")][column])
-	(_main.get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
-	(_off.get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
-	(_armor.get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
+	(_main.get_parent().get_parent().get_child(0) as Label).text = _t("Mano principale", "Main hand")
+	(_off.get_parent().get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
+	(_armor.get_parent().get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
 	_maximum_label.text = _t("Massimo", "Maximum")
+	_context_menu.set_item_text(0, _t("Rimuovi", "Remove"))
+	_context_menu.set_item_text(1, _t("Vedi nel bestiario", "View in bestiary"))
 	refresh()
 
 
@@ -183,12 +202,28 @@ func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionBu
 	caption.text = label
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	group.add_child(caption)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	group.add_child(row)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	picker.custom_minimum_size.x = 200
+	picker.custom_minimum_size.x = 148 if slot != "body" else 200
 	picker.clip_text = true
+	picker.fit_to_longest_item = false
 	picker.item_selected.connect(_on_slot_selected.bind(slot))
-	group.add_child(picker)
+	row.add_child(picker)
+	if slot in ["main", "off"]:
+		var weapon_size := OptionButton.new()
+		weapon_size.custom_minimum_size.x = 116
+		weapon_size.fit_to_longest_item = false
+		weapon_size.clip_text = true
+		weapon_size.tooltip_text = _t("Taglia dell'arma impugnata", "Equipped weapon size")
+		weapon_size.item_selected.connect(_on_slot_size_selected.bind(slot))
+		row.add_child(weapon_size)
+		if slot == "main":
+			_main_size = weapon_size
+		else:
+			_off_size = weapon_size
 	return picker
 
 
@@ -202,6 +237,15 @@ func _symbol_texture(plus: bool) -> Texture2D:
 		for x: int in range(6, 8):
 			for y: int in range(2, 12):
 				img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
+	return ImageTexture.create_from_image(img)
+
+
+func _remove_texture() -> Texture2D:
+	var img := Image.create(14, 14, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	for n: int in range(3, 11):
+		img.set_pixel(n, n, Color(0.96, 0.55, 0.49))
+		img.set_pixel(13 - n, n, Color(0.96, 0.55, 0.49))
 	return ImageTexture.create_from_image(img)
 
 
@@ -345,7 +389,10 @@ func _quantity_cell(cell: TreeItem, column: int, quantity: int, locked: bool) ->
 	cell.set_cell_mode(column, TreeItem.CELL_MODE_STRING)
 	cell.set_text(column, str(quantity))
 	cell.set_editable(column, not locked)
-	cell.add_button(column, _minus_icon, MINUS_BUTTON, locked or quantity <= 1, _t("Diminuisci", "Decrease"))
+	if quantity <= 1:
+		cell.add_button(column, _remove_icon, REMOVE_BUTTON, false, _t("Rimuovi oggetto", "Remove item"))
+	else:
+		cell.add_button(column, _minus_icon, MINUS_BUTTON, locked, _t("Diminuisci", "Decrease"))
 	cell.add_button(column, _plus_icon, PLUS_BUTTON, locked or quantity >= 99999, _t("Aumenta", "Increase"))
 
 
@@ -387,10 +434,13 @@ func refresh() -> void:
 				icon += "🛡"
 			if "body" in slots:
 				icon += "▣"
-			if kind not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(entry):
+			if kind not in ["weapon", "armor", "shield", "document"]:
 				icon = "✓" if equipped else ""
-				row.set_tooltip_text(0, _t("Doppio clic per equipaggiare o riporre", "Double-click to equip or stow"))
-			if ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
+				# An outlined empty cell makes the double-click target explicit
+				# without turning it into a single-click checkbox.
+				row.set_custom_bg_color(0, Color(0.73, 0.63, 0.43, 0.70), true)
+				row.set_tooltip_text(0, _t("Doppio clic nella casella per (dis)equipaggiare", "Double-click the outlined box to equip or stow"))
+			if kind in ["weapon", "armor", "shield"] and ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
 				icon = "✦"
 			row.set_text(0, icon)
 			row.set_custom_font_size(0, 12)
@@ -401,6 +451,7 @@ func refresh() -> void:
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
 			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
 			row.set_text(6, _characteristic(entry))
+			row.set_tooltip_text(6, _characteristic(entry))
 			row.set_text(7, String(owned.get("name", "")))
 		if index == selected_index and _active_view == ("scroll" if is_scroll else "owned"):
 			row.select(0)
@@ -460,6 +511,18 @@ func _rebuild_pickers(items: Array) -> void:
 			picker.tooltip_text = _t("La mano è occupata da un'arma impugnata a due mani", "Hand occupied by a two-handed weapon")
 		else:
 			picker.tooltip_text = ""
+		if slot in ["main", "off"]:
+			var size_picker: OptionButton = _main_size if slot == "main" else _off_size
+			size_picker.clear()
+			size_picker.add_item(_t("Creatura", "Creature") + " (" + _t(String(_tab.get("_creature_size_name")), String(_tab.get("_creature_size_name"))) + ")")
+			for size_name: String in ItemRules.WEAPON_SIZES:
+				size_picker.add_item(size_name)
+			var equipped_weapon: Dictionary = ItemRules.occupying(items, slot)
+			var is_weapon := not equipped_weapon.is_empty() and ItemRules.kind(_definition(equipped_weapon)) == "weapon"
+			var overrides: Variant = equipped_weapon.get("instance_overrides", {})
+			var size_name: String = String((overrides as Dictionary).get("weapon_size", "")) if overrides is Dictionary else ""
+			size_picker.select(ItemRules.WEAPON_SIZES.find(size_name) + 1 if is_weapon else 0)
+			size_picker.disabled = not is_weapon or locked
 
 
 func _select_saved(index: int, view: String = "") -> void:
@@ -503,7 +566,12 @@ func _on_attunement_selected() -> void:
 
 func _on_owned_mouse_event(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
-	if _updating or click == null or not click.pressed or not click.double_click or click.button_index != MOUSE_BUTTON_LEFT:
+	if _updating or click == null or not click.pressed:
+		return
+	if click.button_index == MOUSE_BUTTON_RIGHT:
+		_request_context_menu(_owned_tree, click, "owned")
+		return
+	if click.button_index != MOUSE_BUTTON_LEFT or not click.double_click:
 		return
 	if _owned_tree.get_column_at_position(click.position) != 0:
 		return
@@ -513,11 +581,64 @@ func _on_owned_mouse_event(event: InputEvent) -> void:
 	var index: int = int(selected.get_metadata(0))
 	var owned: Dictionary = _rows()[index]
 	var entry: Dictionary = _definition(owned)
-	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry):
+	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"]:
 		return
-	# A click still holds the Tree's mouse selection lock. Deferred mutation
-	# avoids clearing its rows from within that event's synchronous callbacks.
+	if _is_spell_scroll(owned, entry):
+		return
+	# Tree.clear() is forbidden until the mouse selection event completes.
 	call_deferred("_apply_generic_equipment", index, not bool(owned.get("equipped", false)))
+
+
+func _on_scroll_mouse_event(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if _updating or click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	_request_context_menu(_scroll_tree, click, "scroll")
+
+
+func _request_context_menu(tree: Tree, click: InputEventMouseButton, view: String) -> void:
+	var row: TreeItem = tree.get_item_at_position(click.position)
+	if row == null:
+		return
+	var index: int = int(row.get_metadata(0))
+	var popup_position := Vector2i(tree.get_global_rect().position + click.position)
+	call_deferred("_show_context_menu", index, view, popup_position)
+
+
+func _show_context_menu(index: int, view: String, popup_position: Vector2i) -> void:
+	if index < 0 or index >= _rows().size():
+		return
+	_context_index = index
+	_select_saved(index, view)
+	# An installed source record can be opened in the in-sheet catalog.
+	var owned: Dictionary = _rows()[index]
+	var available := false
+	for raw: Dictionary in _tab.get("_catalog"):
+		if String(raw.get("id", "")) == String(owned.get("id", "")):
+			available = true
+			break
+	_context_menu.set_item_disabled(1, not available)
+	DialogLayout.popup_menu(_context_menu, popup_position)
+
+
+func _on_context_action(id: int) -> void:
+	if _context_index < 0 or _context_index >= _rows().size():
+		return
+	var index := _context_index
+	_context_index = -1
+	match id:
+		MENU_REMOVE:
+			call_deferred("_delete_item", index)
+		MENU_CATALOG:
+			call_deferred("_open_catalog_entry", index)
+
+
+func _delete_item(index: int) -> void:
+	_tab.call("_remove_inventory_at", index)
+
+
+func _open_catalog_entry(index: int) -> void:
+	_tab.call("_show_owned_item_in_catalog", index)
 
 
 func _apply_generic_equipment(index: int, equipped: bool) -> void:
@@ -531,20 +652,24 @@ func _update_quantity(index: int, requested: int) -> void:
 	var rows := _rows()
 	if index < 0 or index >= rows.size():
 		return
+	if requested <= 0:
+		_delete_item(index)
+		return
 	var entry: Dictionary = _definition(rows[index])
 	_select_saved(index, "scroll" if _is_spell_scroll(rows[index], entry) else "owned")
 	var spinner: SpinBox = _tab.get("_quantity")
 	spinner.set_value_no_signal(clampi(requested, 1, 99999))
 	_tab.call("_on_quantity_changed", float(clampi(requested, 1, 99999)))
-	# The owning tab refreshes the desktop tables after the event is over.
+	# The owner refreshes the Tree after this deferred handler returns.
 
 
 func _on_quantity_button(item: TreeItem, _column: int, button_id: int, _mouse_button: int) -> void:
-	if _updating or button_id not in [MINUS_BUTTON, PLUS_BUTTON]:
+	if _updating or button_id not in [MINUS_BUTTON, PLUS_BUTTON, REMOVE_BUTTON]:
 		return
 	var index: int = int(item.get_metadata(0))
 	var quantity: int = int(_rows()[index].get("quantity", 1))
-	call_deferred("_update_quantity", index, quantity + (1 if button_id == PLUS_BUTTON else -1))
+	var requested := 0 if button_id == REMOVE_BUTTON else quantity + (1 if button_id == PLUS_BUTTON else -1)
+	call_deferred("_update_quantity", index, requested)
 
 
 func _on_owned_edited() -> void:
@@ -576,6 +701,21 @@ func _apply_attunement(index: int, attuned: bool) -> void:
 		return
 	_select_saved(index, "attunement")
 	_tab.call("_set_attunement", attuned)
+
+
+func _on_slot_size_selected(choice: int, slot: String) -> void:
+	if _updating:
+		return
+	call_deferred("_apply_slot_size", choice, slot)
+
+
+func _apply_slot_size(choice: int, slot: String) -> void:
+	var rows: Array = _rows()
+	for index: int in range(rows.size()):
+		var item: Dictionary = rows[index]
+		if slot in ItemRules.slots(item) and ItemRules.kind(_definition(item)) == "weapon":
+			_tab.call("set_weapon_size_at", index, choice, slot)
+			return
 
 
 func _on_slot_selected(choice: int, slot: String) -> void:

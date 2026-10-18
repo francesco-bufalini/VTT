@@ -39,8 +39,18 @@ func run() -> void:
 	var attunement_tree: Tree = desktop.get("_attunement_tree")
 	var off_picker: OptionButton = desktop.get("_off")
 	var maximum: SpinBox = desktop.get("_maximum")
+	var main_size: OptionButton = desktop.get("_main_size")
+	var off_size: OptionButton = desktop.get("_off_size")
+	var menu: PopupMenu = desktop.get("_context_menu")
 	var first: TreeItem = owned_tree.get_root().get_first_child()
 	assert(first.get_text(7) == "Stocco", "Owned item name must be the last column")
+	assert(owned_tree.get_column_title(0) == "Equip.", "The outlined equipment column must be titled")
+	assert(owned_tree.get_column_title(7) == "Nome", "The final column must be the item name")
+	assert(menu.get_item_text(0) == "Rimuovi" and menu.get_item_text(1) == "Vedi nel bestiario",
+		"Desktop right-click menu must expose removal and bestiary lookup")
+	assert(not tab._legacy_actions.visible and not tab._legacy_switches.visible
+		and not tab._legacy_size_row.visible and not tab._item_share_button.visible,
+		"Obsolete remove/activate/send-copy/weapon-size controls must be hidden on desktop")
 	assert(first.get_text(1) == "30 mo" and first.get_text(2) == "4 lb",
 		"Cost and weight are multiplied by the stack quantity")
 	assert(first.get_text(6) == "Accurata, Leggera", "Weapon properties use readable names")
@@ -52,6 +62,10 @@ func run() -> void:
 		"Spell scrolls belong in their own level-sorted metadata table")
 	assert(scroll_row.get_text(2) == "Incantesimo non specificato",
 		"Generic scroll titles must not masquerade as spell names")
+	assert(owned_tree.get_root().get_first_child().get_next().get_button_id(4, 0) == 102,
+		"Quantity 1 must show the removal X instead of a disabled minus button")
+	assert(scroll_row.get_button_id(0, 0) == 102,
+		"Quantity 1 spell scrolls must also show the removal X")
 	assert(owned_tree.get_root().get_child_count() == 5,
 		"Scrolls are excluded from the ordinary owned item table")
 	# All embedded scrollable controls must let the enclosing creature sheet
@@ -98,10 +112,13 @@ func run() -> void:
 	tab._inventory_list.select(0)
 	tab._equip_selected("main")
 	assert("main" in ItemRules.slots(tab._inventory[0]))
+	assert(not main_size.disabled and main_size.get_parent() == (desktop.get("_main") as OptionButton).get_parent(),
+		"Weapon size is editable directly beside the main hand picker")
 	assert(owned_tree.get_root().get_first_child().get_text(0).contains("⚔"))
 	tab._inventory_list.select(2)
 	tab._equip_selected("off")
 	assert("off" in ItemRules.slots(tab._inventory[2]))
+	assert(off_size.disabled, "A shield must not expose weapon-size options")
 	var test_record := {"kind": "character", "inventory": tab._inventory,
 		"abilities": {"str": 12, "dex": 12, "con": 12, "int": 12, "wis": 12, "cha": 12}}
 	var has_improvised := false
@@ -118,6 +135,13 @@ func run() -> void:
 	tab._inventory_list.select(4)
 	tab._set_attunement(true)
 	assert(ItemRules.origin_active(tab._inventory[4]))
+	# Attunable objects with no weapon/armor/shield slot also use the first
+	# column for the equipped state.
+	tab._inventory_list.select(4)
+	tab._set_generic_equipment(false)
+	assert(not bool(tab._inventory[4].get("equipped", true)),
+		"Attunable non-slot objects must support the same equipped toggle")
+	tab._set_generic_equipment(true)
 	assert(attunement_tree.get_root().get_first_child().is_checked(0))
 	maximum.value = 4
 	assert(tab.attunement_max_base() == 4 and tab.attunement_capacity() == 4,
@@ -126,6 +150,15 @@ func run() -> void:
 	assert(owned_tree.get_column_title(1) == "Value" and
 		scroll_tree.get_column_title(2) == "Spell",
 		"Desktop table titles must follow the creature language")
+	# The bestiary action must resolve the installed catalog entry by ID.
+	tab._catalog.append(torch.duplicate(true))
+	tab.call("_show_owned_item_in_catalog", 3)
+	var found_in_catalog: PackedInt32Array = tab._catalog_list.get_selected_items()
+	assert(tab._search_panel.visible and not found_in_catalog.is_empty()
+		and String(tab._filtered[found_in_catalog[0]].get("id", "")) == "test:torch"
+		and tab._details_from_catalog,
+		"View in bestiary must select the owned item's definition in the catalog")
+
 	# Equipping a two-handed weapon locks the off-hand menu.
 	var glaive := {"id": "test:glaive", "name": "Alabarda", "type": "M",
 		"quantity": 1, "source": "PHB", "properties": ["2H"]}
@@ -134,6 +167,35 @@ func run() -> void:
 	tab._equip_selected("main")
 	assert(off_picker.disabled and off_picker.get_item_text(0).contains("two hands"))
 	assert(ItemRules.occupying(tab._inventory, "off").is_empty())
+	desktop.call("_on_slot_size_selected", 4, "main")
+	await process_frame
+	assert(String((tab._inventory[0].get("instance_overrides", {}) as Dictionary).get("weapon_size", "")) == "Large",
+		"Main hand size control must edit the equipped weapon's instance")
+	assert(main_size.get_selected_id() == 4 and off_size.disabled,
+		"Hand-size selectors must follow the current occupied weapon slot")
+	# Entering zero removes an owned entry; the context-menu removal uses
+	# that same owner-managed path and must never leave stale table rows.
+	var before := tab._inventory.size()
+	desktop.call("_update_quantity", 1, 0)
+	assert(tab._inventory.size() == before - 1,
+		"Setting quantity to zero must delete the stack")
+	desktop.set("_context_index", 0)
+	desktop.call("_on_context_action", 1)
+	await process_frame
+	assert(tab._inventory.is_empty(),
+		"Right-click Remove must delete the selected owned entry")
+	# When two equal weapons occupy both hands, resizing the main-hand
+	# instance must preserve the off-hand equipped copy.
+	var paired := {"id": "test:paired", "name": "Daghe", "type": "M",
+		"properties": ["L"], "quantity": 2, "equipped_slots": ["main", "off"]}
+	tab.load_record({"inventory": [paired]})
+	tab.set_weapon_size_at(0, 4, "main")
+	assert(tab._inventory.size() == 2
+		and "off" in ItemRules.slots(tab._inventory[0])
+		and "main" in ItemRules.slots(tab._inventory[1])
+		and String(tab._inventory[1].get("instance_overrides", {}).get("weapon_size", "")) == "Large",
+		"Weapon size overrides must not steal the opposite hand's equipped copy")
+
 	tab.queue_free()
 	await process_frame
 	print("PASS: desktop inventory tables, scrolls, slot icons, shield attacks and attunement")

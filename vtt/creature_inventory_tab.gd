@@ -73,6 +73,9 @@ var _item_share_index := -1
 var _item_touch_start := Vector2.ZERO
 var _item_touch_active := false
 var _item_touch_generation := 0
+var _legacy_actions: HBoxContainer
+var _legacy_size_row: HBoxContainer
+var _legacy_switches: HFlowContainer
 var _optional_features: Array[Dictionary] = []
 var _infusion_record: Dictionary = {}
 var _infusion_panel: VBoxContainer
@@ -282,6 +285,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	# Keep these internal controls for legacy save tests, not in the inventory UI.
 	equipment_row.visible = false
 	var item_switches := HFlowContainer.new()
+	_legacy_switches = item_switches
 	item_switches.add_theme_constant_override("h_separation", 8)
 	add_child(item_switches)
 	_equip_hint = Label.new()
@@ -306,6 +310,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	item_switches.add_child(_active_item)
 
 	var actions := HBoxContainer.new()
+	_legacy_actions = actions
 	actions.add_theme_constant_override("separation", 6)
 	add_child(actions)
 	_legacy_qty_label = Label.new()
@@ -324,6 +329,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	# Weapon sizes are instance overrides. Without one, the weapon always
 	# follows the current creature's size, even after a transformation.
 	var size_row := HBoxContainer.new()
+	_legacy_size_row = size_row
 	size_row.add_theme_constant_override("separation", 6)
 	add_child(size_row)
 	var size_caption := Label.new()
@@ -365,6 +371,12 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	objects_page.add_child(_desktop_ui)
 	objects_page.move_child(_desktop_ui, _inventory_list.get_index() + 1)
 	_desktop_ui.call("setup", self, _details)
+	# These edit controls remain available in touch layout; desktop uses
+	# inline quantities, slot-specific weapon sizes and a context menu.
+	_legacy_actions.hide()
+	_legacy_size_row.hide()
+	_legacy_switches.hide()
+	_item_share_button.hide()
 	_inventory_list.hide()
 	_inventory_title.hide()
 	_equip_hint.hide()
@@ -402,6 +414,10 @@ func configure_touch_layout() -> void:
 			_desktop_ui.remove_child(_details)
 			objects_page.add_child(_details)
 		_inventory_list.show()
+		_legacy_actions.show()
+		_legacy_size_row.show()
+		_legacy_switches.show()
+		_item_share_button.show()
 		_inventory_title.show()
 		_equip_hint.show()
 		_generic_equip.show()
@@ -1139,8 +1155,14 @@ func _set_weapon_size_choice(item: Dictionary) -> void:
 func _on_weapon_size_changed(choice: int) -> void:
 	if _loading:
 		return
-	var index: int = _selected_inventory_index()
-	if index < 0 or index >= _inventory.size():
+	set_weapon_size_at(_selected_inventory_index(), choice)
+
+
+# Shared size mutation for the legacy touch picker and both desktop hands.
+# The index comes from the occupied equipment slot, never from an unrelated
+# selected row in the inventory table.
+func set_weapon_size_at(index: int, choice: int, equipment_slot: String = "") -> void:
+	if _loading or index < 0 or index >= _inventory.size():
 		return
 	var row: Dictionary = _inventory[index].duplicate(true)
 	if ItemRules.kind(_catalog_entry(row)) != "weapon":
@@ -1152,11 +1174,20 @@ func _on_weapon_size_changed(choice: int) -> void:
 	var overrides: Dictionary = row.get("instance_overrides", {}).duplicate(true)
 	if String(overrides.get("weapon_size", "")) == override_size:
 		return
-	# Changing one weapon in a stack must leave the other copies untouched.
+	# Preserve every other weapon copy when editing one from an equipped slot.
 	if int(row.get("quantity", 1)) > 1:
 		_inventory[index]["quantity"] = int(row["quantity"]) - 1
 		row["quantity"] = 1
-		row["equipped_slots"] = []
+		if equipment_slot in ["main", "off"]:
+			# Splitting two copies wielded in different hands must not move
+			# both equipped slots to the one copy whose size is changing.
+			var remaining_slots: Array = ItemRules.slots(_inventory[index])
+			remaining_slots.erase(equipment_slot)
+			_inventory[index]["equipped_slots"] = remaining_slots
+			row["equipped_slots"] = [equipment_slot]
+		else:
+			# Touch's legacy selected-item picker changes a spare copy.
+			row["equipped_slots"] = []
 		index += 1
 		_inventory.insert(index, row)
 	if override_size.is_empty():
@@ -1176,6 +1207,9 @@ func _on_quantity_changed(value: float) -> void:
 	var index: int = _selected_inventory_index()
 	if index < 0 or index >= _inventory.size():
 		return
+	if _desktop_ui != null and _desktop_ui.visible and int(value) <= 0:
+		_remove_inventory_at(index)
+		return
 	if DocumentStore.is_document(_inventory[index]):
 		_quantity.set_value_no_signal(1)
 		return
@@ -1193,14 +1227,47 @@ func _on_quantity_changed(value: float) -> void:
 
 
 func _remove_selected() -> void:
-	var index: int = _selected_inventory_index()
+	_remove_inventory_at(_selected_inventory_index())
+
+
+func _remove_inventory_at(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_inventory.remove_at(index)
+	_sanitize_equipment()
 	_refresh_inventory()
 	_publish()
 	if _search_panel.visible:
 		_filter_catalog()
+
+
+# The desktop right-click action navigates to the matching catalog record,
+# retaining the catalog's filters and description rendering.
+func _show_owned_item_in_catalog(index: int) -> void:
+	if index < 0 or index >= _inventory.size():
+		return
+	var owned: Dictionary = _inventory[index]
+	var item_id: String = String(owned.get("id", ""))
+	var item_name: String = String(owned.get("name", ""))
+	var catalog_name := item_name
+	for entry: Dictionary in _catalog:
+		if String(entry.get("id", "")) == item_id:
+			catalog_name = String(entry.get("name", item_name))
+			break
+	_reset_catalog_filters()
+	_search.text = catalog_name
+	_filter_catalog()
+	_set_search_visible(true)
+	for result_index: int in range(_filtered.size()):
+		if String(_filtered[result_index].get("id", "")) == item_id:
+			_catalog_list.select(result_index)
+			_catalog_list.ensure_current_is_visible()
+			_on_catalog_selected(result_index)
+			return
+	# A custom saved item may not be installed in the current catalog.
+	if _on_status.is_valid():
+		_on_status.call("Oggetto non presente nel catalogo locale: " + item_name)
+	_on_inventory_selected(index)
 
 
 func _refresh_inventory(selected_index: int = -1) -> void:
@@ -1213,7 +1280,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
 		var item_index: int = _inventory_list.item_count - 1
 		var category: String = ItemRules.kind(_catalog_entry(item))
-		if category not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(_catalog_entry(item)):
+		if category not in ["weapon", "armor", "shield", "document"] and String(_catalog_entry(item).get("type", "")).split("|")[0].to_upper() != "SC":
 			_inventory_list.set_item_icon(item_index, get_theme_icon("checked" if bool(item.get("equipped", false)) else "unchecked", "CheckBox"))
 			_inventory_list.set_item_icon_modulate(item_index, Color(0.79, 0.92, 0.97))
 			_inventory_list.set_item_tooltip(item_index, "Clicca sulla casella a sinistra per equipaggiare o riporre l’oggetto.")
@@ -1341,7 +1408,7 @@ func _update_equip_buttons() -> void:
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
 	var kind: String = ItemRules.kind(entry) if present else ""
-	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry)
+	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"]
 	_generic_equip.set_pressed_no_signal(present and bool(_inventory[index].get("equipped", false)))
 	_generic_equip.tooltip_text = (
 		"Armi, scudi e armature si equipaggiano in Statistiche."
@@ -1397,7 +1464,7 @@ func _set_generic_equipment(value: bool) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
-	if kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
+	if kind in ["weapon", "armor", "shield", "document"]:
 		_generic_equip.set_pressed_no_signal(bool(_inventory[index].get("equipped", false)))
 		return
 	if bool(_inventory[index].get("equipped", false)) == value:
