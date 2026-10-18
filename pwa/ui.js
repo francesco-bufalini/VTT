@@ -7,6 +7,7 @@ import { status, session, pair, unpair, hasPairingCredential, map, action, subsc
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
+import { tokenGroups, snapshotRevision, snapshotSource } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
@@ -32,7 +33,7 @@ const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
 const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
-  tokenId:"", online:false, paired:false, session:null, errors:[], messages:[],
+  tokenId:"", editTokenId:"", liveSnapshot:null, snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", openDocumentInstance:"",
@@ -43,6 +44,8 @@ let tacticalViewer=null;
 let tokenStatusFingerprint="";
 let tokenSyncQueue=Promise.resolve();
 let mapGeneration=0;
+let snapshotGeneration=0;
+let previousMapFingerprint="";
 let realtimeStopped=false;
 let toastTimer = null;
 let chatPollGenerationInFlight=-1;
@@ -53,6 +56,8 @@ function acceptSession(info){
   if(currentGameSession && next && next!==currentGameSession){
     // A different desktop game must not inherit the old chat cursor.
     state.messages=[];state.after="";state.map=null;state.tokenId="";
+    state.liveSnapshot=null;state.snapshotKey="";++snapshotGeneration;
+    previousMapFingerprint="";
     tokenStatusFingerprint="";
   }
   if(next)currentGameSession=next;
@@ -673,83 +678,94 @@ function renderEvents() {
       (e.text||""))+'</div></article>').join("") :
     '<p class="hint">Nessun evento recente. La cronologia è disponibile mentre il desktop è collegato.</p>';
 }
+function sessionTokenRows(rows, turnId="") {
+  return rows.map(token => '<div class="session-token-row'+(state.tokenId===token.id?' selected':'')+
+    '" data-token-row="'+esc(token.id)+'">'+
+    '<button type="button" class="session-token-name" data-act="select-token" data-id="'+esc(token.id)+
+    '" aria-pressed="'+(state.tokenId===token.id)+'">'+
+    (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
+    '<span>'+esc(token.name)+(token.free?' <small>· libero</small>':'')+'</span></button>'+
+    (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
+    '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
+    '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
+}
 function sessionView() {
-  const entries = Array.isArray(state.map?.tokens)?state.map.tokens:[];
-  const combat=state.map?.combat||{};
-  const isActive=state.paired && state.online;
-  const statusMarkup = '<div class="row between"><span>'+tag(isActive?"Partita connessa":
-    state.hostReachable?"Desktop attivo · nessuna partita":"Desktop non raggiungibile")+'</span>'+
-    '<button type="button" class="btn small" data-act="check">Aggiorna</button></div>'+
-    (state.session?'<p class="hint">Partita '+esc(state.session.session||"—")+'</p>':"");
-  const pairing = '<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
-    '<input id="pair-secret" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
-    '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda questo desktop sul dispositivo</label>'+
-    '<button type="submit" class="btn primary full">Collega alla partita</button>'+
-    '<p class="hint">Sul PC con VTT aperto premi <strong>Ctrl + Shift + P</strong>: inquadra il QR con la fotocamera del telefono oppure inserisci i 16 caratteri mostrati. Il codice vale 5 minuti e si usa una sola volta.</p></form>';
-  let html = header("Connessione", "La tua partita", "Il PC con VTT nativo aperto ospita la partita e aggiorna automaticamente questa PWA.")+
-    panel("Desktop",statusMarkup+(state.paired?'<div class="actions">'+
-      btn("disconnect","Dissocia desktop","danger")+'</div>':pairing));
-  if(!state.paired) return html;
-  html += panel("Token sulla scena",entries.length ? '<div class="stack">'+
-    entries.map(token => '<button type="button" class="btn full '+(state.tokenId===token.id?"primary":"")+
-      '" data-act="select-token" data-id="'+esc(token.id)+'">'+
-      esc(token.name)+(token.free?" · libero":"")+'</button>').join("")+'</div>' :
-    '<p class="hint">Nessun token visibile. Aggiorna quando il desktop ha una scena attiva.</p>');
-  const selected=entries.find(x=>x.id===state.tokenId);
-  if(selected){
-    html += panel("Controlli · "+selected.name,
-      '<p class="hint">Muovi il token sulla griglia del desktop. Per alcune operazioni il desktop può richiedere il controllo della creatura.</p>'+
-      '<div class="movement"><span></span><button class="btn" type="button" data-act="move" data-direction="north">↑</button><span></span>'+
-      '<button class="btn" type="button" data-act="move" data-direction="west">←</button>'+
-      '<span aria-hidden="true" class="pill movement-center">•</span>'+
-      '<button class="btn" type="button" data-act="move" data-direction="east">→</button>'+
-      '<span></span><button class="btn" type="button" data-act="move" data-direction="south">↓</button><span></span></div>'+
-      '<div class="actions">'+btn("move-up","Quota +") + btn("move-down","Quota −")+'</div>'+
-      '<h3>Condizioni</h3><div class="pillbox">'+conditions.map(id=>
-      '<label class="check pill"><input type="checkbox" data-token-condition="'+id+'" '+
-      ((selected.conditions||[]).includes(id)?"checked":"")+'>'+esc(id)+'</label>').join("")+'</div>');
-    if((state.cachedCreatures||[]).length) html+=panel("Piazza una tua creatura",
-      '<p class="hint">Seleziona una scheda locale. Il desktop riceverà solo l’identità e i dati tattici pubblici necessari a posizionare il token.</p>'+
-      '<label>Creatura<select id="place-creature">'+state.cachedCreatures.map(c=>
-        '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select></label>'+
-      '<div class="actions">'+btn("place-creature","Piazza vicino al token","primary")+
-      (selected.free?btn("claim-creature","Associa al token libero"):"")+'</div>');
+  const entries=Array.isArray(state.map?.tokens)?state.map.tokens:[];
+  const groups=tokenGroups(state.map);
+  const selected=entries.find(t=>t.id===state.tokenId);
+  const online=state.online&&state.paired;
+  const statusMarkup='<div class="row between"><span>'+tag(online?'Partita connessa':
+    state.hostReachable?'Desktop attivo · nessuna partita':'Desktop non raggiungibile')+'</span>'+
+    '<button type="button" class="btn small" data-act="check">Aggiorna</button></div>';
+  const pairing='<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
+    '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
+    '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
+    '<button type="submit" class="btn primary full">Collega alla partita</button></form>';
+  let html=header('Partita','La tua partita','')+
+    panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
+  const image=snapshotSource(state.liveSnapshot);
+  const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
+  html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
+    '<div class="session-map-stage">'+
+    (image?'<img id="session-map-image" src="'+image+'" alt="Snapshot della mappa desktop" draggable="false">':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il desktop è collegato')+'</span></div>')+
+    (state.snapshotPending||image&&!snapshotMatches?'<span class="session-map-loading" role="status">Aggiornamento…</span>':'')+
+    '</div>'+
+    (selected?'<div class="session-selected-controls"><strong>'+esc(selected.name)+'</strong>'+
+    '<div class="session-move-buttons" aria-label="Sposta il token">'+
+    '<button type="button" class="btn small" data-act="move" data-direction="north" aria-label="Nord">↑</button>'+
+    '<button type="button" class="btn small" data-act="move" data-direction="west" aria-label="Ovest">←</button>'+
+    '<button type="button" class="btn small" data-act="move" data-direction="south" aria-label="Sud">↓</button>'+
+    '<button type="button" class="btn small" data-act="move" data-direction="east" aria-label="Est">→</button>'+
+    '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
+    '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
+    '</section>';
+  if(!state.paired)return html;
+  html+='<section class="panel session-token-panel">'+
+    '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
+    '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
+    (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId):
+      '<p class="hint">Nessun token sulla mappa.</p>')+
+    (groups.active&&groups.outside.length?'<h3 class="session-outside-heading">Fuori dal combattimento</h3>'+
+      sessionTokenRows(groups.outside):'')+
+    '<button type="button" class="btn primary full session-add-token" data-act="open-place-token"'+
+      (!online||!entries.length?' disabled':'')+'>＋ Aggiungi token da una tua scheda</button>'+
+    '</section>';
+  if(state.editTokenId){
+    const edited=entries.find(t=>t.id===state.editTokenId);
+    if(edited){
+      const linked=(state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===edited.id);
+      const active=(edited.active_spell_ids||[]).map(id=>{
+        const definition=(state.spellCatalog||[]).find(x=>x.id===id);
+        return '<div class="row between session-applied-spell"><span>'+esc(definition?.name||id)+'</span>'+
+          '<button type="button" class="btn small" data-act="remove-token-spell" data-spell-id="'+esc(id)+'">✕</button></div>';
+      }).join('');
+      html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><h2>⚙ '+esc(edited.name)+'</h2>'+
+        '<h3>Condizioni</h3><div class="session-condition-grid">'+conditions.map(id=>
+          '<label class="check"><input type="checkbox" data-token-condition="'+id+'" '+((edited.conditions||[]).includes(id)?'checked':'')+'>'+esc(id)+'</label>').join('')+'</div>'+
+        '<h3>Incantesimi applicati</h3>'+ (active||'<p class="hint">Nessun incantesimo attivo.</p>')+
+        '<label>Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
+        '<label>Incantesimo<select id="token-spell-select"></select></label>'+
+        '<button type="button" class="btn small" data-act="apply-token-spell">＋ Applica incantesimo</button>'+
+        '<h3>Miniatura</h3>'+
+        (linked?'<p class="hint">Puoi cambiare la miniatura dei token associati alla tua scheda.</p>'+
+          '<label>Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
+          '<label>Miniatura<select id="token-mini-select"></select></label>'+
+          '<button type="button" class="btn small" data-act="apply-token-appearance">Applica miniatura</button>':
+          '<p class="hint">La miniatura può essere cambiata dal dispositivo che controlla la scheda collegata.</p>')+
+        '<div class="session-dialog-footer"><button type="button" class="btn" data-act="close-token-dialog">Chiudi</button></div></dialog>';
+    }
   }
-  if(selected) {
-    const selectedCaster = (state.cachedCreatures||[]).find(c=>c.id===state.castCreatureId)
-      || (state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===selected.id)
-      || (state.cachedCreatures||[])[0];
-    const calculated=state.castSheets?.get(selectedCaster?.id);
-    const spells=selectedCaster&&calculated?sessionSpellEntries(selectedCaster,calculated,state.spellCatalog||[]):[];
-    state.visibleSpells=spells;
-    html+=panel("Mappa e bersagli",
-      '<p class="hint">Richiedi la vista 2D esistente: zoom con due dita, trascinamento e selezione dei token. Per attacchi e incantesimi la risoluzione resta sul desktop.</p>'+
-      '<div class="actions">'+btn("snapshot-map","Apri mappa 2D","primary")+'</div>'+
-      '<div class="columns three">'+field("Gittata (ft)","attack_range_ui",state.attackRange,"number",'min="0" max="10000"')+
-      field("Gittata lunga","attack_long_ui",state.attackLongRange,"number",'min="0" max="10000"')+
-      '<label class="check"><input type="checkbox" data-field="attack_melee_ui" '+
-      (state.attackMelee?'checked':'')+'>Mischia</label></div>'+
-      '<div class="actions">'+btn("attack-map","Mira attacco")+'</div>')+
-      panel("Lancia un incantesimo",
-      '<label>Creatura<select id="cast-creature">'+(state.cachedCreatures||[]).map(c=>
-        '<option value="'+esc(c.id)+'" '+(selectedCaster?.id===c.id?'selected':'')+'>'+
-        esc(c.name)+'</option>').join("")+'</select></label>'+
-      '<label>Incantesimo<select id="cast-spell">'+spells.map((sp,i)=>
-        '<option value="'+i+'">'+esc(sp.name)+' · '+esc(sp.casting_label)+(sp.source?' · '+esc(sp.source):'')+'</option>').join("")+
-      '</select></label><div class="columns">'+
-      field("Livello slot / 0 automatico","cast_slot_ui",state.castLevel,"number",'min="0" max="9"')+
-      '<label>Risorsa<select id="cast-payment"><option value="auto">Automatica (classe o origine)</option><option value="slot">Slot di classe</option><option value="pact">Slot del Patto</option></select></label>'+
-      '</div><p class="hint">Puoi lanciare soltanto incantesimi già presenti nella scheda. Il desktop ne verifica l’effetto e il targeting.</p>'+
-      '<div class="actions">'+btn("begin-spell","Avvia incantesimo",spells.length?"primary":"")+'</div>');
-  }
-  if(combat.active) html += panel("Iniziativa · Round "+(combat.round||1),
-    (combat.entries||[]).map((entry,i)=>
-      '<div class="combat-line '+(i===combat.active_index?"active":"")+'"><span>'+
-      (i===combat.active_index?"▶ ":"")+esc(entry.name)+'</span><span>'+esc(entry.initiative)+'</span></div>').join(""));
-  else html += panel("Iniziativa",'<p class="hint">Nessun combattimento attivo nella scena.</p>');
-  html += '<p class="hint">Lo snapshot mostra la vista ortografica acquisita dal desktop. Gittate ed effetti vengono calcolati da Godot, non nel browser.</p>';
+  html+='<dialog id="session-place-dialog" class="session-dialog" aria-label="Aggiungi token"><h2>Aggiungi token</h2>'+
+    '<label>La tua scheda<select id="place-creature">'+(state.cachedCreatures||[]).map(c=>
+      '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label>'+
+    '<label>Accanto al token<select id="place-reference">'+entries.map(t=>
+      '<option value="'+esc(t.id)+'" '+(t.id===state.tokenId?'selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>'+
+    '<label>Direzione<select id="place-direction"><option value="north">Nord</option><option value="east">Est</option><option value="south">Sud</option><option value="west">Ovest</option></select></label>'+
+    '<div class="session-dialog-footer"><button class="btn primary" type="button" data-act="place-creature">Piazza token</button>'+
+    '<button class="btn" type="button" data-act="close-place-dialog">Annulla</button></div></dialog>';
   return html;
 }
+
 async function refreshConnection(quiet=false) {
   // Offline does not mean unpaired: a stored credential can be validated again
   // when the host comes back, without requiring another single-use QR.
