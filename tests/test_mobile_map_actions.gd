@@ -158,6 +158,7 @@ func run() -> void:
 		var captured: Dictionary = await sync._handle_mobile_action("snapshot", {"token_id": placed.token_id,
 			"field_feet": 120, "attack": {"range_feet": 20, "long_range_feet": 60, "melee": false}})
 		assert(captured.ok and captured.contours.size() == 2)
+		assert(bool(captured.get("token_overlays", false)), "Snapshot WebP must include the off-floor token portraits and height labels")
 		assert(captured.field_feet == 120 and captured.width == 1536 and captured.height == 1536)
 		assert(captured.markers.size() == 3, "Other elevations must remain selectable")
 		var elevation_found := false

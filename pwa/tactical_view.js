@@ -29,6 +29,10 @@ export function imageCoordinates(localX, localY, transform) {
   const x=(localX-originX)/scale, y=(localY-originY)/scale;
   return x>=0 && y>=0 && x<=width && y<=height ? [x,y] : null;
 }
+export function formatElevation(cells) {
+  const height=Math.trunc(Number(cells)||0);
+  return height ? `${height>0?"+":""}${height} □` : "";
+}
 export function hitMarker(pixel, markers) {
   if (!pixel) return null;
   let closest=null, best=Infinity;
@@ -226,11 +230,20 @@ export class TacticalViewer {
       ctx.strokeStyle=selected?"#e7bd77":marker.selected?"#8bd8b5":"#e3f0ff";
       ctx.stroke();
       if(selected){ctx.fillStyle="#e7bd7733";ctx.fill();}
-      ctx.font=(13/t.scale)+"px system-ui,sans-serif";
-      ctx.textAlign="center";ctx.textBaseline="bottom";ctx.fillStyle="#fff";
-      ctx.shadowColor="#101827";ctx.shadowBlur=8/t.scale;
-      ctx.fillText(String(marker.name||"" ).slice(0,38),marker.x,marker.y-radius-4/t.scale);
-      ctx.shadowBlur=0;
+      // New desktop WebPs already include portraits, names and heights.
+      // Keep targeting rings live, but don't paint duplicate labels.
+      if(!this.snapshot?.token_overlays){
+        ctx.font=(13/t.scale)+"px system-ui,sans-serif";
+        ctx.textAlign="center";ctx.textBaseline="bottom";ctx.fillStyle="#fff";
+        ctx.shadowColor="#101827";ctx.shadowBlur=8/t.scale;
+        ctx.fillText(String(marker.name||"").slice(0,38),marker.x,marker.y-radius-4/t.scale);
+        const altitude=formatElevation(marker.elevation_cells);
+        if(altitude){
+          ctx.textAlign="left";ctx.textBaseline="middle";
+          ctx.fillText(altitude,marker.x+radius+5/t.scale,marker.y);
+        }
+        ctx.shadowBlur=0;
+      }
     }
     if(this.aimPixel){
       const [x,y]=this.aimPixel;

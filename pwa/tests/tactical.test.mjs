@@ -1,12 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { validateSnapshot, imageCoordinates, hitMarker,
-  isAimStatus, TacticalViewer } from "../tactical_view.js";
+  isAimStatus, formatElevation, TacticalViewer } from "../tactical_view.js";
 function snapshot() {
   return {ok:true,format:"webp",image:"d2VicA==",width:1536,height:1536,
     token_id:"hero",snapshot_id:"snapshot123",field_feet:120,contours:[],
     markers:[{id:"enemy",name:"Nemico",x:750,y:600,radius:15}]};
 }
+test("elevations use signed desktop-style tactical squares",()=>{
+  assert.equal(formatElevation(2),"+2 □");
+  assert.equal(formatElevation(-3),"-3 □");
+  assert.equal(formatElevation(0),"");
+  assert.equal(validateSnapshot({...snapshot(),token_overlays:true}).token_overlays,true);
+});
 test("snapshot uses Android's WebP/marker schema and stable zoom mapping",()=>{
   assert.equal(validateSnapshot(snapshot()).width,1536);
   assert.throws(()=>validateSnapshot({...snapshot(),format:"png"}),/Snapshot/);

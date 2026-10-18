@@ -232,6 +232,10 @@ func _draw() -> void:
 		if String(marker.get("id", "")) in selected_ids or bool(marker.get("affected", false)):
 			color = Color("ff6666")
 		draw_rect(Rect2(point - Vector2.ONE * radius, Vector2.ONE * radius * 2), color, false, 2)
+		# New snapshots contain the portrait/name/height baked into the WebP;
+		# keep the interactive ring but avoid painting duplicate labels.
+		if bool(snapshot.get("token_overlays", false)):
+			continue
 		var label := String(marker.get("name", ""))
 		var label_point := point + Vector2(-font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x * 0.5, radius + 16)
 		draw_string_outline(font, label_point, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 3, Color.BLACK)
