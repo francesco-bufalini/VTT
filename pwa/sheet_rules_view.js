@@ -273,6 +273,12 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
  }
  for(const action of classAbilities){
   const id=String(action.id||action.ability_id||action.name||'');
+  // The native action projector can describe a granted class action twice
+  // (once as an action grant and once as its structured feature).
+  const repeated=rows.some(row=>row.source==='class'&&(
+   row.id===id||(powerIdentity(row.classAction)===powerIdentity(action)&&
+    String(row.tracker_id||'')===String(action.tracker_id||''))));
+  if(repeated)continue;
   const cost=Math.max(0,Number(action.cost??0)||0);
   const identity=powerIdentity(action);
   const same=rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
