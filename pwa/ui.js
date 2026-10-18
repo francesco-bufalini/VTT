@@ -2013,7 +2013,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2106,8 +2106,13 @@ async function handleAction(target){
     const panels=battleActionPanels(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
       state.generalActionSupplements||[],readActionVariants(),
       abilitiesForCreature(c,state.abilityCatalog||[],calculated));
+    const requested=String(target.dataset.abilityId||'');
+    const power=requested.startsWith('activated:')?
+      abilitiesForCreature(c,state.abilityCatalog||[],calculated)
+        .find(row=>String(row.id)===requested.slice('activated:'.length)):null;
     const ability=panels.abilityEntries.find(row=>
-      String(row.id||row.ability_id||row.name)===String(target.dataset.abilityId||''));
+      String(row.id||row.ability_id||row.name)===requested)||
+      (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
     if(!ability)throw Error('Capacità non disponibile per questa creatura.');
     if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(ability.class_feature_id)){
       await patch(classAbilityActivationPatch(c,calculated,ability));
