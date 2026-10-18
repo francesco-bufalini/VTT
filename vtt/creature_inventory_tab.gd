@@ -1161,7 +1161,7 @@ func _on_weapon_size_changed(choice: int) -> void:
 # Shared size mutation for the legacy touch picker and both desktop hands.
 # The index comes from the occupied equipment slot, never from an unrelated
 # selected row in the inventory table.
-func set_weapon_size_at(index: int, choice: int) -> void:
+func set_weapon_size_at(index: int, choice: int, equipment_slot: String = "") -> void:
 	if _loading or index < 0 or index >= _inventory.size():
 		return
 	var row: Dictionary = _inventory[index].duplicate(true)
@@ -1177,9 +1177,17 @@ func set_weapon_size_at(index: int, choice: int) -> void:
 	# Preserve every other weapon copy when editing one from an equipped slot.
 	if int(row.get("quantity", 1)) > 1:
 		_inventory[index]["quantity"] = int(row["quantity"]) - 1
-		# Keep the equipped instance in the new single-item stack.
-		_inventory[index]["equipped_slots"] = []
 		row["quantity"] = 1
+		if equipment_slot in ["main", "off"]:
+			# Splitting two copies wielded in different hands must not move
+			# both equipped slots to the one copy whose size is changing.
+			var remaining_slots: Array = ItemRules.slots(_inventory[index])
+			remaining_slots.erase(equipment_slot)
+			_inventory[index]["equipped_slots"] = remaining_slots
+			row["equipped_slots"] = [equipment_slot]
+		else:
+			# Touch's legacy selected-item picker changes a spare copy.
+			row["equipped_slots"] = []
 		index += 1
 		_inventory.insert(index, row)
 	if override_size.is_empty():
