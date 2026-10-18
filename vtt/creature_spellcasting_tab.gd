@@ -348,7 +348,7 @@ func setup(
 	columns.add_child(resource_column)
 	resource_column.add_child(slot_title)
 	var heading := Label.new()
-	heading.text = "Slot incantesimo"
+	heading.text = "Slot degli incantesimi"
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
@@ -374,8 +374,8 @@ func setup(
 	_slot_grid.add_theme_constant_override("v_separation", 5)
 	slot_scroll.add_child(_slot_grid)
 	var hint := Label.new()
-	hint.text = "Liv.   −  +  Rimasti / max"
-	hint.tooltip_text = "Doppio clic sul massimo per modificarlo"
+	hint.text = "Liv.   −  +  Rimasti / totale"
+	hint.tooltip_text = "Fai doppio clic sul totale degli slot per modificarlo"
 	hint.add_theme_font_size_override("font_size", 12)
 	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
