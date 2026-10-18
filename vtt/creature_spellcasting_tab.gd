@@ -1687,7 +1687,7 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
 			_cast_slot_choice.add_item("Consuma %d · %s" % [OriginSpells.tracker_cost(grant), String(tracker.get("name", "tracker"))], -1)
 			_cast_slot_choice.select(1)
-		_cast_dialog.dialog_text = "Lancia " + String(spell.get("name", "")) + ". Scegli il consumo."
+		_cast_dialog.dialog_text = "Lancia %s. Scegli il consumo." % String(spell.get("name", ""))
 		_show_cast_description(spell)
 	else:
 		_dispatch_cast(spell, -1, grant)
@@ -1831,7 +1831,7 @@ func _view_edit_class(member: Dictionary) -> void:
 	for entry: Variant in _spellbook:
 		if ClassSelections.eligible(SpellCatalog.catalog_spell(_entry_id(entry)), member):
 			book.append(_entry_id(entry))
-	_selection_dialog.choose(options, {"title": "Scegli · " + String(member.name),
+	_selection_dialog.choose(options, {"title": "Scegli · " + String(member.name), "gui_language": _gui_language,
 		"selected": selected, "class_spell_ids": class_ids, "book": book, "book_mode": member.book, "limit": member.limit, "cantrips": member.cantrips,
 		"details": "Origine: " + String(member.name) + " [" + String(member.source) + "] · lista di classe fino al %d° livello" % int(member.max_level)},
 		func(result: Dictionary) -> void:
@@ -1886,7 +1886,7 @@ func _view_edit_manual() -> void:
 				if ClassSelections.eligible(spell, member):
 					class_ids.append(String(spell.id))
 					break
-	_selection_dialog.choose(options, {"title": "Altri incantesimi disponibili", "selected": selected, "class_spell_ids": class_ids, "class_only_default": false,
+	_selection_dialog.choose(options, {"title": "Altri incantesimi disponibili", "gui_language": _gui_language, "selected": selected, "class_spell_ids": class_ids, "class_only_default": false,
 		"details": "Selezione manuale: incantesimi senza attribuzione a una classe. Nessun limite automatico."},
 		func(result: Dictionary) -> void:
 			for entry: Variant in _prepared:
