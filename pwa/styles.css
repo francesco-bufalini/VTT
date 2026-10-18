@@ -660,3 +660,10 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .vtt-action-glyph--pack-3.vtt-action-glyph--slot-21{--glyph-position:95.454545%}
 .vtt-action-glyph--pack-3.vtt-action-glyph--slot-22{--glyph-position:100.000000%}
 .toast.error{border-color:#c77b82}
+
+/* Compact action-toolbar controls remain legible with the metallic theme. */
+.action-toolbar-buttons{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0}
+.action-toolbar-buttons .btn{display:inline-flex;align-items:center;gap:5px;min-height:36px;white-space:normal}
+.action-toolbar-buttons .vtt-action-glyph{flex:none;width:20px;height:20px}
+.action-catalog-warning{border:1px solid #ad7441;padding:9px;border-radius:7px}
+@media(max-width:420px){.action-toolbar{align-items:flex-start;flex-direction:column;gap:7px}.action-toolbar-buttons{width:100%;justify-content:space-between}.action-toolbar-buttons .btn{font-size:12px}}
