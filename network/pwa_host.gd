@@ -36,6 +36,7 @@ const FILES := {
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
 	"/demo.js": ["res://pwa/demo.js", "text/javascript; charset=utf-8"],
 	"/tactical_view.js": ["res://pwa/tactical_view.js", "text/javascript; charset=utf-8"],
+	"/session_map.js": ["res://pwa/session_map.js", "text/javascript; charset=utf-8"],
 	"/catalog_data.js": ["res://pwa/catalog_data.js", "text/javascript; charset=utf-8"],
 	"/catalog/action_feature_overrides.json": ["res://vtt/data/action_feature_overrides.json", "application/json; charset=utf-8"],
 	"/catalog/combat_actions_5etools.json": ["res://vtt/data/combat_actions_5etools.json", "application/json; charset=utf-8"],
