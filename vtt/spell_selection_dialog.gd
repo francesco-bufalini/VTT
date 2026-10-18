@@ -1,6 +1,7 @@
 extends ConfirmationDialog
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Caption = preload("res://vtt/scrollable_caption.gd")
+const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 var _catalog: Array[Dictionary] = []
 var _selected: Dictionary = {}
 var _book: Dictionary = {}
@@ -180,13 +181,18 @@ func _rebuild() -> void:
 		)
 		var name_label := Label.new()
 		name_label.size.x = 280
-		name_label.text = String(spell.get("name", id)) + (" · trucchetto" if level == 0 else " · %d°" % level)
+		# Keep the catalogue name untouched. The level/cantrip suffix is UI
+		# text, so it needs a separate localizable label.
+		name_label.text = String(spell.get("name", id))
 		name_label.set_meta("creature_gui_data", true)
 		name_label.mouse_filter = Control.MOUSE_FILTER_PASS
 		name_label.tooltip_text = String(spell.get("description", ""))
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
+		var level_badge := Label.new()
+		level_badge.text = " · trucchetto" if level == 0 else " · %d°" % level
+		row.add_child(level_badge)
 		if _wizard and level > 0:
 			var book := CheckBox.new()
 			book.text = "Nel libro"
@@ -216,6 +222,10 @@ func _rebuild() -> void:
 	else:
 		empty.queue_free()
 	_update_count()
+	# This dialog can be rebuilt after searching or paging; translate each
+	# new row immediately, not just during the archive panel refresh.
+	if String(_context.get("gui_language", "")) in ["en", "it"]:
+		CreatureLocale.apply(self, String(_context.gui_language))
 
 func _update_count() -> void:
 	var leveled := 0
@@ -234,6 +244,8 @@ func _update_count() -> void:
 	get_ok_button().disabled = _max_selections > 0 and (_selected.is_empty() or _selected.size() > _max_selections)
 	if _wizard:
 		_count.text += " · Nel libro: %d" % _book.size()
+	if String(_context.get("gui_language", "")) in ["en", "it"]:
+		CreatureLocale.apply(_count, String(_context.gui_language))
 
 func _save() -> void:
 	hide()
