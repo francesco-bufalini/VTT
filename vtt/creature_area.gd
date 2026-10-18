@@ -698,11 +698,13 @@ func _build_ui() -> void:
 	_panel.name = "CreatureSheet"
 	preload("res://vtt/creature_sheet_style.gd").install(_panel)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Reduce outer gutters; keep the window entirely inside the viewport.
-	_panel.offset_left = 12
-	_panel.offset_top = 52
-	_panel.offset_right = -12
-	_panel.offset_bottom = -12
+	# The visible sheet border should occupy the available desktop surface:
+	# use internal sheet padding instead of leaving dark unusable gutters
+	# outside the panel. Preserve a slim clearance for the game top bar.
+	_panel.offset_left = 4
+	_panel.offset_top = 44
+	_panel.offset_right = -4
+	_panel.offset_bottom = -4
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	# Ensure UI sheets outrank any remaining tactical screen-space badges.
 	_panel.z_index = 30
@@ -2180,10 +2182,11 @@ func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	_fit_sheet_tabs.call_deferred()
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The breathing room is inside the bordered sheet, not around it.
 	for edge: String in ["margin_left", "margin_right"]:
-		margin.add_theme_constant_override(edge, 6)
+		margin.add_theme_constant_override(edge, 10)
 	for edge: String in ["margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(edge, 8)
+		margin.add_theme_constant_override(edge, 11)
 	scroll.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
