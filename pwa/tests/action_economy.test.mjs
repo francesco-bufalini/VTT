@@ -317,7 +317,7 @@ test('battle projects all unported actions without duplicating weapons, movement
  assert(surge);
  assert.match(surge.textContent,/Cariche guerriero · Costo 2 · 3 \/ 4/);
  assert(surge.querySelector('[data-act="battle-use-ability"]'));
- assert(surge.closest('[data-action-timing="bonus"]'));
+ assert.match(surge.textContent,/Azione bonus/);
  assert(doc(result.resourceAbilities.missing.join('')).body.textContent.includes('Ispirazione'));
  assert.equal(result.abilityEntries.length,2);
  const exhausted=battleActionPanels(record,{...calculated,trackers:[{id:'surge',name:'Cariche guerriero',max:4,spent:3}]},
