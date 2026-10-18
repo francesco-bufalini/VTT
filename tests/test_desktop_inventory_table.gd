@@ -50,6 +50,19 @@ func run() -> void:
 	assert(owned_tree.get_column_title(6) == "Nome", "The final column must be the item name")
 	var equipment_panel: PanelContainer = desktop.get("_equipment_panel")
 	var attune_panel: PanelContainer = desktop.get("_attunement_panel")
+	var coins_panel: PanelContainer = desktop.get("_coins_panel")
+	assert(coins_panel != null and coins_panel.get_index() == 2,
+		"Five-denomination coin purse must be a boxed panel near equipment and attunement")
+	var coin_boxes: Dictionary = desktop.get("_coin_boxes")
+	assert(coin_boxes.size() == 5,
+		"Native currency UI must include copper, silver, electrum, gold and platinum")
+	assert(int((coin_boxes["gp"] as SpinBox).value) == 0,
+		"Legacy sheets without currency retain zero as the default")
+	(coin_boxes["gp"] as SpinBox).value = 54
+	assert(int((tab.call("coins") as Dictionary).get("gp", 0)) == 54 and not updates.is_empty(),
+		"Coin changes must notify the same owning inventory autosave callback")
+	assert((tab.call("coins") as Dictionary).get("sp", -1) == 0,
+		"Editing one coin denomination must preserve all others")
 	assert(equipment_panel.get_index() == 0 and attune_panel.get_index() == 1,
 		"Boxed equipment and attunement sections belong at the top of the inventory")
 	assert((desktop.get("_main") as OptionButton).get_parent().get_parent() == equipment_panel.get_child(0).get_child(1)

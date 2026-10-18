@@ -39,7 +39,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1,
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', pendingItemOwner:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 let tokenStatusFingerprint="";
@@ -192,6 +192,7 @@ function stopSubscriptions() {
 }
 async function navigate(page){
   if(!sections.has(page))return;
+  if(page!=='catalog')state.pendingItemOwner='';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
@@ -360,42 +361,52 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
-    const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
-    const ordinary=owned.filter(({item})=>!isSpellScroll(item));
-    const scrolls=owned.filter(({item})=>isSpellScroll(item));
-    const attunements=owned.filter(({item})=>requiresAttunement(item));
-    const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
-    const definitions=await Promise.all(documents.map(({item})=>
-      getRecord("global","homebrew",String(item.id||""))));
-    let selected=owned.find(({index})=>index===state.inventorySelectedIndex);
-    if(!selected){selected=owned[0];state.inventorySelectedIndex=selected?.index??-1;}
-    let resolvedDetail=selected?.item||{};
-    if(selected&&isCatalogItem(selected.item)){
-      if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
-      const source=state.referenceCatalogs.items.find(row=>String(row.id||"")===String(selected.item.id||""));
-      if(source) {
-        const detail=await detailedEntry("items",source);
-        resolvedDetail={...detail,...selected.item,
-          entries:detail.entries??selected.item.entries,
-          description:detail.description??selected.item.description};
+    const isDocuments=state.inventorySubtab==="documents";
+    const nav='<nav class="inventory-subtabs" role="tablist" aria-label="Inventario">'+
+      [['items','Oggetti'],['documents','Documenti']].map(([key,label])=>
+        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+'" '+
+        'aria-selected="'+(key===state.inventorySubtab)+'">'+label+'</button>').join('')+'</nav>';
+    if(isDocuments){
+      const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
+      const definitions=await Promise.all(documents.map(({item})=>
+        getRecord("global","homebrew",String(item.id||""))));
+      body=nav+panel("Documenti",
+        (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
+          '<p class="hint">Nessun documento.</p>')+
+        '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>',
+        "inventory-native-panel inventory-documents-panel");
+    }else{
+      const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+      const ordinary=owned.filter(({item})=>!isSpellScroll(item));
+      const scrolls=owned.filter(({item})=>isSpellScroll(item));
+      const attunements=owned.filter(({item})=>requiresAttunement(item));
+      let selected=owned.find(({index})=>index===state.inventorySelectedIndex);
+      if(!selected){selected=owned[0];state.inventorySelectedIndex=selected?.index??-1;}
+      let resolvedDetail=selected?.item||{};
+      if(selected&&isCatalogItem(selected.item)){
+        if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
+        const source=state.referenceCatalogs.items.find(row=>String(row.id||"")===String(selected.item.id||""));
+        if(source){
+          const detail=await detailedEntry("items",source);
+          resolvedDetail={...detail,...selected.item,
+            entries:detail.entries??selected.item.entries,
+            description:detail.description??selected.item.description};
+        }
       }
+      body=nav+inventoryEquipmentView(c)+
+        inventoryAttunementView(c,attunements)+
+        inventoryCoinsView(c)+
+        panel("Oggetti posseduti",
+          inventoryTable(ordinary,false,state.inventorySelectedIndex,state.inventoryMenuIndex)+
+          '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
+          btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
+          "inventory-native-panel")+
+        panel("Pergamene possedute",inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
+          "inventory-native-panel inventory-scroll-panel")+
+        (selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
+          inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"")+
+        infusionPanel(c,calculated);
     }
-    body=inventoryEquipmentView(c)+
-      inventoryAttunementView(c,attunements)+
-      panel("Oggetti posseduti",
-        inventoryTable(ordinary,false,state.inventorySelectedIndex,state.inventoryMenuIndex)+
-        '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
-        btn("add-item","Crea oggetto locale")+btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
-        "inventory-native-panel")+
-      panel("Pergamene possedute",inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
-        "inventory-native-panel inventory-scroll-panel")+
-      (selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
-        inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"")+
-      panel("Documenti",'<p class="hint">Documenti personalizzati condivisi tra le copie della scheda.</p>'+
-      (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
-        '<p class="hint">Nessun documento.</p>')+
-      '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>')+
-      infusionPanel(c,calculated);
     break;
   }
   case "actions":
@@ -703,6 +714,25 @@ function inventoryEquipmentView(c){
     return '<div class="inventory-slot-row"><span>'+esc(label)+'</span>'+selector+size+'</div>';
   }).join('');
   return panel("Equipaggiamento",'<div class="inventory-slots">'+rows+'</div>',"inventory-native-panel inventory-equipment");
+}
+const COIN_LABELS=[["cp","Rame"],["sp","Argento"],["ep","Elettro"],["gp","Oro"],["pp","Platino"]];
+function inventoryCoinsView(c){
+  const coins=c.coins&&typeof c.coins==="object"&&!Array.isArray(c.coins)?c.coins:{};
+  const units=COIN_LABELS.map(([code,label])=>{
+    const value=Number(coins[code]??0);
+    const count=Number.isSafeInteger(value)&&value>=0?value:0;
+    return '<label class="inventory-coin"><span title="'+label+'">'+code.toUpperCase()+'</span>'+
+      '<input type="number" min="0" max="999999999" step="1" data-coin-code="'+code+
+      '" aria-label="'+label+'" value="'+count+'"></label>';
+  }).join('');
+  const copper=COIN_LABELS.reduce((sum,[code],i)=>{
+    const value=Number(coins[code]??0);
+    return sum+(Number.isSafeInteger(value)&&value>=0?value:0)*[1,10,50,100,1000][i];
+  },0);
+  return panel("Monete possedute",'<div class="inventory-coin-grid">'+units+'</div>'+
+    '<p class="inventory-coin-total">Equivalente: '+
+    esc((copper/100).toLocaleString("it-IT",{maximumFractionDigits:2}))+' mo</p>',
+    "inventory-native-panel inventory-coins-panel");
 }
 function inventoryAttunementView(c,entries){
   const max=Math.max(0,Math.min(99,Number(c.attunement_max_base??3)||0));
@@ -1603,6 +1633,23 @@ async function handleField(target) {
     await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
     await render();return;
   }
+  if(target.dataset.coinCode){
+    const denomination=target.dataset.coinCode;
+    if(!COIN_LABELS.some(([code])=>code===denomination))throw Error("Moneta non valida.");
+    if(target.value.trim()==="")throw Error("Inserisci una quantità di monete.");
+    const amount=Number(target.value);
+    if(!Number.isSafeInteger(amount)||amount<0||amount>999999999)
+      throw Error("Quantità di monete non valida.");
+    const coins=creature.coins&&typeof creature.coins==="object"&&!Array.isArray(creature.coins)?
+      {...creature.coins}:{};
+    coins[denomination]=amount;
+    await patch({coins});
+    const total=COIN_LABELS.reduce((sum,[code],i)=>sum+
+      (Number(coins[code])||0)*[1,10,50,100,1000][i],0)/100;
+    const output=app.querySelector(".inventory-coin-total");
+    if(output)output.textContent="Equivalente: "+total.toLocaleString("it-IT",{maximumFractionDigits:2})+" mo";
+    return;
+  }
   if(target.dataset.slotWeaponSize){
     const slot=target.dataset.slotWeaponSize;
     const changed=changeEquippedWeaponSize(creature.inventory||[],slot,target.value);
@@ -1868,7 +1915,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants()):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants()):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2406,8 +2453,12 @@ async function handleAction(target){
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
   if(act==="power-trait"){state.sheet="traits";state.sheetPopup=target.dataset.originId?"trait-origin:"+target.dataset.originId:"";state.sheetPopupTitle="";await render();return;}
   if(act==="new-homebrew-item"){
+    const owner=state.creatureId||"";
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
     await navigate("catalog");
+    state.pendingItemOwner=owner;
+    const creator=app.querySelector(".catalog-create");
+    if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
     name?.scrollIntoView?.({block:"center"});
     name?.focus();
@@ -2468,6 +2519,19 @@ async function handleAction(target){
       value:Number(app.querySelector('#quick-value')?.value)
     }:{};
     const created=await createQuickHomebrew(state.catalogCategory,name,description,grants,details);
+    const owner=state.pendingItemOwner;
+    if(owner&&state.catalogCategory==="items"){
+      const editor=await openCreatureEditor(owner);
+      const record=editor.read();
+      const item=createOwnedItem({...created.data,id:created.id,name:created.name,
+        source:created.source}, "pwa_"+crypto.randomUUID());
+      const inventory=[...(record.inventory||[]),item];
+      await editor.update({inventory});
+      state.page="library";state.libraryMode=false;state.creatureId=owner;
+      state.editor=editor;state.sheet="inventory";state.inventorySubtab="items";
+      state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";
+      await render();message("Oggetto homebrew aggiunto all'inventario.");return;
+    }
     state.catalogSelected=-1;state.catalogQuery=created.name;
     await render();message('Contenuto personalizzato salvato in locale.');return;
   }
@@ -2640,6 +2704,12 @@ async function handleAction(target){
     else changes=clearInfusionPatch(creature,index);
     await patch(changes);await render();return;
   }
+  if(act==="inventory-subtab"){
+    const subtab=target.dataset.subtab;
+    if(!["items","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
+    state.inventorySubtab=subtab;state.sheetPopup="";state.inventoryMenuIndex=-1;
+    await render();return;
+  }
   if(act==="inventory-select"){
     state.inventorySelectedIndex=Number(target.dataset.index);
     state.inventoryMenuIndex=-1;
@@ -2695,14 +2765,6 @@ async function handleAction(target){
     const inventory=structuredClone(record.inventory||[]);
     if(!isDocument(inventory[index]))throw Error("Documento non valido.");
     inventory.splice(index,1);state.openDocumentInstance="";state.sheetPopup="";
-    await patch({inventory});await render();return;
-  }
-  if(act==="add-item"){
-    const c=state.editor.read();
-    const inventory=Array.isArray(c.inventory)?[...c.inventory]:[];
-    state.inventorySelectedIndex=inventory.length;state.sheetPopup="item:"+inventory.length;state.sheetPopupTitle="Nuovo oggetto";
-    inventory.push({id:"local_"+crypto.randomUUID(),name:"Nuovo oggetto",quantity:1,description:"",
-      source:"",custom_item_type:"other",equipped:false,equipped_slots:[],attuned:false,active:true});
     await patch({inventory});await render();return;
   }
   if(act==="remove-item"){
@@ -2925,7 +2987,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  const editable = "[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.matches('[data-play-search]')){

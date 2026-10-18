@@ -50,6 +50,20 @@ function change(selector,value){
   elem.value=value;
   elem.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
 }
+async function addHomebrewToInventory(name){
+  assert.ok(document.querySelector('[data-act="new-homebrew-item"]'),
+    "Only one homebrew creation action should be visible in the items subtab");
+  assert.equal(document.querySelector('[data-act="add-item"]'),null,
+    "The old local-item creation path must be removed");
+  click('[data-act="new-homebrew-item"]');
+  await until(()=>document.querySelector('#quick-name'));
+  assert.ok(document.querySelector('.catalog-create')?.open,
+    "Creation controls are expanded when invoked from the inventory");
+  change('#quick-name',name);
+  click('[data-act="quick-create"]');
+  await until(()=>document.querySelector('[data-act="new-homebrew-item"]')&&
+    document.querySelector('.inventory-table-row')?.textContent.includes(name),5000);
+}
 async function changeScore(ability,value){
   click('[data-act="edit-score"][data-ability-key="'+ability+'"]');
   await until(()=>document.querySelector('#sheet-score-input'));
@@ -75,13 +89,11 @@ test("mobile navigation and local creature editing persist through tabs",async()
     return rows.find(r=>r.creature.name==="Arcanista mobile"&&r.creature.current_hp===17);
   });
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-act="add-item"]'));
+  await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
   assert.equal(document.querySelector(".current-section"),null);
   assert.equal(document.querySelector("#creature-name").textContent,"Arcanista mobile");
   assert.equal(document.querySelector('[data-sheet="inventory"]').getAttribute("aria-pressed"),"true");
-  click('[data-act="add-item"]');
-  await until(()=>document.querySelector('[data-item-key="name"]'));
-  change('[data-item-key="name"]',"Pozione");
+  await addHomebrewToInventory("Pozione");
   change('[data-item-key="quantity"]',"3");
   await until(async()=>{
     const rows=await listCreatures();
@@ -600,12 +612,13 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-act="add-item"]'));
-  click('[data-act="add-item"]');
-  await until(()=>document.querySelector('[data-item-key="name"]'));
-  change('[data-item-key="name"]',"Test personalizzato");
+  await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
+  await addHomebrewToInventory("Test personalizzato");
   change('[data-item-key="quantity"]',"3");
   assert.ok(document.querySelector('.inventory-equipment'),"Desktop-style equipment panel in mobile inventory");
+  assert.ok(document.querySelector('.inventory-coins-panel'),"Coins must be available in the objects subtab");
+  assert.equal(document.querySelector('[data-act="document-add"]'),null,
+    "Document operations stay inside their own subtab");
   assert.ok(document.querySelector('.inventory-attunement'),"Dedicated attunement list in mobile inventory");
   assert.ok(document.querySelector('.inventory-table[role="table"]'),"Compact mobile inventory table");
   click('[data-act="inventory-equip"]');
@@ -637,10 +650,8 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="inventory"]');
-  await until(()=>document.querySelector('[data-act="add-item"]'));
-  click('[data-act="add-item"]');
-  await until(()=>document.querySelector('[data-item-key="name"]'));
-  change('[data-item-key="name"]',"Oggetto prova");
+  await until(()=>document.querySelector('[data-act="new-homebrew-item"]'));
+  await addHomebrewToInventory("Oggetto prova");
   change('[data-item-key="quantity"]',"2");
   await until(()=>document.querySelector('[data-item-key="quantity"]')?.value==="2");
   click('[data-act="inventory-quantity"][data-delta="1"]');
@@ -654,12 +665,50 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
+
+test("PWA coins persist across inventory subtabs and reopening a creature",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  const name="Tesoriere mobile";
+  change('[data-field="name"]',name);
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-coin-code="gp"]'));
+  change('[data-coin-code="gp"]',"47");
+  await until(async()=>{
+    const c=(await listCreatures()).find(row=>row.creature.name===name)?.creature;
+    return c?.coins?.gp===47;
+  });
+  change('[data-coin-code="sp"]',"6");
+  await until(()=>document.querySelector('.inventory-coin-total')?.textContent.includes("47,6"));
+  click('[data-act="inventory-subtab"][data-subtab="documents"]');
+  await until(()=>document.querySelector('[data-act="document-add"]'));
+  assert.equal(document.querySelector('[data-coin-code]'),null);
+  click('[data-act="inventory-subtab"][data-subtab="items"]');
+  await until(()=>document.querySelector('[data-coin-code="gp"]'));
+  assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
+  assert.equal(document.querySelector('[data-coin-code="sp"]').value,"6");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  const owner=(await listCreatures()).find(row=>row.creature.name===name).creature;
+  click('[data-act="open"][data-id="'+owner.id+'"]');
+  await until(()=>document.querySelector('[data-sheet="inventory"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-coin-code="gp"]'));
+  assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Scriba locale");
   click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
+  click('[data-act="inventory-subtab"][data-subtab="documents"]');
   await until(()=>document.querySelector('[data-act="document-add"]'));
+  assert.equal(document.querySelector('[data-act="new-homebrew-item"]'),null,
+    "The documents subtab must not render item actions");
   click('[data-act="document-add"]');
   await until(()=>document.querySelector('[data-document-part="title"]'));
   change('[data-document-part="title"]',"Messaggio segreto");
@@ -691,6 +740,8 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   assert.ok(open);open.click();
   await until(()=>document.querySelector('[data-field="name"]')?.value==="Scriba locale");
   click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
+  click('[data-act="inventory-subtab"][data-subtab="documents"]');
   await until(()=>document.querySelector('[data-document-card]'));
   const card=document.querySelector('[data-document-card]');
   card.open=true;

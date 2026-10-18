@@ -53,6 +53,8 @@ var _inventory_title: Label
 var _legacy_qty_label: Label
 var _equip_hint: Label
 var _attunement_max_base := 3
+# Portable denominations: copper, silver, electrum, gold, platinum.
+var _coins: Dictionary = {}
 var _attunement_limit_bonus := 0
 var _quantity: SpinBox
 var _weapon_size_choice: OptionButton
@@ -736,6 +738,11 @@ func load_record(record: Dictionary) -> void:
 		_filter_catalog()
 	_loading = true
 	_attunement_max_base = clampi(int(record.get("attunement_max_base", 3)), 0, 99)
+	_coins.clear()
+	var saved_coins: Variant = record.get("coins", {})
+	for denomination: String in ["cp", "sp", "ep", "gp", "pp"]:
+		var amount: Variant = (saved_coins as Dictionary).get(denomination, 0) if saved_coins is Dictionary else 0
+		_coins[denomination] = clampi(int(amount) if amount != null and str(amount).is_valid_int() else 0, 0, 999999999)
 	_attunement_limit_bonus = BonusRules.bonus(record, "attunement_max")
 	_inventory.clear()
 	var saved: Variant = record.get("inventory", [])
@@ -1571,6 +1578,18 @@ func attunement_capacity() -> int:
 func _publish_migration(expected_creature_id: String) -> void:
 	if _loaded_creature_id == expected_creature_id:
 		_publish()
+
+
+func coins() -> Dictionary:
+	return _coins.duplicate(true)
+
+
+func set_coins(coins_value: Dictionary) -> void:
+	if _loading:
+		return
+	for denomination: String in ["cp", "sp", "ep", "gp", "pp"]:
+		_coins[denomination] = clampi(int(coins_value.get(denomination, 0)), 0, 999999999)
+	_publish()
 
 
 func _publish() -> void:

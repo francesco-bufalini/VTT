@@ -31,6 +31,9 @@ var _scroll_heading: Label
 var _equipment_heading: Label
 var _equipment_panel: PanelContainer
 var _attunement_panel: PanelContainer
+var _coins_panel: PanelContainer
+var _coin_boxes: Dictionary = {}
+var _coins_heading: Label
 var _attune_label: Label
 var _slot_indices: Dictionary = {}
 var _record: Dictionary = {}
@@ -183,6 +186,63 @@ func setup(tab: Node, description: Control) -> void:
 	# Move the completed panels to the top of this VBox.
 	move_child(_equipment_panel, 0)
 	move_child(_attunement_panel, 1)
+	_build_coins()
+
+
+func _build_coins() -> void:
+	_coins_panel = PanelContainer.new()
+	_coins_panel.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
+	add_child(_coins_panel)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 5)
+	_coins_panel.add_child(body)
+	_coins_heading = Label.new()
+	_coins_heading.text = _t("Monete possedute", "Coins carried")
+	_coins_heading.add_theme_font_size_override("font_size", 15)
+	body.add_child(_coins_heading)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 9)
+	body.add_child(row)
+	for denomination: String in ["cp", "sp", "ep", "gp", "pp"]:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 3)
+		cell.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		row.add_child(cell)
+		var caption := Label.new()
+		caption.text = denomination.to_upper()
+		caption.tooltip_text = _coin_name(denomination)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(caption)
+		var amount := SpinBox.new()
+		amount.min_value = 0
+		amount.max_value = 999999999
+		amount.step = 1
+		amount.rounded = true
+		amount.custom_minimum_size.x = 89
+		amount.tooltip_text = _coin_name(denomination)
+		amount.value_changed.connect(_on_coin_changed.bind(denomination))
+		cell.add_child(amount)
+		_coin_boxes[denomination] = amount
+	move_child(_coins_panel, 2)
+
+
+func _coin_name(denomination: String) -> String:
+	return {
+		"cp": _t("Rame", "Copper"),
+		"sp": _t("Argento", "Silver"),
+		"ep": _t("Elettro", "Electrum"),
+		"gp": _t("Oro", "Gold"),
+		"pp": _t("Platino", "Platinum")
+	}.get(denomination, denomination)
+
+
+func _on_coin_changed(value: float, denomination: String) -> void:
+	if _updating or _tab == null:
+		return
+	var coins_value: Dictionary = _tab.call("coins")
+	coins_value[denomination] = int(value)
+	_record["coins"] = coins_value.duplicate(true)
+	_tab.call("set_coins", coins_value)
 
 
 # Desktop headings are built once; changing the creature language must also
@@ -194,6 +254,9 @@ func refresh_captions() -> void:
 	_scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
 	_equipment_heading.text = _t("Equipaggiamento", "Equipment")
 	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
+	_coins_heading.text = _t("Monete possedute", "Coins carried")
+	for denomination: String in _coin_boxes:
+		(_coin_boxes[denomination] as SpinBox).tooltip_text = _coin_name(denomination)
 	for column: int in range(7):
 		_owned_tree.set_column_title(column, [
 			_t("Eq.", "Eq."), _t("mo", "gp"), _t("Peso", "Weight"),
@@ -288,6 +351,11 @@ func _remove_texture() -> Texture2D:
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
 	_active_view = "owned"
+	_updating = true
+	var purse: Dictionary = _tab.call("coins")
+	for denomination: String in _coin_boxes:
+		(_coin_boxes[denomination] as SpinBox).set_value_no_signal(int(purse.get(denomination, 0)))
+	_updating = false
 	refresh()
 
 
