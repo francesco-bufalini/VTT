@@ -69,8 +69,18 @@ try{
 
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
  assert.equal(await mainAttack.count(),1);
+ const mainTiming=weaponPanel.locator('[data-action-timing="action"]');
+ assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
+ assert.equal(await mainTiming.getAttribute('open'),'');
+ await mainTiming.locator('summary.play-battle-action-heading').click();
+ assert.equal(await mainTiming.getAttribute('open'),null,'Tapping the timing label collapses its actions');
+ await mainTiming.locator('summary.play-battle-action-heading').click();
+ assert.equal(await mainTiming.getAttribute('open'),'','Tapping again expands without any extra icon');
+ const opportunity=weaponPanel.locator('[data-attack-id="opportunity"]');
+ assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
+ assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),1);
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null);
- assert.match(await mainAttack.locator('.play-battle-attack-copy small').textContent(),/1d20 \+ [0-9]+ · Mischia/);
+ assert.match(await mainAttack.locator('.play-battle-roll-formula').textContent(),/1d20 \+ [0-9]+ · Mischia/);
  assert.equal(await weaponPanel.locator('[data-attack-id="item:local_sword"]').count(),1);
  assert.equal(await weaponPanel.locator('.play-battle-attack-copy strong').filter({hasText:/^Attaccare$/}).count(),0);
  await mainAttack.locator('summary').click();
