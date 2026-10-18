@@ -145,6 +145,7 @@ static func symbol_target(symbol: String) -> String:
 		"max_hp": return "hp"
 		"passive_perception": return "passive_perception"
 		"level": return "level"
+		"attunement_max", "max_attunements": return "attunement_max"
 	return ""
 
 
@@ -276,6 +277,8 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 			return {"ok": true, "value": Rules.ability_modifier(int(score["value"]))}
 	if target == "level":
 		return {"ok": true, "value": int(record.get("level", 1))}
+	if target == "attunement_max":
+		return {"ok": true, "value": maxi(0, int(record.get("attunement_max_base", 3)))}
 	if target == "proficiency":
 		if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
 			var cr: float = Rules.effective_monster_cr(record)
