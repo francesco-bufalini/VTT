@@ -36,7 +36,7 @@ func run() -> void:
 	view.setup({
 		"record": _current, "gui_language": _language,
 		"section_ability": _section_ability, "casting_stats": _stats,
-		"set_section_ability": _ignore, "cast_origin": _ignore, "tracker": _ignore
+		"set_section_ability": _ignore, "cast_origin": _ignore, "class_feature": _ignore, "tracker": _ignore
 	})
 	var pair: Array[VBoxContainer] = view._pair()
 	view._heading(pair[0], "Origine · Talento · Shadow Touched")
