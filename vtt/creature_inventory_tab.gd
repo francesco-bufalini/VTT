@@ -277,7 +277,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	item_switches.add_theme_constant_override("h_separation", 8)
 	add_child(item_switches)
 	var equip_hint := Label.new()
-	equip_hint.text = "Seleziona un oggetto e usa Equipaggiato o Sintonia. Armi, scudi e armature si equipaggiano in Statistiche."
+	equip_hint.text = "Seleziona un oggetto e usa «Equipaggiato» o «Sintonia». Armi, scudi e armature si equipaggiano nella sezione Statistiche."
 	equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(equip_hint)
 	move_child(equip_hint, item_switches.get_index())
@@ -322,11 +322,11 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	size_caption.text = "Taglia arma"
 	size_row.add_child(size_caption)
 	_weapon_size_choice = OptionButton.new()
-	_weapon_size_choice.add_item("Come creatura (Medium)")
+	_weapon_size_choice.add_item("Come creatura (Media)")
 	for size_name: String in ItemRules.WEAPON_SIZES:
 		_weapon_size_choice.add_item(size_name)
 	_weapon_size_choice.disabled = true
-	_weapon_size_choice.tooltip_text = "Default: taglia della creatura. Le armi Grandi/Enormi/Mastodontiche usano dadi aggiuntivi."
+	_weapon_size_choice.tooltip_text = "Per impostazione predefinita si usa la taglia della creatura. Le armi Grandi, Enormi o Mastodontiche aggiungono dadi di danno."
 	_weapon_size_choice.item_selected.connect(_on_weapon_size_changed)
 	size_row.add_child(_weapon_size_choice)
 	_remove_button = Button.new()
