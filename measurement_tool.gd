@@ -2894,7 +2894,7 @@ func _draw_aoe(
 
 	if not style.is_empty():
 		var style_color: Color = color if color.a >= 0.0 else _spell_style_color(style)
-		style_color.a = 0.72 if style == "darkness" else 0.24
+		style_color.a = 0.36 if style == "darkness" else 0.11
 		material.albedo_color = style_color
 		material.emission_enabled = true
 		material.emission = Color(
@@ -2908,13 +2908,13 @@ func _draw_aoe(
 		)
 	elif color.a >= 0.0:
 		var display_color: Color = color
-		display_color.a = 0.28
+		display_color.a = 0.11
 		material.albedo_color = display_color
 		material.emission_enabled = true
 		material.emission = Color(color.r, color.g, color.b, 1.0)
 		material.emission_energy_multiplier = 0.18
 	else:
-		material.albedo_color = Color(1, 0.3, 0.05, 0.28)
+		material.albedo_color = Color(1, 0.3, 0.05, 0.11)
 
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -2961,6 +2961,27 @@ func _draw_aoe(
 			node.mesh = sphere_mesh
 
 	node.material_override = material
+	# Draw crisp arcane edge geometry separately from the almost transparent
+	# volume. The outline follows the same transform/size as the rule geometry.
+	var outline: MeshInstance3D = node.get_node_or_null("ArcaneAreaOutline") as MeshInstance3D
+	if outline == null:
+		outline = MeshInstance3D.new()
+		outline.name = "ArcaneAreaOutline"
+		outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(outline)
+	outline.mesh = RangeGeometry.area_outline_mesh(geometry)
+	var outline_material := StandardMaterial3D.new()
+	outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	outline_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	outline_material.no_depth_test = false
+	var edge_color := material.albedo_color
+	edge_color.a = 0.86
+	outline_material.albedo_color = edge_color
+	outline_material.emission_enabled = true
+	outline_material.emission = Color(edge_color.r, edge_color.g, edge_color.b, 1.0)
+	outline_material.emission_energy_multiplier = 0.40
+	outline.material_override = outline_material
 	var radii: MeshInstance3D = node.get_node_or_null("DimensionRadii") as MeshInstance3D
 	if radii == null:
 		radii = MeshInstance3D.new()
