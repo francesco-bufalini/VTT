@@ -79,7 +79,7 @@ try{
  assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
  assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
  await shot('menu');await page.keyboard.press('Escape');
- assert.equal(await page.locator('#more-navigation').getAttribute('aria-expanded'),'false');
+ await page.waitForFunction(()=>document.querySelector('#more-navigation')?.getAttribute('aria-expanded')==='false');
  await sheet('info');
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
