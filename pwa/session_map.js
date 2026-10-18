@@ -31,9 +31,19 @@ export function snapshotRevision(data) {
       t.current_miniature_id,t.default_miniature_id])]);
 }
 
-export function snapshotSource(snapshot) {
+// The desktop returns WebP as base64 JSON. Do NOT use a data: URL in an
+// <img>: our restrictive desktop CSP intentionally permits only self/Blob.
+export function snapshotBlob(snapshot) {
   if(!snapshot||snapshot.ok!==true||snapshot.format!=="webp"||
-    typeof snapshot.image!=="string"||snapshot.image.length>1800000||
-    !/^[A-Za-z0-9+/]*={0,2}$/.test(snapshot.image))return "";
-  return "data:image/webp;base64,"+snapshot.image;
+    typeof snapshot.image!=="string"||!snapshot.image.length||
+    snapshot.image.length>1800000||
+    !/^[A-Za-z0-9+/]*={0,2}$/.test(snapshot.image))return null;
+  try{
+    const decoded=atob(snapshot.image);
+    const bytes=new Uint8Array(decoded.length);
+    for(let i=0;i<decoded.length;i++)bytes[i]=decoded.charCodeAt(i);
+    return new Blob([bytes],{type:"image/webp"});
+  }catch{
+    return null;
+  }
 }
