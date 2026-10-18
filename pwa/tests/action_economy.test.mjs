@@ -43,7 +43,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
  assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
  assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
- assert.equal(movement.querySelectorAll('.play-battle-attack-entry:not(:has(.play-battle-effect))').length,0);
+ assert([...movement.querySelectorAll('.play-battle-attack-entry')].every(node=>node.querySelector('.play-battle-effect')));
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
  assert.equal(attacks.querySelector('[data-action-timing="action"] h3>.vtt-action-glyph')?.tagName,'SPAN');
