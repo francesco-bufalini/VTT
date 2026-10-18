@@ -47,6 +47,7 @@ const FILES := {
 	"/catalog/ability_grants.json": ["res://pwa/catalog/ability_grants.json", "application/json; charset=utf-8"],
 	"/catalog/activated_abilities.json": ["res://vtt/data/activated_abilities_5etools.json", "application/json; charset=utf-8"],
 	"/catalog/class_mechanics.json": ["res://pwa/catalog/class_mechanics.json", "application/json; charset=utf-8"],
+	"/catalog/species_types.json": ["res://pwa/catalog/species_types.json", "application/json; charset=utf-8"],
 	"/catalog/proficiency_grants.json": ["res://pwa/catalog/proficiency_grants.json", "application/json; charset=utf-8"],
 	"/catalog/player.json": ["res://vtt/data/player_5etools_catalog.json", "application/json; charset=utf-8"],
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
@@ -67,6 +68,11 @@ const FILES := {
 	"/icons/gold_generated/gold_1.svg": ["res://pwa/icons/gold_generated/gold_1.svg", "image/svg+xml"],
 	"/icons/gold_generated/gold_2.svg": ["res://pwa/icons/gold_generated/gold_2.svg", "image/svg+xml"],
 	"/icons/gold_generated/gold_3.svg": ["res://pwa/icons/gold_generated/gold_3.svg", "image/svg+xml"],
+	"/icons/info/identity.svg": ["res://assets/creature_info/identity.svg", "image/svg+xml"],
+	"/icons/info/physique.svg": ["res://assets/creature_info/physique.svg", "image/svg+xml"],
+	"/icons/info/progression.svg": ["res://assets/creature_info/progression.svg", "image/svg+xml"],
+	"/icons/info/talents.svg": ["res://assets/creature_info/talents.svg", "image/svg+xml"],
+	"/icons/info/biography.svg": ["res://assets/creature_info/biography.svg", "image/svg+xml"],
 	"/icon-192.png": ["res://pwa/icon-192.png", "image/png"],
 	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
 }
