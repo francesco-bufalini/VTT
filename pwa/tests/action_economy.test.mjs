@@ -12,12 +12,31 @@ const find=(rows,id)=>rows.find(row=>row.id===id);
 const doc=html=>new JSDOM(html).window.document;
 
 test('battle panels reuse calculated attacks, optional manoeuvres and timed movement',()=>{
- const calculated={attacks:[{id:'item:sword',name:'Spada',hit:5,damage:'1d8'},
-  {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',hit:2,damage:'1d4 + 2'}]};
+ const calculated={attacks:[{id:'item:sword',name:'Spada',slot:'main',melee:true,hit:5,damage:'1d8'},
+  {id:'item:off:dagger',name:'Pugnale',slot:'off',melee:false,offhand_bonus:true,hit:4,damage:'1d4'},
+  {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',slot:'shield',melee:true,hit:2,damage:'1d4 + 2'}],skills:{athletics:3}};
  const panels=battleActionPanels({rules_version:'2014'},calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
  const attacks=doc(panels.attacks),movement=doc(panels.movement);
  assert(attacks.querySelector('[data-target="attack_hit:shield:improvised:off:sh"]'));
  assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
+ const sword=attacks.querySelector('[data-attack-id="item:sword"]');
+ assert(sword);assert.equal(sword.querySelector('details').open,false);
+ assert.match(sword.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 5 · Mischia/);
+ assert.equal(sword.querySelector('.play-battle-attack-roll b').textContent,'+5');
+ assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
+ assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
+ const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
+ assert.match(dagger.querySelector('.play-battle-attack-copy small').textContent,/Distanza/);
+ assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus');
+ assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
+ assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
+ assert(![...attacks.querySelectorAll('.play-battle-attack-copy strong')].some(node=>/^(Attaccare|Combattere con due armi)$/.test(node.textContent)));
+ const grapple=attacks.querySelector('[data-attack-id="grapple"]');
+ assert.match(grapple.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 3 · Prova di Atletica/);
+ assert.equal(grapple.querySelector('[data-target="skill:athletics"]').tagName,'BUTTON');
+ assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
+ assert.equal(attacks.querySelector('[data-action-timing="action"] h3>.vtt-action-glyph')?.tagName,'SPAN');
+ assert.equal(movement.querySelector('[data-action-timing="movement"] h3>.vtt-action-glyph')?.tagName,'SPAN');
  assert(attacks.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
  assert(attacks.body.textContent.includes('Disarmare'));
  assert(!attacks.body.textContent.includes('Scattare'));
