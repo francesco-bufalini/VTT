@@ -29,6 +29,47 @@ function showFailure(phase, error) {
   app.querySelector("#startup-error").textContent = error?.message || String(error);
   app.querySelector("#retry-startup").addEventListener("click", () => location.reload());
   console.error("VTT Mobile startup failed during " + phase, error);
+  // Report a useful HTTP status instead of only Chrome's generic import error.
+  // This check is read-only: it never clears IndexedDB or the app cache.
+  if (phase === "Caricamento dei moduli") {
+    void deadline(fetch("./ui.js", { cache: "no-store" }), 4000, "Diagnostica del modulo")
+      .then(response => {
+        if (!app.querySelector("#startup-error")) return;
+        const mime = response.headers.get("content-type") || "";
+        if (!response.ok || !/javascript/i.test(mime)) {
+          app.querySelector("#startup-error").textContent +=
+            " | Verifica /ui.js: HTTP " + response.status + " (" + (mime || "tipo sconosciuto") + ")";
+        }
+      })
+      .catch(() => {
+        if (app.querySelector("#startup-error")) {
+          app.querySelector("#startup-error").textContent +=
+            " | Il server desktop non risponde nemmeno alla verifica di /ui.js.";
+        }
+      });
+  }
+}
+
+function retryableModuleError(error) {
+  return /failed to fetch dynamically imported module|failed to load module script|importing a module script failed|networkerror|non risponde/i
+    .test(String(error?.message || error));
+}
+
+async function loadStartupModules() {
+  try {
+    return await deadline(Promise.all([import("./ui.js"), import("./storage.js")]),
+      9000, "Caricamento dell'interfaccia");
+  } catch (error) {
+    if (!retryableModuleError(error)) throw error;
+    console.warn("VTT Mobile: transient module load error, retrying once", error);
+    await new Promise(resolve => setTimeout(resolve, 450));
+    // A failed ESM URL is remembered by the browser for this page. A distinct
+    // fragment gives the second attempt a new module-map key while HTTP and the
+    // Godot server still request the exact same allowlisted /ui.js path.
+    return deadline(Promise.all([
+      import("./ui.js#startup-retry"), import("./storage.js#startup-retry")
+    ]), 9000, "Secondo tentativo di caricamento");
+  }
 }
 
 async function installOfflineShell() {
@@ -48,8 +89,7 @@ async function boot() {
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
     const [{ mount }, { openStorage, requestPersistentStorage, storageEstimate }] =
-      await deadline(Promise.all([import("./ui.js"), import("./storage.js")]),
-        12000, "Caricamento dell'interfaccia");
+      await loadStartupModules();
     phase = "Apertura archivio locale";
     showStage("Apertura archivio locale…");
     const database = await deadline(openStorage(), 12000, "Archivio IndexedDB");
