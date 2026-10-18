@@ -27,6 +27,8 @@ var _record: Dictionary = {}
 var _minus_icon: Texture2D
 var _plus_icon: Texture2D
 var _updating := false
+# One inventory table owns the current highlight.
+var _active_view := "owned"
 
 
 func _t(it: String, en: String) -> String:
@@ -50,7 +52,7 @@ func setup(tab: Node, description: Control) -> void:
 	for column: int in range(7):
 		_owned_tree.set_column_expand(column, false)
 	for column: int in range(8):
-		_owned_tree.set_column_custom_minimum_width(column, [34, 82, 70, 94, 124, 64, 162, 174][column])
+		_owned_tree.set_column_custom_minimum_width(column, [30, 82, 70, 94, 114, 64, 162, 174][column])
 	_owned_tree.item_selected.connect(_on_owned_selected)
 	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
@@ -158,7 +160,8 @@ func _make_tree(captions: Array, height: float) -> Tree:
 	tree.select_mode = Tree.SELECT_ROW
 	tree.custom_minimum_size.y = height
 	tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tree.mouse_force_pass_scroll_events = false
+	# Do not trap the parent sheet's wheel events inside short Tree lists.
+	tree.mouse_force_pass_scroll_events = true
 	tree.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	for column: int in range(captions.size()):
 		tree.set_column_title(column, _t(String(captions[column]), String(captions[column])))
@@ -183,20 +186,21 @@ func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionBu
 
 
 func _symbol_texture(plus: bool) -> Texture2D:
-	var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	var img := Image.create(14, 14, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
-	for x: int in range(3, 13):
-		for y: int in range(7, 9):
+	for x: int in range(2, 12):
+		for y: int in range(6, 8):
 			img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
 	if plus:
-		for x: int in range(7, 9):
-			for y: int in range(3, 13):
+		for x: int in range(6, 8):
+			for y: int in range(2, 12):
 				img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
 	return ImageTexture.create_from_image(img)
 
 
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
+	_active_view = "owned"
 	refresh()
 
 
@@ -382,6 +386,7 @@ func refresh() -> void:
 			if ItemRules.requires_attunement(entry) and bool(owned.get("attuned", false)) and icon.is_empty():
 				icon = "✦"
 			row.set_text(0, icon)
+			row.set_custom_font_size(0, 12)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
 			row.set_text(2, _weight_total(entry, quantity))
@@ -390,7 +395,7 @@ func refresh() -> void:
 			row.set_text(5, String(entry.get("source", owned.get("source", ""))).to_upper())
 			row.set_text(6, _characteristic(entry))
 			row.set_text(7, String(owned.get("name", "")))
-		if index == selected_index:
+		if index == selected_index and _active_view == ("scroll" if is_scroll else "owned"):
 			row.select(0)
 		if ItemRules.requires_attunement(entry):
 			var attune_row := attune_root.create_child()
@@ -400,6 +405,8 @@ func refresh() -> void:
 			var attuned: bool = bool(owned.get("attuned", false))
 			attune_row.set_checked(0, attuned)
 			attune_row.set_text(1, String(owned.get("name", "")))
+			if index == selected_index and _active_view == "attunement":
+				attune_row.select(0)
 			if attuned:
 				attuned_count += 1
 				for col: int in range(2):
