@@ -238,8 +238,8 @@ try{
  assert.equal(await rage.count(),1,'Rage has a single Disattiva button when active');
  await rage.locator('[data-act="condition-remove-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.active_class_features?.rage;});
- assert.equal(await ragePanel.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]').count(),0);
- assert(await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').count()>0,'Activation reappears after disabling');
+ await ragePanel.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]').waitFor({state:'detached'});
+ await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: 8 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
