@@ -566,7 +566,12 @@ func _on_attunement_selected() -> void:
 
 func _on_owned_mouse_event(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
-	if _updating or click == null or not click.pressed or not click.double_click or click.button_index != MOUSE_BUTTON_LEFT:
+	if _updating or click == null or not click.pressed:
+		return
+	if click.button_index == MOUSE_BUTTON_RIGHT:
+		_request_context_menu(_owned_tree, click, "owned")
+		return
+	if click.button_index != MOUSE_BUTTON_LEFT or not click.double_click:
 		return
 	if _owned_tree.get_column_at_position(click.position) != 0:
 		return
@@ -576,11 +581,64 @@ func _on_owned_mouse_event(event: InputEvent) -> void:
 	var index: int = int(selected.get_metadata(0))
 	var owned: Dictionary = _rows()[index]
 	var entry: Dictionary = _definition(owned)
-	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry):
+	if ItemRules.kind(entry) in ["weapon", "armor", "shield", "document"]:
 		return
-	# A click still holds the Tree's mouse selection lock. Deferred mutation
-	# avoids clearing its rows from within that event's synchronous callbacks.
+	if _is_spell_scroll(owned, entry):
+		return
+	# Tree.clear() is forbidden until the mouse selection event completes.
 	call_deferred("_apply_generic_equipment", index, not bool(owned.get("equipped", false)))
+
+
+func _on_scroll_mouse_event(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if _updating or click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	_request_context_menu(_scroll_tree, click, "scroll")
+
+
+func _request_context_menu(tree: Tree, click: InputEventMouseButton, view: String) -> void:
+	var row: TreeItem = tree.get_item_at_position(click.position)
+	if row == null:
+		return
+	var index: int = int(row.get_metadata(0))
+	var popup_position := Vector2i(tree.get_global_rect().position + click.position)
+	call_deferred("_show_context_menu", index, view, popup_position)
+
+
+func _show_context_menu(index: int, view: String, popup_position: Vector2i) -> void:
+	if index < 0 or index >= _rows().size():
+		return
+	_context_index = index
+	_select_saved(index, view)
+	# An installed source record can be opened in the in-sheet catalog.
+	var owned: Dictionary = _rows()[index]
+	var available := false
+	for raw: Dictionary in _tab.get("_catalog"):
+		if String(raw.get("id", "")) == String(owned.get("id", "")):
+			available = true
+			break
+	_context_menu.set_item_disabled(1, not available)
+	DialogLayout.popup_menu(_context_menu, popup_position)
+
+
+func _on_context_action(id: int) -> void:
+	if _context_index < 0 or _context_index >= _rows().size():
+		return
+	var index := _context_index
+	_context_index = -1
+	match id:
+		MENU_REMOVE:
+			call_deferred("_delete_item", index)
+		MENU_CATALOG:
+			call_deferred("_open_catalog_entry", index)
+
+
+func _delete_item(index: int) -> void:
+	_tab.call("_remove_inventory_at", index)
+
+
+func _open_catalog_entry(index: int) -> void:
+	_tab.call("_show_owned_item_in_catalog", index)
 
 
 func _apply_generic_equipment(index: int, equipped: bool) -> void:
@@ -594,20 +652,24 @@ func _update_quantity(index: int, requested: int) -> void:
 	var rows := _rows()
 	if index < 0 or index >= rows.size():
 		return
+	if requested <= 0:
+		_delete_item(index)
+		return
 	var entry: Dictionary = _definition(rows[index])
 	_select_saved(index, "scroll" if _is_spell_scroll(rows[index], entry) else "owned")
 	var spinner: SpinBox = _tab.get("_quantity")
 	spinner.set_value_no_signal(clampi(requested, 1, 99999))
 	_tab.call("_on_quantity_changed", float(clampi(requested, 1, 99999)))
-	# The owning tab refreshes the desktop tables after the event is over.
+	# The owner refreshes the Tree after this deferred handler returns.
 
 
 func _on_quantity_button(item: TreeItem, _column: int, button_id: int, _mouse_button: int) -> void:
-	if _updating or button_id not in [MINUS_BUTTON, PLUS_BUTTON]:
+	if _updating or button_id not in [MINUS_BUTTON, PLUS_BUTTON, REMOVE_BUTTON]:
 		return
 	var index: int = int(item.get_metadata(0))
 	var quantity: int = int(_rows()[index].get("quantity", 1))
-	call_deferred("_update_quantity", index, quantity + (1 if button_id == PLUS_BUTTON else -1))
+	var requested := 0 if button_id == REMOVE_BUTTON else quantity + (1 if button_id == PLUS_BUTTON else -1)
+	call_deferred("_update_quantity", index, requested)
 
 
 func _on_owned_edited() -> void:
@@ -639,6 +701,21 @@ func _apply_attunement(index: int, attuned: bool) -> void:
 		return
 	_select_saved(index, "attunement")
 	_tab.call("_set_attunement", attuned)
+
+
+func _on_slot_size_selected(choice: int, slot: String) -> void:
+	if _updating:
+		return
+	call_deferred("_apply_slot_size", choice, slot)
+
+
+func _apply_slot_size(choice: int, slot: String) -> void:
+	var rows: Array = _rows()
+	for index: int in range(rows.size()):
+		var item: Dictionary = rows[index]
+		if slot in ItemRules.slots(item) and ItemRules.kind(_definition(item)) == "weapon":
+			_tab.call("set_weapon_size_at", index, choice)
+			return
 
 
 func _on_slot_selected(choice: int, slot: String) -> void:
