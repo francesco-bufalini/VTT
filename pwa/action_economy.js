@@ -446,8 +446,8 @@ function battleEffectMarkup(item,attack){
  const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
  const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
   item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:
-  item.id==='opportunity'?{kind:'damage',label:'Danni dell’arma impiegata',glyph:'weapon'}:
-  {kind:'other',label:'Effetto secondo le regole dell’azione',glyph:'spark'});
+  item.id==='opportunity'?{kind:'damage',label:'Danni dell’arma impiegata',glyph:'weapon'}:null);
+ if(!resolved)return '';
  // Avoid inventing damage types or rolling formulae absent from the calculation.
  const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
  const text=resolved.label+(resolved.type?' · '+resolved.type:'');
@@ -488,7 +488,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
- const descriptor=rolls.length?rolls.map(row=>rollFormula(row.modifier)+' · '+row.kind).join(' / '):
+ const descriptor=rolls.length>1?'Prove alternative · '+rolls.map(row=>row.kind).join(' / '):
+  rolls.length?rollFormula(rolls[0].modifier)+' · '+rolls[0].kind:
   item.type==='Attacco'?'Attacco speciale':item.type||'Azione';
  const icon=actionGlyph(actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
@@ -498,12 +499,12 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
-  '<div class="play-battle-attack-line'+(rolls.length>1?' has-multiple-rolls':'')+'"><details class="play-battle-attack-details"><summary>'+icon+
+  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
   '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
   source+target+resources+'</div></details>'+
-  (rolls.length?'<div class="play-battle-attack-rolls">'+rolls.map(row=>
+  (rolls.length?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
    (rolls.length>1?'<span class="play-battle-roll-name">'+esc(row.kind)+'</span>':'')+'<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
@@ -515,6 +516,7 @@ const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
  String(row?.origin_id||'').startsWith('feature:class|')||
  String(row?.id||'').startsWith('class_feature:')||!!row?.class_feature_id;
 const persistentClassFeatures=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
+const classTimeLabel={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',contextual:'Secondo il privilegio'};
 export function battleAbilityEntries(record={},calculated={},entries=[],activated=[]){
  const result=entries.filter(row=>row.origin==='personal'&&row.type==='Capacità'&&classOrigin(row));
  const seen=new Set(result.map(row=>String(row.name||'').trim().toLocaleLowerCase('it')));
@@ -542,7 +544,7 @@ function battleAbilityRow(item,record,calculated){
  const resource=tracker?.name||item.tracker||'';
  const active=!!(item.class_feature_id&&record.active_class_features?.[item.class_feature_id]);
  const enabled=!(active||(cost>0&&(!tracker||tracker.disabled||remaining<cost)));
- const caption=resource?resource+' · ':'';
+ const caption=(classTimeLabel[item.time]||'Secondo il privilegio')+' · '+(resource?resource+' · ':'');
  const button=item.spell_id?
   '<button type="button" class="btn small primary" data-act="action-cast-spell" data-spell-id="'+esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+'">Lancia</button>':
   '<button type="button" class="btn small primary" data-act="battle-use-ability" data-ability-id="'+esc(item.id||item.ability_id||item.name)+'"'+(enabled?'':' disabled')+'>'+
@@ -577,7 +579,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const other=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
   !['attack','two_weapon'].includes(row.id)&&row.type!=='Incantesimo'&&
   !['spell_cast','cast_spell'].includes(row.id));
- const render=(rows,kind)=>[...BATTLE_TIMINGS,...(kind==='abilities'?[['contextual','Secondo il privilegio']]:[])].map(([time,label])=>{
+ const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
    '<h3>'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
@@ -585,8 +587,15 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
     kind==='abilities'?battleAbilityRow(row,record,calculated):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></section>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
+ const resourceAbilities={};
+ for(const ability of classAbilities){
+  const cost=Math.max(0,Number(ability.cost)||0);
+  const tracker=(calculated.trackers||[]).find(t=>t.id===ability.tracker_id&&!t.disabled);
+  const key=cost>0?(tracker?'tracker:'+tracker.id:'missing'):'free';
+  (resourceAbilities[key]??=[]).push(battleAbilityRow(ability,record,calculated));
+ }
  return {attacks:render(weapon,'attacks'),others:render(other,'others'),
-  abilities:render(classAbilities,'abilities'),abilityEntries:classAbilities,
+  resourceAbilities,abilityEntries:classAbilities,
   movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
 
