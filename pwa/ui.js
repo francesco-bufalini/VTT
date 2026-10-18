@@ -1,4 +1,4 @@
-import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
+import { actionEconomyView, battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
@@ -336,14 +336,14 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
-  if(state.sheet==="actions"){
+  if(state.sheet==="actions"||state.sheet==="battle"){
     const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
     state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
     state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="actions"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="actions"||state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -1861,7 +1861,15 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||""},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants()):null},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  // Preserve expanded combat cards across sheet rerenders.
+  for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
+    const key='battle-disclosure:'+details.dataset.battleAction;
+    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.addEventListener('toggle',()=>{
+      if(details.isConnected)state.disclosureState.set(key,details.open);
+    });
+  }
   if(state.sheet==='traits'&&state.sheetPopup.startsWith('trait-origin:')){
     const origin=state.sheetPopup.slice('trait-origin:'.length);
     const matches=[...state.sheetSources].filter(([key,node])=>key.startsWith('trait:')&&node.querySelector('[data-feature-origin]')?.dataset.featureOrigin===origin);
