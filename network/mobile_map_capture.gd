@@ -68,6 +68,23 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 			var pixel := camera.unproject_position(center + Vector3(point.x, 0, point.y))
 			points.append([pixel.x, pixel.y])
 		result.contours.append({"points": points, "long": reach == long_range})
+	# Include peer-shared targeting ranges on mobile tactical snapshots.
+	var shared_attack: Node = board.get_node_or_null("AttackSystem")
+	if shared_attack != null and shared_attack.has_method("shared_range_previews"):
+		for preview: Dictionary in shared_attack.call("shared_range_previews"):
+			var normal_feet := float(preview.get("normal", 0.0))
+			var long_feet := float(preview.get("long", 0.0))
+			for reach: float in [normal_feet, long_feet]:
+				if reach <= 0.0:
+					continue
+				var points: Array = []
+				var source_center: Vector3 = preview["center"]
+				for point: Vector2 in RangeGeometry.rounded_footprint_perimeter(
+					float(preview["half"]), reach / 5.0 * cell
+				):
+					var pixel := camera.unproject_position(source_center + Vector3(point.x, 0, point.y))
+					points.append([pixel.x, pixel.y])
+				result.contours.append({"points": points, "long": reach == long_feet, "shared": true})
 	for node: Node in board.get_tree().get_nodes_in_group("dnd_token"):
 		if not node is CharacterBody3D or not board.is_ancestor_of(node) or not node.is_visible_in_tree() or node.is_queued_for_deletion():
 			continue
