@@ -3946,6 +3946,9 @@ func _on_selected(index: int) -> void:
 	for i: int in range(_creature_row_buttons.size()):
 		_creature_row_buttons[i].set_pressed_no_signal(i == index)
 	_load_form(record)
+	# Some tabs rebuild their section headings when a creature is selected.
+	# Reapply the selected locale after those dynamic controls exist.
+	call_deferred("_refresh_creature_language")
 
 
 func _load_form(record: Dictionary) -> void:
@@ -6433,6 +6436,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
+	# Trait categories, origin summaries and spell lists can be rebuilt here.
+	call_deferred("_refresh_creature_language")
 	if index >= 0 and _tabs.get_tab_control(index).name == "Cosa posso fare?" and _action_economy_ui != null:
 		_action_economy_ui.call("refresh_top_skills", _live_stats_record())
 	if index >= 0 and _tabs.get_tab_control(index).name == "Modifica personaggio" and _editor_section_picker.selected == 0:

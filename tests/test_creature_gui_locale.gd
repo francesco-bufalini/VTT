@@ -239,6 +239,94 @@ func run() -> void:
 		and Locale.text_for("Runa del drago", "en") == "Runa del drago",
 		"Localized UI must leave catalog and free-form data untouched")
 
+
+	# Regression: all these labels are emitted by real creature-sheet controls.
+	# Previously the generic mock test passed while spell/ancestry panels and
+	# dynamic selectors still displayed Italian with English selected.
+	for row: Array in [
+		["Altri incantesimi disponibili", "Other available spells"],
+		["Slot · Classi / Patto", "Slots · Classes / Pact"],
+		["Razza / Specie", "Race / Species"],
+		["Sottorazza", "Subrace"],
+		["RAZZA E SOTTORAZZA", "RACE AND SUBRACE"],
+		["Sottorazza · ", "Subrace · "],
+		["Classi", "Classes"],
+		["Capacità", "Abilities"],
+		["Risorse delle capacità", "Ability resources"],
+		["Privilegi di classe", "Class features"],
+		["Effetti e risorse", "Effects and resources"],
+		["Scegli incantesimi", "Choose spells"],
+		["Salva selezione", "Save selection"],
+		["Selezione manuale: incantesimi senza attribuzione a una classe. Nessun limite automatico.",
+			"Manual selection: spells not assigned to any class. No automatic limit."],
+		["⚙ Massimi e bonus degli slot", "⚙ Slot maximums and bonuses"],
+		["Concentrazione: nessuna", "Concentration: none"],
+		["Classe lanciante", "Spellcasting class"],
+		["senza limite", "unlimited"],
+		["tracker non disponibile", "tracker unavailable"],
+		["Nessun consumo (eccezione manuale)", "No cost (manual exception)"],
+		["Scegli l'incantesimo che concede il beneficio", "Choose the spell that grants the benefit"],
+		["Cerca un incantesimo…", "Search for a spell…"],
+		["+ Bonus ai tiri", "+ Roll bonuses"],
+		["+ Resistenza o immunità", "+ Resistance or immunity"],
+		["Apri / modifica", "Open / edit"],
+		["Nome del contenuto personalizzato", "Custom content name"],
+		["Regole varianti · 2014", "Variant rules · 2014"],
+		["Prove di abilità", "Skill checks"],
+		["Prove che richiedono un’azione", "Checks requiring an action"],
+		["Dalla scheda", "From the sheet"],
+		["Modifica ripristinata.", "Change undone."],
+		["Modifica ripetuta.", "Change redone."],
+		["Punti stregoneria non più disponibili.", "Sorcery points are no longer available."],
+		["Non puoi lanciare incantesimi mentre sei in Ira.", "You cannot cast spells while raging."],
+		["Azione eseguita.", "Action completed."],
+		["Azione non valida.", "Invalid action."],
+		["Scelta ancora da completare: clicca ⚠ accanto al talento nelle origini.",
+			"Choice still pending: click ⚠ next to the feat in Origins."],
+		[" · trucchetto", " · cantrip"],
+		["Senza costo", "No cost"],
+		["Slot disponibili", "Available slots"],
+	]:
+		assert(Locale.text_for(String(row[0]), "en") == String(row[1]),
+			"Untranslated hardcoded creature sheet label: " + String(row[0]))
+	for row: Array in [
+		["⚠ Scegli 2 incantesimo/i", "⚠ Choose 2 spell(s)"],
+		["Scegli fino a 3 incantesimo/i · 2 selezionati", "Choose up to 3 spell(s) · 2 selected"],
+		["Disponibili: 3 / 5 · Trucchetti: 2 / 2", "Available: 3 / 5 · Cantrips: 2 / 2"],
+		["⚠ Disponibili: 3 / 5 · Trucchetti: 2 / 2", "⚠ Available: 3 / 5 · Cantrips: 2 / 2"],
+		[" · Nel libro: 4", " · In spellbook: 4"],
+		["4 utilizzi · Rage · 2 lanci rimasti", "4 uses · Rage · 2 casts remaining"],
+		["Origine: Wizard [PHB] · lista di classe fino al 3° livello",
+			"Origin: Wizard [PHB] · class list through level 3"],
+		["Lancia Magic Missile. Scegli il consumo.",
+			"Cast Magic Missile. Choose the resource to spend."],
+		["Invia Aria: scegli destinatari", "Send Aria: choose recipients"],
+		["Sottorazza · Dwarf", "Subrace · Dwarf"],
+	]:
+		assert(Locale.text_for(String(row[0]), "en") == String(row[1]),
+			"Untranslated hardcoded dynamic creature sheet label: " + String(row[0]))
+	var race_label := Label.new()
+	race_label.text = "Razza / Specie"
+	sheet.add_child(race_label)
+	var subrace_label := Label.new()
+	subrace_label.text = "Sottorazza"
+	sheet.add_child(subrace_label)
+	var spell_count := Label.new()
+	spell_count.text = "⚠ Disponibili: 3 / 5 · Trucchetti: 2 / 2"
+	sheet.add_child(spell_count)
+	var spell_name := Label.new()
+	spell_name.text = "Magic Missile"
+	spell_name.set_meta("creature_gui_data", true)
+	sheet.add_child(spell_name)
+	Locale.apply(sheet, "en")
+	assert(race_label.text == "Race / Species" and subrace_label.text == "Subrace")
+	assert(spell_count.text == "⚠ Available: 3 / 5 · Cantrips: 2 / 2")
+	assert(spell_name.text == "Magic Missile")
+	Locale.apply(sheet, "it")
+	assert(race_label.text == "Razza / Specie" and subrace_label.text == "Sottorazza")
+	assert(spell_count.text == "⚠ Disponibili: 3 / 5 · Trucchetti: 2 / 2")
+	assert(spell_name.text == "Magic Missile")
+
 	# Persistence remains a local GUI preference, not a creature-data field.
 	var previous := Locale.read_locale()
 	Locale.write_locale("en")
