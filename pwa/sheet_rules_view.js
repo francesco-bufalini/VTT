@@ -256,7 +256,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
   html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
-  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','speed','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
+  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
@@ -268,12 +268,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>'));
   const disclosure=(key,title,glyph,body,open=false)=>'<details class="play-card play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2><span class="play-chevron" aria-hidden="true">⌄</span></summary>'+body+'</details>';
-  const attackTable=(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>';
-  html+=disclosure('attacks','Attacchi con arma','weapon',
-   '<div class="play-battle-attack-table">'+attackTable+
-    '<div class="play-battle-equipment">'+btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>')+'</div></div>'+
-   (view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>'),true);
-  html+=disclosure('movement','Spostamento','movement',
+  html+=disclosure('attacks','Attacchi fisici','weapon',
+   (view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>')+
+   '<div class="play-battle-equipment">'+btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>')+'</div>',true);
+  html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
  }
  if(sheet==='stats'){
