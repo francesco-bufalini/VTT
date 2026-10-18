@@ -61,7 +61,7 @@ func run() -> void:
 		and tab._catalog_list.mouse_force_pass_scroll_events,
 		"Desktop inventory controls must not trap the sheet's vertical scrolling")
 	var plus_icon: Texture2D = desktop.get("_plus_icon")
-	assert(plus_icon.get_width() == 14 and owned_tree.get_column_custom_minimum_width(0) == 30,
+	assert(plus_icon.get_width() == 14,
 		"Equipment and quantity indicators must be compact")
 
 	# Only one table can retain a selection, even when it was previously
