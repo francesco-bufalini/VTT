@@ -1394,6 +1394,16 @@ async function handleField(target) {
     await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
     await render();return;
   }
+  if(target.dataset.slotWeaponSize){
+    await patch({inventory:changeEquippedWeaponSize(creature.inventory||[],target.dataset.slotWeaponSize,target.value)});
+    await render();return;
+  }
+  if(target.dataset.inventoryAttunementMax!==undefined){
+    const max=Number(target.value);
+    if(!Number.isInteger(max)||max<0||max>99)throw Error("Massimo di sintonia non valido.");
+    await patch({attunement_max_base:max});
+    await render();return;
+  }
   if(target.dataset.documentIndex!==undefined){
     await persistDocumentEdit(Number(target.dataset.documentIndex),target.dataset.documentPart,creature);
     return;
@@ -1540,7 +1550,15 @@ async function handleField(target) {
   } else if(target.dataset.itemIndex !== undefined){
     const index=Number(target.dataset.itemIndex),key=target.dataset.itemKey;
     const value=target.type==="checkbox"?target.checked:target.value;
-    await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+    if(key==="quantity"&&Number(value)===0){
+      const inventory=structuredClone(creature.inventory||[]);
+      inventory.splice(index,1);
+      state.inventorySelectedIndex=index>0?index-1:0;
+      await patch({inventory});
+    }else{
+      await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+    }
+    await render();
   } else if(target.dataset.condition){
     const entries=new Set(creature.conditions||[]);
     if(target.checked) entries.add(target.dataset.condition);
@@ -2248,6 +2266,42 @@ async function handleAction(target){
     else changes=clearInfusionPatch(creature,index);
     await patch(changes);await render();return;
   }
+  if(act==="inventory-select"){
+    state.inventorySelectedIndex=Number(target.dataset.index);
+    state.inventoryMenuIndex=-1;
+    await render();return;
+  }
+  if(act==="inventory-menu"){
+    const index=Number(target.dataset.index);
+    state.inventoryMenuIndex=state.inventoryMenuIndex===index?-1:index;
+    await render();return;
+  }
+  if(act==="inventory-view-catalog"){
+    const item=state.editor.read().inventory?.[Number(target.dataset.index)];
+    if(!item)throw Error("Oggetto non trovato.");
+    state.catalogCategory="items";state.catalogQuery=String(item.name||"");
+    state.catalogSelected=-1;await navigate("catalog");return;
+  }
+  if(act==="inventory-equip"){
+    const record=state.editor.read(),index=Number(target.dataset.index);
+    const owned=record.inventory?.[index];
+    if(!owned)throw Error("Oggetto non trovato.");
+    await patch({inventory:changeOwnedItem(record.inventory,index,"equipped",!owned.equipped)});
+    state.inventorySelectedIndex=index;
+    await render();return;
+  }
+  if(act==="inventory-quantity"){
+    const record=state.editor.read(),index=Number(target.dataset.index);
+    const qty=Number(record.inventory?.[index]?.quantity??1)+Number(target.dataset.delta||0);
+    if(!Number.isInteger(qty)||qty<0||qty>99999)throw Error("Quantità fuori intervallo.");
+    if(qty===0){
+      const rows=structuredClone(record.inventory||[]);
+      rows.splice(index,1);
+      state.inventorySelectedIndex=Math.max(0,index-1);
+      await patch({inventory:rows});
+    }else await patch({inventory:changeOwnedItem(record.inventory,index,"quantity",qty)});
+    await render();return;
+  }
   if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
   if(act==="document-add"){
     if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
@@ -2276,7 +2330,10 @@ async function handleAction(target){
   }
   if(act==="remove-item"){
     const c=state.editor.read(),inventory=structuredClone(c.inventory||[]);
-    inventory.splice(Number(target.dataset.index),1);
+    const index=Number(target.dataset.index);
+    inventory.splice(index,1);
+    state.inventorySelectedIndex=Math.max(0,index-1);
+    state.inventoryMenuIndex=-1;
     await patch({inventory});await render();return;
   }
   if(act==="spell-pick"){
@@ -2443,7 +2500,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  const editable = "[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
