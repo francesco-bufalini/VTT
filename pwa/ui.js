@@ -26,13 +26,12 @@ const creatureInput = document.querySelector("#import-creature");
 const backupInput = document.querySelector("#import-backup");
 const toastElement = document.querySelector("#toast");
 const sheetSections = SHEET_SECTIONS;
-const sectionMenu = document.querySelector("#section-menu");
-const sections = new Set(["library", "catalog", "dice", "chat", "session"]);
+const sections = new Set(["library", "catalog", "session"]);
 const conditions = ["blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified","poisoned",
   "prone","restrained","stunned","unconscious","concentrating","surprised","hidden","helped","dead"];
 const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intelligenza",wis:"Saggezza",cha:"Carisma"};
-const state = { page:"library", creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
+const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, stopMap:null, pollChat:null, renderTicket:0,
   librarySelectedIds:new Set(),
@@ -89,9 +88,9 @@ function esc(value) { return String(value ?? "").replace(/[&<>"']/g, c =>
 function text(value) { return String(value ?? "").trim(); }
 function number(value, fallback=0) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }
 function btn(name, label, variant="") { return '<button type="button" class="btn '+variant+'" data-act="'+esc(name)+'">'+label+'</button>'; }
-function header(eyebrow, title, subtitle) {
-  return '<div class="page-head"><p class="eyebrow">'+esc(eyebrow)+'</p><h1>'+esc(title)+
-    '</h1><p>'+esc(subtitle)+'</p></div>';
+function header(eyebrow,title,subtitle){
+  return '<div class="page-head"><h1>'+esc(title)+'</h1>'+
+    (eyebrow==="Errore"&&subtitle?'<p class="warning">'+esc(subtitle)+'</p>':'')+'</div>';
 }
 function panel(title, body, className="") {
   return '<section class="panel '+className+'"><h2>'+esc(title)+'</h2>'+body+'</section>';
@@ -123,20 +122,23 @@ const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity','Fisico':'physique',
  'Classi e progressione':'progression','Talenti':'talents'};
-function syncNav() {
-  document.querySelector("#sheet-navigation").innerHTML = state.page === "library" && state.creatureId ?
-    '<p class="drawer-heading">Scheda creatura</p>'+sheetSections.map(([key,title]) =>
-      '<button type="button" class="btn" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
-      (state.sheet===key)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+
-       '<span>'+esc(title)+'</span></button>').join("") : "";
-  for(const button of nav.querySelectorAll("[data-nav]")) {
-    const current = button.dataset.nav === state.page;
-    if(current) button.setAttribute("aria-current","page");
-    else button.removeAttribute("aria-current");
+function syncNav(){
+  const creature=state.editor?.read()||(state.cachedCreatures||[]).find(x=>x.id===state.creatureId);
+  const hasCreature=Boolean(state.creatureId),label=document.querySelector("#creature-name"),symbol=document.querySelector("#creature-symbol");
+  if(label)label.textContent=hasCreature?(creature?.name||"Creatura"):"VTT";
+  if(symbol){symbol.textContent=hasCreature&&creature?.kind==="monster"?"◆":"♜";
+    symbol.setAttribute("aria-label",hasCreature&&creature?.kind==="monster"?"Mostro":"Personaggio");}
+  document.querySelector("#sheet-navigation").innerHTML=sheetSections.map(([key,title])=>
+    '<button type="button" class="btn mobile-tab" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
+    (state.page==="library"&&!state.libraryMode&&state.sheet===key)+'" aria-label="'+esc(title)+'" title="'+esc(title)+'"'+
+    (hasCreature?'':' disabled aria-disabled="true"')+'>'+actionGlyph(SHEET_TAB_GLYPHS[key]||"information")+'</button>').join("");
+  for(const button of nav.querySelectorAll("[data-nav]")){
+    const current=button.dataset.nav===state.page&&(state.page!=="library"||state.libraryMode||!hasCreature);
+    if(current)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
   }
-  connection.textContent = state.paired && state.online ? "● Partita collegata" :
-    state.online ? "● Desktop in partita" : state.hostReachable ? "○ Nessuna partita aperta" : "○ Archivio offline";
-  connection.classList.toggle("connected",state.paired && state.online);
+  connection.textContent=state.paired&&state.online?"● Partita collegata":state.online?"● Desktop in partita":
+    state.hostReachable?"○ Nessuna partita":"○ Archivio offline";
+  connection.classList.toggle("connected",state.paired&&state.online);
 }
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -156,17 +158,12 @@ function stopSubscriptions() {
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
-async function navigate(page, id=null) {
-  if (!sections.has(page)) return;
-  if (state.editor) {
-    try { await flushPendingFields(); }
-    catch (error) { message("Salvataggio bloccato: "+errorMessage(error),true); return; }
-  }
-  stopSubscriptions();
-  if(page==="session")realtimeStopped=false;
-  state.page=page; state.creatureId=id; state.editor=null;
-  state.magicPopup="";
-  if (page==="chat" || page==="session" || page==="catalog") state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+async function navigate(page){
+  if(!sections.has(page))return;
+  if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
+  stopSubscriptions();if(page==="session")realtimeStopped=false;
+  state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
 }
 async function render() {
@@ -176,8 +173,6 @@ async function render() {
     let html = "";
     if (state.page === "library") html = await libraryView();
     else if (state.page === "catalog") html = await catalogView();
-    else if (state.page === "dice") html = diceView();
-    else if (state.page === "chat") html = chatView();
     else if (state.page === "session") {
       state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
       if(!state.spellCatalog)try{state.spellCatalog=await catalogEntries('spells');}catch{}
@@ -185,6 +180,7 @@ async function render() {
       html=sessionView();
     }
     if(ticket !== state.renderTicket) return;
+    syncNav();
     app.innerHTML = html;
     decorateSheetHeadings();
     const magicDialog=app.querySelector('#magic-tools-dialog');
@@ -194,7 +190,7 @@ async function render() {
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
     if(state.paired && !realtimeStopped && !state.stopMap) startMap();
-    if(state.page === "chat" && state.paired) startChat();
+    if(state.page === "session" && state.paired && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
@@ -202,7 +198,7 @@ async function render() {
   }
 }
 async function libraryView() {
-  if(state.creatureId) return editorView();
+  if(state.creatureId && !state.libraryMode) return editorView();
   const rows = await listCreatures();
   const availableIds=new Set(rows.map(row=>row.creature.id));
   for(const id of state.librarySelectedIds)if(!availableIds.has(id))state.librarySelectedIds.delete(id);
@@ -220,7 +216,7 @@ async function libraryView() {
       '" aria-label="Apri '+esc(c.name)+'">Apri →</button></article>').join("");
   if(!list) list = '<div class="empty"><div class="symbol">♜</div>'+
     '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
-  return header("Archivio delle creature", "Le tue creature", "Personaggi e mostri salvati sul dispositivo.")+
+  return header("Archivio delle creature", "Le tue creature")+
     '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
     btn("import","Importa JSON dal PC")+'</div>'+
     '<details class="archive-tools"><summary>Backup dell’archivio</summary><div class="actions">'+
@@ -230,8 +226,7 @@ async function libraryView() {
         btn("library-select-none","Deseleziona")+
         btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
         btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
-      '</span></div>':'')+list+
-    '<p class="hint">Le creature sono salvate su questo dispositivo. Esporta periodicamente una copia di sicurezza: in alcune condizioni iOS può eliminare i dati locali dei siti.</p>';
+      '</span></div>':'')+list;
 }
 function renderCatalogRows() {
   const filter=state.catalogQuery.trim().toLocaleLowerCase();
@@ -297,14 +292,7 @@ async function computeLocalData(record){
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
-  const tabs = sheetSections;
-  const navigation = '<div class="editor-head">'+
-    '<button type="button" class="btn small ghost" data-act="back">← Indietro</button>'+
-    '<h1>'+esc(c.name)+'</h1></div>'+
-    '<div class="row between editor-meta">'+tag(c.kind === "monster" ? "Mostro" : "Personaggio")+
-    '<span id="save-state" class="save-status'+(state.saveError?" error":"")+'">'+
-    (state.saveError ? esc(state.saveError) : "✓ Salvato in locale")+'</span></div>'+
-    '<div class="current-section">'+esc(tabs.find(([key])=>key===state.sheet)?.[1] || "Info")+'</div>';
+  // The persistent header owns creature identity and tab navigation.
   let body = "";
   if(['info','origins'].includes(state.sheet)){
     await Promise.all(["races","classes","subclasses","backgrounds",...(state.sheet==='origins'?['feats']:[])].map(async key=>{
@@ -417,7 +405,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return navigation+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -1058,29 +1046,41 @@ function renderSpellResults(){
     '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+esc(info.name)+'</button>'):
     '<p class="hint">Nessun incantesimo corrispondente.</p>';
 }
-function diceView() {
-  return header("Strumenti", "Lancia i dadi", "Tiri locali con generatore crittografico. Se collegato, puoi condividerli nella chat della partita.")+
-    panel("Nuovo tiro",'<div class="columns">'+
-      '<label>Numero dadi<input id="die-count" type="number" value="1" min="1" max="20"></label>'+
-      '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
-      '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
-        '<button class="btn" type="button" data-act="roll" data-sides="'+n+'">d'+n+'</button>').join("")+'</div>'+
-      (state.roll?'<div class="dice-result">'+esc(state.roll.total)+'</div><p class="hint" class="centered">'+
-        esc(state.roll.detail)+'</p><div class="actions">'+btn("share-roll","Invia in chat",state.paired?"primary":"")+'</div>':""))+
-    panel("Tiri recenti",state.rollHistory.length ? state.rollHistory.slice(0,12).map(r=>
-      '<div class="combat-line"><span>'+esc(r.notation)+'</span><strong>'+esc(r.total)+'</strong></div>').join("") :
-      '<p class="muted">Non hai ancora effettuato tiri.</p>');
+function diceResult(){
+  return state.roll?'<div class="dice-result">'+esc(state.roll.total)+'</div>'+
+    '<p class="dice-detail">'+esc(state.roll.notation)+' · '+esc(state.roll.detail)+'</p>'+
+    '<div class="actions"><button type="button" class="btn primary" data-act="share-roll"'+
+    (!state.paired||!state.online?' disabled':'')+'>Invia in chat</button></div>':'';
 }
-function chatView() {
-  return header("Comunicazione", "Chat della partita", "Messaggi e tiri condivisi col desktop. Non vengono memorizzati nell’archivio delle schede.")+
-    (!state.paired?'<div class="empty"><p>Collega prima il desktop nella sezione Partita.</p>'+
-      '<button type="button" class="btn primary" data-nav="session">Vai alla partita</button></div>':
-    panel("Messaggi",'<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
-      '<form id="chat-form" class="stack" autocomplete="off">'+
-      '<label>Scrivi come <select id="chat-author"><option value="">Giocatore</option>'+
-      (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join("")+
-      '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
-      '<button type="submit" class="btn primary full">Invia messaggio</button></form>'));
+function diceView(){
+  return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
+    '<label>Numero dadi<input id="die-count" type="number" value="1" min="1" max="20"></label>'+
+    '<label>Modificatore<input id="die-mod" type="number" value="0" min="-999" max="999"></label></div>'+
+    '<div class="dice-options">'+[4,6,8,10,12,20,100].map(n=>
+    '<button class="btn" type="button" data-act="roll" data-sides="'+n+'">d'+n+'</button>').join("")+'</div>'+
+    '<div id="dice-feedback" aria-live="polite">'+diceResult()+'</div>'+
+    '<div class="actions"><button type="button" class="btn" data-act="close-chat-dice">Chiudi</button></div>';
+}
+function openDiceDialog(){
+  if(document.querySelector("#chat-dice-dialog"))return;
+  const dlg=document.createElement("dialog");
+  dlg.id="chat-dice-dialog";dlg.className="sheet-roll-dialog chat-dice-dialog";
+  dlg.setAttribute("aria-labelledby","chat-dice-title");dlg.innerHTML=diceView();
+  dlg.addEventListener("close",()=>dlg.remove(),{once:true});document.body.append(dlg);
+  if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
+}
+function chatView(){
+  return panel("Chat della partita",
+    '<div class="row between chat-toolbar"><span class="chat-caption">'+
+    (state.paired&&state.online?'Messaggi e tiri della partita':'Chat disponibile con una partita collegata')+
+    '</span><button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
+    (state.paired?
+    '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
+    '<form id="chat-form" class="stack" autocomplete="off">'+
+    '<label>Scrivi come <select id="chat-author"><option value="">Giocatore</option>'+
+    (state.cachedCreatures||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join("")+
+    '</select></label><label>Messaggio<textarea id="chat-message" rows="2" maxlength="1000" placeholder="Messaggio alla partita…" required></textarea></label>'+
+    '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Invia messaggio</button></form>':''));
 }
 function renderEvents() {
   return state.messages.length ? state.messages.slice(-80).map(e=>
@@ -1132,7 +1132,7 @@ function sessionView() {
     '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
     '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
     '</section>';
-  if(!state.paired)return html;
+  if(!state.paired)return html+chatView();
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
@@ -1175,7 +1175,7 @@ function sessionView() {
     '<label>Direzione<select id="place-direction"><option value="north">Nord</option><option value="east">Est</option><option value="south">Sud</option><option value="west">Ovest</option></select></label>'+
     '<div class="session-dialog-footer"><button class="btn primary" type="button" data-act="place-creature">Piazza token</button>'+
     '<button class="btn" type="button" data-act="close-place-dialog">Annulla</button></div></dialog>';
-  return html;
+  return html+chatView();
 }
 
 function openSessionDialog(dialog) {
@@ -1388,7 +1388,7 @@ async function fetchChat() {
   chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
-    if(generation!==chatGeneration || state.page!=="chat")return;
+    if(generation!==chatGeneration || state.page!=="session")return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     if(Array.isArray(reply.events) && reply.events.length){
       const ids=new Set(state.messages.map(e=>e.id));
@@ -1399,10 +1399,10 @@ async function fetchChat() {
       }
       state.messages=state.messages.slice(-100);
       const container=document.querySelector("#events");
-      if(state.page==="chat"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
+      if(state.page==="session"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
   }catch(error){
-    if(generation===chatGeneration && state.page==="chat" && error.status===401){
+    if(generation===chatGeneration && state.page==="session" && error.status===401){
       state.paired=false;
       stopSubscriptions();
       render().catch(e=>message(errorMessage(e),true));
@@ -1416,7 +1416,7 @@ function startChat() {
   ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
-  state.pollChat=setInterval(()=>{ if(state.page==="chat") fetchChat(); },2500);
+  state.pollChat=setInterval(()=>{ if(state.page==="session") fetchChat(); },2500);
 }
 function randomDie(sides) {
   const range=0x100000000;
@@ -1436,7 +1436,7 @@ async function roll(sides) {
   state.roll={sides,count,modifier,rolls,total,notation,detail:rolls.join(" + ")+
     (modifier?(" "+(modifier>0?"+ ":"− ")+Math.abs(modifier)):"")};
   state.rollHistory.unshift(state.roll);
-  await render();
+  const feedback=document.querySelector("#dice-feedback");if(feedback)feedback.innerHTML=diceResult();
 }
 async function shareRoll({quiet=false}={}) {
   if(!state.roll) return;
@@ -2305,7 +2305,7 @@ async function handleAction(target){
   }
   if(act==="refresh"){await render();return;}
   if(act==="demo"){
-    state.creatureId=await createDemoCreature();state.editor=null;state.sheet="info";
+    state.creatureId=await createDemoCreature();state.libraryMode=false;state.editor=null;state.sheet="info";
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
   if(act==="library-select-all"){
@@ -2344,7 +2344,7 @@ async function handleAction(target){
   if(act==="create"){
     state.magicPopup="";
     const row=await createCreature("character","Nuovo personaggio");
-    state.creatureId=row.id;state.editor=null;state.sheet="info";await render();return;
+    state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";await render();return;
   }
   if(act==="import"){creatureInput.click();return;}
   if(act==="restore-backup"){backupInput.click();return;}
@@ -2353,16 +2353,17 @@ async function handleAction(target){
     message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){state.magicPopup="";state.creatureId=target.dataset.id;state.sheet="info";state.editor=null;await render();return;}
+  if(act==="open"){state.magicPopup="";state.creatureId=target.dataset.id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;}
   if(act==="back"){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
-    state.editor=null;state.creatureId=null;await render();return;
+    state.editor=null;state.libraryMode=true;await render();return;
   }
   if(act==="sheet"){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
-    state.sheet=target.dataset.sheet;await render();return;
+    if(!state.creatureId)return;
+    state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();
@@ -2375,7 +2376,7 @@ async function handleAction(target){
     if(!confirm('Eliminare "'+record.name+'"? Questa operazione non è reversibile.'))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
-    state.creatureId=null;state.editor=null;await render();message("Scheda eliminata.");return;
+    state.creatureId=null;state.libraryMode=true;state.editor=null;await render();message("Scheda eliminata.");return;
   }
   if(act==="tracker-add"){
     const name=text(document.querySelector("#tracker-name")?.value);
@@ -2614,6 +2615,8 @@ async function handleAction(target){
     else await refreshMapOnce();
     return;
   }
+  if(act==="open-chat-dice"){openDiceDialog();return;}
+  if(act==="close-chat-dice"){const dlg=document.querySelector("#chat-dice-dialog");if(dlg){if(typeof dlg.close==="function")dlg.close();else dlg.remove();}return;}
   if(act==="roll"){await roll(Number(target.dataset.sides));return;}
   if(act==="share-roll"){await shareRoll();return;}
 }
@@ -2643,12 +2646,6 @@ async function handleSubmit(form){
   }
 }
 function listen(){
-  document.addEventListener("keydown",e=>{
-    if(e.key === "Escape" && sectionMenu.open){sectionMenu.open=false;sectionMenu.querySelector("summary").focus();}
-  });
-  document.addEventListener("click",e=>{
-    if(!sectionMenu.contains(e.target))sectionMenu.open=false;
-  });
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button)return;
@@ -2656,7 +2653,6 @@ function listen(){
     button.disabled=true;
     try {
       await flushPendingFields();
-      sectionMenu.open=false;
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
     }catch(error){message(errorMessage(error),true);}
@@ -2771,7 +2767,7 @@ function listen(){
       const result=await importCreatureFile(file);
       const imported=Array.isArray(result)?result:[result];
       state.page="library";state.creatureId=imported.length===1?imported[0].creature.id:null;
-      state.editor=null;state.sheet="info";
+      state.libraryMode=imported.length!==1;state.editor=null;state.sheet="info";
       state.librarySelectedIds.clear();
       await render();
       message(imported.length===1 ? "Scheda importata e salvata offline." :

@@ -16,23 +16,17 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <details class="section-menu" id="section-menu">
-        <summary aria-label="Apri le sezioni">☰ <span>Sezioni</span></summary>
-        <div class="sections-drawer">
-          <div id="sheet-navigation" class="drawer-sheet"></div>
-          <p class="drawer-heading">Archivio e strumenti</p>
-          <nav id="nav" aria-label="Sezioni principali">
-            <button type="button" class="btn" data-nav="library">Creature locali</button>
-            <button type="button" class="btn" data-nav="catalog">Catalogo</button>
-            <button type="button" class="btn" data-nav="dice">Dadi</button>
-            <button type="button" class="btn" data-nav="chat">Chat della partita</button>
-            <button type="button" class="btn" data-nav="session">Partita</button>
-          </nav>
-        </div>
-      </details>
-      <div class="brand"><span class="brand-icon" aria-hidden="true"></span><span>VTT <small>MOBILE</small></span></div>
-      <div id="connection" class="connection" role="status" aria-live="polite">Archivio locale</div>
+      <div class="brand"><span id="creature-symbol" class="creature-symbol" aria-hidden="true">♜</span><span id="creature-name">VTT</span></div>
+      <div id="connection" class="connection" role="status" aria-live="polite">Archivio offline</div>
     </header>
+    <nav id="mobile-tabs" class="mobile-tabs" aria-label="Navigazione principale e schede">
+      <div id="nav" class="mobile-primary-tabs" aria-label="Sezioni principali">
+        <button type="button" class="btn" data-nav="library" title="Seleziona creatura" aria-label="Seleziona creatura">♜</button>
+        <button type="button" class="btn" data-nav="catalog" title="Catalogo" aria-label="Catalogo">▤</button>
+        <button type="button" class="btn" data-nav="session" title="Partita" aria-label="Partita">⚔</button>
+      </div>
+      <div id="sheet-navigation" class="mobile-sheet-tabs" aria-label="Schede creatura"></div>
+    </nav>
     <main id="app" class="content" tabindex="-1" aria-label="Contenuto principale">
       <p class="muted">Apertura archivio locale…</p>
     </main>
