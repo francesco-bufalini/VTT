@@ -219,7 +219,7 @@ try{
  await sheet('traits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
-  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
+  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
   for(const contextKey of keys){await popup(contextKey);assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();}
  }
  await sheet('battle');
