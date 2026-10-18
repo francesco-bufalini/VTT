@@ -1248,8 +1248,14 @@ async function handleField(target) {
   }
 }
 async function refreshMapOnce() {
+  const editing=Boolean(app.querySelector("#session-token-dialog[open]"));
+  if(editing)app.querySelector("#session-token-dialog")?.close();
   state.map=await map();
-  if(state.page==="session"){renderSessionIfIdle();void refreshSessionSnapshot(true);}
+  if(state.page==="session"){
+    renderSessionIfIdle();
+    void refreshSessionSnapshot(true);
+    if(editing)await reopenTokenEditor();
+  }
 }
 
 // Android and PWA use the same native targeting commands, not independent
@@ -1302,6 +1308,45 @@ function decorateSheetHeadings(){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==="open-place-token"){
+    if(!state.map?.tokens?.length)throw Error("Serve almeno un token di riferimento sulla mappa.");
+    const dialog=app.querySelector("#session-place-dialog");
+    if(dialog)dialog.showModal();
+    return;
+  }
+  if(act==="close-place-dialog"){app.querySelector("#session-place-dialog")?.close();return;}
+  if(act==="edit-token"){
+    const tokenId=String(target.dataset.id||"");
+    if(!state.map?.tokens?.some(row=>row.id===tokenId))throw Error("Token non più presente.");
+    state.editTokenId=tokenId;
+    state.tokenId=tokenId;
+    await render();
+    await reopenTokenEditor();
+    return;
+  }
+  if(act==="close-token-dialog"){app.querySelector("#session-token-dialog")?.close();return;}
+  if(act==="apply-token-spell"||act==="remove-token-spell"){
+    const spellId=act==="remove-token-spell"?String(target.dataset.spellId||""):
+      String(app.querySelector("#token-spell-select")?.value||"");
+    if(!spellId)throw Error("Scegli un incantesimo.");
+    const enabled=act==="apply-token-spell";
+    const result=await action("set_token_spell",{token_id:state.editTokenId,spell_id:spellId,enabled});
+    if(!result.ok)throw Error(result.error||"Effetto non applicato.");
+    await refreshMapOnce();
+    return;
+  }
+  if(act==="apply-token-appearance"){
+    const tokenId=state.editTokenId;
+    const linked=(state.cachedCreatures||[]).find(c=>c.linked_token_sync_id===tokenId);
+    if(!linked)throw Error("La miniatura si modifica solo dalla scheda proprietaria.");
+    const miniature=String(app.querySelector("#token-mini-select")?.value||"");
+    if(!miniature||(state.miniatureCatalog||[]).every(m=>m.id!==miniature))
+      throw Error("Scegli una miniatura del catalogo.");
+    const result=await action("set_appearance",{token_id:tokenId,owner_id:await ownerId(),miniature_id:miniature});
+    if(!result.ok)throw Error(result.error||"Miniatura non applicata.");
+    await refreshMapOnce();
+    return;
+  }
   if(act==='miniature-pick'){
     if(!state.editor)throw Error('Apri prima una scheda.');
     const kind=target.dataset.miniatureKind;
@@ -1810,8 +1855,9 @@ async function handleAction(target){
   }
   if(act==="place-creature"||act==="claim-creature"){
     const selectedId=document.querySelector("#place-creature")?.value;
-    const selectedToken=state.map?.tokens?.find(t=>t.id===state.tokenId);
-    if(!selectedToken||!selectedId)throw new Error("Scegli un token e una creatura locale.");
+    const referenceId=String(document.querySelector("#place-reference")?.value||state.tokenId);
+    const selectedToken=state.map?.tokens?.find(t=>t.id===referenceId);
+    if(!selectedToken||!selectedId)throw new Error("Scegli un token di riferimento e una creatura locale.");
     if(act==="claim-creature"&&!selectedToken.free)throw new Error("Il token non è più libero.");
     const stored=await loadCreature(selectedId);
     if(!stored)throw new Error("Scheda non trovata in locale.");
@@ -1826,14 +1872,19 @@ async function handleAction(target){
       reach_feet:sheet.reach_feet??5,conditions:sheet.conditions||[],
       rules_version:sheet.rules_version||"2014",
       visual_front_quarter_turns:sheet.visual_front_quarter_turns??0};
+    const direction=String(document.querySelector("#place-direction")?.value||"");
+    if(act==="place-creature"&&!["north","east","south","west"].includes(direction))
+      throw new Error("Seleziona una direzione cardinale.");
     const result=await action(act==="claim-creature"?"claim_free_token":"place_token",
-      {token_id:state.tokenId,creature:visible});
+      {token_id:referenceId,creature:visible,...(act==="place-creature"?{direction}:{})});
     if(!result.ok)throw new Error(result.error||"Impossibile piazzare la creatura.");
     const editor=await openCreatureEditor(selectedId);
     await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
+    app.querySelector("#session-place-dialog")?.close();
+    state.tokenId=result.token_id;
     await refreshMapOnce();return;
   }
   if(act==="snapshot-map"||act==="attack-map"){
@@ -1877,7 +1928,9 @@ async function handleAction(target){
     if(!state.tokenId)throw new Error("Seleziona un token.");
     const result=await action("move_token",{token_id:state.tokenId,direction});
     if(!result.ok)throw new Error(result.error||"Movimento rifiutato");
-    if(!result.moved)message("Movimento non disponibile sulla scena.");return;
+    if(!result.moved)message("Movimento non disponibile sulla scena.");
+    else await refreshMapOnce();
+    return;
   }
   if(act==="roll"){await roll(Number(target.dataset.sides));return;}
   if(act==="share-roll"){await shareRoll();return;}
