@@ -216,7 +216,21 @@ func _draw() -> void:
 		if points.size() < 2:
 			continue
 		points.append(points[0])
-		draw_polyline(points, Color("ffaa42") if bool(contour.get("long", false)) else Color("61ed86"), 2.0, true)
+		var tint := (
+			Color("b7bbff") if bool(contour.get("shared", false))
+			else Color("ffca83") if bool(contour.get("long", false))
+			else Color("89eaff")
+		)
+		var halo := tint
+		halo.a = 0.13
+		draw_polyline(points, halo, 8.0, true)
+		var glow := tint
+		glow.a = 0.32
+		draw_polyline(points, glow, 4.0, true)
+		draw_polyline(points, tint, 1.8, true)
+		var step := maxi(1, points.size() / 14)
+		for i: int in range(0, points.size() - 1, step):
+			draw_circle(points[i], 1.25, Color(1.0, 0.95, 0.80, 0.65))
 	var area := PackedVector2Array()
 	for point: Array in area_preview.get("points", []):
 		area.append(image_to_local(Vector2(float(point[0]), float(point[1]))))
