@@ -21,6 +21,16 @@ try{
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="movement"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
  assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi fisici/);
+ const spellPanel=page.locator('#sheet-play-view [data-battle-action="spells"]');
+ assert.equal(await spellPanel.count(),1);
+ assert.equal(await weaponPanel.locator('.play-chevron').count(),0,'No disclosure arrow in attack header');
+ assert.equal(await spellPanel.locator('.play-chevron').count(),0,'No disclosure arrow in spell header');
+ assert.equal(await page.locator('.play-battle-heading-tools [data-sheet-context="equipment"]').count(),1);
+ assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),1);
+ await spellPanel.locator('summary.play-battle-summary').click();
+ assert.equal(await spellPanel.getAttribute('open'),'');
+ await spellPanel.locator('summary.play-battle-summary').click();
+
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
  assert.equal(await mainAttack.count(),1);
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null);
@@ -31,6 +41,15 @@ try{
  assert.equal(await mainAttack.locator('details').getAttribute('open'),'');
  assert.match(await mainAttack.locator('.play-battle-attack-expanded').textContent(),/The most common action/);
  await mainAttack.locator('summary').click();
+ assert.equal(await mainAttack.locator('.play-battle-attack-chevron').count(),0);
+ assert.equal(await mainAttack.locator('.play-battle-effect').count(),1);
+ const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
+ assert.equal(await damageButton.count(),1);
+ await damageButton.click();
+ assert.match(await page.locator('#battle-damage-dialog').textContent(),/Lama lunare/);
+ await page.locator('#battle-damage-dialog [data-act="battle-damage-confirm"]').click();
+ assert.match(await page.locator('#battle-damage-dialog [data-damage-result]').textContent(),/Formula/);
+ await page.locator('#battle-damage-dialog [data-act="battle-damage-close"]').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
