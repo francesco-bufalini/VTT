@@ -567,3 +567,117 @@ input:disabled{opacity:.75;cursor:default}
  .battle-root .battle-hp-grid,.battle-root .battle-defense-values{gap:7px}
  .battle-root .battle-base-fields{gap:7px}
 }
+
+/* Dense battle: every combat control stays reachable without oversized cards. */
+.battle-root{gap:7px}
+.battle-root>.panel{padding:9px 10px}
+.battle-root>.panel>h2{font-size:15px;margin-bottom:7px}
+.battle-root .battle-hp-grid:not(.battle-form-stats){
+ grid-template-columns:repeat(3,minmax(0,1fr));gap:5px
+}
+.battle-root .battle-temp-hp{grid-column:auto}
+.battle-root .battle-stat{padding:6px;gap:4px;font-size:11px;min-height:0}
+.battle-root .battle-stat input{padding:6px 4px;min-height:37px;font-size:16px}
+.battle-root .battle-stat .sheet-formula{flex-wrap:nowrap;gap:3px}
+.battle-root .battle-stat .sheet-result,
+.battle-root .battle-stat .sheet-formula output{font-size:16px;padding:4px;min-height:31px}
+.battle-root .battle-stat .formula-bonus{min-width:26px;min-height:31px;padding:4px}
+.battle-root .battle-hp-controls{
+ grid-template-columns:62px repeat(3,minmax(0,1fr));gap:5px;margin:7px 0 0
+}
+.battle-root .battle-hp-controls [data-act="hp-restore"]{grid-column:auto}
+.battle-root .battle-hp-controls .battle-hp-quantity{font-size:10px;gap:4px}
+.battle-root .battle-hp-quantity input{min-height:40px;padding:5px;font-size:15px}
+.battle-root .battle-hp-controls .btn{
+ padding:5px 3px;min-height:40px;font-size:11px;line-height:1.2
+}
+.battle-root details{margin-top:5px}
+.battle-root .panel details>summary{min-height:37px;padding:5px 0;font-size:11px}
+.battle-root .battle-defense-values{gap:6px}
+.battle-root .battle-defence-settings .columns,
+.battle-root .battle-defense-settings .columns{gap:6px;margin-top:6px}
+.battle-root .battle-base-fields input{min-height:40px}
+.battle-root .battle-resources-panel{min-width:0}
+.battle-resource-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;gap:4px 7px;padding:6px 0;
+ border-bottom:1px solid #9c70485c;min-width:0
+}
+.battle-resource-row:last-of-type{border-bottom:0}
+.battle-resource-main{display:flex;align-items:center;flex-wrap:wrap;gap:3px 9px;min-width:0}
+.battle-resource-main>strong{font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.battle-resource-count{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-size:12px}
+.battle-resource-count>b{color:var(--vtt-highlight)}
+.battle-resource-count .sheet-formula{display:inline-flex;align-items:center;gap:2px}
+.battle-resource-count .sheet-formula output{padding:3px 5px;min-height:30px;font-weight:650}
+.battle-root .battle-resource-count .formula-bonus{min-width:26px;min-height:30px;padding:3px}
+.battle-resource-actions{display:flex;align-items:center;gap:3px}
+.battle-root .battle-resource-actions .btn{
+ min-width:30px;min-height:34px;padding:4px 6px;font-size:15px
+}
+.battle-root .battle-resource-actions .battle-resource-link{font-size:13px}
+.battle-root .battle-resource-details{position:relative;display:inline-flex;margin:0;border:0}
+.battle-root .battle-resource-details>summary{
+ display:grid;place-items:center;min-height:34px!important;min-width:28px;
+ padding:3px!important;font-size:15px!important;list-style:none;cursor:pointer
+}
+.battle-root .battle-resource-details>summary::-webkit-details-marker{display:none}
+.battle-root .battle-resource-details>span{
+ position:absolute;z-index:3;right:0;top:calc(100% + 4px);
+ width:max-content;max-width:min(255px,75vw);padding:9px 11px;
+ border:1px solid #9c7048;border-radius:7px;background:#211b1b;
+ font-size:12px;color:#f5eee5;box-shadow:0 7px 16px #0009;white-space:normal
+}
+.battle-resource-extra{grid-column:1/-1;display:flex;gap:5px;flex-wrap:wrap}
+.battle-root .battle-resource-extra .btn{min-height:34px;padding:5px 8px;font-size:11px}
+.battle-recovery-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
+.battle-root .battle-recovery-actions .btn{min-height:37px;padding:5px 3px;font-size:11px}
+.battle-attack-row{border-bottom:1px solid #9c70485c;padding:8px 0;min-width:0}
+.battle-attack-row>strong{display:block;font-size:13px;margin-bottom:5px}
+.battle-attack-facts{display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;font-size:11px}
+.battle-attack-facts>span{display:inline-flex;align-items:center;gap:4px}
+.battle-attack-facts .sheet-formula{display:inline-flex;gap:3px;align-items:center}
+.battle-attack-facts .sheet-formula output,
+.battle-attack-facts .sheet-result{padding:3px 5px;min-height:30px;font-size:12px}
+.battle-root .battle-attack-facts .formula-bonus{min-width:26px;min-height:30px;padding:3px}
+.battle-root .battle-attack-details{margin:3px 0 0}
+.battle-root .battle-attack-details>summary{min-height:32px!important;color:var(--muted)!important}
+.battle-attack-details p{margin:5px 0;font-size:11px;line-height:1.5}
+.battle-root .battle-attack-settings .columns{gap:7px}
+.battle-root .battle-attack-settings .btn{min-height:38px}
+
+/* The creature sheet and the session token popup use the same condition grid. */
+.condition-sheet-panel{padding:11px}
+.condition-sheet-panel>h2{font-size:17px;margin-bottom:9px}
+.condition-sheet-header{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+ align-items:center;gap:9px;margin-bottom:9px}
+.condition-count{font-size:12px;color:var(--muted)}
+.condition-count strong{font-size:20px;color:var(--vtt-highlight);font-variant-numeric:tabular-nums}
+.condition-sheet-header>label{margin:0;gap:4px;font-size:11px}
+.condition-sheet-header>label input{min-height:37px;width:100%;padding:5px 8px}
+.session-condition-grid.condition-toggle-grid{display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+ max-height:none;overflow:visible;min-width:0}
+.condition-toggle-grid label.check,
+.session-dialog .condition-toggle-grid label.check{
+ display:flex;align-items:center;flex-direction:row;gap:7px;
+ min-width:0;min-height:41px;margin:0;padding:7px 8px;
+ border:1px solid #7e6145;border-radius:7px;background:#302624;
+ color:var(--text);font-size:12px;line-height:1.25;cursor:pointer;
+}
+.condition-toggle-grid label.check:has(input:checked){
+ border-color:var(--vtt-highlight);background:#65452d66;color:#ffe5b4
+}
+.condition-toggle-grid label.check:has(input:focus-visible){
+ outline:2px solid #ffda9d;outline-offset:2px
+}
+.condition-toggle-grid label.check input{width:17px;height:17px;flex:none;margin:0;accent-color:var(--vtt-highlight)}
+.condition-toggle-grid label.check span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:360px){
+ .battle-root>.panel{padding:8px}
+ .battle-root .battle-hp-controls{grid-template-columns:57px repeat(3,minmax(0,1fr));gap:3px}
+ .battle-root .battle-hp-controls .btn{font-size:10px;padding:4px 2px}
+ .battle-resource-row{gap:3px 4px}
+ .battle-root .battle-resource-actions .btn{min-width:27px;padding:3px 4px}
+ .condition-toggle-grid label.check{padding:6px!important;gap:5px!important;font-size:11px!important}
+}
