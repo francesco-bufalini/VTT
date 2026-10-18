@@ -546,6 +546,21 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   assert.deepEqual([...group.querySelectorAll('.magic-level h4')].map(n=>n.textContent),["Trucchetti","Livello 1"]);
   assert.equal(group.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length,2);
   assert.equal(group.querySelectorAll('[data-casting-section]').length,2,"each source keeps its spellcasting ability");
+  assert.equal(group.querySelector('[data-tracker-remaining="shared-power-uses"]').textContent,'3');
+  click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
+  await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='2');
+  assert.equal((await loadCreature(id)).data.resource_tracker_spent['shared-power-uses'],1);
+  click('[data-sheet="origins"]');
+  await until(()=>document.querySelector('#native-details'));
+  change('#native-details','resources');
+  await until(()=>document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]'));
+  const resourceRow=document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]').closest('article');
+  assert.match(resourceRow.textContent,/2\s*\/\s*3/,'origins sees the same tracker availability');
+  click('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]');
+  await until(async()=>!(await loadCreature(id)).data.resource_tracker_spent?.['shared-power-uses']);
+  click('[data-sheet="magic"]');
+  await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]'));
+  assert.equal(document.querySelector('[data-tracker-remaining="shared-power-uses"]').textContent,'3');
   click('[data-act="back"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -742,6 +757,8 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));
  assert.match(document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot').textContent,/3\s*\/\s*4/);
+ assert.deepEqual([...document.querySelectorAll('.magic-source:first-child .magic-level[data-magic-level]')].map(x=>x.dataset.magicLevel),['1','2','3'],
+  'slot levels render even without any prepared spells');
  assert.equal(document.querySelectorAll('.magic-level-slot + .slot-counter .btn').length,0);
  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-slot-total="1"]'));
