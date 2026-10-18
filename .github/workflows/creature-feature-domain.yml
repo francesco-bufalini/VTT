@@ -21,6 +21,7 @@ on:
       - "vtt/structured_resource_trackers.gd"
       - "vtt/creature_area.gd"
       - "tests/test_creature_action_economy.gd"
+      - "tests/test_inventory_desktop.gd"
       - "tests/test_action_spell_groups.gd"
       - "tests/test_action_dashboard_ui.gd"
       - "tests/test_combat_basic_actions.gd"
@@ -63,6 +64,7 @@ on:
       - "vtt/creature_trackers_tab.gd"
       - "vtt/item_instance.gd"
       - "vtt/creature_item_rules.gd"
+      - "tests/test_inventory_desktop.gd"
       - "tests/test_creature_features_standalone.gd"
       - "tests/test_benefit_requirements.gd"
       - ".github/workflows/creature-feature-domain.yml"
@@ -123,6 +125,7 @@ jobs:
             test_trait_origins.gd \
             test_structured_numeric_bonuses.gd \
             test_creature_equipment_regressions.gd \
+            test_inventory_desktop.gd \
             test_benefit_first_origins_trackers.gd \
             test_structured_resource_trackers.gd \
             test_origin_granted_spells.gd \
