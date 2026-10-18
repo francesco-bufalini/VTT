@@ -754,7 +754,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-field="name"]')?.value==='Verifica parità PWA');
  assert.deepEqual([...document.querySelectorAll('#app .panel > h2')].map(e=>e.textContent),['Identità','Fisico','Classi e progressione','Talenti']);
  click('[data-sheet="battle"]');
- await until(()=>document.querySelector('#hp-amount'));
+ await until(()=>document.querySelector('.battle-hp-controls [data-act="hp-damage"]'));
  assert.deepEqual([...document.querySelectorAll('.battle-root > .panel > h2')].map(e=>e.textContent),
   ['Punti ferita','Classe armatura e iniziativa','Risorse','Attacchi disponibili'],
   'CA follows HP before resource trackers and attacks');
@@ -777,13 +777,33 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'Attacks use compact summary rows');
  assert.ok(document.querySelector('.battle-resources-panel [data-act="tracker-turn"]'),
   'Turn recovery remains available');
- document.querySelector('#hp-amount').value='10';click('[data-act="hp-damage"]');
+ assert.equal(document.querySelector('#hp-amount'),null,'HP quantity is not permanently visible');
+ assert.equal(document.querySelectorAll('.battle-hp-controls > button').length,3,
+  'Danni, Cura and PF pieni occupy one compact row');
+ assert.ok(document.querySelector('#hp-adjust-dialog:not([open])'),'HP amount dialog starts closed');
+ click('[data-act="hp-damage"]');
+ await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
+ assert.equal(document.querySelector('#hp-adjust-title').textContent,'Infliggi danni');
+ assert.equal(document.querySelector('#hp-adjust-amount').value,'1');
+ click('[data-act="hp-adjust-cancel"]');
+ await until(()=>!document.querySelector('#hp-adjust-dialog[open]'));
+ assert.equal((await loadCreature(saved.data.id)).data.current_hp,20,
+  'Cancelling damage does not change hit points');
+ click('[data-act="hp-damage"]');
+ await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
+ document.querySelector('#hp-adjust-amount').value='10';
+ document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
  await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
  let record=(await loadCreature(saved.data.id)).data;
  assert.deepEqual([record.temporary_hp,record.second_form_hp,record.current_hp],[0,0,17]);
+ assert.ok(!document.querySelector('#hp-adjust-dialog[open]'),'Dialog closes after confirming damage');
  click('[data-act="hp-restore-second"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.second_form_hp===8);
- document.querySelector('#hp-amount').value='2';click('[data-act="hp-heal"]');
+ click('[data-act="hp-heal"]');
+ await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
+ assert.equal(document.querySelector('#hp-adjust-title').textContent,'Cura punti ferita');
+ document.querySelector('#hp-adjust-amount').value='2';
+ document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
  await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===19);
  click('[data-act="hp-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===20);
