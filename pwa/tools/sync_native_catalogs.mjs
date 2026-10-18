@@ -203,11 +203,11 @@ const references=await read('../../vtt/data/creature_references_5etools.json');
   const trait=(race.entries||[]).find(entry=>String(entry?.name||'').trim().toLowerCase()==='creature type');
   if(!trait)return [];
   const text=JSON.stringify(trait.entries||[]).toLowerCase();
-  const kind=creatureKinds.find(value=>new RegExp('\\\\b'+value+'\\\\b').test(text));
+  const kind=creatureKinds.find(value=>new RegExp('\\b'+value+'\\b').test(text));
   return kind?[{id:race.id,name:race.name,source:race.source,creatureTypes:[kind]}]:[];
  });
  await writeFile(new URL('../catalog/species_types.json',import.meta.url),
-  JSON.stringify({version:1,source:'vtt/data/creature_references_5etools.json',races:speciesTypes},null,2)+'\\n');
+  JSON.stringify({version:1,source:'vtt/data/creature_references_5etools.json',races:speciesTypes},null,2)+'\n');
 
 // These structured race rows are also the native speed source. Keep only
 // mechanics/identity here; the existing features URL owns descriptions.
