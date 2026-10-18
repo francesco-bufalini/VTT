@@ -329,7 +329,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       c.alignment&&!ALIGNMENTS.some(([id])=>id===c.alignment)?
         [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
       c.alignment||'Completamente neutrale'))+reference('Background','background','backgrounds'))+
-   panel('Fisico',
+   panel('Aspetto',
+    '<p class="sheet-section-description">Specie, sottorazza e tipo definiscono l’identità fisica della creatura. Puoi anche scegliere le miniature per la forma di base e quella attuale, regolare la taglia e orientarne il fronte sulla mappa.</p>'+
     (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
       cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
@@ -342,6 +343,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '')+
    panel('Classi e progressione',
+      '<p class="sheet-section-description">Qui trovi la classe principale con la relativa sottoclasse e le eventuali classi aggiuntive. Ogni classe ha un livello indipendente: il livello totale è calcolato automaticamente dalla loro somma, mentre i punti esperienza possono essere aggiornati separatamente.</p>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp')+'</div>'+
       cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
