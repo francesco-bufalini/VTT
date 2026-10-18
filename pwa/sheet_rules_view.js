@@ -249,7 +249,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    return '<div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="resource:'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+btn('Consuma '+t.name,'decrease','data-act="tracker-more" data-tracker-id="'+esc(t.id)+'"'+(left<=0?' disabled':''),'<span class="sr-only">Consuma un utilizzo</span>')+'</div>';
   }).join('');
   html+=card('Risorse',resources||'<p class="play-empty">Nessuna risorsa attiva.</p>',btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>'));
-  html+=card('Attacchi',(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>',btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
+  const disclosure=(key,title,glyph,body,open=false)=>'<details class="play-card play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
+   '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2><span class="play-chevron" aria-hidden="true">⌄</span></summary>'+body+'</details>';
+  const attackTable=(d.attacks||[]).map(a=>'<div class="play-attack"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.damage)+' '+esc(a.damage_type||'')+' · '+esc(d.values?.['attack_range:'+a.id]??a.range_feet??a.reach??5)+' ft</small></span>'+roll('attack_hit:'+a.id,'Tiro per colpire · '+a.name,output('attack_hit:'+a.id,true))+'</div>').join('')||'<p class="play-empty">Scegli un’arma dall’equipaggiamento.</p>';
+  html+=disclosure('attacks','Attacchi con arma','weapon',
+   '<div class="play-battle-attack-table">'+attackTable+
+    '<div class="play-battle-equipment">'+btn('Equipaggiamento e attacchi','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>')+'</div></div>'+
+   (view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>'),true);
+  html+=disclosure('movement','Spostamento','movement',
+   view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
  }
  if(sheet==='stats'){
   html='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
