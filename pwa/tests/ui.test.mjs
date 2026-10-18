@@ -135,7 +135,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   pendingNote.value="Gruppo digitato e subito chiuso";
   pendingNote.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   // No change/blur or delay: a fast mobile tap must flush the debounce.
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   assert.match(document.querySelector("#app").textContent,/Arcanista mobile/);
   const rows=await listCreatures();
@@ -164,7 +164,7 @@ test("prototype sample creature is editable, private and persists offline",async
   assert.equal(saved.creature.resource_trackers[0].name,"Second Wind");
   assert.equal(saved.creature.inventory.length,3);
   assert.equal(saved.creature.linked_token_sync_id,"");
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -322,7 +322,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   click('[data-act="sheet-roll-edit-bonus"]');
   await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
   assert.equal(document.querySelector('#sheet-roll-dialog'),null);
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -439,7 +439,7 @@ test("native Android section order and editable sheet data",async()=>{
     const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
     return c?.proficiency_choices?.some(row=>row.key==="athletics");
   });
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -463,7 +463,7 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
     assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' is not freely editable');
   }
   assert.equal(document.querySelector('#tracker-name'),null,'Tracker configuration belongs in character editor');
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -520,7 +520,7 @@ test("inline spell catalog adds available and spellbook choices without divergin
     return current?.prepared_spells?.length===0 && current?.spells?.length===0 &&
       current?.spellbook_spells?.length===1;
   });
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -530,7 +530,7 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   change('[data-field="name"]',"Poteri tracker condivisi");
   await until(async()=>(await listCreatures()).some(row=>row.creature.name==="Poteri tracker condivisi"));
   const id=(await listCreatures()).find(row=>row.creature.name==="Poteri tracker condivisi").creature.id;
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="open"][data-id="'+id+'"]'));
   const editor=await openCreatureEditor(id);
   await editor.update({
@@ -570,7 +570,7 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]'));
   assert.equal(document.querySelector('[data-tracker-remaining="shared-power-uses"]').textContent,'3');
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -628,7 +628,7 @@ test("mobile inventory actions persist equipment, quantity zero removal and attu
   change('[data-item-key="quantity"]',"0");
   await until(()=>!document.querySelector('.inventory-table-row[role="row"]'));
   assert.ok(document.querySelector(".inventory-slots"),"Equipment slots remain visible with empty inventory");
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -662,7 +662,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   const portable=JSON.parse(await (await exportCreature(saved.id)).text());
   assert.ok(portable.homebrew_content.some(x=>x.id===saved.inventory[0].id &&
     x.name==="Messaggio segreto"&&x.data.description==="Un testo lungo e modificabile."));
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
   const open=[...document.querySelectorAll('[data-act="open"]')]
     .find(x=>x.getAttribute("data-id")===saved.id);
@@ -680,7 +680,7 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
     const c=(await listCreatures()).find(x=>x.creature.id===saved.id)?.creature;
     return c?.inventory?.length===0;
   });
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -707,7 +707,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/13/);
   assert.equal(requests.filter(url=>url==="/api/evaluate").length,0,
     "A private creature sheet must never be transmitted for derived calculations");
-  click('[data-act="back"]');
+  click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -803,5 +803,5 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
  click('[data-sheet="stats"]');
  await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
- click('[data-act="back"]');await until(()=>document.querySelector('[data-act="create"]'));
+ click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });

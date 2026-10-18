@@ -132,6 +132,10 @@ function syncNav(){
     '<button type="button" class="btn mobile-tab" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+
     (state.page==="library"&&!state.libraryMode&&state.sheet===key)+'" aria-label="'+esc(title)+'" title="'+esc(title)+'"'+
     (hasCreature?'':' disabled aria-disabled="true"')+'>'+actionGlyph(SHEET_TAB_GLYPHS[key]||"information")+'</button>').join("");
+  for(const [page,glyph] of [["library","proficiency"],["catalog","book"],["session","map"]]){
+    const button=nav.querySelector('[data-nav="'+page+'"]');
+    if(button)button.innerHTML=actionGlyph(glyph);
+  }
   for(const button of nav.querySelectorAll("[data-nav]")){
     const current=button.dataset.nav===state.page&&(state.page!=="library"||state.libraryMode||!hasCreature);
     if(current)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
