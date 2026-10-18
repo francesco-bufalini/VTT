@@ -2781,6 +2781,9 @@ async function handleSubmit(form){
   }
 }
 function listen(){
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
+  });
   const navigation=document.querySelector('#navigation-dialog');
   navigation.addEventListener('close',()=>document.querySelector('#more-navigation').setAttribute('aria-expanded','false'));
   navigation.addEventListener('click',event=>{if(event.target!==navigation)return;const rect=navigation.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeNavigation(true);});
