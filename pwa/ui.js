@@ -121,13 +121,13 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
-const SHEET_TAB_GLYPHS={info:'information',stats:'skill',battle:'shield',actions:'weapon',
+const SHEET_TAB_GLYPHS={info:'information',battle:'shield',actions:'weapon',
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['stats','Abilità',''],['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],stats:['Abilità',''],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -202,6 +202,8 @@ function syncBrowserHistory(){
   }
 }
 async function restoreBrowserScreen(screen){
+  // Older installed builds stored the retired Abilità tab in browser history.
+  if(screen?.sheet==='stats')screen={...screen,sheet:'info'};
   if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
   const ticket=++browserHistoryRestoreTicket;
   restoringBrowserHistory=true;
