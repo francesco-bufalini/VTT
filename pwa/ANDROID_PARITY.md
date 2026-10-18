@@ -96,8 +96,10 @@ totale con ogni privilegio nativo. Rimangono da migrare integralmente:
   pendenti, senza concedere automaticamente incantesimi;
 - effetti di privilegi che non sono rappresentati da dati numerici strutturati,
   scelte di beneficio specifiche e infusioni avanzate;
-- scelta delle miniature, trasferimento a destinatari di oggetti/documenti e
-  finestre di lancio avanzate che richiedono ancora supporto nativo.
+- miniature provenienti da pacchetti locali non pubblicati nel catalogo offline,
+  trasferimento a destinatari di oggetti/documenti e finestre di lancio avanzate
+  che richiedono ancora supporto nativo. La PWA ora permette di scegliere gli ID
+  delle miniature pubblicate per base e forma attuale; il caricamento 3D resta al desktop.
 
 Il motore non interpreta la prosa dei privilegi come una formula e non
 attribuisce silenziosamente benefici che non può calcolare.

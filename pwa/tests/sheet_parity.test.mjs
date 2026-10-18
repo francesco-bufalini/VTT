@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch} from '../native_sheet.js';
+import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
@@ -9,6 +9,16 @@ import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:mechanics};
+
+test('miniature choices mirror native base/current identity and size rules',()=>{
+ const profile={id:'adult_brass_dragon_updated',size_name:'Huge',footprint:3};
+ assert.deepEqual(miniaturePatch({default_miniature_id:'old',current_miniature_id:'old'},profile,'base'),
+  {default_miniature_id:profile.id,current_miniature_id:profile.id,size_name:'Huge',footprint:3});
+ assert.deepEqual(miniaturePatch({default_miniature_id:'old',current_miniature_id:'transformed'},profile,'base'),
+  {default_miniature_id:profile.id,size_name:'Huge',footprint:3});
+ assert.deepEqual(miniaturePatch({size_name:'Small'},profile,'current'),{current_miniature_id:profile.id});
+ assert.throws(()=>miniaturePatch({}, {id:''}, 'base'));
+});
 
 test('damage consumes temporary, transformed and normal HP in native order; healing respects effective maximum',()=>{
  const c={temporary_hp:4,second_form_hp:8,current_hp:20,max_hp_base:25,formula_bonuses:[{target:'hp',expression:'5'}]};

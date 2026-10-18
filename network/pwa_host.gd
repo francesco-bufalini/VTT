@@ -51,6 +51,7 @@ const FILES := {
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
 	"/catalog/features.json": ["res://vtt/data/compendium_features_5etools.json", "application/json; charset=utf-8"],
 	"/catalog/items.json": ["res://vtt/data/compendium_items_5etools.json", "application/json; charset=utf-8"],
+	"/catalog/miniatures.json": ["res://vtt/data/token_catalog_offline.json", "application/json; charset=utf-8"],
 	"/mobile_metal_theme.css": ["res://pwa/mobile_metal_theme.css", "text/css; charset=utf-8"],
 	"/styles.css": ["res://pwa/styles.css", "text/css; charset=utf-8"],
 	"/storage.js": ["res://pwa/storage.js", "text/javascript; charset=utf-8"],

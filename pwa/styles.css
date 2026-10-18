@@ -546,3 +546,16 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
  .sections-drawer{max-width:calc(100vw - 24px);}
 }
 @media(prefers-reduced-motion:reduce){.btn,.section-tabs button{transition:none;}}
+
+/* Miniature picker: thumb-sized rows and a bounded scroll area on small phones. */
+.miniature-dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:18px;overflow:auto}
+.miniature-dialog::backdrop{background:#000b}
+.miniature-results{display:grid;gap:8px;max-height:min(52dvh,480px);overflow-y:auto;overscroll-behavior:contain;margin:14px 0;padding:2px}
+.miniature-choice{min-height:58px;width:100%;display:flex;align-items:flex-start;flex-direction:column;justify-content:center;text-align:left;gap:3px;white-space:normal;overflow-wrap:anywhere}
+.miniature-choice small{font-size:11px;color:var(--muted);font-weight:500}
+@media(max-width:480px){
+ .miniature-actions{display:grid;grid-template-columns:1fr;gap:8px}
+ .miniature-actions .btn{width:100%;min-height:48px}
+ .miniature-dialog{padding:14px}
+ .miniature-choice{min-height:58px}
+}

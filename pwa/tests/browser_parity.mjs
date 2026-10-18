@@ -9,7 +9,7 @@ const root=new URL('../',import.meta.url),native=new URL('../../vtt/data/',impor
 const artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],entries:['Test reference.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Bard','Wizard']}]};
-const aliases={'/catalog/feature_timing_recovery_rules.json':'feature_timing_recovery_rules.json','/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
+const aliases={'/catalog/feature_timing_recovery_rules.json':'feature_timing_recovery_rules.json','/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json','/catalog/miniatures.json':'token_catalog_offline.json'};
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
@@ -52,6 +52,45 @@ try{
  await page.locator('[data-field="name"]').waitFor();
  const names={actions:'Cosa posso fare?',info:'Info',stats:'Caratteristiche e abilità',battle:'Battaglia',magic:'Poteri',inventory:'Inventario',traits:'Tratti',conditions:'Condizioni',origins:'Modifica personaggio'};
  const section=async key=>{await page.locator('#section-menu').evaluate(node=>node.open=true);await page.locator('[data-sheet="'+key+'"]').click();await page.waitForFunction(name=>document.querySelector('.current-section')?.textContent===name,names[key]);};
+ await page.setViewportSize({width:360,height:844});
+ await page.locator('[data-miniature-kind="base"]').click();
+ await page.locator('[data-miniature-search]').fill('brass dragon');
+ const chosen=page.locator('.miniature-choice').first();
+ const miniatureId=await chosen.getAttribute('data-miniature-id');
+ assert.ok(miniatureId,'The searchable picker must show catalog miniature IDs');
+ assert.ok(await chosen.evaluate(node=>node.getBoundingClientRect().height>=48));
+ assert.ok(await page.locator('.miniature-dialog').evaluate(node=>node.getBoundingClientRect().right<=innerWidth),
+  'The miniature picker must fit a 360px viewport');
+ await chosen.click();
+ await page.waitForFunction(id=>[...document.querySelectorAll('.native-summary')].some(node=>node.textContent.includes(id)),miniatureId);
+ assert.equal(await page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.default_miniature_id;
+ }),miniatureId,'The chosen native ID must persist in the local creature');
+ assert.equal(await page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.current_miniature_id;
+ }),miniatureId,'Selecting a base miniature must also align the initial current form');
+ assert.deepEqual(await page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.feats_catalog;
+ }),[{name:'Fey Touched',source:'TCE'}],'Miniature selection must preserve unrelated feats');
+ if(process.env.VTT_PWA_PICKER_ONLY==='1'){
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('[data-miniature-kind="current"]').click();
+  await page.locator('[data-miniature-search]').fill('brass dragon');
+  const nextId=await page.locator('.miniature-choice').nth(1).getAttribute('data-miniature-id');
+  assert.notEqual(nextId,miniatureId);
+  await page.locator('.miniature-choice').nth(1).click();
+  await page.waitForFunction(id=>[...document.querySelectorAll('.native-summary')].some(node=>node.textContent.includes(id)),nextId);
+  assert.deepEqual(await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');const c=(await listCreatures())[0].creature;
+   return [c.default_miniature_id,c.current_miniature_id];
+  }),[miniatureId,nextId],'Current form must not replace the base miniature');
+  assert.deepEqual(errors,[]);
+  assert.deepEqual(apiWrites,[],'Miniature selection must stay local');
+  console.log('PASS: searchable 360px miniature picker, native base/current fields, local persistence and untouched feats.');
+ }else{
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:844});
   for(const key of ['info','stats','battle','actions','magic','inventory','traits','conditions','origins']){
@@ -136,4 +175,5 @@ try{
  assert.equal((await counts()).manual,2,'rests and reopening must preserve manual counters');
  console.log('PASS: 8 sections at 360/390/768/1440px; optional dice, formula trackers, level gates, recovery, origin choices/charges, spellbook/slots and offline persistence.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
+ }
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
