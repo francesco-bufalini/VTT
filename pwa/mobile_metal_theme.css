@@ -952,3 +952,12 @@ input:disabled{opacity:.75;cursor:default}
 .inventory-detail-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px;padding:14px;border:1px solid #b68b5040;border-radius:12px;background:#49322425}
 .inventory-detail-facts>div{min-width:0}.inventory-detail-facts dt{font-size:10px;color:#aa987e;margin-bottom:4px}.inventory-detail-facts dd{font-size:13px;color:#e6d0ad;margin:0;line-height:1.6;overflow-wrap:anywhere}
 .inventory-detail-section{margin:18px 0}.inventory-detail-section h3{font:600 10px/1.5 system-ui;text-transform:uppercase;letter-spacing:.08em;color:#bfa581;margin:0 0 7px}.inventory-detail-section p,.inventory-detail-section .inventory-prose{font-size:13px;line-height:1.7;color:#dfd0ba}
+
+/* Dice roller: selection is separate from rolling and sharing. */
+.chat-dice-dialog .dice-options .btn[aria-pressed="true"]{border-color:var(--accent);background:rgba(227,179,107,.16);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chat-dice-dialog .chat-dice-outcome{margin:15px 0 8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.16);text-align:center}
+.chat-dice-dialog .chat-dice-outcome-label{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.chat-dice-dialog .chat-dice-outcome .dice-result{font-size:46px;line-height:1.25;margin:5px 0 10px}
+.chat-dice-dialog .chat-dice-formula{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--muted);text-align:left}
+.chat-dice-dialog .chat-dice-formula strong{font-size:16px;color:var(--text);overflow-wrap:anywhere}
+.chat-dice-dialog .chat-dice-breakdown{margin-top:7px;color:var(--muted);font-size:12px;text-align:left;overflow-wrap:anywhere}
