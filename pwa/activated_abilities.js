@@ -60,16 +60,18 @@ export function abilitiesForCreature(creature={},manifest=[],projection={}){
     const id=nativeIds.get(owner+"|"+norm(feature.name));
     const explicit=feature.action_type||feature.activation_type||feature.activation;
     if(!id&&!explicit)continue; // Never turn passive features into actions.
-    const action=timed.find(a=>norm(a.feature)===norm(feature.name)&&
-      String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|")));
+    const action=timed.find(a=>id==="vtt_wild_shape"&&a.action_id==="wild_shape")||
+      timed.find(a=>norm(a.feature)===norm(feature.name)&&
+        (String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|"))||
+         String(a.origin_id||"")===parts.slice(0,3).join("|")));
     const tracker=trackerFor(projection,feature.name,owner);
     const definition={
       id:id||"feature:"+feature.key,name:feature.name,
       source:feature.source||parts[1].toUpperCase(),
       feature_id:feature.origin_id,
       requirements:feature.requirements,
-      action_type:action?.time||explicit||"",
-      activation_mode:action?.time||explicit||"contextual",
+      action_type:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
+      activation_mode:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",
       resource_name:action?.tracker||tracker?.name||"",
       tracker_id:action?.tracker_id||tracker?.id||"",
       resource_cost:action?.cost??(tracker?1:0),
