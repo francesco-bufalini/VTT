@@ -6,6 +6,7 @@ extends Node
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
@@ -37,6 +38,7 @@ const FILES := {
 	"/structured_effects.js": ["res://pwa/structured_effects.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/condition_catalog.js": ["res://pwa/condition_catalog.js", "text/javascript; charset=utf-8"],
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
@@ -491,7 +493,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		_answer(client, 200, {"protocol": 1, "desktop_online": board != null
 			and bool(board.get("receiving")), "pairing_required": true})
 		return
-	if path not in ["/api/session", "/api/map", "/api/action"]:
+	if path not in ["/api/session", "/api/map", "/api/action", "/api/conditions"]:
 		_answer(client, 404, {"error": "not_found"})
 		return
 	if (path == "/api/action" and method != "POST") or (
@@ -510,6 +512,8 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	if path == "/api/session":
 		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
 			"mobile_protocol": 3})
+	elif path == "/api/conditions":
+		_answer(client, 200, _condition_public_catalog())
 	elif path == "/api/map":
 		_answer(client, 200, controller.get_map_data())
 	else:
@@ -524,6 +528,22 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			String(request.action), request.payload)
 		_answer(client, 200, result)
 
+
+# Serve exactly the selection available in the native sheet/token dialogs,
+# including edition-specific effects and locally installed content. IDs never
+# depend on the translated PWA labels.
+func _condition_public_catalog() -> Dictionary:
+	var editions: Dictionary = {}
+	for edition: String in ["2014", "2024"]:
+		var rows: Array[Dictionary] = []
+		for definition: Dictionary in ContentCatalog.condition_definitions(edition):
+			rows.append({
+				"id": String(definition.get("id", "")),
+				"name": String(definition.get("name", "")),
+				"category": String(definition.get("category", "conditions"))
+			})
+		editions[edition] = rows
+	return {"editions": editions}
 
 func _answer(client: Dictionary, status: int, value: Dictionary) -> void:
 	_respond(client, status, "application/json; charset=utf-8",
