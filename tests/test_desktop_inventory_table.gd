@@ -112,7 +112,7 @@ func run() -> void:
 	tab._inventory_list.select(0)
 	tab._equip_selected("main")
 	assert("main" in ItemRules.slots(tab._inventory[0]))
-	assert(not main_size.disabled and main_size.get_parent() == desktop._main.get_parent().get_child(1),
+	assert(not main_size.disabled and main_size.get_parent() == (desktop.get("_main") as OptionButton).get_parent().get_child(1),
 		"Weapon size is editable directly beside the main hand picker")
 	assert(owned_tree.get_root().get_first_child().get_text(0).contains("⚔"))
 	tab._inventory_list.select(2)
