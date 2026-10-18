@@ -400,8 +400,10 @@ test("alignment defaults to true neutral and derived fields are non-editable",as
   for(const key of ['type','default_miniature_id','current_miniature_id','speed_base']){
     assert.equal(document.querySelector('[data-field="'+key+'"]'),null,key+' must not be freely editable');
   }
-  assert.ok(document.querySelector('[data-field="player_name"]'),
-    'Il giocatore è un campo narrativo editabile della scheda');
+  assert.equal(document.querySelector('[data-field="player_name"]'),null,
+    'I dettagli narrativi non appartengono più alla sezione Info');
+  assert.equal(document.querySelector('[data-calculation-note]'),null,
+    'La copertura dei calcoli non deve essere mostrata in Info');
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-field="current_hp"]'));
   for(const key of ['armor_class_base','initiative']){
