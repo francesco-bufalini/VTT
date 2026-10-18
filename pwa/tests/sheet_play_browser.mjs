@@ -107,7 +107,7 @@ try{
  assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
  await resourcesPanel.locator('summary.play-battle-summary').click();
  assert.equal(await resourcesPanel.getAttribute('open'),'');
- const inlineClass=resourcesPanel.locator('[data-ability-id="arcane_pulse"]');
+ const inlineClass=resourcesPanel.locator('.play-battle-ability-entry[data-ability-id="arcane_pulse"]');
  assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
  assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="arcane_pulse"]').count(),0);
@@ -123,7 +123,7 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
  await dismiss();
  await page.locator('#sheet-play-view [data-tracker-id="focus"]').click();await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
- await resourcesPanel.locator('[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
+ await resourcesPanel.locator('.play-battle-ability-entry[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
