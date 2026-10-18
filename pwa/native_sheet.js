@@ -192,6 +192,8 @@ export function nativeRowPatch(c,key,index,field,value){
  if(Array.isArray(definition[2])&&!definition[2].some(([v])=>String(v)===String(value)))throw Error('Scelta non valida');
  if(key==='classes'&&['name','source','subclass','subclass_source'].includes(field)&&row[field]!==value){
   row[['name','source'].includes(field)?'id':'subclass_id']='';
+  if(field==='name')row.source=''; // Cannot retain the previous book when the class changes by free text.
+  if(field==='subclass')row.subclass_source='';
   if(['name','source'].includes(field))Object.assign(row,{subclass:'',subclass_source:'',subclass_id:''});
  }
  row[field]=value;
@@ -262,8 +264,9 @@ export function speciesCreatureType(creature,catalogs={}){
  const subrace=String(creature?.subrace||''),subsource=String(creature?.subrace_source||'');
  const flattened=subrace?races.find(r=>same(r.name,species+' ('+subrace+')')&&
   (!subsource||same(r.source,subsource))):null;
+ // In 5etools the omitted creatureTypes property means Humanoid.
  const raw=flattened?.creatureTypes??parent?.creatureTypes;
- const values=Array.isArray(raw)?raw:raw?[raw]:[];
+ const values=Array.isArray(raw)?raw:raw?[raw]:parent?['humanoid']:[];
  const names={aberration:'Aberrazione',beast:'Bestia',celestial:'Celestiale',construct:'Costrutto',
   dragon:'Drago',elemental:'Elementale',fey:'Folletto',fiend:'Immondo',giant:'Gigante',
   humanoid:'Umanoide',monstrosity:'Mostruosità',ooze:'Melma',plant:'Pianta',undead:'Non morto'};
