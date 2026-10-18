@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch} from '../native_sheet.js';
+import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
@@ -39,6 +39,31 @@ test('legacy class becomes editable without losing primary class or subclass ref
  assert.equal(patch.class_id,'wizard');
  assert.equal(nativeRowPatch({...c,...patch},'classes',1,'level',3).level,8);
  assert.throws(()=>nativeRowPatch({...c,...patch},'classes',1,'level',19),/20/);
+});
+test('Info derives species creature type from references, including implicit Humanoid and subraces',()=>{
+ const races=[{id:'elf',name:'Elf',source:'PHB'},
+  {id:'hybrid',name:'Changeling',source:'ERLW',creatureTypes:['fey']},
+  {id:'variant',name:'Elf (Other)',source:'PHB',creatureTypes:['fey','humanoid']}];
+ assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB'}, {races}),'Umanoide');
+ assert.equal(speciesCreatureType({kind:'character',species:'Changeling',species_source:'ERLW'}, {races}),'Folletto');
+ assert.equal(speciesCreatureType({kind:'character',species:'Elf',species_source:'PHB',subrace:'Other',subrace_source:'PHB'}, {races}),'Folletto, Umanoide');
+ assert.equal(speciesCreatureType({kind:'character',species:'Unknown'}, {races}),'—');
+ assert.equal(speciesCreatureType({kind:'monster',stat_block:{type:{type:'dragon'}}}, {races}),'dragon');
+});
+test('secondary classes show only non-primary entries, with source from selected catalog',()=>{
+ const c={class:'Wizard',class_source:'PHB',classes:[{name:'Wizard',source:'PHB',level:4},
+  {name:'Fighter',source:'PHB',level:1,subclass:'Champion',subclass_source:'PHB'}]};
+ const html=nativeRows(c,'classes',{},1);
+ assert.match(html,/data-native-list="classes" data-index="1" data-key="level"/);
+ assert.doesNotMatch(html,/data-native-list="classes" data-index="0"/);
+ assert.match(html,/native-readonly-source/);
+ assert.doesNotMatch(html,/data-key="source"/);
+ assert.throws(()=>nativeRowPatch(c,'classes',1,'source','DMG'),/catalogo/);
+ assert.throws(()=>nativeRowPatch(c,'classes',1,'subclass_source','DMG'),/catalogo/);
+ const patch=rowReferencePatch(c,'classes',1,'name',{id:'fighter_xphb',name:'Fighter',source:'XPHB'});
+ assert.equal(patch.classes[1].source,'XPHB');
+ assert.equal(patch.classes[1].id,'fighter_xphb');
+ assert.equal(patch.class_source,'PHB');
 });
 test('all sheet readouts expose effective values and native bonus targets, including legacy HP alias',()=>{
  const out=calculateSheet({abilities:{dex:14},max_hp_base:10,formula_bonuses:[
