@@ -1,5 +1,7 @@
 extends VBoxContainer
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const DesktopInventory = preload("res://vtt/creature_inventory_desktop.gd")
+const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
 
 # Private creature inventory. These are catalog references, not scene items:
 # placing or deleting physical objects on the board never changes a sheet.
@@ -46,6 +48,12 @@ var _unequip: Button
 var _search: LineEdit
 var _catalog_list: ItemList
 var _inventory_list: ItemList
+var _desktop_ui: Control
+var _inventory_title: Label
+var _legacy_qty_label: Label
+var _equip_hint: Label
+var _attunement_max_base := 3
+var _attunement_limit_bonus := 0
 var _quantity: SpinBox
 var _weapon_size_choice: OptionButton
 var _creature_size_name := "Medium"
@@ -180,10 +188,10 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_catalog_list.gui_input.connect(_on_image_click.bind(true))
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
 	_search_panel.add_child(_catalog_list)
-	var inventory_title := Label.new()
-	inventory_title.text = "Oggetti posseduti"
-	inventory_title.add_theme_font_size_override("font_size", 15)
-	add_child(inventory_title)
+	_inventory_title = Label.new()
+	_inventory_title.text = "Oggetti posseduti"
+	_inventory_title.add_theme_font_size_override("font_size", 15)
+	add_child(_inventory_title)
 	_inventory_list = ItemList.new()
 	_inventory_list.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	_inventory_list.mouse_force_pass_scroll_events = false
@@ -276,11 +284,11 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	var item_switches := HFlowContainer.new()
 	item_switches.add_theme_constant_override("h_separation", 8)
 	add_child(item_switches)
-	var equip_hint := Label.new()
-	equip_hint.text = "Seleziona un oggetto e usa «Equipaggiato» o «Sintonia». Armi, scudi e armature si equipaggiano nella sezione Statistiche."
-	equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(equip_hint)
-	move_child(equip_hint, item_switches.get_index())
+	_equip_hint = Label.new()
+	_equip_hint.text = "Seleziona un oggetto e usa «Equipaggiato» o «Sintonia». Armi, scudi e armature si equipaggiano nella sezione Statistiche."
+	_equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(_equip_hint)
+	move_child(_equip_hint, item_switches.get_index())
 	_generic_equip = CheckButton.new()
 	_generic_equip.text = "Equipaggiato"
 	_generic_equip.tooltip_text = "Equipaggia o riponi l'oggetto selezionato senza occupare slot. Per armi, scudi e armature usa Statistiche."
@@ -300,9 +308,9 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
 	add_child(actions)
-	var qty_label := Label.new()
-	qty_label.text = "Quantità"
-	actions.add_child(qty_label)
+	_legacy_qty_label = Label.new()
+	_legacy_qty_label.text = "Quantità"
+	actions.add_child(_legacy_qty_label)
 	_quantity = SpinBox.new()
 	_quantity.min_value = 1
 	_quantity.max_value = 99999
@@ -353,6 +361,17 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 		if child != inner_tabs:
 			remove_child(child)
 			objects_page.add_child(child)
+	_desktop_ui = DesktopInventory.new()
+	objects_page.add_child(_desktop_ui)
+	objects_page.move_child(_desktop_ui, _inventory_list.get_index() + 1)
+	_desktop_ui.call("setup", self, _details)
+	_inventory_list.hide()
+	_inventory_title.hide()
+	_equip_hint.hide()
+	_generic_equip.hide()
+	_attuned.hide()
+	_quantity.hide()
+	_legacy_qty_label.hide()
 	_documents_tab = DocumentsTab.new()
 	_documents_tab.name = "Documenti"
 	inner_tabs.add_child(_documents_tab)
@@ -371,6 +390,19 @@ func configure_touch_layout() -> void:
 	# sheets, after the document tab has created non-toolbar child nodes.
 	var touch = preload("res://vtt/mobile/touch_layout.gd")
 	var objects_page := _inventory_list.get_parent() as VBoxContainer
+	# Mobile retains the established touch list and controls, not the wide desktop tables.
+	if _desktop_ui != null:
+		_desktop_ui.hide()
+		if _details.get_parent() == _desktop_ui:
+			_desktop_ui.remove_child(_details)
+			objects_page.add_child(_details)
+		_inventory_list.show()
+		_inventory_title.show()
+		_equip_hint.show()
+		_generic_equip.show()
+		_attuned.show()
+		_quantity.show()
+		_legacy_qty_label.show()
 	var header: Node = objects_page.get_child(0)
 	if header is HBoxContainer:
 		# Section styling can prepend a TextureRect; the caption is not
@@ -447,6 +479,8 @@ func _documents_changed(inventory: Array) -> void:
 	if _loading:
 		return
 	_loading = true
+	_attunement_max_base = clampi(int(record.get("attunement_max_base", 3)), 0, 99)
+	_attunement_limit_bonus = BonusRules.bonus(record, "attunement_max")
 	_inventory.clear()
 	for raw: Variant in inventory:
 		if raw is Dictionary:
@@ -725,6 +759,8 @@ func load_record(record: Dictionary) -> void:
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
+	if _desktop_ui != null:
+		_desktop_ui.call("load_record", record)
 	_refresh_infusion_ui()
 	if _documents_tab != null:
 		_documents_tab.call("load_inventory", _inventory)
@@ -1146,6 +1182,8 @@ func _on_quantity_changed(value: float) -> void:
 	_update_equip_buttons()
 	# Keep the active editor and selection intact while typing multiple digits.
 	_inventory_list.set_item_text(index, _image_label(_catalog_entry(_inventory[index]), _inventory_label(_inventory[index])))
+	if _desktop_ui != null and _desktop_ui.visible:
+		_desktop_ui.call("refresh")
 	_publish()
 
 
@@ -1170,7 +1208,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
 		var item_index: int = _inventory_list.item_count - 1
 		var category: String = ItemRules.kind(_catalog_entry(item))
-		if category not in ["weapon", "armor", "shield"]:
+		if category not in ["weapon", "armor", "shield", "document"] and not ItemRules.requires_attunement(_catalog_entry(item)):
 			_inventory_list.set_item_icon(item_index, get_theme_icon("checked" if bool(item.get("equipped", false)) else "unchecked", "CheckBox"))
 			_inventory_list.set_item_icon_modulate(item_index, Color(0.79, 0.92, 0.97))
 			_inventory_list.set_item_tooltip(item_index, "Clicca sulla casella a sinistra per equipaggiare o riporre l’oggetto.")
@@ -1189,6 +1227,8 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_quantity.editable = selected_index >= 0 and not DocumentStore.is_document(_inventory[selected_index])
 	_update_equip_buttons()
 	_loading = old_loading
+	if _desktop_ui != null and _desktop_ui.visible:
+		_desktop_ui.call("refresh")
 	_refresh_infusion_ui()
 
 
@@ -1204,7 +1244,7 @@ func _on_inventory_checkbox_input(event: InputEvent) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
-	if kind in ["weapon", "armor", "shield"]:
+	if kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
 		return
 	_inventory_list.select(index)
 	_on_inventory_selected(index)
@@ -1294,7 +1334,7 @@ func _update_equip_buttons() -> void:
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
 	var kind: String = ItemRules.kind(entry) if present else ""
-	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"]
+	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(entry)
 	_generic_equip.set_pressed_no_signal(present and bool(_inventory[index].get("equipped", false)))
 	_generic_equip.tooltip_text = (
 		"Armi, scudi e armature si equipaggiano in Statistiche."
@@ -1350,7 +1390,7 @@ func _set_generic_equipment(value: bool) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
-	if kind in ["weapon", "armor", "shield", "document"]:
+	if kind in ["weapon", "armor", "shield", "document"] or ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
 		_generic_equip.set_pressed_no_signal(bool(_inventory[index].get("equipped", false)))
 		return
 	if bool(_inventory[index].get("equipped", false)) == value:
@@ -1369,6 +1409,16 @@ func _set_attunement(value: bool) -> void:
 	if not ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
 		_attuned.set_pressed_no_signal(false)
 		return
+	if value and not bool(_inventory[index].get("attuned", false)):
+		var occupied := 0
+		for item: Dictionary in _inventory:
+			if bool(item.get("attuned", false)) and ItemRules.requires_attunement(_catalog_entry(item)):
+				occupied += 1
+		if occupied >= maxi(0, attunement_max_base() + _attunement_limit_bonus):
+			if _on_status.is_valid():
+				_on_status.call("Limite di sintonia raggiunto.")
+			_refresh_inventory(index)
+			return
 	_inventory[index]["attuned"] = value
 	_refresh_inventory(index)
 	_publish()
@@ -1391,6 +1441,27 @@ func _unequip_selected() -> void:
 	_inventory[index]["equipped_slots"] = []
 	_refresh_inventory(index)
 	_publish()
+
+
+func _clear_slot(slot: String) -> void:
+	if slot not in ["main", "off", "body"]:
+		return
+	var changed := false
+	for i: int in range(_inventory.size()):
+		var slots: Array = ItemRules.slots(_inventory[i])
+		if slot in slots:
+			slots.erase(slot)
+			_inventory[i]["equipped_slots"] = slots
+			changed = true
+	if changed:
+		_refresh_inventory(_selected_inventory_index())
+		_publish()
+
+
+func attunement_max_base() -> int:
+	if _desktop_ui != null and _desktop_ui.visible:
+		return int(_desktop_ui.call("maximum_base"))
+	return _attunement_max_base
 
 
 func _publish_migration(expected_creature_id: String) -> void:
