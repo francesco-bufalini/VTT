@@ -420,8 +420,8 @@ test("native Android section order and editable sheet data",async()=>{
   click('[data-sheet="origins"]');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','proficiency_choices');
-  await until(()=>document.querySelector('[data-act="native-add"]'));
-  click('[data-act="native-add"]');
+  await until(()=>document.querySelector('[data-act="native-add"][data-list="proficiency_choices"]'));
+  click('[data-act="native-add"][data-list="proficiency_choices"]');
   await until(()=>document.querySelector('[data-native-list="proficiency_choices"]'));
   change('[data-native-list="proficiency_choices"][data-key="key"]',"athletics");
   await until(async()=>{
