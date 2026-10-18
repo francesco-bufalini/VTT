@@ -335,7 +335,9 @@ test('Battle resources deduplicate Wild Shape in favor of catalog popup and grou
   origin_id:'feature:class|phb|druid|wild_shape',rule_action_id:'wild_shape',
   tracker_id:'wild_shape',cost:1,time:'action'},
   {id:'arcane_pulse',name:'Impulso arcano',tracker_id:'focus',cost:2,time:'bonus',
-   description:'Attiva un impulso'}];
+   description:'Attiva un impulso'},
+  {id:'arcane_pulse',name:'Impulso arcano',tracker_id:'focus',cost:2,time:'bonus',
+   description:'Duplicato da action_grant'}];
  const powers=[{id:'vtt_wild_shape',name:'Wild Shape',feature_id:'feature:class|phb|druid|wild_shape',
   tracker_id:'wild_shape',resource_cost:1,action_type:'action',description:'Diventa una bestia'},
   {id:'optional',name:'Aura senza costo',resource_cost:0,action_type:'free'}];
@@ -350,6 +352,7 @@ test('Battle resources deduplicate Wild Shape in favor of catalog popup and grou
  assert.equal(rows.find(row=>row.id==='activated:vtt_wild_shape')?.key,'tracker:wild_shape');
  assert.equal(rows.find(row=>row.id==='activated:vtt_wild_shape')?.source,'activated');
  assert.equal(rows.find(row=>row.id==='arcane_pulse')?.key,'tracker:focus');
+ assert.equal(rows.filter(row=>row.id==='arcane_pulse').length,1);
  assert.equal(rows.find(row=>row.id==='grant_fire')?.key,'tracker:focus');
  assert.equal(rows.find(row=>row.id==='grant_fire')?.name,'Fiamma');
  assert.equal(rows.find(row=>row.id==='grant_light')?.key,'free');
