@@ -619,7 +619,7 @@ function magicSpellInfo(row){
   const record=typeof row==='object'&&row?row:{};
   const rawLevel=definition?.level??record.level;
   const level=rawLevel===undefined||rawLevel===null?null:Number(rawLevel);
-  return {id,name:text(definition?.name||record.name||row||id),level:Number.isInteger(level)&&level>=0&&level<=9?level:null};
+  return {id,name:text(definition?.name||record.name||(typeof row==='string'?row:id)),level:Number.isInteger(level)&&level>=0&&level<=9?level:null};
 }
 function groupedMagicSpells(items,renderRow){
   if(!items.length)return '<p class="hint magic-empty">Nessun incantesimo.</p>';
