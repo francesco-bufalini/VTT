@@ -2675,6 +2675,30 @@ func _on_map_autosave_committed(
 	_redo_stack.clear()
 
 
+# Ctrl+Z may be pressed before the 280 ms autosave debounce has elapsed.
+# Capture that pending edit on demand rather than silently undoing an older one.
+func _capture_pending_map_edit_for_undo() -> void:
+	if (
+		_map_history_last_snapshot.is_empty()
+		or _explicit_history_since_autosave
+		or _undo_restoring
+		or board_sync == null
+		or not is_instance_valid(board_sync)
+	):
+		return
+	var current: Dictionary = board_sync.call("create_snapshot")
+	if current.is_empty() or current == _map_history_last_snapshot:
+		return
+	_append_history_state(_undo_stack, {
+		"snapshot": _map_history_last_snapshot.duplicate(true),
+		"grid_visible": volumetric_grid.visible,
+		"vision_visible": _vision_cones_visible
+	})
+	_redo_stack.clear()
+	_map_history_last_snapshot = current.duplicate(true)
+	_explicit_history_since_autosave = true
+
+
 func _append_history_state(
 	stack: Array[Dictionary],
 	state: Dictionary
@@ -2888,6 +2912,7 @@ func undo_last_action() -> bool:
 
 
 func _undo_last_action_now() -> bool:
+	_capture_pending_map_edit_for_undo()
 	if _undo_stack.is_empty():
 		return false
 	if board_sync == null or not is_instance_valid(board_sync):
@@ -2904,6 +2929,7 @@ func _undo_last_action_now() -> bool:
 		return false
 
 	_append_history_state(_redo_stack, current_state)
+	_map_history_last_snapshot = board_sync.call("create_snapshot")
 	_explicit_history_since_autosave = true
 	return true
 
@@ -2932,6 +2958,7 @@ func _redo_last_action_now() -> bool:
 		return false
 
 	_append_history_state(_undo_stack, current_state)
+	_map_history_last_snapshot = board_sync.call("create_snapshot")
 	_explicit_history_since_autosave = true
 	return true
 
