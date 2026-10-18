@@ -15,7 +15,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, formulaReadout, sheetRollFormula, rollSheetDice, sheetRollChatFields } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -1057,9 +1057,8 @@ async function shareRoll({quiet=false}={}) {
   if(!state.paired||!state.online) throw new Error("Collega prima una partita.");
   const r=state.roll;
   const event={id:"pwa_"+crypto.randomUUID(),kind:"roll",author:r.author||"Giocatore",
-    timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,die:"d"+r.sides,
-    count:r.count,modifier:r.modifier,rolls:r.rolls,total:r.total,
-    notation:r.notation,detail:r.detail};
+    timestamp:Math.floor(Date.now()/1000),label:r.label||r.notation,
+    ...sheetRollChatFields(r)};
   const result=await action("chat_send",{event});
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
   if(!quiet)message("Tiro condiviso nella chat.");
