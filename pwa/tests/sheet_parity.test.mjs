@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
+import {sheetRollFormula,rollSheetDice,formulaReadout} from '../sheet_rules_view.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
@@ -77,17 +78,42 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
  assert.match(markup,/class="native-abilities-header" role="row"/);
  for(const ability of ['str','dex','con','int','wis','cha']){
   assert.equal((markup.match(new RegExp('data-ability-row="'+ability+'"','g'))||[]).length,1);
-  assert.equal((markup.match(new RegExp('data-ability="'+ability+'"','g'))||[]).length,1);
+  assert.equal((markup.match(new RegExp('data-ability-key="'+ability+'"','g'))||[]).length,1);
+  assert.doesNotMatch(markup,new RegExp('data-ability="'+ability+'"'));
   for(const target of ['ability:','ability_mod:','save:']){
    assert.match(markup,new RegExp('data-calculated="'+target+ability+'"'));
   }
  }
  assert.match(markup,/stats-abilities-panel/);
  assert.match(markup,/stats-skills-panel/);
+ assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
+ assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
  assert.match(css,/\.stats-abilities-panel \.native-ability-row/);
- assert.match(css,/\.stats-abilities-panel \.native-score-editor > summary/);
+ assert.match(css,/\.stats-abilities-panel \.native-ability-score \.score-editor-trigger/);
  assert.match(css,/\.stats-skills-panel \.native-summary > div/);
+});
+test('roll preview never rolls automatically; explicit roll returns full dice breakdown',()=>{
+ const modifier=5,bonuses=[{dice:'1d4',origin_name:'Benedizione'},
+  {dice:'2d6+1',origin_name:'Ispirazione'}];
+ assert.equal(sheetRollFormula(modifier), '1d20 + 5');
+ assert.equal(sheetRollFormula(-2,bonuses),'1d20 − 2 + 1d4 + 2d6+1');
+ const draws=[14,3,2,5],sides=[];
+ const result=rollSheetDice(modifier,bonuses,side=>{sides.push(side);return draws.shift();});
+ assert.deepEqual(sides,[20,4,6,6]);
+ assert.deepEqual(result.rolls,[14]);
+ assert.equal(result.total,30); // d20 14 + 5 + d4 3 + (2d6 [2,5] + 1)
+ assert.equal(result.parts.length,3);
+ assert.match(result.detail,/d20 \[14\] = 14/);
+ assert.match(result.detail,/Benedizione \[3\] = 3/);
+ assert.match(result.detail,/Ispirazione \[2, 5\] \+ 1 = 8/);
+ assert.match(result.detail,/totale 30/);
+ assert.throws(()=>rollSheetDice(2,[{dice:'1d3'}],()=>1),/Dadi bonus/);
+ const score=formulaReadout({values:{'ability:dex':16}},'ability:dex','Destrezza',{scoreAbility:'dex'});
+ assert.match(score,/data-act="edit-score"/);
+ assert.doesNotMatch(score,/data-act="sheet-roll"/);
+ const save=formulaReadout({values:{'save:dex':4}},'save:dex','TS Destrezza',{signed:true});
+ assert.match(save,/data-act="sheet-roll"/);
 });
 test('species type index retains official edition-specific non-humanoid types',()=>{
  const typed=JSON.parse(readFileSync(new URL('../catalog/species_types.json',import.meta.url),'utf8'));
