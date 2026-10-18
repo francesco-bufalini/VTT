@@ -323,7 +323,7 @@ async function editorView() {
   }
   const calculated=await computeLocalData(c);
   state.calculated=calculated;
-  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
+  body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:equipmentView(c,['main','off'],false),armor:equipmentView(c,['body'],false),attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -417,9 +417,12 @@ async function editorView() {
       '<button class="btn full" data-act="sheet-details" data-detail="origin_spell_grants">Incantesimi concessi dalle origini</button>';
     break;
   case "conditions":
-    body=panel("Condizioni",field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+'<div class="condition-list">'+conditions.map(id=>
-      '<label class="check"><input type="checkbox" data-condition="'+id+'" '+
-      ((c.conditions||[]).includes(id)?'checked':'')+'>'+esc(conditionLabel(id))+'</label>').join('')+'</div>');
+    body=panel('Condizioni',
+      '<div class="condition-sheet-header"><span class="condition-count"><strong data-condition-count>'+
+        (c.conditions||[]).filter(id=>conditions.includes(id)).length+
+        '</strong> attive</span>'+
+        field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+
+      '</div>'+conditionGrid(c.conditions,'data-condition'),'condition-sheet-panel');
     break;
   case 'traits':body=await traitsView(c);break;
   case "json":
@@ -433,7 +436,7 @@ async function editorView() {
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
-function resourceView(c,configure=false){
+function resourceView(c,configure=false,compact=false){
  const active=state.calculated?.trackers||[],saved=Array.isArray(c.resource_trackers)?c.resource_trackers:[],origins=state.calculated?.origins||[];
  const trackers=configure?[...active,...saved.filter(t=>!active.some(a=>a.id===t.id)).map(t=>({...t,inactive:true}))]:active;
  const modes=[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']];
@@ -446,12 +449,46 @@ function resourceView(c,configure=false){
   const optional=(t.partial_recoveries||[]).filter(rule=>rule.mode==='optional_partial'&&c.resource_recovery_ready?.[rule.id]&&!c.resource_recovery_used?.[rule.id]);
   const optionalButton=optional.map(rule=>'<button type="button" class="btn small" data-act="tracker-optional-recovery" data-rule-id="'+esc(rule.id)+'">Recupero speciale · '+esc(rule.feature||rule.resource_name)+'</button>').join('');
   const edit=configure&&!t.automatic?'<div class="columns">'+control(t,'name','Nome',base.name)+control(t,'max','Massimo base',base.max,'number')+control(t,'max_formula','Formula del massimo',base.max_formula)+pick('origin_id','Origine',[['','Senza origine'],...(!origins.some(o=>o.id===base.origin_id)&&base.origin_id?[[base.origin_id,base.origin_name||base.origin_id]]:[]),...origins.map(o=>[o.id,o.name])],base.origin_id||'')+pick('recharge','Recupero',modes,base.recharge||'manual')+control(t,'recharge_min','Ricarica d6 da (1–6)',base.recharge_min||6,'number')+'<label class="check"><input type="checkbox" data-tracker-field="disabled" data-tracker-id="'+esc(t.id)+'" '+(base.disabled?'checked':'')+'>Disattivato</label></div>'+benefitRequirements(base,'data-benefit-tracker="'+esc(t.id)+'"')+(base.max_formula?'<p class="hint">'+esc(formulaPreview(base.max_formula,state.calculated))+'</p>':'')+'<button class="btn small danger" data-act="tracker-delete" data-tracker-id="'+esc(t.id)+'">Elimina</button>':'';
+  if(compact){
+   const remaining=Math.max(0,maximum-used);
+   const compactActions='<div class="battle-resource-actions">'+
+     '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo di '+esc(t.name)+'" title="Ripristina 1">−</button>'+
+     '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo di '+esc(t.name)+'" title="Consuma 1">＋</button>'+
+     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button></div>';
+   return '<article class="battle-resource-row">'+
+    '<div class="battle-resource-main"><strong>'+esc(t.name)+'</strong>'+
+      '<span class="battle-resource-count"><b>'+esc(remaining)+'</b> / '+
+        formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</span></div>'+
+    compactActions+
+    (t.recharge==='d6'||optional.length?
+      '<div class="battle-resource-extra">'+
+        (t.recharge==='d6'?'<button type="button" class="btn small" data-act="tracker-recharge" data-tracker-id="'+esc(t.id)+'">Ricarica d6 · '+esc(t.recharge_min||6)+'+</button>':'')+
+        optionalButton+'</div>':'')+
+    '<details class="battle-resource-details"><summary>Origine e recupero</summary>'+
+      '<span>'+esc(t.origin_name||'Senza origine')+' · '+
+      esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details>'+
+    '</article>';
+  }
   return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Poteri">↗ Poteri</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
  }).join('');
+ if(compact)return panel('Risorse',
+   (body||'<p class="hint">Nessuna risorsa disponibile.</p>')+
+   '<div class="battle-recovery-actions">'+
+    '<button type="button" class="btn small" data-act="tracker-short">Riposo breve</button>'+
+    '<button type="button" class="btn small" data-act="tracker-long">Riposo lungo</button>'+
+    '<button type="button" class="btn small" data-act="tracker-turn">Inizio turno</button>'+
+   '</div>','battle-resources-panel');
  return panel('Risorse','<p class="hint">I valori massimi includono formule e bonus attivi. Il riposo breve ripristina le risorse previste e gli slot del Patto; quello lungo ripristina anche gli slot di classe. All’inizio del turno si recuperano solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
 }
 
-function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",dead:"Morto"})[id]||id;}
+function conditionLabel(id){return ({blinded:"Accecato",charmed:"Affascinato",deafened:"Assordato",exhaustion:"Indebolimento",frightened:"Spaventato",grappled:"Afferrato",incapacitated:"Incapacitato",invisible:"Invisibile",paralyzed:"Paralizzato",petrified:"Pietrificato",poisoned:"Avvelenato",prone:"Prono",restrained:"Trattenuto",stunned:"Stordito",unconscious:"Privo di sensi",concentrating:"Concentrazione",surprised:"Sorpreso",hidden:"Nascosto",helped:"Aiutato",dead:"Morto"})[id]||id;}
+function conditionGrid(active,attribute){
+ const applied=new Set(Array.isArray(active)?active:[]);
+ return '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="Condizioni">'+
+  conditions.map(id=>'<label class="check condition-toggle">'+
+   '<input type="checkbox" '+attribute+'="'+esc(id)+'" '+(applied.has(id)?'checked':'')+'>'+
+   '<span>'+esc(conditionLabel(id))+'</span></label>').join('')+'</div>';
+}
 function equipmentView(c,slots=['main','off','body'],boxed=true){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
   const labels=[["main","Mano principale"],["off","Mano secondaria / scudo"],["body","Armatura indossata"]];
@@ -466,8 +503,22 @@ function equipmentView(c,slots=['main','off','body'],boxed=true){
     }).join('')+'</div>';
   return boxed?panel('Equipaggiamento',body):body;
 }
-function attacksView(calculated){
- return '<div data-attack-list>'+((calculated.attacks||[]).map(attack=>'<article class="native-entry"><h3>'+esc(attack.name)+'</h3><div class="row between"><span>Tiro per colpire '+formulaReadout(calculated,'attack_hit:'+attack.id,'Tiro per colpire',{signed:true})+'</span><span>Danni: '+esc(attack.damage)+' '+esc(attack.damage_type||'')+'</span></div><p class="hint">'+esc(attack.explanation)+(attack.offhand_bonus?' · Attacco secondario con azione bonus':'')+'</p><div class="row"><span>'+ (attack.melee?'Portata':'Gittata')+' '+formulaReadout(calculated,'attack_range:'+attack.id,'Portata', {suffix:' ft'})+'</span>'+(attack.long_range_feet?'<span>Lunga '+formulaReadout(calculated,'attack_long_range:'+attack.id,'Gittata lunga',{suffix:' ft'})+'</span>':'')+'</div></article>').join('')||'<p class="hint">Seleziona un’arma in una mano per renderne disponibile l’attacco.</p>')+'</div>';
+function attacksView(calculated,compact=false){
+ const rows=(calculated.attacks||[]).map(attack=>{
+  if(compact)return '<article class="battle-attack-row">'+
+    '<strong>'+esc(attack.name)+'</strong>'+
+    '<div class="battle-attack-facts">'+
+      '<span>Colpire '+formulaReadout(calculated,'attack_hit:'+attack.id,'Tiro per colpire',{signed:true})+'</span>'+
+      '<span>Danni <b>'+esc(attack.damage)+' '+esc(attack.damage_type||'')+'</b></span>'+
+      '<span>'+(attack.melee?'Portata ':'Gittata ')+
+        formulaReadout(calculated,'attack_range:'+attack.id,'Portata',{suffix:' ft'})+'</span></div>'+
+    '<details class="battle-attack-details"><summary>Dettagli attacco</summary>'+
+      '<p>'+esc(attack.explanation||'')+(attack.offhand_bonus?' · Attacco secondario con azione bonus':'')+'</p>'+
+      (attack.long_range_feet?'<p>Gittata lunga '+formulaReadout(calculated,'attack_long_range:'+attack.id,'Gittata lunga',{suffix:' ft'})+'</p>':'')+
+    '</details></article>';
+  return '<article class="native-entry"><h3>'+esc(attack.name)+'</h3><div class="row between"><span>Tiro per colpire '+formulaReadout(calculated,'attack_hit:'+attack.id,'Tiro per colpire',{signed:true})+'</span><span>Danni: '+esc(attack.damage)+' '+esc(attack.damage_type||'')+'</span></div><p class="hint">'+esc(attack.explanation)+(attack.offhand_bonus?' · Attacco secondario con azione bonus':'')+'</p><div class="row"><span>'+ (attack.melee?'Portata':'Gittata')+' '+formulaReadout(calculated,'attack_range:'+attack.id,'Portata', {suffix:' ft'})+'</span>'+(attack.long_range_feet?'<span>Lunga '+formulaReadout(calculated,'attack_long_range:'+attack.id,'Gittata lunga',{suffix:' ft'})+'</span>':'')+'</div></article>';
+ }).join('');
+ return '<div data-attack-list>'+ (rows||'<p class="hint">Seleziona un’arma in una mano per renderne disponibile l’attacco.</p>')+'</div>';
 }
 async function traitsView(c){
  const groups=[],warnings=[];
@@ -1017,8 +1068,7 @@ function sessionView() {
           '<button type="button" class="btn small" data-act="remove-token-spell" data-spell-id="'+esc(id)+'">✕</button></div>';
       }).join('');
       html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><h2>⚙ '+esc(edited.name)+'</h2>'+
-        '<h3>Condizioni</h3><div class="session-condition-grid">'+conditions.map(id=>
-          '<label class="check"><input type="checkbox" data-token-condition="'+id+'" '+((edited.conditions||[]).includes(id)?'checked':'')+'>'+esc(id)+'</label>').join('')+'</div>'+
+        '<h3>Condizioni</h3>'+conditionGrid(edited.conditions,'data-token-condition')+
         '<h3>Incantesimi applicati</h3>'+ (active||'<p class="hint">Nessun incantesimo attivo.</p>')+
         '<label>Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
         '<label>Incantesimo<select id="token-spell-select"></select></label>'+
@@ -1325,7 +1375,7 @@ async function patch(patchValue) {
     if(state.editor===editor&&revision===editor.revision){
       state.calculated=calculated;
       refreshCalculatedValues(app,calculated);
-      const attacks=app.querySelector('[data-attack-list]');if(attacks)attacks.outerHTML=attacksView(calculated);
+      const attacks=app.querySelector('[data-attack-list]');if(attacks)attacks.outerHTML=attacksView(calculated,state.sheet==='battle');
       const note=app.querySelector('[data-calculation-note]');
       if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
     }
@@ -1380,7 +1430,7 @@ async function persistDocumentEdit(index,part,creature){
 async function handleField(target) {
   // Tactical controls are independent from an open local creature editor.
   if(target.dataset.tokenCondition){
-    const result=await action("set_condition",{token_id:state.tokenId,
+    const result=await action("set_condition",{token_id:state.editTokenId||state.tokenId,
       condition_id:target.dataset.tokenCondition,enabled:target.checked});
     if(!result.ok){target.checked=!target.checked;throw new Error(result.error||"Condizione non applicata");}
     await refreshMapOnce();
@@ -1580,6 +1630,8 @@ async function handleField(target) {
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
     await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
+    const count=app.querySelector('[data-condition-count]');
+    if(count)count.textContent=String([...entries].filter(id=>conditions.includes(id)).length);
   }
 }
 async function refreshMapOnce() {
