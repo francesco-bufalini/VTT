@@ -61,7 +61,7 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
    cost:tracker?1:0,origin:'personal',origin_id:feature?.origin_id||source,
-   action_id:rule.action_id,rule_id:rule.id,feature:rule.feature};
+   action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature};
  });
 }
 export function modifyFeatureTrackers(record,trackers,catalog={}){
