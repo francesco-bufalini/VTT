@@ -2152,6 +2152,21 @@ async function handleAction(target){
       await render();return;
     }
     const cost=Math.max(0,Number(ability.cost)||0);
+    const persistentKey=String(target.dataset.persistentKey||'');
+    if(persistentKey){
+      if(c.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
+      if(cost&&(!tracker||tracker.max-tracker.spent<cost))
+        throw Error('Risorsa insufficiente per attivare la capacità.');
+      const effects={...(c.active_class_features||{}),
+        [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
+          rules_version:c.rules_version||'2014',enhanced:false}};
+      const changes={active_class_features:effects};
+      if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+      await patch(changes);
+      await render();
+      return;
+    }
     if(cost){
       const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
       if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
