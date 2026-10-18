@@ -407,9 +407,9 @@ const rollFormula=value=>'1d20 '+(value<0?'− '+Math.abs(value):'+ '+value);
 const BATTLE_EFFECTS={
  grapple:['condition','Afferrato','condition'],
  prone:['condition','Prono','prone_alt'],
- shove:['condition','Prono oppure spinto di 5 ft','shove'],
+ shove:['other','Prono oppure spinto di 5 ft','shove'],
  shove_aside:['movement','Spinto lateralmente','shove'],
- disarm:['condition','Oggetto lasciato cadere','disengage'],
+ disarm:['other','Oggetto lasciato cadere','disengage'],
  drop_prone:['condition','Prono','prone_alt'],
  escape_grapple:['condition','Interrompe Afferrato, se riesce','grapple'],
  disengage:['movement','Nessun attacco di opportunità durante lo spostamento','disengage'],
