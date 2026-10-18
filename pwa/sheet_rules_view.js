@@ -352,7 +352,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const list=(title,rows,empty='Nessuna voce.')=>card(title,rows||'<p class="play-empty">'+esc(empty)+'</p>');
  let html='';
  if(sheet==='battle'){
-  target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('movement','.battle-movement-panel');target('equipment','.battle-attack-settings');
+  target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('movement','.battle-movement-panel');
+  // Both battle entry points display the exact same editor and computed AC.
+  bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
   html='<section class="play-health"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span class="sr-only">Riposi</span>')+edit('hp','Gestisci punti ferita','settings')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
