@@ -1082,9 +1082,8 @@ function diceResult(){
   return '<div class="chat-dice-outcome"><div class="chat-dice-outcome-label">Risultato</div>'+
     '<div class="dice-result">'+esc(state.roll.total)+'</div>'+
     '<div class="chat-dice-formula"><span>Formula</span><strong>'+esc(state.roll.notation)+'</strong></div>'+
-    '<div class="chat-dice-breakdown">Dadi: '+esc(state.roll.detail)+'</div></div>'+
-    '<div class="actions"><button type="button" class="btn" data-act="share-roll"'+
-    (!state.paired||!state.online?' disabled':'')+'>Invia in chat</button></div>';
+    '<div class="chat-dice-breakdown"><span>Sviluppo del tiro</span><strong>'+esc(state.roll.detail)+'</strong></div></div>'+
+    '<p class="hint" data-dice-chat-status>'+(state.roll.chatStatus||'')+'</p>';
 }
 function diceView(){
   return '<h2 id="chat-dice-title">Lancia i dadi</h2><div class="columns">'+
@@ -1480,7 +1479,19 @@ async function roll(sides) {
   state.roll={sides,count,modifier,rolls,total,notation,detail:rolls.join(" + ")+
     (modifier?(" "+(modifier>0?"+ ":"− ")+Math.abs(modifier)):"")};
   state.rollHistory.unshift(state.roll);
+  state.roll.chatStatus=state.paired&&state.online?'Invio in chat…':'Tiro locale · partita non collegata.';
   const feedback=document.querySelector("#dice-feedback");if(feedback)feedback.innerHTML=diceResult();
+  if(state.paired&&state.online){
+    const currentRoll=state.roll;
+    try{
+      await shareRoll({quiet:true});
+      currentRoll.chatStatus='✓ Inviato in chat';
+      await fetchChat();
+    }catch(error){
+      currentRoll.chatStatus='Invio in chat non riuscito: '+errorMessage(error);
+    }
+    if(state.roll===currentRoll&&feedback)feedback.innerHTML=diceResult();
+  }
 }
 async function shareRoll({quiet=false}={}) {
   if(!state.roll) return;
@@ -2799,7 +2810,6 @@ async function handleAction(target){
     return;
   }
   if(act==="roll"){await roll(state.diceSides);return;}
-  if(act==="share-roll"){await shareRoll();return;}
 }
 async function handleSubmit(form){
   if(form.id==='hp-adjust-form'){
