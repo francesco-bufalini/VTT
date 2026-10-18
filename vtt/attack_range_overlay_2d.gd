@@ -1,8 +1,8 @@
 extends Control
 
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
-const NORMAL_COLOR := Color(0.22, 0.68, 1.0, 0.96)
-const LONG_COLOR := Color(1.0, 0.61, 0.22, 0.98)
+const NORMAL_COLOR := Color(0.35, 0.84, 1.0, 0.96)
+const LONG_COLOR := Color(1.0, 0.72, 0.38, 0.96)
 
 var board: Node3D
 var attack: Node
@@ -60,15 +60,42 @@ func _screen_polygon(center: Vector3, half_footprint: float, radius: float) -> P
 	return projected
 
 
+# Fantasy ward: three concentric strokes, sparse runic ticks and a near-clear
+# centre. Thicknesses are screen-space pixels so zoom never hides boundaries.
 func _paint_range(vertices: PackedVector2Array, tint: Color, fill_alpha: float) -> void:
 	if vertices.size() < 3:
 		return
-	var fill: Color = tint
-	fill.a = fill_alpha
-	draw_colored_polygon(vertices, fill)
-	var closed: PackedVector2Array = PackedVector2Array(vertices)
+	var fill := tint
+	fill.a = minf(fill_alpha, 0.035)
+	if fill.a > 0.0:
+		draw_colored_polygon(vertices, fill)
+	var closed := PackedVector2Array(vertices)
 	closed.append(vertices[0])
-	draw_polyline(closed, tint, 2.8, true)
+	var halo := tint
+	halo.a = 0.10
+	draw_polyline(closed, halo, 8.0, true)
+	var inner_glow := tint
+	inner_glow.a = 0.28
+	draw_polyline(closed, inner_glow, 4.4, true)
+	var edge := tint
+	edge.a = 0.9
+	draw_polyline(closed, edge, 1.8, true)
+	var glint := Color(1.0, 0.97, 0.84, 0.42)
+	draw_polyline(closed, glint, 0.8, true)
+	# Tiny compass/rune marks are placed inside the boundary; no screen-filling
+	# grid, animation or opaque texture is added above the actual terrain.
+	var center := Vector2.ZERO
+	for vertex: Vector2 in vertices:
+		center += vertex
+	center /= float(vertices.size())
+	var step := maxi(1, vertices.size() / 16)
+	for i: int in range(0, vertices.size(), step):
+		var vertex := vertices[i]
+		var inward := (center - vertex).normalized()
+		var tick := tint
+		tick.a = 0.77
+		draw_line(vertex + inward * 2.0, vertex + inward * 10.0, tick, 1.6, true)
+		draw_circle(vertex + inward * 12.0, 1.25, glint)
 
 
 func _draw_legend(normal_feet: float, long_feet: float) -> void:
