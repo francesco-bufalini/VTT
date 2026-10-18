@@ -54,8 +54,12 @@ func run() -> void:
 				if control is Label and String(control.text).begins_with("✦ Ira"):
 					has_rage_effect = true
 	assert(has_rage_effect, "Rage must appear among active ability effects in Conditions")
+	var damage_label: Label = area._attack_damage_source_labels.get("unarmed")
+	assert(damage_label != null and "Ira +3" in damage_label.text, "Attack damage must visibly explain its Rage contribution")
 	area._end_active_class_effect("rage")
 	assert(not preload("res://vtt/class_feature_activation.gd").is_active(area._current(), "rage"))
+	var after: Label = area._attack_damage_source_labels.get("unarmed")
+	assert(after != null and not after.visible, "Ending Rage must remove the damage origin annotation")
 	assert(preload("res://vtt/class_feature_activation.gd").active_effects(area._current()).is_empty())
 	area._tabs.current_tab = 2
 	area._action_economy_ui.load_record(area._current())
