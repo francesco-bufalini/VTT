@@ -26,7 +26,7 @@ export function initialCreature(kind,name,id,owner_id){
     max_hp:1,max_hp_base:1,current_hp:1,temporary_hp:0,
     second_form_hp:0,second_form_max_hp:0,
     speed_base:30,speed:30,speed_is_custom:false,darkvision:0,exhaustion:0,
-    hit_dice:"",death_save_successes:0,death_save_failures:0,
+    hit_dice:"",hit_dice_spent:{},death_save_successes:0,death_save_failures:0,
     attacks:"",attack_ability:"str",attack_overrides:{},equipped_attack_id:"",
     equipped_inventory_index:-1,hand_main_special:"none",hand_off_special:"none",
     hand_grip_two_handed:false,two_weapon_fighting:false,fighting_styles:[],
