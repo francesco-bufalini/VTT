@@ -39,7 +39,7 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   const classOrigin='class|'+low(rule.class_source||member.source)+'|'+low(rule.class_name);
   if(disabled(classOrigin))continue;
   const matches=rows(features).filter(f=>low(f.name)===low(rule.feature)&&
-    String(f.origin_key||'').startsWith(classOrigin+'|'));
+    (String(f.origin_key||'')===classOrigin||String(f.origin_key||'').startsWith(classOrigin+'|')));
   if(matches.length&&!matches.some(f=>!f.disabled))continue;
   if(rule.subclass){
    const subclassOrigins=rows(features).filter(f=>String(f.origin_key||'').startsWith(classOrigin+'|subclass|')&&
@@ -57,7 +57,7 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   const tracker=trackerFor(featureMember(record,rule),rule,trackers);
   const source='class|'+low(rule.class_source)+'|'+low(rule.class_name);
   const feature=rows(features).find(f=>low(f.name)===low(rule.feature)&&
-    String(f.origin_key||'').startsWith(source+'|')&&!f.disabled);
+    (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&!f.disabled);
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
    cost:tracker?1:0,origin:'personal',origin_id:feature?.origin_id||source,
