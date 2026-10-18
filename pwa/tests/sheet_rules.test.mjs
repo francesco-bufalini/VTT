@@ -46,6 +46,24 @@ test("armor and shield use actual occupied slots and dexterity caps",()=>{
   assert.equal(calculateSheet(character({inventory:[{...armor,equipped_slots:[]},shield]}),catalogs).stats.armor_class,14);
   assert.equal(calculateSheet(character({inventory:[shield,{...shield,id:"local_shield2",equipped_slots:["main"]}]}),catalogs).stats.armor_class,14);
 });
+test("attack ability scope and versatile two-handed damage honor the shared equipment settings",()=>{
+ const versatile={id:"vers",name:"Stocco versatile",custom_item_type:"weapon",type:"M",
+   quantity:1,damage:"1d6",versatile_damage:"1d8",properties:["F","V"],equipped_slots:["main"]};
+ const plain={id:"plain",name:"Mazza",custom_item_type:"weapon",type:"M",
+   quantity:1,damage:"1d8",properties:[],equipped_slots:["main"]};
+ const base=character({abilities:{str:16,dex:12,con:12,int:10,wis:10,cha:10},
+   attack_ability:"dex",attack_ability_finesse_only:true});
+ const roll=(item,extra={})=>calculateSheet({...base,...extra,inventory:[item]},catalogs).attacks
+   .find(attack=>attack.id==="item:"+item.id);
+ assert.equal(roll(versatile).ability,"dex");
+ assert.equal(roll(plain).ability,"str");
+ assert.equal(roll(plain,{attack_ability_finesse_only:false}).ability,"dex");
+ assert.equal(roll(versatile,{hand_grip_two_handed:true}).damage,"1d8 + 1");
+ const withOff=calculateSheet({...base,hand_grip_two_handed:true,inventory:[
+   versatile,{...plain,equipped_slots:["off"]}]},catalogs).attacks.find(a=>a.id==="item:vers");
+ assert.equal(withOff.damage,"1d6 + 1","Two-handed versatile damage requires the off-hand to be free");
+});
+
 test("worn shield grants improvised attack and removal withdraws it",()=>{
  const shield={id:"sh",name:"Scudo",custom_item_type:"shield",type:"S",ac:2,quantity:1,equipped_slots:["off"]};
  const withShield=calculateSheet(character({inventory:[shield],abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10}}),catalogs);
