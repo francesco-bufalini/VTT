@@ -136,6 +136,7 @@ func create_character() -> Dictionary:
 		"attack_overrides": {},
 		"equipped_attack_id": "",
 		"equipped_inventory_index": -1,
+		"attunement_max_base": 3,
 		"hand_main_special": "none",
 		"hand_off_special": "none",
 		"hand_grip_two_handed": false,
@@ -339,6 +340,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["condition_immunity_overrides"] = value.get("condition_immunity_overrides", {}).duplicate(true) if value.get("condition_immunity_overrides", {}) is Dictionary else {}
 	defaults["equipped_attack_id"] = String(value.get("equipped_attack_id", "")).strip_edges()
 	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))
+	defaults["attunement_max_base"] = clampi(int(value.get("attunement_max_base", 3)), 0, 99)
 	defaults["hand_main_special"] = String(value.get("hand_main_special", "none"))
 	defaults["hand_off_special"] = String(value.get("hand_off_special", "none"))
 	defaults["hand_grip_two_handed"] = bool(value.get("hand_grip_two_handed", false))
