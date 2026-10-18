@@ -18,6 +18,10 @@ var _off: OptionButton
 var _armor: OptionButton
 var _maximum: SpinBox
 var _maximum_label: Label
+var _owned_heading: Label
+var _scroll_heading: Label
+var _equipment_heading: Label
+var _attune_label: Label
 var _slot_indices: Dictionary = {}
 var _record: Dictionary = {}
 var _minus_icon: Texture2D
@@ -36,6 +40,7 @@ func setup(tab: Node, description: Control) -> void:
 	_minus_icon = _symbol_texture(false)
 	_plus_icon = _symbol_texture(true)
 	var heading := Label.new()
+	_owned_heading = heading
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
@@ -45,7 +50,7 @@ func setup(tab: Node, description: Control) -> void:
 	for column: int in range(7):
 		_owned_tree.set_column_expand(column, false)
 	for column: int in range(8):
-		_owned_tree.set_column_custom_minimum_width(column, [35, 95, 75, 115, 135, 65, 180, 190][column])
+		_owned_tree.set_column_custom_minimum_width(column, [34, 82, 70, 94, 124, 64, 162, 174][column])
 	_owned_tree.item_selected.connect(_on_owned_selected)
 	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
@@ -53,6 +58,7 @@ func setup(tab: Node, description: Control) -> void:
 	add_child(_owned_tree)
 
 	var scroll_heading := Label.new()
+	_scroll_heading = scroll_heading
 	scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
 	scroll_heading.add_theme_font_size_override("font_size", 15)
 	add_child(scroll_heading)
@@ -71,6 +77,7 @@ func setup(tab: Node, description: Control) -> void:
 	description_parent.remove_child(description)
 	add_child(description)
 	var equipment_heading := Label.new()
+	_equipment_heading = equipment_heading
 	equipment_heading.text = _t("Equipaggiamento", "Equipment")
 	equipment_heading.add_theme_font_size_override("font_size", 15)
 	add_child(equipment_heading)
@@ -90,6 +97,7 @@ func setup(tab: Node, description: Control) -> void:
 	var attune_heading := HBoxContainer.new()
 	add_child(attune_heading)
 	var attune_label := Label.new()
+	_attune_label = attune_label
 	attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
 	attune_label.add_theme_font_size_override("font_size", 15)
 	attune_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -114,6 +122,33 @@ func setup(tab: Node, description: Control) -> void:
 	add_child(_attunement_tree)
 
 
+# Desktop headings are built once; changing the creature language must also
+# refresh columns and slot captions, not only the saved item rows.
+func refresh_captions() -> void:
+	if _owned_tree == null:
+		return
+	_owned_heading.text = _t("Oggetti posseduti", "Owned items")
+	_scroll_heading.text = _t("Pergamene possedute", "Owned spell scrolls")
+	_equipment_heading.text = _t("Equipaggiamento", "Equipment")
+	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
+	for column: int in range(8):
+		_owned_tree.set_column_title(column, [
+			"", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
+			_t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"),
+			_t("Nome", "Name")][column])
+	for column: int in range(3):
+		_scroll_tree.set_column_title(column, [
+			_t("Quantità", "Quantity"), _t("Livello", "Level"), _t("Incantesimo", "Spell")][column])
+	for column: int in range(2):
+		_attunement_tree.set_column_title(column, [
+			_t("Sintonia", "Attuned"), _t("Oggetto", "Item")][column])
+	_main.get_parent().get_child(0).text = _t("Mano principale", "Main hand")
+	_off.get_parent().get_child(0).text = _t("Mano secondaria", "Off hand")
+	_armor.get_parent().get_child(0).text = _t("Armatura", "Armor")
+	_maximum_label.text = _t("Massimo", "Maximum")
+	refresh()
+
+
 func _make_tree(captions: Array, height: float) -> Tree:
 	var tree := Tree.new()
 	tree.hide_root = true
@@ -124,6 +159,7 @@ func _make_tree(captions: Array, height: float) -> Tree:
 	tree.custom_minimum_size.y = height
 	tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tree.mouse_force_pass_scroll_events = false
+	tree.add_theme_stylebox_override("panel", preload("res://vtt/creature_sheet_style.gd").section_style())
 	for column: int in range(captions.size()):
 		tree.set_column_title(column, _t(String(captions[column]), String(captions[column])))
 	return tree
@@ -172,6 +208,8 @@ func _on_maximum_changed(value: float) -> void:
 	if _updating:
 		return
 	_record["attunement_max_base"] = int(value)
+	# Keep the owning inventory model authoritative when switching to mobile.
+	_tab.set("_attunement_max_base", int(value))
 	_tab.call("_publish")
 	refresh()
 
@@ -194,12 +232,23 @@ func _is_spell_scroll(owned: Dictionary, entry: Dictionary) -> bool:
 
 
 func _spell_label(owned: Dictionary, entry: Dictionary) -> String:
-	var spell_name := String(entry.get("spell_name", entry.get("spellName", entry.get("spell", ""))))
+	var raw: Variant = entry.get("spell_name", entry.get("spellName", entry.get("spell", "")))
+	if raw is Dictionary:
+		raw = (raw as Dictionary).get("name", "")
+	elif raw is Array:
+		raw = (raw as Array)[0] if not (raw as Array).is_empty() else ""
+		if raw is Dictionary:
+			raw = (raw as Dictionary).get("name", "")
+	var spell_name := String(raw).strip_edges()
 	if not spell_name.is_empty():
 		return spell_name
-	var name := String(owned.get("name", entry.get("name", "")))
-	var stripped := name.replace("Spell Scroll", "").replace("Pergamena di incantesimo", "").strip_edges()
-	return name if stripped.is_empty() else stripped
+	var name := String(owned.get("name", entry.get("name", ""))).strip_edges()
+	# A generic scroll (e.g. "Spell Scroll (3rd Level)") names no spell.
+	# Never present its level as though it were the incantation's name.
+	var generic := RegEx.create_from_string("(?i)^(?:spell scroll|pergamena di incantesimo)\\s*(?:\\(.*\\))?$")
+	if generic.search(name) != null:
+		return _t("Incantesimo non specificato", "Unspecified spell")
+	return name
 
 
 func _spell_level(entry: Dictionary) -> String:
@@ -240,18 +289,30 @@ func _characteristic(entry: Dictionary) -> String:
 		if properties is Array:
 			var names := PackedStringArray()
 			for property: Variant in properties:
-				names.append(String(property))
+				var code: String = String(property).split("|")[0].to_upper()
+				var labels: Dictionary = {
+					"F": [_t("Accurata", "Finesse")], "L": [_t("Leggera", "Light")],
+					"T": [_t("Lancio", "Thrown")], "V": [_t("Versatile", "Versatile")],
+					"H": [_t("Pesante", "Heavy")], "2H": [_t("Due mani", "Two-handed")],
+					"A": [_t("Munizioni", "Ammunition")], "R": [_t("Portata", "Reach")],
+					"LD": [_t("Caricamento", "Loading")], "RLD": [_t("Ricarica", "Reload")]
+				}
+				names.append(String(labels.get(code, [code])[0]))
 			return ", ".join(names) if not names.is_empty() else "—"
 		return str(properties) if str(properties) != "" else "—"
 	if kind == "shield":
 		return "CA +%s" % str(entry.get("ac", 2))
 	if kind == "armor":
 		var base: String = str(entry.get("ac", 10))
-		match String(entry.get("type", "")).split("|")[0].to_upper():
-			"LA": return "CA " + base + " + DES"
-			"MA": return "CA " + base + " + min(DES, 2)"
-			"HA": return "CA " + base
-		return "CA " + base
+		var armor_type: String = String(entry.get("type", "")).split("|")[0].to_upper()
+		var limit: int = 2 if armor_type == "MA" else (0 if armor_type == "HA" else -1)
+		if entry.has("dexterity_max"):
+			limit = int(entry["dexterity_max"])
+		if armor_type == "HA" and limit == 0:
+			return "CA " + base
+		if limit >= 0:
+			return "CA " + base + " + min(DES, %d)" % limit
+		return "CA " + base + " + DES"
 	return "—"
 
 
@@ -362,6 +423,9 @@ func _rebuild_pickers(items: Array) -> void:
 			(_slot_indices[slot] as Array).append(index)
 			if slot in ItemRules.slots(owned):
 				selected = picker.item_count - 1
+		if locked:
+			picker.set_item_text(0, _t("Occupata · due mani", "Occupied · two hands"))
+			selected = 0
 		picker.select(selected)
 		picker.disabled = locked
 		if locked:
