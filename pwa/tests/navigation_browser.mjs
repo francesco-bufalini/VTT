@@ -75,7 +75,7 @@ try{
  await page.setViewportSize({width:390,height:844});await sheet('stats');
  assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
  await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),9);
+ assert.equal(await page.locator('#navigation-dialog button:visible').count(),8);
  assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
  assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
  await shot('menu');await page.keyboard.press('Escape');
