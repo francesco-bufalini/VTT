@@ -117,7 +117,8 @@ try{
  assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
  assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
  assert.equal(await resourcesPanel.locator('.play-resource>[data-act="tracker-more"]').count(),0,'No minus shortcut next to tracker');
- assert.doesNotMatch(await inlineClass.textContent(),/Focus arcano|[0-9]+ \\/ [0-9]+/);
+ assert(!String(await inlineClass.textContent()).includes('Focus arcano'));
+ assert(!String(await inlineClass.textContent()).includes(' / '));
  await inlineClass.locator('[data-act="sheet-context"]').click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
  await dismiss();
