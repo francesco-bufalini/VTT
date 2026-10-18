@@ -3,6 +3,8 @@ extends RefCounted
 # Creature-sheet-only display translations. Never mutate persisted records or the global locale.
 const CONFIG_PATH := "user://creature_gui_locale.cfg"
 const EN: Dictionary = {
+	"Usa gli slot di classe o del Patto": "Use class or Pact slots",
+	"Nessuna risorsa consumata": "No resource consumed",
 	" · una mano": " · one-handed",
 	"Capacità attive": "Active abilities",
 	"Nessuna capacità attiva.": "No active abilities.",
