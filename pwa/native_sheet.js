@@ -378,7 +378,10 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const type=String(wornArmor?.type||'').split('|')[0].toUpperCase();
   const dexCap=wornArmor?.dexterity_max!==undefined?Number(wornArmor.dexterity_max):type==='MA'?2:type==='HA'?0:99;
   const armorDex=type==='HA'&&Number(wornArmor?.dexterity_max)===0?0:Math.min(dex,dexCap);
-  const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(c.armor_class_base??10)===10)?'10 + dex_mod':String(c.armor_class_base??10)));
+  const rawMonsterAc=Array.isArray(c.stat_block?.ac)?c.stat_block.ac.find(row=>typeof row==='number'||row?.ac!==undefined):c.stat_block?.ac;
+  const monsterAc=typeof rawMonsterAc==='object'?rawMonsterAc?.ac:rawMonsterAc;
+  const naturalBase=c.kind==='monster'?(monsterAc??10):(c.armor_class_base??10);
+  const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(naturalBase)===10)?'10 + dex_mod':String(naturalBase)));
   const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+(shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   return '<div class="battle-root">'+
    panel('Punti ferita',
