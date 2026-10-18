@@ -515,11 +515,9 @@ input:disabled{opacity:.75;cursor:default}
 .battle-root .battle-stat .formula-bonus{min-width:30px;min-height:33px;padding:5px}
 .battle-root .battle-temp-hp{grid-column:1 / -1}
 .battle-root .battle-hp-controls{
- display:grid;grid-template-columns:78px repeat(3,minmax(0,1fr));
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
  gap:7px;align-items:end;margin:9px 0 1px;
 }
-.battle-root .battle-hp-controls .battle-hp-quantity{gap:5px;margin:0}
-.battle-root .battle-hp-quantity input{min-height:44px;padding:7px;text-align:center}
 .battle-root .battle-hp-controls .btn{
  min-width:0;min-height:44px;height:auto;margin:0;padding:7px 5px;
  font-size:12px;line-height:1.25;white-space:normal;
@@ -561,8 +559,7 @@ input:disabled{opacity:.75;cursor:default}
 }
 @media(max-width:420px){
  .battle-root>.panel{padding:10px}
- .battle-root .battle-hp-controls{grid-template-columns:74px repeat(2,minmax(0,1fr))}
- .battle-root .battle-hp-controls [data-act="hp-restore"]{grid-column:2 / -1}
+ .battle-root .battle-hp-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
  .battle-root .battle-stat{padding:8px}
  .battle-root .battle-hp-grid,.battle-root .battle-defense-values{gap:7px}
  .battle-root .battle-base-fields{gap:7px}
@@ -583,11 +580,9 @@ input:disabled{opacity:.75;cursor:default}
 .battle-root .battle-stat .sheet-formula output{font-size:16px;padding:4px;min-height:31px}
 .battle-root .battle-stat .formula-bonus{min-width:26px;min-height:31px;padding:4px}
 .battle-root .battle-hp-controls{
- grid-template-columns:62px repeat(3,minmax(0,1fr));gap:5px;margin:7px 0 0
+ grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:7px 0 0
 }
 .battle-root .battle-hp-controls [data-act="hp-restore"]{grid-column:auto}
-.battle-root .battle-hp-controls .battle-hp-quantity{font-size:10px;gap:4px}
-.battle-root .battle-hp-quantity input{min-height:40px;padding:5px;font-size:15px}
 .battle-root .battle-hp-controls .btn{
  padding:5px 3px;min-height:40px;font-size:11px;line-height:1.2
 }
@@ -675,7 +670,7 @@ input:disabled{opacity:.75;cursor:default}
 .condition-toggle-grid label.check span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:360px){
  .battle-root>.panel{padding:8px}
- .battle-root .battle-hp-controls{grid-template-columns:57px repeat(3,minmax(0,1fr));gap:3px}
+ .battle-root .battle-hp-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
  .battle-root .battle-hp-controls .btn{font-size:10px;padding:4px 2px}
  .battle-resource-row{gap:3px 4px}
  .battle-root .battle-resource-actions .btn{min-width:27px;padding:3px 4px}
@@ -704,3 +699,12 @@ input:disabled{opacity:.75;cursor:default}
 @media(max-width:380px){.mobile-tabs .btn{min-width:40px;padding:6px}.topbar .connection{font-size:9px;max-width:44%}}
 
 .topbar{min-height:calc(42px + env(safe-area-inset-top))}
+
+/* HP amount is requested only when Danni or Cura is tapped. */
+.hp-adjust-dialog{width:min(330px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:15px}
+.hp-adjust-dialog h2{font-size:17px;line-height:1.3;margin:0 0 12px}
+.hp-adjust-dialog form{display:grid;gap:13px}
+.hp-adjust-dialog label{display:grid;gap:6px;margin:0;font-size:12px;font-weight:650}
+.hp-adjust-dialog input{width:100%;min-height:45px;font-size:21px;text-align:center;font-variant-numeric:tabular-nums}
+.hp-adjust-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hp-adjust-actions .btn{min-width:0;min-height:42px;margin:0;padding:8px 10px;font-size:12px}
