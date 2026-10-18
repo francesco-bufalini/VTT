@@ -50,12 +50,9 @@ test('nested weapon attacks, action checks and movement preserve stable dice tar
  const html=actionEconomyView({},calculated),document=doc(html);
  assert.equal(document.querySelectorAll('.action-economy-section').length,5);
  assert(document.querySelector('.action-tree ol li [data-target="attack_hit:item:off:dagger"]'));
- assert(document.querySelector('[data-timing="action"] .action-economy-skills [data-target="skill:stealth"]'));
+ assert(document.querySelector('[data-timing="action"] [data-action-group="skill-checks"] [data-target="skill:stealth"]'));
  assert(!document.querySelector('[data-timing="free"] .action-economy-skills'));
- const skillChecks=[...document.querySelectorAll('[data-timing="action"] .action-economy-row')]
-  .find(row=>row.querySelector('.action-group-label strong')?.textContent==='Prove di abilità');
- assert(skillChecks && skillChecks.nextElementSibling?.classList.contains("action-economy-skills"),
-  "Quick rolls follow the action skill-checks group");
+ assert.equal(document.querySelectorAll('.action-economy-skills').length,1);
  assert(document.querySelector('.action-dice'));
 });
 
@@ -220,4 +217,11 @@ test('load both native catalogs without duplicating, auto-enabling or dropping v
   assert(!actionEntries({}, {},[],[],entries).some(row=>row.id==='disarm'));
   assert(actionEntries({}, {},[],[],entries).some(row=>row.id==='wake'));
  }finally{globalThis.fetch=original;}
+});
+
+test('quick skill checks remain with the action skill group when the catalog is unavailable',()=>{
+ const root=doc(actionEconomyView({}, {skills:{stealth:7,athletics:5,arcana:4,perception:3}}, [],[],[]));
+ const checks=root.querySelector('[data-timing="action"] [data-action-group="skill-checks"]');
+ assert(checks);assert.equal(checks.querySelectorAll('[data-target^="skill:"]').length,4);
+ assert(!root.querySelector('[data-timing="free"] [data-target^="skill:"]'));
 });
