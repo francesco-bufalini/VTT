@@ -1,5 +1,5 @@
 import { actionEconomyView, battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -2939,7 +2939,21 @@ async function handleAction(target){
   }
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
-    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':act==='tracker-turn'?'turn':'short_rest',calculated.trackers));await render();return;
+    if(act==='tracker-turn'){
+      await patch(recoveryPatch(record,'turn',calculated.trackers));await render();return;
+    }
+    const event=act==='tracker-long'?'long_rest':'short_rest';
+    const dice={};
+    if(event==='short_rest'){
+      for(const control of app.querySelectorAll('#sheet-context-dialog [data-rest-die]')){
+        dice['d'+control.dataset.restDie]=Number(control.value);
+      }
+    }
+    const result=completeRest(record,event,calculated,dice);
+    await patch(result.patch);await render();
+    const detail=result.rolls.length?' · '+result.rolls.map(r=>'d'+r.die+': '+r.roll+(r.modifier>=0?'+':'')+r.modifier).join(', '):'';
+    message((event==='long_rest'?'Riposo lungo':'Riposo breve')+' completato · '+result.healed+' PF recuperati'+detail);
+    return;
   }
   if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
