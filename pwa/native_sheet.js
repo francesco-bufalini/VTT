@@ -128,6 +128,9 @@ export function recoveryPatch(c,event,trackers){
  }
  if(event==='long_rest'){for(const id of Object.keys(ready))delete ready[id];for(const id of Object.keys(used))delete used[id];}
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
+ // Native feature timing recovery ends activations on either rest.
+ if(event==='short_rest'||event==='long_rest')patch.active_class_features={};
+ if(event==='long_rest')patch.created_spell_slots=[];
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
