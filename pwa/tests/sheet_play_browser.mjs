@@ -140,6 +140,7 @@ try{
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
  const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
+ assert.equal(await linkedSpell.locator('[data-act="battle-cast-resource-spell"]').count(),1,'Dedicated Lancia button is beside the spell details');
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
@@ -161,6 +162,9 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
  await resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
+ await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
+ assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
@@ -219,6 +223,23 @@ try{
   for(const contextKey of keys){await popup(contextKey);assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();}
  }
  await sheet('actions');await page.locator('[data-timing-choice="reaction"]').click();assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi/);await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();await shot('action-popup');await dismiss();
+ // A persistent class feature must expose a reversible action, not an inert "Attiva" badge.
+ await page.evaluate(async()=>{
+  const {listCreatures,saveCreature}=await import('/creatures.js');
+  const row=(await listCreatures())[0],c=row.creature;
+  await saveCreature({...c,class:'Barbarian',class_source:'PHB',
+   classes:[{name:'Barbarian',source:'PHB',level:5}],level:5,
+   active_class_features:{rage:{name:'Ira',origin_id:'class_feature:rage',rules_version:'2014'}}},'default',row.revision);
+ });
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
+ const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ await ragePanel.locator('summary.play-battle-summary').click();
+ const rage=ragePanel.locator('.play-resource-power-row').filter({has:page.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]')});
+ assert.equal(await rage.count(),1,'Rage has a single Disattiva button when active');
+ await rage.locator('[data-act="condition-remove-ability"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.active_class_features?.rage;});
+ await ragePanel.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]').waitFor({state:'detached'});
+ await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: 8 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');

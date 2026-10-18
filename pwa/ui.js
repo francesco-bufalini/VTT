@@ -2300,6 +2300,36 @@ async function handleAction(target){
   if(act==='action-open-spells'){
     state.sheet='magic';await render();return;
   }
+  if(act==='battle-cast-resource-spell'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri una creatura prima di lanciare.');
+    const calculated=await computeLocalData(creature);
+    const grantId=String(target.dataset.grantId||'');
+    const grant=(calculated.origin_spells||[]).find(row=>String(row.id)===grantId);
+    const mode=grant?.payment_mode||(grant?.tracker_id?'tracker':'free');
+    if(!grant||!['tracker','free'].includes(mode))
+      throw Error('Concessione dell’incantesimo non disponibile.');
+    const selection=sessionSpellEntries(creature,calculated,state.spellCatalog||[])
+      .find(row=>row.id===grant.spell_id&&String(row.grant_id||'')===grantId);
+    if(!selection)throw Error('Incantesimo non disponibile per questa creatura.');
+    // Use the same validated spell-casting plan and targeting path as the
+    // normal spell dialog; 0 means automatic payment for tracker/free grants.
+    const plan=spellCastPlan(creature,selection,0,calculated,'auto');
+    target.disabled=true;
+    try{
+      if(creature.linked_token_sync_id&&state.paired&&state.online){
+        await startTargetedCast(creature.id,structuredClone(selection),0,'auto');
+      }else{
+        if(Object.keys(plan.patch).length)await patch(plan.patch);
+        await render();
+        message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
+      }
+    }catch(error){
+      target.disabled=false;
+      throw error;
+    }
+    return;
+  }
   if(act==='action-cast-spell'||act==='power-spell'){
     const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
     const calculated=await computeLocalData(record);

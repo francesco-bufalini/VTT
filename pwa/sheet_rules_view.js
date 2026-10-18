@@ -389,8 +389,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
    const note=row.cost>1?' · Costo '+row.cost:'';
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
-    '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
-    ' aria-label="Lancia '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button></div>';
+    '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
+    ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
+    '<button type="button" class="play-resource-use" data-act="battle-cast-resource-spell" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
+    ' aria-label="Lancia '+esc(row.name)+'">Lancia</button></div>';
    const id=row.id;
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(row.power.id));
    let context=powerDetail?.key;
@@ -416,7 +418,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (active?'<span class="play-resource-power-active">Attiva</span>':
+    (active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(action.class_feature_id)+'"'+
+    ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
     '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+(disabled?' disabled':'')+
     ' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
   }).join('');
