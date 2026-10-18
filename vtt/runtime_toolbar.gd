@@ -27,14 +27,15 @@ const VIEW_REACHES := 42
 const VIEW_CONDITIONS := 43
 const VIEW_2D := 44
 const SHARE_OPEN := 50
-const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
 const SHARE_CONTEXT_ID := 25
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
+const FEEDBACK_DURATION_MS := 2000
 
 var board_root: Node3D
 var ui_root: CanvasLayer
 var status_label: Label
+var _feedback_hide_at_msec := 0
 
 
 func setup(root: Node3D) -> void:
@@ -62,6 +63,7 @@ func _initialize_toolbar() -> void:
 		)
 
 	_build_toolbar()
+	_connect_feedback_signals()
 	call_deferred("_load_saved_state")
 
 
@@ -99,7 +101,6 @@ func _build_toolbar() -> void:
 		["Incantesimi", GAME_SPELLS],
 		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
 		["Sessione"],
-		["Salva", SESSION_SAVE],
 		["Condividi / Tailscale", SHARE_OPEN],
 		["Torna al menu VTT", SESSION_MAIN_MENU]
 	], _on_game))
@@ -190,8 +191,6 @@ func _on_game(id: int) -> void:
 			board_root.call("toggle_spell_menu")
 		COMBAT_INITIATIVE:
 			board_root.call("toggle_initiative_panel")
-		SESSION_SAVE:
-			_save_current_state()
 		SHARE_OPEN:
 			board_root.call("_on_context_menu_id_pressed", SHARE_CONTEXT_ID)
 		SESSION_MAIN_MENU:
@@ -281,37 +280,6 @@ func _on_view(id: int) -> void:
 
 
 
-func _save_current_state() -> void:
-	var campaign_manager: Node = _campaign_manager()
-	var sync: Node = _board_sync()
-	if campaign_manager == null or sync == null:
-		_set_status("Salvataggio non disponibile")
-		return
-
-	var snapshot_value: Variant = sync.call("create_snapshot")
-	if not snapshot_value is Dictionary:
-		_set_status("Stato non disponibile")
-		return
-
-	var snapshot: Dictionary = snapshot_value as Dictionary
-	if snapshot.is_empty():
-		_set_status("Attendi la fine dell'azione")
-		return
-
-	var error: Error = int(
-		campaign_manager.call("save_active_runtime_state", snapshot)
-	) as Error
-	if error != OK:
-		_set_status("Errore salvataggio")
-		return
-	# Keep the automatic, scene-scoped recovery file aligned with manual Save.
-	var autosave_error: Error = int(sync.call("save_map_snapshot_now")) as Error
-	if autosave_error == OK:
-		_set_status("Salvato")
-	else:
-		_set_status("Campagna salvata; autosave mappa non riuscito")
-
-
 func _load_saved_state() -> void:
 	var campaign_manager: Node = _campaign_manager()
 	var sync: Node = _board_sync()
@@ -338,7 +306,7 @@ func _load_saved_state() -> void:
 			board_root.call("_reset_map_history_baseline", state)
 		if sync.has_method("save_map_snapshot_now"):
 			sync.call("save_map_snapshot_now")
-		_set_status("Salvataggio caricato")
+		_show_temporary_feedback("Mappa ripristinata")
 
 
 func _board_sync() -> Node:
@@ -358,6 +326,55 @@ func _campaign_manager() -> Node:
 	return manager
 
 
+# The right-hand status slot has a fixed width so text can appear/disappear
+# without shifting the toolbar's menu buttons.
+func _connect_feedback_signals() -> void:
+	var sync: Node = _board_sync()
+	if sync == null:
+		return
+	var saved_callback := Callable(self, "_on_map_autosave_committed")
+	if sync.has_signal("map_autosave_committed") and not sync.is_connected(
+		"map_autosave_committed", saved_callback
+	):
+		sync.connect("map_autosave_committed", saved_callback)
+	var synced_callback := Callable(self, "_on_map_synchronized")
+	if sync.has_signal("map_synchronized") and not sync.is_connected(
+		"map_synchronized", synced_callback
+	):
+		sync.connect("map_synchronized", synced_callback)
+
+
+func _on_map_autosave_committed(
+	_snapshot: Dictionary, _previous: Dictionary, local_change: bool
+) -> void:
+	# Restoring/receiving a remote snapshot is not a local edit.
+	if local_change:
+		_show_temporary_feedback("Salvato")
+
+
+func _on_map_synchronized() -> void:
+	_show_temporary_feedback("Sincronizzato")
+
+
+func _show_temporary_feedback(message: String) -> void:
+	if status_label == null:
+		return
+	status_label.text = message
+	_feedback_hide_at_msec = Time.get_ticks_msec() + FEEDBACK_DURATION_MS
+
+
+func _process(_delta: float) -> void:
+	if (
+		_feedback_hide_at_msec > 0
+		and Time.get_ticks_msec() >= _feedback_hide_at_msec
+	):
+		_feedback_hide_at_msec = 0
+		if status_label != null:
+			status_label.text = ""
+
+
 func _set_status(message: String) -> void:
+	# Errors remain readable instead of disappearing like success feedback.
+	_feedback_hide_at_msec = 0
 	if status_label != null:
 		status_label.text = message
