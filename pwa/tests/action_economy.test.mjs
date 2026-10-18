@@ -295,7 +295,8 @@ test('battle projects all unported actions without duplicating weapons, movement
  const activated=[{id:'inspire',name:'Ispirazione',origin:'Classe · bard · PHB',action_type:'bonus',
   resource_cost:1,tracker_id:'inspire',tracker_name:'Ispirazioni'}];
  const result=battleActionPanels(record,calculated,[],[],catalog.actions,[],activated);
- const others=doc(result.others),abilities=doc(result.abilities),movement=doc(result.movement);
+ const others=doc(result.others),movement=doc(result.movement);
+ const abilities=doc(result.resourceAbilities['tracker:surge'].join(''));
  assert(others.body.textContent.includes('Cercare'));
  assert(others.body.textContent.includes('Schivare'));
  assert(others.body.textContent.includes('Talento personalizzato'));
@@ -310,16 +311,19 @@ test('battle projects all unported actions without duplicating weapons, movement
  assert(escape);
  assert(escape.querySelector('[data-target="skill:athletics"]'));
  assert(escape.querySelector('[data-target="skill:acrobatics"]'));
- assert(escape.querySelector('.has-multiple-rolls'));
+ assert.equal(escape.querySelector('[data-multiple-rolls="true"] .play-battle-attack-roll').dataset.target,'skill:athletics');
+ assert.equal(escape.querySelectorAll('[data-multiple-rolls="true"] .play-battle-attack-roll').length,2);
  const surge=abilities.querySelector('[data-ability-id="surge"]');
  assert(surge);
  assert.match(surge.textContent,/Cariche guerriero · Costo 2 · 3 \/ 4/);
  assert(surge.querySelector('[data-act="battle-use-ability"]'));
  assert(surge.closest('[data-action-timing="bonus"]'));
- assert(abilities.body.textContent.includes('Ispirazione'));
+ assert(doc(result.resourceAbilities.missing.join('')).body.textContent.includes('Ispirazione'));
  assert.equal(result.abilityEntries.length,2);
  const exhausted=battleActionPanels(record,{...calculated,trackers:[{id:'surge',name:'Cariche guerriero',max:4,spent:3}]},
   [],[],catalog.actions);
- assert(exhausted.abilities.includes('disabled'));
+ assert(exhausted.resourceAbilities['tracker:surge'].join('').includes('disabled'));
  assert(!doc(exhausted.others).body.textContent.includes('Impeto di battaglia'));
+ assert.equal(others.querySelector('[data-attack-id="help"] .play-battle-effect'),null,'Do not render unknown placeholder effects');
+ assert.equal(others.querySelector('[data-attack-id="dodge"] .play-battle-effect'),null);
 });
