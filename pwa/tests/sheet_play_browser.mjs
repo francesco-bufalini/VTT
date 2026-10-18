@@ -21,6 +21,17 @@ try{
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="movement"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
  assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi fisici/);
+ const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
+ const abilityPanel=page.locator('#sheet-play-view [data-battle-action="abilities"]');
+ assert.equal(await otherPanel.count(),1);
+ assert.equal(await abilityPanel.count(),1);
+ assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Altre azioni/);
+ assert.match(await abilityPanel.locator('summary.play-battle-summary').textContent(),/Capacità/);
+ await otherPanel.locator('summary.play-battle-summary').click();
+ const searchAction=otherPanel.locator('[data-attack-id="search"]');
+ assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
+ assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
+ await otherPanel.locator('summary.play-battle-summary').click();
  const spellPanel=page.locator('#sheet-play-view [data-battle-action="spells"]');
  assert.equal(await spellPanel.count(),1);
  assert.equal(await weaponPanel.locator('.play-chevron').count(),0,'No disclosure arrow in attack header');
@@ -56,6 +67,9 @@ try{
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
+ const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
+ assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
+ assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
  assert(await movementPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Scattare')));
  assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('stats');await sheet('battle');
