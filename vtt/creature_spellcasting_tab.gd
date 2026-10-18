@@ -1725,6 +1725,8 @@ func _build_view() -> void:
 	add_child(_view)
 	_view.setup({"record": Callable(self, "_view_record"), "cast_class": Callable(self, "_view_cast_class"),
 		"class_feature": func(id: String) -> void: class_feature_requested.emit(id),
+		"trait_origin": get_meta("trait_origin_navigate", Callable()),
+		"trait_feature": get_meta("trait_feature_navigate", Callable()),
 		"cast_origin": Callable(self, "_cast_granted_spell"), "slot": Callable(self, "_view_slot"),
 		"pact": Callable(self, "_view_pact"), "restore": Callable(self, "_restore_all"),
 		"tracker": Callable(self, "_view_tracker"), "edit_class": Callable(self, "_view_edit_class"),

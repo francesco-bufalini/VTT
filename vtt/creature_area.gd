@@ -969,6 +969,8 @@ func _build_ui() -> void:
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Poteri")
 	_spellcasting_ui = SpellcastingTab.new()
 	_spellcasting_ui.class_feature_requested.connect(_on_class_feature_requested)
+	_spellcasting_ui.set_meta("trait_origin_navigate", Callable(self, "_open_origin_trait"))
+	_spellcasting_ui.set_meta("trait_feature_navigate", Callable(self, "_open_tracker_trait"))
 	spellcasting_tab.add_child(_spellcasting_ui)
 	_spellcasting_ui.call(
 		"setup",
@@ -1640,6 +1642,19 @@ func _build_ui() -> void:
 	# Keep resources below the complete attack list, including its description.
 	combat_column.move_child(resource_section.get_parent(), _attacks_description.get_index() + 1)
 	var feats_info_box := _info_panel(form, "TALENTI")
+	var feats_header := HBoxContainer.new()
+	feats_header.add_theme_constant_override("separation", 8)
+	feats_info_box.add_child(feats_header)
+	feats_info_box.move_child(feats_header, 0)
+	var feats_heading := feats_info_box.get_child(1) as Label
+	feats_heading.reparent(feats_header)
+	feats_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var add_feat := Button.new()
+	add_feat.name = "OpenFeatOrigins"
+	add_feat.text = "+ Talento"
+	add_feat.tooltip_text = "Scegli un talento del compendio nella sezione Modifica personaggio → Talenti"
+	add_feat.pressed.connect(_open_trait_section.bind(2))
+	feats_header.add_child(add_feat)
 	_info_feats_list = VBoxContainer.new()
 	_info_feats_list.add_theme_constant_override("separation", 5)
 	feats_info_box.add_child(_info_feats_list)
@@ -6378,18 +6393,13 @@ func _refresh_trackers(record: Dictionary) -> void:
 		source_button.set_meta("creature_gui_data", true)
 		source_button.text = (title.substr(0, 23) + "…" if title.length() > 24 else title) + " ↗"
 		source_button.tooltip_text = (
-			"Vai al privilegio: " + String(tracker.get("origin", title))
+			"Apri la risorsa in Poteri: " + title
 			+ (" · " + source_label if not source_label.is_empty() else "")
 		)
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		source_button.clip_text = true
 		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		if not tracker_source.is_empty():
-			source_button.pressed.connect(
-				_open_origin_trait.bind(tracker_source, String(tracker.get("origin", title)))
-			)
-		else:
-			source_button.pressed.connect(_open_trait_section.bind(4))
+		source_button.pressed.connect(_show_sheet_tab.bind("Poteri"))
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])

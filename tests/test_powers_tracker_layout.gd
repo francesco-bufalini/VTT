@@ -36,7 +36,8 @@ func run() -> void:
 	view.setup({
 		"record": _current, "gui_language": _language,
 		"section_ability": _section_ability, "casting_stats": _stats,
-		"set_section_ability": _ignore, "cast_origin": _ignore, "class_feature": _ignore, "tracker": _ignore
+		"set_section_ability": _ignore, "cast_origin": _ignore, "class_feature": _ignore, "tracker": _ignore,
+		"trait_origin": _ignore, "trait_feature": _ignore
 	})
 	var pair: Array[VBoxContainer] = view._pair()
 	view._heading(pair[0], "Origine · Talento · Shadow Touched")
@@ -50,12 +51,16 @@ func run() -> void:
 	view._spell_button(list, {"name": "Inflict Wounds", "level": 1, "description": "Effect"}, {}, other)
 	for i: int in range(2):
 		var entry: HBoxContainer = list.get_child(i)
-		assert(entry.get_child_count() == 2,
-			"Tracker-paid powers separate the action from the cost")
-		assert(entry.get_child(0) is Button and entry.get_child(1) is Label,
-			"The power name stays inside the button with cost to its right")
+		assert(entry.get_child_count() == 3,
+			"Tracker-paid powers separate the action, origin link, and cost")
+		assert(entry.get_child(0) is Button and entry.get_child(1) is Button
+			and entry.get_child(2) is Label,
+			"Power source navigation is a separate button and cannot consume uses")
 		var power: Button = entry.get_child(0)
-		var price: Label = entry.get_child(1)
+		var link: Button = entry.get_child(1)
+		var price: Label = entry.get_child(2)
+		assert(link.name == "OpenTrait" and link.text == "↗",
+			"Each origin-granted power links to its source trait")
 		assert(not "utilizzi" in power.text and not "Costo" in power.text,
 			"The clickable power contains only its name and level")
 		assert(price.text == ("Costo: 2" if i == 0 else "Costo: 1")
@@ -65,10 +70,13 @@ func run() -> void:
 	view._feature_button(ability_list, {"id": "rage", "name": "Ira", "cost": 1,
 		"resource_name": "Rages", "detail": "Rage active"})
 	var ability_row := ability_list.get_child(0) as HBoxContainer
-	assert(ability_row.get_child_count() == 2 and ability_row.size_flags_vertical == Control.SIZE_SHRINK_BEGIN,
-		"Non-magical powers use a single compact, non-expanding row")
+	assert(ability_row.get_child_count() == 3 and ability_row.size_flags_vertical == Control.SIZE_SHRINK_BEGIN,
+		"Non-magical powers use one compact row with a trait link")
 	var rage := ability_row.get_child(0) as Button
-	var rage_cost := ability_row.get_child(1) as Label
+	var rage_link := ability_row.get_child(1) as Button
+	var rage_cost := ability_row.get_child(2) as Label
+	assert(rage_link.name == "OpenTrait" and rage_link.text == "↗",
+		"Class features link to Tratti without triggering their activation")
 	assert(rage.clip_text and rage.custom_minimum_size.y <= 40 and rage_cost.autowrap_mode == TextServer.AUTOWRAP_OFF,
 		"The Rage button stays short and its cost never wraps vertically")
 	view._tracker(pair[1], _record,

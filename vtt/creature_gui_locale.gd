@@ -704,6 +704,8 @@ const EN: Dictionary = {
 	"Rimuovi solo questo tracker": "Remove only this tracker",
 	"Inserisci il nome della nuova risorsa.": "Enter the new resource name.",
 	"+ Talento": "+ Feat",
+	"+ Oggetto homebrew": "+ Homebrew item",
+	"Apri il tratto in Tratti": "Open source trait in Traits",
 	"Cerca talento nel compendio…": "Search feats in compendium…",
 	"Scegli l'origine che concede il talento (o senza origine)": "Choose the feat-granting origin (or none)",
 	"Aggiungi talento": "Add feat",

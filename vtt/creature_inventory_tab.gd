@@ -115,6 +115,12 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_search_toggle.tooltip_text = "Mostra ricerca oggetti"
 	_search_toggle.toggled.connect(_set_search_visible)
 	heading_row.add_child(_search_toggle)
+	var create_homebrew := Button.new()
+	create_homebrew.name = "CreateHomebrewItem"
+	create_homebrew.text = "+ Oggetto homebrew"
+	create_homebrew.tooltip_text = "Crea un oggetto nel catalogo locale personalizzato"
+	create_homebrew.pressed.connect(_open_custom_item_editor)
+	heading_row.add_child(create_homebrew)
 
 	# The search results expand immediately below the heading; the inventory
 	# and its shared item description remain in their original positions.

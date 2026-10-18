@@ -108,6 +108,7 @@ func refresh() -> void:
 		edit.tooltip_text = "Scegli o modifica gli incantesimi di questa origine"
 		edit.pressed.connect(_actions.edit_origin.bind(sid))
 		heading.add_child(edit)
+		_trait_link(heading, sid, String(group["name"]))
 		var suggested: Array[String] = []
 		var spells: Array[Dictionary] = []
 		var abilities: Array[Dictionary] = []
@@ -232,6 +233,7 @@ func _feature_button(parent: Node, feature: Dictionary) -> void:
 	button.custom_minimum_size.y = 36
 	button.pressed.connect(_actions.class_feature.bind(String(feature.get("id", ""))))
 	row.add_child(button)
+	_trait_link(row, "", String(feature.get("name", "")), String(feature.get("class_name", "")))
 	if int(feature.get("cost", 0)) > 0 and not String(feature.get("resource_name", "")).is_empty():
 		var price: Label = _label(row, "Costo: %d" % int(feature["cost"]))
 		price.name = "PowerCost"
@@ -241,6 +243,24 @@ func _feature_button(parent: Node, feature: Dictionary) -> void:
 		price.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_font_size_override("font_size", 12)
+
+# Source links only navigate: using a power is always a separate action.
+func _trait_link(parent: Node, origin_id: String, trait_name: String, source_label: String = "") -> void:
+	var handler: Callable = _actions.get("trait_origin", Callable()) if not origin_id.is_empty() else _actions.get("trait_feature", Callable())
+	if not handler.is_valid() or trait_name.is_empty():
+		return
+	var link := Button.new()
+	link.name = "OpenTrait"
+	link.text = "↗"
+	link.tooltip_text = "Apri il tratto in Tratti"
+	link.custom_minimum_size = Vector2(30, 30)
+	link.size_flags_horizontal = Control.SIZE_SHRINK_END
+	if not origin_id.is_empty():
+		link.pressed.connect(handler.bind(origin_id, trait_name))
+	else:
+		link.pressed.connect(handler.bind(trait_name, source_label))
+	parent.add_child(link)
+
 
 func _pair() -> Array[VBoxContainer]:
 	var row: BoxContainer
@@ -411,6 +431,8 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.tooltip_text = String(spell.get("description", ""))
 	row.add_child(button)
+	if not grant.is_empty():
+		_trait_link(row, String(grant.get("origin_id", "")), String(grant.get("origin_name", spell.get("name", ""))))
 	if not grant.is_empty() and String(grant.get("payment_mode", "")) == "tracker":
 		var cost: int = Grants.tracker_cost(grant)
 		var english: bool = String(_actions.gui_language.call()) == "en"
