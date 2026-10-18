@@ -6,6 +6,19 @@ const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
 const metric=(label,value)=>'<div class="derived-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';
+// Choose the fastest available movement mode, preserving the current calculated speed keys.
+export function fastestMovement(data={}){
+ const modes=[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],
+  ['speed:fly','Volo'],['speed:burrow','Scavo']];
+ const options=modes.map(([key,label])=>{
+  const statKey=key==='speed'?'walk':key.slice('speed:'.length);
+  const raw=data.values?.[key]??data.stats?.speeds?.[statKey];
+  const value=raw===null||raw===undefined||raw===''?NaN:Number(raw);
+  return {key,label,value};
+ }).filter(item=>Number.isFinite(item.value)&&item.value>=0);
+ return options.reduce((best,item)=>!best||item.value>best.value?item:best,null)||
+  {key:'speed',label:'Camminata',value:null};
+}
 /** Expand a modifier using effective abilities, training and residual bonuses. */
 export function sheetModifierBreakdown(data,target){
  const total=Number(data?.values?.[target]);
@@ -96,7 +109,7 @@ export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   const value=data?.values?.[target];
   return (sign?signed(value):value??"—")+suffix;
 }
-export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility=''}={}){
+export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility='',showBonus=true}={}){
   const rollable=/^(?:ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
   const tag=rollable||scoreAbility?'button':'output';
   const click=scoreAbility?' type="button" class="sheet-result score-editor-trigger" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'"':
@@ -105,8 +118,8 @@ export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bo
     '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
     esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
     esc(calculatedValue(data,target,{signed:sign,suffix}))+'</'+tag+'>'+
-    '<button type="button" class="btn small formula-bonus" data-act="edit-bonus" data-target="'+
-    esc(bonusTarget)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button></span>';
+    (showBonus?'<button type="button" class="btn small formula-bonus" data-act="edit-bonus" data-target="'+
+    esc(bonusTarget)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button>':'')+'</span>';
 }
 export function calculationNote(data,loadError=""){
   const warnings=[...new Set([...(data?.warnings||[]),...(loadError?[loadError]:[])])];
@@ -115,6 +128,9 @@ export function calculationNote(data,loadError=""){
     (warnings.length?'<ul>'+warnings.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>':'')+'</details>';
 }
 export function refreshCalculatedValues(root,data){
+  const fastest=fastestMovement(data);
+  for(const label of root.querySelectorAll('[data-fastest-movement-label]'))label.textContent=fastest.label;
+  for(const output of root.querySelectorAll('[data-fastest-movement-value]'))output.dataset.calculated=fastest.key;
   for(const output of root.querySelectorAll('[data-calculated]')){
     output.textContent=calculatedValue(data,output.dataset.calculated,{
       signed:output.dataset.signed==='true',suffix:output.dataset.suffix||''});
@@ -239,7 +255,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   target('hp','.battle-hp-panel');target('defense','.battle-defense-panel');target('movement','.battle-movement-panel');target('equipment','.battle-attack-settings');
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
   html='<section class="play-health"><header><span>Punti ferita</span>'+edit('hp','Gestisci punti ferita','settings')+'</header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
-  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','movement','data-act="sheet-context" data-sheet-context="movement"','<small>Velocità</small>'+output('speed',false,' ft'))+'</div>';
+  const fastest=fastestMovement(d);
+  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','speed','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
