@@ -850,8 +850,12 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'Initiative is not duplicated inside the AC popup');
  assert.ok(document.querySelector('.battle-movement-panel [data-calculated="speed"]'),
   'Movement has its own dedicated panel');
- assert.ok(document.querySelector('.battle-attack-settings:not([open])'),
-  'Equipment and attack modifiers remain available without permanent clutter');
+ assert.ok(document.querySelector('.battle-defense-panel .equipment-unified-panel [data-field="attack_ability"]'),
+  'Battle defense and attack equipment use the same editor');
+ assert.ok(document.querySelector('.battle-defense-panel .equipment-unified-panel [data-field="attack_ability_finesse_only"]'),
+  'The attack ability scope can be changed in the shared editor');
+ assert.equal(document.querySelectorAll('.battle-attack-settings').length,0,
+  'The obsolete separate battle attack equipment editor is removed');
  assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
   'Trackers use compact action rows in battle');
  assert.ok(document.querySelector('.battle-attacks-panel .battle-attack-row'),
