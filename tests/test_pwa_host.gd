@@ -111,6 +111,28 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
+	# Concurrent module fetches must not be disconnected when more than twelve
+	# resources arrive in the same frame (old PWA_HOST active-client limit).
+	var burst := {"done": 0, "failed": 0}
+	var requests: Array[HTTPRequest] = []
+	for _index in range(20):
+		var request_node := HTTPRequest.new()
+		root.add_child(request_node)
+		request_node.request_completed.connect(
+			func(result: int, status_code: int, _headers: PackedStringArray, response_body: PackedByteArray) -> void:
+				burst["done"] = int(burst["done"]) + 1
+				if result != HTTPRequest.RESULT_SUCCESS or status_code != 200 or not response_body.get_string_from_utf8().contains("openCreatureEditor"):
+					burst["failed"] = int(burst["failed"]) + 1
+		)
+		requests.append(request_node)
+		assert(request_node.request("http://127.0.0.1:%d/ui.js" % _test_port) == OK)
+	var burst_deadline := Time.get_ticks_msec() + 12000
+	while int(burst["done"]) < requests.size() and Time.get_ticks_msec() < burst_deadline:
+		await process_frame
+	assert(int(burst["done"]) == requests.size() and int(burst["failed"]) == 0,
+		"PWA failed a burst of 20 simultaneous /ui.js module requests")
+	for request_node in requests:
+		request_node.queue_free()
 	var stylesheet := await http("GET", "/styles.css")
 	assert(stylesheet.begins_with("HTTP/1.1 200") and stylesheet.contains(".bottom-nav"))
 	for asset: String in ["/mobile_metal_theme.css", "/catalog/combat_actions_5etools.json", "/icons/action_controls.svg", "/feature_mechanics.js"]:
