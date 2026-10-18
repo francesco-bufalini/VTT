@@ -1115,3 +1115,9 @@ input:disabled{opacity:.75;cursor:default}
 .topbar #creature-classes{display:block;color:#d9bea0;font:500 11px/1.35 system-ui,sans-serif;letter-spacing:0;overflow-wrap:anywhere}
 .topbar #creature-classes[hidden]{display:none}
 .sheet-section-description{color:#cbbdad;font-size:13px;line-height:1.55;margin:0 0 14px;max-width:65ch}
+
+/* Info section previews: two-line data summaries without interface instructions. */
+.sheet-play-view[data-sheet="info"] .play-row-copy small{line-height:1.45;-webkit-line-clamp:2;min-height:2.9em}
+.info-feat-entry>summary{display:flex;flex-direction:column;align-items:flex-start;gap:3px;cursor:pointer;min-height:48px}
+.info-feat-entry .info-feat-level{font-size:12px;color:#ceb38d;font-weight:400}
+.info-feat-entry .trait-description{white-space:pre-wrap;font-size:13px;line-height:1.6}
