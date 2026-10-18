@@ -1,4 +1,5 @@
 extends VBoxContainer
+const ClassFeatures = preload("res://vtt/class_feature_activation.gd")
 const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
@@ -183,7 +184,7 @@ static func rank(record: Dictionary, damage_type: String) -> int:
 	for source: Dictionary in sources:
 		var sid: String = String(source.get("id", ""))
 		active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
-	var best: int = 0
+	var best: int = 1 if damage_type in ["bludgeoning", "piercing", "slashing"] and ClassFeatures.is_active(record, "rage") else 0
 	for entry: Dictionary in entries:
 		if String(entry.get("key", "")) != damage_type or bool(entry.get("disabled", false)):
 			continue

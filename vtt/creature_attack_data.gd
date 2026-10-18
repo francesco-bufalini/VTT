@@ -2,6 +2,7 @@ extends RefCounted
 
 # Stable combat attack definitions. The remaining creature reach_feet field
 # is only a derived compatibility value for token opportunity/reach overlays.
+const ClassFeatures = preload("res://vtt/class_feature_activation.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
@@ -275,6 +276,12 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	if source == "item" and String(attack.get("slot", "")) == "off":
 		if offhand_bonus_attack_allowed(record) and not has_two_weapon_style(record):
 			modifier = mini(0, modifier)
+	var ability := "str"
+	var item: Dictionary = attack.get("item_entry", {})
+	if not item.is_empty(): ability = Items.attack_ability(record, item, bool(attack.get("thrown", false)))
+	var rage_attack := attack.duplicate()
+	rage_attack["weapon_kind"] = String(item.get("type", "")).split("|")[0]
+	modifier += ClassFeatures.rage_damage(record, rage_attack, ability)
 	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"

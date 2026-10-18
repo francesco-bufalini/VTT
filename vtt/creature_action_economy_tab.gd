@@ -1,4 +1,5 @@
 extends VBoxContainer
+signal class_feature_requested(id: String)
 signal skill_requested(key: String)
 signal attack_requested(attack_id: String, damage: bool)
 signal basic_action_requested(action_id: String)
@@ -646,6 +647,15 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		grant_entry["spell_id"] = String(grant.get("spell_id", ""))
 		grant_entry["grant_id"] = String(grant.get("id", ""))
 		results.append(grant_entry)
+	for feature: Dictionary in preload("res://vtt/class_feature_activation.gd").entries(record):
+		# Replace descriptive supplements by the same actionable class feature.
+		for i: int in range(results.size() - 1, -1, -1):
+			if String(results[i].get("name", "")) in [String(feature.name), String(feature.feature_name)]:
+				results.remove_at(i)
+		var feature_row := _entry(String(feature.name), _timing(feature.activation), "Capacità", String(feature.detail))
+		feature_row["class_feature_id"] = feature.id
+		feature_row["active"] = feature.get("active", false)
+		results.append(feature_row)
 	var routine := attack_action_summary(record)
 	for row: Dictionary in results:
 		if row.get("id", "") == "attack":
@@ -910,6 +920,10 @@ func _add_entry(entry: Dictionary, target: VBoxContainer = null) -> void:
 	controls.size_flags_horizontal = Control.SIZE_SHRINK_END
 	controls.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(controls)
+	if not String(entry.get("class_feature_id", "")).is_empty():
+		var activate := _action_button("Termina" if bool(entry.get("active", false)) else "Usa", "Attiva il privilegio con il consumo della relativa risorsa")
+		activate.pressed.connect(func() -> void: class_feature_requested.emit(String(entry.class_feature_id)))
+		controls.add_child(activate)
 	if not spell_id.is_empty():
 		var cast := _action_button("Usa" if String(entry.get("kind", "")) == "Capacità" else "Lancia",
 			"Apri il lancio dell'incantesimo con scelta dello slot o consumo dalla sua origine")

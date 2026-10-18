@@ -96,7 +96,7 @@ static func sync_automatic_progression(record: Dictionary) -> void:
 		spent.append(0)
 	for index: int in range(1, 10):
 		spent[index] = clampi(int(spent[index]), 0,
-			maxi(0, Bonuses.add(record, "slot:" + str(index), int(totals[index]))))
+			maxi(0, Bonuses.add(record, "slot:" + str(index), int(totals[index]))) + (int(record.created_spell_slots[index]) if record.get("created_spell_slots", []).size() > index else 0))
 	record["spell_slots_spent"] = spent
 	record["pact_slots_total"] = int(progression.get("pact_total", 0))
 	record["pact_slot_level"] = int(progression.get("pact_level", 1))

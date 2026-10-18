@@ -156,6 +156,21 @@ func refresh() -> void:
 	_fit()
 	_balance_lists.call_deferred()
 
+	var class_features := preload("res://vtt/class_feature_activation.gd").entries(record)
+	if not class_features.is_empty():
+		pair = _pair()
+		_heading(pair[0], "Privilegi di classe")
+		_heading(pair[1], "Effetti e risorse")
+		for feature: Dictionary in class_features:
+			var button := Button.new()
+			button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.name)
+			button.tooltip_text = String(feature.detail)
+			button.custom_minimum_size.y = 40
+			button.pressed.connect(func() -> void: _actions.class_feature.call(String(feature.id)))
+			pair[0].add_child(button)
+			var resource := String(feature.get("resource_name", ""))
+			_label(pair[1], ("Attivo · " if bool(feature.get("active", false)) else "") + String(feature.name) + (" · " + resource if not resource.is_empty() else ""))
+
 func _pair() -> Array[VBoxContainer]:
 	var row: BoxContainer
 	if _touch_layout:
@@ -349,6 +364,8 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		var totals: Array = record.get("spell_slots_total", [])
 		var spent: Array = record.get("spell_slots_spent", [])
 		var maximum: int = maxi(0, Bonuses.add(record, "slot:" + str(level), int(totals[level]) if totals.size() > level else 0))
+		var created: Array = record.get("created_spell_slots", [])
+		maximum += int(created[level]) if created.size() > level else 0
 		var used: int = int(spent[level]) if spent.size() > level else 0
 		_counter(grid, maxi(0, maximum - used), maximum, _actions.slot.bind(level), level, record)
 		var pact_max: int = maxi(0, Bonuses.add(record, "pact_slot", int(record.get("pact_slots_total", 0))))

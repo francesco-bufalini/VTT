@@ -155,7 +155,10 @@ static func recovery_patch(record: Dictionary, event: String, trackers: Array[Di
 	if event == "long_rest":
 		ready.clear()
 		used.clear()
-	return {"resource_tracker_spent": spent, "resource_recovery_ready": ready, "resource_recovery_used": used}
+	var patch := {"resource_tracker_spent": spent, "resource_recovery_ready": ready, "resource_recovery_used": used}
+	if event in ["short_rest", "long_rest"]: patch["active_class_features"] = {}
+	if event == "long_rest": patch["created_spell_slots"] = []
+	return patch
 
 static func optional_recovery_patch(record: Dictionary, rule_id: String, trackers: Array[Dictionary]) -> Dictionary:
 	var ready: Dictionary = record.get("resource_recovery_ready", {})

@@ -17,6 +17,9 @@ const ActionEconomyTab = preload("res://vtt/creature_action_economy_tab.gd")
 const BasicCombat = preload("res://vtt/combat_basic_actions.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
+var _pending_metamagic_cast: Dictionary = {}
+const Metamagic = preload("res://vtt/spell_metamagic.gd")
+const ClassFeatures = preload("res://vtt/class_feature_activation.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
@@ -924,6 +927,7 @@ func _build_ui() -> void:
 	var conditions_tab := _add_sheet_tab(_tabs, "Condizioni")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Poteri")
 	_spellcasting_ui = SpellcastingTab.new()
+	_spellcasting_ui.class_feature_requested.connect(_on_class_feature_requested)
 	spellcasting_tab.add_child(_spellcasting_ui)
 	_spellcasting_ui.call(
 		"setup",
@@ -935,6 +939,7 @@ func _build_ui() -> void:
 	)
 	var actions_tab := _add_sheet_tab(_tabs, "Cosa posso fare?")
 	_action_economy_ui = ActionEconomyTab.new()
+	_action_economy_ui.class_feature_requested.connect(_on_class_feature_requested)
 	actions_tab.add_child(_action_economy_ui)
 	_action_economy_ui.skill_requested.connect(_on_formula_roll_requested)
 	_action_economy_ui.attack_requested.connect(_roll_attack_from_sheet)
@@ -2819,6 +2824,67 @@ func _scroll_origins_to_top() -> void:
 		_origins_scroll.scroll_vertical = 0
 
 
+func _on_class_feature_requested(id: String) -> void:
+	var record := _current()
+	var feature: Dictionary = {}
+	for row: Dictionary in ClassFeatures.entries(record):
+		if row.id == id: feature = row; break
+	if feature.is_empty(): return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = String(feature.name)
+	dialog.ok_button_text = "Termina" if bool(feature.get("active", false)) else "Attiva"
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 8)
+	dialog.add_child(body)
+	var text := RichTextLabel.new()
+	text.custom_minimum_size = Vector2(400, 180)
+	text.text = ActionEconomyTab._source_text(String(feature.detail))
+	body.add_child(text)
+	var amount := SpinBox.new()
+	amount.min_value = 1
+	amount.max_value = 100
+	amount.value = 1
+	amount.visible = feature.mode in ["heal_pool", "conversion", "recovery"]
+	if feature.mode in ["conversion", "recovery"]: amount.max_value = 5
+	body.add_child(amount)
+	var direction := CheckBox.new()
+	direction.text = "Crea slot (disattiva per convertire uno slot in punti)"
+	direction.button_pressed = true
+	direction.visible = feature.mode == "conversion"
+	body.add_child(direction)
+	var enhanced := CheckBox.new()
+	enhanced.text = "Versione potenziata · 1 punto Focus"
+	enhanced.visible = feature.key in ["patient_defense", "step_of_the_wind"] and String(record.get("rules_version", "2014")) == "2024"
+	body.add_child(enhanced)
+	var note := Label.new()
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.text = ("Conferma l'effetto con i bersagli e gli eventuali tiri previsti dal privilegio. Il consumo viene registrato alla conferma."
+		if feature.mode == "context" else "Il privilegio rimane attivo fino a quando scegli Termina; rispetta durata e condizioni indicate sopra.")
+	body.add_child(note)
+	if feature.mode == "metamagic":
+		note.text = "Scegli Metamagia nella finestra di lancio dell’incantesimo."
+		dialog.get_ok_button().disabled = true
+	add_child(dialog)
+	var source_id := String(record.get("id", ""))
+	dialog.confirmed.connect(func() -> void:
+		if String(_current().get("id", "")) != source_id: return
+		var live := _current()
+		var result := (ClassFeatures.convert_slots(live, int(amount.value), direction.button_pressed)
+			if feature.mode == "conversion" else ClassFeatures.recover_slots(live, [int(amount.value)]) if feature.mode == "recovery" else ClassFeatures.activate(live, id, {"amount": int(amount.value), "enhanced": enhanced.button_pressed}))
+		if bool(result.get("ok", false)):
+			var updated: Dictionary = result.record
+			if _archive.save(updated) != OK:
+				_set_status("Impossibile salvare il privilegio.")
+				return
+			_update_external_record(updated)
+			_load_form(updated)
+			_sync_token_health(updated)
+		_set_status(String(result.get("message", "")))
+		dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free)
+	DialogLayout.popup(dialog, Vector2i(660, 430), 0.9)
+
+
 func _on_action_tracker_change(tracker_id: String, delta: int, maximum: int) -> void:
 	_change_tracker(tracker_id, delta, maximum)
 	if _action_economy_ui != null:
@@ -2930,7 +2996,7 @@ func _on_formula_roll_requested(key: String) -> void:
 
 
 
-func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary) -> void:
+func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary, forced_advantage: bool = false) -> void:
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
 		_set_status("Il roller della chat non è disponibile.")
@@ -2938,10 +3004,10 @@ func _roll_with_optional_dice(label: String, expression: String, key: String, re
 	var applicable: Array[Dictionary] = DiceBonuses.applicable(record, key)
 	# Bardic Inspiration is offered *after* the d20 has been rolled, as in
 	# the rules. The base result remains visible in the shared roller chat.
-	var base_result: int = int(roller.call(
-		"roll_expression_from_sheet", label, expression,
-		find_linked_token_for_creature(_selected_id)
-	))
+	var feature_advantage := forced_advantage or ClassFeatures.roll_advantage(record, key)
+	var base_result: int = (int(roller.call("roll_expression_from_sheet", label + " · Vantaggio (privilegio)", expression,
+		find_linked_token_for_creature(_selected_id), "advantage")) if feature_advantage else int(roller.call(
+		"roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))))
 	if applicable.is_empty():
 		return
 	var dialog := ConfirmationDialog.new()
@@ -4235,9 +4301,21 @@ func _update_speed_display() -> void:
 # The creature sheet casts from class, available and searched spells alike.
 # When no linked token or VTT effect exists, casting still records slot use.
 func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: Dictionary = {}) -> bool:
+	if ClassFeatures.is_active(_current(), "rage") and String(spell.get("action_kind", "spell")) != "ability":
+		_set_status("Non puoi lanciare incantesimi mentre sei in Ira.")
+		return false
 	if _current().is_empty():
 		_mobile_cast_pending = false
 		return false
+	_pending_metamagic_cast.clear()
+	if spell.get("metamagic", {}) is Dictionary and not (spell.get("metamagic", {}) as Dictionary).is_empty():
+		var plan := Metamagic.plan(_current(), spell, slot_level, spell.metamagic)
+		if not bool(plan.get("ok", false)):
+			_set_status(String(plan.get("message", "")))
+			return false
+		spell = plan.spell
+		_pending_metamagic_cast = {"creature_id": _selected_id, "spell_id": spell.get("id", ""),
+			"cost": plan.cost, "tracker": plan.tracker}
 	var spell_name: String = String(spell.get("name", "Incantesimo"))
 	var spell_id: String = String(spell.get("id", ""))
 	var source: String = String(spell.get("source", ""))
@@ -4281,12 +4359,14 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		return false
 	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
 		_start_sheet_concentration(spell)
+		_complete_metamagic_cast(null, spell)
 		if not grant.is_empty():
 			_complete_origin_spell_cast(null, spell)
 		_set_status("%s lanciato · effetto VTT non attivabile senza un token collegato." % spell_name)
 		return true
 	if not bool(runtime.call("has_runtime_spell_effect", spell_id, spell_name, source)):
 		_start_sheet_concentration(spell)
+		_complete_metamagic_cast(null, spell)
 		if not grant.is_empty():
 			_complete_origin_spell_cast(caster, spell)
 		_set_status("%s lanciato · nessun effetto VTT associato." % spell_name)
@@ -4298,6 +4378,7 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level, casting_context
 	))
 	if not activated:
+		_pending_metamagic_cast.clear()
 		_pending_origin_spell_cast.clear()
 		show_panel()
 		_set_status("Impossibile attivare l'effetto VTT di %s." % spell_name)
@@ -4328,11 +4409,32 @@ func complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 
 
 func cancel_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	if _metamagic_cast_matches(caster, spell): _pending_metamagic_cast.clear()
 	if _pending_cast_matches(caster, spell):
 		_pending_origin_spell_cast.clear()
 
 
+func _metamagic_cast_matches(caster: Node3D, spell: Dictionary) -> bool:
+	return not _pending_metamagic_cast.is_empty() and String(_pending_metamagic_cast.get("spell_id", "")) == String(spell.get("id", "")) and (caster == null or String(caster.get_meta("creature_id", "")) == String(_pending_metamagic_cast.get("creature_id", "")))
+
+
+func _complete_metamagic_cast(caster: Node3D, spell: Dictionary) -> void:
+	if not _metamagic_cast_matches(caster, spell): return
+	var pending := _pending_metamagic_cast.duplicate(true)
+	_pending_metamagic_cast.clear()
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != String(pending.creature_id): continue
+		if not ClassFeatures.spend(record, pending.tracker, int(pending.cost)):
+			_set_status("Punti stregoneria non più disponibili.")
+			return
+		if _archive.save(record) == OK:
+			_update_external_record(record)
+			_set_status("Metamagia applicata · %d punti stregoneria." % int(pending.cost))
+		return
+
+
 func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	_complete_metamagic_cast(caster, spell)
 	if not _pending_cast_matches(caster, spell):
 		return
 	var pending: Dictionary = _pending_origin_spell_cast.duplicate(true)
@@ -4811,7 +4913,11 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 	if damage:
 		_roll_with_optional_dice(label, expression, "attack_damage:" + attack_id, record)
 	else:
-		_roll_with_optional_dice(label, expression, "attack_hit:" + attack_id, record)
+		var item: Dictionary = attack.get("item_entry", {})
+		var ability := ItemRules.attack_ability(record, item, bool(attack.get("thrown", false))) if not item.is_empty() else "str"
+		var attack_context := attack.duplicate()
+		attack_context["weapon_kind"] = String(item.get("type", "")).split("|")[0]
+		_roll_with_optional_dice(label, expression, "attack_hit:" + attack_id, record, ClassFeatures.attack_advantage(record, attack_context, ability))
 
 
 func _refresh_attacks(record: Dictionary) -> void:
@@ -7632,6 +7738,7 @@ func finish_mobile_spell(spell: Dictionary, completed: bool) -> void:
 		_complete_origin_spell_cast(null, spell)
 	else:
 		_pending_origin_spell_cast.clear()
+		_pending_metamagic_cast.clear()
 	_mobile_cast_pending = false
 
 func _sheet_casting_context(record: Dictionary, spell: Dictionary, grant: Dictionary) -> Dictionary:
@@ -7648,6 +7755,12 @@ func _sheet_casting_context(record: Dictionary, spell: Dictionary, grant: Dictio
 				"spell_attack_bonus": BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_attack"),
 				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
 			}
+	if ClassFeatures.is_active(record, "innate_sorcery") and String(spell.get("source_class", "")) == "Sorcerer":
+		casting_context["spell_save_dc"] = int(casting_context.get("spell_save_dc", 8)) + 1
+		casting_context["spell_attack_advantage"] = true
+	if spell.get("metamagic", {}) is Dictionary and not (spell.get("metamagic", {}) as Dictionary).is_empty():
+		casting_context["metamagic"] = spell.metamagic.duplicate(true)
+		casting_context["rules_version"] = record.get("rules_version", "2014")
 	return casting_context
 
 func _mobile_appearance_completed(id: String, action: String, result: Dictionary) -> void:

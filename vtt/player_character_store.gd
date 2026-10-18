@@ -69,6 +69,8 @@ func create_character() -> Dictionary:
 		"spellcasting_section_abilities": {},
 		"dice_bonuses": [],
 		"active_spell_context": {},
+		"active_class_features": {},
+		"created_spell_slots": [],
 		"conditions": [],
 		"concentrating_spell_id": "",
 		"damage_defense_overrides": {},

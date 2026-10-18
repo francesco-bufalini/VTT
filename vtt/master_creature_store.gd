@@ -246,6 +246,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"spellbook_spells": value.get("spellbook_spells", []).duplicate(true) if value.get("spellbook_spells", []) is Array else [],
 		"spell_slots_total": _normalize_spell_slots(value.get("spell_slots_total", [])),
 		"spell_slots_spent": _normalize_spell_slots(value.get("spell_slots_spent", [])),
+		"active_class_features": value.get("active_class_features", {}).duplicate(true) if value.get("active_class_features", {}) is Dictionary else {},
+		"created_spell_slots": value.get("created_spell_slots", []).duplicate() if value.get("created_spell_slots", []) is Array else [],
 		"pact_slots_total": maxi(0, int(value.get("pact_slots_total", 0))),
 		"pact_slots_spent": maxi(0, int(value.get("pact_slots_spent", 0))),
 		"pact_slot_level": clampi(int(value.get("pact_slot_level", 1)), 1, 5),

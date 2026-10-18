@@ -36,7 +36,7 @@ func run() -> void:
 		return
 	if not check(root.find_children("*", "Node3D", true, false).is_empty(), "Mobile must not instantiate a board"):
 		return
-	if not check(sheet._tabs.get_tab_count() == 8 and not sheet._tabs.tabs_visible,
+	if not check(sheet._tabs.get_tab_count() == 9 and not sheet._tabs.tabs_visible,
 		"All current sheet tabs must remain accessible through the touch picker"):
 		return
 	assert(sheet._tabs.get_tab_title(1) == "Caratteristiche e abilità")

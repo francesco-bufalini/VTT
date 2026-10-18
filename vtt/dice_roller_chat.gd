@@ -593,7 +593,8 @@ func _roll_specific(
 func roll_expression_from_sheet(
 	label: String,
 	expression: String,
-	actor: Node3D = null
+	actor: Node3D = null,
+	feature_roll_mode: String = "normal"
 ) -> int:
 	var parsed := parse_dice_expression(expression)
 	if parsed.is_empty():
@@ -625,6 +626,8 @@ func roll_expression_from_sheet(
 			has_single_d20 = true
 			break
 	var roll_mode := _selected_roll_mode(1) if has_single_d20 else "normal"
+	if has_single_d20 and feature_roll_mode in ["advantage", "disadvantage"]:
+		roll_mode = "normal" if roll_mode != "normal" and roll_mode != feature_roll_mode else feature_roll_mode
 	var candidate_rolls: Array = []
 	for term_value: Variant in terms:
 		if not term_value is Dictionary:

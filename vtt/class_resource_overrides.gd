@@ -65,6 +65,20 @@ static func for_class(
 	var result: Array[Dictionary] = []
 	if class_level < 1 or class_level > 20:
 		return result
+	# Revised consumables absent from numeric class-table columns. This is the
+	# normalization layer; generated 5etools/Fight Club output stays untouched.
+	if class_source.to_upper() == "XPHB":
+		var revised: Array[Dictionary] = []
+		match klass_name.to_lower():
+			"sorcerer": revised = [{"name": "Innate Sorcery", "max": 2, "level": 1, "recharge": "long_rest"}]
+			"fighter": revised = [{"name": "Action Surge", "max": 2 if class_level >= 17 else 1, "level": 2, "recharge": "short_rest"}, {"name": "Indomitable", "max": 3 if class_level >= 17 else 2 if class_level >= 13 else 1, "level": 9, "recharge": "long_rest"}]
+			"paladin": revised = [{"name": "Lay on Hands", "max": 5 * class_level, "level": 1, "recharge": "long_rest"}]
+			"wizard": revised = [{"name": "Arcane Recovery", "max": 1, "level": 1, "recharge": "long_rest"}]
+		for resource: Dictionary in revised:
+			if class_level >= int(resource.level):
+				resource["column"] = resource.name
+				resource["origin"] = resource.name
+				result.append(resource)
 	for raw_class: Variant in _classes:
 		if not raw_class is Dictionary:
 			continue

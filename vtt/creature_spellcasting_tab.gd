@@ -1,4 +1,10 @@
 extends VBoxContainer
+const Metamagic = preload("res://vtt/spell_metamagic.gd")
+var _metamagic_box: VBoxContainer
+var _metamagic_checks: Array[CheckBox] = []
+var _metamagic_target_check: CheckBox
+var _metamagic_element: OptionButton
+signal class_feature_requested(id: String)
 const SpellView = preload("res://vtt/creature_spellcasting_view.gd")
 const ClassSelections = preload("res://vtt/class_spell_selection.gd")
 const SelectionDialog = preload("res://vtt/spell_selection_dialog.gd")
@@ -541,6 +547,8 @@ func _build_cast_dialog() -> void:
 	_cast_slot_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cast_slot_choice.custom_minimum_size.x = 180
 	slot_row.add_child(_cast_slot_choice)
+	_metamagic_box = VBoxContainer.new()
+	body.add_child(_metamagic_box)
 	_cast_dialog.confirmed.connect(_confirm_cast_spell)
 
 
@@ -551,21 +559,21 @@ func _request_cast_spell() -> void:
 		return
 	spell["caster_spellcasting_ability"] = _cast_ability_for_spell(spell)
 	var base_level: int = int(spell.get("level", 0))
-	if base_level <= 0:
+	if base_level <= 0 and preload("res://vtt/class_feature_activation.gd").metamagic_options(_record).is_empty():
 		_dispatch_cast(spell, 0)
 		return
 	_pending_cast_spell = spell.duplicate(true)
 	_cast_slot_choice.clear()
 	_cast_slot_choice.add_item("Nessuno slot (non consumare)", 0)
 	var default_index: int = 0
-	for level: int in range(base_level, 10):
+	for level: int in range(maxi(1, base_level), 10) if base_level > 0 else []:
 		var remaining: int = maxi(0, _effective_slot_total(level) - int(_spent[level]))
 		if remaining <= 0:
 			continue
 		_cast_slot_choice.add_item("%d° livello · %d rimasti" % [level, remaining], level)
 		if default_index == 0:
 			default_index = _cast_slot_choice.item_count - 1
-	if _pact_level >= base_level and _pact_spent < _effective_pact_total():
+	if base_level > 0 and _pact_level >= base_level and _pact_spent < _effective_pact_total():
 		_cast_slot_choice.add_item(
 			"Patto · %d° livello · %d rimasti" % [
 				_pact_level, _effective_pact_total() - _pact_spent
@@ -585,6 +593,19 @@ func _confirm_cast_spell() -> void:
 	if _pending_cast_spell.is_empty():
 		return
 	var spell: Dictionary = _pending_cast_spell.duplicate(true)
+	var selected: Array = []
+	for check: CheckBox in _metamagic_checks:
+		if check.button_pressed: selected.append(check.get_meta("option_name"))
+	if not selected.is_empty():
+		var selection := {"names": selected, "eligible_targeting": _metamagic_target_check.button_pressed,
+			"damage_type": _metamagic_element.get_item_metadata(_metamagic_element.selected)}
+		var chosen := _cast_slot_choice.get_selected_id()
+		var level := chosen - 100 if chosen >= 100 else maxi(int(spell.get("level", 0)), chosen)
+		var plan := Metamagic.plan(_record, spell, level, selection)
+		if not bool(plan.get("ok", false)):
+			if _on_status.is_valid(): _on_status.call(String(plan.get("message", "")))
+			return
+		spell["metamagic"] = selection
 	_pending_cast_spell.clear()
 	var grant: Dictionary = _pending_granted_cast.duplicate(true)
 	_pending_granted_cast.clear()
@@ -736,7 +757,8 @@ static func _normal_slots(value: Variant) -> Array:
 func _effective_slot_total(lvl: int) -> int:
 	if lvl < 0 or lvl >= _totals.size():
 		return 0
-	return maxi(0, Bonuses.add(_record, "slot:" + str(lvl), int(_totals[lvl])))
+	var created: Array = _record.get("created_spell_slots", [])
+	return maxi(0, Bonuses.add(_record, "slot:" + str(lvl), int(_totals[lvl]))) + (int(created[lvl]) if created.size() > lvl else 0)
 
 
 func _effective_pact_total() -> int:
@@ -1693,6 +1715,7 @@ func _build_view() -> void:
 	_view.name = "SpellcastingColumns"
 	add_child(_view)
 	_view.setup({"record": Callable(self, "_view_record"), "cast_class": Callable(self, "_view_cast_class"),
+		"class_feature": func(id: String) -> void: class_feature_requested.emit(id),
 		"cast_origin": Callable(self, "_cast_granted_spell"), "slot": Callable(self, "_view_slot"),
 		"pact": Callable(self, "_view_pact"), "restore": Callable(self, "_restore_all"),
 		"tracker": Callable(self, "_view_tracker"), "edit_class": Callable(self, "_view_edit_class"),
@@ -1772,6 +1795,7 @@ func _view_cast_class(spell: Dictionary, member: Dictionary) -> void:
 	_view_selected_class = member.duplicate(true) if String(member.get("id", "")) != "manual" else {}
 	var section_id: String = String(member.get("id", "manual"))
 	_view_selected_spell["caster_spellcasting_ability"] = _section_ability(section_id, [_ability_for_class(String(member.get("name", "")))])
+	_view_selected_spell["source_class"] = member.get("name", "")
 	_refresh_casting_summary()
 	_request_cast_spell()
 
@@ -1866,6 +1890,7 @@ func _view_edit_manual() -> void:
 	)
 
 func _show_cast_description(spell: Dictionary) -> void:
+	_build_metamagic_options(spell)
 	# Keep the prompt in the same container as description and slot choice.
 	# AcceptDialog's internal label otherwise overlaps the custom body.
 	_cast_prompt.text = _cast_dialog.dialog_text
@@ -1880,3 +1905,33 @@ func _show_cast_description(spell: Dictionary) -> void:
 	_cast_dialog.child_controls_changed()
 	_cast_dialog.reset_size()
 	DialogLayout.popup(_cast_dialog, Vector2i(620, 420), 0.92)
+
+func _build_metamagic_options(spell: Dictionary) -> void:
+	for child: Node in _metamagic_box.get_children():
+		_metamagic_box.remove_child(child)
+		child.queue_free()
+	_metamagic_checks.clear()
+	if String(spell.get("action_kind", "spell")) == "ability": return
+	var options := preload("res://vtt/class_feature_activation.gd").metamagic_options(_record)
+	if options.is_empty(): return
+	var caption := Label.new()
+	caption.text = "Metamagia · seleziona le opzioni da applicare a questo lancio"
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_metamagic_box.add_child(caption)
+	for option: Dictionary in options:
+		var check := CheckBox.new()
+		check.text = String(option.name) + " · " + ("livello incantesimo (minimo 1)" if option.name == "Twinned Spell" and String(_record.get("rules_version", "2014")) != "2024" else str(option.cost)) + " punti"
+		check.set_meta("option_name", option.name)
+		check.tooltip_text = String(option.get("description", ""))
+		_metamagic_box.add_child(check)
+		_metamagic_checks.append(check)
+	_metamagic_target_check = CheckBox.new()
+	_metamagic_target_check.text = ("Raddoppiato: lo slot superiore aggiunge un bersaglio" if String(_record.get("rules_version", "2014")) == "2024" else "Raddoppiato: un solo bersaglio possibile, gittata non Personale")
+	_metamagic_target_check.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_metamagic_box.add_child(_metamagic_target_check)
+	_metamagic_element = OptionButton.new()
+	for element: String in Metamagic.ELEMENTS:
+		_metamagic_element.add_item(element.capitalize())
+		_metamagic_element.set_item_metadata(_metamagic_element.item_count - 1, element)
+	_metamagic_element.tooltip_text = "Tipo di danno per Incantesimo Trasmutato"
+	_metamagic_box.add_child(_metamagic_element)

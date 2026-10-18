@@ -114,6 +114,8 @@ $fastTests = @(
     "test_action_dashboard_ui.gd",
     "test_action_spell_groups.gd",
     "test_creature_action_economy.gd",
+    "test_class_feature_activation.gd",
+    "test_attack_action_summary.gd",
     "test_feature_timing_recovery.gd",
     "test_combat_basic_actions.gd",
     "test_map_data_controller.gd",

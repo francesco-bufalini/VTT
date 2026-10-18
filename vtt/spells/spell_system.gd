@@ -354,6 +354,11 @@ func activate_spell_from_caster(
 		if caster_context.has(field):
 			spell_data["caster_" + field] = caster_context[field]
 
+	if caster_context.get("metamagic", {}) is Dictionary and not (caster_context.get("metamagic", {}) as Dictionary).is_empty():
+		var modification := preload("res://vtt/spell_metamagic.gd").apply_to_spell(spell_data,
+			maxi(int(spell_data.get("level", 0)), cast_slot_level), caster_context.metamagic, String(caster_context.get("rules_version", "2014")) == "2024")
+		if not bool(modification.get("ok", false)): return false
+		spell_data = modification.spell
 	var resolved_spell_id: String = String(
 		spell_data.get("id", spell_id)
 	)
@@ -5493,7 +5498,7 @@ func begin_remote_spell(caster: Node3D, owner: String, request: Dictionary) -> D
 	var context: Dictionary = {}
 	var raw: Variant = request.get("context", {})
 	if raw is Dictionary:
-		for key: String in ["spellcasting_ability", "spell_attack_bonus", "spell_save_dc", "source_class"]:
+		for key: String in ["spellcasting_ability", "spell_attack_bonus", "spell_save_dc", "source_class", "metamagic", "rules_version"]:
 			if raw.has(key):
 				context[key] = raw[key]
 	var accepted := activate_spell_from_caster(String(request.get("spell_id", "")), caster,
