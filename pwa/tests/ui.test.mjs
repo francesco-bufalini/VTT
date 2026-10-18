@@ -757,7 +757,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));
  assert.match(document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot').textContent,/3\s*\/\s*4/);
- assert.deepEqual([...document.querySelectorAll('.magic-source:first-child .magic-level[data-magic-level]')].map(x=>x.dataset.magicLevel),['1','2','3'],
+ assert.deepEqual([...document.querySelectorAll('.magic-panel .magic-source:first-of-type .magic-level[data-magic-level]')].map(x=>x.dataset.magicLevel),['1','2','3'],
   'slot levels render even without any prepared spells');
  assert.equal(document.querySelectorAll('.magic-level-slot + .slot-counter .btn').length,0);
  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
