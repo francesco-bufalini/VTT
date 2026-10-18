@@ -168,6 +168,7 @@ async function render() {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = html;
     decorateSheetHeadings();
+    if(state.page==="session" && state.map) void refreshSessionSnapshot();
     if(state.paired && !realtimeStopped && !state.stopMap) startMap();
     if(state.page === "chat" && state.paired) startChat();
   } catch(error) {
@@ -766,6 +767,77 @@ function sessionView() {
   return html;
 }
 
+function renderSessionIfIdle() {
+  if(state.page!=="session")return;
+  // A live poll must not close a modal or destroy a focused mobile editor.
+  if(app.querySelector("dialog[open]"))return;
+  const focused=document.activeElement;
+  if(focused && app.contains(focused) && ["INPUT","SELECT","TEXTAREA"].includes(focused.tagName))return;
+  const scroll=window.scrollY;
+  app.innerHTML=sessionView();
+  window.scrollTo(0,scroll);
+}
+async function refreshSessionSnapshot(force=false) {
+  if(!state.paired||!state.online||state.page!=="session"||!state.map)return;
+  const key=currentGameSession+"|"+state.tokenId+"|"+snapshotRevision(state.map);
+  if(!force && key===state.snapshotKey)return;
+  const generation=++snapshotGeneration;
+  state.snapshotKey=key;
+  state.snapshotPending=true;
+  renderSessionIfIdle();
+  try {
+    const result=await action("snapshot",{token_id:state.tokenId,
+      owner_id:await ownerId(),field_feet:120,attack:{}});
+    if(generation!==snapshotGeneration)return;
+    if(!snapshotSource(result))throw Error(result?.error||"Snapshot non disponibile.");
+    state.liveSnapshot=result;
+  }catch(error){
+    if(generation!==snapshotGeneration)return;
+    state.snapshotKey="";
+    // Keep the last valid image visible across network interruptions.
+    if(force)message("Snapshot: "+errorMessage(error),true);
+  }finally{
+    if(generation===snapshotGeneration){
+      state.snapshotPending=false;
+      renderSessionIfIdle();
+    }
+  }
+}
+function fillSessionSpells(query="") {
+  const select=app.querySelector("#token-spell-select");
+  if(!select)return;
+  const search=query.trim().toLocaleLowerCase("it");
+  const rows=(state.spellCatalog||[]).filter(s=>s?.id&&s?.name&&
+    (!search||s.name.toLocaleLowerCase("it").includes(search))).slice(0,65);
+  select.innerHTML=rows.map(spell=>'<option value="'+esc(spell.id)+'">'+esc(spell.name)+'</option>').join("");
+}
+function fillSessionMiniatures(query="") {
+  const select=app.querySelector("#token-mini-select");
+  if(!select)return;
+  const search=query.trim().toLocaleLowerCase("it");
+  const rows=(state.miniatureCatalog||[]).filter(m=>m?.id&&m?.name&&
+    (!search||m.name.toLocaleLowerCase("it").includes(search))).slice(0,65);
+  select.innerHTML=rows.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join("");
+}
+async function loadSessionMiniatures() {
+  if(state.miniatureCatalog)return;
+  const result=await fetch("/catalog/miniatures.json",{cache:"no-store"});
+  if(!result.ok)throw Error("Catalogo miniature non disponibile.");
+  const data=await result.json();
+  state.miniatureCatalog=Array.isArray(data.tokens)?data.tokens:[];
+}
+async function reopenTokenEditor() {
+  renderSessionIfIdle();
+  const dialog=app.querySelector("#session-token-dialog");
+  if(dialog){
+    dialog.showModal();
+    fillSessionSpells();
+    if(app.querySelector("#token-mini-select")){
+      try{await loadSessionMiniatures();fillSessionMiniatures();}
+      catch(error){message(errorMessage(error),true);}
+    }
+  }
+}
 async function refreshConnection(quiet=false) {
   // Offline does not mean unpaired: a stored credential can be validated again
   // when the host comes back, without requiring another single-use QR.
@@ -796,6 +868,9 @@ function startMap() {
   state.stopMap = subscribeMap(data=>{
     if(generation!==mapGeneration)return;
     const recovered=!state.online;
+    const currentFingerprint=snapshotRevision(data);
+    const changed=currentFingerprint!==previousMapFingerprint;
+    previousMapFingerprint=currentFingerprint;
     state.map = data;
     state.online=true;
     state.hostReachable=true;
@@ -837,13 +912,9 @@ function startMap() {
     }
     if(!entries.some(x=>x.id===state.tokenId)) state.tokenId="";
     if(!state.tokenId && entries.length) state.tokenId=entries[0].id;
-    // Rebuild only the session panel: sheet/chat/library views must never
-    // be replaced by a background tactical polling response.
-    if(state.page==="session" && (!app.contains(document.activeElement) ||
-       document.activeElement?.tagName==="BUTTON")){
-      const scrollY=window.scrollY;
-      app.innerHTML=sessionView();
-      window.scrollTo(0,scrollY);
+    if(changed||recovered){
+      renderSessionIfIdle();
+      void refreshSessionSnapshot();
     }
   },error=>{
     if(generation!==mapGeneration)return;
@@ -854,6 +925,10 @@ function startMap() {
     // network loss is recoverable: subscribeMap continues retrying.
     state.map=null;
     state.tokenId="";
+    previousMapFingerprint="";
+    state.snapshotKey="";
+    ++snapshotGeneration;
+    state.snapshotPending=false;
     tokenStatusFingerprint="";
     if(error?.status===401){
       state.paired=false;state.session=null;
@@ -863,7 +938,7 @@ function startMap() {
       return;
     }
     syncNav();
-    if(state.page==='session')app.innerHTML=sessionView();
+    renderSessionIfIdle();
     if(wasOnline)message("Connessione persa. Riconnessione automatica in corso.");
   },2500);
 }
@@ -1174,7 +1249,7 @@ async function handleField(target) {
 }
 async function refreshMapOnce() {
   state.map=await map();
-  if(state.page==="session"){const scroll=window.scrollY;app.innerHTML=sessionView();window.scrollTo(0,scroll);}
+  if(state.page==="session"){renderSessionIfIdle();void refreshSessionSnapshot(true);}
 }
 
 // Android and PWA use the same native targeting commands, not independent
