@@ -1822,7 +1822,9 @@ async function handleField(target) {
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
     const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
-    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),...(slot==='body'?{}:{['hand_'+slot+'_special']:special})});
+    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),
+      ...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
+      ...(['main','off'].includes(slot)?{hand_grip_two_handed:false}:{})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -1931,6 +1933,19 @@ async function handleField(target) {
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    if(key==='hand_grip_two_handed'){
+      const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
+      const usable=main&&itemKind(main)==='weapon'&&hasProperty(resolveOwnedItem(main),'V');
+      if(!usable)throw Error('Nessuna arma versatile nella mano principale.');
+      const inventory=structuredClone(creature.inventory||[]);
+      if(value)for(const item of inventory)item.equipped_slots=(item.equipped_slots||[]).filter(slot=>slot!=='off');
+      await patch({hand_grip_two_handed:value,...(value?{inventory,hand_off_special:'none'}:{})});
+      await render();return;
+    }
+    if(key==='attack_ability'&&!['str','dex'].includes(value))
+      throw Error('Caratteristica attacchi non valida.');
+    if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
+      throw Error('Ambito caratteristica attacchi non valido.');
     const changes=identityPatch(creature,key,value);
     if(key==='pact_slot_level'){
       const calculated=await computeLocalData(creature);
@@ -1942,7 +1957,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(key==='rules_version'||key==='primary_class_level')await render();
+    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
