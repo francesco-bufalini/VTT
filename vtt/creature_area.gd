@@ -996,7 +996,7 @@ func _build_ui() -> void:
 	_party = LineEdit.new()
 	_party.custom_minimum_size.x = 85
 	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_party.placeholder_text = "Default"
+	_party.placeholder_text = "Gruppo predefinito"
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
 	var alignment_row := HBoxContainer.new()
@@ -1472,7 +1472,7 @@ func _build_ui() -> void:
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	offhand_row.add_child(_hand_off_picker)
 	_show_offhand_all = CheckButton.new()
-	_show_offhand_all.text = "Only if finesse"
+	_show_offhand_all.text = "Solo armi accurate"
 	_show_offhand_all.tooltip_text = "Filtra la lista della mano secondaria alle armi con proprietà Accurata (Finesse). Non è una regola per l'attacco con azione bonus."
 	_show_offhand_all.button_pressed = true
 	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
@@ -2911,7 +2911,7 @@ func _on_class_feature_requested(id: String) -> void:
 		if String(_current().get("id", "")) != source_id: return
 		var live := _current()
 		if feature.mode == "metamagic_roll" and board_root.get_node_or_null("DiceRollerChat") == null:
-			_set_status("Il roller della chat non è disponibile.")
+			_set_status("Il lanciatore di dadi della chat non è disponibile.")
 			return
 		var recovery_levels: Array = []
 		for index: int in range(recovery_picks.size()):
@@ -3002,7 +3002,7 @@ func _on_basic_action_requested(action_id: String) -> void:
 	body.add_child(caption)
 	if action_id != "help" and String(record.get("rules_version", "2014")) != "2024":
 		var roll := Button.new()
-		roll.text = "Tira Atletica con il roller della scheda"
+		roll.text = "Tira Atletica con i dadi della scheda"
 		roll.pressed.connect(func() -> void: _on_formula_roll_requested("skill:athletics"))
 		body.add_child(roll)
 	var picker := OptionButton.new()
@@ -3053,7 +3053,7 @@ func _on_formula_roll_requested(key: String) -> void:
 				break
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var modifier: int = BonusRules.value(record, key)
 	_roll_with_optional_dice(label, "1d20%+d" % modifier, key, record)
@@ -3063,7 +3063,7 @@ func _on_formula_roll_requested(key: String) -> void:
 func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary, forced_advantage: bool = false) -> void:
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var applicable: Array[Dictionary] = DiceBonuses.applicable(record, key)
 	# Bardic Inspiration is offered *after* the d20 has been rolled, as in
@@ -4951,7 +4951,7 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 		return
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller della chat non è disponibile.")
+		_set_status("Il lanciatore di dadi della chat non è disponibile.")
 		return
 	var label: String = String(record.get("name", "Creatura")) + " · " + String(attack.get("name", "Attacco"))
 	var expression := ""
@@ -5073,7 +5073,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		inspect_range.text = "Vedi gittata" if _touch_layout else "◎ Gittata"
 		inspect_range.tooltip_text = "Chiude la scheda e mostra le creature raggiungibili da questo attacco. Clic per selezionare, Esc per chiudere, nessun danno automatico."
 		if _touch_layout:
-			inspect_range.tooltip_text = "Richiede al desktop uno snapshot della mappa centrato sulla creatura, con la gittata di questo attacco."
+			inspect_range.tooltip_text = "Richiede al desktop un'anteprima della mappa centrata sulla creatura, con la gittata di questo attacco."
 		inspect_range.pressed.connect(_preview_attack_from_sheet.bind(attack_id))
 		hit_row.add_child(inspect_range)
 		var damage_row := HFlowContainer.new()
@@ -5235,7 +5235,7 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		var damage_detail: String = "Danni: %s\n%s" % [damage, AttackData.damage_modifier_description(record, attack)]
+		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
 		if String(attack.get("slot", "")) == "off":
 			if AttackData.offhand_bonus_attack_allowed(record):
 				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
@@ -5860,7 +5860,7 @@ func _build_hp_delta_dialog() -> void:
 	body.add_theme_constant_override("separation", 10)
 	_hp_delta_dialog.add_child(body)
 	var explanation := Label.new()
-	explanation.text = "Scegli una quantità o tira un dado con il roller."
+	explanation.text = "Scegli una quantità oppure lancia i dadi."
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(explanation)
 	_hp_amount_row = HBoxContainer.new()
@@ -5951,7 +5951,7 @@ func _confirm_hp_delta() -> void:
 	if _hp_use_dice.button_pressed:
 		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
 		if roller == null or not roller.has_method("roll_expression_from_sheet"):
-			_set_status("Il roller della chat non è disponibile.")
+			_set_status("Il lanciatore di dadi della chat non è disponibile.")
 			return
 		var actor: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 		var rolled: Variant = roller.call(
@@ -7416,50 +7416,6 @@ func _refresh_conditions(record: Dictionary) -> void:
 		remove.pressed.connect(_remove_active_spell.bind(sid))
 		row.add_child(remove)
 
-	# Persistent abilities are effects, with an explicit source and an end
-	# action. Do not add them to record.conditions: that array holds rule
-	# conditions and must remain compatible with tokens and spell effects.
-	var feature_heading := Label.new()
-	feature_heading.text = "Capacità attive"
-	feature_heading.add_theme_font_size_override("font_size", 15)
-	_condition_rows.add_child(feature_heading)
-	var features: Array[Dictionary] = ClassFeatures.active_effects(record)
-	if features.is_empty():
-		var empty_features := Label.new()
-		empty_features.text = "Nessuna capacità attiva."
-		empty_features.modulate.a = 0.65
-		_condition_rows.add_child(empty_features)
-	for feature: Dictionary in features:
-		var row := HBoxContainer.new()
-		_condition_rows.add_child(row)
-		var label := Label.new()
-		label.text = "✦ " + String(feature.get("name", "Capacità"))
-		if not bool(feature.get("effective", false)):
-			label.text += " (sospesa)"
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.tooltip_text = String(feature.get("summary", "")) + "\nOrigine: " + String(feature.get("origin_id", ""))
-		row.add_child(label)
-		var detail := Button.new()
-		detail.text = "ⓘ" if _touch_layout else "Leggi effetti"
-		detail.tooltip_text = "Leggi gli effetti e la loro origine"
-		if _touch_layout:
-			detail.set_meta("touch_compact_action", true)
-			detail.custom_minimum_size = Vector2(34, 34)
-		detail.pressed.connect(_show_effect_description.bind({
-			"name": String(feature.get("name", "Capacità")),
-			"description": String(feature.get("summary", "")) + "\n\n" + String(feature.get("description", "")) + "\n\nOrigine: " + String(feature.get("origin_id", ""))
-		}))
-		row.add_child(detail)
-		var end := Button.new()
-		end.text = "×" if _touch_layout else "Termina"
-		end.tooltip_text = "Termina questa capacità e rimuovi i suoi benefici, senza restituire le risorse spese"
-		if _touch_layout:
-			end.set_meta("touch_compact_action", true)
-			end.custom_minimum_size = Vector2(34, 34)
-		end.pressed.connect(_end_active_class_effect.bind(String(feature.get("key", ""))))
-		row.add_child(end)
-
 	# Other Effects immediately follow the spell section; then Conditions and
 	# diseases retain their ordinary checkbox-based management.
 	var active: Array = record.get("conditions", [])
@@ -7505,26 +7461,6 @@ func _refresh_conditions(record: Dictionary) -> void:
 				info.custom_minimum_size = Vector2(34, 34)
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
-
-
-func _end_active_class_effect(key: String) -> void:
-	var record: Dictionary = _current()
-	if record.is_empty():
-		return
-	var result: Dictionary = ClassFeatures.deactivate(record, key)
-	if not bool(result.get("ok", false)):
-		return
-	var updated: Dictionary = result.get("record", {})
-	_recalculate_bonus_mirrors(updated)
-	var error: Error = _archive.save(updated)
-	if error != OK:
-		_set_status("Impossibile terminare la capacità: " + error_string(error))
-		return
-	_replace_current_record(updated)
-	_load_form(updated)
-	_apply_sheet_properties(updated)
-	_sync_token_health(updated)
-	_set_status(String(result.get("message", "Effetto terminato.")))
 
 
 func _open_add_active_spell() -> void:

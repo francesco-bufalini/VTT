@@ -604,7 +604,7 @@ func _build_token_generation_controls() -> void:
 	size_selector.disabled = false
 	size_selector.tooltip_text = (
 		"La miniatura propone una taglia iniziale, ma puoi cambiarla. "
-		+ "La scelta modifica footprint, collisione e scala del token."
+		+ "La scelta modifica l'ingombro sulla griglia, la collisione e la scala del token."
 	)
 	if not size_selector.item_selected.is_connected(_on_token_size_selected):
 		size_selector.item_selected.connect(_on_token_size_selected)
@@ -613,10 +613,10 @@ func _build_token_generation_controls() -> void:
 	if reach_label == null:
 		reach_label = Label.new()
 		reach_label.name = "ReachLabel"
-		reach_label.text = "Gittata della creatura (ft)"
+		reach_label.text = "Portata della creatura (ft)"
 		reach_label.tooltip_text = (
-			"Default: 5 ft per Medium o inferiore, 10 ft Large, "
-			+ "15 ft Huge, 20 ft Gargantuan. Puoi sovrascriverla."
+			"Predefinita: 5 ft per taglie Medie o inferiori, 10 ft per creature Grandi, "
+			+ "15 ft per Enormi e 20 ft per Mastodontiche. Puoi modificarla."
 		)
 		content_box.add_child(reach_label)
 
@@ -954,7 +954,7 @@ func _on_token_download_button_pressed() -> void:
 
 	if token_download_button != null:
 		token_download_button.disabled = true
-		token_download_button.text = "Download..."
+		token_download_button.text = "Scaricamento…"
 
 	var error := TokenPackManager.download_token(token_id)
 	if error != OK:
@@ -963,7 +963,7 @@ func _on_token_download_button_pressed() -> void:
 			token_download_button.text = "Scarica"
 		_on_remote_token_download_failed(
 			token_id,
-			"Download non avviato: %s" % error_string(error)
+			"Scaricamento non avviato: %s" % error_string(error)
 		)
 
 
@@ -1938,10 +1938,10 @@ func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
 	_sheet_spawn_pending_record = record.duplicate(true)
 	var origin := String(profile.get("_pack_origin", ""))
 	if origin == "remote" and not TokenPackManager.is_downloaded(miniature_id) and not TokenPackManager.is_mounted(miniature_id):
-		_set_identity_placement_hint("Download dell'aspetto attuale in corso: %s" % miniature_id)
+		_set_identity_placement_hint("Scaricamento della miniatura attuale in corso: %s" % miniature_id)
 		var error: Error = TokenPackManager.download_token(miniature_id)
 		if error != OK:
-			_cancel_sheet_spawn_with_notice("Piazzamento annullato: download della miniatura non riuscito (%s)." % error_string(error))
+			_cancel_sheet_spawn_with_notice("Piazzamento annullato: impossibile scaricare la miniatura (%s)." % error_string(error))
 		return
 	_finish_sheet_spawn_without_dialog()
 
@@ -4303,22 +4303,22 @@ func _build_token_state_dialog() -> void:
 
 	var party_label := Label.new()
 	party_label.name = "PartyLabel"
-	party_label.text = "Party / gruppo tattico"
+	party_label.text = "Gruppo tattico"
 	content_box.add_child(party_label)
 
 	token_party_input = LineEdit.new()
 	token_party_input.name = "PartyInput"
-	token_party_input.placeholder_text = "Vuoto = party Default"
+	token_party_input.placeholder_text = "Vuoto = gruppo predefinito"
 	token_party_input.max_length = 80
 	token_party_input.tooltip_text = (
-		"Token senza party esplicito appartengono tutti al party Default."
+		"I token senza un gruppo specificato appartengono al gruppo predefinito (Default)."
 	)
 	content_box.add_child(token_party_input)
 
 	var party_help := Label.new()
 	party_help.name = "PartyHelp"
 	party_help.text = (
-		"Lascia vuoto per usare il party Default. Token con lo stesso party "
+		"Lascia vuoto per usare il gruppo predefinito (Default). I token dello stesso gruppo "
 		+ "sono alleati ai fini dell'affiancamento."
 	)
 	party_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -4327,7 +4327,7 @@ func _build_token_state_dialog() -> void:
 
 	var states_label := Label.new()
 	states_label.name = "StatesLabel"
-	states_label.text = "Condizioni e marker D&D 5e"
+	states_label.text = "Condizioni e indicatori D&D 5e"
 	states_label.add_theme_font_size_override("font_size", 14)
 	content_box.add_child(states_label)
 
@@ -4341,7 +4341,7 @@ func _build_token_state_dialog() -> void:
 
 	_refresh_shared_condition_choices(ContentCatalog.condition_definitions())
 	_token_effect_dialog = AcceptDialog.new()
-	_token_effect_dialog.title = "5etools · Effect details"
+	_token_effect_dialog.title = "5etools · Dettagli dell'effetto"
 	_token_effect_dialog.min_size = Vector2i(540, 400)
 	add_child(_token_effect_dialog)
 	_token_effect_text = RichTextLabel.new()
@@ -4354,7 +4354,7 @@ func _build_token_state_dialog() -> void:
 	var help := Label.new()
 	help.name = "StatesHelp"
 	help.text = (
-		"Condizioni, malattie ed effetti di 5e.tools e homebrew. "
+		"Condizioni, malattie ed effetti di 5etools e contenuti personalizzati. "
 		+ "Passa il mouse per leggere gli effetti e le versioni."
 	)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -4377,8 +4377,8 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 		var heading := Label.new()
 		heading.text = {
 			"conditions": "Conditions · 5etools",
-			"diseases": "Diseases / magical diseases",
-			"effects": "Other effects · 5etools / homebrew"
+			"diseases": "Malattie e malattie magiche",
+			"effects": "Altri effetti · 5etools e personalizzati"
 		}[category]
 		heading.add_theme_font_size_override("font_size", 15)
 		token_state_grid.add_child(heading)
@@ -4398,7 +4398,7 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 			token_state_checks[condition_id] = check
 			var info := Button.new()
 			info.text = "Leggi effetti"
-			info.tooltip_text = "Read the full 5etools rules text"
+			info.tooltip_text = "Leggi la descrizione completa dell'effetto su 5etools"
 			info.pressed.connect(_show_shared_effect_description.bind(definition.duplicate(true)))
 			token_state_grid.add_child(info)
 
@@ -4406,7 +4406,7 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 func _show_shared_effect_description(definition: Dictionary) -> void:
 	if _token_effect_dialog == null or _token_effect_text == null:
 		return
-	_token_effect_dialog.title = String(definition.get("name", "Effect"))
+	_token_effect_dialog.title = String(definition.get("name", "Effetto"))
 	_token_effect_text.text = ContentCatalog.description(definition)
 	DialogLayout.popup(_token_effect_dialog, Vector2i(560, 440))
 

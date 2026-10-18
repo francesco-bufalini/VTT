@@ -268,7 +268,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
- const nativeNote='<p class="hint">Modifica i valori base o usa ± per gestire i bonus. I risultati si aggiornano sulla scheda, anche offline.</p>';
+ const nativeNote='<p class="hint">Modifica i valori di base o usa ± per gestire i bonus. I risultati si aggiornano sulla scheda, anche offline.</p>';
  if(section==='info')return panel('Identità',cols(
     select('Regole','rules_version',[['2014','2014'],['2024','2024']],c.rules_version||'2014')+
     field('Nome','name',c.name)+field('Fazione','party_id',c.party_id||'Default')+
@@ -283,8 +283,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       summary([['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'Da specie']]))+
     '<h3>Miniature</h3>'+
     summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
-    '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli miniatura base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
-    '<p class="hint">La scelta usa gli ID del catalogo desktop. La miniatura 3D verrà caricata dal desktop quando disponibile; la scheda resta locale.</p>'+
+    '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli la miniatura di base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
+    '<p class="hint">La miniatura è identificata dal catalogo del desktop e verrà caricata in 3D quando disponibile. La scheda rimane salvata sul dispositivo.</p>'+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+

@@ -108,7 +108,7 @@ func setup(on_change: Callable) -> void:
 	dice_body.add_theme_constant_override("separation", 5)
 	dice_panel.add_child(dice_body)
 	var dice_heading := Label.new()
-	dice_heading.text = "Bonus ai tiri con dadi · assegnati alle origini"
+	dice_heading.text = "Bonus con dadi · per origine"
 	dice_heading.add_theme_font_size_override("font_size", 15)
 	dice_body.add_child(dice_heading)
 	_dice_cards = VBoxContainer.new()
@@ -550,7 +550,7 @@ func _refresh_bonuses() -> void:
 			expression.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			expression.placeholder_text = "Formula"
 			expression.editable = not bool(grant.get("automatic", false))
-			expression.tooltip_text = "Bonus strutturato: valore calcolato dalla fonte 5etools" if not expression.editable else "Espressione senza dadi, es. 2 * wis_mod"
+			expression.tooltip_text = "Bonus automatico calcolato dai dati strutturati di 5etools" if not expression.editable else "Espressione senza dadi, es. 2 * wis_mod"
 
 			line.add_child(expression)
 			if expression.editable:

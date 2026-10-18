@@ -189,7 +189,7 @@ func _ready() -> void:
 	_skill_list.add_child(skill_heading_row)
 	skill_heading_row.add_child(_icon("proficiency", 20))
 	var skills_heading := Label.new()
-	skills_heading.text = "Prove di abilità · 4 migliori"
+	skills_heading.text = "Prove di abilità · 4 bonus più alti"
 	skills_heading.add_theme_font_size_override("font_size", 15)
 	skills_heading.add_theme_color_override("font_color", Color(1.0, 0.78, 0.49))
 	skill_heading_row.add_child(skills_heading)
@@ -225,12 +225,12 @@ func _open_variant_settings() -> void:
 	body.add_theme_constant_override("separation", 8)
 	_settings_dialog.add_child(body)
 	var hint := Label.new()
-	hint.text = "Le varianti di combattimento aggiungono le relative opzioni alla scheda. Le altre sono promemoria per il tavolo, senza effetti automatici. Le descrizioni originali si aprono dalla fonte."
+	hint.text = "Le regole varianti di combattimento aggiungono opzioni alla scheda. Le altre servono da promemoria e non hanno effetti automatici. Apri la fonte per leggere il testo completo."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size", 13)
 	body.add_child(hint)
 	var filter := LineEdit.new()
-	filter.placeholder_text = "Cerca una variante, fonte o opzione…"
+	filter.placeholder_text = "Cerca per nome, fonte o categoria…"
 	body.add_child(filter)
 	var status := Label.new()
 	status.hide()

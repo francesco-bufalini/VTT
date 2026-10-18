@@ -51,15 +51,15 @@ func setup(host: Control, map_controller: Node, creature_sheet: Node, column: VB
 	column.add_child(place_button)
 	snapshot_button = Button.new()
 	snapshot_button.name = "RequestMapSnapshot"
-	snapshot_button.text = "Richiedi snapshot"
-	snapshot_button.pressed.connect(func() -> void: _choose_token(_request_selected_snapshot, "Da quale token prendere lo snapshot?"))
+	snapshot_button.text = "Apri anteprima mappa"
+	snapshot_button.pressed.connect(func() -> void: _choose_token(_request_selected_snapshot, "Da quale token centrare l'anteprima?"))
 	column.add_child(snapshot_button)
 	_build_picker()
 	_build_viewer()
 	reopen_button = Button.new()
 	reopen_button.name = "ReopenMapSnapshot"
 	reopen_button.text = "▧"
-	reopen_button.tooltip_text = "Riapri l’ultimo snapshot"
+	reopen_button.tooltip_text = "Riapri l’ultima anteprima della mappa"
 	reopen_button.custom_minimum_size = Vector2(48, 48)
 	reopen_button.z_index = 100
 	reopen_button.disabled = true
@@ -110,7 +110,7 @@ func _build_viewer() -> void:
 	var body := VBoxContainer.new()
 	viewer.add_child(body)
 	var close := Button.new()
-	close.text = "Chiudi snapshot"
+	close.text = "Chiudi anteprima"
 	close.pressed.connect(viewer.hide)
 	body.add_child(close)
 	caption = Label.new()
@@ -248,7 +248,7 @@ func request_attack_snapshot(record: Dictionary, attack: Dictionary) -> void:
 		return
 	if bool(_spell_status.get("active", false)):
 		viewer.show()
-		caption.text = "Completa o annulla prima l’incantesimo nello snapshot."
+		caption.text = "Completa o annulla prima l’incantesimo nell’anteprima."
 		return
 	_snapshot_token = token_id
 	_target_note = ""
@@ -332,7 +332,7 @@ func _send_interaction(action: String, extra: Dictionary) -> void:
 		caption.text = "Collega un desktop e attendi la ricezione della mappa prima di usare i comandi."
 		return
 	if int(remote.get("mobile_protocol", 0)) < 2:
-		caption.text = "Desktop da aggiornare: installa e riavvia anche la nuova versione PC. Lo snapshot da solo non abilita i comandi."
+		caption.text = "Aggiorna e riavvia anche VTT sul computer: la sola anteprima non abilita i comandi."
 		return
 	if not _pending_interactions.is_empty():
 		return
@@ -414,7 +414,7 @@ func _send_snapshot() -> void:
 		"field_feet": _field_feet, "attack": _snapshot_attack, "owner_id": Owner.local_id()})
 	if _pending_snapshot.is_empty():
 		return
-	caption.text = "Richiesta snapshot al desktop…"
+	caption.text = "Richiesta dell’anteprima al computer…"
 	viewer.show()
 
 func _on_action_completed(id: String, action: String, result: Dictionary) -> void:
@@ -479,7 +479,7 @@ func _on_action_completed(id: String, action: String, result: Dictionary) -> voi
 			elif not _snapshot_attack.is_empty():
 				caption.text += " · verde: gittata normale · arancio: lunga" + _target_note
 		else:
-			caption.text = String(result.get("error", "Snapshot non disponibile."))
+			caption.text = String(result.get("error", "Anteprima non disponibile."))
 
 func close_overlay() -> bool:
 	if picker.visible:

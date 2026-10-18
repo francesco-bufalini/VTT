@@ -47,7 +47,7 @@ func setup() -> void:
 	toolbar.add_child(_origin_choice)
 
 	_search = LineEdit.new()
-	_search.placeholder_text = "Cerca un privilegio…"
+	_search.placeholder_text = "Cerca un tratto…"
 	_search.clear_button_enabled = true
 	_search.text_changed.connect(func(_value: String) -> void: _rebuild())
 	add_child(_search)
