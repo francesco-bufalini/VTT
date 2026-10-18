@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {calculateSheet,parseArithmetic,spellProgression,requirementsAllow,localClasses}
   from "../sheet_rules.js";
-import {localSheetView} from "../sheet_rules_view.js";
+import {localSheetView,rollBattleDamage,sheetRollChatFields} from "../sheet_rules_view.js";
 import {fixedProficiencies,structuredFeatureGrants,automaticId} from "../structured_effects.js";
 
 const load=file=>JSON.parse(readFileSync(fileURLToPath(new URL("../catalog/"+file+".json",import.meta.url)),"utf8"));
@@ -236,4 +236,20 @@ test("switching origins withdraws saved proficiencies from a replaced background
   const active=calculateSheet({...characterWithLegacyOrigin,
     background:"Acolyte",background_source:"PHB"},catalogs);
   assert.equal(active.skills.religion,2);
+});
+
+test("battle damage rolls use bounded dice notation and desktop-compatible chat events",()=>{
+ const die=sides=>sides===8?5:sides===4?3:2;
+ const result=rollBattleDamage("2d8 + 1d4 + 3",die);
+ assert.equal(result.total,16);
+ assert.equal(result.modifier,3);
+ assert.equal(result.notation,"2d8+1d4+3");
+ assert.deepEqual(result.parts.map(row=>row.rolls),[[5,5],[3]]);
+ const event=sheetRollChatFields(result);
+ assert.equal(event.die,"formula");
+ assert.equal(event.terms.length,2);
+ assert.equal(event.modifier,3);
+ assert.equal(rollBattleDamage("1d6 - 2",()=>4).total,2);
+ for(const invalid of ["", "alert(1)", "1d6-1d4", "101d6", "1d0", "10000","2d6+1d4+foo"])
+  assert.throws(()=>rollBattleDamage(invalid,()=>1),/danni|dadi/i);
 });
