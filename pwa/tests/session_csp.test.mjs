@@ -32,6 +32,6 @@ test("inline session preview is backed by CSP-authorized, revocable object URLs"
 });
 
 test("PWA shell version changes so installed browsers receive the CSP repair",()=>{
-  assert.ok(read("../sw.js").includes("vtt-mobile-shell-v44"));
+  assert.match(read("../sw.js"), /vtt-mobile-shell-v(?:4[5-9]|[5-9]\\d|\\d{3,})/);
   assert.ok(read("../index.html").includes('name="mobile-web-app-capable"'));
 });
