@@ -22,8 +22,11 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	var camera := Camera3D.new()
 	viewport.add_child(camera)
 	var cell: float = float(board.get("cell_size"))
-	var center: Vector3 = token.global_position
-	var floor_y := Elevation.token_support_air_level(token, cell)
+	var scene_camera := board.get_node_or_null("Camera3D") as Camera3D
+	var center: Vector3 = token.global_position if token != null else (
+		Vector3(scene_camera.global_position.x, 0.0, scene_camera.global_position.z)
+		if scene_camera != null else Vector3.ZERO)
+	var floor_y := Elevation.token_support_air_level(token, cell) if token != null else 0.0
 	var clearance := 64.0 * cell
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
@@ -36,7 +39,7 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	camera.current = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
-	if not is_instance_valid(token):
+	if token != null and not is_instance_valid(token):
 		viewport.queue_free()
 		return {"ok": false, "error": "Il token non è più presente."}
 	var image := viewport.get_texture().get_image()
@@ -50,9 +53,9 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	var result := {"ok": true, "format": "webp", "width": SIZE.x, "height": SIZE.y,
 		"image": Marshalls.raw_to_base64(encoded),
 		"token_id": "", "field_feet": field_feet, "elevation": center.y,
-		"title": String(token.call("get_display_name")), "contours": [], "markers": [],
+		"title": String(token.call("get_display_name")) if token != null else "Mappa", "contours": [], "markers": [],
 		"_projection": {"x": center.x, "y": center.y, "z": center.z, "size": camera.size, "width": SIZE.x, "height": SIZE.y}}
-	var half: float = float(token.call("get_footprint_cells")) * cell * 0.5
+	var half: float = (float(token.call("get_footprint_cells")) if token != null else 1.0) * cell * 0.5
 	var normal: float = float(attack.get("range_feet", 0))
 	var long_range: float = float(attack.get("long_range_feet", 0)) if not bool(attack.get("melee", true)) else 0.0
 	if long_range <= normal:
