@@ -140,9 +140,10 @@ function control(label,attrs,value,type='text',min,max){
  if(type==='checkbox')return '<label class="check"><input type="checkbox" '+attrs+' '+(value?'checked':'')+'>'+esc(label)+'</label>';
  return '<label>'+esc(label)+'<input type="'+type+'" '+attrs+' value="'+esc(value)+'" '+(min!==undefined?'min="'+min+'" max="'+max+'"':'')+'></label>';
 }
-export function nativeRows(c,key,catalogs={}){
+export function nativeRows(c,key,catalogs={},startIndex=0){
  const rows=rowsFor(c,key);
- return rows.map((row,i)=>{
+ return rows.slice(startIndex).map((row,offset)=>{
+  const i=offset+startIndex;
   if(!row||typeof row!=='object')return '<p class="hint">'+esc(row)+'</p>';
   const automatic=!!row.automatic;
   if(key==='formula_bonuses'&&(automatic||String(row.id||'').startsWith('auto|')))return '';
@@ -156,6 +157,8 @@ export function nativeRows(c,key,catalogs={}){
       const options=[['','Nessuno'],...(!chosen&&row[field]?[['__current__',row[field]+' · importato']]:[]),...candidates.map(ref=>[String(ref.id||ref.name+'|'+ref.source),ref.name+' · '+ref.source])];
       return control(label,'data-native-pick="'+key+'" data-index="'+i+'" data-key="'+field+'" data-category="'+category+'"',selected,options);
     }
+    if(key==='classes'&&['source','subclass_source'].includes(field))
+      return '<div class="native-readonly-source"><span>'+esc(label)+'</span><strong>'+esc(row[field]||'—')+'</strong></div>';
     if(key==='proficiency_choices'&&field==='key'){
       if(['skill','expertise'].includes(row.kind))type=SKILLS.map(([id,name])=>[id,name]);
       if(row.kind==='save')type=['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()]);
@@ -182,6 +185,7 @@ export function nativeRowPatch(c,key,index,field,value){
  if(!definition)throw Error('Campo non valido');
  const rows=rowsFor(c,key),row=rows[index];if(!row||typeof row!=='object')throw Error('Voce non valida');
  if(row.automatic&&field!=='disabled')throw Error('Modifica la voce dalla sua origine');
+ if(key==='classes'&&['source','subclass_source'].includes(field))throw Error('La fonte deriva dal catalogo');
  if(definition[2]==='number' || field==='rank'){
   value=Number(value);if(!Number.isInteger(value)||(definition[3]!==undefined&&(value<definition[3]||value>definition[4])))throw Error('Valore fuori intervallo');
  }
@@ -244,6 +248,28 @@ export function identityPatch(c,key,value){
  }
  return patch;
 }
+// Use the native 5etools race catalog for creature types, including subraces.
+export function speciesCreatureType(creature,catalogs={}){
+ if(creature?.kind==='monster'){
+  const raw=creature.type??creature.stat_block?.type;
+  return typeof raw==='string'?raw:raw?.type||'—';
+ }
+ const races=list(catalogs.races),species=String(creature?.species||''),source=String(creature?.species_source||'');
+ if(!species)return '—';
+ const same=(a,b)=>String(a||'').toLowerCase()===String(b||'').toLowerCase();
+ const parent=races.find(r=>creature.species_id&&r.id===creature.species_id&&!r.raceName)||
+  races.find(r=>!r.raceName&&same(r.name,species)&&(!source||same(r.source,source)));
+ const subrace=String(creature?.subrace||''),subsource=String(creature?.subrace_source||'');
+ const flattened=subrace?races.find(r=>same(r.name,species+' ('+subrace+')')&&
+  (!subsource||same(r.source,subsource))):null;
+ const raw=flattened?.creatureTypes??parent?.creatureTypes;
+ const values=Array.isArray(raw)?raw:raw?[raw]:[];
+ const names={aberration:'Aberrazione',beast:'Bestia',celestial:'Celestiale',construct:'Costrutto',
+  dragon:'Drago',elemental:'Elementale',fey:'Folletto',fiend:'Immondo',giant:'Gigante',
+  humanoid:'Umanoide',monstrosity:'Mostruosità',ooze:'Melma',plant:'Pianta',undead:'Non morto'};
+ return values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
+  .map(v=>names[v.toLowerCase()]||v).join(', ')||'—';
+}
 export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',attacks='',details='overview',catalogs={},calculated={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
@@ -262,10 +288,12 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    return '<label>'+esc(label)+'<select data-reference="'+esc(category)+'" data-reference-key="'+esc(key)+'" '+
      (!rows.length?'disabled':'')+'>'+
      options.map(([v,label])=>'<option value="'+esc(v)+'" '+(v===chosen?'selected':'')+'>'+esc(label)+'</option>').join('')+
-     '</select></label>';
+     '</select>'+(current?'<span class="hint">Fonte: '+esc(active?.source||source||'Non disponibile')+'</span>':'')+'</label>';
  };
  const number=(label,key,value=c[key]??0,min=0,max=99999)=>field(label,key,value,'number','min="'+min+'" max="'+max+'"');
  const summary=rows=>'<dl class="native-summary">'+rows.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>').join('')+'</dl>';
+ const speciesType=speciesCreatureType(c,catalogs);
+ const secondaryClasses=rowsFor(c,'classes').slice(1);
  const feats=list(c.feats_catalog).map(f=>'<p>'+esc(typeof f==='string'?f:f.name)+(f.disabled?' · disattivato':'')+'</p>').join('')||'<p class="hint">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='<p class="hint">Modifica i valori di base o usa ± per gestire i bonus. I risultati si aggiornano sulla scheda, anche offline.</p>';
@@ -280,7 +308,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
       cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
-      summary([['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'Da specie']]))+
+      summary([['Tipo',speciesType]]))+
     '<h3>Miniature</h3>'+
     summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
     '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli la miniatura di base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
@@ -295,16 +323,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
       (c.class?number('Livello totale','level',c.level??1,1,20):
         '<label>Livello totale<input type="number" value="'+esc(c.level??0)+'" disabled></label>'))+
-      '<details><summary>Classi aggiuntive (multiclasse)</summary>'+nativeRows(c,'classes',catalogs)+'</details>')+
-   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>')+panel('Storia e personalità',area('Note','background_personality',c.background_personality,6)+
-     '<details><summary>Aspetto, identità e personalità</summary>'+
-     cols(field('Giocatore','player_name',c.player_name)+field('Età','age',c.age)+
-       field('Altezza','height',c.height)+field('Peso','weight',c.weight)+
-       field('Occhi','eyes',c.eyes)+field('Capelli','hair',c.hair)+field('Pelle','skin',c.skin)+field('Sesso','sex',c.sex))+
-     area('Aspetto','appearance',c.appearance)+area('Tratti della personalità','personality_traits',c.personality_traits)+
-     area('Ideali','ideals',c.ideals)+area('Legami','bonds',c.bonds)+area('Difetti','flaws',c.flaws)+
-     area('Appunti','notes',c.notes)+
-     '<label class="check"><input type="checkbox" data-field="inspiration" '+(c.inspiration?'checked':'')+'>Ispirazione</label></details>');
+      '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1))+
+   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>');
  if(section==='stats')return panel('Caratteristiche','<div class="native-abilities"><strong>Car.</strong><strong>Punteggio</strong><strong>Mod.</strong><strong>TS</strong>'+['str','dex','con','int','wis','cha'].map(key=>'<span>'+key.toUpperCase()+'</span><div>'+read('ability:'+key,'Punteggio '+key.toUpperCase())+'<details class="base-editor"><summary>Base</summary><label><span class="sr-only">'+key.toUpperCase()+'</span><input type="number" data-ability="'+key+'" min="1" max="30" value="'+esc(c.abilities?.[key]??10)+'"></label></details></div>'+read('ability_mod:'+key,'Modificatore '+key.toUpperCase(),true)+read('save:'+key,'Tiro salvezza '+key.toUpperCase(),true)).join('')+'</div>'+nativeNote)+
   panel('Riepilogo','<dl class="native-summary"><div><dt>Bonus competenza</dt><dd>'+read('proficiency','Bonus competenza',true)+'</dd></div><div><dt>Percezione passiva</dt><dd>'+read('passive_perception','Percezione passiva')+'</dd></div></dl>')+
   panel('Abilità','<p class="hint">🎓 Competenza · 🎓🎓 Maestria</p><dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>')+
