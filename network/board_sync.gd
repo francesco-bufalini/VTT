@@ -79,6 +79,7 @@ var _auto_sync_retry_after_msec := 0
 var _applying_received_snapshot := false
 # Monotonic render invalidation. The PWA reads this value but never echoes snapshots.
 var _mobile_view_revision := 1
+var _mobile_view_signature := ""
 # Disk persistence is independent of peer availability and the network toggle.
 var _map_autosave_ready := false
 var _map_autosave_last_signature := ""
@@ -252,6 +253,7 @@ func sync_local_change_now() -> Error:
 	if snapshot.is_empty():
 		return ERR_BUSY
 	var signature := _snapshot_signature(snapshot)
+	_register_mobile_view_signature(signature)
 	_persist_map_autosave(snapshot, signature)
 
 	# Unlike the polling path, an explicit UI mutation must never become the
@@ -259,7 +261,6 @@ func sync_local_change_now() -> Error:
 	# edited immediately after a scene/session starts.
 	var error := send_snapshot_to_tailnet(session_key)
 	if error == OK:
-		_mobile_view_revision += 1
 		_auto_sync_initialized = true
 		_auto_sync_last_signature = signature
 		_auto_sync_candidate_signature = ""
@@ -283,10 +284,10 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 	var outgoing_snapshot := create_snapshot()
 	if not outgoing_snapshot.is_empty():
+		_register_mobile_view_signature(_snapshot_signature(outgoing_snapshot))
 		_persist_map_autosave(outgoing_snapshot)
 	var error := send_snapshot_to_tailnet(session_key, sync_event)
 	if error == OK:
-		_mobile_view_revision += 1
 		var snapshot := create_snapshot()
 		if not snapshot.is_empty():
 			_auto_sync_initialized = true
@@ -308,8 +309,6 @@ func _poll_auto_sync() -> void:
 	var now := Time.get_ticks_msec()
 	if now < _auto_sync_suppress_until_msec:
 		return
-	if now < _auto_sync_retry_after_msec:
-		return
 	if now - _auto_sync_last_poll_msec < AUTO_SYNC_POLL_MS:
 		return
 	_auto_sync_last_poll_msec = now
@@ -318,6 +317,9 @@ func _poll_auto_sync() -> void:
 	if snapshot.is_empty():
 		return
 	var signature := _snapshot_signature(snapshot)
+	_register_mobile_view_signature(signature)
+	if now < _auto_sync_retry_after_msec:
+		return
 	if not _auto_sync_initialized:
 		_auto_sync_initialized = true
 		_auto_sync_last_signature = signature
@@ -336,7 +338,6 @@ func _poll_auto_sync() -> void:
 
 	var error := send_snapshot_to_tailnet(session_key, {}, true)
 	if error == OK:
-		_mobile_view_revision += 1
 		_auto_sync_last_signature = signature
 		_auto_sync_candidate_signature = ""
 		_auto_sync_candidate_since_msec = 0
@@ -348,6 +349,15 @@ func _poll_auto_sync() -> void:
 		_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
 
 
+func _register_mobile_view_signature(signature: String) -> void:
+	# One-way public invalidation: failed peer delivery still updates the
+	# connected PWA, but its GET/snapshot requests cannot trigger a send.
+	if signature.is_empty() or signature == _mobile_view_signature:
+		return
+	_mobile_view_signature = signature
+	_mobile_view_revision += 1
+
+
 func _snapshot_signature(snapshot: Dictionary) -> String:
 	var comparable := snapshot.duplicate(true)
 	# Snapshot V6 creati da versioni precedenti possono ancora contenere
@@ -357,13 +367,13 @@ func _snapshot_signature(snapshot: Dictionary) -> String:
 
 
 func _accept_received_snapshot(snapshot: Dictionary) -> void:
-	_mobile_view_revision += 1
 	_persist_map_autosave(snapshot)
 	_auto_sync_initialized = true
 	var local_snapshot := create_snapshot()
 	_auto_sync_last_signature = _snapshot_signature(
 		local_snapshot if not local_snapshot.is_empty() else snapshot
 	)
+	_register_mobile_view_signature(_auto_sync_last_signature)
 	_auto_sync_candidate_signature = ""
 	_auto_sync_candidate_since_msec = 0
 	_auto_sync_suppress_until_msec = (
