@@ -79,7 +79,9 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
   assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
   click('[data-act="create"]');
-  await until(()=>document.querySelector('[data-field="name"]'));
+  await until(()=>document.querySelector('[data-field="name"]')).catch(error=>{
+    throw Error(error.message+" — "+document.querySelector("#app")?.textContent.slice(0,650));
+  });
   change('[data-field="name"]',"Arcanista mobile");
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-field="current_hp"]'));
