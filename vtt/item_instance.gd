@@ -14,7 +14,8 @@ const SNAPSHOT_FIELDS := [
 	"bonus_saving_throw_concentration", "bonusSavingThrowConcentration",
 	"bonus_ability", "bonusAbility", "req_attune", "reqAttune",
 	"requirements",
-	"feats", "entries", "description", "value", "value_gp", "rarity", "custom_item_type"
+	"feats", "entries", "description", "value", "value_gp", "weight", "rarity", "custom_item_type",
+	"spell", "spell_name", "spellName", "spell_level", "spellLevel", "level"
 ]
 const INSTANCE_FIELD_OVERRIDES := ["damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon", "weight", "weapon_size"]
 
