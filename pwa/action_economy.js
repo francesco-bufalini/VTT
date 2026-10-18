@@ -413,7 +413,7 @@ const rollFormula=value=>'1d20 '+(value<0?'− '+Math.abs(value):'+ '+value);
 const BATTLE_EFFECTS={
  grapple:['condition','Afferrato','condition'],
  prone:['condition','Prono','prone_alt'],
- shove:['other','Prono oppure spinto di 5 ft','shove'],
+ shove:['movement','Spinto di 5 ft','shove'],
  shove_aside:['movement','Spinto lateralmente','shove'],
  disarm:['other','Oggetto lasciato cadere','disengage'],
  drop_prone:['condition','Prono','prone_alt'],
@@ -445,18 +445,19 @@ function battleEffectMarkup(item,attack){
    glyph:DAMAGE_GLYPHS[String(attack.damage_type||'').toLowerCase()]||'weapon'}:null;
  const fallbacks=BATTLE_EFFECTS[item.action_id]||BATTLE_EFFECTS[item.id];
  const resolved=effect||(fallbacks?{kind:fallbacks[0],label:fallbacks[1],glyph:fallbacks[2]}:
-  item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:
-  item.id==='opportunity'?{kind:'damage',label:'Danni dell’arma impiegata',glyph:'weapon'}:null);
+  item.class_feature_id==='step_of_the_wind'?{kind:'movement',label:'Scattare o Disimpegnarsi',glyph:'dash'}:null);
  if(!resolved)return '';
- // Avoid inventing damage types or rolling formulae absent from the calculation.
+ // Only actual attack damage formulas get dice controls; never infer a damage roll.
  const label=resolved.kind==='damage'?'Danni':resolved.kind==='condition'?'Condizione':'Effetto';
- const text=resolved.label+(resolved.type?' · '+resolved.type:'');
+ const detail=resolved.label+(resolved.type?' · '+resolved.type:'');
  const glyph=actionGlyph(resolved.glyph);
- const formula=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
+ const canRoll=resolved.kind==='damage'&&supportedDamage(resolved.label)&&/\d+d\d+/i.test(resolved.label);
  return '<div class="play-battle-effect" data-effect-kind="'+esc(resolved.kind)+'">'+
   '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
-  (formula?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-label="'+esc(item.name)+'" aria-label="Tira danni: '+esc(item.name)+'">'+glyph+'<strong>'+esc(text)+'</strong>'+diceGlyph()+'</button>':
-  '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(text)+'</strong></span>')+'</div>';
+  '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
+  (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
+    esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-label="'+esc(item.name)+
+    '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+'</div>';
 }
 function battleAttackRow(item,calculated,attacksById,descriptions){
  const attack=attacksById.get(String(item.attack_id||item.id||''));
@@ -465,9 +466,18 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   const modifier=rollModifier(value);
   if(modifier!==null)rolls.push({target,label,kind,modifier});
  };
+ const choices=[...attacksById.values()];
+ // An opportunity attack uses a melee weapon: prefer the one in the main hand.
+ const opportunityWeapon=item.id==='opportunity'?
+  choices.find(row=>row.melee&&row.slot==='main')||
+  choices.find(row=>row.melee&&!row.offhand_bonus)||
+  choices.find(row=>row.melee):null;
+ const selectedAttack=attack||opportunityWeapon;
+ const actionName=opportunityWeapon?
+  String(opportunityWeapon.name||'Arma')+' · '+item.name:item.name;
  if(attack){
-  addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+item.name,attack.melee?'Mischia':'Distanza',
-   calculated.values?.['attack_hit:'+attack.id]??attack.hit);
+  addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+actionName,
+   attack.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+attack.id]??attack.hit);
  }
  if(item.skill_ids?.length){
   for(const skill of [...new Set(item.skill_ids)]){
@@ -477,20 +487,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   }
  }
  if(!attack&&!item.skill_ids?.length&&WEAPON_ROLL_ACTION_IDS.has(item.id)){
-  const choices=[...attacksById.values()];
-  const weapon=item.id==='opportunity'?
-   choices.find(row=>row.melee&&(row.slot==='main'||!row.slot))||choices.find(row=>row.melee):
+  const weapon=item.id==='opportunity'?opportunityWeapon:
    choices.find(row=>row.slot==='main')||choices[0];
-  if(weapon)addRoll('attack_hit:'+weapon.id,'Tiro per colpire · '+item.name,
+  if(weapon)addRoll('attack_hit:'+weapon.id,'Tiro per colpire · '+actionName,
    weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
  }
  const offhand=attack&&(attack.slot==='off'||String(attack.id).startsWith('shield:improvised:off:'));
  const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
- const descriptor=rolls.length>1?'Prove alternative · '+rolls.map(row=>row.kind).join(' / '):
-  rolls.length?rollFormula(rolls[0].modifier)+' · '+rolls[0].kind:
-  item.type==='Attacco'?'Attacco speciale':item.type||'Azione';
  const icon=actionGlyph(actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
@@ -500,17 +505,18 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
   '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
-  '<span class="play-battle-attack-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(descriptor)+'</small></span>'+
+  '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span>'+
   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
   source+target+resources+'</div></details>'+
   (rolls.length?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
+   '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
+   esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-   (rolls.length>1?'<span class="play-battle-roll-name">'+esc(row.kind)+'</span>':'')+'<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button>').join('')+'</div>':'')+
-  '</div>'+battleEffectMarkup(item,attack)+'</article>';
+   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+'</div>':'')+
+  '</div>'+battleEffectMarkup({...item,name:actionName},selectedAttack)+'</article>';
 }
-
 
 const classOrigin=row=>String(row?.origin_id||'').startsWith('class|')||
  String(row?.origin_id||'').startsWith('feature:class|')||
@@ -558,10 +564,11 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   !['spell_cast','cast_spell'].includes(row.id));
  const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
-  return matching.length?'<section class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
-   '<h3>'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+'<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></h3>'+
+  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'" open>'+
+   '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
+   '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?actionRow(row,calculated):
-    battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></section>':'';
+    battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
  return {attacks:render(weapon,'attacks'),others:render(other,'others'),
   abilityEntries:classAbilities,

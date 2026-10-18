@@ -22,7 +22,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
  const sword=attacks.querySelector('[data-attack-id="item:sword"]');
  assert(sword);assert.equal(sword.querySelector('details').open,false);
- assert.match(sword.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 5 · Mischia/);
+ assert.match(sword.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 5 · Mischia/);
  assert.equal(sword.querySelector('.play-battle-attack-roll b').textContent,'+5');
  assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
@@ -32,13 +32,13 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
 
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
  const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
- assert.match(dagger.querySelector('.play-battle-attack-copy small').textContent,/Distanza/);
+ assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
  assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
  assert(![...attacks.querySelectorAll('.play-battle-attack-copy strong')].some(node=>/^(Attaccare|Combattere con due armi)$/.test(node.textContent)));
  const grapple=attacks.querySelector('[data-attack-id="grapple"]');
- assert.match(grapple.querySelector('.play-battle-attack-copy small').textContent,/1d20 \+ 3 · Atletica/);
+ assert.match(grapple.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 3 · Atletica/);
  assert.equal(grapple.querySelector('[data-target="skill:athletics"]').tagName,'BUTTON');
  assert.equal(grapple.querySelector('.play-battle-effect').dataset.effectKind,'condition');
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
@@ -47,9 +47,25 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert([...movement.querySelectorAll('.play-battle-attack-entry')].every(node=>node.querySelector('.play-battle-effect')));
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
- assert.equal(attacks.querySelector('[data-action-timing="action"] h3>.vtt-action-glyph')?.tagName,'SPAN');
- assert.equal(movement.querySelector('[data-action-timing="movement"] h3>.vtt-action-glyph')?.tagName,'SPAN');
+ assert.equal(attacks.querySelector('[data-action-timing="action"] summary>.vtt-action-glyph')?.tagName,'SPAN');
+ assert.equal(movement.querySelector('[data-action-timing="movement"] summary>.vtt-action-glyph')?.tagName,'SPAN');
  assert(attacks.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
+ const opportunity=attacks.querySelector('[data-attack-id="opportunity"]');
+ assert(opportunity,'The opportunity reaction is available');
+ assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
+ assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
+ assert.equal(opportunity.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
+ const shove=attacks.querySelector('[data-attack-id="shove"]');
+ assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
+ assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
+ const actionGroup=attacks.querySelector('[data-action-timing="action"]');
+ assert.equal(actionGroup.tagName,'DETAILS');
+ assert.equal(actionGroup.open,true);
+ assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
+ assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
+ const rollLine=sword.querySelector('.play-battle-attack-roll-line');
+ assert.match(rollLine.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 5 · Mischia/);
+ assert(rollLine.querySelector('button.play-battle-attack-roll'));
  assert(attacks.body.textContent.includes('Disarmare'));
  assert(!attacks.body.textContent.includes('Scattare'));
  assert(movement.querySelector('[data-action-timing="action"]').textContent.includes('Scattare'));
@@ -308,7 +324,7 @@ test('battle projects all unported actions without duplicating weapons, movement
  const search=others.querySelector('[data-attack-id="search"]');
  assert(search.querySelector('[data-target="skill:perception"]'));
  assert(search.querySelector('[data-target="skill:investigation"]'));
- assert.equal(search.querySelectorAll('.play-battle-roll-name').length,2);
+ assert.equal(search.querySelectorAll('.play-battle-roll-formula').length,2);
  const escape=movement.querySelector('[data-attack-id="escape_grapple"]');
  assert(escape);
  assert(escape.querySelector('[data-target="skill:athletics"]'));
