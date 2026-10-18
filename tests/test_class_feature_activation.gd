@@ -58,6 +58,9 @@ func run() -> void:
 	var stopped := Runtime.activate(raging, "class_feature:rage")
 	assert(stopped.ok and not Runtime.is_active(stopped.record, "rage"))
 	assert(stopped.record.resource_tracker_spent == raging.resource_tracker_spent)
+	var novice := make_record("Barbarian", 1)
+	var novice_rage := Runtime.activate(novice, "class_feature:rage").record
+	assert(Runtime.rage_damage(novice_rage, {"thrown": false}, "str") == 2)
 	var revised := make_record("Barbarian", 9, "XPHB")
 	revised = Runtime.activate(revised, "class_feature:rage").record
 	assert(Runtime.rage_damage(revised, {"thrown": true}, "str") == 3)
