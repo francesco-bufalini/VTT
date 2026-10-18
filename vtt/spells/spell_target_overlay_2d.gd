@@ -136,15 +136,36 @@ func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: flo
 	return rectangle
 
 
+# Spell sigils: a faint translucent interior and unmistakable illuminated
+# perimeter with geometric marks. No extra hitbox or gameplay rule changes.
 func _draw_area(points: PackedVector2Array, color: Color) -> void:
 	if points.size() < 3:
 		return
-	var fill: Color = color
-	fill.a = color.a * 0.14
+	var fill := color
+	fill.a = minf(maxf(color.a, 0.0) * 0.052, 0.052)
 	draw_colored_polygon(points, fill)
 	var border := PackedVector2Array(points)
 	border.append(points[0])
-	draw_polyline(border, color, 2.6, true)
+	var aura := color
+	aura.a = 0.12
+	draw_polyline(border, aura, 8.0, true)
+	var glow := color
+	glow.a = 0.36
+	draw_polyline(border, glow, 4.0, true)
+	var sharp := color
+	sharp.a = 0.94
+	draw_polyline(border, sharp, 1.65, true)
+	var center := Vector2.ZERO
+	for point: Vector2 in points:
+		center += point
+	center /= float(points.size())
+	var rune_step := maxi(1, points.size() / 12)
+	for index: int in range(0, points.size(), rune_step):
+		var pos := points[index]
+		var toward_center := (center - pos).normalized()
+		var engraved := Color(1.0, 0.91, 0.68, 0.70)
+		draw_line(pos + toward_center * 1.0, pos + toward_center * 7.0, engraved, 1.25, true)
+		draw_circle(pos + toward_center * 9.0, 1.1, sharp)
 
 
 func _array_vector3(value: Variant) -> Vector3:
@@ -363,8 +384,7 @@ func _draw_spell_range(center: Vector3, radius: float) -> void:
 	for vertex: Vector2 in vertices:
 		projected.append(_world_point(Vector3(center.x + vertex.x, center.y, center.z + vertex.y)))
 	if projected.size() > 2:
-		projected.append(projected[0])
-		draw_polyline(projected, Color(0.22, 0.68, 1.0, 0.96), 2.8, true)
+		_draw_area(projected, Color(0.34, 0.81, 1.0, 0.91))
 
 
 func _draw_target_list(names: Array[String], area_label: String, top: float = 132.0) -> float:
