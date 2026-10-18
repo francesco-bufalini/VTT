@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {sheetRollFormula,rollSheetDice,formulaReadout} from '../sheet_rules_view.js';
+import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown} from '../sheet_rules_view.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
@@ -108,12 +108,34 @@ test('roll preview never rolls automatically; explicit roll returns full dice br
  assert.match(result.detail,/Benedizione \[3\] = 3/);
  assert.match(result.detail,/Ispirazione \[2, 5\] \+ 1 = 8/);
  assert.match(result.detail,/totale 30/);
+ const combined=sheetRollChatFields(result);
+ assert.equal(combined.die,'formula');
+ assert.equal(combined.count,4);
+ assert.equal(combined.modifier,6);
+ assert.equal(combined.terms.length,3);
+ assert.deepEqual(combined.terms.map(row=>row.sides),[20,4,6]);
+ assert.deepEqual(combined.terms.map(row=>row.rolls),[[14],[3],[2,5]]);
+ assert.equal(combined.terms.reduce((n,row)=>n+row.rolls.reduce((a,b)=>a+b,0),combined.modifier),30);
+ const standalone=rollSheetDice(2,[],()=>12);
+ assert.deepEqual([sheetRollChatFields(standalone).die,sheetRollChatFields(standalone).total],['d20',14]);
  assert.throws(()=>rollSheetDice(2,[{dice:'1d3'}],()=>1),/Dadi bonus/);
  const score=formulaReadout({values:{'ability:dex':16}},'ability:dex','Destrezza',{scoreAbility:'dex'});
  assert.match(score,/data-act="edit-score"/);
  assert.doesNotMatch(score,/data-act="sheet-roll"/);
  const save=formulaReadout({values:{'save:dex':4}},'save:dex','TS Destrezza',{signed:true});
  assert.match(save,/data-act="sheet-roll"/);
+});
+test('saving throw preview explains ability modifier, proficiency and extra origin bonuses',()=>{
+ const record={kind:'character',abilities:{dex:18},
+  proficiency_choices:[{kind:'save',key:'dex'}],
+  formula_bonuses:[{id:'boost',target:'save:dex',expression:'2',origin_name:'Sigillo'}]};
+ const data=calculateSheet(record);
+ assert.equal(data.values['save:dex'],8);
+ const breakdown=sheetModifierBreakdown(data,'save:dex');
+ assert.match(breakdown,/Mod\. DEX \+4/);
+ assert.match(breakdown,/Competenza \+2/);
+ assert.match(breakdown,/Altri bonus \+2/);
+ assert.match(data.explanations['save:dex'],/Sigillo/);
 });
 test('species type index retains official edition-specific non-humanoid types',()=>{
  const typed=JSON.parse(readFileSync(new URL('../catalog/species_types.json',import.meta.url),'utf8'));
