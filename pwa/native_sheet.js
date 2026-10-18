@@ -6,6 +6,19 @@ export const SHEET_SECTIONS = [["info","Info"],["stats","Caratteristiche e abili
  ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
+// Mirrors CreatureArea._confirm_miniature for the portable fields only.
+export function miniaturePatch(creature,profile,kind){
+ const id=String(profile?.id||'');
+ if(!id||!['base','current'].includes(kind))throw Error('Miniatura non valida');
+ if(kind==='current')return {current_miniature_id:id};
+ const previousBase=String(creature.default_miniature_id||'');
+ const previousCurrent=String(creature.current_miniature_id||'');
+ const patch={default_miniature_id:id};
+ if(!previousCurrent||previousCurrent===previousBase)patch.current_miniature_id=id;
+ patch.size_name=String(profile.size_name||'Medium');
+ patch.footprint=Math.max(0.5,Number(profile.footprint)||1);
+ return patch;
+}
 export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Competenze"],
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
@@ -270,7 +283,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       summary([['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'Da specie']]))+
     '<h3>Miniature</h3>'+
     summary([['Miniatura base',c.default_miniature_id||'Non assegnata'],['Forma attuale',c.current_miniature_id||'Non assegnata']])+
-    '<p class="hint">Le miniature si scelgono dal catalogo della versione nativa.</p>'+
+    '<div class="actions miniature-actions"><button class="btn" data-act="miniature-pick" data-miniature-kind="base">Scegli miniatura base</button><button class="btn" data-act="miniature-pick" data-miniature-kind="current">Scegli forma attuale</button></div>'+
+    '<p class="hint">La scelta usa gli ID del catalogo desktop. La miniatura 3D verrà caricata dal desktop quando disponibile; la scheda resta locale.</p>'+
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+

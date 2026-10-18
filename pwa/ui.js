@@ -1,5 +1,5 @@
 import { actionEconomyView, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -1203,6 +1203,58 @@ function decorateSheetHeadings(){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='miniature-pick'){
+    if(!state.editor)throw Error('Apri prima una scheda.');
+    const kind=target.dataset.miniatureKind;
+    if(kind!=='base'&&kind!=='current')throw Error('Tipo di miniatura non valido.');
+    const response=await fetch('/catalog/miniatures.json');
+    if(!response.ok)throw Error('Catalogo miniature non disponibile offline. Collegati al desktop e riprova.');
+    const catalog=await response.json();
+    const choices=Array.isArray(catalog.tokens)?catalog.tokens.filter(row=>
+      typeof row?.id==='string'&&row.id&&typeof row.name==='string'):[];
+    if(!choices.length)throw Error('Il catalogo miniature è vuoto.');
+    const creatureId=state.creatureId;
+    const dialog=document.createElement('dialog');
+    dialog.className='sheet-roll-dialog miniature-dialog';
+    dialog.innerHTML='<h2>'+(kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
+      '<p class="hint">Cerca per nome o ID. La scelta non scarica file 3D sul telefono.</p>'+
+      '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
+      '<div class="miniature-results" role="list"></div>'+
+      '<div class="actions"><button type="button" class="btn" data-miniature-close>Chiudi</button></div>';
+    const results=dialog.querySelector('.miniature-results');
+    const search=dialog.querySelector('[data-miniature-search]');
+    const paint=()=>{
+      const query=search.value.trim().toLocaleLowerCase('it');
+      const matches=choices.filter(row=>(row.name+' '+row.id).toLocaleLowerCase('it').includes(query)).slice(0,60);
+      results.innerHTML=matches.length?matches.map(row=>
+        '<button type="button" class="btn miniature-choice" data-miniature-id="'+esc(row.id)+'">'+
+        '<strong>'+esc(row.name)+'</strong><small>'+esc(row.size_name||'Medium')+' · '+esc(row.id)+'</small></button>').join(''):
+        '<p class="hint">Nessuna miniatura trovata.</p>';
+    };
+    search.addEventListener('input',paint);
+    dialog.querySelector('[data-miniature-close]').addEventListener('click',()=>dialog.close());
+    results.addEventListener('click',async event=>{
+      const choice=event.target.closest('[data-miniature-id]');
+      if(!choice)return;
+      const id=choice.dataset.miniatureId;
+      const profile=choices.find(row=>row.id===id);
+      if(!profile||state.creatureId!==creatureId||!state.editor)return;
+      choice.disabled=true;
+      try{
+        await patch(miniaturePatch(state.editor.read(),profile,kind));
+        if(state.saveError)throw Error(state.saveError);
+        dialog.close();
+        await render();
+        message('Miniatura salvata nella scheda locale.');
+      }catch(error){choice.disabled=false;message(errorMessage(error),true);}
+    });
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    document.body.append(dialog);
+    paint();
+    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    search.focus();
+    return;
+  }
   if(act==='action-variants'){
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog action-variants-dialog';
     const enabled=readActionVariants();
