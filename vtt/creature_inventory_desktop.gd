@@ -714,7 +714,7 @@ func _apply_slot_size(choice: int, slot: String) -> void:
 	for index: int in range(rows.size()):
 		var item: Dictionary = rows[index]
 		if slot in ItemRules.slots(item) and ItemRules.kind(_definition(item)) == "weapon":
-			_tab.call("set_weapon_size_at", index, choice)
+			_tab.call("set_weapon_size_at", index, choice, slot)
 			return
 
 
