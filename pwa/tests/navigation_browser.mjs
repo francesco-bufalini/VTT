@@ -63,7 +63,7 @@ try{
  await sheet('battle');await shot('battle');
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['actions','battle','magic','inventory','stats','conditions','traits','info','origins']){
+  for(const key of ['actions','battle','magic','inventory','conditions','traits','info','origins']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
@@ -72,15 +72,23 @@ try{
    assert.equal(await page.locator('#app h1').count(),1);
   }
  }
- await page.setViewportSize({width:390,height:844});await sheet('stats');
+ await page.setViewportSize({width:390,height:844});await sheet('conditions');
  assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
  await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),8);
+ assert.equal(await page.locator('#navigation-dialog button:visible').count(),7);
  assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
  assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
  await shot('menu');await page.keyboard.press('Escape');
  await page.waitForFunction(()=>document.querySelector('#more-navigation')?.getAttribute('aria-expanded')==='false');
  await sheet('info');
+ assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
+ assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ await page.locator('#sheet-play-view [data-sheet-context="tools"]').click();
+ assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
+ assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armi/);
+ assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
+ await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');

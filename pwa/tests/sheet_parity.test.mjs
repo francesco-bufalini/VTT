@@ -75,7 +75,7 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
   catalogs:{},calculated,
  };
  const markup=nativeSection(creature,'info',opts);
- const skills=nativeSection(creature,'stats',opts);
+ assert.equal(nativeSection(creature,'stats',opts),null,'The former standalone skills screen was retired');
  assert.equal((markup.match(/class="native-ability-row"/g)||[]).length,6);
  assert.match(markup,/class="native-abilities-header" role="row"/);
  for(const ability of ['str','dex','con','int','wis','cha']){
@@ -87,8 +87,9 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
   }
  }
  assert.match(markup,/stats-abilities-panel/);
- assert.match(skills,/stats-skills-panel/);
- assert.doesNotMatch(skills,/native-ability-row/);
+ assert.match(markup,/stats-skills-panel/);
+ assert.match(markup,/Strumenti e linguaggi/);
+ assert.match(markup,/data-detail="proficiency_choices"/);
  assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
  assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');

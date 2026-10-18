@@ -3,7 +3,7 @@
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
-export const SHEET_SECTIONS = [["info","Info"],["stats","Abilità"],
+export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
@@ -331,6 +331,9 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  }).join('')||'<p class="play-empty">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='';
+ const skillPanels=()=>panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
+  panel('Strumenti e linguaggi',summary(['tool','language','weapon','armor'].map((kind,i)=>[['Strumenti','Linguaggi','Armi','Armature'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
+  '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
  const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
@@ -376,10 +379,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>')+
-   statsIntro();
- if(section==='stats')return panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
-  panel('Strumenti e linguaggi',summary(['tool','language'].map((kind,i)=>[['Strumenti','Linguaggi'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
-  '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
+   statsIntro()+
+   skillPanels();
  if(section==='battle'){
   const secondMax=Number(calculated.values?.second_max??c.second_form_max_hp??0);
   const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
