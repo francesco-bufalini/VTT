@@ -207,7 +207,7 @@ export class TacticalViewer {
       ctx.beginPath();
       pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
       ctx.closePath();ctx.lineWidth=3/t.scale;
-      ctx.strokeStyle=contour.long?"#ffb75e":"#8bd8b5";ctx.stroke();
+      ctx.strokeStyle=contour.shared?"#a5bffc":(contour.long?"#ffb75e":"#8bd8b5");ctx.stroke();
     }
     const preview=this.preview?.points||[];
     if(preview.length>=3){
