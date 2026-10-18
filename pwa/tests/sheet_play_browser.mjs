@@ -137,7 +137,7 @@ try{
  await dismiss();
  const maneuver=resourcesPanel.locator('[data-sheet-context="power-ability:ability:maneuver:phb:commander\'s_strike"]');
  assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
- assert.equal(await resourcesPanel.locator('[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
+ assert.equal(await resourcesPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
  await dismiss();
