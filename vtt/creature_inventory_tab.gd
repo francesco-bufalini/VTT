@@ -373,9 +373,13 @@ func configure_touch_layout() -> void:
 	var objects_page := _inventory_list.get_parent() as VBoxContainer
 	var header: Node = objects_page.get_child(0)
 	if header is HBoxContainer:
-		var title := header.get_child(0) as Label
-		title.text = "Inventario"
-		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		# Section styling can prepend a TextureRect; the caption is not
+		# necessarily the first child of the header any more.
+		for child: Node in header.get_children():
+			if child is Label:
+				child.text = "Inventario"
+				child.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				break
 		touch.replace_box(header, VBoxContainer.new())
 	for field: Control in [_search, _add_button]:
 		var parent: Node = field.get_parent()
