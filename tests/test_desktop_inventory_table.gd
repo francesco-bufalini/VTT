@@ -34,26 +34,31 @@ func run() -> void:
 	tab.load_record({"inventory": [weapon, armor, shield, torch, ring, scroll],
 		"attunement_max_base": 3})
 	var desktop: Control = tab._desktop_ui
-	var first: TreeItem = desktop._owned_tree.get_root().get_first_child()
+	var owned_tree: Tree = desktop.get("_owned_tree")
+	var scroll_tree: Tree = desktop.get("_scroll_tree")
+	var attunement_tree: Tree = desktop.get("_attunement_tree")
+	var off_picker: OptionButton = desktop.get("_off")
+	var maximum: SpinBox = desktop.get("_maximum")
+	var first: TreeItem = owned_tree.get_root().get_first_child()
 	assert(first.get_text(7) == "Stocco", "Owned item name must be the last column")
 	assert(first.get_text(1) == "30 mo" and first.get_text(2) == "4 lb",
 		"Cost and weight are multiplied by the stack quantity")
 	assert(first.get_text(6) == "Accurata, Leggera", "Weapon properties use readable names")
-	assert(desktop._characteristic(armor) == "CA 14 + min(DES, 3)",
+	assert(desktop.call("_characteristic", armor) == "CA 14 + min(DES, 3)",
 		"Custom armor Dexterity caps must match the actual AC rules")
-	assert(desktop._characteristic(shield) == "CA +2")
-	var scroll_row: TreeItem = desktop._scroll_tree.get_root().get_first_child()
+	assert(desktop.call("_characteristic", shield) == "CA +2")
+	var scroll_row: TreeItem = scroll_tree.get_root().get_first_child()
 	assert(scroll_row != null and scroll_row.get_text(1) == "3",
 		"Spell scrolls belong in their own level-sorted metadata table")
 	assert(scroll_row.get_text(2) == "Incantesimo non specificato",
 		"Generic scroll titles must not masquerade as spell names")
-	assert(desktop._owned_tree.get_root().get_child_count() == 5,
+	assert(owned_tree.get_root().get_child_count() == 5,
 		"Scrolls are excluded from the ordinary owned item table")
 	# The hand/armor selectors persist the same item slots used by game rules.
 	tab._inventory_list.select(0)
 	tab._equip_selected("main")
 	assert("main" in ItemRules.slots(tab._inventory[0]))
-	assert(desktop._owned_tree.get_root().get_first_child().get_text(0).contains("⚔"))
+	assert(owned_tree.get_root().get_first_child().get_text(0).contains("⚔"))
 	tab._inventory_list.select(2)
 	tab._equip_selected("off")
 	assert("off" in ItemRules.slots(tab._inventory[2]))
@@ -73,13 +78,13 @@ func run() -> void:
 	tab._inventory_list.select(4)
 	tab._set_attunement(true)
 	assert(ItemRules.origin_active(tab._inventory[4]))
-	assert(desktop._attunement_tree.get_root().get_first_child().is_checked(0))
-	desktop._maximum.value = 4
+	assert(attunement_tree.get_root().get_first_child().is_checked(0))
+	maximum.value = 4
 	assert(tab.attunement_max_base() == 4 and tab.attunement_capacity() == 4,
 		"The editable capacity must be exported through the inventory owner")
 	tab.set_gui_language("en")
-	assert(desktop._owned_tree.get_column_title(1) == "Value" and
-		desktop._scroll_tree.get_column_title(2) == "Spell",
+	assert(owned_tree.get_column_title(1) == "Value" and
+		scroll_tree.get_column_title(2) == "Spell",
 		"Desktop table titles must follow the creature language")
 	# Equipping a two-handed weapon locks the off-hand menu.
 	var glaive := {"id": "test:glaive", "name": "Alabarda", "type": "M",
@@ -87,7 +92,7 @@ func run() -> void:
 	tab.load_record({"inventory": [glaive, shield]})
 	tab._inventory_list.select(0)
 	tab._equip_selected("main")
-	assert(desktop._off.disabled and desktop._off.get_item_text(0).contains("two hands"))
+	assert(off_picker.disabled and off_picker.get_item_text(0).contains("two hands"))
 	assert(ItemRules.occupying(tab._inventory, "off").is_empty())
 	tab.queue_free()
 	await process_frame
