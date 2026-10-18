@@ -257,6 +257,30 @@ const powerIdentity=power=>{
  if(id==='vtt_wild_shape'||id==='wild_shape'||name==='wild shape'||name==='forma selvatica')return 'wild_shape';
  return name;
 };
+// Persistent self-effects are explicit: never turn a condition inflicted on a
+// target into a toggle on the actor. Native class-feature activations and
+// explicitly typed self/toggle powers have reversible sheet state.
+export function persistentBattleAbility(row={}){
+ const power=row.power||{},action=row.classAction||{};
+ if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id))return true;
+ const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
+ return sources.some(source=>{
+  if(source.toggleable===true||source.persistent===true||
+     ['toggle','sustained'].includes(String(source.activation_mode||'').toLowerCase()))return true;
+  const effect=source.effect||source.effects;
+  const typed=Array.isArray(effect)?effect:[effect];
+  return typed.some(e=>e&&typeof e==='object'&&
+   (e.kind==='condition'||e.type==='condition'||e.condition)&&
+   isSelf(e.target||source.target));
+ });
+}
+const spellActionTime=spell=>{
+ const raw=Array.isArray(spell?.time)?spell.time[0]:spell?.time??spell?.casting_time;
+ const value=typeof raw==='object'&&raw?raw.unit||raw.type||raw.name:raw;
+ const key=String(value||'').trim().toLowerCase();
+ return ({action:'action',bonus:'bonus',reaction:'reaction',free:'free',minute:'contextual',hour:'contextual',
+  azione:'action','azione bonus':'bonus',reazione:'reaction'})[key]||'contextual';
+};
 export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
  const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
  const keyFor=(cost,trackerId)=>{
@@ -309,7 +333,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   const spell=spells.find(row=>row.id===grant.spell_id);
   rows.push({kind:'spell',id:String(grant.id),name:spell?.name||grant.name||grant.spell_name||grant.spell_id,
    tracker_id:grant.tracker_id||'',cost,key:mode==='tracker'?keyFor(cost,grant.tracker_id):'free',
-   timing:'',grant});
+   timing:spellActionTime(spell),grant});
  }
  return rows;
 }
