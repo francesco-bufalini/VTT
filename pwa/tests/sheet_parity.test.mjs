@@ -289,3 +289,17 @@ test('removing a spell assigned to another class cannot delete it',()=>{
  const onlyWizard=removeSelectedSpell(shared,'prepared_spells',0,{classId:warlock});
  assert.deepEqual(onlyWizard.prepared_spells[0].casting_classes,[wizard]);
 });
+
+test('classes header displays non-editable total level and editable XP on one line',()=>{
+ const c={kind:'character',class:'Wizard',level:5,xp:1250,classes:[{name:'Wizard',level:3},{name:'Fighter',level:2}]};
+ const markup=nativeSection(c,'info',{
+  field:(label,key,value)=>'<label>'+label+'<input data-field="'+key+'" value="'+value+'"></label>',
+  area:()=>'',panel:(title,body,cls='')=>'<section class="panel '+cls+'"><h2>'+title+'</h2>'+body+'</section>',
+  catalogs:{},calculated:calculateSheet(c)
+ });
+ assert(markup.includes('class="panel classes-progression-panel"'));
+ assert(markup.includes('class="progression-summary"'));
+ assert(markup.includes('<output aria-label="Livello totale automatico">5</output>'));
+ assert(markup.includes('data-field="xp" value="1250"'));
+ assert(!markup.includes('Livello totale<input'));
+});

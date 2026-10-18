@@ -694,12 +694,12 @@ function originPowersView(c,calculated,abilitiesList=[]){
    const header=(group.tracker?'<p class="hint magic-tracker-count">'+esc(Math.max(0,Number(group.tracker.max||0)-Number(group.tracker.spent||0)))+' / '+esc(group.tracker.max||0)+' disponibili</p>':'');
    const spellRows=group.spells.length?groupedMagicSpells(group.spells,({grant,info})=>configured(grant,info)):'';
    const abilityRows=group.abilities.length?
-     '<div class="magic-ability-list"><h4>Capacità</h4>'+
+     '<div class="magic-ability-list">'+
      group.abilities.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it')).map(ability=>
-       '<details class="magic-ability-entry"><summary>'+esc(ability.name)+
-       (ability.resource_cost>0?' · '+esc(ability.resource_cost)+' utilizzi':'')+'</summary>'+
-       '<p class="hint">'+esc(ability.origin||'')+'</p>'+
-       '<p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></details>').join('')+'</div>':'';
+       '<details class="magic-ability-entry"><summary><span class="magic-ability-name">'+esc(ability.name)+'</span>'+
+       (Number(ability.resource_cost)>0?'<span class="magic-power-cost">Costo: '+esc(ability.resource_cost)+'</span>':'')+'</summary>'+
+       '<div class="magic-ability-detail"><p class="hint">'+esc(ability.origin||'')+'</p>'+
+       '<p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div></details>').join('')+'</div>':'';
    return panel(group.name,header+[...stats.entries()].map(([origin,meta])=>
      '<div class="magic-source-ability"><span class="hint">'+esc(meta.name)+'</span>'+
      castingStatistics(c,'origin:'+origin,meta.ability)+'</div>').join('')+

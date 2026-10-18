@@ -328,6 +328,14 @@ export function spellActionEntries(record={},calculated={},spells=[]){
 }
 // One row = one action and its resource. The rule's type remains in the
 // structured data but is not used as a repeated visual heading.
+function quickSkillMarkup(calculated){
+ const skills=topSkillEntries(calculated);
+ return '<div class="action-economy-skills"><h3>Skill checks · 4 migliori</h3>'+
+   (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
+     '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
+     '" data-label="'+esc(row.label)+'">'+actionGlyph(skillGlyphKey(row.id))+'<span class="action-skill-name">'+esc(row.label)+'</span><span class="action-skill-bonus">'+(row.bonus>=0?'+':'')+esc(row.bonus)+'</span></button>'
+    ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>';
+}
 function actionRow(item,calculated){
  const glyph=actionGlyph(item.id?.startsWith('movement_options_')?'dash':item.id==='ability_checks'?'skill':actionGlyphKey(item));
  const tracker=String(item.tracker||'').trim();
@@ -349,7 +357,7 @@ function actionRow(item,calculated){
     !isSpell&&resource?'<span class="action-economy-tracker" title="Risorsa utilizzata">'+esc(resource)+'</span>':'');
  const subLabel=resource;
  const groupOnly=item.children?.length&&!item.description;
- return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'">'+
+ return '<article class="action-economy-row" data-origin="'+(item.origin==='personal'?'personal':'general')+'"'+(item.id==='ability_checks'?' data-action-group="skill-checks"':'')+'>'+
   '<div class="action-economy-main">'+(groupOnly?'<div class="action-economy-entry action-group-label">'+glyph+'<strong>'+esc(item.name)+'</strong></div>':'<details class="action-economy-entry"><summary>'+
   '<span class="action-economy-type-icon" aria-hidden="true">'+glyph+'</span><strong>'+esc(item.name)+
   '</strong>'+(item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione" aria-label="Anche con un’azione">A</span>':'')+'<span class="action-economy-chevron">›</span></summary><p>'+
@@ -365,7 +373,7 @@ function actionRow(item,calculated){
   esc((item.description||'').split('\n')[0].slice(0,92))+'</span></div>'+
   '<div class="action-economy-controls">'+actionButtons+
   (subLabel&&!t?'<span class="action-economy-resource-label">'+esc(subLabel)+'</span>':'')+'</div>'+
-  (item.children?.length?'<details class="action-tree"><summary>'+esc(item.children_heading||'Attacchi e manovre')+' · '+item.children.length+'</summary><ol>'+item.children.map(child=>'<li>'+actionRow(child,calculated)+'</li>').join('')+'</ol></details>':'')+'</article>';
+  (item.children?.length?'<details class="action-tree"><summary>'+esc(item.children_heading||'Attacchi e manovre')+' · '+item.children.length+'</summary><ol>'+item.children.map(child=>'<li>'+actionRow(child,calculated)+'</li>').join('')+'</ol></details>':'')+(item.id==='ability_checks'?quickSkillMarkup(calculated):'')+'</article>';
 }
 
 function diceGlyph(){return '<span class="action-dice" aria-hidden="true"></span>';}
@@ -398,19 +406,13 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
   }
   spellGroups.get(spell.time).children.push(spell);
  }
- const skills=topSkillEntries(calculated);
+ // Keep quick checks in the action group even when its source catalogue is missing.
+ if(!entries.some(row=>row.id==='ability_checks'))entries.push({id:'ability_checks',name:'Prove di abilità',time:'action',origin:'general',children:[]});
  return GROUPS.map(([id,title])=>{
   const matching=entries.filter(row=>row.time===id);
   const general=matching.filter(row=>row.origin!=='personal')
    .sort((a,b)=>Number(a.optional===true)-Number(b.optional===true));
   const personal=matching.filter(row=>row.origin==='personal');
-  const skillsPanel=id!=='free'?'':(
-    '<div class="action-economy-skills"><h3>Tiri rapidi · 4 migliori</h3>'+
-    (skills.length?'<div class="action-economy-skill-grid">'+skills.map(row=>
-      '<button type="button" class="btn small" data-act="sheet-roll" data-target="skill:'+esc(row.id)+
-      '" data-label="'+esc(row.label)+'">'+actionGlyph(skillGlyphKey(row.id))+'<span class="action-skill-name">'+esc(row.label)+'</span><span class="action-skill-bonus">'+(row.bonus>=0?'+':'')+esc(row.bonus)+'</span></button>'
-     ).join('')+'</div>':'<p class="hint">Nessun bonus disponibile.</p>')+'</div>'
-  );
   const separated=general.length&&personal.length;
   const visibleCount=matching.reduce((total,row)=>total+1+(row.children?.length||0),0);
   return '<section class="panel action-economy-section" data-timing="'+esc(id)+'"><header class="action-economy-heading">'+
@@ -419,9 +421,8 @@ export function actionEconomyView(record,calculated,spells=[],featureOverrides=[
     '<span class="action-economy-count" aria-label="'+visibleCount+' opzioni">'+visibleCount+'</span></header>'+
     (general.length?(separated?'<h3 class="action-economy-group-title">Generali</h3>':'')+
       general.map(row=>actionRow(row,calculated)).join(''):'')+
-    skillsPanel+
     (personal.length?(separated?'<h3 class="action-economy-group-title">Dalla scheda</h3>':'')+
       personal.map(row=>actionRow(row,calculated)).join(''):'')+
-    (!matching.length&&!skillsPanel?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
+    (!matching.length?'<p class="hint">Nessuna azione disponibile.</p>':'')+'</section>';
  }).join('').replace(/^/,'<div class="action-toolbar"><span>Azioni e opzioni</span><div class="action-toolbar-buttons"><button type="button" class="btn small" data-act="action-expand-all" aria-expanded="false">Espandi tutto</button><button type="button" class="btn small" data-act="action-variants" aria-label="Regole varianti 2014">'+actionGlyph('settings')+'<span>Regole varianti</span></button></div></div><div class="action-economy-dashboard">')+'</div>';
 }
