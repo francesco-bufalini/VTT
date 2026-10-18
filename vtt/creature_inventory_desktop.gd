@@ -4,10 +4,14 @@ extends VBoxContainer
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const QUANTITY_COLUMN := 4
 const MINUS_BUTTON := 100
 const PLUS_BUTTON := 101
+const REMOVE_BUTTON := 102
+const MENU_REMOVE := 1
+const MENU_CATALOG := 2
 
 var _tab: Node
 var _owned_tree: Tree
@@ -16,6 +20,10 @@ var _attunement_tree: Tree
 var _main: OptionButton
 var _off: OptionButton
 var _armor: OptionButton
+var _main_size: OptionButton
+var _off_size: OptionButton
+var _context_menu: PopupMenu
+var _context_index := -1
 var _maximum: SpinBox
 var _maximum_label: Label
 var _owned_heading: Label
@@ -26,6 +34,7 @@ var _slot_indices: Dictionary = {}
 var _record: Dictionary = {}
 var _minus_icon: Texture2D
 var _plus_icon: Texture2D
+var _remove_icon: Texture2D
 var _updating := false
 # One inventory table owns the current highlight.
 var _active_view := "owned"
@@ -48,18 +57,19 @@ func setup(tab: Node, description: Control) -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_minus_icon = _symbol_texture(false)
 	_plus_icon = _symbol_texture(true)
+	_remove_icon = _remove_texture()
 	var heading := Label.new()
 	_owned_heading = heading
 	heading.text = _t("Oggetti posseduti", "Owned items")
 	heading.add_theme_font_size_override("font_size", 15)
 	add_child(heading)
-	_owned_tree = _make_tree(["", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
+	_owned_tree = _make_tree([_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"), _t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"), _t("Nome", "Name")], 185)
 	_owned_tree.columns = 8
 	_owned_tree.set_column_expand(7, true)
 	for column: int in range(7):
 		_owned_tree.set_column_expand(column, false)
 	for column: int in range(8):
-		_owned_tree.set_column_custom_minimum_width(column, [30, 82, 70, 94, 114, 64, 162, 174][column])
+		_owned_tree.set_column_custom_minimum_width(column, [65, 65, 60, 77, 104, 52, 122, 235][column])
 	_owned_tree.item_selected.connect(_on_owned_selected)
 	_owned_tree.gui_input.connect(_on_owned_mouse_event)
 	_owned_tree.item_edited.connect(_on_owned_edited)
@@ -75,9 +85,10 @@ func setup(tab: Node, description: Control) -> void:
 	_scroll_tree.columns = 3
 	_scroll_tree.set_column_expand(0, false)
 	_scroll_tree.set_column_expand(1, false)
-	_scroll_tree.set_column_custom_minimum_width(0, 125)
-	_scroll_tree.set_column_custom_minimum_width(1, 75)
+	_scroll_tree.set_column_custom_minimum_width(0, 104)
+	_scroll_tree.set_column_custom_minimum_width(1, 58)
 	_scroll_tree.item_selected.connect(_on_scroll_selected)
+	_scroll_tree.gui_input.connect(_on_scroll_mouse_event)
 	_scroll_tree.item_edited.connect(_on_scroll_edited)
 	_scroll_tree.button_clicked.connect(_on_quantity_button)
 	add_child(_scroll_tree)
@@ -102,6 +113,12 @@ func setup(tab: Node, description: Control) -> void:
 	armor_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	triangle.add_child(armor_row)
 	_armor = _slot_picker(armor_row, _t("Armatura", "Armor"), "body")
+
+	_context_menu = PopupMenu.new()
+	_context_menu.add_item(_t("Rimuovi", "Remove"), MENU_REMOVE)
+	_context_menu.add_item(_t("Vedi nel bestiario", "View in bestiary"), MENU_CATALOG)
+	_context_menu.id_pressed.connect(_on_context_action)
+	add_child(_context_menu)
 
 	var attune_heading := HBoxContainer.new()
 	add_child(attune_heading)
@@ -142,7 +159,7 @@ func refresh_captions() -> void:
 	_attune_label.text = _t("Oggetti che richiedono sintonia", "Attunement items")
 	for column: int in range(8):
 		_owned_tree.set_column_title(column, [
-			"", _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
+			_t("Equip.", "Equipped"), _t("Valore", "Value"), _t("Peso", "Weight"), _t("Rarità", "Rarity"),
 			_t("Quantità", "Quantity"), _t("Fonte", "Source"), _t("Proprietà / CA", "Properties / AC"),
 			_t("Nome", "Name")][column])
 	for column: int in range(3):
@@ -155,6 +172,8 @@ func refresh_captions() -> void:
 	(_off.get_parent().get_child(0) as Label).text = _t("Mano secondaria", "Off hand")
 	(_armor.get_parent().get_child(0) as Label).text = _t("Armatura", "Armor")
 	_maximum_label.text = _t("Massimo", "Maximum")
+	_context_menu.set_item_text(0, _t("Rimuovi", "Remove"))
+	_context_menu.set_item_text(1, _t("Vedi nel bestiario", "View in bestiary"))
 	refresh()
 
 
@@ -183,12 +202,28 @@ func _slot_picker(parent: BoxContainer, label: String, slot: String) -> OptionBu
 	caption.text = label
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	group.add_child(caption)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	group.add_child(row)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	picker.custom_minimum_size.x = 200
+	picker.custom_minimum_size.x = 148 if slot != "body" else 200
 	picker.clip_text = true
+	picker.fit_to_longest_item = false
 	picker.item_selected.connect(_on_slot_selected.bind(slot))
-	group.add_child(picker)
+	row.add_child(picker)
+	if slot in ["main", "off"]:
+		var weapon_size := OptionButton.new()
+		weapon_size.custom_minimum_size.x = 116
+		weapon_size.fit_to_longest_item = false
+		weapon_size.clip_text = true
+		weapon_size.tooltip_text = _t("Taglia dell'arma impugnata", "Equipped weapon size")
+		weapon_size.item_selected.connect(_on_slot_size_selected.bind(slot))
+		row.add_child(weapon_size)
+		if slot == "main":
+			_main_size = weapon_size
+		else:
+			_off_size = weapon_size
 	return picker
 
 
@@ -202,6 +237,15 @@ func _symbol_texture(plus: bool) -> Texture2D:
 		for x: int in range(6, 8):
 			for y: int in range(2, 12):
 				img.set_pixel(x, y, Color(0.87, 0.85, 0.72))
+	return ImageTexture.create_from_image(img)
+
+
+func _remove_texture() -> Texture2D:
+	var img := Image.create(14, 14, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	for n: int in range(3, 11):
+		img.set_pixel(n, n, Color(0.96, 0.55, 0.49))
+		img.set_pixel(13 - n, n, Color(0.96, 0.55, 0.49))
 	return ImageTexture.create_from_image(img)
 
 
