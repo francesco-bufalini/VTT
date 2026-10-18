@@ -10,6 +10,8 @@ const nativeHost = await readFile(new URL("network/pwa_host.gd", root), "utf8");
 const routes = new Map([...nativeHost.matchAll(/"([^"\n]+)":\s*\["res:\/\/([^"\n]+)",\s*"([^"\n]+)"\]/g)]
   .map(match => [match[1], [match[2], match[3]]]));
 let failUiModule = false;
+let failUiModuleOnce = false;
+let transientUiFailures = 0;
 
 const server = createServer(async (request, response) => {
   try {
@@ -25,9 +27,13 @@ const server = createServer(async (request, response) => {
       response.end(JSON.stringify({ version: 1, spells: [] }));
       return;
     }
-    if (failUiModule && path === "/ui.js") {
-      response.writeHead(404);
-      response.end("missing UI module");
+    if (path === "/ui.js" && (failUiModule || failUiModuleOnce)) {
+      if (failUiModuleOnce) {
+        failUiModuleOnce = false;
+        ++transientUiFailures;
+      }
+      response.writeHead(503, { "Content-Type": "text/plain" });
+      response.end("temporarily unavailable UI module");
       return;
     }
     const route = routes.get(path);
@@ -76,7 +82,21 @@ try {
   await slowContext.close();
   console.log("PASS: hung Service Worker cannot block local archive");
 
-  // Broken imports must show an actionable startup error, not an eternal placeholder.
+  // A first /ui.js request can fail because several PWA resources are being
+  // loaded concurrently. Chromium caches a failed module resolution within a
+  // page; a fragment-only retry must create a fresh module-map entry without
+  // changing the native host's allowlisted HTTP path.
+  failUiModuleOnce = true;
+  const transientContext = await browser.newContext();
+  const transientPage = await transientContext.newPage();
+  await transientPage.goto(origin);
+  await transientPage.locator('[data-act="create"]').waitFor({ timeout: 20000 });
+  assert.equal(transientUiFailures, 1, "Expected one transient /ui.js failure");
+  assert.equal(await transientPage.locator("#startup-error").count(), 0);
+  await transientContext.close();
+  console.log("PASS: transient module failure recovers without clearing IndexedDB");
+
+  // Permanently missing modules must still show an actionable error.
   failUiModule = true;
   const errorContext = await browser.newContext();
   const errorPage = await errorContext.newPage();

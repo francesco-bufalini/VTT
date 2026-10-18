@@ -8,6 +8,10 @@ const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
 const BODY_LIMIT := 2 * 1024 * 1024
+# Module imports, multiple phones and an existing Service Worker can issue
+# several independent requests at once. Never drop accepted connections merely
+# because a transient burst has filled the active slots.
+const MAX_CLIENTS := 32
 const TIMEOUT_MS := 15000
 const TOKEN_PATH := "user://pwa_pairing_token.txt"
 const SHORT_CODE_LIFETIME_MS := 300000
@@ -353,14 +357,14 @@ func _board_sync() -> Node:
 
 
 func _process(_delta: float) -> void:
-	while _server.is_connection_available():
+	# Stop accepting at capacity, letting TCP queue new requests. Previously
+	# requests above the cap were accepted and disconnected immediately, which
+	# surfaced in Chromium as "Failed to fetch dynamically imported module".
+	while _server.is_connection_available() and _clients.size() < MAX_CLIENTS:
 		var peer := _server.take_connection()
-		if _clients.size() >= 12:
-			peer.disconnect_from_host()
-		else:
-			_clients.append({"peer": peer, "buffer": PackedByteArray(),
-				"out": PackedByteArray(), "sent": 0, "processing": false,
-				"deadline": Time.get_ticks_msec() + TIMEOUT_MS})
+		_clients.append({"peer": peer, "buffer": PackedByteArray(),
+			"out": PackedByteArray(), "sent": 0, "processing": false,
+			"deadline": Time.get_ticks_msec() + TIMEOUT_MS})
 	for i in range(_clients.size() - 1, -1, -1):
 		var client: Dictionary = _clients[i]
 		var peer: StreamPeerTCP = client.peer
