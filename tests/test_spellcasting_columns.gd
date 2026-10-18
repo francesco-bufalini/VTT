@@ -216,7 +216,7 @@ func run() -> void:
 	var headings: Array[String] = []
 	var buttons: Array[String] = []
 	for node: Node in ordered.get_children():
-		if node.name == "SpellLevelHeader":
+		if node is Label:
 			headings.append((node as Label).text)
 		elif node is HBoxContainer:
 			buttons.append((node.get_child(0) as Button).text)
