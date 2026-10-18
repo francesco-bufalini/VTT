@@ -350,7 +350,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
       (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
         '<label>Livello classe principale<input type="number" value="0" disabled></label>'))+
-      '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1))+'</section>'+
+      '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+nativeRows(c,'classes',catalogs,1)+'</section>'+
    panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">Modifica talenti</button>');
  if(section==='stats')return panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
