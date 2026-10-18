@@ -1584,8 +1584,8 @@ func _build_ui() -> void:
 	var resource_section := _info_panel(combat_column, "RISORSE")
 	_tracker_rows = VBoxContainer.new()
 	resource_section.add_child(_tracker_rows)
-	# Keep resources directly below HP and before AC/initiative.
-	combat_column.move_child(resource_section.get_parent(), defense_panel.get_index())
+	# Keep resources below the complete attack list, including its description.
+	combat_column.move_child(resource_section.get_parent(), _attacks_description.get_index() + 1)
 	var feats_info_box := _info_panel(form, "TALENTI")
 	_info_feats_list = VBoxContainer.new()
 	_info_feats_list.add_theme_constant_override("separation", 5)

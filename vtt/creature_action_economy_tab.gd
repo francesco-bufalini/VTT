@@ -455,6 +455,32 @@ static func _normalize_alternatives(rows: Array[Dictionary]) -> Array[Dictionary
 			result.append(row)
 	return result
 
+static func attack_action_summary(record: Dictionary) -> Dictionary:
+	var count := 1
+	var notes: PackedStringArray = []
+	for feature: Dictionary in Features.collect_features(record):
+		if bool(feature.get("inactive", false)):
+			continue
+		var title := String(feature.get("name", "")).to_lower()
+		var amount: int = {"extra attack": 2, "extra attack (2)": 3, "extra attack (3)": 4,
+			"two extra attacks": 3, "three extra attacks": 4, "thirsting blade": 2,
+			"devouring blade": 3}.get(title, 0)
+		if int(amount) > 0:
+			count = maxi(count, int(amount)) # Multiclass Extra Attack never stacks.
+			notes.append(String(feature.get("name", "")) + " · " + _source_text(_description(feature.get("entries", ""))))
+	for raw: Variant in record.get("stat_block", {}).get("action", []):
+		if not raw is Dictionary or String(raw.get("name", "")).to_lower() not in ["multiattack", "multiattacco"]:
+			continue
+		var text := _source_text(_description(raw.get("entries", "")))
+		notes.append("Multiattacco · " + text)
+		# Presentation only: complex alternative routines retain their full text.
+		var match_count := RegEx.create_from_string("(?i)makes (two|three|four|five|six|[2-9]) (?:melee |ranged |weapon )?attacks").search(text)
+		if match_count != null:
+			var number := match_count.get_string(1).to_lower()
+			count = maxi(count, int({"two": 2, "three": 3, "four": 4, "five": 5, "six": 6}.get(number, number)))
+	return {"count": count, "detail": "\n\n".join(notes)}
+
+
 static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[Dictionary]:
 	var results := _base_entries(record, enabled_variants)
 	if record.is_empty(): return results
@@ -509,7 +535,7 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 				if not action is Dictionary:
 					continue
 				var name := String(action.get("name", "")).strip_edges()
-				if name.is_empty():
+				if name.is_empty() or name.to_lower() in ["multiattack", "multiattacco"]:
 					continue
 				results.append(_entry(name, _timing(section), "Capacità", _description(action.get("entries", action))))
 	# Only explicitly structured activations are classified. Passive features
@@ -620,6 +646,14 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		grant_entry["spell_id"] = String(grant.get("spell_id", ""))
 		grant_entry["grant_id"] = String(grant.get("id", ""))
 		results.append(grant_entry)
+	var routine := attack_action_summary(record)
+	for row: Dictionary in results:
+		if row.get("id", "") == "attack":
+			row["attack_count"] = routine.count
+			if int(routine.count) > 1:
+				row["name"] = String(row.name) + " ×%d" % int(routine.count)
+			if not String(routine.detail).is_empty():
+				row["detail"] = String(row.get("detail", "")) + "\n\n" + String(routine.detail)
 	for index: int in range(results.size()):
 		results[index]["origin"] = "personal" if index >= personal_start else "general"
 		results[index]["position"] = index
