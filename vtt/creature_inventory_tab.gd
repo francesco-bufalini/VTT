@@ -73,6 +73,9 @@ var _item_share_index := -1
 var _item_touch_start := Vector2.ZERO
 var _item_touch_active := false
 var _item_touch_generation := 0
+var _legacy_actions: HBoxContainer
+var _legacy_size_row: HBoxContainer
+var _legacy_switches: HFlowContainer
 var _optional_features: Array[Dictionary] = []
 var _infusion_record: Dictionary = {}
 var _infusion_panel: VBoxContainer
@@ -282,6 +285,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	# Keep these internal controls for legacy save tests, not in the inventory UI.
 	equipment_row.visible = false
 	var item_switches := HFlowContainer.new()
+	_legacy_switches = item_switches
 	item_switches.add_theme_constant_override("h_separation", 8)
 	add_child(item_switches)
 	_equip_hint = Label.new()
@@ -306,6 +310,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	item_switches.add_child(_active_item)
 
 	var actions := HBoxContainer.new()
+	_legacy_actions = actions
 	actions.add_theme_constant_override("separation", 6)
 	add_child(actions)
 	_legacy_qty_label = Label.new()
@@ -324,6 +329,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	# Weapon sizes are instance overrides. Without one, the weapon always
 	# follows the current creature's size, even after a transformation.
 	var size_row := HBoxContainer.new()
+	_legacy_size_row = size_row
 	size_row.add_theme_constant_override("separation", 6)
 	add_child(size_row)
 	var size_caption := Label.new()
@@ -365,6 +371,12 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	objects_page.add_child(_desktop_ui)
 	objects_page.move_child(_desktop_ui, _inventory_list.get_index() + 1)
 	_desktop_ui.call("setup", self, _details)
+	# These edit controls remain available in touch layout; desktop uses
+	# inline quantities, slot-specific weapon sizes and a context menu.
+	_legacy_actions.hide()
+	_legacy_size_row.hide()
+	_legacy_switches.hide()
+	_item_share_button.hide()
 	_inventory_list.hide()
 	_inventory_title.hide()
 	_equip_hint.hide()
@@ -402,6 +414,10 @@ func configure_touch_layout() -> void:
 			_desktop_ui.remove_child(_details)
 			objects_page.add_child(_details)
 		_inventory_list.show()
+		_legacy_actions.show()
+		_legacy_size_row.show()
+		_legacy_switches.show()
+		_item_share_button.show()
 		_inventory_title.show()
 		_equip_hint.show()
 		_generic_equip.show()
@@ -1139,8 +1155,14 @@ func _set_weapon_size_choice(item: Dictionary) -> void:
 func _on_weapon_size_changed(choice: int) -> void:
 	if _loading:
 		return
-	var index: int = _selected_inventory_index()
-	if index < 0 or index >= _inventory.size():
+	set_weapon_size_at(_selected_inventory_index(), choice)
+
+
+# Shared size mutation for the legacy touch picker and both desktop hands.
+# The index comes from the occupied equipment slot, never from an unrelated
+# selected row in the inventory table.
+func set_weapon_size_at(index: int, choice: int) -> void:
+	if _loading or index < 0 or index >= _inventory.size():
 		return
 	var row: Dictionary = _inventory[index].duplicate(true)
 	if ItemRules.kind(_catalog_entry(row)) != "weapon":
@@ -1152,11 +1174,10 @@ func _on_weapon_size_changed(choice: int) -> void:
 	var overrides: Dictionary = row.get("instance_overrides", {}).duplicate(true)
 	if String(overrides.get("weapon_size", "")) == override_size:
 		return
-	# Changing one weapon in a stack must leave the other copies untouched.
+	# Preserve every other weapon copy when editing one from an equipped slot.
 	if int(row.get("quantity", 1)) > 1:
 		_inventory[index]["quantity"] = int(row["quantity"]) - 1
 		row["quantity"] = 1
-		row["equipped_slots"] = []
 		index += 1
 		_inventory.insert(index, row)
 	if override_size.is_empty():
@@ -1176,6 +1197,9 @@ func _on_quantity_changed(value: float) -> void:
 	var index: int = _selected_inventory_index()
 	if index < 0 or index >= _inventory.size():
 		return
+	if _desktop_ui != null and _desktop_ui.visible and int(value) <= 0:
+		_remove_inventory_at(index)
+		return
 	if DocumentStore.is_document(_inventory[index]):
 		_quantity.set_value_no_signal(1)
 		return
@@ -1193,14 +1217,42 @@ func _on_quantity_changed(value: float) -> void:
 
 
 func _remove_selected() -> void:
-	var index: int = _selected_inventory_index()
+	_remove_inventory_at(_selected_inventory_index())
+
+
+func _remove_inventory_at(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_inventory.remove_at(index)
+	_sanitize_equipment()
 	_refresh_inventory()
 	_publish()
 	if _search_panel.visible:
 		_filter_catalog()
+
+
+# The desktop right-click action navigates to the matching catalog record,
+# retaining the catalog's filters and description rendering.
+func _show_owned_item_in_catalog(index: int) -> void:
+	if index < 0 or index >= _inventory.size():
+		return
+	var owned: Dictionary = _inventory[index]
+	var item_id: String = String(owned.get("id", ""))
+	var item_name: String = String(owned.get("name", ""))
+	_reset_catalog_filters()
+	_search.text = item_name
+	_filter_catalog()
+	_set_search_visible(true)
+	for result_index: int in range(_filtered.size()):
+		if String(_filtered[result_index].get("id", "")) == item_id:
+			_catalog_list.select(result_index)
+			_catalog_list.ensure_current_is_visible()
+			_on_catalog_selected(result_index)
+			return
+	# A custom saved item may not be installed in the current catalog.
+	if _on_status.is_valid():
+		_on_status.call("Oggetto non presente nel catalogo locale: " + item_name)
+	_on_inventory_selected(index)
 
 
 func _refresh_inventory(selected_index: int = -1) -> void:
