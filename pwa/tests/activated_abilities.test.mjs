@@ -11,16 +11,35 @@ const definitions=[
     activation_mode:"contextual"}
 ];
 
-test("PWA projects Bardic Inspiration and Wild Shape as nonspell capabilities",()=>{
-  const record={classes:[{name:"Bard",level:3},{name:"Druid",level:2}]};
-  const powers=abilitiesForCreature(record,definitions);
+test("PWA derives class abilities from the actual structured features, not level placeholders",()=>{
+  const record={classes:[{name:"Bard",source:"PHB",level:3},{name:"Druid",source:"PHB",level:2}]};
+  const feature=(name,owner)=>({name,origin_key:"class|phb|"+owner,
+    origin_id:"feature:class|phb|"+owner+"|"+name,entries:[name+" description"]});
+  const bard=feature("Bardic Inspiration","bard");
+  const druid=feature("Wild Shape","druid");
+  assert.deepEqual(abilitiesForCreature(record,definitions).map(x=>x.id),[],
+    "a class level must not fabricate a privilege when no features are loaded");
+  const projected={features:[bard,druid],trackers:[
+    {id:"class:bard:phb:bardic_inspiration",name:"Bardic Inspiration",
+      origin_class:"Bard",max:3,spent:1},
+    {id:"class:druid:phb:wild_shape",name:"Wild Shape",
+      origin_class:"Druid",max:2,spent:0}
+  ]};
+  const powers=abilitiesForCreature(record,definitions,projected);
   assert.deepEqual(powers.map(x=>x.id),["vtt_bardic_inspiration","vtt_wild_shape"]);
+  assert.equal(powers[0].tracker_remaining,2);
+  assert.equal(powers[1].tracker_id,"class:druid:phb:wild_shape");
+  assert.equal(powers[0].feature_id,bard.origin_id);
   for(const power of powers){
     assert.equal(power.action_kind,"ability");
     assert.equal(Object.hasOwn(power,"level"),false);
     assert.equal(Object.hasOwn(power,"school"),false);
     assert.equal(Object.hasOwn(power,"components"),false);
   }
+  const disabled={...projected,features:[{...bard,disabled:true},druid]};
+  assert.deepEqual(abilitiesForCreature(record,definitions,disabled).map(x=>x.id),["vtt_wild_shape"]);
+  assert.deepEqual(abilitiesForCreature({...record,origin_enabled:{[druid.origin_id]:false}},
+    definitions,projected).map(x=>x.id),["vtt_bardic_inspiration"]);
 });
 
 test("PWA selects only acquired maneuvers and preserves legacy omitted source",()=>{
@@ -64,4 +83,20 @@ test("PWA manifest loader requests shared structured native data",async()=>{
   }finally{
     globalThis.fetch=previous;
   }
+});
+
+test("typed active features and optional grants preserve their origins and costs",()=>{
+ const feature={id:"feature:typed",key:"class|phb|fighter|typed",name:"Parry",
+   origin_key:"class|phb|fighter",origin_id:"feature:class|phb|fighter|typed",
+   action_type:{type:"reaction"},entries:["Protect yourself"]};
+ const projection={features:[feature],trackers:[{id:"superiority",name:"Superiority Die",max:4,spent:2}]};
+ const record={class:"Fighter",class_source:"PHB",level:3,
+   optional_features_catalog:[{name:"Ambush",source:"TCE",origin_id:"optional:ambush"}]};
+ const abilities=abilitiesForCreature(record,definitions,projection);
+ assert(abilities.some(x=>x.feature_id===feature.origin_id));
+ assert(abilities.some(x=>x.id==="ability:maneuver:tce:ambush"));
+ assert.equal(abilities.find(x=>x.name==="Ambush").tracker_remaining,2);
+ const disabled=abilitiesForCreature({...record,origin_enabled:{"optional:ambush":false}},
+   definitions,projection);
+ assert(!disabled.some(x=>x.name==="Ambush"));
 });
