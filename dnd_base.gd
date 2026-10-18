@@ -5871,6 +5871,10 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 
 func replay_sync_event(sync_event: Dictionary) -> void:
 	var event_type := String(sync_event.get("type", "")).strip_edges()
+	if event_type == "range_preview":
+		if attack_system != null and is_instance_valid(attack_system):
+			attack_system.call("receive_shared_range_event", sync_event)
+		return
 	if event_type == "spell_visual":
 		if (
 			spell_system != null
