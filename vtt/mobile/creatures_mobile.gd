@@ -234,7 +234,6 @@ func _install_unified_sections(sheet: CreatureSheet) -> void:
 		_select_page(0)
 		sheet.show_touch_library(true))
 	sections.add_child(library)
-	sheet._options_menu.hide()
 	var transfer_index := sheet._creature_context_menu.get_item_index(4)
 	if transfer_index >= 0:
 		sheet._creature_context_menu.remove_item(transfer_index)

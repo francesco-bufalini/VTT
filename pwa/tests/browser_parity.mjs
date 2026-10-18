@@ -9,7 +9,7 @@ const root=new URL('../',import.meta.url),native=new URL('../../vtt/data/',impor
 const artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const spells={version:1,spells:[{id:'spell:shield|phb',name:'Shield',source:'PHB',level:1,classes:['Wizard'],entries:['Test reference.']},{id:'spell:light|phb',name:'Light',source:'PHB',level:0,classes:['Bard','Wizard']}]};
-const aliases={'/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
+const aliases={'/catalog/feature_timing_recovery_rules.json':'feature_timing_recovery_rules.json','/catalog/combat_actions_5etools.json':'combat_actions_5etools.json','/catalog/action_feature_overrides.json':'action_feature_overrides.json','/catalog/combat_action_supplements_5etools.json':'combat_action_supplements_5etools.json','/catalog/player.json':'player_5etools_catalog.json','/catalog/features.json':'compendium_features_5etools.json','/catalog/backgrounds.json':'compendium_backgrounds_5etools.json','/catalog/items.json':'compendium_items_5etools.json'};
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;

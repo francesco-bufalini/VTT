@@ -217,6 +217,11 @@ func run() -> void:
 	for i: int in range(8):
 		await process_frame
 	assert(absf(mobile._page_menu_button.position.y - (mobile.get_viewport_rect().size.y * 0.5 - 50)) < 2)
+	var mobile_sheet: Node = mobile.creature_area
+	assert(mobile_sheet._creature_context_menu.get_item_index(4) == -1,
+		"Mobile section setup must finish removing desktop-only transfer actions")
+	var sheet_toolbar := (mobile_sheet._panel.get_child(0) as VBoxContainer).get_child(0) as HBoxContainer
+	assert(not sheet_toolbar.visible, "The old sheet toolbar must be hidden after unified mobile navigation installs")
 	var actions: Node = mobile._session_actions
 	assert(actions.reopen_button.position.y > mobile._page_menu_button.position.y)
 	actions._choose_token(func(_id: String) -> void: pass, "Token")
