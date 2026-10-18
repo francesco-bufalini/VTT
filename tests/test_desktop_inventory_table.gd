@@ -150,6 +150,15 @@ func run() -> void:
 	assert(owned_tree.get_column_title(1) == "Value" and
 		scroll_tree.get_column_title(2) == "Spell",
 		"Desktop table titles must follow the creature language")
+	# The bestiary action must resolve the installed catalog entry by ID.
+	tab._catalog.append(torch.duplicate(true))
+	tab.call("_show_owned_item_in_catalog", 3)
+	var found_in_catalog: PackedInt32Array = tab._catalog_list.get_selected_items()
+	assert(tab._search_panel.visible and not found_in_catalog.is_empty()
+		and String(tab._filtered[found_in_catalog[0]].get("id", "")) == "test:torch"
+		and tab._details_from_catalog,
+		"View in bestiary must select the owned item's definition in the catalog")
+
 	# Equipping a two-handed weapon locks the off-hand menu.
 	var glaive := {"id": "test:glaive", "name": "Alabarda", "type": "M",
 		"quantity": 1, "source": "PHB", "properties": ["2H"]}
@@ -175,6 +184,17 @@ func run() -> void:
 	await process_frame
 	assert(tab._inventory.is_empty(),
 		"Right-click Remove must delete the selected owned entry")
+	# When two equal weapons occupy both hands, resizing the main-hand
+	# instance must preserve the off-hand equipped copy.
+	var paired := {"id": "test:paired", "name": "Daghe", "type": "M",
+		"properties": ["L"], "quantity": 2, "equipped_slots": ["main", "off"]}
+	tab.load_record({"inventory": [paired]})
+	tab.set_weapon_size_at(0, 4, "main")
+	assert(tab._inventory.size() == 2
+		and "off" in ItemRules.slots(tab._inventory[0])
+		and "main" in ItemRules.slots(tab._inventory[1])
+		and String(tab._inventory[1].get("instance_overrides", {}).get("weapon_size", "")) == "Large",
+		"Weapon size overrides must not steal the opposite hand's equipped copy")
 
 	tab.queue_free()
 	await process_frame
