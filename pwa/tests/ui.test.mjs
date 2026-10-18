@@ -515,6 +515,8 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   await until(()=>document.querySelector('[data-act="open"][data-id="'+id+'"]'));
   const editor=await openCreatureEditor(id);
   await editor.update({
+    proficiency_origins:[{id:"custom:first",name:"Prima origine",group:"custom"},
+      {id:"custom:second",name:"Seconda origine",group:"custom"}],
     resource_trackers:[{id:"shared-power-uses",name:"Cariche condivise",max:3,recharge:"long_rest"}],
     origin_spell_grants:[
       {id:"grant:shield",origin_id:"custom:first",origin_name:"Prima origine",
