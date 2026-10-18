@@ -564,6 +564,12 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   click('[data-act="inventory-menu"]');
   await until(()=>document.querySelector('[data-act="remove-item"]'));
   assert.ok(document.querySelector('[data-act="inventory-view-catalog"]'));
+  click('[data-act="inventory-menu"]');
+  await until(()=>!document.querySelector('[data-act="remove-item"]'));
+  const contextEvent=new dom.window.MouseEvent("contextmenu",{bubbles:true,cancelable:true});
+  document.querySelector('[data-inventory-row="0"]').dispatchEvent(contextEvent);
+  assert.ok(contextEvent.defaultPrevented,"Right-click is handled by the item context menu");
+  await until(()=>document.querySelector('[data-act="inventory-view-catalog"]'));
   click('[data-act="item-catalog"]');
   await until(()=>document.querySelector('#catalog-category'));
   assert.equal(document.querySelector('#catalog-category').value,"items");
