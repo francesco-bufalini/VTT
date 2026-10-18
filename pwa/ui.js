@@ -45,6 +45,7 @@ let tokenStatusFingerprint="";
 let tokenSyncQueue=Promise.resolve();
 let mapGeneration=0;
 let snapshotGeneration=0;
+let snapshotCaptureQueue=Promise.resolve();
 let previousMapFingerprint="";
 let realtimeStopped=false;
 let toastTimer = null;
@@ -135,6 +136,8 @@ function selectedName() { return state.editor?.read().name || "Giocatore"; }
 function stopSubscriptions() {
   ++chatGeneration;
   ++mapGeneration;
+  ++snapshotGeneration;
+  state.snapshotPending=false;
   state.stopMap?.(); state.stopMap = null;
   if(state.pollChat) { clearInterval(state.pollChat); state.pollChat = null; }
 }
@@ -795,23 +798,31 @@ async function refreshSessionSnapshot(force=false) {
   state.snapshotKey=key;
   state.snapshotPending=true;
   renderSessionIfIdle();
-  try {
-    const result=await action("snapshot",{token_id:state.tokenId,
-      owner_id:await ownerId(),field_feet:120,attack:{}});
+  // Godot's one-shot capture is not reentrant. Serialize requests, discarding
+  // obsolete selections before allocating a new SubViewport on the desktop.
+  const run=async()=>{
     if(generation!==snapshotGeneration)return;
-    if(!snapshotSource(result))throw Error(result?.error||"Snapshot non disponibile.");
-    state.liveSnapshot=result;
-  }catch(error){
-    if(generation!==snapshotGeneration)return;
-    state.snapshotKey="";
-    // Keep the last valid image visible across network interruptions.
-    if(force)message("Snapshot: "+errorMessage(error),true);
-  }finally{
-    if(generation===snapshotGeneration){
-      state.snapshotPending=false;
-      renderSessionIfIdle();
+    try {
+      const owner=await ownerId();
+      if(generation!==snapshotGeneration)return;
+      const result=await action("snapshot",{token_id:state.tokenId,
+        owner_id:owner,field_feet:120,attack:{}});
+      if(generation!==snapshotGeneration)return;
+      if(!snapshotSource(result))throw Error(result?.error||"Snapshot non disponibile.");
+      state.liveSnapshot=result;
+    }catch(error){
+      if(generation!==snapshotGeneration)return;
+      state.snapshotKey="";
+      if(force)message("Snapshot: "+errorMessage(error),true);
+    }finally{
+      if(generation===snapshotGeneration){
+        state.snapshotPending=false;
+        renderSessionIfIdle();
+      }
     }
-  }
+  };
+  snapshotCaptureQueue=snapshotCaptureQueue.catch(()=>{}).then(run);
+  return snapshotCaptureQueue;
 }
 function fillSessionSpells(query="") {
   const select=app.querySelector("#token-spell-select");
@@ -1932,7 +1943,12 @@ async function handleAction(target){
       document.querySelector('#cast-payment')?.value||'auto',state.tokenId);
     return;
   }
-  if(act==="select-token"){state.tokenId=target.dataset.id;await render();return;}
+  if(act==="select-token"){
+    state.tokenId=target.dataset.id;
+    await render();
+    app.querySelector(".session-map-panel")?.scrollIntoView?.({behavior:"smooth",block:"start"});
+    return;
+  }
   if(act==="move"||act==="move-up"||act==="move-down"){
     const direction=act==="move-up"?"up":act==="move-down"?"down":target.dataset.direction;
     if(!state.tokenId)throw new Error("Seleziona un token.");
