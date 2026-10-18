@@ -223,6 +223,8 @@ func _feature_button(parent: Node, feature: Dictionary) -> void:
 	if int(feature.get("cost", 0)) > 0 and not String(feature.get("resource_name", "")).is_empty():
 		var price: Label = _label(row, "Costo: %d" % int(feature["cost"]))
 		price.name = "PowerCost"
+		price.custom_minimum_size.x = 72
+		price.autowrap_mode = TextServer.AUTOWRAP_OFF
 		price.size_flags_horizontal = Control.SIZE_SHRINK_END
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_font_size_override("font_size", 12)
@@ -401,6 +403,7 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 		var english: bool = String(_actions.gui_language.call()) == "en"
 		var cost_label := _label(row, ("Cost: %d" if english else "Costo: %d") % cost)
 		cost_label.name = "PowerCost"
+		cost_label.custom_minimum_size.x = 72
 		cost_label.size_flags_horizontal = Control.SIZE_SHRINK_END
 		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		cost_label.autowrap_mode = TextServer.AUTOWRAP_OFF
