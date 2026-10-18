@@ -5,6 +5,7 @@
     "test": "node --test tests/*.test.mjs",
     "sync-catalogs": "node tools/sync_native_catalogs.mjs",
     "test:browser": "node tests/browser_parity.mjs",
+    "test:offline-browser": "node tests/offline_browser.mjs",
     "test:navigation-browser": "node tests/navigation_browser.mjs",
     "test:inventory-powers-browser": "node tests/inventory_powers_browser.mjs",
     "test:sheets-browser": "node tests/sheet_play_browser.mjs",
