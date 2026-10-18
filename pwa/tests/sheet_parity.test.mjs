@@ -65,6 +65,30 @@ test('secondary classes show only non-primary entries, with source from selected
  assert.equal(patch.classes[1].id,'fighter_xphb');
  assert.equal(patch.class_source,'PHB');
 });
+test('statistics layout keeps six aligned, individually editable ability rows',()=>{
+ const creature={kind:'character',abilities:{str:17,dex:14,con:12,int:10,wis:11,cha:8}};
+ const calculated=calculateSheet(creature);
+ const markup=nativeSection(creature,'stats',{
+  field:()=>'',area:()=>'',panel:(title,body,className='')=>
+   '<section class="'+className+'"><h2>'+title+'</h2>'+body+'</section>',
+  catalogs:{},calculated,
+ });
+ assert.equal((markup.match(/class="native-ability-row"/g)||[]).length,6);
+ assert.match(markup,/class="native-abilities-header" role="row"/);
+ for(const ability of ['str','dex','con','int','wis','cha']){
+  assert.equal((markup.match(new RegExp('data-ability-row="'+ability+'"','g'))||[]).length,1);
+  assert.equal((markup.match(new RegExp('data-ability="'+ability+'"','g'))||[]).length,1);
+  for(const target of ['ability:','ability_mod:','save:']){
+   assert.match(markup,new RegExp('data-calculated="'+target+ability+'"'));
+  }
+ }
+ assert.match(markup,/stats-abilities-panel/);
+ assert.match(markup,/stats-skills-panel/);
+ const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(css,/\.stats-abilities-panel \.native-ability-row/);
+ assert.match(css,/\.stats-abilities-panel \.native-score-editor > summary/);
+ assert.match(css,/\.stats-skills-panel \.native-summary > div/);
+});
 test('species type index retains official edition-specific non-humanoid types',()=>{
  const typed=JSON.parse(readFileSync(new URL('../catalog/species_types.json',import.meta.url),'utf8'));
  const base=[{name:'Fairy',source:'WBtW'},{name:'Autognome',source:'AAG'},
