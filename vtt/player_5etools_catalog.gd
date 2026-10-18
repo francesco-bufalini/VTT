@@ -555,6 +555,64 @@ static func info_text(
 	return "\n".join(lines)
 
 
+# Creature inventory details: keep the complete compendium prose, but arrange
+# the structured metadata across a couple of compact lines instead of giving
+# every numeric field an entire row (as the generic info_text() does).
+static func compact_item_info_text(entry: Dictionary, description: String = "") -> String:
+	if entry.is_empty():
+		return "Nessuna informazione disponibile."
+	var lines := PackedStringArray()
+	lines.append(String(entry.get("name", "Oggetto")))
+	var identity := PackedStringArray()
+	var source: String = String(entry.get("source", "")).strip_edges()
+	if not source.is_empty():
+		identity.append("Fonte: " + source)
+	var type_name := String(entry.get("custom_item_type", "")).strip_edges()
+	if type_name.is_empty():
+		var type_code: String = String(entry.get("type", "")).split("|")[0]
+		if not type_code.is_empty():
+			type_name = _item_type_name(type_code)
+	if not type_name.is_empty():
+		identity.append(type_name)
+	var rarity: String = String(entry.get("rarity", "")).strip_edges()
+	if not rarity.is_empty() and rarity.to_lower() != "none":
+		identity.append("Rarità: " + rarity)
+	if not identity.is_empty():
+		lines.append(" · ".join(identity))
+	var facts := PackedStringArray()
+	var value: Variant = entry.get("value_gp", null)
+	if value is int or value is float:
+		facts.append("Valore: %s mo" % _trim_number(float(value)))
+	elif entry.get("value", null) is int or entry.get("value", null) is float:
+		facts.append("Valore: %s mo" % _trim_number(float(entry["value"]) / 100.0))
+	if entry.get("weight", null) is int or entry.get("weight", null) is float:
+		facts.append("Peso: %s lb" % _trim_number(float(entry["weight"])))
+	var damage: String = String(entry.get("damage", "")).strip_edges()
+	if not damage.is_empty():
+		facts.append("Danno: " + damage + (" " + _damage_type_name(String(entry.get("damage_type", ""))) if not String(entry.get("damage_type", "")).is_empty() else ""))
+	var ac_value: Variant = entry.get("ac", null)
+	if ac_value is int or ac_value is float:
+		facts.append("CA: %s" % str(ac_value))
+	elif ac_value is Dictionary and (ac_value as Dictionary).has("base"):
+		facts.append("CA: %s" % str((ac_value as Dictionary)["base"]))
+	var reach: String = String(entry.get("range", "")).strip_edges()
+	if not reach.is_empty():
+		facts.append("Gittata: " + reach + " ft")
+	if not facts.is_empty():
+		lines.append(" · ".join(facts))
+	var properties: String = _properties_text(entry)
+	if not properties.is_empty():
+		lines.append("Proprietà: " + properties)
+	var mechanics: String = _known_mechanic_summary(entry)
+	if not mechanics.is_empty() and description.strip_edges().is_empty():
+		lines.append(mechanics)
+	var prose := description.strip_edges()
+	if not prose.is_empty():
+		lines.append("")
+		lines.append(prose)
+	return "\n".join(lines)
+
+
 static func description_text_from_raw_item(entry: Dictionary) -> String:
 	if entry.has("entries") or entry.has("description"):
 		return ContentCatalog.description(entry)
