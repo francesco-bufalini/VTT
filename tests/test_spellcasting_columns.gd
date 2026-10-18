@@ -139,7 +139,7 @@ func run() -> void:
 	await process_frame
 	for label: Node in tab._view.find_children("*", "Label", true, false):
 		if label.is_visible_in_tree() and not label.text.is_empty():
-			assert(label.size.x > 10, "Every caption and counter has a usable width")
+			assert(label.size.x > 10, "Every caption and counter has a usable width: %s (%s), width %s" % [label.name, label.text, str(label.size.x)])
 	# The panel may be taller now to show a complete first power; check the
 	# actual slot headings instead of imposing a fixed height on both columns.
 	var slot_headers: GridContainer = tab._view._rows[0].get_child(1).get_child(0).get_node("SlotGrid")
