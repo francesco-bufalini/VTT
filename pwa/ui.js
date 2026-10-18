@@ -225,7 +225,7 @@ async function render() {
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
     if(state.paired && !realtimeStopped && !state.stopMap) startMap();
-    if(state.page === "session" && state.paired && !state.pollChat) startChat();
+    if(state.paired && !realtimeStopped && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
@@ -1434,7 +1434,7 @@ async function fetchChat() {
   chatPollGenerationInFlight=generation;
   try {
     const reply=await action("chat_poll",{after:state.after});
-    if(generation!==chatGeneration || state.page!=="session")return;
+    if(generation!==chatGeneration)return;
     if(!reply.ok) throw new Error(reply.error||"Chat non disponibile");
     const initialHistory = !chatNotificationBaseline && !state.after;
     const incomingChat = [];
@@ -1452,7 +1452,7 @@ async function fetchChat() {
       if(state.page==="session"&&container){ container.innerHTML=renderEvents();container.scrollTop=container.scrollHeight; }
     }
   }catch(error){
-    if(generation===chatGeneration && state.page==="session" && error.status===401){
+    if(generation===chatGeneration && error.status===401){
       state.paired=false;
       stopSubscriptions();
       render().catch(e=>message(errorMessage(e),true));
@@ -1466,7 +1466,7 @@ function startChat() {
   ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
-  state.pollChat=setInterval(()=>{ if(state.page==="session") fetchChat(); },2500);
+  state.pollChat=setInterval(()=>{ if(state.paired) fetchChat(); },2500);
 }
 function randomDie(sides) {
   const range=0x100000000;
@@ -2954,8 +2954,21 @@ function listen(){
 // Allows tests and future app lifecycle handlers to release polling resources.
 export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
+// Notification taps should return to the live chat, not just focus the page.
+function openChatFromNotification(){
+  if(!state.paired) return;
+  if(state.page!=="session") void navigate("session");
+  else { state.sessionPane="chat"; void render(); }
+}
+window.addEventListener("message", event => {
+  if(event.origin===location.origin && event.data?.type==="OPEN_CHAT") openChatFromNotification();
+});
 export async function mount(){
   realtimeStopped=false;
+  if(new URLSearchParams(location.search).get("open")==="chat") {
+    history.replaceState(null,"",location.pathname);
+    state.sessionPane="chat";
+  }
   listen();
   const dbOk=await import("./storage.js").then(m=>m.openStorage()).then(db=>{db.close();return true;});
   if(!dbOk)throw new Error("Archivio locale non disponibile.");
