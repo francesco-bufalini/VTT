@@ -71,6 +71,7 @@ jobs:
           cd pwa
           node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
+          node tests/offline_browser.mjs
       - name: Verify smartphone Back navigation and multiclass Info in Chromium
         shell: bash
         run: |

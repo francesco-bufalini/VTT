@@ -6,9 +6,9 @@ const PAIRING_KEY = "paired-desktop-secret";
 const TIMEOUT_MS = 20000;
 let volatileToken = "";
 
-async function exchange(path, token = "", action = null) {
+async function exchange(path, token = "", action = null, timeoutMs = TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const headers = { Accept: "application/json" };
   if (token) headers.Authorization = "Bearer " + token;
   if (action) headers["Content-Type"] = "application/json";
@@ -35,7 +35,8 @@ async function currentToken() {
 }
 
 export function status() {
-  return exchange("/api/status");
+  // Presence checks must never delay an offline-first local UI.
+  return exchange("/api/status", "", null, 3000);
 }
 
 // A remembered bearer remains useful while the native board is temporarily
