@@ -15,7 +15,13 @@ try{
      {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}],
    action_grants:[...(creature.action_grants||[]),
      {id:'arcane_pulse',name:'Impulso arcano',action_type:'bonus',origin_id:'feature:class|phb|wizard|arcane_pulse',
-      tracker_id:'focus',tracker_cost:2,description:'Attiva un impulso magico.'}]},
+      tracker_id:'focus',tracker_cost:2,description:'Attiva un impulso magico.'},
+     {id:'free_pulse',name:'Impulso gratuito',action_type:'free',origin_id:'feature:class|phb|wizard|free_pulse',
+      tracker_cost:0,description:'Attiva un impulso gratuito.'}],
+   origin_spell_grants:[...(creature.origin_spell_grants||[]),
+     {id:'arcane_light',spell_id:'spell:light|phb',tracker_id:'focus',
+      payment_mode:'tracker',tracker_cost:1,origin_id:'feature:class|phb|wizard|arcane_light',
+      origin_name:'Mago'}]},
    'default',row.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
@@ -107,9 +113,21 @@ try{
  assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
  await resourcesPanel.locator('summary.play-battle-summary').click();
  assert.equal(await resourcesPanel.getAttribute('open'),'');
- const inlineClass=resourcesPanel.locator('.play-battle-ability-entry[data-ability-id="arcane_pulse"]');
+ const inlineClass=resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"]');
  assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
  assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
+ assert.equal(await resourcesPanel.locator('.play-resource>[data-act="tracker-more"]').count(),0,'No minus shortcut next to tracker');
+ assert.doesNotMatch(await inlineClass.textContent(),/Focus arcano|[0-9]+ \\/ [0-9]+/);
+ await inlineClass.locator('[data-act="sheet-context"]').click();
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
+ await dismiss();
+ assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
+ assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="free_pulse"]').count(),1);
+ const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
+ assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
+ await linkedSpell.locator('[data-act="power-spell"]').click();
+ assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
+ await page.locator('#action-cast-dialog [data-act="action-cast-close"],#action-cast-dialog [data-spell-close]').first().click();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="arcane_pulse"]').count(),0);
  const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
  await focusButton.click();
@@ -122,8 +140,11 @@ try{
  await maneuver.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
  await dismiss();
- await page.locator('#sheet-play-view [data-tracker-id="focus"]').click();await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
- await resourcesPanel.locator('.play-battle-ability-entry[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
+ await focusButton.click();
+ await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
+ await dismiss();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
+ await resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"] [data-act="battle-use-ability"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===5;});
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
