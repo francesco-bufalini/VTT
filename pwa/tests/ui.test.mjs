@@ -549,18 +549,45 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   await until(()=>document.querySelector('[data-item-key="name"]'));
   change('[data-item-key="name"]',"Test personalizzato");
   change('[data-item-key="quantity"]',"3");
-  click('[data-item-key="equipped"]');
+  assert.ok(document.querySelector('.inventory-equipment'),"Desktop-style equipment panel in mobile inventory");
+  assert.ok(document.querySelector('.inventory-attunement'),"Dedicated attunement list in mobile inventory");
+  assert.ok(document.querySelector('.inventory-table[role="table"]'),"Compact mobile inventory table");
+  click('[data-act="inventory-equip"]');
   await until(async()=>{
     const rows=await listCreatures();
     return rows.some(r=>r.creature.inventory?.[0]?.name==="Test personalizzato" &&
       r.creature.inventory[0].quantity===3 && r.creature.inventory[0].equipped===true);
   });
   assert.equal(document.querySelector('[data-item-key="attuned"]'),null);
+  assert.ok(document.querySelector('[data-act="inventory-quantity"][data-delta="1"]'),"Quantity can be increased inline");
+  assert.ok(document.querySelector('[data-act="inventory-menu"]'),"Touch menu exposes item options");
+  click('[data-act="inventory-menu"]');
+  await until(()=>document.querySelector('[data-act="remove-item"]'));
+  assert.ok(document.querySelector('[data-act="inventory-view-catalog"]'));
   click('[data-act="item-catalog"]');
   await until(()=>document.querySelector('#catalog-category'));
   assert.equal(document.querySelector('#catalog-category').value,"items");
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("mobile inventory actions persist equipment, quantity zero removal and attunement",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="add-item"]'));
+  click('[data-act="add-item"]');
+  await until(()=>document.querySelector('[data-item-key="name"]'));
+  change('[data-item-key="name"]',"Oggetto prova");
+  change('[data-item-key="quantity"]',"2");
+  await until(()=>document.querySelector('[data-item-key="quantity"]')?.value==="2");
+  click('[data-act="inventory-quantity"][data-delta="1"]');
+  await until(()=>document.querySelector('[data-item-key="quantity"]')?.value==="3");
+  click('[data-act="inventory-quantity"][data-delta="-1"]');
+  await until(()=>document.querySelector('[data-item-key="quantity"]')?.value==="2");
+  change('[data-item-key="quantity"]',"0");
+  await until(()=>!document.querySelector('.inventory-table-row[role="row"]'));
+  assert.ok(document.querySelector(".inventory-slots"),"Equipment slots remain visible with empty inventory");
 });
 
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
