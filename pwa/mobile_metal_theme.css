@@ -694,7 +694,7 @@ input:disabled{opacity:.75;cursor:default}
 .play-dock>.global-destinations{grid-template-columns:repeat(3,minmax(0,1fr))}
 .play-dock .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:60px;padding:6px 2px;border:1px solid transparent;border-radius:10px;background:transparent;box-shadow:none;text-shadow:none;font-size:11px;line-height:1.2;font-weight:600;color:#cfc1ae}
 .play-dock .btn .vtt-action-glyph{width:23px;height:23px;object-fit:contain}
-.play-dock .dock-more{flex:0 0 15%}
+.play-dock .dock-more{flex:0 0 max(48px,15%)}
 .play-dock .btn[aria-pressed=true],.play-dock .btn[aria-current=page],.play-dock .btn.is-current{background:linear-gradient(180deg,#70414b65,#542c3650);border-color:#bb8a555f;color:#ffe3ae}
 .play-dock .btn[aria-pressed=true]::after,.play-dock .btn[aria-current=page]::after,.play-dock .btn.is-current::after{content:"";position:absolute;top:0;width:24px;height:3px;background:#edbd78;border-radius:0 0 3px 3px}
 .play-dock .btn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
