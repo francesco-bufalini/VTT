@@ -490,6 +490,7 @@ func refresh() -> void:
 			row.set_custom_font_size(0, 12)
 			row.set_text_alignment(0, HORIZONTAL_ALIGNMENT_CENTER)
 			row.set_text(1, _value_total(entry, quantity))
+			row.set_tooltip_text(1, _value_total(entry, quantity) + " " + _t("mo", "gp"))
 			row.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			row.set_text(2, _weight_total(entry, quantity))
 			_quantity_cell(row, QUANTITY_COLUMN, quantity, locked)
