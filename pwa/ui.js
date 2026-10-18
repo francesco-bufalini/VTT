@@ -2196,7 +2196,6 @@ async function handleAction(target){
     amount.value='1';
     openSessionDialog(dialog);
     amount.focus();
-    amount.select();
     return;
   }
   if(act==='hp-adjust-cancel'){
