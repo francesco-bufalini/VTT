@@ -82,7 +82,7 @@ func run() -> void:
 	})
 	assert(int(_find_resource(mixed, "Ki Points").get("max", 0)) == 5)
 	assert(int(_find_resource(mixed, "Sorcery Points").get("max", 0)) == 7)
-	assert(mixed.size() == 2, "Each resource is tied to its class level")
+	assert(mixed.size() == 3 and int(_find_resource(mixed, "Innate Sorcery").get("max", 0)) == 2, "Each resource is tied to its class level; 2024 innate sorcery has its own uses")
 	assert(String(_find_resource(mixed, "Sorcery Points").get("origin", "")) == "Font of Magic",
 		"Structured class feature association for sorcery points must be preserved")
 	# Legacy sheets lacking an explicit edition must use the resolved

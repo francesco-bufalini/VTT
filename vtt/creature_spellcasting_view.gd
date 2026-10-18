@@ -161,6 +161,7 @@ func refresh() -> void:
 		pair = _pair()
 		_heading(pair[0], "Privilegi di classe")
 		_heading(pair[1], "Effetti e risorse")
+		var class_trackers: Dictionary = {}
 		for feature: Dictionary in class_features:
 			var button := Button.new()
 			button.text = ("Termina · " if bool(feature.get("active", false)) else "Usa · ") + String(feature.name)
@@ -169,7 +170,10 @@ func refresh() -> void:
 			button.pressed.connect(func() -> void: _actions.class_feature.call(String(feature.id)))
 			pair[0].add_child(button)
 			var resource := String(feature.get("resource_name", ""))
-			_label(pair[1], ("Attivo · " if bool(feature.get("active", false)) else "") + String(feature.name) + (" · " + resource if not resource.is_empty() else ""))
+			if bool(feature.get("active", false)): _label(pair[1], "Attivo · " + String(feature.name))
+			if not resource.is_empty() and not class_trackers.has(resource):
+				class_trackers[resource] = true
+				_tracker(pair[1], record, preload("res://vtt/class_feature_activation.gd").tracker_named(record, resource, String(feature.class_name)))
 
 func _pair() -> Array[VBoxContainer]:
 	var row: BoxContainer

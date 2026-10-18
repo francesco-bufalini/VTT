@@ -67,6 +67,8 @@ func run() -> void:
 		"Creature GUI should isolate its lists, scroll panels and multiline editors")
 	_assert_scroll_isolated(area)
 	area._archive.setup(campaign)
+	var isolated_archive := "user://creature_gui_layout_%d.json" % Time.get_ticks_usec()
+	area._archive._storage.path = isolated_archive
 	for label: String in ["Alpha", "Beta", "Gamma"]:
 		var record: Dictionary = area._archive.create_character()
 		record["name"] = label
@@ -144,13 +146,10 @@ func run() -> void:
 	probe_physics.free()
 	probe_speeds.free()
 	probe_jumps.free()
-	var combat_column: Node = area._tracker_rows.get_parent()
-	var ac_panel: Node = area._ac_effective
-	while ac_panel.get_parent() != null and ac_panel.get_parent() != combat_column:
-		ac_panel = ac_panel.get_parent()
-	assert(ac_panel.get_parent() == combat_column
-		and area._tracker_rows.get_index() < ac_panel.get_index(),
-		"Resources must be positioned before AC and initiative")
+	var resource_panel: Node = area._tracker_rows.get_parent().get_parent()
+	assert(resource_panel.get_parent() == area._attacks_description.get_parent()
+		and resource_panel.get_index() > area._attacks_description.get_index(),
+		"Resources must be positioned below the available attacks")
 	# The statistics editors are mutually exclusive and default to no section.
 	assert(area._editor_section_picker.item_count == 7
 		and area._editor_section_picker.selected == 0
@@ -265,8 +264,7 @@ func run() -> void:
 		assert(dialog.position.y + confirm_rect.end.y <= bounds.size.y,
 			"First-open miniature Confirm must be on screen")
 		dialog.hide()
-	for store in [area._archive._characters, area._archive._monsters]:
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(isolated_archive))
 	board.queue_free()
 	campaign.queue_free()
 	await process_frame

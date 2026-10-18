@@ -1,5 +1,6 @@
 extends RefCounted
 ## Per-cast changes; never change the catalogue or charge a cancelled preview.
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const ClassFeatures = preload("res://vtt/class_feature_activation.gd")
 const ELEMENTS := ["acid", "cold", "fire", "lightning", "poison", "thunder"]
@@ -14,6 +15,7 @@ static func plan(record: Dictionary, spell: Dictionary, slot_level: int, selecti
 	var revised := String(record.get("rules_version", "2014")) == "2024"
 	for raw: Variant in names:
 		var name := String(raw)
+		if name in ["Empowered Spell", "Seeking Spell"]: return {"ok": false, "message": "Questa Metamagia si usa dopo il tiro: apri il privilegio in Poteri."}
 		if not known.has(name) or seen.has(name): return {"ok": false, "message": "Opzione di Metamagia non disponibile o duplicata."}
 		seen[name] = true
 		if name not in ["Empowered Spell", "Seeking Spell"]: ordinary += 1
@@ -77,6 +79,7 @@ static func apply_to_spell(spell: Dictionary, slot_level: int, selection: Dictio
 					modified["target_clicks_per_slot_above_base"] = 0
 					modified["allow_repeat_targets"] = false
 			"Transmuted Spell":
+				if not bool(selection.get("eligible_damage", false)): return {"ok": false, "message": "Conferma che il danno originale sia uno dei tipi elementali ammessi."}
 				var element := String(selection.get("damage_type", ""))
 				if element not in ELEMENTS: return {"ok": false, "message": "Scegli il tipo di danno elementale."}
 				modified["metamagic_damage_type"] = element
@@ -109,3 +112,19 @@ static func duration_seconds(raw: Variant) -> int:
 		return 0
 	var found := RegEx.create_from_string("(?i)([0-9]+) (round|minute|hour|day|second)").search(String(raw))
 	return int(found.get_string(1)) * int({"round": 6, "minute": 60, "hour": 3600, "day": 86400, "second": 1}.get(found.get_string(2).to_lower(), 0)) if found != null else 0
+
+
+static func reroll_plan(record: Dictionary, name: String, count: int, sides: int) -> Dictionary:
+	var cost := -1
+	for option: Dictionary in ClassFeatures.metamagic_options(record):
+		if option.name == name: cost = int(option.cost)
+	if cost < 0 or name not in ["Empowered Spell", "Seeking Spell"]: return {"ok": false, "message": "Metamagia non disponibile."}
+	if name == "Seeking Spell":
+		count = 1
+		sides = 20
+	else:
+		var maximum := maxi(1, Bonuses.value(record, "ability_mod:cha"))
+		if count < 1 or count > maximum or sides not in [4, 6, 8, 10, 12, 20, 100]: return {"ok": false, "message": "Seleziona un numero di dadi entro il modificatore di Carisma."}
+	var next := record.duplicate(true)
+	if not ClassFeatures.spend(next, ClassFeatures.tracker_named(next, "Sorcery Points", "Sorcerer"), cost): return {"ok": false, "message": "Punti stregoneria insufficienti."}
+	return {"ok": true, "record": next, "expression": "%dd%d" % [count, sides], "message": "Usa i nuovi risultati per i dadi sostituiti."}

@@ -94,6 +94,15 @@ func save(record: Dictionary) -> Error:
 	return _storage.upsert(_normalize(record))
 
 
+func update_owned_many(records: Array[Dictionary]) -> Error:
+	var normalized: Array[Dictionary] = []
+	for record: Dictionary in records:
+		if String(record.get("_storage_origin", "")) == "scene" or not CreatureOwner.is_owner(record): return ERR_UNAUTHORIZED
+		if String(record.get("kind", "")) not in ["character", "monster"]: return ERR_INVALID_PARAMETER
+		normalized.append(_normalize(record))
+	return _storage.update_owned_many(normalized)
+
+
 # Undo/redo only edit existing locally owned sheets; never transfer ownership.
 func undo_owned(record: Dictionary) -> Error:
 	if String(record.get("_storage_origin", "")) == "scene":

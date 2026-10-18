@@ -2847,6 +2847,34 @@ func _on_class_feature_requested(id: String) -> void:
 	amount.visible = feature.mode in ["heal_pool", "conversion", "recovery"]
 	if feature.mode in ["conversion", "recovery"]: amount.max_value = 5
 	body.add_child(amount)
+	var quantity_label := Label.new()
+	quantity_label.text = "Punti ferita" if feature.mode == "heal_pool" else "Livello dello slot"
+	quantity_label.visible = amount.visible
+	body.add_child(quantity_label)
+	body.move_child(quantity_label, amount.get_index())
+	var target_picker := OptionButton.new()
+	target_picker.visible = feature.mode == "heal_pool"
+	var healing_targets: Array[Dictionary] = _archive.list_owned()
+	for target: Dictionary in healing_targets:
+		target_picker.add_item(String(target.get("name", "Creatura")))
+		target_picker.set_item_metadata(target_picker.item_count - 1, target.get("id", ""))
+		if String(target.get("id", "")) == String(record.get("id", "")): target_picker.select(target_picker.item_count - 1)
+	body.add_child(target_picker)
+	var recovery_picks: Array[SpinBox] = []
+	if feature.mode == "recovery":
+		amount.hide()
+		quantity_label.text = "Slot da recuperare · massimo %d livelli totali" % ceili(float(ClassFeatures.class_level(record, "Wizard")) / 2.0)
+		for level: int in range(1, 6):
+			var row := HBoxContainer.new()
+			body.add_child(row)
+			var caption := Label.new()
+			caption.text = "Slot %d° livello" % level
+			row.add_child(caption)
+			var count := SpinBox.new()
+			var spent: Array = record.get("spell_slots_spent", [])
+			count.max_value = int(spent[level]) if spent.size() > level else 0
+			row.add_child(count)
+			recovery_picks.append(count)
 	var direction := CheckBox.new()
 	direction.text = "Crea slot (disattiva per convertire uno slot in punti)"
 	direction.button_pressed = true
@@ -2856,11 +2884,24 @@ func _on_class_feature_requested(id: String) -> void:
 	enhanced.text = "Versione potenziata · 1 punto Focus"
 	enhanced.visible = feature.key in ["patient_defense", "step_of_the_wind"] and String(record.get("rules_version", "2014")) == "2024"
 	body.add_child(enhanced)
+	var reroll_count := SpinBox.new()
+	reroll_count.min_value = 1
+	reroll_count.max_value = maxi(1, BonusRules.value(record, "ability_mod:cha"))
+	reroll_count.value = 1
+	reroll_count.visible = feature.mode == "metamagic_roll" and feature.name == "Empowered Spell"
+	body.add_child(reroll_count)
+	var reroll_die := OptionButton.new()
+	for sides: int in [4, 6, 8, 10, 12, 20, 100]:
+		reroll_die.add_item("d%d" % sides, sides)
+	reroll_die.visible = reroll_count.visible
+	body.add_child(reroll_die)
 	var note := Label.new()
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.text = ("Conferma l'effetto con i bersagli e gli eventuali tiri previsti dal privilegio. Il consumo viene registrato alla conferma."
 		if feature.mode == "context" else "Il privilegio rimane attivo fino a quando scegli Termina; rispetta durata e condizioni indicate sopra.")
 	body.add_child(note)
+	if feature.mode == "metamagic_roll":
+		note.text = "Usa dopo un tiro per colpire fallito (Seeking) o dopo aver tirato i danni (Empowered). Seleziona i dadi da sostituire: devi utilizzare i nuovi risultati."
 	if feature.mode == "metamagic":
 		note.text = "Scegli Metamagia nella finestra di lancio dell’incantesimo."
 		dialog.get_ok_button().disabled = true
@@ -2869,14 +2910,37 @@ func _on_class_feature_requested(id: String) -> void:
 	dialog.confirmed.connect(func() -> void:
 		if String(_current().get("id", "")) != source_id: return
 		var live := _current()
+		if feature.mode == "metamagic_roll" and board_root.get_node_or_null("DiceRollerChat") == null:
+			_set_status("Il roller della chat non è disponibile.")
+			return
+		var recovery_levels: Array = []
+		for index: int in range(recovery_picks.size()):
+			for count: int in range(int(recovery_picks[index].value)): recovery_levels.append(index + 1)
+		var target_id := String(target_picker.get_item_metadata(target_picker.selected)) if target_picker.item_count > 0 else source_id
 		var result := (ClassFeatures.convert_slots(live, int(amount.value), direction.button_pressed)
-			if feature.mode == "conversion" else ClassFeatures.recover_slots(live, [int(amount.value)]) if feature.mode == "recovery" else ClassFeatures.activate(live, id, {"amount": int(amount.value), "enhanced": enhanced.button_pressed}))
+			if feature.mode == "conversion" else Metamagic.reroll_plan(live, String(feature.name), int(reroll_count.value), reroll_die.get_selected_id()) if feature.mode == "metamagic_roll" else ClassFeatures.recover_slots(live, recovery_levels) if feature.mode == "recovery" else ClassFeatures.activate(live, id, {"amount": int(amount.value), "enhanced": enhanced.button_pressed, "apply_to_self": target_id == source_id}))
 		if bool(result.get("ok", false)):
 			var updated: Dictionary = result.record
-			if _archive.save(updated) != OK:
+			var updates: Array[Dictionary] = [updated]
+			if feature.mode == "heal_pool" and target_id != source_id:
+				for target: Dictionary in _archive.list_owned():
+					if String(target.get("id", "")) != target_id: continue
+					SheetController.change_hit_points(target, int(amount.value))
+					updates.append(target)
+					break
+				if updates.size() != 2:
+					_set_status("Bersaglio della cura non più disponibile.")
+					return
+			if _archive.update_owned_many(updates) != OK:
 				_set_status("Impossibile salvare il privilegio.")
 				return
+			for saved: Dictionary in updates:
+				_update_external_record(saved)
+				_sync_token_health(saved)
 			_update_external_record(updated)
+			if result.has("expression"):
+				var roller := board_root.get_node_or_null("DiceRollerChat")
+				roller.call("roll_expression_from_sheet", String(feature.name) + " · nuovi risultati obbligatori", String(result.expression), find_linked_token_for_creature(source_id))
 			_load_form(updated)
 			_sync_token_health(updated)
 		_set_status(String(result.get("message", "")))

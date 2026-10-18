@@ -67,7 +67,7 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	for option: Dictionary in metamagic_options(record):
 		result.append({"id": "metamagic:" + String(option.name), "key": "metamagic", "name": option.name,
 			"class_name": "Sorcerer", "feature_name": "Metamagic", "detail": "Scegli questa opzione durante il lancio di un incantesimo. " + String(option.get("description", "")),
-			"mode": "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost})
+			"mode": "metamagic_roll" if String(option.name) in ["Empowered Spell", "Seeking Spell"] else "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost})
 	return result
 
 static func _text(raw: Variant) -> String:
@@ -145,8 +145,9 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 		var die := clampi(int(options.get("roll", randi_range(1, 10))), 1, 10)
 		var amount := die + class_level(next, "Fighter")
 		next["current_hp"] = mini(Bonuses.value(next, "hp"), int(next.get("current_hp", 0)) + amount)
-	elif action.mode == "heal_pool" and bool(options.get("apply_to_self", true)):
-		next["current_hp"] = mini(Bonuses.value(next, "hp"), int(next.get("current_hp", 0)) + cost)
+	elif action.mode == "heal_pool":
+		if bool(options.get("apply_to_self", true)):
+			next["current_hp"] = mini(Bonuses.value(next, "hp"), int(next.get("current_hp", 0)) + cost)
 	else:
 		active[key] = {"name": action.name, "origin_id": action.origin_id,
 			"rules_version": next.get("rules_version", "2014"), "enhanced": bool(options.get("enhanced", false))}
@@ -166,6 +167,8 @@ static func rage_damage(record: Dictionary, attack: Dictionary, ability: String)
 	return 4 if level >= 16 else 3 if level >= 9 else 2
 
 static func roll_advantage(record: Dictionary, key: String) -> bool:
+	if key == "save:dex" and is_active(record, "patient_defense") and "incapacitated" not in record.get("conditions", []):
+		if String(record.get("rules_version", "2014")) != "2024" or bool(record.get("active_class_features", {}).get("patient_defense", {}).get("enhanced", false)): return true
 	if is_active(record, "rage"):
 		if key in ["ability_mod:str", "save:str"]: return true
 		if key.begins_with("skill:"):

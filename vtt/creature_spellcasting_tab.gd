@@ -1,9 +1,11 @@
 extends VBoxContainer
 const Metamagic = preload("res://vtt/spell_metamagic.gd")
+var _metamagic_scroll: ScrollContainer
 var _metamagic_box: VBoxContainer
 var _metamagic_checks: Array[CheckBox] = []
 var _metamagic_target_check: CheckBox
 var _metamagic_element: OptionButton
+var _metamagic_damage_check: CheckBox
 signal class_feature_requested(id: String)
 const SpellView = preload("res://vtt/creature_spellcasting_view.gd")
 const ClassSelections = preload("res://vtt/class_spell_selection.gd")
@@ -547,8 +549,13 @@ func _build_cast_dialog() -> void:
 	_cast_slot_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cast_slot_choice.custom_minimum_size.x = 180
 	slot_row.add_child(_cast_slot_choice)
+	_metamagic_scroll = ScrollContainer.new()
+	_metamagic_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_metamagic_scroll.custom_minimum_size.y = 144
+	body.add_child(_metamagic_scroll)
 	_metamagic_box = VBoxContainer.new()
-	body.add_child(_metamagic_box)
+	_metamagic_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_metamagic_scroll.add_child(_metamagic_box)
 	_cast_dialog.confirmed.connect(_confirm_cast_spell)
 
 
@@ -598,7 +605,7 @@ func _confirm_cast_spell() -> void:
 		if check.button_pressed: selected.append(check.get_meta("option_name"))
 	if not selected.is_empty():
 		var selection := {"names": selected, "eligible_targeting": _metamagic_target_check.button_pressed,
-			"damage_type": _metamagic_element.get_item_metadata(_metamagic_element.selected)}
+			"damage_type": _metamagic_element.get_item_metadata(_metamagic_element.selected), "eligible_damage": _metamagic_damage_check.button_pressed}
 		var chosen := _cast_slot_choice.get_selected_id()
 		var level := chosen - 100 if chosen >= 100 else maxi(int(spell.get("level", 0)), chosen)
 		var plan := Metamagic.plan(_record, spell, level, selection)
@@ -1911,9 +1918,13 @@ func _build_metamagic_options(spell: Dictionary) -> void:
 		_metamagic_box.remove_child(child)
 		child.queue_free()
 	_metamagic_checks.clear()
+	_metamagic_scroll.hide()
+	_cast_description.custom_minimum_size.y = 160
 	if String(spell.get("action_kind", "spell")) == "ability": return
 	var options := preload("res://vtt/class_feature_activation.gd").metamagic_options(_record)
 	if options.is_empty(): return
+	_metamagic_scroll.show()
+	_cast_description.custom_minimum_size.y = 100
 	var caption := Label.new()
 	caption.text = "Metamagia · seleziona le opzioni da applicare a questo lancio"
 	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1923,15 +1934,25 @@ func _build_metamagic_options(spell: Dictionary) -> void:
 		check.text = String(option.name) + " · " + ("livello incantesimo (minimo 1)" if option.name == "Twinned Spell" and String(_record.get("rules_version", "2014")) != "2024" else str(option.cost)) + " punti"
 		check.set_meta("option_name", option.name)
 		check.tooltip_text = String(option.get("description", ""))
+		if option.name in ["Empowered Spell", "Seeking Spell"]:
+			check.disabled = true
+			check.text += " · usa dopo il tiro da Poteri"
 		_metamagic_box.add_child(check)
 		_metamagic_checks.append(check)
 	_metamagic_target_check = CheckBox.new()
 	_metamagic_target_check.text = ("Raddoppiato: lo slot superiore aggiunge un bersaglio" if String(_record.get("rules_version", "2014")) == "2024" else "Raddoppiato: un solo bersaglio possibile, gittata non Personale")
 	_metamagic_target_check.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_metamagic_target_check.visible = options.any(func(option: Dictionary) -> bool: return option.name == "Twinned Spell")
 	_metamagic_box.add_child(_metamagic_target_check)
 	_metamagic_element = OptionButton.new()
 	for element: String in Metamagic.ELEMENTS:
 		_metamagic_element.add_item(element.capitalize())
 		_metamagic_element.set_item_metadata(_metamagic_element.item_count - 1, element)
 	_metamagic_element.tooltip_text = "Tipo di danno per Incantesimo Trasmutato"
+	_metamagic_element.visible = options.any(func(option: Dictionary) -> bool: return option.name == "Transmuted Spell")
 	_metamagic_box.add_child(_metamagic_element)
+	_metamagic_damage_check = CheckBox.new()
+	_metamagic_damage_check.text = "Trasmutato: l’incantesimo infligge uno dei danni elementali previsti"
+	_metamagic_damage_check.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_metamagic_damage_check.visible = _metamagic_element.visible
+	_metamagic_box.add_child(_metamagic_damage_check)

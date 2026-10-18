@@ -129,6 +129,35 @@ func upsert(record: Dictionary, allow_transfer: bool = false) -> Error:
 	return _write(records, loaded.get("undo", []), loaded.get("redo", []))
 
 
+# A feature can spend one owned creature's pool and heal another. Validate
+# every existing identity before the one atomic archive write.
+func update_owned_many(updates: Array[Dictionary]) -> Error:
+	if updates.is_empty(): return ERR_INVALID_PARAMETER
+	var loaded := _load()
+	if loaded.error != OK: return loaded.error
+	var records: Array[Dictionary] = loaded.records
+	var pending: Dictionary = {}
+	for record: Dictionary in updates:
+		var id := String(record.get("id", ""))
+		if id.is_empty() or pending.has(id) or not Owner.is_owner(record): return ERR_INVALID_PARAMETER
+		pending[id] = record
+	var undo_entries: Array = loaded.get("undo", []).duplicate(true)
+	var redo_entries: Array = loaded.get("redo", []).duplicate(true)
+	for index: int in range(records.size()):
+		var old: Dictionary = records[index]
+		var id := String(old.get("id", ""))
+		if not pending.has(id): continue
+		var updated: Dictionary = pending[id]
+		if String(old.get("kind", "")) != String(updated.get("kind", "")) or not Owner.can_edit(updated, old): return ERR_UNAUTHORIZED
+		undo_entries.append({"kind": old.kind, "id": id, "before": old.duplicate(true), "after": updated.duplicate(true), "at": int(Time.get_unix_time_from_system() * 1000)})
+		redo_entries = _without_history(redo_entries, String(old.kind), id)
+		records[index] = updated.duplicate(true)
+		pending.erase(id)
+	if not pending.is_empty(): return ERR_DOES_NOT_EXIST
+	_limit_history(undo_entries, redo_entries)
+	return _write(records, undo_entries, redo_entries)
+
+
 func delete_record(record: Dictionary) -> Error:
 	var kind := String(record.get("kind", ""))
 	var id := String(record.get("id", "")).strip_edges()
