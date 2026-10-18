@@ -5,9 +5,86 @@ const SIZE := Vector2i(1536, 1536)
 const MIN_FIELD_FEET := 20.0
 const MAX_FIELD_FEET := 1500.0
 const Elevation = preload("res://vtt/top_down_elevation_levels.gd")
+const ElevationOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
 
 static func field_for_range(range_feet: float) -> float:
 	return clampf(range_feet * 2.0, MIN_FIELD_FEET, MAX_FIELD_FEET)
+
+# The orthographic camera clips other floors. Paint desktop-style token
+# portraits in a screen-space layer so all elevations remain visible.
+static func _add_token_badge(overlay: Control, target: CharacterBody3D, marker: Dictionary) -> void:
+	var radius: float = maxf(float(marker.get("radius", 0.0)), 1.0)
+	var diameter: float = radius * 2.0
+	var badge := Control.new()
+	badge.name = "TokenBadge"
+	badge.position = Vector2(float(marker.x) - radius, float(marker.y) - radius)
+	badge.size = Vector2.ONE * diameter
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(badge)
+	var portrait := TextureRect.new()
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	portrait.size = badge.size
+	badge.add_child(portrait)
+	var texture: Texture2D = null
+	if target.has_method("get_top_down_icon_texture"):
+		texture = target.call("get_top_down_icon_texture") as Texture2D
+	# Captures normally happen in 3D mode; read the bestiary portrait
+	# cache directly without switching the live desktop token to 2D.
+	if texture == null and target.has_method("get_miniature_identity"):
+		var manager: Node = target.get_node_or_null("/root/TokenPackManager")
+		if manager != null:
+			var url: String = String(manager.call(
+				"get_bestiary_token_url", target.call("get_miniature_identity")
+			))
+			if not url.is_empty():
+				texture = manager.call("get_bestiary_texture", url) as Texture2D
+				if texture == null:
+					manager.call("request_bestiary_texture", url)
+	if texture == null:
+		# Match the desktop's fallback to a miniature rendered from its
+		# actual model, rather than an opaque tile or placeholder initials.
+		texture = overlay.call("_miniature_preview_texture", badge, target) as Texture2D
+	portrait.texture = texture
+	portrait.visible = texture != null
+
+	var name_label := Label.new()
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.text = String(marker.get("name", ""))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 30)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.88))
+	name_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.97))
+	name_label.add_theme_constant_override("outline_size", 5)
+	name_label.size = Vector2(maxf(diameter * 2.0, 280.0), 42.0)
+	name_label.position = Vector2((diameter - name_label.size.x) * 0.5, -49.0)
+	badge.add_child(name_label)
+	var height_cells: int = int(marker.get("elevation_cells", 0))
+	if height_cells != 0:
+		var height_label := Label.new()
+		height_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		height_label.text = "%+d □" % height_cells
+		height_label.add_theme_font_size_override("font_size", 29)
+		height_label.add_theme_color_override("font_color", Color.WHITE)
+		height_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		height_label.add_theme_constant_override("outline_size", 5)
+		height_label.position = Vector2(diameter + 4.0, diameter * 0.3)
+		badge.add_child(height_label)
+	if bool(marker.get("selected", false)):
+		var ring := Panel.new()
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ring.position = Vector2(-4.0, -4.0)
+		ring.size = badge.size + Vector2.ONE * 8.0
+		var border := StyleBoxFlat.new()
+		border.bg_color = Color.TRANSPARENT
+		border.draw_center = false
+		border.border_color = Color(0.33, 0.85, 0.69, 0.96)
+		border.set_border_width_all(3)
+		border.set_corner_radius_all(100)
+		ring.add_theme_stylebox_override("panel", border)
+		badge.add_child(ring)
+
 
 static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dictionary) -> Dictionary:
 	if DisplayServer.get_name() == "headless":
@@ -37,21 +114,13 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 	camera.near = clearance - 0.12 * cell
 	camera.far = clearance + 1000.0 * cell
 	camera.current = true
-	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
-	if token != null and not is_instance_valid(token):
-		viewport.queue_free()
-		return {"ok": false, "error": "Il token non è più presente."}
-	var image := viewport.get_texture().get_image()
-	if image == null or image.is_empty():
-		viewport.queue_free()
-		return {"ok": false, "error": "Impossibile acquisire la mappa."}
-	var encoded := encode_snapshot(image)
-	if encoded.is_empty():
-		viewport.queue_free()
-		return {"ok": false, "error": "Impossibile comprimere lo snapshot."}
+	var overlay: Control = ElevationOverlay.new()
+	overlay.name = "MobileTokenOverlay"
+	overlay.size = Vector2(SIZE)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	viewport.add_child(overlay)
 	var result := {"ok": true, "format": "webp", "width": SIZE.x, "height": SIZE.y,
-		"image": Marshalls.raw_to_base64(encoded),
+		"image": "", "token_overlays": true,
 		"token_id": "", "field_feet": field_feet, "elevation": center.y,
 		"title": String(token.call("get_display_name")) if token != null else "Mappa", "contours": [], "markers": [],
 		"_projection": {"x": center.x, "y": center.y, "z": center.z, "size": camera.size, "width": SIZE.x, "height": SIZE.y}}
@@ -99,6 +168,24 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 			"elevation_cells": elevation_cells, "conditions": node.call("get_conditions"),
 			"status_text": " · ".join(node.call("get_active_condition_display_parts")) if node.has_method("get_active_condition_display_parts") else "",
 			"affected": bool(node.get_meta("mobile_target_selected", false))})
+		_add_token_badge(overlay, node as CharacterBody3D, result.markers[-1])
+	# Render miniature preview viewports first, then capture the complete
+	# orthographic map with 2D portraits, names and relative elevations.
+	await RenderingServer.frame_post_draw
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	if token != null and not is_instance_valid(token):
+		viewport.queue_free()
+		return {"ok": false, "error": "Il token non è più presente."}
+	var image := viewport.get_texture().get_image()
+	if image == null or image.is_empty():
+		viewport.queue_free()
+		return {"ok": false, "error": "Impossibile acquisire la mappa."}
+	var encoded := encode_snapshot(image)
+	if encoded.is_empty():
+		viewport.queue_free()
+		return {"ok": false, "error": "Impossibile comprimere lo snapshot."}
+	result.image = Marshalls.raw_to_base64(encoded)
 	viewport.queue_free()
 	return result
 
