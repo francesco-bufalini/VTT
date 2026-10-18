@@ -61,6 +61,14 @@ async function supplementalCatalog(category){
     return {name,source:String(record?.source||parts[1]||"").toUpperCase()};
   });
 }
+let speciesTypePromise;
+async function speciesTypeLookup(){
+ if(!speciesTypePromise)speciesTypePromise=fetch('/catalog/species_types.json')
+  .then(response=>{if(!response.ok)throw Error('Indice tipi specie non disponibile');return response.json();})
+  .then(data=>data?.version===1&&Array.isArray(data.races)?data.races:[])
+  .catch(()=>{speciesTypePromise=null;return [];});
+ return speciesTypePromise;
+}
 let packagedSpells=null;
 async function spellCatalog(){
   if(packagedSpells)return packagedSpells;
@@ -88,7 +96,14 @@ export async function catalogEntries(category) {
   const source=extra?await supplementalCatalog(category):keys.flatMap(key=>
     Array.isArray(data[key])?data[key].map(row=>({...row,_category:key})):[]
   );
-  const rows=source.map(row=>({...row,_category:row._category||category,_homebrew:false}));
+  const types=category==='races'?await speciesTypeLookup():[];
+  const typedById=new Map(types.map(row=>[String(row.id||''),row]));
+  const typedByName=new Map(types.map(row=>[String(row.name||'').toLowerCase()+'|'+String(row.source||'').toLowerCase(),row]));
+  const rows=source.map(row=>{
+    const matched=category==='races'?(typedById.get(String(row.id||''))||
+      typedByName.get(String(row.name||'').toLowerCase()+'|'+String(row.source||'').toLowerCase())):null;
+    return {...row,...(matched?{creatureTypes:matched.creatureTypes}:{}),_category:row._category||category,_homebrew:false};
+  });
   const homebrew=await listRecords("global","homebrew");
   for(const stored of homebrew){
     const value=stored.data;
