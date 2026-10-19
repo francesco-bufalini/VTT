@@ -1380,7 +1380,7 @@ input:disabled{opacity:.75;cursor:default}
  margin:5px 0;border-color:#a6804e27;background:#47332526;
 }
 
-/* Shared equipment panel: weapons/attack options together, armor/AC together. */
+/* Shared equipment controls, with ability and switches on one row. */
 .equipment-unified-panel{min-width:0;display:grid;gap:10px}
 .equipment-unified-panel>h2{margin:0 0 2px}
 .equipment-unified-panel .equipment-weapons,
@@ -1390,19 +1390,37 @@ input:disabled{opacity:.75;cursor:default}
 .equipment-unified-panel .equipment-armor>h3{color:#f0cd96;font-size:14px;font-weight:700;margin:0}
 .equipment-unified-panel .inventory-slots{display:grid;gap:6px}
 .equipment-unified-panel .inventory-slot-row{min-width:0;align-items:center}
-.equipment-unified-panel .equipment-attack-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:7px 9px}
-.equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:1/-1;display:flex;align-items:center;gap:9px;justify-content:space-between;min-width:0}
-.equipment-unified-panel .equipment-attack-options>label:first-child select{width:min(56%,245px);min-width:0}
-.equipment-unified-panel .equipment-attack-options .check{margin:0;display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.35}
-.equipment-unified-panel .equipment-attack-options .check input{flex:none}
+.equipment-unified-panel .equipment-attack-options{
+ display:grid;grid-template-columns:minmax(92px,1.16fr) minmax(0,1fr) minmax(0,1.1fr);
+ align-items:center;gap:5px;min-width:0;margin:0;padding:0;border:0
+}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability{
+ grid-column:auto;min-width:0;width:100%;display:flex;flex-direction:column;
+ align-items:stretch;justify-content:center;gap:3px;font-size:10px;line-height:1.2
+}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability select{
+ min-width:0;max-width:none;width:100%;min-height:36px;padding:5px 3px;font-size:12px
+}
+.equipment-unified-panel .equipment-attack-options>.check{
+ min-width:0;display:flex;flex-direction:row;align-items:center;gap:4px;
+ font-size:10.5px;line-height:1.25;overflow-wrap:anywhere;margin:0
+}
+.equipment-unified-panel .equipment-attack-options>.check input{
+ flex:0 0 16px;min-width:16px;width:16px;height:16px;margin:0
+}
 .equipment-unified-panel .equipment-defense{display:grid;gap:8px;min-width:0}
 .equipment-unified-panel .equipment-defense .battle-defense-values{display:grid;grid-template-columns:1fr}
 .equipment-unified-panel .equipment-defense .battle-stat{min-width:0}
 .equipment-unified-panel .battle-ac-manage{width:100%;min-height:36px}
 .sheet-context-dialog .equipment-unified-panel{border:0;box-shadow:none;padding:0;background:transparent}
 @media(max-width:360px){
- .equipment-unified-panel .equipment-attack-options{grid-template-columns:1fr;gap:8px}
- .equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:auto}
+ .equipment-unified-panel .equipment-attack-options{
+  grid-template-columns:minmax(88px,1.1fr) minmax(0,1fr) minmax(0,1.1fr);gap:3px
+ }
+ .equipment-unified-panel .equipment-attack-options>.check{font-size:10px;gap:3px}
+ .equipment-unified-panel .equipment-attack-options>.equipment-attack-ability select{
+  font-size:11px;padding:5px 1px
+ }
 }
 
 /* Native spell metadata stays separate from freeform descriptions. */

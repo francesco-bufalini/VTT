@@ -200,11 +200,24 @@ try{
  assert.equal(await weaponsGroup.locator('[data-equip-slot]').count(),2);
  assert.equal(await armorGroup.locator('[data-equip-slot="body"]').count(),1);
  assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
- assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),1);
+ assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),0,
+   'The two-weapon fighting style is not toggled manually');
  assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
+ for(const width of [320,390]){
+  await page.setViewportSize({width,height:844});
+  const aligned=await weaponsGroup.locator('.equipment-attack-options').evaluate(node=>{
+   const [ability,finesse,grip]=[...node.querySelectorAll(':scope > label')].map(label=>label.getBoundingClientRect());
+   return ability.right<=finesse.left+5&&finesse.right<=grip.left+5&&
+     Math.abs(ability.top-finesse.top)<24&&Math.abs(ability.top-grip.top)<24;
+  });
+  assert(aligned,'Attack ability and both options share one horizontal row at '+width+'px');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
+    'Equipment popup must not overflow at '+width+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
  assert.doesNotMatch(await shared.textContent(),/Iniziativa/);
  assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
  assert.equal(await shared.locator('.battle-ac-manage').count(),1);
@@ -213,8 +226,6 @@ try{
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
  await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('wis');
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='wis';});
- await page.locator('#sheet-context-dialog [data-field="two_weapon_fighting"]').check();
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.two_weapon_fighting===true;});
  await page.locator('#sheet-context-dialog [data-field="attack_ability_finesse_only"]').uncheck();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability_finesse_only===false;});
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
