@@ -678,12 +678,11 @@ func _render() -> void:
 	if entries.is_empty():
 		return
 
-	# The active turn is always rendered first, so advancing or going back
-	# visibly scrolls/rotates the initiative list.
-	for offset: int in range(entries.size()):
-		var real_index: int = (active_index + offset) % entries.size()
-		_add_entry_row(entries[real_index], real_index, offset == 0)
-	call_deferred("_scroll_active_to_top")
+	# Show the actual saved order. Rotating the list around the active turn
+	# conceals participants positioned before the environment turn.
+	for real_index: int in range(entries.size()):
+		_add_entry_row(entries[real_index], real_index, real_index == active_index)
+	call_deferred("_scroll_active_into_view")
 
 
 func _clear_list_rows() -> void:
@@ -699,6 +698,7 @@ func _add_entry_row(
 	is_active: bool
 ) -> void:
 	var row_panel: PanelContainer = PanelContainer.new()
+	row_panel.set_meta("initiative_entry_id", String(entry.get("id", "")))
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if is_active:
 		var active_style: StyleBoxFlat = StyleBoxFlat.new()
@@ -755,7 +755,7 @@ func _add_entry_row(
 	var up_button: Button = Button.new()
 	up_button.text = "↑"
 	up_button.tooltip_text = "Sposta prima nell'ordine"
-	up_button.disabled = real_index == 0 or entry_id_is_environment(entry)
+	up_button.disabled = real_index == 0
 	up_button.custom_minimum_size = Vector2(28, 30)
 	up_button.pressed.connect(
 		func() -> void:
@@ -766,7 +766,7 @@ func _add_entry_row(
 	var down_button: Button = Button.new()
 	down_button.text = "↓"
 	down_button.tooltip_text = "Sposta dopo nell'ordine"
-	down_button.disabled = real_index >= entries.size() - 1 or entry_id_is_environment(entry)
+	down_button.disabled = real_index >= entries.size() - 1
 	down_button.custom_minimum_size = Vector2(28, 30)
 	down_button.pressed.connect(
 		func() -> void:
@@ -786,14 +786,20 @@ func _add_entry_row(
 	row.add_child(remove_button)
 
 
-func _scroll_active_to_top() -> void:
-	if list_scroll != null:
-		list_scroll.scroll_vertical = 0
+func _scroll_active_into_view() -> void:
+	if list_scroll == null or list_box == null:
+		return
+	var active_id: String = _active_entry_id()
+	for child: Node in list_box.get_children():
+		if child.is_queued_for_deletion() or not child is Control:
+			continue
+		if String(child.get_meta("initiative_entry_id", "")) == active_id:
+			list_scroll.ensure_control_visible(child as Control)
+			return
 
 
 func _move_entry(entry_id: String, delta: int) -> void:
-	if entry_id == ENVIRONMENT_ENTRY_ID:
-		return
+	# The environment is a regular position in the order, but cannot be removed.
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return

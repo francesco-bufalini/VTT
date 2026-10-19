@@ -39,6 +39,29 @@ test("in combat native initiative ordering wins; nonparticipants are listed sepa
   assert.equal(groups.turnId,"a");
   assert.deepEqual(groups.outside.map(x=>x.id),["d"]);
 });
+test("environment round stays in native order and is never a selectable token",()=>{
+  const data={tokens,combat:{active:true,round:2,active_index:1,entries:[
+    {token_id:"c",name:"Zanna"},
+    {token_id:"",name:"Turno ambientale",initiative:20,environment:true},
+    {token_id:"a",name:"Alba"}
+  ]}};
+  let groups=tokenGroups(data);
+  assert.deepEqual(groups.participants.map(x=>x.name),["Zanna","Turno ambientale","Alba"]);
+  assert.equal(groups.activeEnvironment,true);
+  assert.equal(groups.turnId,"");
+  assert.deepEqual(groups.participants[1],{id:"",name:"Turno ambientale",initiative:20,environment:true});
+  assert.deepEqual(groups.outside.map(x=>x.id),["b","d"]);
+  data.combat.active_index=0;
+  groups=tokenGroups(data);
+  assert.equal(groups.activeEnvironment,false);
+  assert.equal(groups.turnId,"c");
+  data.combat.entries=[data.combat.entries[1],data.combat.entries[0]];
+  data.combat.active_index=0;
+  groups=tokenGroups(data);
+  assert.deepEqual(groups.participants.map(x=>x.name),["Turno ambientale","Zanna"]);
+  assert.equal(groups.activeEnvironment,true);
+  assert.equal(tokenGroups({tokens:[],combat:{active:true,active_index:0,entries:data.combat.entries}}).participants[0].environment,true);
+});
 test("empty board and deleted active token do not manufacture an initiative turn",()=>{
   const groups=tokenGroups({tokens:[],combat:{active:true,round:1,active_index:0,entries:[
     {token_id:"missing",initiative:20,name:"Missing"}]}});

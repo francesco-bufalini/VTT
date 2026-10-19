@@ -2596,7 +2596,13 @@ func get_tactical_map_data() -> Dictionary:
 			var token_id := String(row.get("token_id", ""))
 			if not token_id.is_empty() and not visible_ids.has(token_id):
 				continue
-			entries.append({"token_id": token_id, "name": String(row.get("name", "")), "initiative": int(row.get("initiative", 0))})
+			entries.append({
+				"token_id": token_id,
+				"name": String(row.get("name", "")),
+				"initiative": int(row.get("initiative", 0)),
+				# A turn without a miniature must remain visible, not selectable.
+				"environment": String(row.get("id", "")) == "initiative_environment"
+			})
 			if index == active_index:
 				projected_active_index = entries.size() - 1
 		combat["entries"] = entries

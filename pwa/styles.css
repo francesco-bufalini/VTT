@@ -580,7 +580,8 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .session-token-panel{padding:12px;margin-bottom:12px}
 .session-token-panel h2{margin:0}
 .session-token-row{display:flex;align-items:center;gap:7px;min-height:41px;border-bottom:1px solid #89644055}
-.session-token-row.selected{background:#e3b36b12;border-radius:5px}
+.session-token-row.selected,.session-environment-row.active{background:#e3b36b12;border-radius:5px}
+.session-environment-name{cursor:default}
 .session-token-name{display:flex;align-items:center;gap:8px;min-width:0;flex:1;text-align:left;
   padding:8px 4px;background:none;border:0;color:inherit;font-weight:650;font-size:13px;cursor:pointer}
 .session-token-name span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

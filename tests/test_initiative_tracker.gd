@@ -74,6 +74,20 @@ func run() -> void:
 	assert(int(after_previous.get("round", 0)) == 2, "The environment turn belongs to the same wrapped round")
 	assert(int(after_previous.get("turn_count", -1)) == 3)
 
+	# The environment is movable: creatures may act before initiative 20.
+	tracker.call("_move_entry", "initiative_environment", 1)
+	var moved: Dictionary = tracker.call("get_save_state")
+	assert(moved.entries[0].id == "initiative_1")
+	assert(moved.entries[1].id == "initiative_environment")
+	assert(int(moved.active_index) == 1, "Reordering must preserve the active environment turn")
+	tracker.call("_move_entry", "initiative_2", -1)
+	moved = tracker.call("get_save_state")
+	assert(moved.entries[0].id == "initiative_1" and moved.entries[1].id == "initiative_2")
+	assert(moved.entries[2].id == "initiative_environment")
+	assert(int(moved.active_index) == 2)
+	assert(bool(tracker.call("load_state", moved)))
+	assert((tracker.call("get_save_state") as Dictionary).entries[2].id == "initiative_environment")
+
 	var duplicate_state: Dictionary = state.duplicate(true)
 	var duplicate_entries: Array = duplicate_state.get("entries", [])
 	(duplicate_entries[2] as Dictionary)["id"] = "initiative_1"
