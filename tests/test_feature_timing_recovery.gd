@@ -40,6 +40,12 @@ func run() -> void:
 	assert(_time(disabled, "Forma selvatica") == -1)
 	assert(bool(_tracker(disabled, "Wild Shape").get("disabled", false)))
 	assert(int(disabled.resource_tracker_spent[druid_tracker.id]) == 1)
+	var sorc_actions := Actions.entries(_sheet("Sorcerer", "2014", 5))
+	var conversions := 0
+	for action: Dictionary in sorc_actions:
+		assert(String(action.get("name", "")) != "Conversione slot e punti stregoneria", "A descriptive override must not duplicate the executable trait")
+		if action.get("class_feature_id", "") == "class_feature:font_of_magic": conversions += 1
+	assert(conversions == 1)
 	assert(_time(_sheet("Rogue", "2014", 2), "Scattare") == 1)
 	assert(_time(_sheet("Rogue", "2024", 3, "Thief"), "Utilizzare") == 1)
 	assert(_time(_sheet("Ranger", "2014", 14), "Nascondersi") == 1)

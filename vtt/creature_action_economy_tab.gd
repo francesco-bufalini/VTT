@@ -575,21 +575,11 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		# rules; avoid another set of identically timed special abilities.
 		if String(rule.get("feature_name", "")) == "Cunning Action":
 			continue
-		var matched_feature: Dictionary = {}
-		for feature: Dictionary in collected:
-			if bool(feature.get("inactive", false)):
-				continue
-			if String(feature.get("class_name", "")).nocasecmp_to(String(rule.get("class_name", ""))) != 0:
-				continue
-			if String(feature.get("class_source", "")).nocasecmp_to(String(rule.get("book", ""))) != 0:
-				continue
-			if String(feature.get("name", "")).nocasecmp_to(String(rule.get("feature_name", ""))) != 0:
-				continue
-			if int(feature.get("level", 0)) < int(rule.get("min_level", 1)):
-				continue
-			matched_feature = feature
-			break
+		var matched_feature := FeatureRules.enabled_feature(record, {"class_source": rule.get("book", ""),
+			"class_name": rule.get("class_name", ""), "feature": rule.get("feature_name", "")}, collected)
 		if matched_feature.is_empty():
+			continue
+		if int(matched_feature.get("level", 0)) < int(rule.get("min_level", 1)):
 			continue
 		var resource_label := String(rule.get("resource_name", ""))
 		var tracker_id := ""
@@ -607,6 +597,8 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 			_source_text(_description(matched_feature.get("entries", ""))),
 			_tracker_label(tracker_id, trackers) if not tracker_id.is_empty() else resource_label, tracker_id)
 		if String(rule.get("feature_name", "")) == "Wild Shape": supplement_entry["id"] = "wild_shape"
+		supplement_entry["origin_id"] = "feature:" + String(matched_feature.get("key", ""))
+		supplement_entry["supplement_feature_id"] = supplement_entry.origin_id
 		results.append(supplement_entry)
 	for grant in record.get("action_grants", []):
 		if not grant is Dictionary or bool(grant.get("disabled", false)):
@@ -651,10 +643,12 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 	for feature: Dictionary in preload("res://vtt/class_feature_activation.gd").entries(record):
 		# Replace descriptive supplements by the same actionable class feature.
 		for i: int in range(results.size() - 1, -1, -1):
-			if String(results[i].get("name", "")) in [String(feature.name), String(feature.feature_name)]:
+			var same_trait := not String(feature.get("origin_id", "")).is_empty() and String(results[i].get("supplement_feature_id", "")) == String(feature.origin_id)
+			if same_trait or String(results[i].get("name", "")) in [String(feature.name), String(feature.feature_name)]:
 				results.remove_at(i)
 		var feature_row := _entry(String(feature.name), _timing(feature.activation), "Capacità", String(feature.detail))
 		feature_row["class_feature_id"] = feature.id
+		feature_row["origin_id"] = String(feature.get("origin_id", ""))
 		feature_row["active"] = feature.get("active", false)
 		results.append(feature_row)
 	var routine := attack_action_summary(record)

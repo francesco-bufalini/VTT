@@ -20,7 +20,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
-import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch} from './feature_mechanics.js';
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
 const app = document.querySelector("#app");
@@ -397,6 +397,9 @@ function classAbilityActivationPatch(c,calculated,ability,options={}){
  return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
 async function activateClassAbility(c,calculated,ability){
+ if(ability.mode==='metamagic'){
+  state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
+ }
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
  if(ability.mode==='toggle'&&!enhanced){
   await patch(classAbilityActivationPatch(c,calculated,ability));await render();return;
@@ -411,6 +414,8 @@ async function activateClassAbility(c,calculated,ability){
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
   (recovery?'<p>Massimo '+Math.ceil(Number((c.classes||[]).find(x=>x.name==='Wizard')?.level||c.level||0)/2)+' livelli di slot.</p>'+[1,2,3,4,5].map(n=>'<label>Slot di livello '+n+'<input data-feature-recover="'+n+'" type="number" min="0" max="'+Number(c.spell_slots_spent?.[n]||0)+'" value="0"></label>').join(''):'')+
   (enhanced?'<label class="check"><input data-feature-enhanced type="checkbox">Versione potenziata · 1 punto Focus</label>':'')+
+  (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
+   (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
  dialog.querySelector('[data-feature-cancel]').addEventListener('click',()=>dialog.close());
@@ -422,12 +427,15 @@ async function activateClassAbility(c,calculated,ability){
    const fresh=await computeLocalData(current),options={amount:dialog.querySelector('[data-feature-amount]')?.value,
     level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
     apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
+    count:Number(dialog.querySelector('[data-feature-count]')?.value||1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
     levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value))};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
    const changes=classAbilityActivationPatch(current,fresh,ability,options);
+   const reroll=ability.mode==='metamagic_roll'?rollBattleDamage(ability.name==='Seeking Spell'?'1d20':options.count+'d'+options.sides,randomDie):null;
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();dialog.close();await render();
-   message(ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
+   if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
+   message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
@@ -2572,6 +2580,7 @@ async function handleAction(target){
     }
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
+    const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
     dialog.innerHTML='<h2>'+esc(spell.name||id)+'</h2>'+
       '<p class="hint magic-spell-metadata">'+(level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
       (spell.school?' · '+esc(spell.school):'')+(spell.source?' · '+esc(spell.source):'')+'</p>'+
@@ -2582,6 +2591,7 @@ async function handleAction(target){
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':
         '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+      (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
       '<div class="actions magic-dialog-actions">'+
       (entry&&options.length?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
@@ -2601,6 +2611,9 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
+    if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
+      eligible_damage:!!app.querySelector('[data-metamagic-damage]')?.checked,damage_type:app.querySelector('[data-metamagic-element]')?.value||''};
     const choice=app.querySelector('#action-cast-choice')?.value||'';
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)

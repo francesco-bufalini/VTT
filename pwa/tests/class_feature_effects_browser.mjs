@@ -75,7 +75,18 @@ try{
  await page.setViewportSize({width:320,height:740});
  assert(await page.locator('.miniature-dialog').evaluate(n=>n.scrollWidth<=n.clientWidth));
  await shot('wild-shape-picker');await page.locator('[data-miniature-close]').click();
+ await seed('Sorcerer',{optional_features_catalog:[{name:'Extended Spell',source:'PHB'}],
+  proficiency_origins:[{id:'custom:light',name:'Luce di prova',group:'custom'}],
+  origin_spell_grants:[{id:'meta-light',spell_id:'phb2014_light',origin_id:'custom:light',origin_name:'Luce di prova',payment_mode:'free'}]});
+ const light=page.locator('#sheet-play-view [data-power-spell-id="meta-light"] [data-act="power-spell"]');
+ await light.click();await page.locator('.metamagic-options > summary').click();
+ await page.locator('[data-metamagic-name]').selectOption('Extended Spell');
+ await page.locator('[data-act="action-cast-cancel"]').click();assert.deepEqual((await record()).resource_tracker_spent,{});
+ await light.click();await page.locator('.metamagic-options > summary').click();
+ await page.locator('[data-metamagic-name]').selectOption('Extended Spell');
+ await page.locator('[data-act="action-cast-confirm"]').click();await page.locator('#action-cast-dialog').waitFor({state:'detached'});
+ assert.equal(Object.values((await record()).resource_tracker_spent)[0],1,'Metamagic consumes only at confirmation');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
- console.log('PASS: Chrome privilege effects, real advantage dice, cancellation without spending, healing, transformation preview/confirm, reload, second-form overflow and original appearance restoration.');
+ console.log('PASS: Chrome privilege effects, real advantage dice, cancellation without spending, healing, transformation preview/confirm, reload, second-form overflow, original appearance restoration and Metamagic.');
 }catch(error){await shot('feature-failure');console.error((await page.locator('body').innerText()).slice(0,5000));throw error;}
 finally{await f.close();}

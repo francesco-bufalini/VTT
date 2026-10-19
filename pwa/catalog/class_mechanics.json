@@ -2137,6 +2137,195 @@
           ]
         }
       ]
+    },
+    {
+      "class": "Sorcerer",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Innate Sorcery",
+          "origin_feature": "Innate Sorcery",
+          "steps": [
+            {
+              "level": 1,
+              "value": "2",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Fighter",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Action Surge",
+          "origin_feature": "Action Surge",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "2",
+              "reset": "short_rest"
+            }
+          ]
+        },
+        {
+          "name": "Indomitable",
+          "origin_feature": "Indomitable",
+          "steps": [
+            {
+              "level": 9,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Lay on Hands",
+          "origin_feature": "Lay on Hands",
+          "steps": [
+            {
+              "level": 1,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 2,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "20",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "25",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "30",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "35",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "40",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "45",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "50",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "55",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "60",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "65",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "70",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "75",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "80",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "85",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "90",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "95",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "100",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Wizard",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Arcane Recovery",
+          "origin_feature": "Arcane Recovery",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
     }
   ],
   "resource_overrides_meta": {

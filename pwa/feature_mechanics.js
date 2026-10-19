@@ -26,6 +26,14 @@ export const CLASS_FEATURE_RULES=[
  ['deflect_missiles','Monk','Deflect Missiles','Deviare proiettili','','reaction','context'],
  ['deflect_attacks','Monk','Deflect Attacks','Deviare attacchi','','reaction','context']
 ];
+const METAMAGIC_COSTS={'Careful Spell':1,'Distant Spell':1,'Empowered Spell':1,'Extended Spell':1,
+ 'Heightened Spell':3,'Quickened Spell':2,'Subtle Spell':1,'Twinned Spell':1,'Seeking Spell':2,'Transmuted Spell':1};
+export function metamagicOptions(record){
+ return rows(record.optional_features_catalog).filter(f=>f&&!f.disabled&&Object.hasOwn(METAMAGIC_COSTS,f.name)&&
+  !disabledOrigin(record,f.origin_id)).map(f=>({...f,
+   cost:record.rules_version==='2024'&&f.name==='Heightened Spell'?2:record.rules_version==='2024'&&f.name==='Seeking Spell'?1:METAMAGIC_COSTS[f.name],
+   origin_id:f.origin_id||'optional-feature:'+low(f.source)+'|'+low(f.name)}));
+}
 const disabledOrigin=(record,id)=>record.origin_enabled?.[id]===false||
  rows(record.proficiency_origins).some(o=>o?.id===id&&o.disabled);
 export function featureEnabled(record,feature){
@@ -55,6 +63,14 @@ export function classFeatureEntries(record={},calculated={}){
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
    active:mode==='toggle'&&!!record.active_class_features?.[key]});
  }
+ for(const option of metamagicOptions(record)){
+  const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)==='sorcery points'&&low(t.origin_class)==='sorcerer');
+  output.push({id:'metamagic:'+option.name,class_feature_id:'metamagic:'+option.name,name:option.name,
+   time:'free',type:'Capacità',mode:['Empowered Spell','Seeking Spell'].includes(option.name)?'metamagic_roll':'metamagic',
+   description:option.entries??option.description??'',class_name:'Sorcerer',resource_name:'Sorcery Points',
+   tracker:tracker?.name||'Sorcery Points',tracker_id:tracker?.id||'',cost:option.cost,origin:'personal',
+   origin_id:option.origin_id,feature_id:option.origin_id,feature_name:option.name});
+ }
  return output;
 }
 export function classFeatureLevel(record,name){
@@ -83,6 +99,10 @@ export function classFeatureRollAdvantage(record,calculated,target){
   return !!attack&&attack.ability==='str'&&classFeatureActive(record,calculated,'reckless_attack')&&
    (record.rules_version==='2024'||!attack.thrown&&attack.weapon_kind!=='R'&&attack.melee!==false);
  }
+ if(target.startsWith('casting_hit:')&&classFeatureActive(record,calculated,'innate_sorcery')){
+  const sources=rows(calculated.casting_classes).filter(c=>c.ability===target.slice('casting_hit:'.length));
+  return sources.length===1&&low(sources[0].name)==='sorcerer';
+ }
  return false;
 }
 export function classFeatureEffects(record,calculated){
@@ -103,6 +123,7 @@ export function classFeatureEffects(record,calculated){
 export function classFeatureActivationPatch(record,calculated,id,options={}){
  const action=classFeatureEntries(record,calculated).find(a=>a.id===id||a.class_feature_id===id);
  if(!action)throw Error('Privilegio non disponibile.');
+ if(action.mode==='metamagic')throw Error('Scegli la Metamagia nella finestra di lancio.');
  const key=action.class_feature_id,active={...(record.active_class_features||{})};
  if(action.mode==='toggle'&&active[key]){delete active[key];return {active_class_features:active};}
  if(key==='rage'&&!classFeatureActive({...record,active_class_features:{...active,rage:{}}},calculated,key))
@@ -112,7 +133,12 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
  const remaining=tracker?Math.max(0,tracker.max-Number(spent[tracker.id]||0)):0;
  let cost=action.cost,patch={};
  const integer=(value)=>Number.isSafeInteger(Number(value))?Number(value):NaN;
- if(action.mode==='heal_pool'){
+ if(action.mode==='metamagic_roll'){
+  const count=action.name==='Seeking Spell'?1:integer(options.count);
+  const sides=action.name==='Seeking Spell'?20:integer(options.sides);
+  if(!(count>=1&&count<=Math.max(1,Number(calculated.values['ability_mod:cha'])||0))||![4,6,8,10,12,20,100].includes(sides))
+   throw Error('Seleziona i dadi da sostituire entro il modificatore di Carisma.');
+ }else if(action.mode==='heal_pool'){
   cost=integer(options.amount??1);if(!(cost>=1))throw Error('Quantità di cura non valida.');
   if(options.apply_to_self!==false)patch.current_hp=Math.min(calculated.values.hp,Number(record.current_hp||0)+cost);
  }else if(action.mode==='heal_roll'){
@@ -150,12 +176,73 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
   if(!tracker||remaining<cost)throw Error('Risorsa insufficiente.');
   spent[tracker.id]=Number(spent[tracker.id]||0)+cost;patch.resource_tracker_spent=spent;
  }
- if(!['heal_pool','heal_roll','conversion','recovery'].includes(action.mode)){
+ if(!['heal_pool','heal_roll','conversion','recovery','metamagic_roll'].includes(action.mode)){
   active[key]={name:action.name,origin_id:action.origin_id,rules_version:record.rules_version||'2014',enhanced:!!options.enhanced};
   patch.active_class_features=active;
  }
  if(key==='rage'){patch.conditions=rows(record.conditions).filter(c=>c!=='concentrating');patch.concentrating_spell_id='';}
  return patch;
+}
+// Same per-cast validations and changes as vtt/spell_metamagic.gd.
+export function metamagicPlan(record,spell,slotLevel,calculated){
+ const selection=spell.metamagic||{},names=rows(selection.names),known=metamagicOptions(record);
+ if(names.length>1||new Set(names).size!==names.length)throw Error('Non puoi combinare queste opzioni di Metamagia.');
+ const modified=structuredClone(spell),elements=['acid','cold','fire','lightning','poison','thunder'];
+ let cost=0;
+ const revised=record.rules_version==='2024';
+ for(const name of names){
+  const option=known.find(o=>o.name===name);
+  if(!option)throw Error('Opzione di Metamagia non disponibile.');
+  if(['Empowered Spell','Seeking Spell'].includes(name))throw Error('Questa Metamagia si usa dopo il tiro: apri il privilegio nelle Risorse.');
+  cost+=name==='Twinned Spell'&&!revised?Math.max(1,slotLevel):option.cost;
+  if(name==='Distant Spell'){
+   const range=typeof spell.range==='object'?spell.range?.distance?.type:spell.range;
+   let feet=Number(spell.range_feet??spell.range?.distance?.amount??0);
+   if(low(range).includes('touch'))feet=30;else if(feet>=5)feet*=2;else throw Error('Incantesimo Distante richiede gittata o contatto.');
+   modified.range_feet=Math.min(100000,feet);modified.range=modified.range_feet+' feet';
+  }else if(name==='Quickened Spell'){
+   const raw=Array.isArray(spell.time)?spell.time[0]:spell.casting_time??spell.time;
+   const time=typeof raw==='object'?raw?.unit:raw;
+   if(!['action','1 action','1 azione'].includes(low(time)))throw Error('Incantesimo Rapido richiede tempo di lancio di un’azione.');
+   modified.casting_time='Bonus Action';modified.time='bonus';
+  }else if(name==='Subtle Spell'){
+   const raw=spell.components;
+   const material=typeof raw==='object'?(typeof raw.m==='object'?raw.m.text:String(raw.m||'')):
+    String(raw||'').includes('M')?String(raw).slice(String(raw).indexOf('M')):'';
+   const costly=typeof raw?.m==='object'&&(raw.m.cost||raw.m.consume)||/gp|consum/i.test(material);
+   modified.components=revised&&!costly?'':material;
+  }else if(name==='Extended Spell'){
+   const seconds=durationSeconds(spell.duration);
+   if(seconds<60)throw Error('Incantesimo Esteso richiede durata di almeno un minuto.');
+   modified.requires_concentration=spell.requires_concentration||rows(spell.duration).some(d=>d?.concentration)||/concentration/i.test(String(spell.duration));
+   modified.duration=Math.min(86400,seconds*2)+' seconds';modified.metamagic_duration_seconds=Math.min(86400,seconds*2);
+  }else if(name==='Twinned Spell'){
+   if(!selection.eligible_targeting)throw Error('Conferma i requisiti di bersaglio per questa edizione.');
+   if(revised){
+    if(slotLevel<1||slotLevel>=9)throw Error('Incantesimo Raddoppiato richiede uno slot inferiore al 9°.');
+    modified.metamagic_effective_level=slotLevel+1;
+    modified.base_target_clicks=Number(spell.base_target_clicks||1)+Math.max(1,Number(spell.target_clicks_per_slot_above_base||1));
+   }else{
+    const range=Number(spell.range_feet??spell.range?.distance?.amount??0);
+    if(spell.aoe_shape||spell.range?.type==='cone'||spell.range?.type==='radius'||range<=0)throw Error('Un incantesimo ad area o Personale non può essere raddoppiato.');
+    modified.base_target_clicks=2;modified.target_clicks_per_slot_above_base=0;
+   }
+   modified.target_mode='token_then_multi_token';modified.allow_repeat_targets=false;
+  }else if(name==='Transmuted Spell'){
+   if(!selection.eligible_damage||!elements.includes(selection.damage_type))throw Error('Conferma il danno elementale e scegli il nuovo tipo.');
+   modified.metamagic_damage_type=selection.damage_type;modified.damage_type=selection.damage_type;
+  }else if(name==='Careful Spell')modified.metamagic_careful=true;
+  else if(name==='Heightened Spell')modified.metamagic_save_disadvantage=true;
+ }
+ const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)==='sorcery points'&&low(t.origin_class)==='sorcerer');
+ if(cost&&(!tracker||tracker.max-Number(record.resource_tracker_spent?.[tracker.id]||0)<cost))throw Error('Punti stregoneria insufficienti.');
+ return {spell:modified,cost,tracker,selection};
+}
+function durationSeconds(raw){
+ if(Array.isArray(raw))return raw.map(durationSeconds).find(n=>n>0)||0;
+ if(raw&&typeof raw==='object'){const d=raw.duration||raw;return Number(d.amount||0)*({round:6,minute:60,hour:3600,day:86400}[d.type]||0);}
+ const found=/(\d+) (round|minute|hour|day|second)/i.exec(String(raw));
+ return found?Number(found[1])*({round:6,minute:60,hour:3600,day:86400,second:1}[low(found[2])]||0):0;
 }
 export function wildShapePatch(record,calculated,profile,maximum=0){
  const feature=rows(calculated.features).find(f=>low(f.name)==='wild shape'&&featureEnabled(record,f)&&

@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureEntries,classFeatureActivationPatch,classFeatureRollAdvantage,
- classFeatureActive,wildShapePatch,endWildShapePatch} from '../feature_mechanics.js';
+ classFeatureActive,wildShapePatch,endWildShapePatch,metamagicPlan} from '../feature_mechanics.js';
 import {spellCastPlan,recoveryPatch,hitPointPatch} from '../native_sheet.js';
 import {rollSheetDice,sheetRollFormula} from '../sheet_rules_view.js';
+import {actionEntries} from '../action_economy.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
@@ -101,4 +102,42 @@ test('advantage rolls two actual dice, keeps the right die and leaves other bonu
  assert.equal(rolled.total,25);assert.deepEqual(rolled.rolls,[2,18]);assert.match(rolled.notation,/2d20kh1/);
  dice=[2,18];assert.equal(rollSheetDice(4,[],()=>dice.shift(),'disadvantage').total,6);
  assert.equal(sheetRollFormula(4,[],'advantage'),'2d20kh1 + 4');
+});
+test('Metamagic validates acquired options and charges together with spell payment only in a confirmed plan',()=>{
+ const spell={id:'test',name:'Spell',level:1,range_feet:60,range:'60 feet',time:[{unit:'action'}],components:{v:true,s:true},duration:[{type:'timed',duration:{type:'minute',amount:1}}]};
+ const sorc={...sheet('Sorcerer',5),prepared_spells:['test'],optional_features_catalog:[
+  {name:'Distant Spell',source:'PHB'},{name:'Quickened Spell',source:'PHB'},
+  {name:'Extended Spell',source:'PHB'},{name:'Empowered Spell',source:'PHB'}]};
+ const out=calculateSheet(sorc,catalogs),before=structuredClone(sorc);
+ const distant={...spell,metamagic:{names:['Distant Spell']}};
+ const plan=spellCastPlan(sorc,distant,1,out);
+ assert.deepEqual(sorc,before);assert.equal(plan.spell.range_feet,120);
+ assert.equal(plan.context.metamagic.names[0],'Distant Spell');
+ assert.equal(plan.patch.spell_slots_spent[1],1);assert.equal(Object.values(plan.patch.resource_tracker_spent)[0],1);
+ assert.equal(metamagicPlan(sorc,{...spell,metamagic:{names:['Quickened Spell']}},1,out).spell.time,'bonus');
+ assert.equal(metamagicPlan(sorc,{...spell,metamagic:{names:['Extended Spell']}},1,out).spell.duration,'120 seconds');
+ assert.throws(()=>metamagicPlan(sorc,{...spell,metamagic:{names:['Heightened Spell']}},1,out),/non disponibile/);
+ assert.throws(()=>metamagicPlan(sorc,{...spell,metamagic:{names:['Distant Spell','Quickened Spell']}},1,out),/combinare/);
+ assert.throws(()=>metamagicPlan(sorc,{...spell,metamagic:{names:['Empowered Spell']}},1,out),/dopo il tiro/);
+ const reroll=apply(sorc,'metamagic:Empowered Spell',{count:3,sides:6});
+ assert.equal(Object.values(reroll.resource_tracker_spent)[0],1);assert.equal(reroll.active_class_features,undefined);
+ assert.throws(()=>apply(sorc,'metamagic:Empowered Spell',{count:5,sides:6}),/Carisma/);
+});
+test('Innate Sorcery is paid, grants Sorcerer DC/attack benefits and does not boost another class',()=>{
+ const c={...sheet('Sorcerer',5,'2024'),prepared_spells:['test']};
+ const active=apply(c,'innate_sorcery'),out=calculateSheet(active,catalogs);
+ const spell={id:'test',level:1,source_class:'Sorcerer',caster_ability:'cha'};
+ const plan=spellCastPlan(active,spell,1,out);
+ assert.equal(plan.context.spell_save_dc,out.values['casting_dc:cha']+1);
+ assert.equal(plan.context.spell_attack_advantage,true);
+ assert(classFeatureRollAdvantage(active,out,'casting_hit:cha'));
+ assert.equal(spellCastPlan(active,{...spell,source_class:'Bard'},1,out).context.spell_attack_advantage,undefined);
+ assert.equal(Object.values(active.resource_tracker_spent)[0],1);
+});
+test('descriptive class overrides cannot duplicate the executable privilege of the same trait',()=>{
+ const c=sheet('Sorcerer',5),out=calculateSheet(c,catalogs);
+ const overrides=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8')).entries;
+ const actions=actionEntries(c,out,[],overrides);
+ assert.equal(actions.filter(a=>a.class_feature_id==='font_of_magic').length,1);
+ assert(!actions.some(a=>a.name==='Conversione slot e punti stregoneria'));
 });
