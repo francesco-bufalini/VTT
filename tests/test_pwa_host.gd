@@ -113,10 +113,18 @@ func run() -> void:
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
 	var condition_script := await http("GET", "/condition_catalog.js")
 	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
+	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")
+	assert(bundled_effects.begins_with("HTTP/1.1 200") and bundled_effects.contains("Arcane Blight"),
+		"Offline 5etools diseases must be served with the shell")
 	var condition_catalog: Dictionary = host.call("_condition_public_catalog")
 	var conditions_2014: Array = condition_catalog.editions["2014"]
 	var conditions_2024: Array = condition_catalog.editions["2024"]
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and row.name == "Grappled"))
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and
+		row.get("entries", []) is Array and not row.entries.is_empty()), "5etools descriptions must accompany statuses")
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.get("category") == "diseases" and
+		row.name == "Arcane Blight" and not row.get("entries", []).is_empty()),
+		"Native magical diseases must be included in mobile catalog")
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "restrained" and row.name == "Restrained"))
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "hidden"))
 	assert(conditions_2024.any(func(row: Dictionary) -> bool: return row.id == "5etools:effects:xphb:bloodied"))
