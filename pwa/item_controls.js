@@ -26,6 +26,38 @@ export function spellScrollLevel(item={}){
     /(\d+)[°º]?\s*livello/i.exec(name);
   return match?match[1]:"—";
 }
+// Scrolls are created from an actual spell and its selected casting level,
+// not from a generic magic item entry. The desktop's SC + spell fields remain
+// readable, while each scroll remains a normal owned inventory stack.
+export function addSpellScroll(inventory,spell,level,instanceId){
+  if(!Array.isArray(inventory))throw Error("Inventario non valido.");
+  const spellId=String(spell?.id||"").trim(),spellName=String(spell?.name||"").trim();
+  const base=Number(spell?.level),selected=Number(level);
+  if(!spellId||!spellName||spell?.internal_grant||
+     !Number.isInteger(base)||base<0||base>9||
+     !Number.isInteger(selected)||selected<base||selected>9||
+     (base===0&&selected!==0))
+    throw Error("Seleziona un incantesimo e un livello valido.");
+  const rows=structuredClone(inventory),id="local_spell_scroll:"+spellId;
+  const existing=rows.findIndex(item=>isSpellScroll(item)&&item.id===id&&
+    item.spell_id===spellId&&Number(item.spell_level)===selected&&
+    !item.equipped&&!item.attuned&&!item.infusion);
+  if(existing>=0){
+    const amount=Number(rows[existing].quantity)||1;
+    if(!Number.isInteger(amount)||amount<1||amount>=99999)
+      throw Error("Quantità massima raggiunta per questa pergamena.");
+    rows[existing].quantity=amount+1;
+    return {inventory:rows,index:existing};
+  }
+  if(!String(instanceId||"").trim())throw Error("Identificativo copia mancante.");
+  rows.push({id,instance_id:String(instanceId),name:"Pergamena di incantesimo ("+spellName+")",
+    type:"SC",source:String(spell.source||""),spell_id:spellId,spell_name:spellName,
+    spell_level:selected,spell_base_level:base,
+    description:String(spell.description||""),
+    quantity:1,equipped:false,equipped_slots:[],attuned:false,active:true,
+    instance_overrides:{}});
+  return {inventory:rows,index:rows.length-1};
+}
 const array=v=>Array.isArray(v)?v:[];
 export function itemKind(item={}){
   if(item.category==="documents")return "document";
