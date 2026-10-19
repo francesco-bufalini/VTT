@@ -3772,7 +3772,9 @@ export async function mount(){
         state.paired=true;state.online=true;state.hostReachable=true;
         state.page="session";state.sessionPane="table";
         state.messages=[];state.after="";state.tokenId="";
+        try{state.map=await map();}catch{state.map=null;}
         await render();
+        void refreshConnection(true).catch(error=>console.warn("QR reconnect check unavailable",error));
         message("Telefono associato tramite QR.");
       }catch(error){
         // A one-time code may have been redeemed before /api/session failed.
