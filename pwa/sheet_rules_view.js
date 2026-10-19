@@ -260,7 +260,9 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  if(item.attuned)status.push('In sintonia');else if(requiresAttunement(effective))status.push('Richiede sintonia');
  if(item.active===false)status.push('Disattivato');
  if(item.infusion)status.push('Infuso');
- return {kind,type,glyph,quantity,source:String(item.source||''),properties:propertyText==='—'?'':String(propertyText||''),facts,status,
+ const properties=String(propertyText==='—'?'':propertyText||'').split(' · ').filter(part=>
+   !(facts.some(fact=>fact.label==='CA')&&/^CA(?:\s|\+|$)/i.test(part))).join(' · ');
+ return {kind,type,glyph,quantity,source:String(item.source||''),properties,facts,status,
   weight:kind==='document'?null:weight===null?null:weight*quantity,value:kind==='document'?null:value===null?null:value*quantity};
 }
 
