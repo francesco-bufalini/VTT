@@ -162,7 +162,7 @@ try {
   });
   const manualPage = await manualContext.newPage();
   await manualPage.goto(origin);
-  await manualPage.locator('[data-nav="session"]').click();
+  await manualPage.locator('button.connection-link[data-nav="session"]').click();
   await manualPage.locator("#pair-form").waitFor({timeout:15000});
   await manualPage.waitForFunction(() =>
     !document.querySelector('#pair-form button[type="submit"]')?.disabled,
