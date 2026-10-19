@@ -53,6 +53,9 @@ try{
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
+ assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
+ assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
+ assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
  assert.equal(await page.locator('[data-sheet="actions"]').count(),0);
  await sheet('magic');
  await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');
@@ -68,7 +71,7 @@ try{
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,5);
+   assert.equal(dock.length,6);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
@@ -85,6 +88,12 @@ try{
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
+ assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
+ assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
+ assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
+ await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
+ assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
+ assert(await page.locator('#sheet-play-view [data-play-search]').isVisible());
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="tools"] .play-row-copy strong').innerText(),'Altre competenze');
  await page.locator('#sheet-play-view [data-sheet-context="tools"]').click();
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Strumenti/);
@@ -92,6 +101,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog').innerText(),/Armature/);
  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
+ await sheet('battle');await sheet('info');
+ assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'','Expanded skills survive a return to Info');
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
@@ -126,7 +137,7 @@ try{
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
  // Opening a multiclass character shows every class both in the persistent
  // header and directly below the name on the Info tab.
  await globalPage('library');
@@ -143,6 +154,26 @@ try{
  assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
  assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),4);
+ // Gallery and persistent header must distinguish elven characters from monsters.
+ await globalPage('library');
+ await page.evaluate(async()=>{
+  const {listCreatures,openCreatureEditor,createCreature}=await import('/creatures.js');
+  const rows=await listCreatures(),character=rows.find(row=>row.creature.kind==='character').creature;
+  await (await openCreatureEditor(character.id)).update({species:'Elfo'});
+  const monster=await createCreature('monster','Orco del crepuscolo');
+  await (await openCreatureEditor(monster.data.id)).update({species:'Orco'});
+ });
+ await globalPage('library');
+ const elfCard=page.locator('.creature-card').filter({hasText:'Lyria · Sentinella delle stelle'});
+ assert.match(await elfCard.locator('.creature-details').textContent(),/Elfo/);
+ assert.doesNotMatch(await elfCard.locator('.creature-details').textContent(),/Personaggio|Mostro/);
+ assert.equal(await elfCard.locator('.creature-face').count(),1);
+ const orcCard=page.locator('.creature-card').filter({hasText:'Orco del crepuscolo'});
+ assert.match(await orcCard.locator('.creature-details').textContent(),/Orco/);
+ assert.equal(await orcCard.locator('.creature-face').count(),1);
+ await orcCard.locator('[data-act="open"]').click();
+ assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ assert.equal(await page.locator('.play-identity-mark .creature-face').count(),1);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
