@@ -1160,6 +1160,15 @@ input:disabled{opacity:.75;cursor:default}
  .play-battle-roll-formula{font-size:11px}
 }
 
+/* Generic ability/skill checks share the battle action layout, without fake descriptions. */
+.play-battle-check-heading{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;padding:7px 10px}
+.play-battle-check-heading>.vtt-action-glyph{width:22px;height:22px;flex:0 0 22px}
+.play-battle-check-heading>.play-battle-attack-copy{min-width:0}
+.play-battle-check-heading .play-battle-attack-copy>strong{overflow-wrap:break-word}
+@media(max-width:360px){
+ .play-battle-check-heading{gap:7px}
+}
+
 /* All multiclass levels remain readable below the character name. */
 .topbar .brand-identity{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
 .topbar #creature-name{display:block}
