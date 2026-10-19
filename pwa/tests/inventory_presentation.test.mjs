@@ -79,3 +79,14 @@ test('new spell scrolls preserve selected casting level and stack identical copi
  assert.throws(()=>addSpellScroll([], {id:'spell:light',name:'Light',level:0},1,'copy'),/livello valido/);
  assert.throws(()=>addSpellScroll([],{id:'spell:ability',name:'Feature',level:1,internal_grant:true},1,'copy'),/livello valido/);
 });
+
+test('armor class appears once as a structured fact, not again in the properties line',()=>{
+ const shield=inventoryReadout({id:'shield:test',name:'Shield',type:'S',ac:2},'CA +2 · Raro');
+ assert.equal(shield.facts.filter(fact=>fact.label==='CA').length,1);
+ assert.equal(shield.properties,'Raro');
+ const armor=inventoryReadout({id:'armor:test',name:'Armor',type:'HA',ac:17},'CA 17');
+ assert.equal(armor.facts.filter(fact=>fact.label==='CA').length,1);
+ assert.equal(armor.properties,'');
+ const sword=inventoryReadout({id:'weapon:test',name:'Sword',type:'M',damage:'1d8'},'Versatile');
+ assert.equal(sword.properties,'Versatile');
+});

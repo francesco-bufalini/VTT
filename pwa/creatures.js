@@ -5,6 +5,7 @@ import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecord
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
 import { initialCreature } from "./character_core.js";
+import { consolidateOwnedItems } from "./item_controls.js";
 
 const CREATURE_TYPE = "creature";
 const HOMEBREW_SCOPE = "global";
@@ -167,6 +168,13 @@ export async function editHomebrewDefinition(definition, expectedRevision) {
 export async function openCreatureEditor(id, scope = "default") {
   let stored = await loadCreature(id, scope);
   if (!stored) throw new Error("Creature not found");
+  // Upgrade older saves with repeated copies as soon as the creature is edited.
+  // Do not rewrite records that already have canonical inventory stacks.
+  if (Array.isArray(stored.data.inventory)) {
+    const inventory = consolidateOwnedItems(stored.data.inventory);
+    if (JSON.stringify(inventory) !== JSON.stringify(stored.data.inventory))
+      stored = await saveCreature({...stored.data,inventory},scope,stored.revision);
+  }
   let pending = Promise.resolve(), blocked = null;
   let latest = structuredClone(stored.data);
   return {
@@ -183,6 +191,8 @@ export async function openCreatureEditor(id, scope = "default") {
       if (!patch || typeof patch !== "object" || Array.isArray(patch))
         return Promise.reject(new TypeError("Creature update must be an object"));
       const proposed = validateCreature({ ...latest, ...structuredClone(patch) });
+      if (Array.isArray(proposed.inventory))
+        proposed.inventory = consolidateOwnedItems(proposed.inventory);
       if (proposed.id !== stored.data.id ||
           proposed.owner_id !== stored.data.owner_id ||
           Number(proposed.transfer_revision ?? 0) !==
