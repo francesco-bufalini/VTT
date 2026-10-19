@@ -261,6 +261,37 @@ test('equipped attacks calculate proficiency, finesse, offhand damage, thrown ra
  assert.equal(monster.attacks[0].hit,7);
  assert.equal(monster.attacks[0].damage,'2d6 + 5');
 });
+test('shared equipment rules support every attack ability, finesse scope, off-hand style and versatile two-hand lock',()=>{
+ const longsword={id:'blade',name:'Longsword',type:'M',weapon_category:'martial',damage:'1d8',
+   versatile_damage:'1d10',properties:['V'],quantity:1,equipped_slots:['main']};
+ const dagger={id:'dagger',name:'Dagger',type:'M',weapon_category:'simple',damage:'1d4',
+   properties:['F','L'],quantity:1,equipped_slots:['off']};
+ const creature={kind:'character',abilities:{str:12,dex:14,con:10,int:10,wis:18,cha:10},
+   attack_ability:'wis',attack_ability_finesse_only:false,
+   inventory:[longsword,dagger],hand_grip_two_handed:false,
+   proficiency_choices:[{kind:'weapon',key:'martial'},{kind:'weapon',key:'simple'}]};
+ const both=calculateSheet(creature,catalogs);
+ assert.equal(both.attacks.find(a=>a.id==='item:blade').ability,'wis');
+ assert.equal(both.attacks.find(a=>a.id==='item:off:dagger').ability,'wis');
+ const finesseOnly=calculateSheet({...creature,attack_ability_finesse_only:true},catalogs);
+ assert.equal(finesseOnly.attacks.find(a=>a.id==='item:blade').ability,'str');
+ assert.equal(finesseOnly.attacks.find(a=>a.id==='item:off:dagger').ability,'wis');
+ const versatile=calculateSheet({...creature,hand_grip_two_handed:true},catalogs);
+ assert.equal(versatile.attacks.find(a=>a.id==='item:blade').damage,'1d10 + 4');
+ assert.equal(versatile.attacks.some(a=>a.id==='item:off:dagger'),false,
+   'Offhand attacks cannot survive two-hand versatile grip, even for imported stale slots');
+ const twin={...creature,hand_grip_two_handed:false,
+   inventory:[{...dagger,equipped_slots:['main']},{...dagger,id:'off-dagger',equipped_slots:['off']}]};
+ const withoutStyle=calculateSheet(twin,catalogs);
+ const withStyle=calculateSheet({...twin,two_weapon_fighting:true},catalogs);
+ assert.equal(withoutStyle.attacks.find(a=>a.slot==='off').damage,'1d4');
+ assert.equal(withStyle.attacks.find(a=>a.slot==='off').damage,'1d4 + 4');
+ for(const ability of ['str','dex','con','int','wis','cha']){
+   const selected=calculateSheet({...creature,attack_ability:ability},catalogs);
+   assert.equal(selected.attacks.find(a=>a.id==='item:blade').ability,ability);
+ }
+});
+
 test('class and subclass catalog edits keep legacy fields and multi-class IDs coherent',()=>{
  const c={class:'Wizard',class_id:'old',class_source:'PHB',subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub',level:5,
   classes:[{id:'old',name:'Wizard',source:'PHB',level:5,subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub'}]};
@@ -318,27 +349,30 @@ test('classes header displays non-editable total level and editable XP on one li
  assert(!markup.includes('Livello totale<input'));
 });
 
-test('battle context separates movement from identity and displays the equipped AC formula without hiding fields',()=>{
+test('battle sheet presents one shared equipment panel instead of duplicate armor and attack editors',()=>{
  const armor={id:'chain-shirt',name:'Cotta di maglia',type:'MA',ac:14,quantity:1,equipped_slots:['body']};
  const creature={kind:'character',abilities:{str:12,dex:16,con:12,int:10,wis:10,cha:10},
   armor_natural_formula:'12 + dex_mod',inventory:[armor]};
  const panel=(title,body,className='')=>'<section class="'+className+'"><h2>'+title+'</h2>'+body+'</section>';
- const view=(c,section)=>nativeSection(c,section,{panel,field:()=>'',area:()=>'',armor:'<label>Armatura indossata<select data-equip-slot="body"></select></label>',equipment:'',resources:'',attacks:'',calculated:calculateSheet(c,catalogs)});
+ const shared='<section class="equipment-unified-panel"><section class="equipment-weapons">'+
+  '<select data-equip-slot="main"></select></section><section class="equipment-armor">'+
+  '<select data-equip-slot="body"></select><div class="battle-ac-formula"><output>14 + (2 DES)</output></div></section></section>';
+ const view=(c,section)=>nativeSection(c,section,{panel,field:()=>'',area:()=>'',armor:'',
+  equipment:shared,resources:'',attacks:'',calculated:calculateSheet(c,catalogs)});
  const battle=view(creature,'battle');
  assert.match(battle,/class="battle-movement-panel"/);
  assert.match(battle,/class="battle-defense-panel"/);
+ assert.equal(battle.match(/class="equipment-unified-panel"/g)?.length,1);
  assert.match(battle,/data-equip-slot="body"/);
- assert.match(battle,/Formula armatura indossata/);
  assert.match(battle,/14 \+ \(2 DES\)/);
+ assert.equal(calculateSheet(creature,catalogs).values.ac,16);
+ assert.equal(calculateSheet({...creature,inventory:[]},catalogs).values.ac,15);
  assert.doesNotMatch(battle,/data-field="armor_natural_formula"/);
  assert.doesNotMatch(battle,/<summary>Armatura e CA naturale<\/summary>/);
  assert.doesNotMatch(battle,/data-calculated="initiative"/);
- assert.match(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
+ assert.equal(battle.match(/data-equip-slot="main"/g)?.length,1);
+ assert.doesNotMatch(battle,/battle-attack-settings/);
  assert.doesNotMatch(view(creature,'info'),/<h3>Velocità<\/h3>/);
- const natural=view({...creature,inventory:[]},'battle');
- assert.match(natural,/Formula CA naturale/);
- assert.match(natural,/12 \+ dex_mod/);
- assert.doesNotMatch(natural,/Formula armatura indossata/);
 });
 
 test('only spells with duration can remain applied on the conditions sheet',()=>{
