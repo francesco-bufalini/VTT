@@ -172,6 +172,13 @@ try{
  assert.match(await shared.textContent(),/Formula CA naturale/);
  assert.match(await shared.textContent(),/CA totale/);
  assert.equal(await shared.locator('[data-equip-slot]').count(),3);
+ const weaponsGroup=shared.locator('.equipment-weapons');
+ const armorGroup=shared.locator('.equipment-armor');
+ assert.equal(await weaponsGroup.locator('[data-equip-slot]').count(),2);
+ assert.equal(await armorGroup.locator('[data-equip-slot="body"]').count(),1);
+ assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
+ assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),1);
+ assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
@@ -181,12 +188,17 @@ try{
  await dismiss();
  await popup('equipment');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
- await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('dex');
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='dex';});
+ await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('wis');
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='wis';});
+ await page.locator('#sheet-context-dialog [data-field="two_weapon_fighting"]').check();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.two_weapon_fighting===true;});
  await page.locator('#sheet-context-dialog [data-field="attack_ability_finesse_only"]').uncheck();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability_finesse_only===false;});
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===true;});
+ const secondary=page.locator('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]');
+ assert.equal(await secondary.isDisabled(),true,'Versatile grip must disable offhand equipment');
+ assert.equal(await secondary.inputValue(),'-1','Versatile grip must lock the offhand on Nessuno');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
  await dismiss();
  await page.locator('#sheet-play-view [data-target="initiative"]').click();
