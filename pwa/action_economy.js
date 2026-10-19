@@ -595,8 +595,28 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Free general actions belong with the no-cost options in Battle resources.
  const freeActions=other.filter(row=>row.time==='free'&&row.origin!=='personal');
  const remainingOthers=other.filter(row=>!freeActions.includes(row));
+ // Put attacks using currently equipped weapons first within each action-time
+ // group. The local attack projection only marks an item as main/off when it is
+ // equipped; monster attacks, generic actions and improvised shield attacks
+ // must not jump ahead of the actual weapons.
+ const equippedWeaponPriority=row=>{
+  const equippedSlot=attack=>{
+   if(!attack||!String(attack.id||'').startsWith('item:'))return 2;
+   return attack.slot==='main'?0:attack.slot==='off'?1:2;
+  };
+  const direct=equippedSlot(attacksById.get(String(row.attack_id||row.id||'')));
+  if(direct<2)return direct;
+  // Opportunity attacks take the equipped melee weapon into account too.
+  if(row.id==='opportunity'){
+   return Math.min(2,...[...attacksById.values()]
+    .filter(attack=>attack.melee)
+    .map(equippedSlot));
+  }
+  return 2;
+ };
  const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
+  if(kind==='attacks')matching.sort((a,b)=>equippedWeaponPriority(a)-equippedWeaponPriority(b));
   return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'" open>'+
    '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
    '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
