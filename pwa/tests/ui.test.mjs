@@ -562,6 +562,8 @@ test("inline spell catalog adds available and spellbook choices without divergin
   click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
   await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-target'));
   change('#spell-target',"spellbook_spells");
+  await until(()=>document.querySelector('#spell-target')?.value==='spellbook_spells'&&
+    document.querySelector('[data-act="spell-pick"]')?.disabled===false);
   click('[data-act="spell-pick"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;

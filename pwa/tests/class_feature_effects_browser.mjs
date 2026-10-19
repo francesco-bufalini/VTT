@@ -128,6 +128,6 @@ try{
   assert.equal(JSON.stringify(await record()),before,'Edition/subclass origin details must not modify the sheet');
  }
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
- console.log('PASS: Chrome privilege effects, real advantage dice, cancellation without spending, healing, transformation preview/confirm, reload, second-form overflow, original appearance restoration and Metamagic.');
+ console.log('PASS: Chrome granting-trait origins in resource/ability popups (2014, 2024, Moon), exact Info links, privilege effects, advantage, cancellation, healing, transformation, reload, restoration and Metamagic.');
 }catch(error){await shot('feature-failure');console.error((await page.locator('body').innerText()).slice(0,5000));throw error;}
 finally{await f.close();}
