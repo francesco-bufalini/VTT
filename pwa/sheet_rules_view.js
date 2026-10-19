@@ -607,7 +607,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
   html+=card('Privilegi e tratti',groups.map((node,i)=>{bind('trait:'+i,node);return go('trait:'+i,node.querySelector('summary')?.textContent||'Tratto','proficiency');}).join('')||'<p class="play-empty">Nessun tratto disponibile.</p>');
-  const notes=panelNamed('aggiuntivi');bind('trait-notes',notes);html+=go('trait-notes','Note sui tratti','scroll',c.additional_traits||'Aggiungi una nota personale');
+  // The removed native notes section must not leave a broken action.
  }
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
