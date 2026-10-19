@@ -330,8 +330,10 @@ export function spellActionEntries(record={},calculated={},spells=[]){
    if(typeof raw==='object'&&Number(raw?.number??1)!==1)continue;
    if(!['action','bonus','bonus action','reaction','azione','azione bonus','reazione'].includes(unit))continue;
    const time=timing(unit);if(seen.has(time))continue;seen.add(time);
-   output.push({id:spell.id,spell_id:spell.id,name:spell.name,time,type:'Incantesimo',description:details(spell.entries??spell.description??''),origin:'general',
-    casting_class:spell.casting_class||'',grant_id:spell.grant_id||'',spell_mode:mode,tracker_id,tracker:resource});
+   output.push({id:spell.id,spell_id:spell.id,name:spell.name,time,type:'Incantesimo',
+    level:Number.isFinite(Number(spell.level))?Number(spell.level):null,
+    origin:'general',casting_class:spell.casting_class||'',grant_id:spell.grant_id||'',
+    spell_mode:mode,tracker_id,tracker:resource});
   }
  }
  return output;
@@ -575,6 +577,22 @@ export function battleSkillChecksPanel(calculated={}){
  }).join('');
 }
 
+// Spell actions open the very same spell/casting dialog as the Magia tab.
+// Keep prose out of the action list; its detailed facts are shown in the dialog.
+function battleSpellRow(item){
+ const level=item.level;
+ const levelLabel=level===0?'Trucchetto':Number.isInteger(level)&&level>0?'Livello '+level:'Livello non disponibile';
+ const payment=item.spell_mode==='tracker'?'Capacità · '+(item.tracker||'risorsa'):
+  item.spell_mode==='free'?'Senza slot':level===0?'Senza slot':'Slot incantesimo';
+ return '<article class="play-battle-attack-entry play-battle-spell-entry" data-spell-id="'+esc(item.spell_id)+
+  '" data-spell-level="'+esc(level??'')+'" data-action-timing-spell="'+esc(item.time)+'">'+
+  '<button type="button" class="play-battle-spell-open" data-act="action-cast-spell" data-spell-id="'+
+   esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+
+   esc(item.casting_class||'')+'" aria-label="Apri '+esc(item.name)+'">'+
+  actionGlyph('spell_cast')+'<span class="play-battle-attack-copy"><strong>'+esc(item.name)+
+  '</strong><small>'+esc(levelLabel+' · '+payment)+'</small></span></button></article>';
+}
+
 export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const descriptions={
@@ -621,10 +639,12 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   if(kind==='attacks')matching.sort((a,b)=>equippedWeaponPriority(a)-equippedWeaponPriority(b));
+  if(kind==='spells')matching.sort((a,b)=>(a.level??99)-(b.level??99)||
+   String(a.name||'').localeCompare(String(b.name||''),'it'));
   return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'" open>'+
    '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
    '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
-   '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?actionRow(row,calculated):
+   '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
  return {attacks:render(weapon,'attacks'),others:render(remainingOthers,'others'),
