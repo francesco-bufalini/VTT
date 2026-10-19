@@ -9,6 +9,8 @@ try{
   const {listCreatures,saveCreature}=await import('/creatures.js');
   const row=(await listCreatures())[0],creature=row.creature;
   await saveCreature({...creature,
+   proficiency_choices:[...(creature.proficiency_choices||[]),
+     {kind:'skill',key:'arcana'}, {kind:'expertise',key:'stealth'}],
    resource_trackers:[...(creature.resource_trackers||[]),
      {id:'superiority',name:'Superiority Die',max:4,recharge:'short_rest'}],
    optional_features_catalog:[...(creature.optional_features_catalog||[]),
@@ -290,11 +292,19 @@ try{
  assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1);
  await popup('tools');
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
  await dismiss();
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
+ const skillMarker=key=>page.locator('#sheet-play-view .play-skills [data-target="skill:'+key+'"] .play-skill-rank');
+ assert.equal(await skillMarker('arcana').getAttribute('aria-label'),'Competenza');
+ assert.equal(await skillMarker('arcana').locator('svg path').count(),1);
+ assert.equal(await skillMarker('stealth').getAttribute('aria-label'),'Maestria');
+ assert.equal(await skillMarker('stealth').locator('svg path').count(),2);
+ assert.equal(await skillMarker('athletics').count(),0,'Untrained skills have no rank indicator');
  await page.locator('[data-play-search]').fill('furt');assert.equal(await page.locator('.play-skills [data-play-filter]:visible').count(),1);
  await page.locator('#sheet-play-view [data-target="skill:stealth"]').click();await page.locator('[data-act="roll-sheet-confirm"]').click();assert(Number(await page.locator('.dice-result').textContent())>0);await page.locator('[data-act="close-sheet-roll"]').click();
  await sheet('inventory');
@@ -352,7 +362,10 @@ try{
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  assert.equal(await page.locator('.play-info-traits').count(),1);
- assert(await page.locator('.play-info-traits .trait-origin-group').count()>0);
+ assert.equal(await page.locator('.play-info-traits').getAttribute('open'),null,'Tratti starts folded');
+ await page.locator('.play-info-traits > summary').click();
+ assert.equal(await page.locator('.play-info-traits').getAttribute('open'),'');
+ assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));

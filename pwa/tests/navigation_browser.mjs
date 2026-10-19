@@ -90,6 +90,11 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1,'Info keeps its former portrait symbol');
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),null,'Tratti begins collapsed');
+ await page.locator('#sheet-play-view .play-traits-disclosure > summary').click();
+ assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
@@ -103,6 +108,7 @@ try{
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'','Expanded skills survive a return to Info');
+ assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'','Expanded traits survive a return to Info');
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');
@@ -176,7 +182,8 @@ try{
  await orcCard.locator('[data-act="open"]').click();
  assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
  await sheet('info');
- assert.equal(await page.locator('.play-identity-mark .creature-face').count(),1);
+ assert.equal(await page.locator('.play-identity-mark .vtt-action-glyph').count(),1);
+ assert.equal(await page.locator('.play-identity-mark .creature-face').count(),0,'Only Info reverts to the original symbol');
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
