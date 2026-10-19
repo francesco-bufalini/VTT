@@ -1304,3 +1304,41 @@ input:disabled{opacity:.75;cursor:default}
 .trait-card.trait-inactive{opacity:.68}
 .trait-book{display:block;font-size:11px;color:var(--muted);margin:5px 0 0}
 .trait-catalog-warnings{font-size:12px;color:var(--muted)}
+
+/* Origins and full-rest control share the warm, borderless power popup layout. */
+.sheet-context-body .play-battle-power-detail .power-privilege-facts{
+ padding:2px 0 13px;margin:0;border-top:0;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-facts>div{
+ display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-description{
+ margin-top:14px;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-description .trait-description{
+ color:#e0d3c0;font-size:13px;line-height:1.7;margin:4px 0 12px;white-space:pre-wrap;
+}
+.play-resource-origin-details{
+ display:grid;gap:12px;margin-top:14px;padding:14px 0 2px;
+ border-top:1px solid #ae855433;color:#dfcaaa;
+}
+.play-resource-origin-facts{display:grid;gap:5px}
+.play-resource-origin-facts>span{
+ font:500 10px/1.4 system-ui;text-transform:uppercase;letter-spacing:.06em;color:#b7a181;
+}
+.play-resource-origin-facts>strong{font:550 13px/1.4 system-ui;color:#f1d39e;overflow-wrap:anywhere}
+.play-resource-origin-details>.trait-description{margin:0;color:#e0d3c0;font-size:13px;line-height:1.7;white-space:pre-wrap}
+.play-resource-reset{
+ width:100%;min-height:45px;padding:10px 12px;border:1px solid #ad85516c;
+ border-radius:9px;background:#7550334a;color:#f1d8b4;font:600 12px/1.35 system-ui;
+ cursor:pointer;
+}
+.play-resource-reset:disabled{opacity:.45;cursor:default}
+.play-resource-reset:focus-visible{outline:2px solid #edbd77;outline-offset:2px}
+.play-resource-free-actions{padding:9px 12px 12px;border-top:1px solid #ad87412d}
+.play-resource-free-actions>h4{
+ margin:2px 0 9px;color:#e7c897;font:550 12px/1.4 system-ui;
+}
+.play-resource-free-actions>.play-battle-attack-entry{
+ margin:5px 0;border-color:#a6804e27;background:#47332526;
+}
