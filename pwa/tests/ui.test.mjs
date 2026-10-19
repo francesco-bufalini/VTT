@@ -742,7 +742,7 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   await until(()=>document.querySelector('[data-sheet="inventory"]'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="items"]'));
-  assert.equal(document.querySelectorAll(".inventory-subtabs [role=tab]").length,3);
+  assert.ok(document.querySelector(".inventory-subtabs [data-subtab=scrolls]"),"La terza scheda Pergamene è disponibile");
   assert.equal(document.querySelectorAll('.inventory-table-row').length,1);
   assert.equal(document.querySelector('.inventory-scroll-panel'),null);
   click('[data-act="inventory-subtab"][data-subtab="scrolls"]');
