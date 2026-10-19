@@ -5,6 +5,8 @@ const app = document.querySelector("#app");
 // A navigation resets Safari's entire ES module map, including failed transitive
 // imports. A fragment-only import retry cannot recover those dependencies.
 const MODULE_RELOAD_KEY = "vtt-mobile-module-reload-once";
+const COMPAT_START_KEY = "vtt-mobile-serial-modules";
+const DIAGNOSTIC_VERSION = "ios-module-debug-3";
 
 function reloadFailedModuleGraph(error) {
   if (!retryableModuleError(error)) return false;
@@ -51,6 +53,17 @@ const STARTUP_MODULE_PATHS = [
 const startupBrowserErrors = [];
 // main.js invokes boot() at top level: never dynamically re-import it.
 const MODULE_IMPORT_PATHS = STARTUP_MODULE_PATHS.filter(path => path !== "/main.js");
+// Independent modules first; then dependencies and finally the UI. Importing
+// modules sequentially is an optional fallback for connection-limited WebKit.
+const SERIAL_STARTUP_ORDER = [
+  "/storage.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
+  "/structured_effects.js", "/condition_catalog.js", "/chat_notifications.js",
+  "/tactical_view.js", "/session_map.js", "/spell_metadata.js", "/documents.js",
+  "/character_core.js", "/client.js", "/feature_mechanics.js", "/sheet_rules.js",
+  "/sheet_rules_view.js", "/native_sheet.js", "/action_economy.js", "/creatures.js",
+  "/activated_abilities.js", "/class_spells.js", "/class_trackers.js",
+  "/trait_projection.js", "/quick_homebrew.js", "/catalog_data.js", "/demo.js"
+];
 window.addEventListener("error", event => {
   if (startupBrowserErrors.length >= 6) return;
   const resourceUrl = event.target !== window && (event.target?.src || event.target?.href);
@@ -66,6 +79,50 @@ window.addEventListener("error", event => {
         ":" + (event.lineno || "?") + ")" : ""));
   }
 }, true);
+
+async function getServerModuleDiagnostics() {
+  try {
+    const response = await deadline(fetch("/__vtt_module_diagnostics",
+      { cache: "no-store" }), 4500, "Telemetria server");
+    if (!response.ok) return { available: false, reason: "HTTP " + response.status };
+    const payload = await response.json();
+    if (payload?.version !== 1 || !Array.isArray(payload.module_events))
+      return { available: false, reason: "formato non compatibile" };
+    return { available: true, payload };
+  } catch (error) {
+    return { available: false, reason: error?.message || String(error) };
+  }
+}
+
+function summarizeServerModules(snapshot, label) {
+  if (!snapshot?.available) return [
+    label + ": indisponibile (" + (snapshot?.reason || "errore") + ")"
+  ];
+  const data = snapshot.payload;
+  const events = data.module_events;
+  const incomplete = events.filter(row => row.outcome !== "socket_written");
+  return [
+    label + ": " + data.module_requests_recorded + " richieste JS registrate, " +
+      "connessioni attive " + data.connections_active +
+      ", picco " + data.connections_peak + "/32",
+    "Trasferimenti nello snapshot: " + events.length +
+      ", interrotti " + incomplete.length,
+    ...(incomplete.length ? [
+      "TRASFERIMENTI SERVER NON COMPLETI:",
+      ...incomplete.slice(-30).map(row =>
+        "#" + row.id + " " + row.path + " — " + row.bytes_written + "/" +
+        row.bytes_expected + " byte | " + row.outcome + " | " +
+        row.duration_ms + " ms")
+    ] : []),
+    ...(events.length ? [
+      "ULTIME RICHIESTE JS DEL SERVER:",
+      ...events.slice(-32).map(row =>
+        "#" + row.id + " " + row.path + " " + row.status + " | " +
+        row.bytes_written + "/" + row.bytes_expected + " byte | " +
+        row.outcome + " | " + row.duration_ms + " ms")
+    ] : [])
+  ];
+}
 
 function diagnosticException(error) {
   const name = error?.name || "Error";
@@ -86,8 +143,18 @@ async function probeStartupModule(path, remainingMs) {
     const response = await fetch(path, { cache: "no-store", signal: controller.signal });
     const source = await response.text();
     const mime = response.headers.get("content-type") || "assente";
+    const actualBytes = new TextEncoder().encode(source).length;
+    const expectedHeader = response.headers.get("content-length");
+    const expectedBytes = expectedHeader === null ? null : Number(expectedHeader);
+    const mismatch = expectedBytes !== null && Number.isFinite(expectedBytes) &&
+      expectedBytes !== actualBytes;
     const details = "HTTP " + response.status + " | MIME " + mime + " | " +
-      source.length + " caratteri | " + (Date.now() - started) + " ms";
+      actualBytes + " byte" +
+      (expectedHeader === null ? " (Content-Length assente)" :
+        "/" + expectedHeader + " dichiarati") +
+      " | " + (Date.now() - started) + " ms" +
+      (mismatch ? " | DIMENSIONE DIFFERENTE" : "");
+    if (mismatch) return { path, problem: true, details };
     if (!response.ok) return { path, problem: true, details };
     if (!/javascript|ecmascript/i.test(mime))
       return { path, problem: true, details: details + " | MIME non valido per moduli JS" };
@@ -110,9 +177,14 @@ async function diagnoseStartupModules(phase, error) {
 
   const header = [
     "VTT Mobile — diagnostica avvio",
+    "Versione diagnostica: " + DIAGNOSTIC_VERSION,
     "Fase: " + phase,
     "Errore originale: " + diagnosticException(error),
     "Browser: " + navigator.userAgent,
+    "Protocollo/origine: " + location.protocol + " / " + location.hostname,
+    "Modalità compatibilità: " + (sessionStorage.getItem(COMPAT_START_KEY) === "1" ? "attiva" : "no"),
+    "Visibilità pagina: " + document.visibilityState,
+    "Memoria dispositivo: " + (navigator.deviceMemory || "non esposta") + " GB",
     "Connessione secondo il browser: " + (navigator.onLine ? "online" : "offline"),
     "Service Worker che controlla la pagina: " +
       (navigator.serviceWorker?.controller ? "sì" : "no"),
@@ -128,6 +200,12 @@ async function diagnoseStartupModules(phase, error) {
   let importCompleted = 0;
   let importStarted = false;
   let importUntil = 0;
+  const freshResults = new Map();
+  let freshStarted = false, freshDone = false;
+  let serverStart = { available:false, reason:"non ancora letto" };
+  let serverEnd = { available:false, reason:"non ancora letto" };
+  let serverEndReady = false;
+  let reportComplete = false;
   const initialTimings = (performance.getEntriesByType?.("resource") || [])
     .filter(row => {
       try {
@@ -138,13 +216,17 @@ async function diagnoseStartupModules(phase, error) {
     .slice(-28).map(row => {
       const path = new URL(row.name).pathname;
       const code = row.responseStatus ? " HTTP " + row.responseStatus : "";
-      return path + ": " + Math.round(row.duration) + " ms" + code;
+      return path + ": " + Math.round(row.duration) + " ms" + code +
+        " | transfer " + (row.transferSize ?? "?") +
+        " B | encoded " + (row.encodedBodySize ?? "?") +
+        " B | decoded " + (row.decodedBodySize ?? "?") + " B";
     });
 
   function render() {
     if (!details.isConnected) return;
     const problems = results.filter(row => row?.problem);
     const importProblems = importResults.filter(row => row?.problem);
+    const freshFailures = [...freshResults.values()].filter(row => row.problem);
     const untested = STARTUP_MODULE_PATHS.length - completed;
     const lines = [
       ...header,
@@ -175,6 +257,26 @@ async function diagnoseStartupModules(phase, error) {
           path + " — " + (importResults[index]?.details || "non ancora verificato")),
         ""
       ] : []),
+      ...(freshStarted ? [
+        "SECONDA PROVA CON URL MODULE MAP NUOVI (#fragment):",
+        "Testati " + freshResults.size + " moduli | falliti " +
+          freshFailures.length + (freshDone ? " | completata" : " | in corso"),
+        "Gli import freschi riusano le dipendenze con URL originali;",
+        "perciò un import padre può fallire per una dipendenza già guasta.",
+        ...[...freshResults.values()].map(row =>
+          row.path + " — " + row.details),
+        ...(freshResults.has("/spell_metadata.js") &&
+            freshResults.has("/documents.js") &&
+            freshResults.has("/character_core.js") ? [
+          "ESITO FILE INDIPENDENTI: " +
+            ["/spell_metadata.js", "/documents.js", "/character_core.js"].map(path =>
+              path + "=" + (freshResults.get(path)?.problem ? "FALLISCE" : "OK")).join(" | ")
+        ] : []), ""
+      ] : []),
+      ...(serverStart.available || serverStart.reason !== "non ancora letto" ?
+        [...summarizeServerModules(serverStart, "SERVER DOPO ERRORE"), ""] : []),
+      ...(serverEndReady ?
+        [...summarizeServerModules(serverEnd, "SERVER A FINE TEST"), ""] : []),
       ...(initialTimings.length ? [
         "TEMPI DELLE RICHIESTE JS DELL'AVVIO ORIGINALE:",
         ...initialTimings,
@@ -187,7 +289,13 @@ async function diagnoseStartupModules(phase, error) {
         path + " — " + results[index].details :
         path + " — non ancora verificato")
     ];
-    details.textContent = lines.join("\n");
+    details.textContent = [
+      ...lines, "", reportComplete ? "DIAGNOSTICA COMPLETATA." :
+      "Diagnostica ancora in esecuzione; attendere prima di copiare."
+    ].join("\n");
+    const copyButton = app.querySelector("#copy-startup-diagnostic");
+    if (copyButton) copyButton.textContent = reportComplete ?
+      "Copia diagnostica completa" : "Copia diagnostica parziale";
     const headline = app.querySelector("#startup-error");
     const importHint = importProblems.find(row => row.path !== "/ui.js") || importProblems[0];
     if (headline && importHint) {
@@ -197,15 +305,19 @@ async function diagnoseStartupModules(phase, error) {
       headline.textContent = (error?.message || String(error)) +
         " | Controllo HTTP: " + problems[0].path + " — " + problems[0].details;
     }
-    status.textContent = importStarted ?
-      "Import Safari: " + importCompleted + "/" + MODULE_IMPORT_PATHS.length +
-      (importCompleted === MODULE_IMPORT_PATHS.length ? " — completati" :
-        Date.now() >= importUntil ? " — parziali" : " — in corso…") :
+    status.textContent = reportComplete ? "Diagnostica completa — ora puoi copiarla" :
+      freshStarted ? "Import con URL nuovi: " + freshResults.size +
+        " — attendere…" :
+      importStarted ? "Import Safari: " + importCompleted + "/" +
+        MODULE_IMPORT_PATHS.length + " — attendere…" :
       "Verifica HTTP: " + completed + "/" + STARTUP_MODULE_PATHS.length +
-      (completed === STARTUP_MODULE_PATHS.length ? " — completata" :
-        Date.now() >= until ? " — parziale" : " — in corso…");
+        " — attendere…";
   }
 
+  render();
+  // Capture server records *before* probes create new connections; this is
+  // the closest snapshot to the original failed navigation.
+  serverStart = await getServerModuleDiagnostics();
   render();
   // Two concurrent requests avoid reproducing the initial connection burst.
   await Promise.all([0, 1].map(async () => {
@@ -243,6 +355,47 @@ async function diagnoseStartupModules(phase, error) {
       render();
     }
   }));
+  // Fragment changes the ES module map identifier while keeping the server
+  // route unchanged. Prioritize zero-dependency modules, whose failures cannot
+  // be blamed on a child import. Never re-import /main.js or /ui.js here:
+  // those have app-level initialization side effects.
+  freshStarted = true;
+  const freshOrder = [
+    "/spell_metadata.js", "/documents.js", "/character_core.js",
+    "/storage.js", "/item_controls.js", "/creature_format.js",
+    ...MODULE_IMPORT_PATHS.filter(path => importResults[
+      MODULE_IMPORT_PATHS.indexOf(path)]?.problem &&
+      !["/spell_metadata.js", "/documents.js", "/character_core.js",
+        "/ui.js"].includes(path))
+  ];
+  const deduped = [...new Set(freshOrder)];
+  const nonce = Date.now().toString(36);
+  const freshDeadline = Date.now() + 18000;
+  let freshIndex = 0;
+  await Promise.all([0, 1].map(async () => {
+    while (freshIndex < deduped.length && Date.now() < freshDeadline) {
+      const idx = freshIndex++;
+      const path = deduped[idx];
+      const before = importResults[MODULE_IMPORT_PATHS.indexOf(path)];
+      try {
+        await deadline(import(path + "#vtt-deep-check-" + nonce + "-" + idx),
+          Math.min(4000, Math.max(1, freshDeadline - Date.now())),
+          "Import nuovo " + path);
+        freshResults.set(path, { path, problem: false,
+          details: "FRESH OK" + (before?.problem ? " (originale FALLIVA)" : "") });
+      } catch (freshError) {
+        freshResults.set(path, { path, problem: true,
+          details: "FRESH FALLITO: " + diagnosticException(freshError) +
+            (before?.problem ? " (originale FALLIVA)" : "") });
+      }
+      render();
+    }
+  }));
+  freshDone = true;
+  render();
+  serverEnd = await getServerModuleDiagnostics();
+  serverEndReady = true;
+  reportComplete = true;
   render();
 }
 
@@ -284,12 +437,17 @@ function showFailure(phase, error) {
     '<summary>Diagnostica caricamento moduli</summary>' +
     '<p id="startup-diagnostic-status" class="muted" role="status">Preparazione verifica…</p>' +
     '<pre id="startup-diagnostic" tabindex="0" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:360px;overflow-y:auto;overflow-x:hidden;user-select:text;font-size:0.78rem"></pre>' +
-    '<button type="button" class="btn" id="copy-startup-diagnostic">Copia diagnostica</button>' +
+    '<button type="button" class="btn" id="copy-startup-diagnostic">Copia diagnostica parziale</button>' +
+    '<button type="button" class="btn" id="compat-startup">Riprova in modalità compatibilità</button>' +
     '</details></div>';
   app.querySelector("#startup-phase").textContent = phase;
   app.querySelector("#startup-error").textContent = error?.message || String(error);
   app.querySelector("#retry-startup").addEventListener("click", () => location.reload());
   app.querySelector("#copy-startup-diagnostic").addEventListener("click", copyStartupDiagnostic);
+  app.querySelector("#compat-startup").addEventListener("click", () => {
+    try { sessionStorage.setItem(COMPAT_START_KEY, "1"); } catch (_) {}
+    location.reload();
+  });
   console.error("VTT Mobile startup failed during " + phase, error);
   if (phase === "Caricamento dei moduli") {
     void diagnoseStartupModules(phase, error).catch(diagnosticError => {
@@ -311,6 +469,23 @@ function retryableModuleError(error) {
 }
 
 async function loadStartupModules() {
+  // Opt-in recovery: warm the module graph in dependency order and reduce
+  // concurrent WebKit loader requests on connection-sensitive devices.
+  if (sessionStorage.getItem(COMPAT_START_KEY) === "1") {
+    for (let index = 0; index < SERIAL_STARTUP_ORDER.length; index++) {
+      const path = SERIAL_STARTUP_ORDER[index];
+      showStage("Modalità compatibilità: modulo " + (index + 1) + "/" +
+        SERIAL_STARTUP_ORDER.length + "…");
+      try {
+        await deadline(import(path), 8000, "Modulo compatibilità " + path);
+      } catch (error) {
+        throw new Error("Modulo compatibilità " + path + ": " +
+          (error?.message || String(error)));
+      }
+    }
+    return deadline(Promise.all([import("./ui.js"), import("./storage.js")]),
+      12000, "Interfaccia in modalità compatibilità");
+  }
   try {
     return await deadline(Promise.all([import("./ui.js"), import("./storage.js")]),
       9000, "Caricamento dell'interfaccia");
