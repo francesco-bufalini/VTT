@@ -107,6 +107,44 @@ test('equipped weapon attacks lead each timing list and follow equipment changes
  assert(!ids(replaced,'action').includes('item:blade'));
 });
 
+test('combat spells are sorted by level within action, bonus and reaction and open Magia dialog',()=>{
+ const spells=[
+  {id:'action3',name:'Tempesta',level:3,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 3']},
+  {id:'action0',name:'Luce',level:0,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 0']},
+  {id:'action1',name:'Scudo arcano',level:1,time:[{number:1,unit:'action'}],entries:['SECRET DESCRIPTION 1']},
+  {id:'bonus2',name:'Passo fatato',level:2,time:[{number:1,unit:'bonus'}],entries:['SECRET DESCRIPTION BONUS']},
+  {id:'reaction1',name:'Scudo',level:1,time:[{number:1,unit:'reaction'}],entries:['SECRET DESCRIPTION REACTION']},
+  {id:'slow',name:'Rituale lento',level:4,time:[{number:1,unit:'minute'}],entries:['SECRET DESCRIPTION SLOW']},
+  {id:'long',name:'Lancio complesso',level:5,time:[{number:2,unit:'action'}],entries:['SECRET DESCRIPTION LONG']}
+ ];
+ const record={rules_version:'2014',prepared_spells:spells.slice(0,3)};
+ const calc={casting_classes:[],origin_spells:[
+  {id:'spellbonus',spell_id:'bonus2',payment_mode:'tracker',tracker_id:'mana'},
+  {id:'spellreact',spell_id:'reaction1',payment_mode:'free'},
+  {id:'spellslow',spell_id:'slow',payment_mode:'free'},
+  {id:'spelllong',spell_id:'long',payment_mode:'free'}
+ ],trackers:[{id:'mana',name:'Mana',max:2,spent:0}]};
+ const html=doc(battleActionPanels(record,calc,spells,[],[]).spells);
+ const entries=time=>[...html.querySelectorAll('[data-action-timing="'+time+'"] .play-battle-spell-entry')];
+ assert.deepEqual(entries('action').map(el=>el.dataset.spellId),['action0','action1','action3']);
+ assert.deepEqual(entries('bonus').map(el=>el.dataset.spellId),['bonus2']);
+ assert.deepEqual(entries('reaction').map(el=>el.dataset.spellId),['reaction1']);
+ assert.equal(html.querySelector('[data-spell-id="slow"]'),null);
+ assert.equal(html.querySelector('[data-spell-id="long"]'),null);
+ for(const row of html.querySelectorAll('.play-battle-spell-entry')){
+  assert(!row.textContent.includes('SECRET DESCRIPTION'),'Descriptions belong in the Magia popup');
+  const button=row.querySelector('button');
+  assert.equal(button.dataset.act,'action-cast-spell');
+  assert.equal(button.dataset.spellId,row.dataset.spellId);
+  assert(!row.querySelector('details'),'A spell row should not expand its description inline');
+ }
+ assert.equal(entries('action')[0].querySelector('small').textContent.includes('Trucchetto'),true);
+ assert.equal(entries('bonus')[0].querySelector('button').dataset.grantId,'spellbonus');
+ assert.equal(entries('reaction')[0].querySelector('button').dataset.grantId,'spellreact');
+ assert.match(entries('bonus')[0].textContent,/Capacità/);
+ assert.match(entries('action')[2].textContent,/Slot incantesimo/);
+});
+
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
  const abilityNames=['Forza','Destrezza','Costituzione','Intelligenza','Saggezza','Carisma'];
  const calculated={values:{'ability_mod:str':3,'skill:athletics':7,'ability_mod:con':2},
