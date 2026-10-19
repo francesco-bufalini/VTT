@@ -132,6 +132,7 @@ $fastTests = @(
     "test_initiative_tracker.gd",
     "test_activated_abilities.gd",
     "test_artificer_infusions.gd",
+    "test_artificer_and_natural_armor.gd",
     "test_spell_catalog_smoke.gd",
     "test_spell_selection_and_multiclass.gd",
     "test_spell_slot_profiles.gd",

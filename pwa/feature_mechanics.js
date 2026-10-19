@@ -7,6 +7,22 @@ const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school
 // Same explicit operations as vtt/class_feature_activation.gd. Descriptions
 // never determine effects, payments or eligibility.
 export const CLASS_FEATURE_RULES=[
+ ['armor_guardian','Artificer','Armor Model','Modello armatura · Guardiano','','free','armor_model'],
+ ['armor_infiltrator','Artificer','Armor Model','Modello armatura · Infiltratore','','free','armor_model'],
+ ["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "action", "context"],
+ ["flash_of_genius", "Artificer", "Flash of Genius", "Lampo di genio", "Flash of Genius", "reaction", "context"],
+ ["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "bonus", "temporary_hp"],
+ ["experimental_elixir", "Artificer", "Experimental Elixir", "Elisir sperimentale", "Experimental Elixir", "action", "context"],
+ ["eldritch_cannon", "Artificer", "Eldritch Cannon", "Cannone arcano", "Eldritch Cannon", "action", "context"],
+ ["command_cannon", "Artificer", "Eldritch Cannon", "Attiva cannone arcano", "", "bonus", "context"],
+ ["command_defender", "Artificer", "Steel Defender", "Comanda difensore d'acciaio", "", "bonus", "context"],
+ ["arcane_jolt", "Artificer", "Arcane Jolt", "Scossa arcana", "Arcane Jolt", "free", "context"],
+ ["restorative_reagents", "Artificer", "Restorative Reagents", "Reagenti ristoratori · ristorare inferiore", "Restorative Reagents", "action", "context"],
+ ["chemical_mastery_heal", "Artificer", "Chemical Mastery", "Maestria chimica · guarigione", "Chemical Mastery (Heal)", "action", "context"],
+ ["chemical_mastery_restore", "Artificer", "Chemical Mastery", "Maestria chimica · ristorare superiore", "Chemical Mastery (Greater Restoration)", "action", "context"],
+ ["perfected_guardian", "Artificer", "Guardian", "Armatura perfezionata · guardiano", "Perfected Armor", "reaction", "context"],
+ ["spell_storing_item", "Artificer", "Spell-Storing Item", "Oggetto accumula incantesimi", "", "action", "context"],
+ ["soul_of_artifice", "Artificer", "Soul of Artifice", "Anima dell'artefice", "", "reaction", "context"],
  ['rage','Barbarian','Rage','Ira','Rages','bonus','toggle'],
  ['reckless_attack','Barbarian','Reckless Attack','Attacco irruento','','free','toggle'],
  ['second_wind','Fighter','Second Wind','Recuperare energie','Second Wind','bonus','heal_roll'],
@@ -50,6 +66,8 @@ export function classFeatureEntries(record={},calculated={}){
    low(f.name).replaceAll("'",'’')===low(parent)&&String(f.origin_key||'').startsWith('class|')&&
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner));
   if(!feature)continue;
+  if(owner==='Artificer'&&low(feature.class_source||String(feature.origin_key).split('|')[1])!=='tce')continue;
+  if(key==='defensive_field'&&(!rows(record.inventory).map(resolveOwnedItem).some(i=>Number(i.quantity??1)>0&&rows(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0]))||(record.artificer_armor_model||'guardian')!=='guardian'))continue;
   let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
   if(revised&&key==='divine_sense')resource='Channel Divinity';
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
@@ -125,6 +143,7 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
  if(!action)throw Error('Privilegio non disponibile.');
  if(action.mode==='metamagic')throw Error('Scegli la Metamagia nella finestra di lancio.');
  const key=action.class_feature_id,active={...(record.active_class_features||{})};
+ if(action.mode==='armor_model')return {artificer_armor_model:key==='armor_guardian'?'guardian':'infiltrator'};
  if(action.mode==='toggle'&&active[key]){delete active[key];return {active_class_features:active};}
  if(key==='rage'&&!classFeatureActive({...record,active_class_features:{...active,rage:{}}},calculated,key))
   throw Error('Ira non disponibile con armatura pesante o incapacità.');
@@ -141,6 +160,8 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
  }else if(action.mode==='heal_pool'){
   cost=integer(options.amount??1);if(!(cost>=1))throw Error('Quantità di cura non valida.');
   if(options.apply_to_self!==false)patch.current_hp=Math.min(calculated.values.hp,Number(record.current_hp||0)+cost);
+ }else if(action.mode==='temporary_hp'){
+  patch.temporary_hp=Math.max(Number(record.temporary_hp)||0,classFeatureLevel(record,'Artificer'));
  }else if(action.mode==='heal_roll'){
   const roll=integer(options.roll);if(!(roll>=1&&roll<=10))throw Error('Tiro d10 non valido.');
   patch.current_hp=Math.min(calculated.values.hp,Number(record.current_hp||0)+roll+classFeatureLevel(record,'Fighter'));
@@ -176,7 +197,7 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
   if(!tracker||remaining<cost)throw Error('Risorsa insufficiente.');
   spent[tracker.id]=Number(spent[tracker.id]||0)+cost;patch.resource_tracker_spent=spent;
  }
- if(!['heal_pool','heal_roll','conversion','recovery','metamagic_roll'].includes(action.mode)){
+ if(!['temporary_hp','heal_pool','heal_roll','conversion','recovery','metamagic_roll'].includes(action.mode)){
   active[key]={name:action.name,origin_id:action.origin_id,rules_version:record.rules_version||'2014',enhanced:!!options.enhanced};
   patch.active_class_features=active;
  }
@@ -354,4 +375,29 @@ export function optionalRecoveryPatch(record,ruleId,trackers){
    resource_recovery_used:{...record.resource_recovery_used,[ruleId]:true}};
  }
  return null;
+}
+
+// Curated TCE consumables; the two browser projections share these definitions.
+export function artificerResources(level,intelligence,proficiency,selectedSubclass){
+ const extra=[['Flash of Genius',7,Math.max(1,intelligence),''],['Defensive Field',3,proficiency,'Armorer'],
+  ['Experimental Elixir',3,level>=15?3:level>=6?2:1,'Alchemist'],
+  ['Restorative Reagents',9,Math.max(1,intelligence),'Alchemist'],
+  ['Chemical Mastery (Heal)',15,1,'Alchemist','Chemical Mastery'],
+  ['Chemical Mastery (Greater Restoration)',15,1,'Alchemist','Chemical Mastery'],
+  ['Eldritch Cannon',3,1,'Artillerist'],['Arcane Jolt',9,Math.max(1,intelligence),'Battle Smith'],
+  ['Perfected Armor',15,proficiency,'Armorer','Guardian']];
+ return extra.filter(([,gate,,sub])=>level>=gate&&(!sub||low(sub)===low(selectedSubclass)))
+  .map(([name,,max,sub,origin])=>({name,max,subclass:sub,origin:origin||name}));
+}
+
+export function armorerWeapons(record,features=[]){
+ if(!rows(record.inventory).map(resolveOwnedItem).some(i=>Number(i.quantity??1)>0&&rows(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0])))return [];
+ const guardian=(record.artificer_armor_model||'guardian')==='guardian';
+ const name=guardian?'Thunder Gauntlets':'Lightning Launcher';
+ const trait=features.find(f=>f.name===name&&featureEnabled(record,f)&&low(f.class_name||f.requirements?.class_name)==='artificer'&&low(f.class_source||String(f.origin_key).split('|')[1])==='tce');
+ if(!trait)return [];
+ return [{id:'class_feature:'+(guardian?'thunder_gauntlets':'lightning_launcher'),name,
+  origin_id:trait.origin_id,source:'class_feature',proficient:true,melee:guardian,
+  damage:guardian?'1d8':'1d6',damage_type:guardian?'T':'L',
+  ability:record.attack_ability==='int'?'int':guardian?'str':'dex',range_feet:guardian?5:90,long_range_feet:guardian?0:300}];
 }

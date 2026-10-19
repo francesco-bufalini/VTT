@@ -275,6 +275,7 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 		"background": record.get("background", ""), "background_source": record.get("background_source", ""),
 		"feats_catalog": record.get("feats_catalog", []), "classes": record.get("classes", []),
 		"level": record.get("level", 1), "kind": record.get("kind", ""),
+		"artificer_armor_model": record.get("artificer_armor_model", "guardian"),
 		"inventory": record.get("inventory", []), "stat_block": record.get("stat_block", {})
 	})
 	if signature == _cached_signature:
@@ -287,6 +288,21 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 	for feature: Dictionary in Features.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		var label: String = "Tratto · " + String(feature.get("name", ""))
+		if String(feature.get("class_name", "")) == "Artificer" and String(feature.get("class_source", "")) == "TCE":
+			var name := String(feature.get("name", ""))
+			if name == "Powered Steps" and String(record.get("artificer_armor_model", "guardian")) == "infiltrator" and not Items.equipped_armor(record.get("inventory", [])).is_empty():
+				_add(result, sid, label, "powered_steps", "speed", 5)
+			# Only the highest item-attunement feature contributes.
+			var class_level := Infusions.artificer_level(record)
+			if (name == "Magic Item Adept" and class_level < 14) or (name == "Magic Item Savant" and class_level < 18) or name == "Magic Item Master":
+				_add(result, sid, label, "attunement", "attunement_max", 3 if name == "Magic Item Master" else 2 if name == "Magic Item Savant" else 1)
+			if name == "Soul of Artifice":
+				var count := 0
+				for owned: Dictionary in record.get("inventory", []):
+					if bool(owned.get("attuned", false)) and int(owned.get("quantity", 1)) > 0:
+						count += 1
+				for stat: String in ABILITIES:
+					_add(result, sid, label, "soul", "save:" + stat, count)
 		var structured: Variant = feature.get("bonuses", [])
 		if not structured is Array:
 			continue

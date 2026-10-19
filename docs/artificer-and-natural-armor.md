@@ -1,0 +1,26 @@
+# Artificer privileges and alternative armor class
+
+The artificer normalization in this change targets Tasha's Cauldron of Everything (TCE, 2014 rules), including Alchemist, Armorer, Artillerist and Battle Smith. EFA/2025 and Unearthed Arcana definitions are not treated as TCE.
+
+## Executable behavior
+
+- Flash of Genius: reaction, INT-modifier uses (minimum one), long-rest recovery.
+- Armorer: explicit Guardian/Infiltrator selection, integrated weapon attack definitions (1d8 thunder / 1d6 lightning, 90/300), optional Intelligence via attack ability preference, Powered Steps +5 feet only while wearing armor in Infiltrator mode. Model selection is performed after a short/long rest with smith's tools, as described in Armor Model; rest timing remains a player decision.
+- Defensive Field: bonus action, PB uses per long rest, requires Guardian armor; grants artificer-level temporary HP without replacing a higher pool.
+- Alchemist, Artillerist, Battle Smith: separate, source-qualified free-use counters for Experimental Elixir, Eldritch Cannon, Restorative Reagents, both Chemical Mastery spells, and Arcane Jolt.
+- Magic Item Adept/Savant/Master: attunement limits 4/5/6; Soul of Artifice contributes one to each save per attuned owned item.
+- Infusions continue to use the existing infusion/item system. No replacement bonus evaluator is introduced.
+
+Context actions record their use and retain the granting trait. Their targets, attack/healing rolls, spell-slot-funded extra elixirs/cannons, companion creation/commands, the launcher's once-per-turn extra die, spell-storing-item configuration and destruction of an infusion for Soul of Artifice remain explicit player operations. Context actions do not apply changes to another creature or the board automatically. Defensive Field temporary HP lost by doffing the armor must be removed by the player. Conditional Alchemical Savant, Arcane Firearm, Battle Ready and Tool Expertise are not newly automated by this change; their original descriptions remain available.
+
+## Alternative armor class
+
+Unarmored Defense (Barbarian/Monk, PHB and XPHB), Draconic Resilience (PHB: 13 + DEX; XPHB: 10 + DEX + CHA) and College of Dance Unarmored Defense are evaluated from actual enabled traits. Monk/Dance require no shield; Barbarian and Draconic Resilience permit a shield. Worn armor suppresses these formulas. Alternative formulas compete with the saved unarmored formula; the highest legal base applies, then the shield and additive bonuses. Formulas never add together. Native AC tooltips list the granting traits/formulas.
+
+## Ore conversion
+
+Run `python scripts/export_ore_fightclub.py <backup> outputs/characters/ORE.vtt.json`. The converter is intentionally reviewed for Ore, not a generic importer for arbitrary Fight Club classes.
+
+The output contains all 67 noncurrency item rows, including items from all five containers; container names remain in each item's description. The 98 gold and 599 electrum pieces are stored as coins. The separate Fight Club `money=130` field is preserved in notes, without adding it a second time to coin denominations. Raw base abilities, ASIs, species bonuses and Skill Expert are kept separate: effective STR 18 / DEX 14 / CON 14 / INT 19 / WIS 12 / CHA 10. Flash of Genius has one spent use, second-level slots have one spent slot. Infiltrator is selected according to the equipped backup entry. Custom item wording and descriptions are retained; the original XML backup is untouched. A separate batch contains Garbal (Homunculus Servant) and the Velociraptor.
+
+`res://scripts/verify_ore_export.gd` verifies these personal output files and imports companions into a disposable isolated archive. The regular regression tests have no dependency on personal exports.

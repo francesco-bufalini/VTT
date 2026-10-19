@@ -70,6 +70,7 @@ func create_character() -> Dictionary:
 		"dice_bonuses": [],
 		"active_spell_context": {},
 		"active_class_features": {},
+		"artificer_armor_model": "guardian",
 		"created_spell_slots": [],
 		"conditions": [],
 		"concentrating_spell_id": "",
@@ -191,6 +192,7 @@ func create_character() -> Dictionary:
 		"inventory_mundane": [],
 		"inventory_magic": [],
 		"inventory": [],
+		"coins": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0},
 		"spell_slots_total": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],

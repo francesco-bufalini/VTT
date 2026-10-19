@@ -4,7 +4,7 @@
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
-import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive} from './feature_mechanics.js';
+import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -358,6 +358,13 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    if(column.kind==='resource'&&typeof max==='number'&&max>0)
     add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_feature_key:column.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,recharge:'manual',automatic:true});
   }
+  if(same(member.name,'Artificer')&&base.source==='TCE'){
+   for(const resource of artificerResources(level,resolve('int_mod'),resolve('proficiency'),member.subclass||record.subclass)){
+    add({id:makeId(resource.name),name:resource.name,max:resource.max,origin_name:resource.origin,
+      origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass,
+      recharge:'long_rest',automatic:true});
+   }
+  }
   for(const group of arr(catalog?.resource_overrides).filter(r=>same(r.class,member.name)&&same(r.source,base.source))){
    for(const resource of arr(group.resources)){
     if(resource.subclass&&subclassKey(resource.subclass)!==subclassKey(member.subclass||record.subclass))continue;
@@ -450,6 +457,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'&&!!offAllowed});
  };
+ for(const weapon of armorerWeapons(record,featureContext.features))append(weapon,weapon.ability,true,weapon.damage);
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
   if(!action?.name)return;
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
@@ -568,6 +576,7 @@ export function calculateSheet(record={},catalogs={}){
     if(prefix==="ability"&&ABILITIES.includes(key))return int(record.abilities?.[key],10);
     if(prefix==="ability_mod"&&ABILITIES.includes(key))return mod(resolve("ability:"+key,stack));
     if(target==="level")return int(record.level,1);
+    if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
     if(target==="initiative")return resolve("ability_mod:dex",stack);
     if(target==="ac"){
@@ -577,6 +586,22 @@ export function calculateSheet(record={},catalogs={}){
         let natural=base;
         try{natural=parseArithmetic(record.armor_natural_formula||fallback,
           name=>resolveSymbol(name,resolve,stack));}catch{warnings.add("Formula CA naturale non valida");}
+        for(const feature of features){
+          if(!featureEnabled(record,feature))continue;
+          const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
+          const book=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
+          let formula='';
+          if(feature.name==='Unarmored Defense'&&['PHB','XPHB'].includes(book)){
+            if(owner==='barbarian')formula='10 + dex_mod + con_mod';
+            if(owner==='monk'&&!shieldBonus)formula='10 + dex_mod + wis_mod';
+            if(owner==='bard'&&book==='XPHB'&&!shieldBonus)formula='10 + dex_mod + cha_mod';
+          }
+          if(feature.name==='Draconic Resilience'&&owner==='sorcerer'){
+            if(book==='PHB')formula='13 + dex_mod';
+            if(book==='XPHB')formula='10 + dex_mod + cha_mod';
+          }
+          if(formula)natural=Math.max(natural,parseArithmetic(formula,name=>resolveSymbol(name,resolve,stack)));
+        }
         return natural+shieldBonus;
       }
       const dex=resolve("ability_mod:dex",stack),type=String(armor.type||"").split("|")[0].toUpperCase();
@@ -721,6 +746,7 @@ export function calculateSheet(record={},catalogs={}){
   }
   const abilities=Object.fromEntries(ABILITIES.map(a=>[a,{score:safe("ability:"+a),
     modifier:safe("ability_mod:"+a)}]));
+  safe("attunement_max");
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
   const progression=spellProgression(record,classes);

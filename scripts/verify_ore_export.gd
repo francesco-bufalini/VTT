@@ -1,0 +1,28 @@
+extends SceneTree
+const Store = preload("res://vtt/player_character_store.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const Runtime = preload("res://vtt/class_feature_activation.gd")
+func _initialize() -> void:
+	call_deferred("run")
+func run() -> void:
+	var ore: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://outputs/characters/ORE.vtt.json")).creature
+	ore = Store.new().normalize_character(ore)
+	assert(Bonuses.value(ore, "ability:str") == 18)
+	assert(Bonuses.value(ore, "ability:con") == 14)
+	assert(Bonuses.value(ore, "ability:int") == 19)
+	assert(int(ore.current_hp) == 62 and int(ore.spell_slots_spent[2]) == 1)
+	assert(Bonuses.value(ore, "speed") == 30)
+	assert(preload("res://vtt/creature_attack_data.gd").definitions(ore)[0].id == "class_feature:lightning_launcher")
+	assert(ore.coins.gp == 98 and ore.coins.ep == 599)
+	assert(ore.inventory.any(func(item: Dictionary) -> bool: return item.name == "Rations (1 day)" and item.quantity == 60))
+	assert(ore.inventory.size() == 67 and ore.prepared_spells.size() == 14)
+	assert(Runtime.remaining(ore, Runtime.tracker_named(ore, "Flash of Genius", "Artificer")) == 3)
+	var archive := preload("res://vtt/creature_archive.gd").new()
+	archive.setup()
+	archive._storage.path = "user://ore_companion_import_test_%d.json" % Time.get_ticks_usec()
+	var batch: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://outputs/characters/ORE.vtt_companions.json"))
+	assert(archive.import_export_batch(batch) == OK)
+	assert(archive.list_owned().size() == 2)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(archive._storage.path))
+	print("PASS: Ore effective abilities, spent resources, slots, inventory and companion import")
+	quit()

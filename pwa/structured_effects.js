@@ -237,6 +237,21 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
   const result=[];
   for(const feature of features){
     if(feature.inactive)continue;
+    const classSource=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
+    const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
+    if(owner==='artificer'&&classSource==='TCE'){
+      if(feature.name==='Powered Steps'&&(record.artificer_armor_model||'guardian')==='infiltrator'&&array(record.inventory).some(i=>Number(i.quantity??1)>0&&array(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0])))result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'powered_steps','speed',5));
+      const level=Number(classMembers(record).find(c=>match(c.name,'Artificer')&&c.source==='TCE')?.level||0);
+      let amount=0;
+      if(feature.name==='Magic Item Adept'&&level<14)amount=1;
+      if(feature.name==='Magic Item Savant'&&level<18)amount=2;
+      if(feature.name==='Magic Item Master')amount=3;
+      if(amount)result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'attunement','attunement_max',amount));
+      if(feature.name==='Soul of Artifice'){
+        const count=array(record.inventory).filter(i=>i.attuned&&Number(i.quantity??1)>0).length;
+        for(const ability of ['str','dex','con','int','wis','cha'])result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'soul','save:'+ability,count));
+      }
+    }
     for(const row of feature.bonuses){
       if(!row||typeof row!=="object")continue;
       const target=String(row.target||"");

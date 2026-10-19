@@ -79,6 +79,25 @@ static func for_class(
 				resource["column"] = resource.name
 				resource["origin"] = resource.name
 				result.append(resource)
+	if klass_name.nocasecmp_to("Artificer") == 0 and class_source == "TCE":
+		var extra: Array[Dictionary] = [
+			{"name": "Flash of Genius", "level": 7, "max": maxi(1, Bonuses.value(record, "ability_mod:int"))},
+			{"name": "Defensive Field", "subclass": "Armorer", "level": 3, "max": Bonuses.value(record, "proficiency")},
+			{"name": "Experimental Elixir", "subclass": "Alchemist", "level": 3, "max": 3 if class_level >= 15 else 2 if class_level >= 6 else 1},
+			{"name": "Restorative Reagents", "subclass": "Alchemist", "level": 9, "max": maxi(1, Bonuses.value(record, "ability_mod:int"))},
+			{"name": "Chemical Mastery (Heal)", "origin": "Chemical Mastery", "subclass": "Alchemist", "level": 15, "max": 1},
+			{"name": "Chemical Mastery (Greater Restoration)", "origin": "Chemical Mastery", "subclass": "Alchemist", "level": 15, "max": 1},
+			{"name": "Eldritch Cannon", "subclass": "Artillerist", "level": 3, "max": 1},
+			{"name": "Arcane Jolt", "subclass": "Battle Smith", "level": 9, "max": maxi(1, Bonuses.value(record, "ability_mod:int"))},
+			{"name": "Perfected Armor", "origin": "Guardian", "subclass": "Armorer", "level": 15, "max": Bonuses.value(record, "proficiency")}
+		]
+		for resource: Dictionary in extra:
+			if class_level < int(resource.level) or (resource.has("subclass") and _subclass_key(String(resource.subclass)) != _subclass_key(subclass_name)):
+				continue
+			resource["column"] = resource.name
+			resource["origin"] = resource.get("origin", resource.name)
+			resource["recharge"] = "long_rest"
+			result.append(resource)
 	for raw_class: Variant in _classes:
 		if not raw_class is Dictionary:
 			continue

@@ -8,6 +8,22 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const RULES := [
+	["armor_guardian", "Artificer", "Armor Model", "Modello armatura · Guardiano", "", "armor_model", "free"],
+	["armor_infiltrator", "Artificer", "Armor Model", "Modello armatura · Infiltratore", "", "armor_model", "free"],
+	["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "context", "action"],
+	["flash_of_genius", "Artificer", "Flash of Genius", "Lampo di genio", "Flash of Genius", "context", "reaction"],
+	["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "temporary_hp", "bonus"],
+	["experimental_elixir", "Artificer", "Experimental Elixir", "Elisir sperimentale", "Experimental Elixir", "context", "action"],
+	["eldritch_cannon", "Artificer", "Eldritch Cannon", "Cannone arcano", "Eldritch Cannon", "context", "action"],
+	["command_cannon", "Artificer", "Eldritch Cannon", "Attiva cannone arcano", "", "context", "bonus"],
+	["command_defender", "Artificer", "Steel Defender", "Comanda difensore d'acciaio", "", "context", "bonus"],
+	["arcane_jolt", "Artificer", "Arcane Jolt", "Scossa arcana", "Arcane Jolt", "context", "free"],
+	["restorative_reagents", "Artificer", "Restorative Reagents", "Reagenti ristoratori · ristorare inferiore", "Restorative Reagents", "context", "action"],
+	["chemical_mastery_heal", "Artificer", "Chemical Mastery", "Maestria chimica · guarigione", "Chemical Mastery (Heal)", "context", "action"],
+	["chemical_mastery_restore", "Artificer", "Chemical Mastery", "Maestria chimica · ristorare superiore", "Chemical Mastery (Greater Restoration)", "context", "action"],
+	["perfected_guardian", "Artificer", "Guardian", "Armatura perfezionata · guardiano", "Perfected Armor", "context", "reaction"],
+	["spell_storing_item", "Artificer", "Spell-Storing Item", "Oggetto accumula incantesimi", "", "context", "action"],
+	["soul_of_artifice", "Artificer", "Soul of Artifice", "Anima dell'artefice", "", "context", "reaction"],
 	["rage", "Barbarian", "Rage", "Ira", "Rages", "toggle", "bonus"],
 	["reckless_attack", "Barbarian", "Reckless Attack", "Attacco irruento", "", "toggle", "free"],
 	["second_wind", "Fighter", "Second Wind", "Recuperare energie", "Second Wind", "heal_roll", "bonus"],
@@ -45,6 +61,10 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 			if revised and parent == "Ki": parent = "Monk’s Focus"
 			var feature_name := String(feature.get("name", "")).replace("'", "’")
 			if feature_name.nocasecmp_to(parent) != 0 or String(feature.get("class_name", "")).nocasecmp_to(String(rule[1])) != 0:
+				continue
+			if String(rule[1]) == "Artificer" and String(feature.get("class_source", "")) != "TCE":
+				continue
+			if rule[0] == "defensive_field" and (Items.equipped_armor(record.get("inventory", [])).is_empty() or String(record.get("artificer_armor_model", "guardian")) != "guardian"):
 				continue
 			var origin := "feature:" + String(feature.get("key", ""))
 			if bool(feature.get("inactive", false)) or not bool(enabled.get(origin, true)):
@@ -128,6 +148,9 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 		active.erase(key)
 		next["active_class_features"] = active
 		return {"ok": true, "record": next, "message": String(action.name) + " terminato."}
+	if action.mode == "armor_model":
+		next["artificer_armor_model"] = "guardian" if key == "armor_guardian" else "infiltrator"
+		return {"ok": true, "record": next, "message": "Modello selezionato. Cambialo al termine di un riposo breve o lungo, con gli strumenti da fabbro."}
 	if action.mode in ["metamagic", "conversion", "recovery"]:
 		return {"ok": false, "message": "Completa le scelte del privilegio."}
 	if key == "rage" and (heavy_armor(next) or "unconscious" in next.get("conditions", []) or (String(next.get("rules_version", "2014")) == "2024" and "incapacitated" in next.get("conditions", []))):
@@ -141,7 +164,9 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 	var resource := tracker_named(next, String(action.resource_name), String(action.class_name))
 	if not String(action.resource_name).is_empty() and cost > 0:
 		if not spend(next, resource, cost): return {"ok": false, "message": "Risorsa insufficiente."}
-	if action.mode == "heal_roll":
+	if action.mode == "temporary_hp":
+		next["temporary_hp"] = maxi(int(next.get("temporary_hp", 0)), class_level(next, "Artificer"))
+	elif action.mode == "heal_roll":
 		var die := clampi(int(options.get("roll", randi_range(1, 10))), 1, 10)
 		var amount := die + class_level(next, "Fighter")
 		next["current_hp"] = mini(Bonuses.value(next, "hp"), int(next.get("current_hp", 0)) + amount)
@@ -320,3 +345,19 @@ static func recover_slots(record: Dictionary, levels: Array) -> Dictionary:
 static func attack_advantage(record: Dictionary, attack: Dictionary, ability: String) -> bool:
 	if ability != "str" or not is_active(record, "reckless_attack"): return false
 	return String(record.get("rules_version", "2014")) == "2024" or not (bool(attack.get("thrown", false)) or String(attack.get("weapon_kind", "")) == "R")
+
+static func armorer_weapons(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if Items.equipped_armor(record.get("inventory", [])).is_empty(): return result
+	var enabled := Profs.origin_enabled_map(record)
+	var guardian := String(record.get("artificer_armor_model", "guardian")) == "guardian"
+	var name := "Thunder Gauntlets" if guardian else "Lightning Launcher"
+	for feature: Dictionary in Features.collect_features(record):
+		var sid := "feature:" + String(feature.get("key", ""))
+		if feature.name != name or feature.class_name != "Artificer" or feature.class_source != "TCE" or not bool(enabled.get(sid, true)) or bool(feature.get("inactive", false)): continue
+		result.append({"id": "class_feature:" + ("thunder_gauntlets" if guardian else "lightning_launcher"),
+			"name": name, "source": "class_feature", "origin_id": sid,
+			"proficient": true, "melee": guardian, "damage": "1d8" if guardian else "1d6",
+			"damage_type": "T" if guardian else "L", "ability": "int" if record.get("attack_ability", "str") == "int" else "str" if guardian else "dex",
+			"range_feet": 5 if guardian else 90, "long_range_feet": 0 if guardian else 300})
+	return result

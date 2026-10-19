@@ -12,7 +12,7 @@ const MonsterActions = preload("res://vtt/monster_action_metadata.gd")
 
 
 static func definitions(record: Dictionary) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
+	var result: Array[Dictionary] = ClassFeatures.armorer_weapons(record)
 	var kind: String = String(record.get("kind", "character"))
 	var stat: Dictionary = record.get("stat_block", {})
 	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
@@ -140,6 +140,8 @@ static func _ability_delta_for_monster(_record: Dictionary, _attack: Dictionary)
 
 
 static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> int:
+	if String(attack.get("source", "")) == "class_feature":
+		return Bonuses.value(record, "ability_mod:" + String(attack.get("ability", "int")))
 	var item_value: Variant = attack.get("item_entry", {})
 	if item_value is Dictionary and not (item_value as Dictionary).is_empty():
 		var ability: String = Items.attack_ability(record, item_value as Dictionary, bool(attack.get("thrown", false)))
@@ -270,7 +272,7 @@ static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
 static func damage_modifier_breakdown(record: Dictionary, attack: Dictionary) -> Dictionary:
 	var source: String = String(attack.get("source", ""))
 	var item: Dictionary = attack.get("item_entry", {})
-	var ability := "str"
+	var ability := String(attack.get("ability", "str"))
 	if not item.is_empty():
 		ability = Items.attack_ability(record, item, bool(attack.get("thrown", false)))
 	var ability_amount: int = (
@@ -347,7 +349,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 		return "Come da bestiario"
 	if String(record.get("kind", "")) == "monster" and modifier == 0:
 		return base
-	return base + (" %+d" % modifier if modifier != 0 else "")
+	return base + (" %+d" % modifier if modifier != 0 else "") + (" " + Catalog._damage_type_name(String(attack.get("damage_type", ""))) if source == "class_feature" else "")
 
 
 static func max_melee_range(record: Dictionary) -> float:

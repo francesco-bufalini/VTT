@@ -1,6 +1,7 @@
 // Native StructuredResourceTrackers/class_resource_overrides rules in browser.
 // Numeric 5etools class columns + a bundled, source-qualified FightClub
 // supplement; never infer resources or recharge modes from feature prose.
+import {artificerResources} from './feature_mechanics.js';
 import {localClasses,parseArithmetic} from "./sheet_rules.js";
 const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??"").trim().toLowerCase();
@@ -64,6 +65,15 @@ export function classResourceTrackers(record,classCatalog={},overrides={},modifi
    result.set(id,{id,name:String(column.name),max:Math.trunc(value),
     origin:String(column.origin_feature||column.name),origin_class:name,
     origin_class_source:resolvedSource,recharge:"manual",automatic:true});
+  }
+  if(norm(name)==='artificer'&&resolvedSource==='TCE'){
+   const intelligence=Math.max(1,Number(modifiers?.int??Math.floor((Number(record.abilities?.int??10)-10)/2)));
+   const pb=2+Math.floor((Math.max(1,integer(record.level||level))-1)/4);
+   for(const resource of artificerResources(level,intelligence,pb,member.subclass||record.subclass)){
+    const id=classId(name,resolvedSource,resource.name);
+    result.set(id,{id,...resource,recharge:'long_rest',origin_class:name,
+      origin_class_source:resolvedSource,origin_subclass:resource.subclass,automatic:true});
+   }
   }
   const group=arr(overrides.classes).find(row=>norm(row.class)===norm(name)&&norm(row.source)===norm(resolvedSource));
   for(const entry of arr(group?.resources)){

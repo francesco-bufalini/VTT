@@ -262,6 +262,37 @@ static func _evaluate_expression(record: Dictionary, expression: String, stack: 
 	return {"ok": true, "value": roundi(float(number))}
 
 
+# Alternative base AC formulas never add together. Each candidate retains its
+# actual granting trait; disabling that origin withdraws only that candidate.
+static func natural_armor_options(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not Items.equipped_armor(record.get("inventory", [])).is_empty():
+		return result
+	var enabled := Proficiencies.origin_enabled_map(record)
+	var shield := not Items.occupying(record.get("inventory", []), "off").is_empty() and Items.kind(Items.entry_for(Items.occupying(record.get("inventory", []), "off"))) == "shield"
+	shield = shield or Items.shield_bonus(record.get("inventory", [])) > 0
+	for feature: Dictionary in Features.collect_features(record):
+		var sid := "feature:" + String(feature.get("key", ""))
+		if bool(feature.get("inactive", false)) or not bool(enabled.get(sid, true)):
+			continue
+		var name := String(feature.get("name", ""))
+		var owner := String(feature.get("class_name", ""))
+		var book := String(feature.get("class_source", ""))
+		var formula := ""
+		if name == "Unarmored Defense" and owner == "Barbarian" and book in ["PHB", "XPHB"]:
+			formula = "10 + dex_mod + con_mod"
+		elif name == "Unarmored Defense" and owner == "Monk" and book in ["PHB", "XPHB"] and not shield:
+			formula = "10 + dex_mod + wis_mod"
+		elif name == "Unarmored Defense" and owner == "Bard" and book == "XPHB" and not shield:
+			formula = "10 + dex_mod + cha_mod"
+		elif name == "Draconic Resilience" and owner == "Sorcerer":
+			if book == "PHB": formula = "13 + dex_mod"
+			elif book == "XPHB": formula = "10 + dex_mod + cha_mod"
+		if not formula.is_empty():
+			result.append({"origin_id": sid, "origin_name": "Tratto · " + name, "expression": formula})
+	return result
+
+
 static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dictionary:
 	var abilities: Dictionary = record.get("abilities", {})
 	if target.begins_with("ability:"):
@@ -300,6 +331,10 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 			var natural: Dictionary = _evaluate_expression(record, natural_formula, stack)
 			# Malformed formulas do not crash the sheet or grant arbitrary AC.
 			var natural_value: int = int(natural.get("value", record.get("armor_class_base", 10)))
+			for option: Dictionary in natural_armor_options(record):
+				var candidate := _evaluate_expression(record, String(option.expression), stack)
+				if bool(candidate.get("ok", false)):
+					natural_value = maxi(natural_value, int(candidate.value))
 			return {"ok": true, "value": natural_value + Items.shield_bonus(record.get("inventory", []))}
 		var armor_record: Dictionary = record
 		var armor := Items.equipped_armor(record.get("inventory", []))
@@ -438,6 +473,11 @@ static func description(record: Dictionary, target: String) -> String:
 	var details: PackedStringArray = result.get("details", PackedStringArray())
 	var errors: PackedStringArray = result.get("errors", PackedStringArray())
 	var lines := PackedStringArray()
+	if target == "ac":
+		for option: Dictionary in natural_armor_options(record):
+			var base := _evaluate_expression(record, String(option.expression), {"ac": true})
+			if bool(base.get("ok", false)):
+				lines.append("%s: %s = %d (formula alternativa)" % [option.origin_name, option.expression, int(base.value)])
 	if not details.is_empty():
 		lines.append("Bonus cumulabili: " + str(result.get("value", 0)))
 		lines.append_array(details)
