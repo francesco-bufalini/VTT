@@ -55,3 +55,12 @@ test("base64 WebP becomes a typed Blob, not a CSP-blocked data URI",async()=>{
   assert.equal(snapshotBlob({ok:true,format:"webp",image:"A".repeat(1800001)}),null);
   assert.equal(snapshotBlob({ok:true,format:"webp",image:"not-base64!"}),null);
 });
+
+test("area changes and token elevations refresh the passive map without a network revision",()=>{
+ const data={tokens:[{...tokens[0],position:[1,0,2]}],area_revision:10};
+ let key=snapshotRevision(data);
+ data.area_revision++;
+ assert.notEqual(snapshotRevision(data),key);
+ key=snapshotRevision(data);data.tokens[0].position[1]=5;
+ assert.notEqual(snapshotRevision(data),key);
+});

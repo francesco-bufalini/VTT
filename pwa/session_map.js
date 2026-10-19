@@ -26,9 +26,9 @@ export function tokenGroups(data) {
 // sync. Token projections are also compared to cover offline/local changes.
 export function snapshotRevision(data) {
   if(!data)return "";
-  return JSON.stringify([data.revision||0,data.combat||{},
+  return JSON.stringify([data.revision||0,data.view_revision||0,data.area_revision||0,data.combat||{},
     (data.tokens||[]).map(t=>[t.id,t.name,t.conditions,t.active_spell_ids,
-      t.current_miniature_id,t.default_miniature_id])]);
+      t.current_miniature_id,t.default_miniature_id,t.position])]);
 }
 
 // The desktop returns WebP as base64 JSON. Do NOT use a data: URL in an

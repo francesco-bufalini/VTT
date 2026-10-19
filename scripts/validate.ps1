@@ -124,6 +124,7 @@ $fastTests = @(
     "test_map_data_controller.gd",
     "test_mobile_action_limits.gd",
     "test_mobile_map_actions.gd",
+    "test_mobile_snapshot_targeting.gd",
     "test_mobile_miniature_picker.gd",
     "test_mobile_main_menu.gd",
     "test_mobile_touch_layout.gd",

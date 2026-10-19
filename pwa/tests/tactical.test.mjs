@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import {JSDOM} from "jsdom";
 import { validateSnapshot, imageCoordinates, hitMarker,
   isAimStatus, formatElevation, TacticalViewer } from "../tactical_view.js";
 function snapshot() {
@@ -100,4 +101,60 @@ test("a targeted spell selects the exact token ID and confirms/cancels via nativ
  viewer.targeting={active:true,phase:"target_token"};
  await viewer.control("cancel");
  assert.equal(actions[2].name,"cancel_spell");
+});
+
+test("point aiming over a token previews first and confirms the same elevated target",async()=>{
+ const calls=[];
+ const viewer=new TacticalViewer({ownerId:async()=>"owner",notify:()=>{},send:async(name,payload)=>{
+  calls.push({name,payload});return {ok:true,preview:{valid:true,points:[[0,0],[1,0],[1,1]],affected_ids:["enemy"]}};
+ }});
+ viewer.tokenId="hero";viewer.snapshot=snapshot();viewer.targeting={active:true,phase:"point"};
+ viewer.draw=()=>{};viewer.refresh=async()=>{};
+ await viewer.tap([750,600]);
+ assert.equal(calls[0].name,"preview_spell");assert.equal(calls[0].payload.target_id,"enemy");
+ await viewer.control("confirm-point");
+ assert.equal(calls[1].name,"target_spell");assert.equal(calls[1].payload.target_id,"enemy");
+ assert.deepEqual(calls[1].payload.pixel,[750,600]);
+});
+
+test("area snapshots validate finite server-projected polygons while older desktops remain supported",()=>{
+ const area={points:[[0,0],[1,0],[1,1]],color:"ff9900ff",affected_ids:["enemy"]};
+ assert.equal(validateSnapshot({...snapshot(),areas:[area]}).areas[0],area);
+ for(const bad of [{...area,points:[[NaN,0],[1,0],[1,1]]},{...area,color:"url(bad)"},
+  {...area,affected_ids:[{}]},{...area,points:[[1,2]]}])
+  assert.throws(()=>validateSnapshot({...snapshot(),areas:[bad]}),/Aree/);
+ assert.doesNotThrow(()=>validateSnapshot(snapshot()));
+});
+
+test("desktop-only phases suppress confirmation and refresh on server completion without recapturing unchanged maps",async()=>{
+ const dom=new JSDOM('<button data-tactical="finish"></button><button data-tactical="confirm-point"></button><button data-tactical="cancel"></button>',{pretendToBeVisual:true});
+ const previous=globalThis.document;globalThis.document=dom.window.document;
+ try{
+  let captures=0;
+  const viewer=new TacticalViewer({ownerId:async()=>"owner",notify:()=>{},send:async()=>({ok:true,
+   targeting:{active:true,phase:"saving_throw",waiting_desktop:true,can_finish:false},view_revision:1})});
+  viewer.root=dom.window.document.body;viewer.tokenId="hero";viewer.snapshot={...snapshot(),view_revision:1};
+  viewer.targeting={active:true,phase:"saving_throw",waiting_desktop:true,can_finish:false};
+  viewer.updateButtons();
+  assert.equal(viewer.root.querySelector('[data-tactical="finish"]').hidden,true);
+  assert.equal(viewer.root.querySelector('[data-tactical="confirm-point"]').hidden,true);
+  viewer.refresh=async()=>{captures++;};await viewer.poll();assert.equal(captures,0);
+  viewer.send=async()=>({ok:true,targeting:{active:false,outcome:"completed"},view_revision:2});
+  await viewer.poll();assert.equal(captures,1);
+  // Concurrent board changes must not destroy a still-unconfirmed aim.
+  viewer.targeting={active:true,phase:"point"};viewer.aimPixel=[10,10];
+  viewer.send=async()=>({ok:true,targeting:viewer.targeting,view_revision:3});
+  await viewer.poll();assert.equal(captures,1);
+ }finally{globalThis.document=previous;dom.window.close();}
+});
+
+test("closing active targeting cancels on desktop, while disconnection preserves a retryable map",async()=>{
+ let closed=false;
+ const viewer=new TacticalViewer({ownerId:async()=>"owner",notify:()=>{},send:async(name)=>{
+  assert.equal(name,"cancel_spell");return {ok:true,targeting:{active:false,outcome:"cancelled"}};
+ }});
+ viewer.targeting={active:true};viewer.close=()=>{closed=true;};
+ await viewer.control("close");assert.equal(closed,true);
+ closed=false;viewer.targeting={active:true};viewer.send=async()=>{throw Error("Disconnected");};
+ await assert.rejects(viewer.control("close"),/Disconnected/);assert.equal(closed,false);
 });
