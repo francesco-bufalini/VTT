@@ -829,16 +829,14 @@ function inventoryEquipmentView(c,calculated={}){
       (shieldBonus?' + '+shieldBonus+' scudo':''):
     naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const attackSettings='<div class="equipment-attack-options">'+
-    '<label>Caratteristica attacchi<select data-field="attack_ability">'+
+    '<label class="equipment-attack-ability">Caratteristica attacchi<select data-field="attack_ability">'+
       [['str','Forza'],['dex','Destrezza'],['con','Costituzione'],['int','Intelligenza'],['wis','Saggezza'],['cha','Carisma']].map(([value,label])=>
         '<option value="'+value+'"'+((c.attack_ability||"str")===value?' selected':'')+'>'+label+'</option>').join('')+
     '</select></label>'+
     '<label class="check"><input type="checkbox" data-field="attack_ability_finesse_only"'+
-      (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo armi con Accurata (Finesse)</label>'+
-    '<label class="check"><input type="checkbox" data-field="two_weapon_fighting"'+
-      (c.two_weapon_fighting?' checked':'')+'>Combattere con due armi</label>'+
+      (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo Accurata</label>'+
     (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
-      (c.hand_grip_two_handed?' checked':'')+'>Impugnatura a due mani (Versatile)</label>':'')+
+      (c.hand_grip_two_handed?' checked':'')+'>Due mani (Versatile)</label>':'')+
     '</div>';
   const defense='<div class="equipment-defense">'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
@@ -1965,8 +1963,6 @@ async function handleField(target) {
       throw Error('Caratteristica attacchi non valida.');
     if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
       throw Error('Ambito caratteristica attacchi non valido.');
-    if(key==='two_weapon_fighting'&&typeof value!=='boolean')
-      throw Error('Combattere con due armi non valido.');
     const changes=identityPatch(creature,key,value);
     if(key==='pact_slot_level'){
       const calculated=await computeLocalData(creature);
@@ -1978,7 +1974,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only','two_weapon_fighting'].includes(key))await render();
+    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
