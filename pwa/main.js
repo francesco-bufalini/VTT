@@ -2,6 +2,23 @@
 // Keep all module imports inside boot(): a broken module must show an error rather
 // than leaving the static "Apertura archivio locale…" placeholder forever.
 const app = document.querySelector("#app");
+// A navigation resets Safari's entire ES module map, including failed transitive
+// imports. A fragment-only import retry cannot recover those dependencies.
+const MODULE_RELOAD_KEY = "vtt-mobile-module-reload-once";
+
+function reloadFailedModuleGraph(error) {
+  if (!retryableModuleError(error)) return false;
+  try {
+    if (sessionStorage.getItem(MODULE_RELOAD_KEY) === "1") return false;
+    sessionStorage.setItem(MODULE_RELOAD_KEY, "1");
+    location.reload();
+    return true;
+  } catch (_) {
+    // Storage may be disabled (e.g. restrictive/private browsing). Show the
+    // original error instead of entering an unbounded reload loop.
+    return false;
+  }
+}
 
 function showStage(text) {
   if (app) app.textContent = text;
@@ -36,9 +53,12 @@ function showFailure(phase, error) {
       .then(response => {
         if (!app.querySelector("#startup-error")) return;
         const mime = response.headers.get("content-type") || "";
-        if (!response.ok || !/javascript/i.test(mime)) {
+        if (!response.ok || !/javascript|ecmascript/i.test(mime)) {
           app.querySelector("#startup-error").textContent +=
             " | Verifica /ui.js: HTTP " + response.status + " (" + (mime || "tipo sconosciuto") + ")";
+        } else {
+          app.querySelector("#startup-error").textContent +=
+            " | /ui.js: HTTP " + response.status + " (JavaScript); controlla anche le dipendenze.";
         }
       })
       .catch(() => {
@@ -89,8 +109,6 @@ async function installOfflineShell() {
 
 async function boot() {
   let phase = "Caricamento dei moduli";
-  // Begin offline installation immediately, in parallel with local startup.
-  void installOfflineShell();
   try {
     showStage("Caricamento dell'interfaccia…");
     // Dynamic import ensures syntax/network/module-link errors are caught here.
@@ -103,6 +121,11 @@ async function boot() {
     phase = "Caricamento dell'archivio";
     showStage("Caricamento delle creature…");
     await deadline(mount(), 30000, "Inizializzazione dell'archivio");
+    try { sessionStorage.removeItem(MODULE_RELOAD_KEY); } catch (_) {}
+    // On iOS/WebKit, precaching dozens of assets in parallel with the ESM
+    // graph can exhaust connections through the desktop bridge.
+    // Update the offline shell only after the local UI is usable.
+    void installOfflineShell();
     // Browser persistence requests, cache downloads and diagnostics are optional.
     // None of them may delay painting the usable character library.
     Promise.resolve().then(() => requestPersistentStorage()).catch(error =>
@@ -110,6 +133,10 @@ async function boot() {
     Promise.resolve().then(() => storageEstimate()).then(estimate =>
       console.info("VTT mobile storage ready", estimate)).catch(() => {});
   } catch (error) {
+    // Failed dependencies are cached as failed module-map entries by WebKit.
+    // A single guarded document reload can recover the whole graph; neither
+    // CacheStorage nor IndexedDB (including saved creatures) is touched.
+    if (phase === "Caricamento dei moduli" && reloadFailedModuleGraph(error)) return;
     showFailure(phase, error);
   }
 }
