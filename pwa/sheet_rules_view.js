@@ -382,7 +382,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Both battle entry points display the exact same editor and computed AC.
   bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span class="sr-only">Riposi</span>')+edit('hp','Gestisci punti ferita','settings')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html='<section class="play-health"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+edit('hp','Gestisci punti ferita','settings')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
@@ -514,8 +514,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   html+=disclosure('others','Altre azioni','hand',
-   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>',false,
-   c.rules_version==='2024'?'':btn('Regole varianti','settings','data-act="action-variants"','<span class="sr-only">Regole varianti</span>'));
+   view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
   html+=disclosure('checks','Prove abilità','skill',
    view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
   html+=disclosure('movement','Spostamento','dash',
@@ -672,6 +671,16 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const options=[...(select?.options||[])];
   html+=card('Configurazione del personaggio',options.map(option=>'<button type="button" class="play-list-row" data-act="sheet-origin-editor" data-detail="'+esc(option.value)+'">'+icon(option.value==='resources'?'reset':'settings')+'<span class="play-row-copy"><strong>'+esc(option.textContent)+'</strong></span><span class="play-chevron">›</span></button>').join(''));
   bind('origin-editor',panels[0]);
+ }
+ // The action variants shortcut belongs to the page title, not to an action group.
+ // Preserve the 2014-only availability and the existing delegated popup action.
+ if(sheet==='battle'&&c.rules_version!=='2024'){
+  const title=app.querySelector(':scope > .page-head');
+  if(title){
+   title.classList.add('play-actions-page-title');
+   title.insertAdjacentHTML('beforeend',btn('Varianti alle regole','settings',
+    'data-act="action-variants"','<span>Varianti alle regole</span>'));
+  }
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);

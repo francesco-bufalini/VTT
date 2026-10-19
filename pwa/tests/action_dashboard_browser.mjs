@@ -47,7 +47,7 @@ try{
     assert.equal(await checks.count(),1);
     assert.equal(await checks.locator('[data-action-ability]').count(),6);
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
-    assert.equal(await page.locator('#sheet-play-view [data-act="action-variants"]').count(),1);
+    assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
     if(width===390||width===1440)await page.screenshot({path:fileURLToPath(new URL('actions-'+width+'.png',artifacts))});
    }
@@ -56,7 +56,7 @@ try{
  }
  await page.setViewportSize({width:390,height:900});await section('battle');
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
- await page.getByRole('button',{name:'Regole varianti',exact:true}).click();
+ await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
  await page.locator('[data-variant-search]').fill('Disarmare');
  await page.locator('input[value="disarm_dmg"]').check();await page.locator('[data-save-variants]').click();

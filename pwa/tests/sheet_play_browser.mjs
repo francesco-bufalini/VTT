@@ -124,6 +124,14 @@ try{
  assert.equal(await resourcesPanel.count(),1);
  assert.equal(await resourcesPanel.getAttribute('open'),null,'Risorse starts collapsed');
  assert.equal(await page.locator('.play-health-tools [data-sheet-context="rests"]').count(),1);
+ assert.equal((await page.locator('.play-health-tools [data-sheet-context="rests"]').textContent()).trim(),'Riposi');
+ assert.equal(await page.locator('.page-head.play-actions-page-title h1').textContent(),'Azioni');
+ const variantTitle=page.locator('.page-head [data-act="action-variants"]');
+ assert.equal(await variantTitle.count(),1,'Variant rules shortcut is beside the page title');
+ assert.equal((await variantTitle.textContent()).trim(),'Varianti alle regole');
+ assert.equal(await page.locator('#sheet-play-view [data-act="action-variants"]').count(),0,'No second shortcut inside action groups');
+ assert(await variantTitle.isVisible());
+
  assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
  await resourcesPanel.locator('summary.play-battle-summary').click();
  assert.equal(await resourcesPanel.getAttribute('open'),'');
@@ -212,6 +220,8 @@ try{
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===true;});
  const secondary=page.locator('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]');
+ // Persistence can finish before the equipment popup has rerendered.
+ await page.waitForFunction(()=>document.querySelector('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]')?.disabled===true);
  assert.equal(await secondary.isDisabled(),true,'Versatile grip must disable offhand equipment');
  assert.equal(await secondary.inputValue(),'-1','Versatile grip must lock the offhand on Nessuno');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
@@ -313,7 +323,7 @@ try{
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  await strength.locator('summary.play-battle-action-heading').click();
  assert.equal(await strength.getAttribute('open'),null);
- await page.locator('#sheet-play-view [data-act="action-variants"]').click();
+ await page.locator('.page-head [data-act="action-variants"]').click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
  await page.locator('[data-close-variants]').click();
  await shot('action-ability-checks');
