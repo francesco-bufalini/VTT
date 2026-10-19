@@ -544,6 +544,11 @@ async function editorView() {
           const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
           return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
             '<span class="hint">'+esc(member.source||'')+'</span></header>'+
+            '<div class="magic-source-controls">'+
+            '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">'+
+            esc(member.mode==='Preparati'?'Prepara incantesimi':'Scegli incantesimi conosciuti')+'</button>'+
+            (member.book?'<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="spellbook_spells">Aggiungi al libro</button>':'')+
+            '</div>'+
             '<p class="hint magic-source-count">'+esc(member.mode)+' '+count.leveled+' / '+
             (member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+
             castingStatistics(c,member.id,member.ability)+
@@ -1120,11 +1125,18 @@ function magicToolsDialog(c,calculated){
    field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
    field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+
    '</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>';
+ const selectedMember=calculated.casting_classes.find(member=>member.id===state.spellClass);
+ const selectedTarget=selectedMember?.book&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
  const catalog='<label>Classe / origine<select id="spell-class"><option value="manual">Altre concessioni</option>'+
    calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+'</option>').join('')+
    '</select></label><label>Destinazione<select id="spell-target">'+
-   '<option value="prepared_spells"'+(state.spellTarget==='prepared_spells'?' selected':'')+'>Incantesimi disponibili</option>'+
-   '<option value="spellbook_spells"'+(state.spellTarget==='spellbook_spells'?' selected':'')+'>Libro degli incantesimi</option></select></label>'+
+   '<option value="prepared_spells"'+(selectedTarget==='prepared_spells'?' selected':'')+'>'+
+   esc(selectedMember?.mode==='Preparati'?'Incantesimi preparati':selectedMember?'Incantesimi conosciuti':'Incantesimi disponibili')+'</option>'+
+   (selectedMember?.book?'<option value="spellbook_spells"'+(selectedTarget==='spellbook_spells'?' selected':'')+'>Libro degli incantesimi</option>':'')+
+   '</select></label>'+
+   (selectedMember?'<p class="magic-selection-summary">'+esc(selectedMember.name)+' · '+
+     (selectedMember.mode==='Preparati'?'Preparati':'Conosciuti')+' '+classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]).leveled+
+     ' / '+(selectedMember.limit<0?'—':selectedMember.limit)+'</p>':'')+
    '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
    '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>';
@@ -1132,7 +1144,7 @@ function magicToolsDialog(c,calculated){
   concentration:['Concentrazione',concentration],
   slots:['Slot · Classi / Patto',slots],
   book:['Libro degli incantesimi',spellList(c,'spellbook_spells',null,calculated.casting_classes)],
-  catalog:['Aggiungi dal catalogo',catalog],
+  catalog:['Gestisci incantesimi',catalog],
   choices:['Scelte dalle origini',originChoicesView(calculated)||'<p class="hint">Nessuna scelta di incantesimi in sospeso.</p>']
  };
  if(!views[kind])return '';
