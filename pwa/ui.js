@@ -1050,7 +1050,7 @@ function inventoryItemDescription(obj,index){
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
     ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
-  const properties=inventoryProperties({...obj,rarity:''});
+  const properties=inventoryReadout(obj,inventoryProperties({...obj,rarity:'' }),isSpellScroll(obj)).properties||"—";
   const prose=flattenDescription(obj)||String(obj.description||'');
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
     '" data-item-key="description" rows="3">'+esc(obj.description||"")+'</textarea></label>':'';
