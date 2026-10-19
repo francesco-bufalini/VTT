@@ -632,8 +632,21 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
-  html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
-  const tools=panelNamed('Altre competenze');bind('tools',tools);html+=go('tools','Altre competenze','proficiency');
+  // Competences are one flat, line-divided section rather than another card.
+  // Skills expand inline while equipment/language proficiencies retain their
+  // existing full editor, including the button for changing selections.
+  const tools=panelNamed('Altre competenze');bind('tools',tools);
+  html+='<section class="play-competences" aria-labelledby="play-competences-heading">'+
+   '<h2 id="play-competences-heading" class="play-section-divider"><span>Competenze</span></h2>'+
+   '<details class="play-skills-disclosure">'+
+    '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
+    '<div class="play-skills-content">'+
+     '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
+     '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
+     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>'+
+    '</div></details>'+
+   '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
+   '</section>';
   // Traits belong at the end of Info, as visible cards grouped by origin.
   // The old traits tab flattened them into a list of context buttons.
   const traits=panelNamed('Tratti');
