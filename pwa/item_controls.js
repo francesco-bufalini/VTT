@@ -94,7 +94,7 @@ export function consolidateOwnedItems(inventory){
       Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
   for(const original of inventory){
     const row=structuredClone(original);
-    const quantity=Number(row?.quantity??1),kind=itemKind(row);
+    const quantity=Number(row?.quantity??1),kind=itemKind(row||{});
     const slots=array(row?.equipped_slots);
     const canStack=row&&typeof row==="object"&&!Array.isArray(row)&&
       String(row.id||row.name||"").trim()&&kind!=="document"&&
