@@ -12,6 +12,8 @@ const routes = new Map([...nativeHost.matchAll(/"([^"\n]+)":\s*\["res:\/\/([^"\n
 let failUiModule = false;
 let failUiModuleOnce = false;
 let transientUiFailures = 0;
+let failNestedModuleOnce = false;
+let transientNestedFailures = 0;
 
 const server = createServer(async (request, response) => {
   try {
@@ -34,6 +36,13 @@ const server = createServer(async (request, response) => {
       }
       response.writeHead(503, { "Content-Type": "text/plain" });
       response.end("temporarily unavailable UI module");
+      return;
+    }
+    if (path === "/sheet_rules_view.js" && failNestedModuleOnce) {
+      failNestedModuleOnce = false;
+      ++transientNestedFailures;
+      response.writeHead(503, { "Content-Type": "text/plain" });
+      response.end("temporary failure in a transitive ES module");
       return;
     }
     const route = routes.get(path);
@@ -74,11 +83,17 @@ try {
   await slowPage.addInitScript(() => {
     Object.defineProperty(navigator, "serviceWorker", {
       configurable: true,
-      value: { register: () => new Promise(() => {}) }
+      value: { register: () => {
+        window.__swStartedBeforeUi = !document.querySelector('[data-act="create"]');
+        return new Promise(() => {});
+      } }
     });
   });
   await slowPage.goto(origin);
   await slowPage.locator('[data-act="create"]').waitFor({ timeout: 5000 });
+  await slowPage.waitForFunction(() => window.__swStartedBeforeUi !== undefined);
+  assert.equal(await slowPage.evaluate(() => window.__swStartedBeforeUi), false,
+    "Offline preloading must start after the archive is usable");
   await slowContext.close();
   console.log("PASS: hung Service Worker cannot block local archive");
 
@@ -96,12 +111,35 @@ try {
   await transientContext.close();
   console.log("PASS: transient module failure recovers without clearing IndexedDB");
 
+  // A missing transitive dependency is remembered by the ESM module map:
+  // retrying only ui.js with a fragment cannot fix it. The guarded full
+  // document navigation must reset that map, then open the archive.
+  failNestedModuleOnce = true;
+  const nestedContext = await browser.newContext();
+  const nestedPage = await nestedContext.newPage();
+  let nestedNavigations = 0;
+  nestedPage.on("framenavigated", frame => {
+    if (frame === nestedPage.mainFrame()) ++nestedNavigations;
+  });
+  await nestedPage.goto(origin);
+  await nestedPage.locator('[data-act="create"]').waitFor({ timeout: 25000 });
+  assert.equal(transientNestedFailures, 1);
+  assert.ok(nestedNavigations >= 2, "A failed transitive dependency requires a full navigation");
+  assert.equal(await nestedPage.locator("#startup-error").count(), 0);
+  await nestedContext.close();
+  console.log("PASS: nested module failure recovers with one guarded navigation");
+
   // Permanently missing modules must still show an actionable error.
   failUiModule = true;
   const errorContext = await browser.newContext();
   const errorPage = await errorContext.newPage();
+  let failedNavigations = 0;
+  errorPage.on("framenavigated", frame => {
+    if (frame === errorPage.mainFrame()) ++failedNavigations;
+  });
   await errorPage.goto(origin);
-  await errorPage.locator("#startup-error").waitFor({ timeout: 10000 });
+  await errorPage.locator("#startup-error").waitFor({ timeout: 15000 });
+  assert.equal(failedNavigations, 2, "Do not loop forever on a permanently missing module");
   assert.match(await errorPage.locator("#startup-phase").innerText(), /Caricamento dei moduli/);
   assert.doesNotMatch(await errorPage.locator("#app").innerText(), /Apertura archivio locale/);
   await errorContext.close();
