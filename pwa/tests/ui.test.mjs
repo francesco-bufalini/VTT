@@ -22,8 +22,8 @@ globalThis.fetch=async (url,options={})=>{
   if(url==="/api/status") return new Response(JSON.stringify({protocol:1,desktop_online:false}),{status:200});
   if(url==="/catalog/player.json") return new Response(JSON.stringify({weapons:[{id:"weapon:longsword|phb",name:"Spada lunga",source:"PHB",type:"M",value:15,ac:null}],feats:[],backgrounds:[]}),{status:200});
   if(url==="/catalog/spells.json") return new Response(JSON.stringify({version:1,spells:[
-    {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1},
-    {id:"spell:light|phb",name:"Light",source:"PHB",level:0}
+    {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1,classes:["Bard","Wizard"]},
+    {id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Bard","Wizard"]}
   ]}),{status:200});
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
@@ -538,6 +538,27 @@ test("native alignment options preserve imported nonstandard values",async()=>{
   assert.equal(ALIGNMENTS.length,9);
 });
 
+test("spell preparation caps are advisory and selecting/removing updates legacy and class spell lists",async()=>{
+ const {addSelectedSpell,removeSelectedSpell,classSelectionCount,classSelectionWarnings}=await import('../spell_selection.js');
+ const member={id:'class|phb|bard',name:'Bard',mode:'Conosciuti',max_level:3,limit:1,cantrips:1};
+ const classes=[member],catalog=[
+  {id:'test:one',name:'Primo',level:1,classes:['Bard']},
+  {id:'test:two',name:'Secondo',level:1,classes:['Bard']},
+  {id:'test:light',name:'Luce',level:0,classes:['Bard']}
+ ];
+ let c={prepared_spells:[],spells:[]};
+ assert(classSelectionWarnings(member,classSelectionCount(c,member,classes,catalog)).some(v=>v.includes('ne mancano 1')));
+ for(const spell of catalog)c={...c,...addSelectedSpell(c,spell,'prepared_spells',{member,classes,catalog})};
+ assert.deepEqual(c.prepared_spells,c.spells,'Prepared and desktop legacy spells stay synchronized');
+ const count=classSelectionCount(c,member,classes,catalog);
+ assert.deepEqual(count,{cantrips:1,leveled:2},'An extra known spell is accepted');
+ assert(classSelectionWarnings(member,count).some(v=>v.includes('1 in eccesso')),'Excess is a warning');
+ c={...c,...removeSelectedSpell(c,'prepared_spells',0,{classId:member.id,classes,catalog})};
+ assert.deepEqual(c.prepared_spells,c.spells);
+ assert.equal(classSelectionCount(c,member,classes,catalog).leveled,1);
+ assert.deepEqual(classSelectionWarnings(member,classSelectionCount(c,member,classes,catalog)),[]);
+});
+
 test("inline spell catalog adds available and spellbook choices without diverging legacy fields",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
@@ -1014,6 +1035,23 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-class'));
  assert.equal(document.querySelector('#spell-class').value,'class|phb|bard');
  assert.equal(document.querySelector('#spell-target').value,'prepared_spells');
+ assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
+  'Incomplete selections show a warning without blocking choices');
+ await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-pick"]'));
+ click('#magic-tools-dialog [data-act="spell-pick"]');
+ await until(()=>document.querySelector('#magic-tools-dialog .magic-selection-current [data-act="remove-spell"]'));
+ assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-entry[data-act="remove-spell"]')?.disabled,false,
+  'Already known spells can be unselected directly in the catalog');
+ const savedKnown=(await loadCreature(saved.data.id)).data;
+ assert.equal(savedKnown.prepared_spells?.length,1);
+ assert.equal(savedKnown.spells?.length,1);
+ click('#magic-tools-dialog .magic-selection-current [data-act="remove-spell"]');
+ await until(async()=>{
+  const current=(await loadCreature(saved.data.id)).data;
+  return current.prepared_spells?.length===0&&current.spells?.length===0;
+ });
+ assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
+  'Warnings refresh immediately after removing a known spell');
  click('[data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));

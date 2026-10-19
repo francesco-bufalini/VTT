@@ -52,6 +52,17 @@ export function classSelectionCount(creature,member,classes,catalog=[]){
  const level=row=>Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0);
  return {cantrips:selected.filter(row=>level(row)===0).length,leveled:selected.filter(row=>level(row)>0).length};
 }
+// Selection limits are advisory: report deviations in the UI, never reject an editor choice.
+export function classSelectionWarnings(member,count){
+ if(!member||!count)return [];
+ const limits=[
+  ['Trucchetti',count.cantrips,member.cantrips],
+  [member.mode==='Preparati'?'Preparati':'Conosciuti',count.leveled,member.limit]
+ ];
+ return limits.filter(([,actual,max])=>Number.isInteger(max)&&max>=0&&actual!==max)
+  .map(([label,actual,max])=>label+': '+actual+' / '+max+
+   ' ('+(actual<max?'ne mancano '+(max-actual):(actual-max)+' in eccesso')+')');
+}
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[]}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
@@ -61,9 +72,6 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
     if(target==='spellbook_spells'&&!member.book)throw Error('Questa classe non usa il libro degli incantesimi.');
     if(target==='prepared_spells'){
       if(member.book&&spell.level>0&&!arr(creature.spellbook_spells).some(row=>spellId(row)===spell.id))throw Error('Aggiungi prima l’incantesimo al libro.');
-      const count=classSelectionCount(creature,member,classes,catalog);
-      if(spell.level===0?count.cantrips>=member.cantrips:member.limit>=0&&count.leveled>=member.limit)
-        throw Error('Limite di selezione della classe raggiunto.');
     }
     spell.casting_classes=[member.id];
   }

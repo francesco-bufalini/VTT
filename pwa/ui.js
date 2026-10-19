@@ -1,7 +1,7 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
-import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
+import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
@@ -592,6 +592,7 @@ async function editorView() {
             '</div>'+
             '<p class="hint magic-source-count">'+esc(member.mode)+' '+count.leveled+' / '+
             (member.limit<0?'—':member.limit)+' · Trucchetti '+count.cantrips+' / '+member.cantrips+'</p>'+
+            spellSelectionWarning(member,count)+
             castingStatistics(c,member.id,member.ability)+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
         }).join('')+
@@ -1189,7 +1190,10 @@ function magicToolsDialog(c,calculated){
    '</select></label>'+
    (selectedMember?'<p class="magic-selection-summary">'+esc(selectedMember.name)+' · '+
      (selectedMember.mode==='Preparati'?'Preparati':'Conosciuti')+' '+classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]).leveled+
-     ' / '+(selectedMember.limit<0?'—':selectedMember.limit)+'</p>':'')+
+     ' / '+(selectedMember.limit<0?'—':selectedMember.limit)+'</p>'+
+     spellSelectionWarning(selectedMember,classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[])):'')+
+   '<section class="magic-selection-current"><h3>'+esc(selectedTarget==='spellbook_spells'?'Nel libro':selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
+   spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,{includeSlots:false})+'</section>'+
    '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
    '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>';
@@ -1345,7 +1349,7 @@ function originChoicesView(calculated){
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
 }
-function spellList(c,key,classId=null,classes=[]) {
+function spellList(c,key,classId=null,classes=[],{includeSlots=true}={}) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
   const visible=rows.map((spell,i)=>({spell,i,info:magicSpellInfo(spell)}))
@@ -1355,7 +1359,11 @@ function spellList(c,key,classId=null,classes=[]) {
   return groupedMagicSpells(visible,({i,info})=>
     '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="'+esc(key)+'" data-spell-index="'+i+'" data-casting-class="'+esc(classId||'')+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name||'Incantesimo senza nome')+'</button>'+
     '<button type="button" class="btn small magic-remove-spell" data-act="remove-spell" data-key="'+esc(key)+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'" title="Rimuovi" aria-label="Rimuovi '+esc(info.name)+'">×</button></div>',
-    {slotSummary:key==='prepared_spells'?magicSlotSummary(state.calculated):null});
+    {slotSummary:includeSlots&&key==='prepared_spells'?magicSlotSummary(state.calculated):null});
+}
+function spellSelectionWarning(member,count){
+ const warnings=classSelectionWarnings(member,count);
+ return warnings.length?'<p class="magic-selection-warning" role="status">⚠ '+esc(warnings.join(' · '))+'</p>':'';
 }
 function renderSpellResults(){
   const rows=state.spellCatalog||[],record=state.editor?.read()||{};
@@ -1369,7 +1377,7 @@ function renderSpellResults(){
   const knownBook=new Set((record.spellbook_spells||[]).map(spellId));
   const selected=target==='spellbook_spells'?knownBook:
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
-  const count=member?classSelectionCount(record,member,classes,rows):null;
+  const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
   const found=rows.filter(spell=>allowed.has(spell)&&
     (!member||spellEligible(spell,member))&&
@@ -1385,13 +1393,12 @@ function renderSpellResults(){
     '</p>';
   return groupedMagicSpells(found.map(spell=>({spell,info:magicSpellInfo(spell)})),({spell,info})=>{
     const already=selected.has(spell.id);
-    const cap=member&&target==='prepared_spells'&&
-      (Number(spell.level)===0?count.cantrips>=member.cantrips:
-        member.limit>=0&&count.leveled>=member.limit);
-    return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="spell-pick" data-index="'+
-      rows.indexOf(spell)+'"'+(already||cap?' disabled':'')+'><span>'+esc(info.name)+'</span>'+
-      (already?'<span class="magic-selection-status">✓ Selezionato</span>':
-        cap?'<span class="magic-selection-status">Limite raggiunto</span>':'')+'</button>';
+    const pickedIndex=selectedRows.findIndex(row=>spellId(row)===spell.id);
+    return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="'+
+      (already?'remove-spell':'spell-pick')+'" data-index="'+(already?pickedIndex:rows.indexOf(spell))+'"'+
+      (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
+      '><span>'+esc(info.name)+'</span>'+
+      '<span class="magic-selection-status">'+(already?'× Rimuovi':'+ Aggiungi')+'</span></button>';
   });
 }
 function diceResult(){
