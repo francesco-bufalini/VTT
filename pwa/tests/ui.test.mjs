@@ -451,7 +451,13 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Azioni","Poteri","Inventario","Condizioni","Tratti","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Azioni","Magia","Inventario","Condizioni","Tratti","Modifica personaggio"]);
+  click('[data-sheet="magic"]');
+  await until(()=>document.querySelector(".magic-panel h2"));
+  assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
+  assert.equal(document.querySelector(".magic-panel h2")?.textContent,"Incantesimi disponibili");
+  click('[data-sheet="info"]');
+  await until(()=>document.querySelector('[data-field="alignment"]'));
   change('[data-field="alignment"]',"Caotico buono");
   assert.equal(document.querySelector('[data-field="speed_base"]'),null);
   assert.equal(document.querySelector('[data-field="default_miniature_id"]'),null);
