@@ -162,6 +162,7 @@ try {
   });
   const manualPage = await manualContext.newPage();
   await manualPage.goto(origin);
+  await manualPage.locator('[data-act="create"]').waitFor({timeout:30000});
   await manualPage.locator('button.connection-link[data-nav="session"]').click();
   await manualPage.locator("#pair-form").waitFor({timeout:15000});
   await manualPage.waitForFunction(() =>
