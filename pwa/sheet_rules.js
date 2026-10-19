@@ -418,9 +418,10 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
 export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0){
  const out=[],inventory=arr(record.inventory).map(resolveOwnedItem),trained=new Set(proficiencies);
  const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
- const main=occupied('main');
+ const main=occupied('main'),physicalOff=occupied('off');
+ // Preserve the one-handed damage until the stored offhand is actually clear.
  const off=main&&(hasProperty(main,'2H')||record.hand_grip_two_handed&&hasProperty(main,'V'))?
-   null:occupied('off');
+   null:physicalOff;
  const dual=arr(record.feats_catalog).some(f=>!f?.disabled&&same(f.name,'Dual Wielder'));
  const offAllowed=main&&off&&itemKind(main)==='weapon'&&itemKind(off)==='weapon'&&
    (String(record.rules_version)==='2024'?hasProperty(main,'L')&&(hasProperty(off,'L')||dual&&String(off.type).split('|')[0]!=='R'):
@@ -464,7 +465,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const ability=record.attack_ability_finesse_only===false?chosen:
     hasProperty(item,'F')?chosen:ranged?'dex':'str';
   let damage=item.damage||'';
-  if(slot==='main'&&!off&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
+  if(slot==='main'&&!physicalOff&&hasProperty(item,'V')&&record.hand_grip_two_handed&&item.versatile_damage)damage=item.versatile_damage;
   const size=item.instance_overrides?.weapon_size||record.size_name||'Medium',factor=({Large:2,Huge:3,Gargantuan:4})[size]||1;
   if(factor>1)damage=damage.replace(/^(\s*)(\d+)d(\d+)/,(_,space,count,die)=>space+(Number(count)*factor)+'d'+die);
   const attack={id:'item:'+(slot==='off'?'off:':'')+item.id,name:item.name+(slot==='off'?' · secondaria':''),slot,melee:!ranged,range_feet:ranged?Math.max(5,ranges[0]||0):reach,long_range_feet:ranged?ranges[1]||0:0,damage_type:item.damage_type||''};
