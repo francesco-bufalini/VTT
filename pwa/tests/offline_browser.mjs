@@ -72,7 +72,9 @@ try {
   await page.waitForFunction(async () => {
     const ready = await navigator.serviceWorker.ready;
     if (!ready.active) return false;
-    const cache = await caches.open("vtt-mobile-shell-v66");
+    const currentCache = (await caches.keys()).find(name => /^vtt-mobile-shell-v\d+$/.test(name));
+    if (!currentCache) return false;
+    const cache = await caches.open(currentCache);
     const paths = ["/", "/index.html", "/main.js", "/ui.js", "/storage.js",
       "/creatures.js", "/styles.css", "/catalog/class_mechanics.json",
       "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json"];
