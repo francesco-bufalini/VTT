@@ -40,10 +40,10 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   if(disabled(classOrigin))continue;
   const matches=rows(features).filter(f=>low(f.name)===low(rule.feature)&&
     (String(f.origin_key||'')===classOrigin||String(f.origin_key||'').startsWith(classOrigin+'|')));
-  if(matches.length&&!matches.some(f=>!f.disabled))continue;
+  if(!matches.some(f=>!f.disabled&&!f.inactive&&!disabled(f.origin_id)&&!disabled(f.origin_key)))continue;
   if(rule.subclass){
    const subclassOrigins=rows(features).filter(f=>String(f.origin_key||'').startsWith(classOrigin+'|subclass|')&&
-     low(f.name)===low(rule.feature));
+    low(f.name)===low(rule.feature));
    if(subclassOrigins.length&&!subclassOrigins.some(f=>!f.disabled))continue;
    const selectedSubclass=member.subclass||(low(member.name)===low(record?.class)?record.subclass:'');
    const subSource=member.subclass_source||'';

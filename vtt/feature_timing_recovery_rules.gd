@@ -2,6 +2,7 @@ extends RefCounted
 ## Versioned 5etools/Fight Club mechanic supplements. Strict structured matching;
 ## never infer timings or recoveries from feature descriptions at runtime.
 const PATH := "res://vtt/data/feature_timing_recovery_rules.json"
+const Features = preload("res://vtt/creature_features.gd")
 static var _loaded := false
 static var _actions: Array[Dictionary] = []
 static var _recoveries: Array[Dictionary] = []
@@ -58,7 +59,8 @@ static func _member_for(record: Dictionary, rule: Dictionary) -> Dictionary:
 			continue
 		var required := String(rule.get("subclass", ""))
 		if not required.is_empty():
-			var chosen := String(row.get("subclass", record.get("subclass", "")))
+			var primary := String(row.get("name", "")).nocasecmp_to(String(record.get("class", ""))) == 0
+			var chosen := String(row.get("subclass", record.get("subclass", "") if primary else ""))
 			if _subclass_key(chosen) != _subclass_key(required):
 				continue
 		return row
@@ -77,6 +79,7 @@ static func _tracker_for(member: Dictionary, rule: Dictionary, trackers: Array[D
 
 static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> Array[Dictionary]:
 	_load()
+	var features := Features.collect_features(record)
 	var by_action: Dictionary = {}
 	for rule: Dictionary in _actions:
 		var member := _member_for(record, rule)
@@ -85,6 +88,9 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		var key := String(rule.get("action_id", ""))
 		if key.is_empty():
 			continue
+		var feature := _enabled_feature(record, rule, features)
+		if feature.is_empty():
+			continue
 		if not by_action.has(key) or int(rule.get("priority", 0)) > int((by_action[key] as Dictionary).get("priority", 0)):
 			by_action[key] = rule
 	var result: Array[Dictionary] = []
@@ -92,7 +98,9 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		var rule: Dictionary = by_action[key]
 		var member := _member_for(record, rule)
 		var tracker := _tracker_for(member, rule, trackers)
+		var feature := _enabled_feature(record, rule, features)
 		result.append({
+			"origin_id": "feature:" + String(feature.get("key", "")),
 			"name": String(rule.get("name", key)),
 			"activation": String(rule.get("activation", "action")),
 			"action_id": key,
@@ -103,6 +111,21 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 			"rule_id": String(rule.get("id", ""))
 		})
 	return result
+
+static func _enabled_feature(record: Dictionary, rule: Dictionary, features: Array[Dictionary]) -> Dictionary:
+	var base := "class|" + String(rule.get("class_source", "")).to_lower() + "|" + String(rule.get("class_name", "")).to_lower()
+	for feature: Dictionary in features:
+		var parent := String(feature.get("origin_key", ""))
+		if parent != base and not parent.begins_with(base + "|"): continue
+		if String(feature.get("name", "")).nocasecmp_to(String(rule.get("feature", ""))) != 0: continue
+		if bool(feature.get("inactive", false)): continue
+		var enabled := true
+		for identity: String in [base, parent, "feature:" + String(feature.get("key", ""))]:
+			if record.get("origin_enabled", {}).get(identity, true) == false: enabled = false
+			for saved: Variant in record.get("proficiency_origins", []):
+				if saved is Dictionary and saved.get("id", "") == identity and bool(saved.get("disabled", false)): enabled = false
+		if enabled: return feature
+	return {}
 
 static func apply_tracker_rules(record: Dictionary, trackers: Array[Dictionary]) -> void:
 	_load()

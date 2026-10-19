@@ -32,6 +32,14 @@ func run() -> void:
 	assert(_time(_sheet("Druid", "2014", 2, "Circle of the Moon"), "Forma selvatica") == 1)
 	assert(_time(_sheet("Druid", "2024", 2), "Forma selvatica") == 1)
 	assert(_time(_sheet("Druid", "2014", 1), "Forma selvatica") == -1)
+	var druid_tracker := _tracker(druid, "Wild Shape")
+	assert(String(druid_tracker.get("origin_id", "")).begins_with("feature:class|phb|druid|"))
+	var disabled := druid.duplicate(true)
+	disabled["origin_enabled"] = {String(druid_tracker.origin_id): false}
+	disabled["resource_tracker_spent"] = {String(druid_tracker.id): 1}
+	assert(_time(disabled, "Forma selvatica") == -1)
+	assert(bool(_tracker(disabled, "Wild Shape").get("disabled", false)))
+	assert(int(disabled.resource_tracker_spent[druid_tracker.id]) == 1)
 	assert(_time(_sheet("Rogue", "2014", 2), "Scattare") == 1)
 	assert(_time(_sheet("Rogue", "2024", 3, "Thief"), "Utilizzare") == 1)
 	assert(_time(_sheet("Ranger", "2014", 14), "Nascondersi") == 1)

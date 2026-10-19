@@ -5,12 +5,16 @@ import {featureActionEntries,modifyFeatureTrackers,optionalRecoveryPatch} from '
 import {calculateSheet} from '../sheet_rules.js';
 import {actionEntries} from '../action_economy.js';
 import {recoveryPatch} from '../native_sheet.js';
+import {collectStructuredFeatures} from '../structured_effects.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const rules=read('../../vtt/data/feature_timing_recovery_rules.json');
 const mechanics=read('../catalog/class_mechanics.json');
 const catalogs={classMechanics:mechanics,abilityGrants:read('../catalog/ability_grants.json'),
- proficiencyGrants:read('../catalog/proficiency_grants.json'),featureRules:rules};
+ proficiencyGrants:read('../catalog/proficiency_grants.json'),featureRules:rules,
+ classFeatures:read('../catalog/classes.json')};
+const actionsFor=(record,trackers=[])=>featureActionEntries(record,trackers,rules,
+ collectStructuredFeatures(record,catalogs));
 const creature=(name,edition,level,subclass='')=>({
  kind:'character',rules_version:edition,class:name,class_source:edition==='2024'?'XPHB':'PHB',
  level,subclass,abilities:{str:10,dex:10,con:10,int:10,wis:16,cha:16}
@@ -23,7 +27,7 @@ test('typed supplement tracks feature, class source, level and subclass without 
  const moon={...basic,subclass:'Circle of the Moon'};
  const other={...basic,subclass:'Circle of the Land'};
  const newDruid=creature('Druid','2024',2);
- const activation=(row)=>featureActionEntries(row,calculateSheet(row,catalogs).trackers,rules).filter(a=>a.rule_id.includes('wild_shape'));
+ const activation=(row)=>actionsFor(row,calculateSheet(row,catalogs).trackers).filter(a=>a.rule_id.includes('wild_shape'));
  assert.equal(activation(basic)[0].time,'action');
  assert.equal(activation(other)[0].time,'action');
  assert.equal(activation(moon)[0].time,'bonus');
@@ -32,11 +36,11 @@ test('typed supplement tracks feature, class source, level and subclass without 
  const out=calculateSheet(moon,catalogs),choices=actionEntries(moon,out);
  assert(choices.some(a=>a.name==='Forma selvatica'&&a.time==='bonus'&&a.tracker==='Wild Shape'));
  assert(!choices.some(a=>a.name==='Forma selvatica'&&a.time==='action'));
- assert(featureActionEntries(creature('Rogue','2014',2),[],rules).filter(a=>a.time==='bonus').length>=3);
- assert.equal(featureActionEntries(creature('Rogue','2014',2),[],rules).some(a=>a.name.includes('Mani veloci')),false);
- assert(featureActionEntries(creature('Rogue','2024',3,'Thief'),[],rules).some(a=>a.name.includes('Mani veloci')));
- assert(!featureActionEntries(creature('Ranger','2014',13),[],rules).some(a=>a.name.includes('Svanire')));
- assert(featureActionEntries(creature('Ranger','2014',14),[],rules).some(a=>a.name.includes('Svanire')));
+ assert(actionsFor(creature('Rogue','2014',2)).filter(a=>a.time==='bonus').length>=3);
+ assert.equal(actionsFor(creature('Rogue','2014',2)).some(a=>a.name.includes('Mani veloci')),false);
+ assert(actionsFor(creature('Rogue','2024',3,'Thief')).some(a=>a.name.includes('Mani veloci')));
+ assert(!actionsFor(creature('Ranger','2014',13)).some(a=>a.name.includes('Svanire')));
+ assert(actionsFor(creature('Ranger','2014',14)).some(a=>a.name.includes('Svanire')));
 });
 
 test('2024 short rest recovers one use, long rest recovers all, without modifying counters in stored sheet',()=>{
@@ -100,13 +104,13 @@ test('a multiclass member never inherits the primary class subclass',()=>{
    {name:'Rogue',source:'PHB',level:3,subclass:'Thief'},
    {name:'Druid',source:'PHB',level:2}
   ]};
- const actions=featureActionEntries(rogue,[],rules);
+ const actions=actionsFor(rogue);
  assert(actions.some(row=>row.rule_id==='rogue_phb_use_object'));
  assert(actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='action'));
  assert(!actions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
  const primaryLegacy={...rogue,class:'Druid',subclass:'Circle of the Moon',
   classes:[{name:'Druid',source:'PHB',level:2},{name:'Rogue',source:'PHB',level:3}]};
- const legacyActions=featureActionEntries(primaryLegacy,[],rules);
+ const legacyActions=actionsFor(primaryLegacy);
  assert(legacyActions.some(row=>row.rule_id==='druid_phb_wild_shape'&&row.time==='bonus'));
  assert(!legacyActions.some(row=>row.rule_id==='rogue_phb_use_object'));
 });
@@ -126,4 +130,18 @@ test('disabled class and subclass feature origins cannot grant alternate actions
  assert.equal(selected([plain,combat]).find(x=>x.rule_action_id==='wild_shape')?.origin_id,combat.origin_id);
  const classDisabled={...base,origin_enabled:{[classOrigin]:false}};
  assert(!featureActionEntries(classDisabled,[],rules,[plain,combat]).some(x=>x.rule_action_id==='wild_shape'));
+});
+
+test('no class action without its trait, and disabling a trait preserves its spent counter',()=>{
+ const record=creature('Druid','2014',2);
+ assert.deepEqual(featureActionEntries(record,[],rules,[]),[]);
+ const original=calculateSheet(record,catalogs),tracker=original.trackers.find(t=>t.name==='Wild Shape');
+ const feature=original.features.find(f=>f.name==='Wild Shape');
+ assert.equal(tracker.origin_id,feature.origin_id);
+ const disabled={...record,resource_tracker_spent:{[tracker.id]:1},origin_enabled:{[feature.origin_id]:false}};
+ const hidden=calculateSheet(disabled,catalogs);
+ assert(!hidden.trackers.some(t=>t.id===tracker.id));
+ assert(!actionEntries(disabled,hidden).some(a=>a.rule_action_id==='wild_shape'));
+ const restored=calculateSheet({...disabled,origin_enabled:{}},catalogs).trackers.find(t=>t.id===tracker.id);
+ assert.equal(restored.spent,1);
 });

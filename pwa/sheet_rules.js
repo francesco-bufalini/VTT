@@ -403,6 +403,9 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
   row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id;
   row.origin_name=feature?'Tratto · '+feature.name:row.origin_name||row.name;
   if(feature?.parent_origin)row.parent_origin=feature.parent_origin;
+  if(feature)row.disabled=feature.inactive||feature.disabled||record.origin_enabled?.[row.origin_id]===false||
+   record.origin_enabled?.[feature.origin_key]===false||arr(record.proficiency_origins).some(o=>
+    o?.disabled&&[row.origin_id,feature.origin_key,feature.parent_origin].includes(o.id));
  }
  for(const row of arr(record.resource_trackers)){
   if(!row||!requirementsAllow(record,row))continue;
@@ -628,8 +631,7 @@ export function calculateSheet(record={},catalogs={}){
     if(!sid)return true;
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
     if(saved?.disabled)return false;
-    if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,sid))
-      return Boolean(record.origin_enabled[sid]);
+    if(record.origin_enabled?.[sid]===false)return false;
     if(row.parent_origin){
       if(record.origin_enabled&&Object.hasOwn(record.origin_enabled,row.parent_origin)&&
           !record.origin_enabled[row.parent_origin])return false;

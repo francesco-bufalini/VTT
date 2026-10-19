@@ -201,7 +201,10 @@ export function collectStructuredFeatures(record,catalogs={}){
       });
     }
   }
-  const featureIndex=catalogs.classFeatures||{};
+  const featureIndex=catalogs.classFeatures||{
+    class_features:array(catalogs.classMechanics?.resource_features).filter(f=>!f.subclass_name&&!f.subclass_short_name),
+    subclass_features:array(catalogs.classMechanics?.resource_features).filter(f=>f.subclass_name||f.subclass_short_name)
+  };
   const selectedEdition=record.rules_version==="2024"?"XPHB":"PHB";
   for(const member of members){
     if(!member?.name||match(member.name,"Mostro"))continue;
@@ -213,8 +216,10 @@ export function collectStructuredFeatures(record,catalogs={}){
       const at=Number(row?.level??1);
       if(at>=1&&at<=level)append(row,base,at,"class",name,source);
     }
-    if(!member.subclass)continue;
-    const sub=member.subclass,subsource=String(member.subclass_source||"");
+    const primary=match(member.name,record.class)&&match(source,record.class_source||selectedEdition);
+    const sub=member.subclass||(primary?record.subclass:'');
+    if(!sub)continue;
+    const subsource=String(member.subclass_source||(primary?record.subclass_source:'')||"");
     const origin=base+"|subclass|"+norm(sub)+"|"+norm(subsource);
     for(const row of [...array(featureIndex.subclass_features),...array(member.subclass_features)]){
       if(row?.class_name&&!match(row.class_name,name))continue;

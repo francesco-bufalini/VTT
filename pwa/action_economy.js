@@ -202,8 +202,9 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
     (!t.origin_class||String(t.origin_class).toLowerCase()===String(rule.class_name||'').toLowerCase()));
   // Do not grant missing or disabled features solely from class/level.
   const collected=arr(calculated.features).filter(f=>String(f.origin_key||'').startsWith(classOrigin));
-  if(collected.length&&!collected.some(f=>String(f.name||'').toLowerCase()===
-      String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled))continue;
+  const grantingFeature=collected.find(f=>String(f.name||'').toLowerCase()===
+      String(rule.feature_name||'').toLowerCase()&&!f.inactive&&!f.disabled);
+  if(!grantingFeature)continue;
   // Prefer the native activation (including persistent conditions) when present.
   // Otherwise keep a typed, class-owned grant with its actual resource.
   if(nativeClassFeatureActions(record,calculated).some(row=>
@@ -211,7 +212,8 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   add(rule.display_name||rule.feature_name,rule.activation,'Capacità',rule.description||'',
       resource?.name||rule.resource_name||'',Number(rule.resource_cost??(resource?1:0))||0,
       {id:'class_override:'+rule.class_name+':'+(rule.display_name||rule.feature_name)+':'+rule.book,
-       tracker_id:String(resource?.id||''),origin_id:classOrigin});
+       tracker_id:String(resource?.id||''),origin_id:grantingFeature.origin_id,
+       feature_id:grantingFeature.origin_id,feature_name:grantingFeature.name});
  }
  // Native class abilities with no typed activation in their 5etools entry.
  for(const row of nativeClassFeatureActions(record,calculated)){
@@ -302,7 +304,9 @@ export function nativeClassFeatureActions(record={},calculated={}){
   output.push({id:'class_feature:'+key,name:label,time,type:'Capacità',
    description:details(feature.entries??feature.description??'')+(active?'\nAttiva sulla scheda.':''),
    tracker:tracker?.name||resource||'',tracker_id:tracker?.id||'',cost,
-   origin:'personal',active,class_feature_id:key});
+   origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
+   feature_name:feature.name,origin_name:'Tratto · '+feature.name,
+   class_name:owner,resource_name:resource,active,class_feature_id:key});
  }
  return output;
 }

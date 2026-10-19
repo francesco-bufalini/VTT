@@ -145,6 +145,14 @@ static func _assign_automatic_origins(record: Dictionary, output: Array[Dictiona
 		if not feature.is_empty():
 			origin_id = "feature:" + String(feature.get("key", ""))
 			label = "Tratto · " + String(feature.get("name", ""))
+			row["disabled"] = bool(feature.get("inactive", false))
+			for identity: String in [origin_id, String(feature.get("origin_key", "")),
+				"class|" + String(feature.get("class_source", "")).to_lower() + "|" + String(feature.get("class_name", "")).to_lower()]:
+				if record.get("origin_enabled", {}).get(identity, true) == false:
+					row["disabled"] = true
+				for saved: Variant in record.get("proficiency_origins", []):
+					if saved is Dictionary and saved.get("id", "") == identity and bool(saved.get("disabled", false)):
+						row["disabled"] = true
 		if origin_id.is_empty():
 			origin_id = "tracker:auto:" + String(row.get("id", ""))
 		row["origin_id"] = origin_id
