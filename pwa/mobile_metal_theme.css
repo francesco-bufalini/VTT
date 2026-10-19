@@ -893,6 +893,16 @@ input:disabled{opacity:.75;cursor:default}
 .play-spell>.play-button{width:100%;justify-content:flex-start;border-bottom:1px solid #a37b472a;border-radius:0;text-align:left;font-weight:450;padding:13px 14px}
 .play-spell>.play-button>.vtt-action-glyph{width:15px;height:15px;flex-basis:15px;opacity:.7}
 .play-spell>.play-button>span:last-child{flex:1}
+/* Privilege-granted spells are visible directly below their tracker header. */
+.play-magic-origin-group{min-width:0;border:1px solid #a27b4a55;border-radius:14px;background:linear-gradient(145deg,#3b2c285c,#211c1c);overflow:hidden}
+.play-magic-origin-group>.play-list-row{border-bottom:0}
+.play-magic-origin-group:has(.play-magic-origin-spells)>.play-list-row{border-bottom:1px solid #b38a5524}
+.play-magic-origin-spells{display:grid;min-width:0;padding:0 8px 5px 21px}
+.play-magic-origin-spell>.play-button{display:flex;gap:9px;min-width:0;min-height:43px;padding:9px 7px;font-size:13px}
+.play-magic-origin-spell>.play-button>span:not(.vtt-action-glyph){flex:1;min-width:0;overflow-wrap:anywhere}
+.play-magic-origin-spell .play-spell-level,.play-magic-origin-spell .play-magic-spell-cost{flex:none;font-size:11px;white-space:nowrap;color:#c6a981}
+.play-magic-origin-spell .play-magic-spell-cost{color:#e4c18e}
+.play-magic-origin-spell:last-child>.play-button{border-bottom:0}
 .play-condition{display:inline-flex;align-items:center;gap:7px;font-size:12px;margin:8px 0 8px 12px;padding:9px 11px;border:1px solid #d2a55b60;border-radius:9px;background:#96694518}.play-condition .vtt-action-glyph{width:16px;height:16px}
 .play-calm{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 15px;color:#b8a88e;font-size:13px}.play-calm .vtt-action-glyph{width:32px;height:32px}.play-calm strong{font-weight:500}
 .play-sheet-tools{display:flex;justify-content:flex-end;gap:8px}.play-sheet-tools .play-button{opacity:.65}
