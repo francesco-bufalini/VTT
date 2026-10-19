@@ -32,6 +32,8 @@ var _origin_cards: VBoxContainer
 var _proficiency_cards: VBoxContainer
 var _status: Label
 var _competence_editor: VBoxContainer
+var _competence_dialog: AcceptDialog
+var _competence_error: Label
 var _origin_picker: OptionButton
 var _kind_picker: OptionButton
 var _proficiency_picker: OptionButton
@@ -105,12 +107,25 @@ func setup(on_change: Callable) -> void:
 	_competence_editor.add_child(_origin_picker)
 	var competence_confirm := Button.new()
 	competence_confirm.text = "Aggiungi competenza"
-	competence_confirm.pressed.connect(_add_competence)
 	_competence_editor.add_child(competence_confirm)
+	_competence_error = Label.new()
+	_competence_error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_competence_editor.add_child(_competence_error)
 	_competence_editor.show()
-	var competence_dialog: AcceptDialog = EditorUI.popup_form(self, _competence_editor, "+ Competenza", competence_confirm)
+	_competence_dialog = EditorUI.popup_form(self, _competence_editor, "+ Competenza")
+	_competence_dialog.about_to_popup.connect(func() -> void:
+		_competence_editor.show()
+		_competence_error.text = ""
+		_refresh_origin_picker()
+		_refresh_proficiency_picker()
+	)
+	competence_confirm.pressed.connect(func() -> void:
+		if _add_competence():
+			_competence_dialog.hide()
+	)
+	_origin_picker.item_selected.connect(func(_index: int) -> void: _refresh_proficiency_picker())
 	_add_competence_button.hide()
-	_add_competence_button.pressed.connect(func() -> void: DialogLayout.popup(competence_dialog, Vector2i(640, 300)))
+	_add_competence_button.pressed.connect(func() -> void: DialogLayout.popup(_competence_dialog, Vector2i(640, 300)))
 	_choice_dialog = ConfirmationDialog.new()
 	_choice_dialog.title = "Completa le competenze"
 	_choice_dialog.ok_button_text = "Applica"
@@ -166,6 +181,8 @@ func _create_column(parent: HBoxContainer, heading: String, width: float) -> VBo
 func load_record(record: Dictionary) -> void:
 	_loading = true
 	# A still-open choice dialog must not modify the next selected creature.
+	if _competence_dialog != null:
+		_competence_dialog.hide()
 	if _choice_dialog != null:
 		_choice_dialog.hide()
 	if _delete_dialog != null:
@@ -672,7 +689,12 @@ func _has_expertise(sid: String, key: String) -> bool:
 func _select_origin(sid: String) -> void:
 	_selected_id = "~none~" if _selected_id == sid else sid
 	_add_competence_button.disabled = _selected_id in ["~none~", ""]
-	_competence_editor.visible = false
+	_refresh_origin_picker()
+	for index: int in range(_origin_picker.item_count):
+		var source: Dictionary = _origin_picker.get_item_metadata(index)
+		if String(source.get("id", "")) == (_selected_id if _selected_id != "~none~" else ""):
+			_origin_picker.select(index)
+			break
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_proficiency_picker()
@@ -719,6 +741,16 @@ func _origin_display(sid: String) -> String:
 
 func _refresh_origin_picker() -> void:
 	OriginChoices.populate(_origin_picker, _effective_record(), _selected_id if _selected_id != "~none~" else "")
+
+func _competence_source() -> Dictionary:
+	var source: Dictionary = OriginChoices.selected(_origin_picker).duplicate(true)
+	var sid: String = String(source.get("id", ""))
+	for origin: Dictionary in _origins:
+		if String(origin.get("id", "")) == sid:
+			source["requirements"] = origin.get("requirements", [])
+			break
+	return source
+
 
 func _selected_source_record() -> Dictionary:
 	for item: Dictionary in _origins:
@@ -773,7 +805,8 @@ func _catalog_entries() -> Array[Dictionary]:
 	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
 	var items: Array[Dictionary] = _catalog_entries_for_kind(kind)
 	if kind == "skill":
-		var allowed: Array[String] = Rules.restricted_choices(_selected_source_record(), kind)
+		var source: Dictionary = _competence_source()
+		var allowed: Array[String] = Rules.restricted_choices(source, kind)
 		if not allowed.is_empty():
 			var restricted: Array[Dictionary] = []
 			for item: Dictionary in items:
@@ -1009,33 +1042,34 @@ func _valid_structured_choice(kind: String, key: String, sid: String, source: Di
 	return assigned < max_choices
 
 
-func _add_competence() -> void:
+func _add_competence() -> bool:
 	if _kind_picker.selected < 0:
-		return
+		return false
 	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
 	var key: String = _proficiency_name.text.strip_edges().to_lower()
 	if key.is_empty() and _proficiency_picker.selected >= 0:
 		key = String(_proficiency_picker.get_item_metadata(_proficiency_picker.selected))
 	if key.is_empty():
-		return
-	var source: Dictionary = OriginChoices.selected(_origin_picker)
+		return false
+	var source: Dictionary = _competence_source()
 	var sid: String = String(source.get("id", ""))
 	if not _valid_structured_choice(kind, key, sid, source):
-		_proficiency_name.tooltip_text = "Scelta non prevista dai dati strutturati o limite dell'origine raggiunto."
-		return
+		_competence_error.text = "Scelta non prevista da questa origine o numero massimo di scelte già raggiunto."
+		return false
 	OriginChoices.ensure(_origins, source)
 	for row: Dictionary in _rows:
 		if String(row.get("origin_id", "")) == sid and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
 			row["disabled"] = false
 			_selected_id = sid
 			_publish()
-			return
+			return true
 	_rows.append({"kind": kind, "key": key, "origin_id": sid,
 		"origin_name": String(source.get("name", "Senza origine")), "disabled": false})
 	_selected_id = sid
 	_proficiency_name.clear()
-	_competence_editor.visible = false
 	_publish()
+	return true
+
 
 func _valid_edition(item: Dictionary) -> bool:
 	var source: String = String(item.get("source", ""))

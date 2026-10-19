@@ -648,17 +648,17 @@ func run() -> void:
 				for control: Node in child.get_children():
 					if control is Button and (control as Button).text == "↳":
 						has_link_button = true
-					if control is CheckButton and (control as CheckButton).text == "Mestria":
+					if control is CheckButton and (control as CheckButton).text == "Maestria":
 						has_mastery_word = true
 	assert(heading_names.count("Abilità") == 1
 		and heading_names.count("Categorie di armi") == 1
 		and heading_names.count("Singole armi") == 1,
 		"Skill and weapon headings must never repeat with interleaved grants")
 	for control: Node in tab._proficiency_cards.find_children("*", "CheckButton", true, false):
-		if (control as CheckButton).text == "Mestria":
+		if (control as CheckButton).text == "Maestria":
 			has_mastery_word = true
 	assert(not has_link_button and has_mastery_word,
-		"Manual linking action is removed and stars are replaced by Mestria")
+		"Manual linking action is removed and stars are replaced by Maestria")
 	# Fixed and manually removable rows must have the same layout, even
 	# while another origin is highlighted (the reported armor/tool mismatch).
 	tab._selected_id = "class|phb|fighter"
