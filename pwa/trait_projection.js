@@ -169,26 +169,35 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(spell)add(spell,{category:'incantesimi',origin:'Incantesimo · '+spell.name,
    origin_key:origin.id,level:1,inactive:!!origin.disabled});
  }
- const items=new Map();
+ // An item grants visible traits only while at least one owned instance is
+ // actively worn, held, normally equipped or attuned. Quantity is irrelevant.
+ const equippedItems=new Map();
  for(const item of arr(record.inventory)){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
-  const id=String(item.id),old=items.get(id);
-  if(old)old.quantity+=Number(item.quantity??1);
-  else items.set(id,{item,quantity:Number(item.quantity??1)});
+  const equipped=arr(item.equipped_slots).length>0||
+    item.equipped===true||item.attuned===true;
+  if(!equipped)continue;
+  const id=String(item.id);
+  if(!equippedItems.has(id))equippedItems.set(id,item);
  }
- for(const [id,{item,quantity}] of items){
+ for(const [id,item] of equippedItems){
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
-  const options={category:'oggetti',origin:'Oggetto · '+(item.name||info.name||id),
+  const name=item.name||info.name||id;
+  const options={category:'oggetti',origin:'Oggetto · '+name,
    origin_key:'item:'+id,level:0,inactive:item.disabled===true};
-  add({name:'Descrizione · '+(item.name||info.name||id)+(quantity>1?' ×'+quantity:''),
-   entries:info.entries??info.description??item.description??'',source:info.source},{...options,rank:0});
-  named(info,options,{requireGates:true});
+  // One card per item type, showing the item's complete catalog description;
+  // don't turn individual descriptive paragraphs into separate traits.
+  add({name,entries:info.entries??info.description??item.entries??item.description??'',
+   source:info.source||item.source}, {...options,rank:0});
  }
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
  for(const feature of arr(calculated.features)){
   const originKey=String(feature.origin_key||'altro');
+  // Do not resurrect item-only structured features for unequipped inventory,
+  // and do not replace the full item description with partial effect text.
+  if(originKey.startsWith('item:'))continue;
   const category=originKey.startsWith('class|')?'classi':
    originKey.startsWith('species|')||originKey.startsWith('race|')?'razza':
    originKey.startsWith('background|')?'background':
@@ -201,23 +210,31 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
-  a.level-b.level||a.rank-b.rank||
   a.origin.localeCompare(b.origin,'it',{sensitivity:'base',numeric:true})||
+  a.level-b.level||a.rank-b.rank||
   a.name.localeCompare(b.name,'it',{sensitivity:'base',numeric:true}));
  return rows;
 }
 
+// Origin is the primary group, not level: each class/subclass owns a single
+// visible section containing its own ordered level headings.
 export function groupTraitRows(rows){
  const groups=[];
  for(const row of rows){
   let category=groups.find(group=>group.id===row.category);
-  if(!category){category={id:row.category,title:TRAIT_CATEGORIES[row.category]||TRAIT_CATEGORIES.altro,levels:[]};groups.push(category);}
+  if(!category){
+   category={id:row.category,title:TRAIT_CATEGORIES[row.category]||TRAIT_CATEGORIES.altro,origins:[]};
+   groups.push(category);
+  }
+  let origin=category.origins.find(group=>group.key===row.origin_key);
+  if(!origin){
+   origin={key:row.origin_key,title:row.origin,levels:[]};
+   category.origins.push(origin);
+  }
   const level=row.category==='classi'?row.level:-1;
-  let tier=category.levels.find(group=>group.level===level);
-  if(!tier){tier={level,origins:[]};category.levels.push(tier);}
-  let origin=tier.origins.find(group=>group.key===row.origin_key);
-  if(!origin){origin={key:row.origin_key,title:row.origin,rows:[]};tier.origins.push(origin);}
-  origin.rows.push(row);
+  let tier=origin.levels.find(group=>group.level===level);
+  if(!tier){tier={level,rows:[]};origin.levels.push(tier);}
+  tier.rows.push(row);
  }
  return groups;
 }

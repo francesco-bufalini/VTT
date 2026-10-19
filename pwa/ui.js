@@ -123,12 +123,12 @@ function errorMessage(error) {
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
- magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
+ magic:'spark',inventory:'inventory',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -206,6 +206,7 @@ async function restoreBrowserScreen(screen){
   // Older installed builds stored the retired Abilità tab in browser history.
   if(screen?.sheet==='stats')screen={...screen,sheet:'info'};
   if(screen?.sheet==='actions')screen={...screen,sheet:'battle'};
+  if(screen?.sheet==='traits')screen={...screen,sheet:'info'};
   if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
   const ticket=++browserHistoryRestoreTicket;
   restoringBrowserHistory=true;
@@ -437,7 +438,7 @@ async function editorView() {
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -473,6 +474,7 @@ async function editorView() {
   }
   state.battleOptionalTraits=battleOptionalTraits;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
+  if(state.sheet==="info")body+=await traitsView(c);
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -560,7 +562,6 @@ async function editorView() {
         field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+
       '</div>'+conditionGrid(c.conditions,'data-condition',c.rules_version),'condition-sheet-panel');
     break;
-  case 'traits':body=await traitsView(c);break;
   case "json":
     body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
       '<label>Documento completo<textarea id="json-editor" rows="18" spellcheck="false" class="inline-code">'+
@@ -678,7 +679,7 @@ async function traitsView(c){
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
-  return '<details class="trait-card'+(active?'':' trait-inactive')+'"><summary>'+
+  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
     esc(trait.name)+(active?'':' · disattivato')+
     (trait.granted_spells?.length?'<span class="trait-granted-spells"><span class="trait-spell-label">Incantesimi concessi</span> '+
       trait.granted_spells.map(spell=>'<span class="trait-granted-spell">'+esc(spell.name)+'</span>').join('')+'</span>':'')+'</summary>'+
@@ -688,11 +689,13 @@ async function traitsView(c){
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
-  group.levels.map(tier=>
-   (tier.level>=0?'<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
-   tier.origins.map(origin=>
-    '<div class="trait-origin-group"><h4 class="trait-origin-title">'+esc(origin.title)+'</h4>'+
-    origin.rows.map(renderCard).join('')+'</div>').join('')
+  group.origins.map(origin=>
+   '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
+   '<h4 class="trait-origin-title">'+esc(origin.title)+'</h4>'+
+   origin.levels.map(tier=>
+    (tier.level>=0?'<h5 class="trait-level">LIVELLO '+tier.level+'</h5>':'')+
+    '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
+   ).join('')+'</section>'
   ).join('')+'</section>').join('');
  return panel('Tratti',content||'<p>Nessun privilegio da mostrare.</p>')+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
@@ -2129,12 +2132,7 @@ function organizeSheetPanels(){
       if(details.isConnected)state.disclosureState.set(key,details.open);
     });
   }
-  if(state.sheet==='traits'&&state.sheetPopup.startsWith('trait-origin:')){
-    const origin=state.sheetPopup.slice('trait-origin:'.length);
-    const matches=[...state.sheetSources].filter(([key,node])=>key.startsWith('trait:')&&node.querySelector('[data-feature-origin]')?.dataset.featureOrigin===origin);
-    state.sheetPopup=matches.length===1?matches[0][0]:'';
-    if(matches.length===1)state.sheetPopupTitle=matches[0][1].querySelector('summary')?.textContent||'Privilegio';
-  }
+
   if(!state.sheetPopup)return;
   const source=state.sheetSources.get(state.sheetPopup);
   if(!source){state.sheetPopup="";return;}
@@ -2767,7 +2765,17 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
-  if(act==="power-trait"){state.sheet="traits";state.sheetPopup=target.dataset.originId?"trait-origin:"+target.dataset.originId:"";state.sheetPopupTitle="";await render();return;}
+  if(act==="power-trait"){
+    const id=target.dataset.originId||'';
+    state.sheet="info";state.sheetPopup="";state.sheetPopupTitle="";
+    await render();
+    const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
+    const exact=cards.find(card=>card.dataset.traitFeature===id);
+    const match=exact||cards.find(card=>card.dataset.traitOrigin===id);
+    if(match){match.open=true;match.scrollIntoView?.({block:'center'});}
+    else app.querySelector('.play-info-traits')?.scrollIntoView?.({block:'start'});
+    return;
+   }
   if(act==="new-homebrew-item"){
     const owner=state.creatureId||"";
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
@@ -2947,7 +2955,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet==='actions'?'battle':target.dataset.sheet;await render();return;
+    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=['actions','traits'].includes(target.dataset.sheet)?(target.dataset.sheet==='traits'?'info':'battle'):target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();

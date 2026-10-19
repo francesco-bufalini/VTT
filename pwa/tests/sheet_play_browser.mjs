@@ -27,9 +27,9 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['info','battle','magic','inventory','traits','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions','origins']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
-   const inlineEditors=page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea');
+   const inlineEditors=page.locator('#sheet-play-view input:not([type=search]):visible,#sheet-play-view select:visible,#sheet-play-view textarea:visible');
    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
      'Only the five coin amounts are editable inline: '+key);
    if(key==='inventory')assert.equal(await page.locator('#sheet-play-view .inventory-play-coins input[data-coin-code]').count(),5,
@@ -307,9 +307,11 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
+ await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
+ assert.equal(await page.locator('.play-info-traits').count(),1);
+ assert(await page.locator('.play-info-traits .trait-origin-group').count()>0);
  // All primary context links must resolve on populated and empty sections.
- for(const key of ['info','battle','inventory','traits','conditions']){
+ for(const key of ['info','battle','inventory','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
   for(const contextKey of keys){
    try{
