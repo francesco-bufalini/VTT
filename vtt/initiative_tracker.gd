@@ -755,7 +755,7 @@ func _add_entry_row(
 	var up_button: Button = Button.new()
 	up_button.text = "↑"
 	up_button.tooltip_text = "Sposta prima nell'ordine"
-	up_button.disabled = real_index == 0 or entry_id_is_environment(entry)
+	up_button.disabled = real_index == 0
 	up_button.custom_minimum_size = Vector2(28, 30)
 	up_button.pressed.connect(
 		func() -> void:
@@ -766,7 +766,7 @@ func _add_entry_row(
 	var down_button: Button = Button.new()
 	down_button.text = "↓"
 	down_button.tooltip_text = "Sposta dopo nell'ordine"
-	down_button.disabled = real_index >= entries.size() - 1 or entry_id_is_environment(entry)
+	down_button.disabled = real_index >= entries.size() - 1
 	down_button.custom_minimum_size = Vector2(28, 30)
 	down_button.pressed.connect(
 		func() -> void:
@@ -792,8 +792,7 @@ func _scroll_active_to_top() -> void:
 
 
 func _move_entry(entry_id: String, delta: int) -> void:
-	if entry_id == ENVIRONMENT_ENTRY_ID:
-		return
+	# The environment is a regular position in the order, but cannot be removed.
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return

@@ -1452,8 +1452,15 @@ function renderEvents() {
       '</div></article>').join("") :
     '<p class="hint">Nessun evento recente. La cronologia è disponibile mentre il desktop è collegato.</p>';
 }
-function sessionTokenRows(rows, turnId="") {
-  return rows.map(token => '<div class="session-token-row'+(state.tokenId===token.id?' selected':'')+
+function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
+  return rows.map(token => token.environment ?
+    '<div class="session-token-row session-environment-row'+(activeEnvironment?' active':'')+'"' +
+    (activeEnvironment?' aria-current="true"':'')+'>'+
+    '<span class="session-token-name session-environment-name">'+
+    (activeEnvironment?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
+    '<span>'+esc(token.name||"Turno ambientale")+'</span></span>'+
+    '<span class="session-initiative" title="Iniziativa">'+esc(token.initiative??20)+'</span></div>' :
+    '<div class="session-token-row'+(state.tokenId===token.id?' selected':'')+
     '" data-token-row="'+esc(token.id)+'">'+
     '<button type="button" class="session-token-name" data-act="select-token" data-id="'+esc(token.id)+
     '" aria-pressed="'+(state.tokenId===token.id)+'">'+
@@ -1506,7 +1513,7 @@ function sessionView() {
   html+='<section class="panel session-token-panel">'+
     '<div class="row between"><h2>'+(groups.active?'Combattimento · Round '+esc(groups.round):'Token sulla mappa')+
     '</h2>'+(groups.active?'<span class="tag">Iniziativa</span>':'')+'</div>'+
-    (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId):
+    (groups.participants.length?sessionTokenRows(groups.participants,groups.turnId,groups.activeEnvironment):
       '<p class="hint">Nessun token sulla mappa.</p>')+
     (groups.active&&groups.outside.length?'<h3 class="session-outside-heading">Fuori dal combattimento</h3>'+
       sessionTokenRows(groups.outside):'')+

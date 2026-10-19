@@ -15,19 +15,27 @@ export function tokenGroups(data) {
     a.id.localeCompare(b.id);
   const byId=new Map(tokens.map(t=>[t.id,t]));
   const active=Boolean(data?.combat?.active);
-  if(!active)return {active:false,round:0,turnId:"",participants:[...tokens].sort(compare),outside:[]};
+  if(!active)return {active:false,round:0,turnId:"",activeEnvironment:false,participants:[...tokens].sort(compare),outside:[]};
   const seen=new Set(),participants=[];
   const rows=Array.isArray(data?.combat?.entries)?data.combat.entries:[];
-  let turnId="";
+  let turnId="",activeEnvironment=false,seenEnvironment=false;
   rows.forEach((row,i)=>{
     const id=String(row?.token_id||"");
+    if(row?.environment===true && !id){
+      if(seenEnvironment)return;
+      seenEnvironment=true;
+      participants.push({id:"",name:String(row.name||"Turno ambientale"),
+        initiative:row.initiative,environment:true});
+      if(i===data.combat.active_index)activeEnvironment=true;
+      return;
+    }
     if(!byId.has(id)||seen.has(id))return;
     const token=byId.get(id);
     participants.push({...token,initiative:row.initiative});
     seen.add(id);
     if(i===data.combat.active_index)turnId=id;
   });
-  return {active:true,round:data.combat.round||1,turnId,participants,
+  return {active:true,round:data.combat.round||1,turnId,activeEnvironment,participants,
     outside:tokens.filter(t=>!seen.has(t.id)).sort(compare)};
 }
 
