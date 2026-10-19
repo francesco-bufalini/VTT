@@ -163,7 +163,9 @@ try{
   const monster=await createCreature('monster','Orco del crepuscolo');
   await (await openCreatureEditor(monster.data.id)).update({species:'Orco'});
  });
- await globalPage('library');
+ // Direct IndexedDB fixture edits are outside the UI editor: reload the archive
+ // before inspecting it rather than racing an already-active library page.
+ await page.reload();await page.locator('.creature-card').filter({hasText:'Lyria · Sentinella delle stelle'}).waitFor();
  const elfCard=page.locator('.creature-card').filter({hasText:'Lyria · Sentinella delle stelle'});
  assert.match(await elfCard.locator('.creature-details').textContent(),/Elfo/);
  assert.doesNotMatch(await elfCard.locator('.creature-details').textContent(),/Personaggio|Mostro/);
