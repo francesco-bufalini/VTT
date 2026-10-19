@@ -141,9 +141,9 @@ async function diagnoseStartupModules(phase, error) {
       ...(untested && Date.now() >= until ?
         ["Verifica incompleta: raggiunto il limite di 18 secondi.", ""] : []),
       "RISULTATO PER OGNI FILE:",
-      ...results.map((row, index) => row ?
-        row.path + " — " + row.details :
-        STARTUP_MODULE_PATHS[index] + " — non ancora verificato")
+      ...STARTUP_MODULE_PATHS.map((path, index) => results[index] ?
+        path + " — " + results[index].details :
+        path + " — non ancora verificato")
     ];
     details.textContent = lines.join("\n");
     status.textContent = "Verifica moduli: " + completed + "/" +
