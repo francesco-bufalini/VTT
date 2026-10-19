@@ -120,11 +120,8 @@ func run() -> void:
 	var conditions_2014: Array = condition_catalog.editions["2014"]
 	var conditions_2024: Array = condition_catalog.editions["2024"]
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and row.name == "Grappled"))
-	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and
-		row.get("entries", []) is Array and not row.entries.is_empty()), "5etools descriptions must accompany statuses")
-	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.get("category") == "diseases" and
-		row.name == "Arcane Blight" and not row.get("entries", []).is_empty()),
-		"Native magical diseases must be included in mobile catalog")
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "grappled" and row.get("entries", []) is Array and not row.get("entries", []).is_empty()), "5etools descriptions must accompany statuses")
+	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.get("category") == "diseases" and row.name == "Arcane Blight" and not row.get("entries", []).is_empty()), "Native magical diseases must be included in mobile catalog")
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "restrained" and row.name == "Restrained"))
 	assert(conditions_2014.any(func(row: Dictionary) -> bool: return row.id == "hidden"))
 	assert(conditions_2024.any(func(row: Dictionary) -> bool: return row.id == "5etools:effects:xphb:bloodied"))
