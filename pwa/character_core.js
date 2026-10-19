@@ -26,7 +26,7 @@ export function initialCreature(kind,name,id,owner_id){
     max_hp:1,max_hp_base:1,current_hp:1,temporary_hp:0,
     second_form_hp:0,second_form_max_hp:0,
     speed_base:30,speed:30,speed_is_custom:false,darkvision:0,exhaustion:0,
-    hit_dice:"",death_save_successes:0,death_save_failures:0,
+    hit_dice:"",hit_dice_spent:{},death_save_successes:0,death_save_failures:0,
     attacks:"",attack_ability:"str",attack_overrides:{},equipped_attack_id:"",
     equipped_inventory_index:-1,hand_main_special:"none",hand_off_special:"none",
     hand_grip_two_handed:false,two_weapon_fighting:false,fighting_styles:[],
@@ -85,3 +85,24 @@ export function recoveryPatch(record,event,trackers=record.resource_trackers){
   if(event==="long_rest")patch.spell_slots_spent=zeroSlots();
   return patch;
 }
+
+/**
+ * Hit Dice remain a portable per-die-size counter. Older desktop exports have
+ * no hit_dice_spent field: treat those pools as fully available, never discard
+ * the native hit_dice string or the class-derived values.
+ */
+export function hitDicePools(record,calculated={}){
+ const expression=String(calculated.stats?.hit_dice||record.hit_dice||'');
+ const counts=new Map();
+ for(const match of expression.matchAll(/(\d+)\s*d\s*(\d+)/gi)){
+  const count=Number(match[1]),die=Number(match[2]);
+  if(!Number.isSafeInteger(count)||count<1||count>1000||![4,6,8,10,12,20].includes(die))continue;
+  counts.set(die,(counts.get(die)||0)+count);
+ }
+ return [...counts].sort(([a],[b])=>b-a).map(([die,total])=>{
+  const value=Number(record.hit_dice_spent?.['d'+die]||0);
+  const spent=Math.max(0,Math.min(total,Number.isFinite(value)?Math.trunc(value):0));
+  return {die,total,spent,available:total-spent};
+ });
+}
+

@@ -1,3 +1,4 @@
+import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
@@ -387,7 +388,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
-  const rest=document.createElement('div');rest.innerHTML='<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';bind('rests',rest);
+  const dice=hitDicePools(c,d);
+  const diceControls=dice.map(pool=>'<label class="play-rest-die">'+
+    '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+'</span>'+
+    '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+'" min="0" max="'+pool.available+'" value="0" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
+  const rest=document.createElement('div');
+  rest.innerHTML=(dice.length?'<div class="play-rest-dice"><strong>Dadi Vita</strong>'+diceControls+'</div>':'')+
+    '<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';
+  bind('rests',rest);
   // Link each tracker to the exact power group exposed by the spell/ability
   // editor, and offer direct ability details in the collapsible list.
   const powerGroups=new Map();

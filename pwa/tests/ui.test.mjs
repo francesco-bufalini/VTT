@@ -156,7 +156,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   const rows=await listCreatures();
   const creature=rows.find(r=>r.creature.name==="Arcanista mobile");
   const persisted=await loadCreature(creature.creature.id);
-  assert.equal(persisted.data.current_hp,17);
+  assert.equal(persisted.data.current_hp,1,'Un riposo lungo ripristina i PF massimi, qui 1');
   assert.equal(persisted.data.inventory[0].quantity,3);
   assert.equal(persisted.data.spell_slots_spent[1],0,"Il riposo lungo ripristina gli slot di classe");
   assert.equal(persisted.data.party_id,"Gruppo digitato e subito chiuso");
