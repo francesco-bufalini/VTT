@@ -2710,6 +2710,25 @@ async function handleAction(target){
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
   }
+  if(act==='battle-attack-map'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura.');
+    if(!state.paired||!state.online)throw Error('Collega la partita al desktop per vedere la gittata sulla mappa.');
+    const attackId=String(target.dataset.attackId||'');
+    const calculated=await computeLocalData(creature);
+    const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
+    if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
+    const liveMap=await map();
+    const token=casterToken(creature,liveMap,await ownerId());
+    if(!token)throw Error('Piazza o associa la creatura a un token prima di visualizzare la gittata.');
+    if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+    await tacticalViewer.open(String(token.id),{
+      range_feet:Number(attack.range_feet)||5,
+      long_range_feet:Number(attack.long_range_feet)||0,
+      melee:Boolean(attack.melee)
+    });
+    return;
+  }
   if(act==='combat-action'){
     const mode=target.dataset.mode;
     if(!['help','shove','prone','grapple'].includes(mode))throw Error('Azione non valida.');
