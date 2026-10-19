@@ -498,6 +498,7 @@ static func entries(record: Dictionary, enabled_variants: Array = []) -> Array[D
 		var rule := _entry(String(option.get("name", "")), _timing(option.get("activation", "action")),
 			"Capacità", source_detail, String(option.get("tracker", "")), String(option.get("tracker_id", "")))
 		rule["rule_id"] = String(option.get("rule_id", ""))
+		rule["origin_id"] = String(option.get("origin_id", ""))
 		rule["id"] = String(option.get("action_id", ""))
 		# Combat Wild Shape preserves the normal action option from Wild Shape.
 		rule["alternate_action"] = rule["id"] == "wild_shape" and rule["time"] == 1 and String(record.get("rules_version", "2014")) == "2014"

@@ -2,7 +2,7 @@
 // resources as the battle/magic sheets. No server or prose-regex rule inference.
 import {sessionSpellEntries} from './spell_selection.js';
 import {SKILLS} from './native_sheet.js';
-import {featureActionEntries} from './feature_mechanics.js';
+import {featureActionEntries,classFeatureEntries} from './feature_mechanics.js';
 
 let supplementsCache=null;
 let generalActionsCache=null;
@@ -160,7 +160,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
   const time=String(attack.id).startsWith('monster:')?(section==='bonus'||section==='reaction'?section:'action'):attack.offhand_bonus?'bonus':'action';
   const hit=attack.hit!==null&&attack.hit!==undefined&&attack.hit!==''&&Number.isFinite(Number(attack.hit))?
    'Colpire: '+(Number(attack.hit)>=0?'+':'')+attack.hit+'. ':'';
-  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
+  add(attack.name,time,'Attacco',hit+(attack.damage?'Danni: '+attack.damage+'. ':'')+(attack.damage_explanation?attack.damage_explanation+'. ':'')+'Portata/gittata: '+(attack.range_feet??5)+' ft.','',0,{id:attack.id,attack_id:attack.id,parent_action:time==='bonus'?'two_weapon':time==='action'?'attack':''});
  }
  // Fallback for older schemas without the local computed attack projection.
  for(const attack of arr(record.attacks))if(attack?.name&&!already.has(String(attack.id))){
@@ -262,53 +262,9 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  return normalized;
 }
-// Exact native class_feature_activation.gd/RULES mapping. Project only
-// features that the local rules engine actually collected and enabled.
-const NATIVE_CLASS_ACTIONS=[
- ['rage','Barbarian','Rage','Ira','Rages','bonus'],
- ['reckless_attack','Barbarian','Reckless Attack','Attacco irruento','','free'],
- ['second_wind','Fighter','Second Wind','Recuperare energie','Second Wind','bonus'],
- ['action_surge','Fighter','Action Surge',"Impeto d'azione",'Action Surge','free'],
- ['lay_on_hands','Paladin','Lay on Hands','Imposizione delle mani','Lay on Hands','action'],
- ['divine_sense','Paladin','Divine Sense','Percezione del divino','Divine Sense','action'],
- ['turn_undead','Cleric','Turn Undead','Scacciare non morti','Channel Divinity','action'],
- ['channel_divinity','Paladin','Channel Divinity','Incanalare divinità','Channel Divinity','action'],
- ['font_of_magic','Sorcerer','Font of Magic','Fonte di magia','Sorcery Points','bonus'],
- ['innate_sorcery','Sorcerer','Innate Sorcery','Stregoneria innata','Innate Sorcery','bonus'],
- ['arcane_recovery','Wizard','Arcane Recovery','Recupero arcano','Arcane Recovery','free'],
- ['flurry_of_blows','Monk','Ki','Raffica di colpi','Ki Points','bonus'],
- ['patient_defense','Monk','Ki','Difesa paziente','Ki Points','bonus'],
- ['step_of_the_wind','Monk','Ki','Passo del vento','Ki Points','bonus'],
- ['stunning_strike','Monk','Stunning Strike','Colpo stordente','Ki Points','free'],
- ['uncanny_dodge','Rogue','Uncanny Dodge','Schivata prodigiosa','','reaction'],
- ['deflect_missiles','Monk','Deflect Missiles','Deviare proiettili','','reaction'],
- ['deflect_attacks','Monk','Deflect Attacks','Deviare attacchi','','reaction']
-];
+// Retain the public projection API; execution and eligibility share one rule set.
 export function nativeClassFeatureActions(record={},calculated={}){
- const revised=record.rules_version==='2024',features=arr(calculated.features),trackers=arr(calculated.trackers);
- const output=[];
- for(const [key,owner,sourceName,label,baseResource,baseTime] of NATIVE_CLASS_ACTIONS){
-  const parent=revised&&sourceName==='Ki'?'Monk’s Focus':sourceName;
-  const feature=features.find(row=>!row.inactive&&!row.disabled&&
-   String(row.name||'').replaceAll("'",'’').toLowerCase()===parent.toLowerCase()&&
-   String(row.origin_key||'').startsWith('class|')&&
-   String(row.requirements?.class_name||row.class_name||'').toLowerCase()===owner.toLowerCase());
-  if(!feature)continue;
-  let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
-  if(revised&&key==='divine_sense')resource='Channel Divinity';
-  const tracker=resource?trackers.find(row=>String(row.name||'').toLowerCase()===resource.toLowerCase()&&
-   (!row.origin_class||String(row.origin_class).toLowerCase()===owner.toLowerCase())):null;
-  const time=revised&&key==='lay_on_hands'?'bonus':baseTime;
-  const active=!!record.active_class_features?.[key];
-  const cost=revised&&['patient_defense','step_of_the_wind'].includes(key)?0:tracker?1:0;
-  output.push({id:'class_feature:'+key,name:label,time,type:'Capacità',
-   description:details(feature.entries??feature.description??'')+(active?'\nAttiva sulla scheda.':''),
-   tracker:tracker?.name||resource||'',tracker_id:tracker?.id||'',cost,
-   origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
-   feature_name:feature.name,origin_name:'Tratto · '+feature.name,
-   class_name:owner,resource_name:resource,active,class_feature_id:key});
- }
- return output;
+ return classFeatureEntries(record,calculated).map(row=>({...row,description:details(row.description)}));
 }
 export function spellActionEntries(record={},calculated={},spells=[]){
  const output=[];

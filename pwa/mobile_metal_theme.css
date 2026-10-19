@@ -1514,3 +1514,7 @@ input:disabled{opacity:.75;cursor:default}
 .scroll-creator-fields select:disabled{opacity:.55}
 .scroll-creator-fields .actions{display:flex;justify-content:flex-end;margin-top:4px}
 .scroll-creator-fields .actions .btn{min-height:44px;padding:9px 17px}
+/* Active privilege benefits remain readable in narrow condition cards. */
+.feature-effect-summary{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.45;margin-top:6px}
+#class-feature-dialog label,#class-feature-dialog p,.miniature-dialog p{overflow-wrap:anywhere}
+#class-feature-dialog input[type=number],#class-feature-dialog select{min-height:48px;max-width:100%}

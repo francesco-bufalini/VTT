@@ -20,7 +20,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
-import {optionalRecoveryPatch} from './feature_mechanics.js';
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
 const app = document.querySelector("#app");
@@ -393,33 +393,66 @@ async function computeLocalData(record){
     infusion_mechanics:catalogs.classMechanics||{}};
 }
 
-function classAbilityActivationPatch(c,calculated,ability){
- const key=String(ability?.class_feature_id||'');
- const allowed=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
- if(!allowed.has(key)||c.active_class_features?.[key])throw Error('Capacità non disponibile o già attiva.');
- const incapacitated=(c.conditions||[]).includes('unconscious')||
-   (c.rules_version==='2024'&&(c.conditions||[]).includes('incapacitated'));
- if(key==='rage'&&(incapacitated||(c.inventory||[]).some(item=>
-   item?.equipped_slots?.includes('body')&&String(item.type||'').split('|')[0]==='HA')))
-   throw Error('Ira non disponibile con armatura pesante o incapacità.');
- const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
- const requiresTracker=['rage','innate_sorcery'].includes(key)||
-   (c.rules_version!=='2024'&&['patient_defense','step_of_the_wind'].includes(key));
- if(requiresTracker&&!tracker)throw Error('Tracker della capacità non disponibile.');
- const cost=requiresTracker?1:Math.max(0,Number(ability.cost)||0);
- if(cost&&(!tracker||tracker.disabled||tracker.max-tracker.spent<cost))
-   throw Error('Risorsa insufficiente per attivare la capacità.');
- const changes={active_class_features:{...(c.active_class_features||{}),
-   [key]:{name:ability.name,origin_id:ability.origin_id||ability.id,
-   rules_version:c.rules_version||'2014',enhanced:false}}};
- if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
- if(key==='rage'){
-   changes.conditions=(c.conditions||[]).filter(id=>id!=='concentrating');
-   changes.concentrating_spell_id='';
- }
- return changes;
+function classAbilityActivationPatch(c,calculated,ability,options={}){
+ return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
-
+async function activateClassAbility(c,calculated,ability){
+ const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
+ if(ability.mode==='toggle'&&!enhanced){
+  await patch(classAbilityActivationPatch(c,calculated,ability));await render();return;
+ }
+ document.querySelector('#class-feature-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog';
+ dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
+ const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
+ dialog.innerHTML='<h2>'+esc(ability.name)+'</h2><p class="trait-description">'+esc(ability.description)+'</p>'+
+  (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
+  (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
+  (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
+  (recovery?'<p>Massimo '+Math.ceil(Number((c.classes||[]).find(x=>x.name==='Wizard')?.level||c.level||0)/2)+' livelli di slot.</p>'+[1,2,3,4,5].map(n=>'<label>Slot di livello '+n+'<input data-feature-recover="'+n+'" type="number" min="0" max="'+Number(c.spell_slots_spent?.[n]||0)+'" value="0"></label>').join(''):'')+
+  (enhanced?'<label class="check"><input data-feature-enhanced type="checkbox">Versione potenziata · 1 punto Focus</label>':'')+
+  (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
+  '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
+ dialog.querySelector('[data-feature-cancel]').addEventListener('click',()=>dialog.close());
+ dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
+  if(event.currentTarget.disabled)return;
+  const button=event.currentTarget;button.disabled=true;
+  try{
+   const current=state.editor?.read();if(current?.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   const fresh=await computeLocalData(current),options={amount:dialog.querySelector('[data-feature-amount]')?.value,
+    level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
+    apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
+    levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value))};
+   if(ability.mode==='heal_roll')options.roll=randomDie(10);
+   const changes=classAbilityActivationPatch(current,fresh,ability,options);
+   await patch(changes);if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();dialog.close();await render();
+   message(ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
+  }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
+async function applyFormPatch(c,changes){
+ if(c.linked_token_sync_id&&state.paired&&state.online){
+  const result=await action('set_appearance',{token_id:c.linked_token_sync_id,owner_id:await ownerId(),miniature_id:changes.current_miniature_id});
+  if(!result.ok)throw Error(result.error||'Aspetto non applicato sul desktop.');
+ }
+ await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
+}
+function promptEndWildShape(creatureId){
+ const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='form-depleted-dialog';
+ dialog.innerHTML='<h2>Seconda forma esaurita</h2><p>I PF della seconda forma sono a 0. Ripristinare l’aspetto originale?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Ripristina aspetto</button><button type="button" class="btn" data-form-keep>Mantieni aspetto</button></div>';
+ dialog.querySelector('[data-form-keep]').addEventListener('click',()=>dialog.close());
+ dialog.querySelector('[data-form-restore]').addEventListener('click',async event=>{
+  const button=event.currentTarget;button.disabled=true;
+  try{const c=state.editor?.read();if(c?.id!==creatureId)throw Error('La creatura è cambiata.');
+   await applyFormPatch(c,endWildShapePatch(c));dialog.close();await render();
+  }catch(error){button.disabled=false;message(errorMessage(error),true);}
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
   const c = state.editor.read();
@@ -2251,8 +2284,7 @@ async function handleAction(target){
     const calculated=await computeLocalData(c);
     const ability=nativeClassFeatureActions(c,calculated).find(row=>row.class_feature_id===key);
     if(!ability)throw Error('Capacità non disponibile.');
-    await patch(classAbilityActivationPatch(c,calculated,ability));
-    state.sheetPopup='';await render();return;
+    await activateClassAbility(c,calculated,ability);return;
   }
   if(act==='battle-use-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
@@ -2268,9 +2300,11 @@ async function handleAction(target){
       String(row.id||row.ability_id||row.name)===requested)||
       (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
     if(!ability)throw Error('Capacità non disponibile per questa creatura.');
-    if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(ability.class_feature_id)){
-      await patch(classAbilityActivationPatch(c,calculated,ability));
-      await render();return;
+    if(ability.rule_action_id==='wild_shape'||ability.id==='vtt_wild_shape'||ability.ability_id==='vtt_wild_shape'){
+      await handleAction({dataset:{act:'miniature-pick',miniatureKind:'current',wildShape:'true'}});return;
+    }
+    if(ability.class_feature_id){
+      await activateClassAbility(c,calculated,ability);return;
     }
     const cost=Math.max(0,Number(ability.cost)||0);
     const persistentKey=String(target.dataset.persistentKey||'');
@@ -2316,6 +2350,9 @@ async function handleAction(target){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const key=String(target.dataset.abilityKey||'');
     if(!Object.hasOwn(c.active_class_features||{},key))throw Error('Capacità non attiva.');
+    if(key==='wild_shape'){
+      await applyFormPatch(c,endWildShapePatch(c));await render();return;
+    }
     const effects={...(c.active_class_features||{})};delete effects[key];
     await patch({active_class_features:effects});await render();return;
   }
@@ -2381,13 +2418,15 @@ async function handleAction(target){
       typeof row?.id==='string'&&row.id&&typeof row.name==='string'):[];
     if(!choices.length)throw Error('Il catalogo miniature è vuoto.');
     const creatureId=state.creatureId;
+    const wildShape=target.dataset.wildShape==='true';
+    let selectedProfile=null;
     const dialog=document.createElement('dialog');
     dialog.className='sheet-roll-dialog miniature-dialog';
-    dialog.innerHTML='<h2>'+(kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
-      ''+
+    dialog.innerHTML='<h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
+      (wildShape?'<p>Scegli l’aspetto rispettando i limiti del tratto. Un utilizzo verrà consumato alla conferma.</p><label>PF della seconda forma (0 per nessuna riserva)<input data-form-hp type="number" min="0" max="99999" value="0"></label><p data-form-selection role="status">Nessuna forma selezionata.</p>':'')+
       '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
       '<div class="miniature-results" role="list"></div>'+
-      '<div class="actions"><button type="button" class="btn" data-miniature-close>Chiudi</button></div>';
+      '<div class="actions">'+(wildShape?'<button type="button" class="btn primary" data-form-confirm disabled>Trasformati</button>':'')+'<button type="button" class="btn" data-miniature-close>Annulla</button></div>';
     const results=dialog.querySelector('.miniature-results');
     const search=dialog.querySelector('[data-miniature-search]');
     const paint=()=>{
@@ -2400,12 +2439,25 @@ async function handleAction(target){
     };
     search.addEventListener('input',paint);
     dialog.querySelector('[data-miniature-close]').addEventListener('click',()=>dialog.close());
+    if(wildShape)dialog.querySelector('[data-form-confirm]').addEventListener('click',async event=>{
+      const button=event.currentTarget;if(button.disabled||!selectedProfile)return;button.disabled=true;
+      try{
+        const current=state.editor?.read();if(!current||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');
+        const calculated=await computeLocalData(current);
+        const changes=wildShapePatch(current,calculated,selectedProfile,dialog.querySelector('[data-form-hp]').value);
+        await applyFormPatch(current,changes);dialog.close();await render();message('Forma selvatica applicata.');
+      }catch(error){button.disabled=false;message(errorMessage(error),true);}
+    });
     results.addEventListener('click',async event=>{
       const choice=event.target.closest('[data-miniature-id]');
       if(!choice)return;
       const id=choice.dataset.miniatureId;
       const profile=choices.find(row=>row.id===id);
       if(!profile||state.creatureId!==creatureId||!state.editor)return;
+      if(wildShape){
+        selectedProfile=profile;dialog.querySelector('[data-form-selection]').textContent=profile.name;
+        dialog.querySelector('[data-form-confirm]').disabled=false;return;
+      }
       choice.disabled=true;
       try{
         await patch(miniaturePatch(state.editor.read(),profile,kind));
@@ -2666,6 +2718,7 @@ async function handleAction(target){
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro',author=selectedName();
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
+    const autoAdvantage=classFeatureRollAdvantage(creature,calculated,key);
     document.querySelector('#sheet-roll-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-roll-preview';
     dialog.id='sheet-roll-dialog';dialog.dataset.rollTarget=key;
@@ -2673,7 +2726,8 @@ async function handleAction(target){
     dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2>'+
       '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
       '<div class="sheet-roll-math"><span>Formula del tiro</span><strong data-roll-formula>'+
-      esc(sheetRollFormula(modifier))+'</strong></div>'+
+      esc(sheetRollFormula(modifier,[],autoAdvantage?'advantage':'normal'))+'</strong></div>'+
+      '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+(autoAdvantage?' · vantaggio dal privilegio':'')+'</option><option value="normal">Normale</option><option value="advantage">Vantaggio</option><option value="disadvantage">Svantaggio</option></select></label>'+
       '<p class="sheet-roll-components"><strong>Calcolo del modificatore:</strong> '+
       esc(sheetModifierBreakdown(calculated,key))+'</p>'+
       (key==='initiative'?'':'<p class="sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
@@ -2688,10 +2742,11 @@ async function handleAction(target){
       '<button type="button" class="btn" data-act="sheet-roll-edit-bonus" data-target="'+esc(key)+'">Origini e bonus ±</button>'+
       btn('close-sheet-roll','Chiudi')+'</div>';
     dialog.addEventListener('change',event=>{
-      if(!event.target.matches('[data-roll-bonus]'))return;
+      if(!event.target.matches('[data-roll-bonus],[data-roll-mode]'))return;
       const selected=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
       const formula=dialog.querySelector('[data-roll-formula]');
-      if(formula)formula.textContent=sheetRollFormula(modifier,selected);
+      const choice=dialog.querySelector('[data-roll-mode]').value;
+      if(formula)formula.textContent=sheetRollFormula(modifier,selected,choice==='auto'?(autoAdvantage?'advantage':'normal'):choice);
     });
     document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
@@ -2707,7 +2762,9 @@ async function handleAction(target){
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
     const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
        bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
-    const outcome=rollSheetDice(modifier,chosen,randomDie);
+    const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
+    const mode=choice==='auto'?(classFeatureRollAdvantage(creature,calculated,key)?'advantage':'normal'):choice;
+    const outcome=rollSheetDice(modifier,chosen,randomDie,mode);
     dialog.dataset.rolled='true';
     state.roll={...outcome,label,author:selectedName()};
     state.rollHistory.unshift({...state.roll});
@@ -3313,9 +3370,12 @@ async function handleSubmit(form){
     if(!Number.isSafeInteger(amount)||amount<1||amount>99999)throw Error('Inserisci un valore di PF tra 1 e 99999.');
     if(!state.editor)throw Error('Apri prima una scheda.');
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    await patch(hitPointPatch(creature,mode==='damage'?-amount:amount,calculated));
+    const changes=hitPointPatch(creature,mode==='damage'?-amount:amount,calculated);
+    await patch(changes);
     closeSessionDialog(dialog);
     await render();
+    if(mode==='damage'&&creature.active_class_features?.wild_shape&&creature.second_form_hp>0&&changes.second_form_hp===0)
+      promptEndWildShape(creature.id);
     return;
   }
   if(form.id==="pair-form"){

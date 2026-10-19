@@ -4,7 +4,7 @@
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
-import {modifyFeatureTrackers} from './feature_mechanics.js';
+import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive} from './feature_mechanics.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -418,7 +418,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
 }
 // CreatureAttackData / CreatureItemRules projection: each equipped hand keeps
 // its native stable attack ID. Published monster totals already include PB.
-export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0){
+export function attackCalculations(record,abilities,proficiency,proficiencies=[],bonus=()=>0,featureContext={}){
  const out=[],inventory=arr(record.inventory).map(resolveOwnedItem),trained=new Set(proficiencies);
  const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
  const main=occupied('main'),physicalOff=occupied('off');
@@ -441,11 +441,13 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
   let damageMod=baseHit!==null?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
-  damageMod+=bonus('attack_damage:'+attack.id);
+  const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
+  damageMod+=bonus('attack_damage:'+attack.id)+featureDamage;
   const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
   const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
   out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
+    feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'&&!!offAllowed});
  };
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
@@ -489,7 +491,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  for(const [key,name] of [['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']])if(hands.includes(key)){
   const proficient=key==='unarmed'||trained.has('weapon:improvised');
   append({id:key,name,melee:true,range_feet:5,long_range_feet:0},'str',proficient,key==='unarmed'?'1':'1d4');
-  if(key==='unarmed')out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+bonus('attack_damage:unarmed')));
+  if(key==='unarmed')out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+bonus('attack_damage:unarmed')+classFeatureDamage(record,featureContext,{},'str')));
  }
  return out;
 }
@@ -728,7 +730,7 @@ export function calculateSheet(record={},catalogs={}){
   const useSaved=record.spell_slots_manual||(!record.spell_slots_automatic&&hasLegacy);
   const slots=Array.from({length:9},(_,i)=>{
     const level=i+1,total=Math.max(0,(useSaved?int(saved[level]):progression.slots[level])+
-      (safe("slot:"+level)??0)),spent=Math.max(0,int(record.spell_slots_spent?.[level]));
+      (safe("slot:"+level)??0)+Math.max(0,int(record.created_spell_slots?.[level]))),spent=Math.max(0,int(record.spell_slots_spent?.[level]));
     return {level,base:Math.max(0,useSaved?int(saved[level]):progression.slots[level]),total,spent:Math.min(spent,total)};
   });
   const pactTotal=Math.max(0,(useSaved?int(record.pact_slots_total):progression.pact_total)+
@@ -770,7 +772,8 @@ export function calculateSheet(record={},catalogs={}){
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
-  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0);
+  const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})}))};
+  const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
@@ -807,6 +810,8 @@ export function calculateSheet(record={},catalogs={}){
   return {source:"local",schema:1,abilities,saves,skills,
     values:Object.fromEntries(memo),explanations,proficiencies:[...proficiencies.keys()],
     casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},
+    active_feature_effects:classFeatureEffects(record,featureContext),
+    feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
     automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
