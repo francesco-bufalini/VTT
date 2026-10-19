@@ -475,6 +475,12 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const selectedAttack=attack||opportunityWeapon;
  const actionName=opportunityWeapon?
   String(opportunityWeapon.name||'Arma')+' · '+item.name:item.name;
+ if(item.check_target){
+  const key=String(item.check_target),stat=key.slice('ability_mod:'.length);
+  const bonus=key.startsWith('skill:')?calculated.skills?.[key.slice(6)]:
+   calculated.abilities?.[stat]?.modifier;
+  addRoll(key,actionName,item.check_label||actionName,calculated.values?.[key]??bonus);
+ }
  if(attack){
   addRoll('attack_hit:'+attack.id,'Tiro per colpire · '+actionName,
    attack.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+attack.id]??attack.hit);
@@ -496,7 +502,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
- const icon=actionGlyph(actionGlyphKey(item));
+ const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
@@ -504,11 +510,15 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
-  '<div class="play-battle-attack-line"><details class="play-battle-attack-details"><summary>'+icon+
-  '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span>'+
-  (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
-  '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
-  source+target+resources+'</div></details>'+
+  '<div class="play-battle-attack-line">'+
+  (item.check_target?
+   '<div class="play-battle-attack-details"><div class="play-battle-check-heading">'+icon+
+   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></div></div>':
+   '<details class="play-battle-attack-details"><summary>'+icon+
+   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span>'+
+   (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
+   '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
+   source+target+resources+'</div></details>')+
   (rolls.length?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
@@ -541,6 +551,26 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
  }
  return result;
 }
+// The canonical 18 skills are grouped by their governing ability. Each group
+// starts with an untrained ability check, without adding a fictitious proficiency.
+export function battleSkillChecksPanel(calculated={}){
+ const abilities=[['str','Forza'],['dex','Destrezza'],['con','Costituzione'],
+  ['int','Intelligenza'],['wis','Saggezza'],['cha','Carisma']];
+ const emptyAttacks=new Map(),descriptions={main:'',off:''};
+ return abilities.map(([ability,label])=>{
+  const choices=[
+   {id:'ability_mod:'+ability,name:'Prova di '+label,check_target:'ability_mod:'+ability,check_label:label},
+   ...SKILLS.filter(row=>row[2]===ability).map(([id,name])=>({
+    id:'skill:'+id,name,check_target:'skill:'+id,check_label:name,skill_code:id}))
+  ];
+  return '<details class="play-battle-action-group" data-action-ability="'+esc(ability)+'" open>'+
+   '<summary class="play-battle-action-heading">'+actionGlyph('proficiency')+
+   '<span>'+esc(label)+'</span><span class="play-badge">'+choices.length+'</span></summary>'+
+   '<div class="play-battle-action-rows">'+choices.map(row=>battleAttackRow(row,calculated,emptyAttacks,descriptions)).join('')+
+   '</div></details>';
+ }).join('');
+}
+
 export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const descriptions={
@@ -575,7 +605,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
  return {attacks:render(weapon,'attacks'),others:render(remainingOthers,'others'),
   freeActions:freeActions.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join(''),
-  abilityEntries:classAbilities,
+  abilityEntries:classAbilities,checks:battleSkillChecksPanel(calculated),
   movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
 
