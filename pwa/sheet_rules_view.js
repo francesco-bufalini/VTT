@@ -21,6 +21,17 @@ export function fastestMovement(data={}){
  return options.reduce((best,item)=>!best||item.value>best.value?item:best,null)||
   {key:'speed',label:'Camminata',value:null};
 }
+// Read recovery rules from the effective tracker (automatic or custom).
+export function trackerRecoveryText(tracker={}) {
+ const labels={short_rest:'riposo breve',long_rest:'riposo lungo',turn:'inizio turno',manual:'manuale'};
+ const mode=String(tracker.recharge||'manual');
+ if(mode==='d6'){
+  const n=Number(tracker.recharge_min);
+  const minimum=Number.isInteger(n)&&n>=1&&n<=6?n:6;
+  return 'Ricarica: d6 · '+minimum+'+';
+ }
+ return 'Recupero: '+(labels[mode]||'non specificato');
+}
 /** Expand a modifier using effective abilities, training and residual bonuses. */
 export function sheetModifierBreakdown(data,target){
  const total=Number(data?.values?.[target]);
@@ -493,7 +504,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const source=[...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===t.id);
    bind('resource:'+t.id,source);
    const context=powerGroups.has(key)?'power-resource:'+key:'resource:'+t.id;
-   return '<div class="play-resource-group"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'"><strong>'+esc(t.name)+'</strong><span>'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
+   return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
+    '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
+    '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
     '</div>'+abilityButtons(key)+'</div>';
   }).join('');
   const untracked=['missing','free'].map(key=>{

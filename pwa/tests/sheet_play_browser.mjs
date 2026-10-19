@@ -135,6 +135,13 @@ try{
  assert.equal(await resourcesPanel.locator('[data-sheet-context="rests"]').count(),0,'Rests belong in HP');
  await resourcesPanel.locator('summary.play-battle-summary').click();
  assert.equal(await resourcesPanel.getAttribute('open'),'');
+ const focusResource=resourcesPanel.locator('[data-resource-tracker="focus"] .play-resource-info');
+ assert.equal(await focusResource.locator('.play-resource-name').textContent(),'Focus arcano');
+ assert.equal(await focusResource.locator('.play-resource-recovery').textContent(),'Recupero: riposo breve');
+ assert.match(await focusResource.locator('.play-resource-count').textContent(),/5\s*\/\s*7/);
+ const resourceWeight=await focusResource.locator('.play-resource-name').evaluate(node=>Number(getComputedStyle(node).fontWeight));
+ const abilityWeight=await resourcesPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
+ assert(resourceWeight>abilityWeight,'Resource name has stronger emphasis than its abilities');
  const inlineClass=resourcesPanel.locator('.play-resource-power-row[data-ability-id="arcane_pulse"]');
  assert.equal(await inlineClass.count(),1,'Class abilities appear beneath their resource');
  assert.equal(await inlineClass.locator('[data-act="battle-use-ability"]').count(),1);
