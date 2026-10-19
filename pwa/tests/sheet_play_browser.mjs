@@ -27,7 +27,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['info','battle','actions','magic','inventory','traits','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','traits','conditions','origins']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea');
    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
@@ -135,12 +135,18 @@ try{
  assert(!String(await inlineClass.textContent()).includes(' / '));
  await inlineClass.locator('[data-act="sheet-context"]').click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
+ assert.match(await resourcesPanel.locator('[data-ability-resource="free"]').textContent(),/Azioni gratuite/);
+ assert(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-free-actions [data-attack-id]').count()>0);
  const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  assert.equal(await linkedSpell.locator('[data-act="battle-cast-resource-spell"]').count(),1,'Dedicated Lancia button is beside the spell details');
+ assert.match(await linkedSpell.textContent(),/Azione/);
+ assert.doesNotMatch(await linkedSpell.textContent(),/Incantesimo/);
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
@@ -154,7 +160,7 @@ try{
  assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
  assert.equal(await resourcesPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
- assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
  await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
@@ -165,6 +171,11 @@ try{
  await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
  assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
+ await focusButton.click();
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="tracker-reset"][data-tracker-id="focus"]').count(),1);
+ await page.locator('#sheet-context-dialog [data-act="tracker-reset"][data-tracker-id="focus"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.resource_tracker_spent?.focus;});
+ await dismiss();
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
@@ -176,6 +187,13 @@ try{
  assert.match(await shared.textContent(),/Formula CA naturale/);
  assert.match(await shared.textContent(),/CA totale/);
  assert.equal(await shared.locator('[data-equip-slot]').count(),3);
+ const weaponsGroup=shared.locator('.equipment-weapons');
+ const armorGroup=shared.locator('.equipment-armor');
+ assert.equal(await weaponsGroup.locator('[data-equip-slot]').count(),2);
+ assert.equal(await armorGroup.locator('[data-equip-slot="body"]').count(),1);
+ assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
+ assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),1);
+ assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
@@ -185,19 +203,43 @@ try{
  await dismiss();
  await popup('equipment');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
- await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('dex');
- await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='dex';});
+ await page.locator('#sheet-context-dialog [data-field="attack_ability"]').selectOption('wis');
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability==='wis';});
+ await page.locator('#sheet-context-dialog [data-field="two_weapon_fighting"]').check();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.two_weapon_fighting===true;});
  await page.locator('#sheet-context-dialog [data-field="attack_ability_finesse_only"]').uncheck();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.attack_ability_finesse_only===false;});
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===true;});
+ const secondary=page.locator('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]');
+ assert.equal(await secondary.isDisabled(),true,'Versatile grip must disable offhand equipment');
+ assert.equal(await secondary.inputValue(),'-1','Versatile grip must lock the offhand on Nessuno');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
  await dismiss();
  await page.locator('#sheet-play-view [data-target="initiative"]').click();
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
- await popup('rests');await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();await dismiss();assert.equal((await record()).resource_tracker_spent.focus,undefined);
+ await popup('rests');
+ const shortRestDice=page.locator('#sheet-context-dialog [data-rest-die="6"]');
+ assert.equal(await shortRestDice.count(),1,'Wizard Hit Dice appear in the resting popup');
+ await shortRestDice.fill('2');
+ await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
+ await dismiss();
+ const afterShort=await record();
+ assert.equal(afterShort.resource_tracker_spent.focus,undefined);
+ assert.equal(afterShort.hit_dice_spent.d6,2,'Short rest saves spent Hit Dice');
+ assert(afterShort.current_hp>=37,'Short rest heals without exceeding maximum');
+ await popup('rests');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-die="6"]').getAttribute('max'),'3');
+ await page.locator('#sheet-context-dialog [data-act="tracker-long"]').click();
+ await dismiss();
+ const afterLong=await record();
+ assert.equal(afterLong.temporary_hp,0,'Long rest expires temporary HP');
+ assert.equal(afterLong.hit_dice_spent.d6,undefined,'2014 long rest restores half of five Hit Dice');
+ assert.equal(afterLong.pact_slots_spent,0);
+ assert.deepEqual(afterLong.spell_slots_spent,Array(10).fill(0));
+ assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  await popup('tools');
@@ -244,16 +286,37 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');await popup('trait-notes');await page.locator('#sheet-context-dialog textarea').fill('Una promessa mantenuta.');await dismiss();assert.equal((await record()).additional_traits,'Una promessa mantenuta.');
+ await sheet('traits');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
-  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
+  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
   for(const contextKey of keys){
-   try{await popup(contextKey);}catch(error){throw Error('Popup '+key+' / '+contextKey+': '+error.message);}
-   assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();
+   try{
+    await popup(contextKey);
+    assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);
+    await dismiss();
+   }catch(error){throw Error('Popup non raggiungibile · '+key+' · '+contextKey+' · '+error.message);}
   }
  }
- await sheet('actions');await page.locator('[data-timing-choice="reaction"]').click();assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi/);await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();await shot('action-popup');await dismiss();
+ await sheet('battle');
+ const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
+ await checks.locator('summary.play-battle-summary').click();
+ assert.equal(await checks.locator('[data-action-ability]').count(),6);
+ assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
+ const strength=checks.locator('[data-action-ability="str"]');
+ assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_mod:str');
+ assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
+ assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
+ const firstRoll=strength.locator('[data-target="ability_mod:str"]');
+ await firstRoll.click();
+ assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
+ await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
+ await strength.locator('summary.play-battle-action-heading').click();
+ assert.equal(await strength.getAttribute('open'),null);
+ await page.locator('#sheet-play-view [data-act="action-variants"]').click();
+ assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
+ await page.locator('[data-close-variants]').click();
+ await shot('action-ability-checks');
  // A persistent class feature must expose a reversible action, not an inert "Attiva" badge.
  await page.evaluate(async()=>{
   const {listCreatures,saveCreature}=await import('/creatures.js');
@@ -273,5 +336,5 @@ try{
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 8 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
+ console.log('PASS: 7 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}

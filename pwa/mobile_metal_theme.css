@@ -850,6 +850,7 @@ input:disabled{opacity:.75;cursor:default}
 .play-attack>span{min-width:0}.play-attack strong{display:block;font-size:14px;font-weight:550}.play-attack small{display:block;font-size:11px;color:#bdad94;margin-top:4px}
 .play-attack>.play-button{background:#8a644c24;border:1px solid #a77c493f;flex:none;font-size:20px}
 .play-rest-choices{display:grid;gap:10px}.play-rest-choices .play-button{justify-content:flex-start;border:1px solid #a77c493f;padding:16px}
+.play-rest-dice{display:grid;gap:8px;margin-bottom:14px;padding:10px;border:1px solid #a77c493f;border-radius:10px}.play-rest-dice>strong{font-size:13px}.play-rest-die{display:flex;justify-content:space-between;align-items:center;gap:12px}.play-rest-die input{max-width:80px;min-width:60px;text-align:center}
 .play-abilities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .play-ability{min-width:0;border:1px solid #b38a5550;border-radius:14px;background:linear-gradient(150deg,#3a2c28,#251e1e);text-align:center;padding:3px 4px 5px}
 .play-ability header{display:flex;align-items:center;justify-content:space-between;padding-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;color:#d5b482}
@@ -1160,6 +1161,15 @@ input:disabled{opacity:.75;cursor:default}
  .play-battle-roll-formula{font-size:11px}
 }
 
+/* Generic ability/skill checks share the battle action layout, without fake descriptions. */
+.play-battle-check-heading{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;padding:7px 10px}
+.play-battle-check-heading>.vtt-action-glyph{width:22px;height:22px;flex:0 0 22px}
+.play-battle-check-heading>.play-battle-attack-copy{min-width:0}
+.play-battle-check-heading .play-battle-attack-copy>strong{overflow-wrap:break-word}
+@media(max-width:360px){
+ .play-battle-check-heading{gap:7px}
+}
+
 /* All multiclass levels remain readable below the character name. */
 .topbar .brand-identity{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
 .topbar #creature-name{display:block}
@@ -1303,6 +1313,69 @@ input:disabled{opacity:.75;cursor:default}
 .trait-card.trait-inactive{opacity:.68}
 .trait-book{display:block;font-size:11px;color:var(--muted);margin:5px 0 0}
 .trait-catalog-warnings{font-size:12px;color:var(--muted)}
+
+/* Origins and full-rest control share the warm, borderless power popup layout. */
+.sheet-context-body .play-battle-power-detail .power-privilege-facts{
+ padding:2px 0 13px;margin:0;border-top:0;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-facts>div{
+ display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-description{
+ margin-top:14px;
+}
+.sheet-context-body .play-battle-power-detail .power-privilege-description .trait-description{
+ color:#e0d3c0;font-size:13px;line-height:1.7;margin:4px 0 12px;white-space:pre-wrap;
+}
+.play-resource-origin-details{
+ display:grid;gap:12px;margin-top:14px;padding:14px 0 2px;
+ border-top:1px solid #ae855433;color:#dfcaaa;
+}
+.play-resource-origin-facts{display:grid;gap:5px}
+.play-resource-origin-facts>span{
+ font:500 10px/1.4 system-ui;text-transform:uppercase;letter-spacing:.06em;color:#b7a181;
+}
+.play-resource-origin-facts>strong{font:550 13px/1.4 system-ui;color:#f1d39e;overflow-wrap:anywhere}
+.play-resource-origin-details>.trait-description{margin:0;color:#e0d3c0;font-size:13px;line-height:1.7;white-space:pre-wrap}
+.play-resource-reset{
+ width:100%;min-height:45px;padding:10px 12px;border:1px solid #ad85516c;
+ border-radius:9px;background:#7550334a;color:#f1d8b4;font:600 12px/1.35 system-ui;
+ cursor:pointer;
+}
+.play-resource-reset:disabled{opacity:.45;cursor:default}
+.play-resource-reset:focus-visible{outline:2px solid #edbd77;outline-offset:2px}
+.play-resource-free-actions{padding:9px 12px 12px;border-top:1px solid #ad87412d}
+.play-resource-free-actions>h4{
+ margin:2px 0 9px;color:#e7c897;font:550 12px/1.4 system-ui;
+}
+.play-resource-free-actions>.play-battle-attack-entry{
+ margin:5px 0;border-color:#a6804e27;background:#47332526;
+}
+
+/* Shared equipment panel: weapons/attack options together, armor/AC together. */
+.equipment-unified-panel{min-width:0;display:grid;gap:10px}
+.equipment-unified-panel>h2{margin:0 0 2px}
+.equipment-unified-panel .equipment-weapons,
+.equipment-unified-panel .equipment-armor{min-width:0;display:grid;gap:8px}
+.equipment-unified-panel .equipment-armor{border-top:1px solid #a783514f;padding-top:10px}
+.equipment-unified-panel .equipment-weapons>h3,
+.equipment-unified-panel .equipment-armor>h3{color:#f0cd96;font-size:14px;font-weight:700;margin:0}
+.equipment-unified-panel .inventory-slots{display:grid;gap:6px}
+.equipment-unified-panel .inventory-slot-row{min-width:0;align-items:center}
+.equipment-unified-panel .equipment-attack-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:7px 9px}
+.equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:1/-1;display:flex;align-items:center;gap:9px;justify-content:space-between;min-width:0}
+.equipment-unified-panel .equipment-attack-options>label:first-child select{width:min(56%,245px);min-width:0}
+.equipment-unified-panel .equipment-attack-options .check{margin:0;display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.35}
+.equipment-unified-panel .equipment-attack-options .check input{flex:none}
+.equipment-unified-panel .equipment-defense{display:grid;gap:8px;min-width:0}
+.equipment-unified-panel .equipment-defense .battle-defense-values{display:grid;grid-template-columns:1fr}
+.equipment-unified-panel .equipment-defense .battle-stat{min-width:0}
+.equipment-unified-panel .battle-ac-manage{width:100%;min-height:36px}
+.sheet-context-dialog .equipment-unified-panel{border:0;box-shadow:none;padding:0;background:transparent}
+@media(max-width:360px){
+ .equipment-unified-panel .equipment-attack-options{grid-template-columns:1fr;gap:8px}
+ .equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:auto}
+}
 
 /* Native spell metadata stays separate from freeform descriptions. */
 .magic-spell-facts{display:grid;grid-template-columns:1fr;gap:0;margin:10px 0 14px;padding:9px 11px;border:1px solid #ad875c70;border-radius:9px;background:#0e10125c}

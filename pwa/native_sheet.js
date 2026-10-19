@@ -1,10 +1,11 @@
+import {hitDicePools} from './character_core.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
 export const SHEET_SECTIONS = [["info","Info"],
- ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
+ ["battle","Azioni"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
 // Mirrors CreatureArea._confirm_miniature for the portable fields only.
@@ -127,10 +128,65 @@ export function recoveryPatch(c,event,trackers){
  }
  if(event==='long_rest'){for(const id of Object.keys(ready))delete ready[id];for(const id of Object.keys(used))delete used[id];}
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
+ if(event==='short_rest'||event==='long_rest')patch.active_class_features={};
+ if(event==='long_rest')patch.created_spell_slots=[];
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
  return patch;
+}
+
+/**
+ * A finished rest is a single atomic creature patch, including native feature
+ * recovery, slot usage and the 2014/2024 HP/Hit Die rules. Rest duration and
+ * interruptions are decided at the table rather than guessed from wall time.
+ */
+export function completeRest(record,event,calculated={},spend={},rollDie=sides=>1+Math.floor(Math.random()*sides)){
+ if(!['short_rest','long_rest'].includes(event))throw Error('Tipo di riposo non valido');
+ if(Number(record.current_hp||0)<1)throw Error('Serve almeno 1 PF per iniziare un riposo.');
+ const pools=hitDicePools(record,calculated),version=String(record.rules_version||'2014');
+ const patch=recoveryPatch(record,event,calculated.trackers||[]);
+ const totalHp=Math.max(0,Number(calculated.stats?.max_hp??record.max_hp??0));
+ let healed=0;
+ const rolls=[];
+ const spent={};
+ for(const pool of pools)if(pool.spent)spent['d'+pool.die]=pool.spent;
+ if(event==='short_rest'){
+  const selections=new Map(pools.map(p=>['d'+p.die,p]));
+  for(const [key,raw] of Object.entries(spend||{})){
+   const count=Number(raw),pool=selections.get(key);
+   if(!pool||!Number.isInteger(count)||count<0||count>pool.available)
+    throw Error('Dadi Vita insufficienti o non validi: '+key);
+   if(!count)continue;
+   spent[key]=(spent[key]||0)+count;
+   for(let i=0;i<count;i++){
+    const rolled=rollDie(pool.die);
+    if(!Number.isInteger(rolled)||rolled<1||rolled>pool.die)throw Error('Risultato del Dado Vita non valido');
+    const con=Number(calculated.abilities?.con?.modifier??calculated.values?.['ability_mod:con']??Math.floor((Number(record.abilities?.con||10)-10)/2));
+    const gained=Math.max(version==='2024'?1:0,rolled+(Number.isFinite(con)?con:0));
+    healed+=gained;
+    rolls.push({die:pool.die,roll:rolled,modifier:con,healed:gained});
+   }
+  }
+  patch.current_hp=Math.min(totalHp,Math.max(0,Number(record.current_hp)||0)+healed);
+ }else{
+  patch.current_hp=totalHp;
+  patch.temporary_hp=0; // Temporary HP expire after a long rest.
+  patch.death_save_successes=0;
+  patch.death_save_failures=0;
+  patch.exhaustion=Math.max(0,Math.trunc(Number(record.exhaustion||0))-1);
+  // 2014: half the total Hit Dice (minimum one); 2024: all Hit Dice.
+  let recover=version==='2024'?Infinity:Math.max(1,Math.floor(pools.reduce((sum,p)=>sum+p.total,0)/2));
+  for(const pool of pools){
+   const restored=Math.min(pool.spent,recover);
+   recover-=restored;
+   const leftover=pool.spent-restored;
+   if(leftover)spent['d'+pool.die]=leftover;
+   else delete spent['d'+pool.die];
+  }
+ }
+ patch.hit_dice_spent=spent;
+ return {patch,healed:Math.max(0,patch.current_hp-Math.max(0,Number(record.current_hp)||0)),rolls};
 }
 
 function control(label,attrs,value,type='text',min,max){

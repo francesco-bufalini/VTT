@@ -1,5 +1,5 @@
-import { actionEconomyView, battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, miniaturePatch } from "./native_sheet.js";
+import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -35,7 +35,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), actionTiming:"action", librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
   hostReachable:false, conditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -122,13 +122,13 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
-const SHEET_TAB_GLYPHS={info:'information',battle:'shield',actions:'weapon',
+const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
-const PLAY_SECTIONS=[['info','Info'],['actions','Azioni'],['battle','Battaglia'],['magic','Poteri'],['inventory','Zaino']];
+const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
 const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={actions:['Cosa posso fare?','Scegli un’azione, una capacità o una prova.'],battle:['Battaglia','Punti ferita, difese, risorse e attacchi.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -205,6 +205,7 @@ function syncBrowserHistory(){
 async function restoreBrowserScreen(screen){
   // Older installed builds stored the retired Abilità tab in browser history.
   if(screen?.sheet==='stats')screen={...screen,sheet:'info'};
+  if(screen?.sheet==='actions')screen={...screen,sheet:'battle'};
   if(!screen||!sections.has(screen.page)||!SHEET_SECTIONS.some(([key])=>key===screen.sheet))return;
   const ticket=++browserHistoryRestoreTicket;
   restoringBrowserHistory=true;
@@ -429,14 +430,14 @@ async function editorView() {
       catch{ /* References stay editable offline. */ }
     }));
   }
-  if(state.sheet==="actions"||state.sheet==="battle"){
+  if(state.sheet==="battle"){
     const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
     state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
     state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="actions"||state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -452,6 +453,25 @@ async function editorView() {
     try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
     catch{return {description:''};}
   })):undefined;
+  // Resolve selected optional powers through the very same detailed
+  // compendium source used by the trait and feature viewers.
+  let battleOptionalTraits=[];
+  if(state.sheet==='battle'&&(c.optional_features_catalog||[]).length){
+    if(!state.referenceCatalogs.optional_features)
+      try{state.referenceCatalogs.optional_features=await catalogEntries('optional_features');}
+      catch{state.referenceCatalogs.optional_features=[];}
+    battleOptionalTraits=await Promise.all((c.optional_features_catalog||[]).map(async feature=>{
+      const name=String(feature?.name||feature||''),source=String(feature?.source||'');
+      const reference=(state.referenceCatalogs.optional_features||[]).find(row=>
+        String(row.name||'').toLowerCase()===name.toLowerCase()&&
+        (!source||String(row.source||'').toLowerCase()===source.toLowerCase()));
+      let detail=reference||feature;
+      if(reference)try{detail=await detailedEntry('optional_features',reference);}catch{}
+      return {name,origin_id:feature?.origin_id||'',origin_key:feature?.origin_name||source,
+        feature_key:'',description:flattenDescription(detail)||flattenDescription(feature)};
+    }));
+  }
+  state.battleOptionalTraits=battleOptionalTraits;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
@@ -504,14 +524,6 @@ async function editorView() {
     }
     break;
   }
-  case "actions":
-    body=(state.actionCatalogError?'<p class="hint action-catalog-warning" role="alert">'+
-      esc(state.actionCatalogError)+'</p>':'')+
-      (state.spellCatalogError?'<p class="hint action-catalog-warning" role="alert">Incantesimi non disponibili: '+
-      esc(state.spellCatalogError)+'</p>':'')+
-      actionEconomyView(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
-        state.generalActionSupplements||[],readActionVariants());
-    break;
   case "battle":
     // Keep native Poteri tracker panels available as contextual editors,
     // including the abilities relocated from Poteri into battle resources.
@@ -772,12 +784,13 @@ function inventoryEquipmentView(c,calculated={}){
   const labels=[["main","Mano principale"],["off","Mano secondaria"],["body","Armatura"]];
   const mainRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("main"));
   const main=mainRow?resolveOwnedItem(mainRow):null;
-  const off=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("off"));
-  const blocked=main&&hasProperty(main,"2H");
   const versatile=main&&itemKind(main)==="weapon"&&hasProperty(main,"V");
+  const blocked=Boolean(main&&(hasProperty(main,"2H")||(versatile&&c.hand_grip_two_handed)));
   const rows=labels.map(([slot,label])=>{
-    const selected=inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
-    const special=slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
+    const selected=blocked&&slot==="off"?-1:
+      inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
+    const special=blocked&&slot==="off"?"none":
+      slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
     const options=[[-1,slot==="body"?"Nessuna armatura":"Nessuno"],
       ...(slot==="body"?[]:[["unarmed","Colpo senz’armi"],["improvised","Arma improvvisata"]]),
       ...inventory.map((item,index)=>validSlot(item,slot)&&!(slot==="main"&&itemKind(item)==="shield")?
@@ -794,7 +807,7 @@ function inventoryEquipmentView(c,calculated={}){
         '<option value="'+esc(v)+'"'+((weapon?.instance_overrides?.weapon_size||'')===v?' selected':'')+'>'+
         esc(name)+'</option>').join('')+'</select>');
     return '<div class="inventory-slot-row"><span>'+esc(label)+'</span>'+selector+size+'</div>';
-  }).join('');
+  });
   const wornRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("body")&&itemKind(item)==="armor");
   const armor=wornRow?resolveOwnedItem(wornRow):null;
   const shields=inventory.filter(item=>Array.isArray(item?.equipped_slots)&&
@@ -817,23 +830,28 @@ function inventoryEquipmentView(c,calculated={}){
     naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const attackSettings='<div class="equipment-attack-options">'+
     '<label>Caratteristica attacchi<select data-field="attack_ability">'+
-      [['str','Forza'],['dex','Destrezza']].map(([value,label])=>
+      [['str','Forza'],['dex','Destrezza'],['con','Costituzione'],['int','Intelligenza'],['wis','Saggezza'],['cha','Carisma']].map(([value,label])=>
         '<option value="'+value+'"'+((c.attack_ability||"str")===value?' selected':'')+'>'+label+'</option>').join('')+
     '</select></label>'+
     '<label class="check"><input type="checkbox" data-field="attack_ability_finesse_only"'+
       (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo armi con Accurata (Finesse)</label>'+
+    '<label class="check"><input type="checkbox" data-field="two_weapon_fighting"'+
+      (c.two_weapon_fighting?' checked':'')+'>Combattere con due armi</label>'+
     (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
-      (c.hand_grip_two_handed&&!off?' checked':'')+'>Impugnatura a due mani (Versatile)</label>':'')+
+      (c.hand_grip_two_handed?' checked':'')+'>Impugnatura a due mani (Versatile)</label>':'')+
     '</div>';
   const defense='<div class="equipment-defense">'+
-    '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
-      '</strong><output>'+esc(formula)+'</output></div>'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
+    '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
+      '</strong><output>'+esc(formula)+'</output></div>'+
     '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
     '</div>';
   return panel("Equipaggiamento",
-    '<div class="inventory-slots">'+rows+'</div>'+attackSettings+defense,
+    '<section class="equipment-weapons"><h3>Armi</h3>'+
+      '<div class="inventory-slots">'+rows.slice(0,2).join('')+'</div>'+attackSettings+'</section>'+
+    '<section class="equipment-armor"><h3>Armatura</h3>'+
+      '<div class="inventory-slots">'+rows[2]+'</div>'+defense+'</section>',
     "inventory-native-panel inventory-equipment equipment-unified-panel");
 }
 const COIN_LABELS=[["cp","Rame"],["sp","Argento"],["ep","Elettro"],["gp","Oro"],["pp","Platino"]];
@@ -1809,9 +1827,23 @@ async function handleField(target) {
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
     const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
-    await patch({inventory:equipSlot(creature.inventory||[],slot,special!=='none'?-1:index),
-      ...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
-      ...(['main','off'].includes(slot)?{hand_grip_two_handed:false}:{})});
+    const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
+    const mainResolved=main?resolveOwnedItem(main):null;
+    const occupied=Boolean(mainResolved&&(
+      hasProperty(mainResolved,'2H')||
+      creature.hand_grip_two_handed&&hasProperty(mainResolved,'V')));
+    if(slot==='off'&&occupied&&target.value!=='-1')
+      throw Error('Mano secondaria occupata.');
+    const inventory=equipSlot(creature.inventory||[],slot,special!=='none'?-1:index);
+    const nextMain=inventory.find(item=>item.equipped_slots?.includes('main'));
+    const nextResolved=nextMain?resolveOwnedItem(nextMain):null;
+    const nextVersatile=nextResolved&&itemKind(nextResolved)==='weapon'&&hasProperty(nextResolved,'V');
+    const grip=Boolean(creature.hand_grip_two_handed&&nextVersatile);
+    if(slot==='main'&&grip)for(const item of inventory)
+      item.equipped_slots=(item.equipped_slots||[]).filter(v=>v!=='off');
+    await patch({inventory,...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
+      ...(slot==='main'?{hand_grip_two_handed:grip,
+        ...(grip?{hand_off_special:'none'}:{})}:{})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -1929,10 +1961,12 @@ async function handleField(target) {
       await patch({hand_grip_two_handed:value,...(value?{inventory,hand_off_special:'none'}:{})});
       await render();return;
     }
-    if(key==='attack_ability'&&!['str','dex'].includes(value))
+    if(key==='attack_ability'&&!['str','dex','con','int','wis','cha'].includes(value))
       throw Error('Caratteristica attacchi non valida.');
     if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
       throw Error('Ambito caratteristica attacchi non valido.');
+    if(key==='two_weapon_fighting'&&typeof value!=='boolean')
+      throw Error('Combattere con due armi non valido.');
     const changes=identityPatch(creature,key,value);
     if(key==='pact_slot_level'){
       const calculated=await computeLocalData(creature);
@@ -1944,7 +1978,7 @@ async function handleField(target) {
       if(matches.length===1){changes[key+"_id"]=matches[0].id||"";changes[key+"_source"]=matches[0].source||"";}
     }
     await patch(changes);
-    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only'].includes(key))await render();
+    if(['rules_version','primary_class_level','attack_ability','attack_ability_finesse_only','two_weapon_fighting'].includes(key))await render();
     if(key==="name"){
       const title=app.querySelector(".editor-head h1");
       if(title) title.textContent=value;
@@ -2070,7 +2104,10 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
+    description:flattenDescription(feature)})),
+  ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2083,6 +2120,14 @@ function organizeSheetPanels(){
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group')){
     const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
     const key='battle-timing:'+panel+':'+details.dataset.actionTiming;
+    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.addEventListener('toggle',()=>{
+      if(details.isConnected)state.disclosureState.set(key,details.open);
+    });
+  }
+  // Each characteristic inside Prove abilità can be collapsed independently.
+  for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group[data-action-ability]')){
+    const key='battle-ability:'+details.dataset.actionAbility;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{
       if(details.isConnected)state.disclosureState.set(key,details.open);
@@ -2185,6 +2230,21 @@ async function handleAction(target){
       await render();return;
     }
     const cost=Math.max(0,Number(ability.cost)||0);
+    const persistentKey=String(target.dataset.persistentKey||'');
+    if(persistentKey){
+      if(c.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
+      if(cost&&(!tracker||tracker.max-tracker.spent<cost))
+        throw Error('Risorsa insufficiente per attivare la capacità.');
+      const effects={...(c.active_class_features||{}),
+        [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
+          rules_version:c.rules_version||'2014',enhanced:false}};
+      const changes={active_class_features:effects};
+      if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+      await patch(changes);
+      await render();
+      return;
+    }
     if(cost){
       const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
       if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
@@ -2196,6 +2256,19 @@ async function handleAction(target){
       ability.name+': consulta la descrizione per applicarne gli effetti.');
     return;
   }
+  if(act==='tracker-reset'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const id=String(target.dataset.trackerId||'');
+    const row=(calculated.trackers||[]).find(tracker=>String(tracker.id)===id&&!tracker.disabled);
+    if(!row)throw Error('Risorsa non disponibile.');
+    const spent={...(creature.resource_tracker_spent||{})};
+    delete spent[id];
+    await patch({resource_tracker_spent:spent});
+    await render();
+    return;
+  }
   if(act==='condition-remove-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const key=String(target.dataset.abilityKey||'');
@@ -2204,7 +2277,6 @@ async function handleAction(target){
     await patch({active_class_features:effects});await render();return;
   }
 
-  if(act==='sheet-timing'){state.actionTiming=target.dataset.timingChoice;await render();return;}
   if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
   if(act==='sheet-proxy'){
     const source=state.sheetSources.get(target.dataset.sheetSource);if(!source)throw Error('Controllo non disponibile');
@@ -2318,14 +2390,6 @@ async function handleAction(target){
     state.magicPopup="";
     const dialog=app.querySelector('#magic-tools-dialog');
     if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.remove();}
-    return;
-  }
-  if(act==='action-expand-all'){
-    const details=[...app.querySelectorAll('.action-economy-dashboard details.action-economy-section, .action-economy-dashboard details.action-tree, .action-economy-dashboard details.action-economy-entry')];
-    const expand=details.some(row=>!row.open);
-    for(const row of details)row.open=expand;
-    target.textContent=expand?'Comprimi tutto':'Espandi tutto';
-    target.setAttribute('aria-expanded',String(expand));
     return;
   }
   if(act==='action-variants'){
@@ -2887,7 +2951,7 @@ async function handleAction(target){
     state.magicPopup="";
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
-    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet;await render();return;
+    state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=target.dataset.sheet==='actions'?'battle':target.dataset.sheet;await render();return;
   }
   if(act==="export"){
     await state.editor?.flush();
@@ -2944,7 +3008,21 @@ async function handleAction(target){
   }
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
-    await patch(recoveryPatch(record,act==='tracker-long'?'long_rest':act==='tracker-turn'?'turn':'short_rest',calculated.trackers));await render();return;
+    if(act==='tracker-turn'){
+      await patch(recoveryPatch(record,'turn',calculated.trackers));await render();return;
+    }
+    const event=act==='tracker-long'?'long_rest':'short_rest';
+    const dice={};
+    if(event==='short_rest'){
+      for(const control of app.querySelectorAll('#sheet-context-dialog [data-rest-die]')){
+        dice['d'+control.dataset.restDie]=Number(control.value);
+      }
+    }
+    const result=completeRest(record,event,calculated,dice);
+    await patch(result.patch);await render();
+    const detail=result.rolls.length?' · '+result.rolls.map(r=>'d'+r.die+': '+r.roll+(r.modifier>=0?'+':'')+r.modifier).join(', '):'';
+    message((event==='long_rest'?'Riposo lungo':'Riposo breve')+' completato · '+result.healed+' PF recuperati'+detail);
+    return;
   }
   if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
     const creature=state.editor.read(),calculated=await computeLocalData(creature);

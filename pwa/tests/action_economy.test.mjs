@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {battleResourcePowers} from '../sheet_rules_view.js';
+import {battleResourcePowers,persistentBattleAbility} from '../sheet_rules_view.js';
 import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
@@ -73,6 +73,31 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-timing="movement"]').textContent.includes('Muoversi'));
  assert(!movement.body.textContent.includes('Afferrare una creatura'));
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
+});
+
+test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
+ const abilityNames=['Forza','Destrezza','Costituzione','Intelligenza','Saggezza','Carisma'];
+ const calculated={values:{'ability_mod:str':3,'skill:athletics':7,'ability_mod:con':2},
+  abilities:{str:{modifier:3},con:{modifier:2}},skills:{athletics:7}};
+ const checks=doc(battleActionPanels({},calculated,[],[],catalog.actions).checks);
+ const groups=[...checks.querySelectorAll('.play-battle-action-group')];
+ assert.deepEqual(groups.map(row=>row.dataset.actionAbility),['str','dex','con','int','wis','cha']);
+ assert.deepEqual(groups.map(row=>row.querySelector('summary').textContent.includes('Prova di')?'?':
+   row.querySelector('summary span:nth-child(2)').textContent),abilityNames);
+ assert.equal(checks.querySelectorAll('.play-battle-attack-entry').length,24);
+ for(const group of groups){
+  assert.equal(group.tagName,'DETAILS');
+  assert.equal(group.open,true);
+  const first=group.querySelector('.play-battle-attack-entry');
+  assert.equal(first.dataset.attackId,'ability_mod:'+group.dataset.actionAbility);
+  assert.equal(first.querySelector('.play-battle-attack-expanded'),null);
+  assert.equal(first.querySelector('.play-battle-effect'),null);
+ }
+ assert.equal(checks.querySelector('[data-attack-id="ability_mod:str"] .play-battle-roll-formula').textContent,'1d20 + 3 · Forza');
+ assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] .play-battle-roll-formula').textContent,'1d20 + 7 · Atletica');
+ assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] [data-act="sheet-roll"]').dataset.target,'skill:athletics');
+ assert.equal(checks.querySelector('[data-action-ability="con"] .play-battle-attack-entry').dataset.attackId,'ability_mod:con');
+ assert.equal(checks.querySelectorAll('[data-attack-id^="skill:"]').length,18);
 });
 
 test('source catalogue keeps editions distinct and optional rules opt-in',()=>{
@@ -374,4 +399,31 @@ test('Battle resources deduplicate Wild Shape in favor of catalog popup and grou
  assert.equal(rows.find(row=>row.id==='grant_light')?.key,'free');
  assert(!rows.some(row=>row.id==='grant_slot'));
  assert(rows.some(row=>row.name==='Aura senza costo'&&row.key==='free'));
+});
+
+test('Battle exposes free general actions in the no-cost resources group, not twice',()=>{
+ const data=battleActionPanels({rules_version:'2014'},{
+  skills:{athletics:2,perception:3},trackers:[]},[],[],catalog.actions);
+ assert(typeof data.freeActions==='string');
+ assert(data.freeActions.length>0,'There should be at least one free general action');
+ const free=doc(data.freeActions);
+ assert(free.querySelector('[data-attack-id]'));
+ const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
+ for(const id of ids)assert(!doc(data.others).querySelector('[data-attack-id="'+id+'"]'));
+});
+test('Only explicit persistent self-powers toggle, not conditions inflicted on targets',()=>{
+ assert(persistentBattleAbility({power:{id:'vtt_wild_shape'}}));
+ assert(persistentBattleAbility({classAction:{class_feature_id:'rage'}}));
+ assert(persistentBattleAbility({power:{effects:[{kind:'condition',target:'self',condition:'invisible'}]}}));
+ assert(!persistentBattleAbility({power:{effects:[{kind:'condition',target:'target',condition:'prone'}]}}));
+ assert(!persistentBattleAbility({classAction:{name:'Attacco ordinario'}}));
+});
+test('Resource-granted spells carry the casting time from actual spell metadata',()=>{
+ const data=battleResourcePowers({trackers:[{id:'focus',max:3,spent:0}],origin_spells:[
+  {id:'quick',spell_id:'bonus_spell',payment_mode:'tracker',tracker_id:'focus',tracker_cost:1},
+  {id:'ordinary',spell_id:'normal_spell',payment_mode:'free'}
+ ]},[],[],[{id:'bonus_spell',name:'Furia',time:[{unit:'bonus',number:1}]},
+  {id:'normal_spell',name:'Luce',time:[{unit:'action',number:1}]}]);
+ assert.equal(data.find(x=>x.id==='quick').timing,'bonus');
+ assert.equal(data.find(x=>x.id==='ordinary').timing,'action');
 });
