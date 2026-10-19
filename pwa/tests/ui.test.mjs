@@ -483,7 +483,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
     return c?.abilities?.str===14 && c.conditions?.includes("poisoned");
   });
   assert.equal(document.querySelector('[data-condition-count]').textContent,'1');
-  const activeStatus=document.querySelector('#sheet-play-view [data-sheet-context="condition:poisoned"]');
+  const activeStatus=await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="condition:poisoned"]'));
   assert.ok(activeStatus,"An active status must open its own description, not the editor grid");
   click('#sheet-play-view [data-sheet-context="condition:poisoned"]');
   await until(()=>document.querySelector('#sheet-context-dialog[open] [data-condition-detail="poisoned"]'));
