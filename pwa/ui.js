@@ -1305,18 +1305,41 @@ function spellList(c,key,classId=null,classes=[]) {
     {slotSummary:key==='prepared_spells'?magicSlotSummary(state.calculated):null});
 }
 function renderSpellResults(){
-  const rows=state.spellCatalog||[];
+  const rows=state.spellCatalog||[],record=state.editor?.read()||{};
   if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
-  const query=state.spellQuery.trim().toLocaleLowerCase();
-  if(!query)return '<p class="hint">Digita un nome o una fonte per cercare nel catalogo.</p>';
-  const editionSpells=new Set(spellsForEdition(rows,state.editor?.read().rules_version||'2014'));
-  const found=rows.map((spell,index)=>({spell,index})).filter(({spell})=>
-    (String(spell.name||"")+" "+String(spell.source||"")).toLocaleLowerCase().includes(query)&&
-    editionSpells.has(spell)&&
-    (state.spellClass==='manual'||!state.calculated?.casting_classes.some(member=>member.id===state.spellClass)||spellEligible(spell,state.calculated.casting_classes.find(member=>member.id===state.spellClass)))).slice(0,40);
-  return found.length?groupedMagicSpells(found.map(({spell,index})=>({spell,index,info:magicSpellInfo(spell)})),({spell,index,info})=>
-    '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="spell-pick" data-index="'+index+'">'+esc(info.name)+'</button>'):
-    '<p class="hint">Nessun incantesimo corrispondente.</p>';
+  const query=state.spellQuery.trim().toLocaleLowerCase('it');
+  const classes=state.calculated?.casting_classes||[];
+  const member=classes.find(row=>row.id===state.spellClass);
+  const target=member?.book&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
+  if(!member&&!query)return '<p class="hint">Cerca un incantesimo per aggiungerlo alle concessioni della scheda.</p>';
+  const prepared=availableSpells(record);
+  const knownBook=new Set((record.spellbook_spells||[]).map(spellId));
+  const selected=target==='spellbook_spells'?knownBook:
+    new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
+  const count=member?classSelectionCount(record,member,classes,rows):null;
+  const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
+  const found=rows.filter(spell=>allowed.has(spell)&&
+    (!member||spellEligible(spell,member))&&
+    (target!=='spellbook_spells'||Number(spell.level)>0)&&
+    (!member?.book||target!=='prepared_spells'||Number(spell.level)===0||knownBook.has(spell.id))&&
+    (!query||(String(spell.name||'')+' '+String(spell.source||'')).toLocaleLowerCase('it').includes(query)))
+    .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
+      String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}))
+    .slice(0,40);
+  if(!found.length)return '<p class="hint">'+
+    (member?.book&&target==='prepared_spells'&&!knownBook.size?
+      'Aggiungi prima gli incantesimi al libro, poi torna alla preparazione.':'Nessun incantesimo corrispondente.')+
+    '</p>';
+  return groupedMagicSpells(found.map(spell=>({spell,info:magicSpellInfo(spell)})),({spell,info})=>{
+    const already=selected.has(spell.id);
+    const cap=member&&target==='prepared_spells'&&
+      (Number(spell.level)===0?count.cantrips>=member.cantrips:
+        member.limit>=0&&count.leveled>=member.limit);
+    return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="spell-pick" data-index="'+
+      rows.indexOf(spell)+'"'+(already||cap?' disabled':'')+'><span>'+esc(info.name)+'</span>'+
+      (already?'<span class="magic-selection-status">✓ Selezionato</span>':
+        cap?'<span class="magic-selection-status">Limite raggiunto</span>':'')+'</button>';
+  });
 }
 function diceResult(){
   if(!state.roll)return '';
@@ -2434,11 +2457,16 @@ async function handleAction(target){
     search.focus();
     return;
   }
-  if(act==='magic-tool-open'){
+  if(act==='magic-tool-open'||act==='magic-select-spells'){
     state.sheetPopup='';
     if(state.sheet!=='magic')return;
-    const type=target.dataset.magicTool;
+    const type=act==='magic-select-spells'?'catalog':target.dataset.magicTool;
     if(!['concentration','slots','book','catalog','choices'].includes(type))return;
+    if(act==='magic-select-spells'){
+      state.spellClass=target.dataset.magicClass||'manual';
+      state.spellTarget=target.dataset.magicTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
+      state.spellQuery='';
+    }
     state.magicPopup=type;await render();return;
   }
   if(act==='magic-tool-close'){
@@ -3451,11 +3479,14 @@ function listen(){
     }
     if(target?.id==="scroll-spell-select"){updateScrollSpellLevels();return;}
     if(target?.id==="spell-target"){
-      state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";return;
+      state.spellTarget=target.value==="spellbook_spells"?"spellbook_spells":"prepared_spells";
+      render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==='spell-class'){
       state.spellClass=target.value;
-      const matches=app.querySelector('#spell-results');if(matches)matches.innerHTML=renderSpellResults();return;
+      state.spellTarget='prepared_spells';
+      state.spellQuery='';
+      render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="native-details"){
       if(!DETAILS.some(([key])=>key===target.value))return;
