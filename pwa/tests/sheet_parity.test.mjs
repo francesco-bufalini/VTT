@@ -261,6 +261,37 @@ test('equipped attacks calculate proficiency, finesse, offhand damage, thrown ra
  assert.equal(monster.attacks[0].hit,7);
  assert.equal(monster.attacks[0].damage,'2d6 + 5');
 });
+test('shared equipment rules support every attack ability, finesse scope, off-hand style and versatile two-hand lock',()=>{
+ const longsword={id:'blade',name:'Longsword',type:'M',weapon_category:'martial',damage:'1d8',
+   versatile_damage:'1d10',properties:['V'],quantity:1,equipped_slots:['main']};
+ const dagger={id:'dagger',name:'Dagger',type:'M',weapon_category:'simple',damage:'1d4',
+   properties:['F','L'],quantity:1,equipped_slots:['off']};
+ const creature={kind:'character',abilities:{str:12,dex:14,con:10,int:10,wis:18,cha:10},
+   attack_ability:'wis',attack_ability_finesse_only:false,
+   inventory:[longsword,dagger],hand_grip_two_handed:false,
+   proficiency_choices:[{kind:'weapon',key:'martial'},{kind:'weapon',key:'simple'}]};
+ const both=calculateSheet(creature,catalogs);
+ assert.equal(both.attacks.find(a=>a.id==='item:blade').ability,'wis');
+ assert.equal(both.attacks.find(a=>a.id==='item:off:dagger').ability,'wis');
+ const finesseOnly=calculateSheet({...creature,attack_ability_finesse_only:true},catalogs);
+ assert.equal(finesseOnly.attacks.find(a=>a.id==='item:blade').ability,'str');
+ assert.equal(finesseOnly.attacks.find(a=>a.id==='item:off:dagger').ability,'wis');
+ const versatile=calculateSheet({...creature,hand_grip_two_handed:true},catalogs);
+ assert.equal(versatile.attacks.find(a=>a.id==='item:blade').damage,'1d10 + 4');
+ assert.equal(versatile.attacks.some(a=>a.id==='item:off:dagger'),false,
+   'Offhand attacks cannot survive two-hand versatile grip, even for imported stale slots');
+ const twin={...creature,hand_grip_two_handed:false,
+   inventory:[{...dagger,equipped_slots:['main']},{...dagger,id:'off-dagger',equipped_slots:['off']}]};
+ const withoutStyle=calculateSheet(twin,catalogs);
+ const withStyle=calculateSheet({...twin,two_weapon_fighting:true},catalogs);
+ assert.equal(withoutStyle.attacks.find(a=>a.slot==='off').damage,'1d4');
+ assert.equal(withStyle.attacks.find(a=>a.slot==='off').damage,'1d4 + 4');
+ for(const ability of ['str','dex','con','int','wis','cha']){
+   const selected=calculateSheet({...creature,attack_ability:ability},catalogs);
+   assert.equal(selected.attacks.find(a=>a.id==='item:blade').ability,ability);
+ }
+});
+
 test('class and subclass catalog edits keep legacy fields and multi-class IDs coherent',()=>{
  const c={class:'Wizard',class_id:'old',class_source:'PHB',subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub',level:5,
   classes:[{id:'old',name:'Wizard',source:'PHB',level:5,subclass:'Evoker',subclass_source:'PHB',subclass_id:'oldsub'}]};
