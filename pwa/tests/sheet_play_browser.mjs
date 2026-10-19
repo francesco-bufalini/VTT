@@ -220,6 +220,8 @@ try{
  await page.locator('#sheet-context-dialog [data-field="hand_grip_two_handed"]').check();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.hand_grip_two_handed===true;});
  const secondary=page.locator('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]');
+ // Persistence can finish before the equipment popup has rerendered.
+ await page.waitForFunction(()=>document.querySelector('#sheet-context-dialog .equipment-weapons [data-equip-slot="off"]')?.disabled===true);
  assert.equal(await secondary.isDisabled(),true,'Versatile grip must disable offhand equipment');
  assert.equal(await secondary.inputValue(),'-1','Versatile grip must lock the offhand on Nessuno');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
