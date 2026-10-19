@@ -1152,6 +1152,31 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-action-heading>.vtt-action-glyph{width:18px;height:18px;flex:0 0 18px}
 .play-battle-action-heading>.play-badge{font-size:10px;padding:2px 6px}
 .play-battle-action-heading:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* Battle action index: two nested levels, with a muted spine and individual
+   branches joining each action to its timing or characteristic heading. */
+.play-battle-expansion-tools{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:7px;
+ padding:4px 11px 9px}
+.play-battle-expansion-tools>.play-button{min-height:35px;min-width:0;gap:5px;padding:6px 10px;
+ border:1px solid #aa845155;border-radius:9px;background:#3a2a2480;color:#f2d39a;font:600 11px/1.2 system-ui}
+.play-battle-expansion-tools .vtt-action-glyph{width:15px;height:15px;flex:0 0 15px}
+.play-battle-expansion-tools>.play-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.play-battle-disclosure[open]>.play-battle-action-group{position:relative;margin-left:11px;
+ border-left:1px solid #b28b5d63}
+.play-battle-disclosure[open]>.play-battle-action-group>.play-battle-action-heading{position:relative;
+ padding-left:17px}
+.play-battle-disclosure[open]>.play-battle-action-group>.play-battle-action-heading::before{
+ content:"";position:absolute;left:0;top:50%;width:11px;border-top:1px solid #b28b5d75}
+.play-battle-action-group[open]>.play-battle-action-rows{margin:0 9px 9px 15px;padding:0 0 0 13px;
+ border-left:1px solid #c49a6590}
+.play-battle-action-group[open]>.play-battle-action-rows>.play-battle-attack-entry{position:relative}
+.play-battle-action-group[open]>.play-battle-action-rows>.play-battle-attack-entry::before{
+ content:"";position:absolute;left:-14px;top:18px;width:13px;border-top:1px solid #c49a6590;
+ pointer-events:none}
+@media(max-width:360px){
+ .play-battle-action-group[open]>.play-battle-action-rows{margin-left:11px;margin-right:6px;padding-left:10px}
+ .play-battle-action-group[open]>.play-battle-action-rows>.play-battle-attack-entry::before{left:-11px;width:10px}
+ .play-battle-expansion-tools{padding-inline:7px}
+}
 .play-battle-action-rows{display:grid;gap:0;min-width:0;padding:0 10px 8px}
 .play-battle-attack-entry{display:block;min-width:0;margin:0;padding:0;border:0;
  border-top:1px solid #ad87412d;border-radius:0;background:linear-gradient(90deg,#6745261e,#39291d12)}

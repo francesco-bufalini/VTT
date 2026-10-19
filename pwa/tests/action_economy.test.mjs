@@ -63,7 +63,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
  const actionGroup=attacks.querySelector('[data-action-timing="action"]');
  assert.equal(actionGroup.tagName,'DETAILS');
- assert.equal(actionGroup.open,true);
+ assert.equal(actionGroup.open,false,'Timing groups start collapsed');
  assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
  assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
  const rollLine=sword.querySelector('.play-battle-attack-roll-line');
@@ -184,7 +184,7 @@ test('unified battle shows every canonical skill and pure ability check grouped 
  assert.equal(checks.querySelectorAll('.play-battle-attack-entry').length,24);
  for(const group of groups){
   assert.equal(group.tagName,'DETAILS');
-  assert.equal(group.open,true);
+  assert.equal(group.open,false,'Ability checks start collapsed');
   const first=group.querySelector('.play-battle-attack-entry');
   assert.equal(first.dataset.attackId,'ability_mod:'+group.dataset.actionAbility);
   assert.equal(first.querySelector('.play-battle-attack-expanded'),null);
@@ -498,15 +498,22 @@ test('Battle resources deduplicate Wild Shape in favor of catalog popup and grou
  assert(rows.some(row=>row.name==='Aura senza costo'&&row.key==='free'));
 });
 
-test('Battle exposes free general actions in the no-cost resources group, not twice',()=>{
+test('Battle nests general free actions under Other Actions, without duplicate resource rows',()=>{
  const data=battleActionPanels({rules_version:'2014'},{
   skills:{athletics:2,perception:3},trackers:[]},[],[],catalog.actions);
- assert(typeof data.freeActions==='string');
- assert(data.freeActions.length>0,'There should be at least one free general action');
- const free=doc(data.freeActions);
- assert(free.querySelector('[data-attack-id]'));
+ assert.equal(data.freeActions,undefined,'No separate free action block belongs beneath Resources');
+ const others=doc(data.others);
+ const free=others.querySelector('[data-action-timing="free"]');
+ assert(free,'Free general actions have a dedicated timing group in Other Actions');
+ assert(!free.hasAttribute('open'),'Timing subsections initially stay collapsed');
  const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
- for(const id of ids)assert(!doc(data.others).querySelector('[data-attack-id="'+id+'"]'));
+ assert(ids.length>0,'At least one free general action is offered');
+ assert.equal(new Set(ids).size,ids.length,'Free general actions cannot be duplicated');
+ const attacks=doc(data.attacks);
+ for(const id of ids)assert(!attacks.querySelector('[data-attack-id="'+id+'"]'));
+ const checks=doc(data.checks);
+ assert.equal(checks.querySelectorAll('[data-action-ability][open]').length,0,
+  'Characteristics in skill checks start collapsed as well');
 });
 test('Only explicit persistent self-powers toggle, not conditions inflicted on targets',()=>{
  assert(persistentBattleAbility({power:{id:'vtt_wild_shape'}}));
