@@ -629,11 +629,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
   }
   const add=document.createElement('div');
-  for(const node of bank.querySelectorAll(documentsTab?
-    '[data-act="document-add"]':scrollsTab?
-    '[data-act="item-catalog"]':
-    '[data-act="item-catalog"],[data-act="new-homebrew-item"]'))add.append(node);
-  bind('inventory-add',add);
+  if(scrollsTab)target('scroll-create','.inventory-scroll-create');
+  else{
+    for(const node of bank.querySelectorAll(documentsTab?
+      '[data-act="document-add"]':
+      '[data-act="item-catalog"],[data-act="new-homebrew-item"]'))add.append(node);
+    bind('inventory-add',add);
+  }
   html+=card(documentsTab?'Documenti':scrollsTab?'Pergamene magiche':'Nello zaino',
     '<p class="inventory-list-count">'+visible.length+' voci · '+
     visible.reduce((total,{info})=>total+info.quantity,0)+' unità</p>'+
@@ -667,7 +669,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
         (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
     }).join('')||'<p class="play-empty">Nessuna voce disponibile.</p>',
-    edit('inventory-add',documentsTab?'Aggiungi documento':scrollsTab?'Aggiungi pergamena':'Aggiungi oggetto','increase'));
+    scrollsTab?edit('scroll-create','Crea pergamena','increase'):
+      edit('inventory-add',documentsTab?'Aggiungi documento':'Aggiungi oggetto','increase'));
   if(!documentsTab&&!scrollsTab){
     const infusion=panelNamed('Infusioni');
     if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
