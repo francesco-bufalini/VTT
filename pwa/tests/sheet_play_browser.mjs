@@ -52,6 +52,7 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities belong beneath resources');
  assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Altre azioni/);
  await otherPanel.locator('summary.play-battle-summary').click();
+ await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"]) > summary').click();
  const searchAction=otherPanel.locator('[data-attack-id="search"]');
  assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
  assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
@@ -76,7 +77,8 @@ try{
  assert.equal(await spellPanel.locator('.action-economy-preview').count(),0,'Spell descriptions remain hidden until opened');
  const lightEntry=spellPanel.locator('[data-spell-id="spell:light|phb"]').first();
  assert.match(await lightEntry.textContent(),/Trucchetto/);
- await lightEntry.locator('[data-act="action-cast-spell"]').click();
+ await spellPanel.locator('[data-action-timing="action"] > summary').click();
+ await lightEntry.locator('.play-battle-spell-open').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  assert(await page.locator('#action-cast-dialog .magic-spell-facts').count(),
    'The same detailed Magia spell dialog opens from the action row');
@@ -87,11 +89,12 @@ try{
  assert.equal(await mainAttack.count(),1);
  const mainTiming=weaponPanel.locator('[data-action-timing="action"]');
  assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
- assert.equal(await mainTiming.getAttribute('open'),'');
+ assert.equal(await mainTiming.getAttribute('open'),null,'Timing groups start collapsed');
  await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),null,'Tapping the timing label collapses its actions');
+ assert.equal(await mainTiming.getAttribute('open'),'','Tapping the timing label expands its actions');
  await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),'','Tapping again expands without any extra icon');
+ assert.equal(await mainTiming.getAttribute('open'),null,'Tapping again collapses without any extra icon');
+ await mainTiming.locator('summary.play-battle-action-heading').click();
  const opportunity=weaponPanel.locator('[data-attack-id="opportunity"]');
  assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
  assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),1);
@@ -118,6 +121,7 @@ try{
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
+ await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"]) > summary').click();
  const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
  assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
