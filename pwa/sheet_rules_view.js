@@ -28,6 +28,15 @@ const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
 const metric=(label,value)=>'<div class="derived-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';
+function skillTrainingIcon(rank){
+ if(rank!==1&&rank!==2)return '';
+ const label=rank===2?'Maestria':'Competenza';
+ const shape=rank===2?
+  '<path d="M3.5 7.5 8 11l4-6 4 6 4.5-3.5-2 10.5h-13z"/><path d="M6 21h12"/>':
+  '<path d="m12 2.5 2.9 6 6.6.9-4.8 4.7 1.2 6.6L12 17.5l-5.9 3.2 1.2-6.6-4.8-4.7 6.6-.9z"/>';
+ return '<span class="play-skill-rank play-skill-rank--'+(rank===2?'expertise':'proficient')+
+  '" role="img" aria-label="'+label+'" title="'+label+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">'+shape+'</svg></span>';
+}
 // Choose the fastest available movement mode, preserving the current calculated speed keys.
 export function fastestMovement(data={}){
  const modes=[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],
@@ -610,7 +619,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-  html='<section class="play-identity"><div class="play-identity-mark">'+creatureFaceIcon(c.kind)+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
    edit('identity','Modifica identità','settings')+'</section>';
@@ -643,7 +652,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<div class="play-skills-content">'+
      '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
      '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
-     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>'+
+     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
+       const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
+       return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
+        '<span class="play-skill-name">'+esc(label)+skillTrainingIcon(rank)+'<small>'+ability.toUpperCase()+
+        (rank===2?' · Maestria':rank===1?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>';
+      }).join('')+'</div>'+
     '</div></details>'+
    '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
    '</section>';
@@ -653,7 +667,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   if(traits){
    const content=[...traits.children].filter(child=>child.tagName!=='H2')
      .map(child=>child.outerHTML).join('');
-   html+=card('Tratti','<div class="play-info-traits-content">'+content+'</div>','','play-info-traits');
+   html+='<details class="play-card play-info-traits play-traits-disclosure">'+
+    '<summary class="play-card-head"><h2>Tratti</h2></summary>'+
+    '<div class="play-info-traits-content">'+content+'</div></details>';
   }
  }
  if(sheet==='magic'){
