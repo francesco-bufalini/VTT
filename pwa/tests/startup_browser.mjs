@@ -84,6 +84,19 @@ try {
   await context.close();
   console.log("PASS: clean Chrome profile opens and reloads the local archive");
 
+  // A reduced-concurrency import bootstrap can be enabled without modifying
+  // the local IndexedDB database or the normal fast startup path.
+  const compatContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const compatPage = await compatContext.newPage();
+  await compatPage.addInitScript(() => {
+    sessionStorage.setItem("vtt-mobile-serial-modules", "1");
+  });
+  await compatPage.goto(origin);
+  await compatPage.locator('[data-act="create"]').waitFor({ timeout: 30000 });
+  assert.equal(await compatPage.locator("#startup-error").count(), 0);
+  await compatContext.close();
+  console.log("PASS: serial compatibility startup initializes the full local archive");
+
   // A Service Worker operation which never resolves must not block the UI.
   const slowContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const slowPage = await slowContext.newPage();
