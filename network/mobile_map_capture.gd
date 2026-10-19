@@ -6,6 +6,32 @@ const MIN_FIELD_FEET := 20.0
 const MAX_FIELD_FEET := 1500.0
 const Elevation = preload("res://vtt/top_down_elevation_levels.gd")
 const ElevationOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
+const SpellOverlay = preload("res://vtt/spells/spell_target_overlay_2d.gd")
+
+# Project through the desktop geometry owner. The browser receives pixels,
+# never a second implementation of spell volumes or affected-token rules.
+static func project_areas(board: Node3D, projection: Dictionary) -> Array:
+	var measure := board.get_node_or_null("MeasurementTool") as Node3D
+	if measure == null:
+		return []
+	var projector := SpellOverlay.new()
+	projector.board = board
+	projector.measure = measure
+	var areas := projector.mobile_map_areas(projection)
+	projector.free()
+	return areas
+
+static func _draw_areas(layer: Control, areas: Array) -> void:
+	for area: Dictionary in areas:
+		var points := PackedVector2Array()
+		for point: Array in area.points:
+			points.append(Vector2(float(point[0]), float(point[1])))
+		if points.size() < 3:
+			continue
+		var tint := Color(String(area.color))
+		layer.draw_colored_polygon(points, Color(tint, 0.18))
+		points.append(points[0])
+		layer.draw_polyline(points, tint, 4.0, true)
 
 static func field_for_range(range_feet: float) -> float:
 	return clampf(range_feet * 2.0, MIN_FIELD_FEET, MAX_FIELD_FEET)
@@ -124,6 +150,16 @@ static func capture(board: Node3D, token: Node3D, field_feet: float, attack: Dic
 		"token_id": "", "field_feet": field_feet, "elevation": center.y,
 		"title": String(token.call("get_display_name")) if token != null else "Mappa", "contours": [], "markers": [],
 		"_projection": {"x": center.x, "y": center.y, "z": center.z, "size": camera.size, "width": SIZE.x, "height": SIZE.y}}
+	result["areas"] = project_areas(board, result._projection)
+	result["area_overlays"] = true
+	var area_layer := Control.new()
+	area_layer.name = "MobileAreaOverlay"
+	area_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Below portraits; also bake the areas into the passive Partita image.
+	viewport.add_child(area_layer)
+	viewport.move_child(area_layer, overlay.get_index())
+	area_layer.draw.connect(_draw_areas.bind(area_layer, result.areas))
+	area_layer.queue_redraw()
 	var half: float = (float(token.call("get_footprint_cells")) if token != null else 1.0) * cell * 0.5
 	var normal: float = float(attack.get("range_feet", 0))
 	var long_range: float = float(attack.get("long_range_feet", 0)) if not bool(attack.get("melee", true)) else 0.0

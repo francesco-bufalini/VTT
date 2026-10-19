@@ -2563,6 +2563,7 @@ func get_tactical_map_data() -> Dictionary:
 		tokens.append({
 			"id": get_sync_id_for_node(node),
 			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
+			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
 			# This public bit is the only extra information the mobile picker needs.
 			"free": bool(board_root.call("is_free_scene_token", node)) if board_root.has_method("is_free_scene_token") else (
 				String(node.get_meta("creature_id", "")).is_empty()
@@ -2598,8 +2599,11 @@ func get_tactical_map_data() -> Dictionary:
 				projected_active_index = entries.size() - 1
 		combat["entries"] = entries
 		combat["active_index"] = projected_active_index
+	var measure := board_root.get_node_or_null("MeasurementTool")
+	var area_revision: int = measure.call("mobile_area_revision") if measure != null else 0
 	return {"version": 1, "tokens": tokens, "combat": combat, "mobile_protocol": 3,
-		"revision": _mobile_view_revision}
+		"area_revision": area_revision, "revision": _mobile_view_revision,
+		"view_revision": hash([tokens, combat, area_revision, _mobile_view_revision])}
 
 
 func _visible_mobile_token(id: String) -> CharacterBody3D:
@@ -2680,7 +2684,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 				board_root.call("_set_token_status", target, id, payload.enabled)
 				return {"ok": true}
 		return {"ok": false, "error": "Condizione sconosciuta."}
-	if action in ["begin_spell", "target_spell", "cancel_spell", "finish_spell", "preview_spell"]:
+	if action in ["begin_spell", "target_spell", "cancel_spell", "finish_spell", "preview_spell", "spell_status"]:
 		return _mobile_spell_action(action, payload, target)
 	if action == "target_attack":
 		var victim := _visible_mobile_token(String(payload.get("target_id", "")))
@@ -2722,6 +2726,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 	result["token_id"] = String(payload.get("token_id", ""))
 	result["attack"] = attack.duplicate(true)
 	result["targeting"] = spell_status
+	result["view_revision"] = get_tactical_map_data().view_revision
 	if bool(result.get("ok", false)):
 		var key := Crypto.new().generate_random_bytes(12).hex_encode()
 		_mobile_views[key] = {"projection": result.get("_projection", {}), "token_id": result.token_id, "at": Time.get_ticks_msec()}
@@ -2744,6 +2749,9 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		return {"ok": false, "error": "Piazza prima la tua creatura sulla mappa del desktop."}
 	if action == "begin_spell":
 		return runtime.call("begin_remote_spell", caster, owner, payload)
+	if action == "spell_status":
+		return {"ok": true, "targeting": _mobile_spell_status(caster, owner),
+			"view_revision": get_tactical_map_data().view_revision}
 	if action in ["cancel_spell", "finish_spell"]:
 		return runtime.call("remote_target_input", caster, owner, null, {}, "cancel" if action == "cancel_spell" else "finish")
 	var victim := _visible_mobile_token(String(payload.get("target_id", "")))
@@ -2753,7 +2761,7 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		point_data = {"valid": true, "point": victim.global_position, "in_air": true, "normal": Vector3.UP}
 	elif not String(payload.get("target_id", "")).is_empty():
 		return {"ok": false, "error": "Il bersaglio non è più disponibile. Aggiorna lo snapshot."}
-	if victim == null:
+	if victim == null or action == "preview_spell":
 		var key := String(payload.get("snapshot_id", ""))
 		var pixel: Variant = payload.get("pixel")
 		if not _mobile_views.has(key) or not pixel is Array or pixel.size() != 2:
@@ -2768,11 +2776,12 @@ func _mobile_spell_action(action: String, payload: Dictionary, caster: Character
 		if not is_finite(x) or not is_finite(y) or x < 0 or y < 0 or x > MobileMapCapture.SIZE.x or y > MobileMapCapture.SIZE.y:
 			return {"ok": false, "error": "Punto fuori dalla mappa."}
 		projection = view.projection
-		var scale_factor := float(projection.size) / float(MobileMapCapture.SIZE.y)
-		var world := Vector3(float(projection.x) + (x - MobileMapCapture.SIZE.x * 0.5) * scale_factor, float(projection.y), float(projection.z) + (y - MobileMapCapture.SIZE.y * 0.5) * scale_factor)
-		var query := PhysicsRayQueryParameters3D.create(world + Vector3.UP * 0.12, world + Vector3.DOWN * 1000, 1)
-		var hit := caster.get_world_3d().direct_space_state.intersect_ray(query)
-		point_data = {"valid": true, "point": hit.get("position", world), "in_air": hit.is_empty(), "normal": hit.get("normal", Vector3.UP)}
+		if victim == null:
+			var scale_factor := float(projection.size) / float(MobileMapCapture.SIZE.y)
+			var world := Vector3(float(projection.x) + (x - MobileMapCapture.SIZE.x * 0.5) * scale_factor, float(projection.y), float(projection.z) + (y - MobileMapCapture.SIZE.y * 0.5) * scale_factor)
+			var query := PhysicsRayQueryParameters3D.create(world + Vector3.UP * 0.12, world + Vector3.DOWN * 1000, 1)
+			var hit := caster.get_world_3d().direct_space_state.intersect_ray(query)
+			point_data = {"valid": true, "point": hit.get("position", world), "in_air": hit.is_empty(), "normal": hit.get("normal", Vector3.UP)}
 	if action == "preview_spell":
 		if projection.is_empty():
 			return {"ok": false, "error": "Aggiorna lo snapshot prima di mirare."}

@@ -3346,6 +3346,14 @@ func serialize_persistent_aoes() -> Array:
 	return persistent_aoes.duplicate(true)
 
 
+func mobile_area_revision() -> int:
+	var state: Array = [persistent_aoes]
+	for root: Node3D in _held_spell_aoes:
+		if is_instance_valid(root) and not root.is_queued_for_deletion():
+			state.append(root.get_meta("spell_overlay_2d", {}))
+	return hash(state)
+
+
 func _serialize_aoe_color(color: Color) -> Dictionary:
 	return {
 		"r": color.r,
