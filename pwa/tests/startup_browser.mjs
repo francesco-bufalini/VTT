@@ -175,7 +175,19 @@ try {
   await manualPage.locator('[data-act="check"]').click();
   await manualPage.locator("#pair-form button[type=submit]").click();
   await manualPage.locator('[data-session-pane="table"][aria-pressed="true"]')
-    .waitFor({timeout:20000});
+    .waitFor({timeout:8000}).catch(async error => {
+      console.log("PAIR DEBUG", {
+        pairRequests,unauthenticatedSessionRequests,
+        toast:await manualPage.locator("#toast").textContent().catch(()=>null),
+        appText:(await manualPage.locator("#app").innerText()).slice(0,850),
+        state:await manualPage.evaluate(() => ({
+          enabled:document.querySelector("#pair-form button[type=submit]")?.disabled,
+          form:!!document.querySelector("#pair-form"),
+          current:document.querySelector("#app")?.dataset.page
+        }))
+      });
+      throw error;
+    });
   assert.equal(unauthenticatedSessionRequests,0,
     "Manual first pairing must not send unauthenticated session checks");
   await manualContext.close();
