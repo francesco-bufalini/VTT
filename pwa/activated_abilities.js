@@ -69,6 +69,8 @@ export function abilitiesForCreature(creature={},manifest=[],projection={}){
       id:id||"feature:"+feature.key,name:feature.name,
       source:feature.source||parts[1].toUpperCase(),
       feature_id:feature.origin_id,
+      feature_name:feature.name,
+      origin_name:'Tratto · '+feature.name,
       requirements:feature.requirements,
       action_type:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"",
       activation_mode:action?.time||(typeof explicit==="object"?explicit?.type||explicit?.unit:explicit)||"contextual",

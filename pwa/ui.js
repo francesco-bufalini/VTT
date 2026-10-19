@@ -1307,7 +1307,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
        const activation=({action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',passive:'Passivo',contextual:'Secondo il privilegio'})[ability.action_type||ability.activation_mode]||ability.action_type||ability.activation_mode||'Secondo il privilegio';
        const cost=Math.max(0,Number(ability.resource_cost)||0),resource=ability.tracker_name||ability.resource_name||group.tracker?.name||'';
        return '<details class="magic-ability-entry power-privilege" data-ability-id="'+esc(ability.id)+'"'+(group.abilities.length===1?' open':'')+'><summary><span class="power-privilege-title"><span class="magic-ability-name">'+esc(ability.name)+'</span><span class="power-privilege-meta">'+esc(activation)+(cost?' · '+cost+' per uso':'')+'</span></span><span class="power-privilege-chevron" aria-hidden="true">⌄</span></summary>'+
-         '<div class="magic-ability-detail"><dl class="power-privilege-facts"><div><dt>Origine</dt><dd>'+esc(ability.origin||'Origine non specificata')+'</dd></div>'+
+         '<div class="magic-ability-detail"><dl class="power-privilege-facts"><div><dt>Origine</dt><dd>'+esc(ability.origin_name||ability.origin||'Origine non specificata')+'</dd></div>'+
          (ability.source?'<div><dt>Fonte</dt><dd>'+esc(ability.source)+'</dd></div>':'')+
          '<div><dt>Consumo</dt><dd>'+esc(cost?cost+' utilizzi'+(resource?' · '+resource:' · Risorsa non collegata'):'Nessun consumo di utilizzi')+'</dd></div></dl>'+
          '<div class="power-privilege-description"><h3>Descrizione</h3><p class="trait-description">'+esc(ability.description||'Descrizione non disponibile.')+'</p></div>'+

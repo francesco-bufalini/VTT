@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {browserFixture} from './browser_fixture.mjs';
 const f=await browserFixture();const {page,origin,sheet,shot}=f;
 const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature;});
+const popupOrigins=()=>page.locator('#sheet-context-dialog .power-privilege-facts').evaluateAll(nodes=>
+ nodes.flatMap(node=>[...node.querySelectorAll('div')].filter(row=>row.querySelector('dt')?.textContent==='Origine').map(row=>row.querySelector('dd')?.textContent)));
 const resources=async()=>{
  const panel=page.locator('[data-battle-action="resources"]');
  if(!await panel.evaluate(n=>n.open))await panel.locator('summary.play-battle-summary').click();
@@ -24,6 +26,9 @@ const seed=async(name,extra={})=>{
 const use=name=>page.getByRole('button',{name,exact:true});
 try{
  await seed('Barbarian');
+ await page.locator('#sheet-play-view [aria-label="Dettagli Ira"]').click();
+ assert.deepEqual(await popupOrigins(),['Tratto · Rage'],'Native class ability details must display the granting trait');
+ await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
  await use('Attiva Ira').click();
  await page.waitForFunction(()=>document.querySelector('[aria-label="Disattiva Ira"]'));
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
@@ -52,6 +57,23 @@ try{
  await page.locator('#class-feature-dialog').waitFor({state:'detached'});
  assert((await record()).current_hp>=16);assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  await seed('Druid');
+ const druidBeforeDetails=JSON.stringify(await record());
+ await page.locator('#sheet-play-view [aria-label="Gestisci Wild Shape"]').click();
+ const originText=await popupOrigins();
+ assert.deepEqual(originText,['Tratto · Wild Shape'],'The resource popup must show the granting trait, not the class');
+ assert.equal(await page.locator('#sheet-context-dialog .play-resource-origin-facts strong').textContent(),'Wild Shape');
+ await shot('wild-shape-resource-origin');
+ await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+ await page.locator('#sheet-play-view [aria-label="Dettagli Wild Shape"]').click();
+ assert.match(await page.locator('#sheet-context-dialog .power-privilege-facts').textContent(),/OrigineTratto · Wild Shape/);
+ const grantingFeature=await page.locator('#sheet-context-dialog .power-origin-link').getAttribute('data-origin-id');
+ await page.locator('#sheet-context-dialog .power-origin-link').click();
+ await page.waitForFunction(()=>document.querySelector('#app')?.dataset.renderedSheet==='info');
+ const grantedCard=page.locator('.play-info-traits .trait-card[data-trait-feature="'+grantingFeature+'"]');
+ assert(await grantedCard.evaluate(n=>n.open));
+ assert.equal(await grantedCard.locator(':scope > summary').evaluate(n=>n.childNodes[0].textContent.trim()),'Wild Shape');
+ assert.equal(JSON.stringify(await record()),druidBeforeDetails,'Reading resource and trait details cannot modify the creature');
+ await sheet('battle');await resources();
  const wild=page.locator('[data-act="battle-use-ability"]').filter({hasText:/Attiva/});
  await wild.first().click();await page.locator('.miniature-dialog').waitFor();
  assert.deepEqual((await record()).resource_tracker_spent,{});
@@ -86,6 +108,25 @@ try{
  await page.locator('[data-metamagic-name]').selectOption('Extended Spell');
  await page.locator('[data-act="action-cast-confirm"]').click();await page.locator('#action-cast-dialog').waitFor({state:'detached'});
  assert.equal(Object.values((await record()).resource_tracker_spent)[0],1,'Metamagic consumes only at confirmation');
+ for(const variant of [
+  {rules_version:'2024',class_source:'XPHB',classes:[{name:'Druid',source:'XPHB',level:5}]},
+  {subclass:'Circle of the Moon',subclass_source:'PHB',classes:[{name:'Druid',source:'PHB',level:5,subclass:'Circle of the Moon',subclass_source:'PHB'}]}
+ ]){
+  await seed('Druid',variant);const before=JSON.stringify(await record());
+  await page.locator('#sheet-play-view [aria-label="Gestisci Wild Shape"]').click();
+  assert.deepEqual(await popupOrigins(),['Tratto · Wild Shape']);
+  const source=variant.class_source==='XPHB'?'xphb':'phb';
+  assert((await page.locator('#sheet-context-dialog .power-origin-link').first().getAttribute('data-origin-id')).startsWith('feature:class|'+source+'|druid|'));
+  for(const width of [320,390]){
+   await page.setViewportSize({width,height:844});
+   assert(await page.locator('#sheet-context-dialog').evaluate(n=>n.scrollWidth<=n.clientWidth));
+  }
+  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+  await page.locator('#sheet-play-view [aria-label="Dettagli Wild Shape"]').click();
+  assert.deepEqual(await popupOrigins(),['Tratto · Wild Shape']);
+  await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').click();
+  assert.equal(JSON.stringify(await record()),before,'Edition/subclass origin details must not modify the sheet');
+ }
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
  console.log('PASS: Chrome privilege effects, real advantage dice, cancellation without spending, healing, transformation preview/confirm, reload, second-form overflow, original appearance restoration and Metamagic.');
 }catch(error){await shot('feature-failure');console.error((await page.locator('body').innerText()).slice(0,5000));throw error;}

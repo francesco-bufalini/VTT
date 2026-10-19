@@ -30,6 +30,9 @@ test("PWA derives class abilities from the actual structured features, not level
   assert.equal(powers[0].tracker_remaining,2);
   assert.equal(powers[1].tracker_id,"class:druid:phb:wild_shape");
   assert.equal(powers[0].feature_id,bard.origin_id);
+  assert.equal(powers[0].origin_name,'Tratto · Bardic Inspiration');
+  assert.equal(powers[1].origin_name,'Tratto · Wild Shape');
+  assert.equal(powers[1].feature_name,'Wild Shape');
   for(const power of powers){
     assert.equal(power.action_kind,"ability");
     assert.equal(Object.hasOwn(power,"level"),false);

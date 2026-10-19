@@ -460,11 +460,16 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
   const featureFor=(ids=[],name='')=>{
    const candidates=ids.map(cleanOrigin).filter(Boolean);
-   const exact=traits.find(feature=>[feature.origin_id,feature.origin_key,feature.feature_key]
-     .some(value=>value&&candidates.includes(cleanOrigin(value))));
-   if(exact)return exact;
+   for(const id of candidates){
+    const exact=traits.filter(feature=>[feature.origin_id,feature.feature_key]
+      .some(value=>value&&cleanOrigin(value)===id));
+    if(exact.length===1)return exact[0];
+   }
+   const parent=traits.filter(feature=>feature.origin_key&&candidates.includes(cleanOrigin(feature.origin_key)));
+   if(parent.length===1)return parent[0];
    const normalized=powerName(name);
-   return normalized?traits.find(feature=>powerName(feature.name)===normalized):null;
+   const named=normalized?traits.filter(feature=>powerName(feature.name)===normalized):[];
+   return named.length===1?named[0]:null;
   };
   const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',
     movement:'Movimento',contextual:'Secondo il privilegio'};
@@ -505,7 +510,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const trait=featureFor([power.feature_id,power.origin_id,action.origin_id,action.feature_id],
      action.feature||row.name);
    const originId=trait?.origin_id||power.feature_id||power.origin_id||action.origin_id||'';
-   const originLabel=trait?.origin_key||power.origin||action.origin_id||'';
+   const originLabel=trait?.name?'Tratto · '+trait.name:
+     power.origin_name||action.origin_name||power.origin||action.origin_id||'';
    const description=trait?.description||power.description||action.description||'';
    const detail=document.createElement('section');
    detail.className='panel play-battle-power-detail';
