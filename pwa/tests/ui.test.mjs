@@ -29,7 +29,7 @@ globalThis.fetch=async (url,options={})=>{
 };
 const {mount,stopRealtime}=await import("../ui.js");
 const {takeQrPairCode}=await import("../client.js");
-const {listCreatures,loadCreature,exportCreature,openCreatureEditor}=await import("../creatures.js");
+const {listCreatures,loadCreature,exportCreature,openCreatureEditor,saveCreature}=await import("../creatures.js");
 const {getRecord}=await import("../storage.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
@@ -721,6 +721,55 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-coin-code="gp"]'));
   assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("magic scrolls use a dedicated inventory tab and keep quantities across section changes",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Arcanista delle pergamene");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  const saved=(await listCreatures()).find(row=>row.creature.name==="Arcanista delle pergamene");
+  assert.ok(saved);
+  await saveCreature({...saved.creature,inventory:[
+    {id:"local_dagger",name:"Pugnale",custom_item_type:"weapon",quantity:1},
+    {id:"local_spell_scroll",name:"Spell Scroll (3rd Level)",type:"SC",quantity:2},
+    {id:"local_named_scroll",name:"Pergamena di incantesimo (1° livello)",spell_name:"Scudo",quantity:1}
+  ]},"default",saved.revision);
+  click('[data-act="open"][data-id="'+saved.creature.id+'"]');
+  await until(()=>document.querySelector('[data-sheet="inventory"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-subtabs [role="tab"]').length,3);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===2);
+  assert.match(document.querySelector('#sheet-play-view').textContent,/Incantesimo non specificato/);
+  assert.match(document.querySelector('#sheet-play-view').textContent,/Scudo/);
+  assert.equal(document.querySelector('#sheet-play-view .inventory-play-scroll .inventory-scroll-level').textContent,"3°");
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute("aria-selected"),"true");
+  assert.equal(document.querySelector('#sheet-play-view .inventory-play-coins'),null);
+  click('#sheet-play-view [data-sheet-context="item:1"]');
+  await until(()=>document.querySelector('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]'));
+  change('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]',"4");
+  await until(async()=>{
+    const creature=(await listCreatures()).find(r=>r.creature.id===saved.creature.id)?.creature;
+    return creature?.inventory?.[1]?.quantity===4;
+  });
+  if(document.querySelector('#sheet-context-dialog [data-act="sheet-context-close"]')){
+    click('#sheet-context-dialog [data-act="sheet-context-close"]');
+    await until(()=>!document.querySelector('#sheet-context-dialog'));
+  }
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-selected="true"]'));
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,0);
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="item:1"] .play-badge')?.textContent.includes('4'));
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]');
+  await until(()=>document.querySelector('#sheet-play-view .inventory-play-coins'));
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });

@@ -1,6 +1,6 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -478,11 +478,12 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
-    const isDocuments=state.inventorySubtab==="documents";
-    const nav='<nav class="inventory-subtabs" role="tablist" aria-label="Inventario">'+
-      [['items','Oggetti'],['documents','Documenti']].map(([key,label])=>
+    const isDocuments=state.inventorySubtab==="documents",isScrolls=state.inventorySubtab==="scrolls";
+    const nav='<nav class="inventory-subtabs" role="tablist" aria-label="Sezioni inventario">'+
+      [['items','Oggetti','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book']].map(([key,label,glyph])=>
         '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+'" '+
-        'aria-selected="'+(key===state.inventorySubtab)+'">'+label+'</button>').join('')+'</nav>';
+        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+label+'">'+
+        actionGlyph(glyph)+'<span>'+label+'</span></button>').join('')+'</nav>';
     if(isDocuments){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
       const definitions=await Promise.all(documents.map(({item})=>
@@ -497,8 +498,9 @@ async function editorView() {
       const ordinary=owned.filter(({item})=>!isSpellScroll(item));
       const scrolls=owned.filter(({item})=>isSpellScroll(item));
       const attunements=owned.filter(({item})=>requiresAttunement(item));
-      let selected=owned.find(({index})=>index===state.inventorySelectedIndex);
-      if(!selected){selected=owned[0];state.inventorySelectedIndex=selected?.index??-1;}
+      const visibleRows=isScrolls?scrolls:ordinary;
+      let selected=visibleRows.find(({index})=>index===state.inventorySelectedIndex);
+      if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
       let resolvedDetail=selected?.item||{};
       if(selected&&isCatalogItem(selected.item)){
         if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
@@ -510,19 +512,22 @@ async function editorView() {
             description:detail.description??selected.item.description};
         }
       }
-      body=nav+inventoryEquipmentView(c,calculated)+
+      const description=selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
+        inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
+      body=nav+(isScrolls?
+        panel("Pergamene possedute",
+          inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex)+
+          '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+'</div>',
+          "inventory-native-panel inventory-scroll-panel"):
+        inventoryEquipmentView(c,calculated)+
         inventoryAttunementView(c,attunements)+
         inventoryCoinsView(c)+
         panel("Oggetti posseduti",
           inventoryTable(ordinary,false,state.inventorySelectedIndex,state.inventoryMenuIndex)+
           '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
           btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
-          "inventory-native-panel")+
-        panel("Pergamene possedute",inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
-          "inventory-native-panel inventory-scroll-panel")+
-        (selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
-          inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"")+
-        infusionPanel(c,calculated);
+          "inventory-native-panel"))+
+        description+(isScrolls?'':infusionPanel(c,calculated));
     }
     break;
   }
@@ -755,11 +760,6 @@ const INVENTORY_RARITIES={
   common:"Comune",uncommon:"Non comune",rare:"Raro","very rare":"Molto raro",
   legendary:"Leggendario",artifact:"Artefatto",varies:"Variabile"
 };
-function isSpellScroll(item={}){
-  const type=String(item.type||"").split("|")[0].toUpperCase();
-  const name=String(item.name||"").toLowerCase();
-  return type==="SC"||name.includes("spell scroll")||name.includes("pergamena di incantesimo");
-}
 function inventoryProperties(item={}){
   const obj=resolveOwnedItem(item),kind=itemKind(obj),parts=[];
   if(kind==="weapon"){
@@ -907,12 +907,13 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
         'data-item-index="'+index+'" data-item-key="quantity" value="'+qty+'">'+
         '<button type="button" class="inventory-qty-btn" data-act="inventory-quantity" data-index="'+index+
         '" data-delta="1" aria-label="Aumenta quantità">+</button></div>',
-        name=isCatalogItem(item)?'<strong>'+esc(item.name||"Oggetto")+'</strong>':
+        displayName=scrolls?spellScrollName(item):item.name||"Oggetto",
+        name=isCatalogItem(item)?'<strong>'+esc(displayName)+'</strong>':
           '<input class="inventory-item-name-input" aria-label="Nome oggetto" data-item-index="'+index+
           '" data-item-key="name" value="'+esc(item.name||"")+'">',
         nameCell='<span class="inventory-col-name">'+
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
-          '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:'Dettagli')+'</button>'+
+          '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
           (isCatalogItem(item)?'':name)+
           (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+
           '<button type="button" class="inventory-more" data-act="inventory-menu" data-index="'+index+
@@ -927,7 +928,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
           '<span class="inventory-slotted-icon">'+(eqIcon||'')+'</span>')+'</span>';
       const cells=scrolls?[
         '<span class="inventory-col-quantity">'+controls+'</span>',
-        '<span class="inventory-col-level">'+esc(item.spell_level??item.spellLevel??item.level??"—")+'</span>',nameCell]:
+        '<span class="inventory-col-level">'+esc(spellScrollLevel(item))+'</span>',nameCell]:
         [equip,'<span class="inventory-col-value">'+esc(inventoryGold(item))+'</span>',
         '<span class="inventory-col-weight">'+esc(item.weight!==undefined?(Number(item.weight)*qty)+' lb':'—')+'</span>',
         '<span class="inventory-col-quantity">'+controls+'</span>',
@@ -3044,7 +3045,7 @@ async function handleAction(target){
   }
   if(act==="inventory-subtab"){
     const subtab=target.dataset.subtab;
-    if(!["items","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
+    if(!["items","scrolls","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
     state.inventorySubtab=subtab;state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }

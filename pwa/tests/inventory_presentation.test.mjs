@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {inventoryReadout} from '../sheet_rules_view.js';
+import {isSpellScroll,spellScrollName,spellScrollLevel} from '../item_controls.js';
 
 test('inventory summaries resolve each owned copy and multiply only recorded unit data',()=>{
  const item={id:'local_blade',name:'Spada',custom_item_type:'weapon',damage:'1d6',weight:3,value:1500,quantity:2,equipped_slots:['main'],instance_overrides:{damage:'1d8',weight:4}};
@@ -25,4 +26,23 @@ test('inventory preserves distinct attunement, activation and document states',(
  const document=inventoryReadout({id:'homebrew:vttdoc:documents:doc_test',weight:1,value:100});
  assert.equal(document.kind,'document');assert.equal(document.weight,null);assert.equal(document.value,null);
  const scroll=inventoryReadout({type:'SC',spell_level:0});assert.equal(scroll.type,'Pergamena');assert(scroll.facts.some(row=>row.value==='Trucchetto'));
+});
+
+test('desktop parity: magic scrolls have a separate identity, level and spell label',()=>{
+ const ordinary={name:'Pergamena con sigillo',custom_item_type:'other'};
+ const documents={name:'Pergamena di incantesimo',category:'documents'};
+ const generic={id:'item:scroll3',type:'SC|DMG',name:'Spell Scroll (3rd Level)',quantity:2};
+ const italian={name:'Pergamena di incantesimo (4° livello)'};
+ const named={name:'Spell Scroll (1st Level)',spell_name:{name:'Shield'},spell_level:1};
+ assert.equal(isSpellScroll(ordinary),false);
+ assert.equal(isSpellScroll(documents),false);
+ assert.equal(isSpellScroll(generic),true);
+ assert.equal(isSpellScroll(italian),true);
+ assert.equal(spellScrollLevel(generic),'3');
+ assert.equal(spellScrollLevel(italian),'4');
+ assert.equal(spellScrollName(generic),'Incantesimo non specificato');
+ assert.equal(spellScrollName(named),'Shield');
+ assert.equal(spellScrollLevel(named),'1');
+ assert.equal(spellScrollLevel({name:'Spell Scroll (Cantrip)',spell_level:0}),'0');
+ assert.equal(spellScrollName({name:'Spell Scroll of Fireball'}),'Spell Scroll of Fireball');
 });

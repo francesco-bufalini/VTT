@@ -1,4 +1,31 @@
 // Native-compatible inventory item instance helpers.
+// Keep the mobile spell-scroll inventory in parity with the desktop table.
+// These are display helpers: scrolls remain ordinary owned inventory instances.
+export function isSpellScroll(item={}){
+  if(item.category==="documents")return false;
+  const type=String(item.type||"").split("|")[0].toUpperCase();
+  const name=String(item.name||"").toLowerCase();
+  return type==="SC"||name.includes("spell scroll")||name.includes("pergamena di incantesimo");
+}
+export function spellScrollName(item={}){
+  let value=item.spell_name??item.spellName??item.spell??"";
+  if(Array.isArray(value))value=value[0]??"";
+  if(value&&typeof value==="object")value=value.name??"";
+  const spellName=String(value||"").trim();
+  if(spellName)return spellName;
+  const name=String(item.name||"").trim();
+  if(/^(?:spell scroll|pergamena di incantesimo)\s*(?:\(.*\))?$/i.test(name))
+    return "Incantesimo non specificato";
+  return name||"Incantesimo non specificato";
+}
+export function spellScrollLevel(item={}){
+  const level=item.spell_level??item.spellLevel??item.level;
+  if(level!==undefined&&level!==null&&String(level).trim()!=="")return String(level);
+  const name=String(item.name||"");
+  const match=/(\d+)(?:st|nd|rd|th|°|º)?[- ]level/i.exec(name)||
+    /(\d+)[°º]?\s*livello/i.exec(name);
+  return match?match[1]:"—";
+}
 const array=v=>Array.isArray(v)?v:[];
 export function itemKind(item={}){
   if(item.category==="documents")return "document";
