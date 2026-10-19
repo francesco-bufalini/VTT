@@ -167,8 +167,12 @@ try{
  await dismiss();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
- assert.match(await resourcesPanel.locator('[data-ability-resource="free"]').textContent(),/Azioni gratuite/);
- assert(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-free-actions [data-attack-id]').count()>0);
+ assert.doesNotMatch(await resourcesPanel.locator('[data-ability-resource="free"]').textContent(),/Azioni gratuite/,
+  'Only free-cost abilities belong inside Resources');
+ assert.equal(await resourcesPanel.locator('.play-resource-free-actions').count(),0);
+ const freeActions=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-timing="free"]');
+ assert.equal(await freeActions.count(),1,'Free general actions belong beneath Other Actions');
+ assert(await freeActions.locator('[data-attack-id]').count()>0);
  const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  assert.equal(await linkedSpell.locator('[data-act="battle-cast-resource-spell"]').count(),1,'Dedicated Lancia button is beside the spell details');
@@ -367,6 +371,8 @@ try{
  assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_mod:str');
  assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
+ assert.equal(await strength.getAttribute('open'),null,'Ability groups start collapsed');
+ await strength.locator('summary.play-battle-action-heading').click();
  const firstRoll=strength.locator('[data-target="ability_mod:str"]');
  await firstRoll.click();
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
