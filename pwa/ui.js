@@ -126,9 +126,9 @@ const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
  magic:'spark',inventory:'inventory',traits:'proficiency',conditions:'condition',origins:'settings'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
-const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
+const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
 const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['traits','Tratti','Privilegi e capacità del personaggio'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],traits:['Tratti','Consulta i privilegi delle tue origini.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -532,7 +532,7 @@ async function editorView() {
     break;
   case "magic":
     body=magicToolbar(calculated)+
-      panel("Magia",
+      panel("Incantesimi disponibili",
         calculated.casting_classes.map(member=>{
           const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
           return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
@@ -590,7 +590,7 @@ function resourceView(c,configure=false,compact=false){
    const compactActions='<div class="battle-resource-actions">'+
      '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo di '+esc(t.name)+'" title="Ripristina 1">−</button>'+
      '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo di '+esc(t.name)+'" title="Consuma 1">＋</button>'+
-     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button>'+
+     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Magia" title="Vai a Magia">↗</button>'+
      '<details class="battle-resource-details"><summary aria-label="Origine e recupero di '+esc(t.name)+'" title="Origine e recupero">ⓘ</summary>'+
        '<span>'+esc(t.origin_name||'Senza origine')+' · '+
        esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details></div>';
@@ -605,7 +605,7 @@ function resourceView(c,configure=false,compact=false){
         optionalButton+'</div>':'')+
     '</article>';
   }
-  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Poteri">↗ Poteri</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
+  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Magia">↗ Magia</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
  }).join('');
  if(compact)return panel('Risorse',
    (body||'<p class="hint">Nessuna risorsa disponibile.</p>')+
