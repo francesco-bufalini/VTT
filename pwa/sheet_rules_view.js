@@ -534,7 +534,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
-   if(['Caratteristiche','Riepilogo','Abilità','Altre competenze'].includes(title))continue;
+   if(['Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti'].includes(title))continue;
    const sub=title==='Aspetto'?
     ['Specie '+(c.species||'da definire'),c.subrace?'Sottorazza '+c.subrace:'',
      'Taglia '+(c.size_name||'Medium'),
@@ -551,6 +551,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
   html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
   const tools=panelNamed('Altre competenze');bind('tools',tools);html+=go('tools','Altre competenze','proficiency');
+  // Traits belong at the end of Info, as visible cards grouped by origin.
+  // The old traits tab flattened them into a list of context buttons.
+  const traits=panelNamed('Tratti');
+  if(traits){
+   const content=[...traits.children].filter(child=>child.tagName!=='H2')
+     .map(child=>child.outerHTML).join('');
+   html+=card('Tratti','<div class="play-info-traits-content">'+content+'</div>','','play-info-traits');
+  }
  }
  if(sheet==='magic'){
   const tools=bank.querySelector('.magic-toolbar');bind('magic-tools',tools);
