@@ -21,6 +21,17 @@ export function validateSnapshot(data) {
       throw new Error("Coordinate dei token non valide.");
     }
   }
+  if(data.areas!==undefined){
+    if(!Array.isArray(data.areas)||data.areas.length>32768)
+      throw new Error("Aree dello snapshot non valide.");
+    for(const area of data.areas){
+      if(!area||!Array.isArray(area.points)||area.points.length<3||area.points.length>128||
+        !area.points.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite))||
+        typeof area.color!=="string"||!/^#?[0-9a-f]{6}(?:[0-9a-f]{2})?$/i.test(area.color)||
+        !Array.isArray(area.affected_ids)||!area.affected_ids.every(id=>typeof id==="string"))
+        throw new Error("Aree dello snapshot non valide.");
+    }
+  }
   return data;
 }
 export function imageCoordinates(localX, localY, transform) {
@@ -44,7 +55,7 @@ export function hitMarker(pixel, markers) {
   return closest;
 }
 export function isAimStatus(status) {
-  return !!status?.active && AIM_PHASES.has(status.phase);
+  return !!status?.active && !status.waiting_desktop && AIM_PHASES.has(status.phase);
 }
 const clean = value=>String(value??"").replace(/[&<>"']/g,ch=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -59,9 +70,11 @@ export class TacticalViewer {
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
+    this.generation=0;this.pollTimer=null;this.polling=false;this.aimTargetId="";this.pollError="";
   }
   async open(tokenId, attack={}) {
     if(!tokenId)throw new Error("Scegli prima un token.");
+    if(this.root&&this.targeting.active)throw new Error("Completa o annulla prima l’incantesimo in corso.");
     this.close();
     this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
     this.root=document.createElement("div");
@@ -96,7 +109,7 @@ export class TacticalViewer {
     this.canvas.addEventListener("wheel",e=>{
       e.preventDefault();this.zoomAt(Math.exp(-e.deltaY*0.001),e.offsetX,e.offsetY);
     },{passive:false});
-    this.onKey=e=>{if(e.key==="Escape")this.close();};
+    this.onKey=e=>{if(e.key==="Escape"&&!this.busy)this.control("close").catch(error=>this.setStatus(error.message,true));};
     window.addEventListener("keydown",this.onKey);
     window.addEventListener("resize",this.onResize);
     this.resizeObserver = typeof ResizeObserver !== "undefined" ?
@@ -104,6 +117,7 @@ export class TacticalViewer {
     this.resizeObserver?.observe(this.canvas);
     this.updateButtons();
     await this.refresh();
+    this.schedulePoll();
   }
   setBasicAction(action) {
     if(!this.root||!['help','shove','prone','grapple'].includes(action?.mode))
@@ -114,6 +128,7 @@ export class TacticalViewer {
       action.rule+' Tocca il bersaglio e conferma il successo dopo aver risolto il tiro.');
   }
   close() {
+    ++this.generation;clearTimeout(this.pollTimer);this.pollTimer=null;
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
@@ -121,6 +136,9 @@ export class TacticalViewer {
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
+    this.targeting={};this.preview=null;this.aimPixel=null;this.aimTargetId="";
+    this.selectedId="";this.busy=false;this.polling=false;
+    this.pollError="";
   }
   setStatus(message, error=false) {
     if(this.status){this.status.textContent=message;this.status.classList.toggle("error",error);}
@@ -132,7 +150,9 @@ export class TacticalViewer {
     const aim=isAimStatus(this.targeting);
     for(const key of ["cancel","finish","confirm-point"]){
       const b=this.root.querySelector('[data-tactical="'+key+'"]');
-      if(b){b.hidden=!active || (key==="confirm-point"?!aim:key==="finish"?aim:false);
+      if(b){b.hidden=!active || (key==="confirm-point"?!aim:key==="finish"?
+          (this.targeting.waiting_desktop||this.targeting.can_finish===false||
+            (aim&&this.targeting.can_finish!==true)):false);
         b.disabled=this.busy || (key==="confirm-point"&&!this.aimPixel);}
     }
     for(const b of this.root.querySelectorAll("[data-tactical]")){
@@ -143,19 +163,44 @@ export class TacticalViewer {
   async runAction(name,payload) {
     if(this.busy)throw new Error("Attendi la risposta dal desktop.");
     this.busy=true;this.updateButtons();
+    const generation=this.generation;
     try {
       const result=await this.send(name,payload);
       if(!result?.ok)throw new Error(result?.error||"Il desktop ha rifiutato il comando.");
-      if(result.targeting)this.targeting=result.targeting;
+      if(generation===this.generation&&result.targeting)this.targeting=result.targeting;
       this.updateButtons();
       return result;
-    }finally{this.busy=false;this.updateButtons();}
+    }finally{if(generation===this.generation){this.busy=false;this.updateButtons();}}
+  }
+  schedulePoll() {
+    clearTimeout(this.pollTimer);
+    if(!this.root)return;
+    this.pollTimer=setTimeout(()=>this.poll().finally(()=>this.schedulePoll()),1800);
+  }
+  async poll() {
+    if(!this.root||this.busy||this.polling||this.pointers.size||document.hidden)return;
+    const generation=this.generation,previous=JSON.stringify(this.targeting);
+    this.polling=true;
+    try{
+      const result=await this.send("spell_status",{token_id:this.tokenId,owner_id:await this.ownerId()});
+      if(generation!==this.generation||!this.root||this.busy)return;
+      if(!result?.ok)throw Error(result?.error||"Collegamento con il desktop non disponibile.");
+      this.pollError="";
+      const changed=previous!==JSON.stringify(result.targeting||{});
+      // Preserve an unconfirmed aim while unrelated board changes arrive.
+      if(changed||(!this.aimPixel&&result.view_revision!==this.snapshot?.view_revision))await this.refresh();
+    }catch(error){if(generation===this.generation&&this.pollError!==error.message){
+      this.pollError=error.message;this.setStatus(error.message,true);
+    }}
+    finally{if(generation===this.generation)this.polling=false;}
   }
   async refresh() {
     if(!this.root)return;
+    const generation=this.generation;
     this.setStatus("Acquisizione dello snapshot dal desktop…");
     const data=validateSnapshot(await this.runAction("snapshot",{
-      token_id:this.tokenId,owner_id:await this.ownerId(),field_feet:120,attack:this.attack
+      token_id:this.tokenId,owner_id:await this.ownerId(),
+      field_feet:this.targeting.active?120:(this.snapshot?.field_feet||120),attack:this.attack
     }));
     const raw=atob(data.image), bytes=new Uint8Array(raw.length);
     for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
@@ -169,12 +214,12 @@ export class TacticalViewer {
         el.src=url;
       });
     }finally{URL.revokeObjectURL(url);}
-    if(!this.root)return;
+    if(!this.root||generation!==this.generation)return;
     const same=this.snapshot?.token_id===data.token_id &&
       this.snapshot?.field_feet===data.field_feet;
     this.snapshot=data;this.image=image;this.targeting=data.targeting||{};
-    this.preview=null;this.aimPixel=null;
-    if(!same){this.zoom=1;this.panX=0;this.panY=0;}
+    this.preview=null;this.aimPixel=null;this.aimTargetId="";
+    if(!same){this.zoom=Math.max(1,Math.min(4,(data.field_feet||60)/80));this.panX=0;this.panY=0;}
     this.caption.textContent=String(data.title||"Mappa")+" · "+Math.round(data.field_feet||60)+" ft";
     this.setStatus(this.targeting.active ?
       (this.targeting.instruction||"Scegli un bersaglio sulla mappa.") :
@@ -205,6 +250,12 @@ export class TacticalViewer {
     ctx.save();
     ctx.translate(t.originX,t.originY);ctx.scale(t.scale,t.scale);
     ctx.drawImage(this.image,0,0,t.width,t.height);
+    if(!this.snapshot?.area_overlays)for(const area of this.snapshot?.areas||[]){
+      ctx.beginPath();area.points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+      ctx.closePath();const color="#"+area.color.replace(/^#/,"").slice(0,6);
+      ctx.fillStyle=color+"2e";ctx.fill();ctx.strokeStyle=color;
+      ctx.lineWidth=3/t.scale;ctx.stroke();
+    }
     for(const contour of this.snapshot?.contours||[]) {
       const pts=contour.points||[];
       if(pts.length<2)continue;
@@ -319,12 +370,19 @@ export class TacticalViewer {
         ' · bersaglio: '+marker.name);
       return;
     }
-    if(isAimStatus(this.targeting) && !marker){
-      this.aimPixel=pixel;this.preview=null;this.updateButtons();this.draw();
+    if(this.targeting.waiting_desktop){
+      this.setStatus(this.targeting.instruction||"Attendi la risoluzione sul desktop.");return;
+    }
+    if(isAimStatus(this.targeting)){
+      this.aimPixel=pixel;this.aimTargetId=marker?.id||"";
+      this.preview=null;this.updateButtons();this.draw();
       try {
         const result=await this.runAction("preview_spell",payload);
         this.preview=result.preview||null;
-        this.setStatus(this.preview?.valid?"Anteprima pronta · conferma il punto.":"Punto fuori gittata o non valido.");
+        this.setStatus(this.preview?.valid?"Anteprima pronta · "+
+          (this.preview.affected_ids?.length||0)+" bersagli · conferma il punto.":
+          this.targeting.area_shape?"Punto fuori gittata o non valido.":
+          "Punto selezionato · conferma per proseguire.");
       }catch(error){this.setStatus(error.message,true);}
     }else if(this.targeting.active){
       await this.runAction("target_spell",payload);
@@ -352,11 +410,18 @@ export class TacticalViewer {
     this.targeting=result.targeting||{};
     // Mirror Android: consume the slot after Godot accepted the cast.
     await this.onCastAccepted(slotLevel,spell);
-    await this.refresh();
+    // A failed image capture must not hide an already accepted native cast.
+    // Keep cancellation and manual refresh available on the existing map.
+    try{await this.refresh();}catch(error){this.setStatus(error.message,true);}
     return result;
   }
   async control(name) {
-    if(name==="close"){this.close();return;}
+    if(name==="close"){
+      if(this.busy)throw new Error("Attendi la risposta dal desktop.");
+      if(this.targeting.active)await this.runAction("cancel_spell",{
+        token_id:this.tokenId,owner_id:await this.ownerId()});
+      this.close();return;
+    }
     if(name==="zoom-in"){this.zoomAt(1.25,this.transform().viewW/2,this.transform().viewH/2);return;}
     if(name==="zoom-out"){this.zoomAt(0.8,this.transform().viewW/2,this.transform().viewH/2);return;}
     if(name==="refresh"){await this.refresh();return;}
@@ -366,8 +431,8 @@ export class TacticalViewer {
       await this.runAction(name==="cancel"?"cancel_spell":"finish_spell",payload);
     }else if(name==="confirm-point"){
       if(!this.aimPixel)throw new Error("Scegli prima un punto sulla mappa.");
-      await this.runAction("target_spell",{...payload,target_id:"",
-        snapshot_id:this.snapshot.snapshot_id,pixel:this.aimPixel});
+      await this.runAction("target_spell",{...payload,
+        snapshot_id:this.snapshot.snapshot_id,pixel:this.aimPixel,target_id:this.aimTargetId});
     }
     await this.refresh();
   }

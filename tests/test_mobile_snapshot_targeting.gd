@@ -132,14 +132,43 @@ func run() -> void:
 	var wire_preview: Dictionary = await sync._handle_mobile_action("preview_spell", {"token_id": caster_id,
 		"owner_id": "mobile-owner", "snapshot_id": "preview-test", "pixel": [844.8, 768]})
 	assert(wire_preview.ok and wire_preview.preview.valid and wire_preview.preview.points.size() == 64)
+	var victim_id: String = sync.get_sync_id_for_node(victim)
+	wire_preview = await sync._handle_mobile_action("preview_spell", {"token_id": caster_id,
+		"owner_id": "mobile-owner", "snapshot_id": "preview-test", "pixel": [844.8, 768], "target_id": victim_id})
+	assert(wire_preview.ok and wire_preview.preview.valid and victim_id in wire_preview.preview.affected_ids,
+		"Aiming directly at a token must preview the native area, including its height")
 	assert(sync.get_tactical_map_data().mobile_protocol == 3)
 	var outside: Dictionary = spells.remote_preview_input(caster, "mobile-owner",
 		{"valid": true, "point": Vector3(1000, 0, 0), "normal": Vector3.UP, "in_air": false}, projection)
 	assert(outside.ok and not outside.preview.valid, "Out-of-range aim must clear the AoE")
 	print("PASS: live Fireball native 20ft contour, range validation and preview without casting")
+	var empty_revision: int = sync.get_tactical_map_data().view_revision
 	selected = spells.remote_target_input(caster, "mobile-owner", null,
 		{"valid": true, "point": Vector3(3.5, 0, 0.5), "normal": Vector3.UP, "in_air": false}, "select")
 	assert(selected.ok and selected.targeting.phase != "point", "Snapshot coordinates must enter the native AoE resolution")
+	var areas: Array = Capture.project_areas(board, projection)
+	assert(areas.size() == 1 and areas[0].points.size() == 64 and victim_id in areas[0].affected_ids,
+		"Confirmed Fireball must remain in snapshots with native affected targets")
+	assert(sync.get_tactical_map_data().view_revision != empty_revision)
+	var remote_status: Dictionary = await sync._handle_mobile_action("spell_status", {
+		"token_id": caster_id, "owner_id": "mobile-owner"})
+	assert(remote_status.ok and remote_status.targeting.outcome == "completed")
+	var denied_status: Dictionary = await sync._handle_mobile_action("spell_status", {
+		"token_id": caster_id, "owner_id": "other-owner"})
+	assert(denied_status.ok and denied_status.targeting.is_empty(), "Public views refresh without revealing another owner's targeting")
+	assert(spells.dismiss_post_cast_visuals())
+	assert(Capture.project_areas(board, projection).is_empty(), "Deleted areas must disappear before the next frame")
+	assert(sync.get_tactical_map_data().view_revision == empty_revision)
+	measure.add_spell_aoe(Vector3(3.5, 1, 0.5), Vector3(5.5, 1, 0.5), "cube", "web")
+	var wall: Array[Vector3] = [Vector3.ZERO, Vector3(2, 0, 0), Vector3(2, 0, 2)]
+	measure.add_wall_path(wall, 2, 0.2, "fire")
+	measure.add_wall_globe(Vector3.ZERO, 2, "force")
+	areas = Capture.project_areas(board, projection)
+	assert(areas.size() == 4 and areas[0].shape == "cube" and areas[0].points.size() == 4)
+	assert(areas[1].shape == "wall_path" and areas[2].shape == "wall_path")
+	assert(areas[3].shape == "wall_globe" and areas[3].points.size() == 64)
+	assert(areas.all(func(area: Dictionary) -> bool: return not area.has("root")), "Wire projection must never leak native objects")
+	print("PASS: public area projection, held/persistent cleanup, walls and cheap authorized status refresh")
 	spells.remote_target_input(caster, "mobile-owner", null, {}, "cancel")
 	print("PASS: native remote spell selection, ownership, cancellation cleanup, repeated targets, camera preservation")
 	board.queue_free()

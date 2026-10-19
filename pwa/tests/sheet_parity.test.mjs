@@ -330,7 +330,15 @@ test('bundled PWA native tables and resource definitions are generated without d
  const native=JSON.parse(readFileSync(nativePath,'utf8'));
  const overrides=JSON.parse(readFileSync(overridesPath,'utf8'));
  assert.deepEqual(mechanics.classes,native.classes);
- assert.deepEqual(mechanics.resource_overrides,overrides.classes);
+ const sourceKeys=new Set(overrides.classes.map(row=>row.class+'|'+row.source));
+ assert.deepEqual(mechanics.resource_overrides.filter(row=>sourceKeys.has(row.class+'|'+row.source)),overrides.classes);
+ const normalized=mechanics.resource_overrides.filter(row=>!sourceKeys.has(row.class+'|'+row.source));
+ assert(normalized.every(row=>row.source==='XPHB'));
+ assert.deepEqual(normalized.map(row=>row.class).sort(),['Fighter','Paladin','Sorcerer','Wizard']);
+ // The runtime normalization is compared to Godot in compare_native_features.
+ const paladin=normalized.find(row=>row.class==='Paladin').resources.find(row=>row.name==='Lay on Hands');
+ assert.equal(paladin.steps.length,20);
+ assert.equal(paladin.steps[8].value,'45');
 });
 
 test('removing a spell assigned to another class cannot delete it',()=>{

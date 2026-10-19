@@ -7,6 +7,12 @@ func _initialize() -> void:
 
 func run() -> void:
 	var data := {"version": 1, "tokens": [{"id": "stable-id", "name": "Hero", "conditions": ["poisoned"]}], "combat": {"active": true, "round": 2, "active_index": -1, "entries": []}}
+	data["revision"] = 7
+	assert(Controller.valid_data(JSON.parse_string(JSON.stringify(data))), "JSON revision numbers must survive Android's wire roundtrip")
+	for invalid: Variant in [-1, 0.5, "1", INF, NAN, true]:
+		var candidate := data.duplicate(true)
+		candidate["revision"] = invalid
+		assert(not Controller.valid_data(candidate))
 	var desktop := Controller.new()
 	root.add_child(desktop)
 	desktop.use_board(func() -> Dictionary: return data)

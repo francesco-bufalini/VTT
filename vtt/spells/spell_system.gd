@@ -5557,8 +5557,14 @@ func remote_targeting_status(caster: Node3D, owner: String) -> Dictionary:
 	for token: Node3D in _pending_targets:
 		if is_instance_valid(token) and token.has_method("get_token_id"):
 			selected.append(String(token.call("get_token_id")))
+	var waiting := _targeting_phase in ["saving_throw", "summon_count", "summon_token_dialog",
+		"transform_token_dialog", "resize_token_dialog", "wall_mode", "wall_orientation"]
+	var can_finish := (_targeting_phase == "wall_segment" and _wall_points.size() >= 2) or (
+		_targeting_phase in ["chain_secondary", "teleport_passengers"]) or (
+		_targeting_phase == "transform_multi_targets" and not _pending_targets.is_empty())
 	return {"active": is_targeting(), "phase": _targeting_phase, "outcome": _remote_outcome,
-		"instruction": ("Risolvi la scelta o il tiro salvezza sul desktop, poi premi Aggiorna." if _targeting_phase in ["saving_throw", "summon_count", "summon_token_dialog", "transform_token_dialog", "resize_token_dialog", "wall_mode", "wall_orientation"] else "Tocca un bersaglio o un punto sulla mappa. Selezioni: %d." % _pending_target_history.size()), "selected_ids": selected,
+		"waiting_desktop": waiting, "can_finish": can_finish,
+		"instruction": ("Risolvi la scelta o il tiro salvezza sul desktop. La mappa si aggiorna automaticamente." if waiting else _remote_instruction), "selected_ids": selected,
 		"range_feet": _effective_spell_range_feet(_pending_spell(), caster) if is_targeting() else 0.0,
 		"area_shape": String(_pending_spell().get("aoe_shape", "")),
 		"area_radius_feet": _effective_aoe_radius_feet(_pending_spell()),

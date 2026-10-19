@@ -139,9 +139,34 @@ attribuisce silenziosamente benefici che non può calcolare.
 
 ## Verifiche riproducibili
 
+Il lancio online usa il ciclo nativo del desktop: la PWA sceglie bersagli,
+punti e direzioni sullo snapshot, invia l'anteprima e conferma esplicitamente.
+Il server verifica gittata, geometria e token colpiti, crea le aree e applica
+gli effetti previsti dal catalogo nativo. Le scelte avanzate e i tiri salvezza
+restano nei dialoghi del desktop; la PWA ne rileva automaticamente l'esito.
+Gli slot e i tracker si consumano dopo l'accettazione del lancio, come su Android.
+Chiudere la vista o premere Esc durante la selezione annulla anche sul server.
+
+Gli snapshot includono contorni e colori delle aree persistenti, dei muri
+e delle aree confermate ancora presenti, anche nell'immagine della pagina
+Partita. Una revisione leggera segue modifiche ad aree, posizioni e altezze:
+le immagini si richiedono quando cambia la mappa, preservando una mira ancora
+da confermare. Il ritratto 2D e l'altezza relativa in caselle rimangono visibili
+anche per token sopra o sotto il piano di ripresa. Nascondere un token sul
+desktop continua a escluderlo dalla proiezione pubblica.
+
+La cache di questo aggiornamento è `v76`. Occorre usare il desktop aggiornato
+per il comando `spell_status`; il protocollo mobile 3 resta compatibile con
+Android. `npm run test:tactical-browser` avvia Godot con una board sintetica,
+una porta locale casuale e dati temporanei, quindi prova Chrome alle larghezze
+360/390/768/1440 px: mira, conferma, aree WebP, ritratti a quote diverse,
+TS risolti sul server, effetti applicati solo a chi fallisce ed Esc. Le
+schermate e il log nativo sono in `pwa/.test-artifacts/spell-*`.
+
 ```text
 npm test
 npm run test:browser
+npm run test:tactical-browser
 npm run test:navigation-browser
 npm run test:sheets-browser
 npm run test:actions-browser

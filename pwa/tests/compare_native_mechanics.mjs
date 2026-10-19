@@ -6,9 +6,10 @@ import {calculateSheet,resourceTrackers} from '../sheet_rules.js';
 const root=new URL('../../',import.meta.url),artifacts=new URL('../.test-artifacts/',import.meta.url);
 await mkdir(artifacts,{recursive:true});
 const load=async name=>JSON.parse(await readFile(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
-const catalogs={classMechanics:await load('class_mechanics'),abilityGrants:await load('ability_grants'),proficiencyGrants:await load('proficiency_grants')};
+const catalogs={classMechanics:await load('class_mechanics'),abilityGrants:await load('ability_grants'),proficiencyGrants:await load('proficiency_grants'),
+ classFeatures:await load('classes'),featureRules:JSON.parse(await readFile(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'))};
 const cases=[],base={kind:'character',name:'Synthetic mechanics',rules_version:'2014',level:5,abilities:{str:14,dex:14,con:14,int:16,wis:16,cha:16},max_hp_base:40,speed_base:30};
-for(const row of catalogs.classMechanics.classes)for(const level of [1,3,5,10,17,20])cases.push({record:{...base,level,class:row.name,class_source:row.source,classes:[{name:row.name,source:row.source,level}]}});
+for(const row of catalogs.classMechanics.classes)for(const level of [1,3,5,10,17,20])cases.push({record:{...base,rules_version:row.source==='XPHB'?'2024':'2014',level,class:row.name,class_source:row.source,classes:[{name:row.name,source:row.source,level}]}});
 for(const resource of catalogs.classMechanics.resource_overrides)for(const subclass of [...new Set(resource.resources.map(r=>r.subclass).filter(Boolean))])cases.push({record:{...base,level:17,class:resource.class,class_source:resource.source,subclass,classes:[{name:resource.class,source:resource.source,level:17,subclass}]}});
 for(const grants of [
  [{target:'initiative',expression:'1 + cha_mod / 2'}],

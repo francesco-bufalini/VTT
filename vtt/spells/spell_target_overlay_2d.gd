@@ -162,7 +162,7 @@ func _collect_post_cast_areas() -> void:
 			if not item is Node3D:
 				continue
 			var root: Node3D = item as Node3D
-			if not is_instance_valid(root) or not root.has_meta("spell_overlay_2d"):
+			if not is_instance_valid(root) or root.is_queued_for_deletion() or not root.has_meta("spell_overlay_2d"):
 				continue
 			var data_value: Variant = root.get_meta("spell_overlay_2d")
 			if not data_value is Dictionary:
@@ -186,7 +186,7 @@ func _collect_post_cast_areas() -> void:
 		if String(data.get("shape", "")) not in ["sphere", "cube", "cone", "line", "cylinder", "flat_square"]:
 			continue
 		var root: Node3D = roots[index] as Node3D
-		if not is_instance_valid(root):
+		if not is_instance_valid(root) or root.is_queued_for_deletion():
 			continue
 		var preview_offset: Vector3 = measure.call("area_drag_preview_offset", root)
 		_areas.append({
@@ -733,6 +733,50 @@ func _draw_dimension_radii(start: Vector3, end: Vector3, shape: String, tint: Co
 			draw_line(first, last, color, 2.6, true)
 
 # Reuse desktop geometry without moving cameras or recapturing the map.
+func mobile_map_areas(projection: Dictionary) -> Array:
+	_collect_post_cast_areas()
+	_mobile_projection = projection
+	var result: Array = []
+	for area: Dictionary in _areas:
+		var points: Array = []
+		for point: Vector2 in _shape_polygon(area.start, area.end, area.shape,
+			float(area.get("width", -1.0)), String(area.get("style", ""))):
+			points.append([point.x, point.y])
+		var affected: Array[String] = []
+		for token: Node3D in measure.call("area_affected_tokens", area.start, area.end,
+			area.shape, String(area.get("style", "")), float(area.get("width", -1.0))):
+			if board.is_ancestor_of(token) and token.is_visible_in_tree() and token.has_method("get_token_id"):
+				affected.append(String(token.call("get_token_id")))
+		result.append({"points": points, "shape": area.shape,
+			"color": _area_color(area).to_html(), "affected_ids": affected})
+	# Wall paths/globes are persistent native geometry too. Project each wall
+	# segment independently so bends never fill the space between segments.
+	var entries: Array = measure.get("persistent_aoes")
+	var roots: Array = measure.get("_aoe_nodes")
+	for index: int in range(mini(entries.size(), roots.size())):
+		var entry: Dictionary = entries[index]
+		var root: Node3D = roots[index]
+		if not is_instance_valid(root) or root.is_queued_for_deletion():
+			continue
+		var shape := String(entry.get("shape", ""))
+		var polygons: Array[PackedVector2Array] = []
+		if shape == "wall_globe":
+			polygons.append(_circle_polygon(_array_vector3(entry.center), float(entry.radius)))
+		elif shape == "wall_path":
+			var path: Array = entry.get("points", [])
+			for segment: int in range(path.size() - 1):
+				polygons.append(_shape_polygon(_array_vector3(path[segment]),
+					_array_vector3(path[segment + 1]), "line", float(entry.wall_thickness)))
+		for polygon: PackedVector2Array in polygons:
+			var points: Array = []
+			for point: Vector2 in polygon:
+				points.append([point.x, point.y])
+			result.append({"points": points, "shape": shape,
+				"color": _area_color(entry).to_html(), "affected_ids": []})
+	_mobile_projection = {}
+	return result
+
+
 func mobile_preview_contour(projection: Dictionary) -> Array:
 	var mesh: MeshInstance3D = measure.get("_spell_preview")
 	if not is_instance_valid(mesh) or not mesh.visible:

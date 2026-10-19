@@ -4,6 +4,7 @@ import {hitDicePools} from './character_core.js';
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
+import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["conditions","Condizioni"],["origins","Modifica personaggio"]];
@@ -87,6 +88,7 @@ export function slotUsePatch(c,level,delta,calculated){
 }
 export function spellCastPlan(c,selection,requestedLevel,calculated,payment='auto'){
  if(!selection?.id||!Number.isInteger(requestedLevel)||requestedLevel<0||requestedLevel>9||!['auto','slot','pact'].includes(payment))throw Error('Lancio non valido');
+ if(selection.action_kind!=='ability'&&classFeatureActive(c,calculated,'rage'))throw Error('Non puoi lanciare incantesimi mentre sei in Ira.');
  const level=Number(selection.level);if(!Number.isInteger(level)||level<0||level>9)throw Error('Livello incantesimo non disponibile nel catalogo locale');
  const grant=selection.grant_id?calculated.origin_spells.find(g=>g.id===selection.grant_id&&g.spell_id===selection.id):null;
  if(selection.grant_id&&!grant)throw Error('Concessione non più disponibile');
@@ -105,7 +107,16 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
  const ability=selection.caster_ability||c.spellcasting_ability||'int';
  const hit=calculated.values['casting_hit:'+ability],dc=calculated.values['casting_dc:'+ability];
  if(!Number.isFinite(hit)||!Number.isFinite(dc))throw Error('Caratteristica di lancio non disponibile');
- return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,spell_save_dc:dc,source_level:c.level||1}};
+ const innate=classFeatureActive(c,calculated,'innate_sorcery')&&
+  String(selection.source_class||selection.casting_class||'').toLowerCase().split('|').includes('sorcerer');
+ const meta=metamagicPlan({...c,...patch},selection,slotLevel,calculated);
+ if(meta.cost){
+  const spent={...(patch.resource_tracker_spent||c.resource_tracker_spent||{})};
+  spent[meta.tracker.id]=Number(spent[meta.tracker.id]||0)+meta.cost;patch.resource_tracker_spent=spent;
+ }
+ return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,
+  spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
+  ...(meta.selection.names?.length?{metamagic:meta.selection,rules_version:c.rules_version||'2014'}:{}),source_level:c.level||1},spell:meta.spell};
 }
 export function recoveryPatch(c,event,trackers){
  if(!['short_rest','long_rest','turn'].includes(event))throw Error('Recupero non valido');
@@ -128,7 +139,9 @@ export function recoveryPatch(c,event,trackers){
  }
  if(event==='long_rest'){for(const id of Object.keys(ready))delete ready[id];for(const id of Object.keys(used))delete used[id];}
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
- if(event==='short_rest'||event==='long_rest')patch.active_class_features={};
+ if(event==='short_rest'||event==='long_rest')patch.active_class_features=c.active_class_features?.wild_shape?
+  {wild_shape:structuredClone(c.active_class_features.wild_shape)}:{};
+ if(event==='long_rest')patch.created_spell_slots=Array(10).fill(0);
  if(event==='long_rest')patch.created_spell_slots=[];
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
@@ -504,6 +517,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    panel('Classe armatura',
     equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,
     'battle-defense-panel')+
+    (calculated.feature_damage_resistances?.length?'<p class="feature-defense-summary">Ira · Resistenza a contundenti, perforanti e taglienti</p>':'')+
    panel('Movimento',
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
     '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+

@@ -67,19 +67,24 @@ export function sheetModifierBreakdown(data,target){
   ' = '+sign(total);
 }
 /** Preview does not consume randomness: opening a modifier is not a roll. */
-export function sheetRollFormula(modifier,bonuses=[]){
+export function sheetRollFormula(modifier,bonuses=[],mode='normal'){
  const number=Number(modifier);
  if(!Number.isFinite(number))throw Error('Modificatore del tiro non disponibile');
- const fixed='1d20'+(number<0?' − '+Math.abs(number):' + '+number);
+ const fixed=(mode==='advantage'?'2d20kh1':mode==='disadvantage'?'2d20kl1':'1d20')+(number<0?' − '+Math.abs(number):' + '+number);
  return fixed+bonuses.map(row=>' + '+String(row.dice)).join('');
 }
-export function rollSheetDice(modifier,bonuses=[],die){
+export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
  if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
  const base=Number(modifier);
  if(!Number.isFinite(base))throw Error('Modificatore non valido');
  const d20=die(20);
  if(!Number.isInteger(d20)||d20<1||d20>20)throw Error('Risultato d20 non valido');
- const parts=[{name:'d20',notation:'1d20',rolls:[d20],subtotal:d20}];
+ const rolls=[d20];
+ if(['advantage','disadvantage'].includes(mode)){
+  const second=die(20);if(!Number.isInteger(second)||second<1||second>20)throw Error('Risultato d20 non valido');rolls.push(second);
+ }
+ const kept=mode==='advantage'?Math.max(...rolls):mode==='disadvantage'?Math.min(...rolls):d20;
+ const parts=[{name:mode==='advantage'?'d20 · vantaggio':mode==='disadvantage'?'d20 · svantaggio':'d20',notation:sheetRollFormula(0,[],mode).split(' + ')[0],rolls,subtotal:kept}];
  for(const bonus of bonuses){
   const notation=String(bonus.dice||'').replaceAll(' ','');
   const match=notation.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
@@ -94,10 +99,10 @@ export function rollSheetDice(modifier,bonuses=[],die){
    subtotal:rolls.reduce((sum,value)=>sum+value,flat),flat});
  }
  const total=parts.reduce((sum,row)=>sum+row.subtotal,base);
- const notation=sheetRollFormula(base,bonuses);
+ const notation=sheetRollFormula(base,bonuses,mode);
  const detail=parts.map(row=>row.name+' ['+row.rolls.join(', ')+']'+(row.flat?(row.flat>0?' + ':' − ')+Math.abs(row.flat):'')+' = '+row.subtotal).join(' · ')+
   ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
- return {sides:20,count:1,modifier:base,rolls:[d20],total,notation,detail,parts};
+ return {sides:20,count:rolls.length,modifier:base,rolls,total,notation,detail,parts};
 }
 /** Roll an explicitly calculated weapon-damage formula, never evaluate arbitrary text. */
 export function rollBattleDamage(formula,die){
@@ -514,7 +519,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
    const persistent=persistentBattleAbility(row);
-   const statusKey=action.class_feature_id||'battle:'+String(id);
+   const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':action.class_feature_id||'battle:'+String(id);
    const active=!!c.active_class_features?.[statusKey];
    const use=persistent?'Attiva':'Usa';
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
@@ -749,7 +754,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
   html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
   const active=Object.entries(c.active_class_features||{});
-  const effectRows=active.map(([key,row])=>'<div class="play-effect-row"><span>'+icon('buff')+'<strong>'+esc(row?.name||key)+'</strong></span>'+btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>').join('');
+  const effectRows=active.map(([key,row])=>{
+   const effect=(d.active_feature_effects||[]).find(e=>e.key===key);
+   const detail=key==='wild_shape'?'Aspetto attuale: '+(c.current_miniature_id||''):
+    effect?.effective?effect.summary:'Benefici sospesi: il tratto o le condizioni richieste non sono disponibili.';
+   return '<div class="play-effect-row"><span>'+icon('buff')+'<span><strong>'+esc(row?.name||key)+'</strong><small class="feature-effect-summary">'+esc(detail)+'</small></span></span>'+btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>';
+  }).join('');
   const toggleKeys=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
   const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';

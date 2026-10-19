@@ -88,7 +88,7 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		var key := String(rule.get("action_id", ""))
 		if key.is_empty():
 			continue
-		var feature := _enabled_feature(record, rule, features)
+		var feature := enabled_feature(record, rule, features)
 		if feature.is_empty():
 			continue
 		if not by_action.has(key) or int(rule.get("priority", 0)) > int((by_action[key] as Dictionary).get("priority", 0)):
@@ -98,7 +98,7 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		var rule: Dictionary = by_action[key]
 		var member := _member_for(record, rule)
 		var tracker := _tracker_for(member, rule, trackers)
-		var feature := _enabled_feature(record, rule, features)
+		var feature := enabled_feature(record, rule, features)
 		result.append({
 			"origin_id": "feature:" + String(feature.get("key", "")),
 			"name": String(rule.get("name", key)),
@@ -112,7 +112,7 @@ static func action_entries(record: Dictionary, trackers: Array[Dictionary]) -> A
 		})
 	return result
 
-static func _enabled_feature(record: Dictionary, rule: Dictionary, features: Array[Dictionary]) -> Dictionary:
+static func enabled_feature(record: Dictionary, rule: Dictionary, features: Array[Dictionary]) -> Dictionary:
 	var base := "class|" + String(rule.get("class_source", "")).to_lower() + "|" + String(rule.get("class_name", "")).to_lower()
 	for feature: Dictionary in features:
 		var parent := String(feature.get("origin_key", ""))
