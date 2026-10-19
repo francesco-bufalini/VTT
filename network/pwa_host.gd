@@ -15,6 +15,8 @@ const BODY_LIMIT := 2 * 1024 * 1024
 # because a transient burst has filled the active slots.
 const MAX_CLIENTS := 32
 const TIMEOUT_MS := 15000
+const MODULE_DIAG_PATH := "/__vtt_module_diagnostics"
+const MODULE_DIAG_LIMIT := 160
 const TOKEN_PATH := "user://pwa_pairing_token.txt"
 const SHORT_CODE_LIFETIME_MS := 300000
 const MAX_PAIRING_ATTEMPTS := 8
@@ -92,6 +94,12 @@ const FILES := {
 var _listen_port: int = PORT
 var _server := TCPServer.new()
 var _clients: Array[Dictionary] = []
+# Bounded, session-only HTTP telemetry. No IPs, pairing tokens, API contents,
+# player data, query strings or request headers are retained.
+var _module_diag_events: Array[Dictionary] = []
+var _module_diag_total := 0
+var _module_diag_peak := 0
+var _module_diag_next_id := 0
 var _token := ""
 var _short_code := ""
 var _short_code_expiry := 0
@@ -375,28 +383,32 @@ func _process(_delta: float) -> void:
 	# surfaced in Chromium as "Failed to fetch dynamically imported module".
 	while _server.is_connection_available() and _clients.size() < MAX_CLIENTS:
 		var peer := _server.take_connection()
+		_module_diag_next_id += 1
 		_clients.append({"peer": peer, "buffer": PackedByteArray(),
 			"out": PackedByteArray(), "sent": 0, "processing": false,
+			"connection_id": _module_diag_next_id,
 			"deadline": Time.get_ticks_msec() + TIMEOUT_MS})
+		_module_diag_peak = maxi(_module_diag_peak, _clients.size())
 	for i in range(_clients.size() - 1, -1, -1):
 		var client: Dictionary = _clients[i]
 		var peer: StreamPeerTCP = client.peer
 		peer.poll()
-		if Time.get_ticks_msec() > int(client.deadline) or peer.get_status() in [
-			StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE
-		]:
-			_drop(i)
+		if Time.get_ticks_msec() > int(client.deadline):
+			_drop(i, "timeout")
+			continue
+		if peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
+			_drop(i, "peer_disconnected")
 			continue
 		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
 			continue
 		if not client.out.is_empty():
 			var sent := int(client.sent)
 			if sent >= (client.out as PackedByteArray).size():
-				_drop(i)
+				_drop(i, "bytes_sent")
 				continue
 			var partial := peer.put_partial_data(client.out.slice(sent, mini(sent + 65536, client.out.size())))
 			if partial[0] != OK:
-				_drop(i)
+				_drop(i, "send_error")
 			else:
 				client.sent = sent + int(partial[1])
 			continue
@@ -406,7 +418,7 @@ func _process(_delta: float) -> void:
 		if available > 0:
 			var received := peer.get_data(mini(available, 65536))
 			if received[0] != OK:
-				_drop(i)
+				_drop(i, "receive_error")
 				continue
 			var incoming: PackedByteArray = client.buffer
 			incoming.append_array(received[1])
@@ -464,7 +476,19 @@ func _inspect_request(client: Dictionary) -> void:
 
 func _handle_http(client: Dictionary, method: String, path: String,
 		headers: Dictionary, body: PackedByteArray) -> void:
+	if method == "GET" and path == MODULE_DIAG_PATH:
+		# Anonymous read-only snapshot of JS transfer health, not session data.
+		_answer(client, 200, {
+			"version": 1, "connections_active": _clients.size(),
+			"connections_peak": _module_diag_peak,
+			"module_requests_recorded": _module_diag_total,
+			"module_events": _module_diag_events.duplicate(true)
+		})
+		return
 	if method == "GET" and FILES.has(path):
+		if path.ends_with(".js"):
+			client["module_path"] = path
+			client["module_started_ms"] = Time.get_ticks_msec()
 		var asset: Array = FILES[path]
 		if not FileAccess.file_exists(asset[0]):
 			_answer(client, 500, {"error": "missing_pwa_asset"})
@@ -576,10 +600,37 @@ func _respond(client: Dictionary, status: int, mime: String,
 	response.append_array(payload)
 	client.out = response
 	client.sent = 0
+	if client.has("module_path"):
+		client["module_header_bytes"] = head.to_utf8_buffer().size()
+		client["module_payload_bytes"] = payload.size()
+		client["module_http_status"] = status
 
 
-func _drop(index: int) -> void:
-	(_clients[index].peer as StreamPeerTCP).disconnect_from_host()
+func _drop(index: int, reason: String = "closed") -> void:
+	var client: Dictionary = _clients[index]
+	if client.has("module_path"):
+		var body_expected := int(client.get("module_payload_bytes", 0))
+		var head_bytes := int(client.get("module_header_bytes", 0))
+		var body_queued := maxi(0, int(client.get("sent", 0)) - head_bytes)
+		var body_sent := mini(body_expected, body_queued)
+		var complete := reason == "bytes_sent" and body_sent == body_expected
+		var record: Dictionary = {
+			"id": int(client.get("connection_id", 0)),
+			"path": String(client.module_path),
+			"status": int(client.get("module_http_status", 0)),
+			"bytes_written": body_sent,
+			"bytes_expected": body_expected,
+			"duration_ms": Time.get_ticks_msec() - int(client.module_started_ms),
+			"outcome": "socket_written" if complete else reason
+		}
+		_module_diag_total += 1
+		_module_diag_events.append(record)
+		if _module_diag_events.size() > MODULE_DIAG_LIMIT:
+			_module_diag_events.pop_front()
+		if not complete:
+			push_warning("PWA JS transfer incomplete: %s %d/%d bytes (%s)" % [
+				String(client.module_path), body_sent, body_expected, reason])
+	(client.peer as StreamPeerTCP).disconnect_from_host()
 	_clients.remove_at(index)
 
 
