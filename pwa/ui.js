@@ -912,7 +912,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
           '" data-item-key="name" value="'+esc(item.name||"")+'">',
         nameCell='<span class="inventory-col-name">'+
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
-          '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:'Dettagli')+'</button>'+
+          '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
           (isCatalogItem(item)?'':name)+
           (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+
           '<button type="button" class="inventory-more" data-act="inventory-menu" data-index="'+index+
