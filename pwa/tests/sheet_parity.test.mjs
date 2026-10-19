@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
-import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell,fastestMovement} from '../sheet_rules_view.js';
+import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell,fastestMovement,trackerRecoveryText} from '../sheet_rules_view.js';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
 import {referencePatch,rowReferencePatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
@@ -10,6 +10,16 @@ import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 import {readFileSync,existsSync} from 'node:fs';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:mechanics};
+
+test('resource recovery caption reflects each tracker recovery rule',()=>{
+ assert.equal(trackerRecoveryText({recharge:'short_rest'}),'Recupero: riposo breve');
+ assert.equal(trackerRecoveryText({recharge:'long_rest'}),'Recupero: riposo lungo');
+ assert.equal(trackerRecoveryText({recharge:'turn'}),'Recupero: inizio turno');
+ assert.equal(trackerRecoveryText({recharge:'manual'}),'Recupero: manuale');
+ assert.equal(trackerRecoveryText({recharge:'d6',recharge_min:5}),'Ricarica: d6 · 5+');
+ assert.equal(trackerRecoveryText({recharge:'d6'}),'Ricarica: d6 · 6+');
+ assert.equal(trackerRecoveryText({recharge:'custom'}),'Recupero: non specificato');
+});
 
 test('miniature choices mirror native base/current identity and size rules',()=>{
  const profile={id:'adult_brass_dragon_updated',size_name:'Huge',footprint:3};
