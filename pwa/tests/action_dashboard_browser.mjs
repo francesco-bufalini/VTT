@@ -49,8 +49,30 @@ try{
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
+    const expand=page.locator('[data-act="battle-expand-all"]');
+    const collapse=page.locator('[data-act="battle-collapse-all"]');
+    assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
+    if(width===360){
+     const movement=page.locator('[data-battle-action="movement"]');
+     await movement.locator('summary.play-battle-summary').click();
+     assert.equal(await movement.locator('.play-battle-action-group[open]').count(),0,
+      'Opening a main action category reveals collapsed timing groups only');
+     const group=movement.locator('.play-battle-action-group').first();
+     await group.locator('summary.play-battle-action-heading').click();
+     const tree=await group.locator('.play-battle-action-rows').evaluate(node=>({
+      rail:getComputedStyle(node).borderLeftStyle,
+      branch:getComputedStyle(node.querySelector('.play-battle-attack-entry'),'::before').borderTopStyle
+     }));
+     assert.equal(tree.rail,'solid','Nested action list has a vertical index rail');
+     assert.equal(tree.branch,'solid','Every action has a branch to its category');
+     await expand.click();
+     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure:not([open]), #sheet-play-view .play-battle-action-group:not([open])').count(),0);
+     await collapse.click();
+     assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure[open], #sheet-play-view .play-battle-action-group[open]').count(),0);
+    }
     // Cast stays at the far right of the spell row, not underneath its title.
     await page.locator('[data-battle-action="spells"] > details').evaluate(node=>{node.open=true;});
+    await page.locator('[data-battle-action="spells"] .play-battle-action-group').evaluateAll(groups=>groups.forEach(node=>{node.open=true;}));
     const spellRows=await page.locator('[data-battle-action="spells"] .play-battle-spell-entry').evaluateAll(rows=>rows.map(row=>{
      const label=row.querySelector('.play-battle-spell-open').getBoundingClientRect();
      const cast=row.querySelector('.play-battle-spell-cast').getBoundingClientRect();
@@ -83,6 +105,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
  await page.locator('[data-battle-action="movement"] > details > summary').click();
+ await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"]) > summary').click();
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
  await page.locator('[data-act="close-sheet-roll"]').click();
