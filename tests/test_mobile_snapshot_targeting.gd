@@ -155,7 +155,7 @@ func run() -> void:
 	assert(remote_status.ok and remote_status.targeting.outcome == "completed")
 	var denied_status: Dictionary = await sync._handle_mobile_action("spell_status", {
 		"token_id": caster_id, "owner_id": "other-owner"})
-	assert(not denied_status.ok)
+	assert(denied_status.ok and denied_status.targeting.is_empty(), "Public views refresh without revealing another owner's targeting")
 	assert(spells.dismiss_post_cast_visuals())
 	assert(Capture.project_areas(board, projection).is_empty(), "Deleted areas must disappear before the next frame")
 	assert(sync.get_tactical_map_data().view_revision == empty_revision)

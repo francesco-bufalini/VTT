@@ -410,7 +410,9 @@ export class TacticalViewer {
     this.targeting=result.targeting||{};
     // Mirror Android: consume the slot after Godot accepted the cast.
     await this.onCastAccepted(slotLevel,spell);
-    await this.refresh();
+    // A failed image capture must not hide an already accepted native cast.
+    // Keep cancellation and manual refresh available on the existing map.
+    try{await this.refresh();}catch(error){this.setStatus(error.message,true);}
     return result;
   }
   async control(name) {

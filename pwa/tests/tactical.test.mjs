@@ -77,6 +77,17 @@ test('desktop rejection or transport failure never consumes a local casting reso
  }
 });
 
+test("image failure after accepted casting retains the active map and charges exactly once",async()=>{
+ let charges=0;
+ const viewer=new TacticalViewer({send:async()=>({ok:true,targeting:{active:true,phase:"point"}}),
+  ownerId:async()=>"owner",notify:()=>{},onCastAccepted:async()=>{charges++;}});
+ viewer.root={querySelector:()=>null,querySelectorAll:()=>[]};viewer.tokenId="hero";
+ viewer.refresh=async()=>{throw Error("Acquisizione in corso");};
+ const result=await viewer.beginSpell({spell:{id:"fireball"},slotLevel:3});
+ assert.equal(result.ok,true);assert.equal(viewer.targeting.active,true);
+ assert.ok(viewer.root);assert.equal(charges,1);
+});
+
 test("a targeted spell selects the exact token ID and confirms/cancels via native protocol",async()=>{
  const actions=[];
  const viewer=new TacticalViewer({

@@ -2746,13 +2746,15 @@ func _mobile_spell_status(caster: Node3D, owner: String) -> Dictionary:
 func _mobile_spell_action(action: String, payload: Dictionary, caster: CharacterBody3D) -> Dictionary:
 	var runtime: Node = board_root.get_node_or_null("SpellSystem")
 	var owner := String(payload.get("owner_id", ""))
+	# Refreshing a public view is allowed for any visible token. The spell
+	# system returns private targeting status only for the matching owner.
+	if action == "spell_status":
+		return {"ok": true, "targeting": _mobile_spell_status(caster, owner),
+			"view_revision": get_tactical_map_data().view_revision}
 	if runtime == null or owner.is_empty() or String(caster.get_meta("creature_owner_id", "")) != owner:
 		return {"ok": false, "error": "Piazza prima la tua creatura sulla mappa del desktop."}
 	if action == "begin_spell":
 		return runtime.call("begin_remote_spell", caster, owner, payload)
-	if action == "spell_status":
-		return {"ok": true, "targeting": _mobile_spell_status(caster, owner),
-			"view_revision": get_tactical_map_data().view_revision}
 	if action in ["cancel_spell", "finish_spell"]:
 		return runtime.call("remote_target_input", caster, owner, null, {}, "cancel" if action == "cancel_spell" else "finish")
 	var victim := _visible_mobile_token(String(payload.get("target_id", "")))
