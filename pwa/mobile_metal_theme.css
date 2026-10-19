@@ -1248,3 +1248,30 @@ input:disabled{opacity:.75;cursor:default}
  .equipment-unified-panel .equipment-attack-options{grid-template-columns:1fr;gap:8px}
  .equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:auto}
 }
+
+/* Attack ability and the applicable weapon switches share one compact row. */
+.equipment-unified-panel .equipment-attack-options{
+  display:grid;grid-template-columns:minmax(92px,1.16fr) minmax(0,1fr) minmax(0,1.1fr);
+  align-items:center;gap:5px;min-width:0;margin:0;padding:0;border:0;
+}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability{
+  grid-column:auto;min-width:0;width:100%;display:flex;flex-direction:column;
+  align-items:stretch;justify-content:center;gap:3px;font-size:10px;line-height:1.2;
+}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability select{
+  min-width:0;max-width:none;width:100%;min-height:36px;padding:5px 3px;font-size:12px;
+}
+.equipment-unified-panel .equipment-attack-options>.check{
+  min-width:0;display:flex;flex-direction:row;align-items:center;gap:4px;
+  font-size:10.5px;line-height:1.25;overflow-wrap:anywhere;
+}
+.equipment-unified-panel .equipment-attack-options>.check input{
+  flex:0 0 16px;min-width:16px;width:16px;height:16px;margin:0;
+}
+@media(max-width:360px){
+  .equipment-unified-panel .equipment-attack-options{
+    grid-template-columns:minmax(88px,1.1fr) minmax(0,1fr) minmax(0,1.1fr);gap:3px;
+  }
+  .equipment-unified-panel .equipment-attack-options>.check{font-size:10px;gap:3px}
+  .equipment-unified-panel .equipment-attack-options>.equipment-attack-ability select{font-size:11px;padding:5px 1px}
+}
