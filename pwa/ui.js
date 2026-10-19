@@ -451,6 +451,24 @@ async function editorView() {
     try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
     catch{return {description:''};}
   })):undefined;
+  // Resolve selected optional powers through the very same detailed
+  // compendium source used by the trait and feature viewers.
+  let battleOptionalTraits=[];
+  if(state.sheet==='battle'&&(c.optional_features_catalog||[]).length){
+    if(!state.referenceCatalogs.optional_features)
+      try{state.referenceCatalogs.optional_features=await catalogEntries('optional_features');}
+      catch{state.referenceCatalogs.optional_features=[];}
+    battleOptionalTraits=await Promise.all((c.optional_features_catalog||[]).map(async feature=>{
+      const name=String(feature?.name||feature||''),source=String(feature?.source||'');
+      const reference=(state.referenceCatalogs.optional_features||[]).find(row=>
+        String(row.name||'').toLowerCase()===name.toLowerCase()&&
+        (!source||String(row.source||'').toLowerCase()===source.toLowerCase()));
+      let detail=reference||feature;
+      if(reference)try{detail=await detailedEntry('optional_features',reference);}catch{}
+      return {name,origin_id:feature?.origin_id||'',origin_key:feature?.origin_name||source,
+        feature_key:'',description:flattenDescription(detail)||flattenDescription(feature)};
+    }));
+  }
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   switch(state.sheet){
   case "inventory": {
@@ -2067,7 +2085,10 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{actionTiming:state.actionTiming,inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
+    description:flattenDescription(feature)})),
+  ...battleOptionalTraits)]:[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -2182,6 +2203,21 @@ async function handleAction(target){
       await render();return;
     }
     const cost=Math.max(0,Number(ability.cost)||0);
+    const persistentKey=String(target.dataset.persistentKey||'');
+    if(persistentKey){
+      if(c.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
+      if(cost&&(!tracker||tracker.max-tracker.spent<cost))
+        throw Error('Risorsa insufficiente per attivare la capacità.');
+      const effects={...(c.active_class_features||{}),
+        [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
+          rules_version:c.rules_version||'2014',enhanced:false}};
+      const changes={active_class_features:effects};
+      if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
+      await patch(changes);
+      await render();
+      return;
+    }
     if(cost){
       const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
       if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
@@ -2191,6 +2227,19 @@ async function handleAction(target){
     await render();
     message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':
       ability.name+': consulta la descrizione per applicarne gli effetti.');
+    return;
+  }
+  if(act==='tracker-reset'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Creatura non disponibile.');
+    const calculated=await computeLocalData(creature);
+    const id=String(target.dataset.trackerId||'');
+    const row=(calculated.trackers||[]).find(tracker=>String(tracker.id)===id&&!tracker.disabled);
+    if(!row)throw Error('Risorsa non disponibile.');
+    const spent={...(creature.resource_tracker_spent||{})};
+    delete spent[id];
+    await patch({resource_tracker_spent:spent});
+    await render();
     return;
   }
   if(act==='condition-remove-ability'){
