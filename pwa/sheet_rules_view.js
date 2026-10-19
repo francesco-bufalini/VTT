@@ -287,12 +287,39 @@ export function persistentBattleAbility(row={}){
    isSelf(e.target||source.target));
  });
 }
+// Resolve actual casting times from structured spell data, including non-combat
+// times (e.g. 1 minute) rather than a generic "Secondo il privilegio".
+export function spellCastingTimeLabel(spell){
+ const raw=Array.isArray(spell?.time)?spell.time[0]:spell?.time??spell?.casting_time;
+ if(raw==null||raw==='')return '';
+ const original=typeof raw==='object'?raw.unit??raw.type??raw.name:raw;
+ const text=String(original||'').trim().toLocaleLowerCase('it').replace(/[_-]/g,' ').replace(/\s+/g,' ');
+ const parsed=text.match(/^(\d+)\s+(.+)$/);
+ const number=Math.max(1,Number(raw?.number??(parsed?parsed[1]:1))||1);
+ const unit=(parsed?parsed[2]:text).trim();
+ const forms={
+  action:['Azione','azioni'],azione:['Azione','azioni'],
+  bonus:['Azione bonus','azioni bonus'],'bonus action':['Azione bonus','azioni bonus'],
+  'azione bonus':['Azione bonus','azioni bonus'],
+  reaction:['Reazione','reazioni'],reazione:['Reazione','reazioni'],
+  free:['Azione gratuita','azioni gratuite'],
+  minute:['minuto','minuti'],minutes:['minuto','minuti'],minuto:['minuto','minuti'],minuti:['minuto','minuti'],
+  hour:['ora','ore'],hours:['ora','ore'],ora:['ora','ore'],ore:['ora','ore'],
+  round:['round','round'],rounds:['round','round'],
+  day:['giorno','giorni'],days:['giorno','giorni']
+ };
+ const found=forms[unit];
+ if(!found)return String(original||'').trim();
+ return number===1?found[0]:number+' '+found[1];
+}
 const spellActionTime=spell=>{
  const raw=Array.isArray(spell?.time)?spell.time[0]:spell?.time??spell?.casting_time;
  const value=typeof raw==='object'&&raw?raw.unit||raw.type||raw.name:raw;
- const key=String(value||'').trim().toLowerCase();
- return ({action:'action',bonus:'bonus',reaction:'reaction',free:'free',minute:'contextual',hour:'contextual',
-  azione:'action','azione bonus':'bonus',reazione:'reaction'})[key]||'contextual';
+ const key=String(value||'').trim().toLowerCase().replaceAll('_',' ');
+ const unit=key.replace(/^\d+\s+/,'');
+ if(Number(raw?.number??1)!==1)return 'contextual';
+ return ({action:'action',bonus:'bonus','bonus action':'bonus',reaction:'reaction',free:'free',
+  azione:'action','azione bonus':'bonus',reazione:'reaction'})[unit]||'contextual';
 };
 export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
  const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
@@ -346,7 +373,8 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   const spell=spells.find(row=>row.id===grant.spell_id);
   rows.push({kind:'spell',id:String(grant.id),name:spell?.name||grant.name||grant.spell_name||grant.spell_id,
    tracker_id:grant.tracker_id||'',cost,key:mode==='tracker'?keyFor(cost,grant.tracker_id):'free',
-   timing:spellActionTime(spell),grant});
+   timing:spellActionTime(spell),
+   casting_time_label:spellCastingTimeLabel(spell)||spellCastingTimeLabel(grant)||'Tempo non specificato',grant});
  }
  return rows;
 }
@@ -459,7 +487,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const disabled=row.cost>0&&(!tracker||tracker.disabled||available<row.cost);
    const glyph=icon(row.kind==='spell'?'spell_cast':
      actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
-   const caption=timeLabels[row.timing]||row.timing||'Secondo il privilegio';
+   const caption=row.kind==='spell'?row.casting_time_label:
+     (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
    const note=row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
      ' · '+(row.cost?'Costo '+row.cost:'Nessun costo');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
@@ -528,10 +557,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
   html+=disclosure('others','Altre azioni','hand',
    view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
-  html+=disclosure('checks','Prove abilità','skill',
-   view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
   html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
+  html+=disclosure('checks','Prove abilità','skill',
+   view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
   html+=disclosure('spells','Incantesimi','spell_cast',
    view.battleActions?.spells||'<p class="play-empty">Nessun incantesimo disponibile.</p>',false,
    btn('Gestisci incantesimi','spell_cast','data-act="action-open-spells"','<span>Gestisci</span>'));
