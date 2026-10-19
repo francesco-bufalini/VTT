@@ -2564,6 +2564,8 @@ func get_tactical_map_data() -> Dictionary:
 			"id": get_sync_id_for_node(node),
 			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
 			"position": [node.global_position.x, node.global_position.y, node.global_position.z],
+			"creature_id": String(node.get_meta("creature_id", "")),
+			"owner_id": String(node.get_meta("creature_owner_id", "")),
 			# This public bit is the only extra information the mobile picker needs.
 			"free": bool(board_root.call("is_free_scene_token", node)) if board_root.has_method("is_free_scene_token") else (
 				String(node.get_meta("creature_id", "")).is_empty()

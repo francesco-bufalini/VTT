@@ -58,6 +58,7 @@ func _ready() -> void:
 		token.set_token_id(spec[0])
 		token.set_meta("sync_id", spec[0])
 		token.set_meta("creature_owner_id", "pwa-fixture-owner-123456")
+		token.set_meta("creature_id", "fixture-" + String(spec[0]))
 		tokens_root.add_child(token)
 		token.set_display_name(spec[1])
 		token.global_position = spec[2]

@@ -9,7 +9,7 @@ import { notificationsSupported, notificationsEnabled, toggleChatNotifications, 
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, snapshotRevision, snapshotBlob } from "./session_map.js";
+import { tokenGroups, snapshotRevision, snapshotBlob, casterToken } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
@@ -2166,11 +2166,16 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
-  const tokenId=String(stored.data.linked_token_sync_id||"");
-  if(!tokenId||expectedToken&&expectedToken!==tokenId)
-    throw Error("Seleziona il token associato alla creatura. Piazza prima la sua miniatura.");
-  if(!state.map?.tokens?.some(row=>row.id===tokenId))
-    throw Error("Il token della creatura non è sulla mappa attiva.");
+  state.map=await map();
+  const token=casterToken(stored.data,state.map,await ownerId());
+  if(!token)throw Error("La partita è collegata, ma questa scheda non ha un token associato sulla mappa. Usa Partita → Piazza token per associarla.");
+  const tokenId=String(token.id);
+  if(expectedToken&&expectedToken!==tokenId)
+    throw Error("Seleziona in Partita il token associato a questa creatura.");
+  if(stored.data.linked_token_sync_id!==tokenId){
+    const editor=state.editor&&state.creatureId===casterId?state.editor:await openCreatureEditor(casterId);
+    await editor.update({linked_token_sync_id:tokenId,linked_token_name:token.name||stored.data.name});
+  }
   const calculated=await computeLocalData(stored.data);
   const plan=spellCastPlan(stored.data,selection,requestedLevel,calculated,payment);
   if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
@@ -2568,7 +2573,7 @@ async function handleAction(target){
     const plan=spellCastPlan(creature,selection,0,calculated,'auto');
     target.disabled=true;
     try{
-      if(creature.linked_token_sync_id&&state.paired&&state.online){
+      if(state.paired&&state.online){
         await startTargetedCast(creature.id,structuredClone(selection),0,'auto');
       }else{
         if(Object.keys(plan.patch).length)await patch(plan.patch);
@@ -2658,7 +2663,7 @@ async function handleAction(target){
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
-    if(record.linked_token_sync_id&&state.paired&&state.online){
+    if(state.paired&&state.online){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
     }

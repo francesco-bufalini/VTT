@@ -1,6 +1,16 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {tokenGroups,snapshotRevision,snapshotBlob} from "../session_map.js";
+import {tokenGroups,snapshotRevision,snapshotBlob,casterToken} from "../session_map.js";
+
+test("connected casting recovers only the exact owned creature token, never a display name",()=>{
+ const creature={id:"creature-a",name:"Maga"};
+ const data={tokens:[{id:"foreign",creature_id:"creature-a",owner_id:"other",name:"Maga"},
+  {id:"own",creature_id:"creature-a",owner_id:"owner",name:"Maga"}]};
+ assert.equal(casterToken(creature,data,"owner").id,"own");
+ assert.equal(casterToken(creature,{tokens:[data.tokens[0]]},"owner"),null);
+ assert.equal(casterToken({...creature,linked_token_sync_id:"own"},data,"owner").id,"own");
+ assert.throws(()=>casterToken(creature,{tokens:[data.tokens[1],{...data.tokens[1],id:"duplicate"}]},"owner"),/Più token/);
+});
 
 const tokens=[
   {id:"c",name:"Zanna",conditions:[]},

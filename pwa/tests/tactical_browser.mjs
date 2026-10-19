@@ -115,15 +115,16 @@ try{
  // Exercise the actual sheet button and IndexedDB payment, not only the viewer.
  const creatureId=await page.evaluate(async()=>{
   const {setting}=await import('/storage.js');
-  const {createCreature,saveCreature}=await import('/creatures.js');
+  const {createCreature,saveCreature,removeCreature}=await import('/creatures.js');
   await setting('local-creature-owner-id','pwa-fixture-owner-123456');
   const created=await createCreature('character','Maga della prova connessa');
-  await saveCreature({...created.data,class:'Wizard',class_source:'PHB',level:5,
+  await saveCreature({...created.data,id:'fixture-caster',class:'Wizard',class_source:'PHB',level:5,
    classes:[{name:'Wizard',source:'PHB',level:5}],abilities:{int:18},
-   linked_token_sync_id:'caster',spell_slots_automatic:true,
+   linked_token_sync_id:'',spell_slots_automatic:true,
    prepared_spells:[{id:'phb2014_fireball',name:'Fireball',source:'PHB',level:3,casting_classes:['class|phb|wizard']}]},
-   'default',created.revision);
-  return created.data.id;
+   'default',0);
+  await removeCreature(created.data.id,'default',created.revision);
+  return 'fixture-caster';
  });
  await page.reload();await page.locator('[data-act="open"]').click();
  await page.locator('button[data-sheet="magic"]').first().click();
@@ -143,6 +144,9 @@ try{
   const {loadCreature}=await import('/creatures.js');return (await loadCreature(id)).data.spell_slots_spent[3];
  },creatureId);
  assert.equal(spent,1,'Accepted casting pays exactly once, including after polling and cancellation');
+ assert.equal(await page.evaluate(async id=>{
+  const {loadCreature}=await import('/creatures.js');return (await loadCreature(id)).data.linked_token_sync_id;
+ },creatureId),'caster','Connected casting must repair a missing local link by exact creature/owner identity');
  assert.deepEqual(errors,[]);
  assert.ok(!/(?:SCRIPT ERROR:|ERROR:)/.test(nativeLog),nativeLog);
  console.log('PASS: real Chrome/native HTTP spell targeting, held AoE WebPs, portraits at +/-4 levels, 360/390/768/1440px, GM saves/effects and Escape cleanup');

@@ -1,4 +1,13 @@
 // Read-only tactical presentation: initiative order is native, never inferred.
+export function casterToken(creature, data, owner) {
+  const tokens=Array.isArray(data?.tokens)?data.tokens:[];
+  const linked=tokens.find(t=>t.id===creature?.linked_token_sync_id);
+  if(linked)return linked;
+  const matches=tokens.filter(t=>t.creature_id===creature?.id&&t.owner_id===owner&&owner);
+  if(matches.length>1)throw Error("Più token sono associati a questa creatura. Seleziona il collegamento corretto in Partita.");
+  return matches[0]||null;
+}
+
 export function tokenGroups(data) {
   const tokens = Array.isArray(data?.tokens) ? data.tokens.filter(t =>
     t && typeof t.id === "string" && t.id && typeof t.name === "string") : [];
