@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {itemKind,requiresAttunement,isCatalogItem,createOwnedItem,changeOwnedItem,validSlot,equipSlot}
+import {itemKind,requiresAttunement,isCatalogItem,createOwnedItem,changeOwnedItem,consolidateOwnedItems,validSlot,equipSlot}
   from "../item_controls.js";
 import {spellId,availableSpells,addSelectedSpell,removeSelectedSpell}
   from "../spell_selection.js";
@@ -79,4 +79,37 @@ test("equipping weapons, shields and armor uses native slots and two-hand confli
   assert.deepEqual(initial[0].equipped_slots,[],"input never mutated");
   assert.throws(()=>equipSlot(initial,"off",1),/incompatibile/);
   assert.throws(()=>equipSlot(initial,"head",1),/Slot/);
+});
+
+test("identical shields collapse into one quantity stack without losing occupied hands",()=>{
+  const template={id:"shield:phb",name:"Shield",type:"S",ac:2,source:"PHB"};
+  const main={...createOwnedItem(template,"shield_1"),equipped_slots:["main"]};
+  const off={...createOwnedItem(template,"shield_2"),equipped_slots:["off"]};
+  const before=structuredClone([main,off]);
+  const result=consolidateOwnedItems([main,off]);
+  assert.equal(result.length,1);
+  assert.equal(result[0].quantity,2);
+  assert.deepEqual(result[0].equipped_slots,["main","off"]);
+  assert.equal(result[0].instance_id,"shield_1");
+  assert.deepEqual([main,off],before,"the source archive remains untouched");
+  assert.deepEqual(consolidateOwnedItems(result),result,"normalization is idempotent");
+  const unequipped={...createOwnedItem(template,"shield_3")};
+  const consolidated=consolidateOwnedItems([...result,unequipped]);
+  assert.equal(consolidated.length,1);
+  assert.equal(consolidated[0].quantity,3);
+  assert.deepEqual(consolidated[0].equipped_slots,["main","off"]);
+});
+
+test("stacks never discard per-copy overrides, infusion, attunement or conflicting slots",()=>{
+  const base={id:"shield:phb",name:"Shield",type:"S",ac:2,quantity:1,equipped_slots:[]};
+  const modified={...base,instance_overrides:{bonus_ac:1}};
+  assert.equal(consolidateOwnedItems([base,modified]).length,2);
+  assert.equal(consolidateOwnedItems([base,{...base,infusion:{id:"infused"}}]).length,2);
+  assert.equal(consolidateOwnedItems([base,{...base,attuned:true}]).length,2);
+  assert.equal(consolidateOwnedItems([{...base,equipped_slots:["off"]},{...base,equipped_slots:["off"]}]).length,2);
+  assert.equal(consolidateOwnedItems([{...base,id:"shield:other"} ,base]).length,2);
+  const doc={...base,category:"documents"};
+  assert.equal(consolidateOwnedItems([doc,{...doc,instance_id:"doc_2"}]).length,2);
+  const nearlyFull={...base,quantity:99999};
+  assert.equal(consolidateOwnedItems([nearlyFull,base]).length,2);
 });
