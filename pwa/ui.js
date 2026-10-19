@@ -282,7 +282,15 @@ async function render() {
     }
     if(ticket !== state.renderTicket) return;
     syncNav();
+    // A status refresh can redraw Partita while a manual QR code is already
+    // entered. Do not discard it or silently revert the Remember preference.
+    const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
+    const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    if(pendingCode && app.querySelector("#pair-secret"))
+      app.querySelector("#pair-secret").value=pendingCode;
+    if(rememberPair!==undefined && app.querySelector("#pair-remember"))
+      app.querySelector("#pair-remember").checked=rememberPair;
     app.dataset.page=state.page;
     app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
@@ -1572,7 +1580,13 @@ function renderSessionIfIdle() {
   const focused=document.activeElement;
   if(focused && app.contains(focused) && ["INPUT","SELECT","TEXTAREA"].includes(focused.tagName))return;
   const scroll=window.scrollY;
+  const pendingCode=app.querySelector("#pair-secret")?.value||"";
+  const rememberPair=app.querySelector("#pair-remember")?.checked;
   app.innerHTML=sessionView();
+  if(pendingCode && app.querySelector("#pair-secret"))
+    app.querySelector("#pair-secret").value=pendingCode;
+  if(rememberPair!==undefined && app.querySelector("#pair-remember"))
+    app.querySelector("#pair-remember").checked=rememberPair;
   window.scrollTo(0,scroll);
 }
 async function refreshSessionSnapshot(force=false) {
