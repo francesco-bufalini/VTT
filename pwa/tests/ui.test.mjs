@@ -750,7 +750,7 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   assert.equal(document.querySelectorAll('.inventory-scroll-panel .inventory-table-row').length,2);
   assert.match(document.querySelector('.inventory-scroll-panel').textContent,/Incantesimo non specificato/);
   assert.match(document.querySelector('.inventory-scroll-panel').textContent,/Scudo/);
-  assert.equal(document.querySelector('.inventory-scroll-panel .inventory-col-level').textContent,"3");
+  assert.equal(document.querySelector('.inventory-scroll-panel .inventory-table-row .inventory-col-level').textContent,"3");
   assert.equal(document.querySelector('[data-subtab="scrolls"]').getAttribute("aria-selected"),"true");
   assert.equal(document.querySelector('.inventory-coins-panel'),null);
   click('.inventory-scroll-panel [data-act="inventory-select"][data-index="1"]');
