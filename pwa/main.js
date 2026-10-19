@@ -7,6 +7,10 @@ const app = document.querySelector("#app");
 const MODULE_RELOAD_KEY = "vtt-mobile-module-reload-once";
 const COMPAT_START_KEY = "vtt-mobile-serial-modules";
 const DIAGNOSTIC_VERSION = "ios-module-debug-3";
+function compatStartupEnabled() {
+  try { return sessionStorage.getItem(COMPAT_START_KEY) === "1"; }
+  catch (_) { return false; }
+}
 
 function reloadFailedModuleGraph(error) {
   if (!retryableModuleError(error)) return false;
@@ -181,8 +185,8 @@ async function diagnoseStartupModules(phase, error) {
     "Fase: " + phase,
     "Errore originale: " + diagnosticException(error),
     "Browser: " + navigator.userAgent,
-    "Protocollo/origine: " + location.protocol + " / " + location.hostname,
-    "Modalità compatibilità: " + (sessionStorage.getItem(COMPAT_START_KEY) === "1" ? "attiva" : "no"),
+    "Protocollo: " + location.protocol,
+    "Modalità compatibilità: " + (compatStartupEnabled() ? "attiva" : "no"),
     "Visibilità pagina: " + document.visibilityState,
     "Memoria dispositivo: " + (navigator.deviceMemory || "non esposta") + " GB",
     "Connessione secondo il browser: " + (navigator.onLine ? "online" : "offline"),
@@ -471,7 +475,7 @@ function retryableModuleError(error) {
 async function loadStartupModules() {
   // Opt-in recovery: warm the module graph in dependency order and reduce
   // concurrent WebKit loader requests on connection-sensitive devices.
-  if (sessionStorage.getItem(COMPAT_START_KEY) === "1") {
+  if (compatStartupEnabled()) {
     for (let index = 0; index < SERIAL_STARTUP_ORDER.length; index++) {
       const path = SERIAL_STARTUP_ORDER[index];
       showStage("Modalità compatibilità: modulo " + (index + 1) + "/" +
