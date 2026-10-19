@@ -633,10 +633,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
       bind(key,node);
       const search=[item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
+      const scrollLevel=spellScrollLevel(item),scrollLevelLabel=scrollLevel==='0'?'Trucchetto':scrollLevel==='—'?'—':scrollLevel+'°';
       if(scrollsTab)return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
         '<span class="inventory-item-mark" aria-hidden="true">'+icon('scroll')+'</span>'+
         '<span class="inventory-item-content"><strong>'+esc(spellScrollName(item))+'</strong><small>'+esc(info.source||'Pergamena magica')+'</small></span>'+
-        '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(spellScrollLevel(item))+'°</span>'+
+        '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(scrollLevelLabel)+'</span>'+
         '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
       return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
         '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
