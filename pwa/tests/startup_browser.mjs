@@ -177,6 +177,7 @@ try {
     "One-time QR must not remain in sessionStorage after pairing");
   await qrContext.close();
   pairingTestMode = false;
+  transientNestedFailures = 0; // isolate the existing one-shot nested-import test
   console.log("PASS: iPhone QR fragment pairs automatically even across a module reload");
 
 
