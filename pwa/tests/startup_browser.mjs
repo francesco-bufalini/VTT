@@ -16,6 +16,7 @@ let failNestedModuleOnce = false;
 let transientNestedFailures = 0;
 let invalidSheetMime = false;
 let pairingTestMode = false;
+let pairingDesktopOnline = true;
 let pairRequests = 0;
 let unauthenticatedSessionRequests = 0;
 const testShortCode = "0123456789ABCDEF";
@@ -29,7 +30,7 @@ const server = createServer(async (request, response) => {
       response.setHeader("Content-Type", "application/json");
       if (pairingTestMode) {
         if (path === "/api/status") {
-          response.end(JSON.stringify({protocol:1,desktop_online:true})); return;
+          response.end(JSON.stringify({protocol:1,desktop_online:pairingDesktopOnline})); return;
         }
         if (path === "/api/pair" && request.method === "POST") {
           let body = "";
@@ -148,6 +149,38 @@ try {
   assert.equal(await iosPage.locator("#startup-error").count(), 0);
   await iosContext.close();
   console.log("PASS: iPhone WebKit defaults to serial bootstrap");
+
+  // A reachable desktop must leave the pairing button enabled even before
+  // any secret exists, whether or not the separate game receiver is online.
+  // This reproduces the reported iPhone screenshot (filled QR field and a
+  // disabled "Collega alla partita" button despite a reachable HTTPS host).
+  pairingTestMode = true;
+  pairingDesktopOnline = false;
+  unauthenticatedSessionRequests = 0;
+  const manualContext = await browser.newContext({
+    viewport:{width:390,height:844},userAgent:iosUA,isMobile:true,hasTouch:true
+  });
+  const manualPage = await manualContext.newPage();
+  await manualPage.goto(origin);
+  await manualPage.locator('[data-nav="session"]').click();
+  await manualPage.locator("#pair-form").waitFor({timeout:15000});
+  await manualPage.waitForFunction(() =>
+    !document.querySelector('#pair-form button[type="submit"]')?.disabled,
+    null,{timeout:10000});
+  assert.equal(unauthenticatedSessionRequests,0,
+    "An unpaired phone must not call /api/session before enrolling");
+  await manualPage.locator("#pair-secret").fill(testShortCode);
+  pairingDesktopOnline = true;
+  await manualPage.locator('[data-act="check"]').click();
+  await manualPage.locator("#pair-form button[type=submit]").click();
+  await manualPage.locator('[data-session-pane="table"][aria-pressed="true"]')
+    .waitFor({timeout:20000});
+  assert.equal(unauthenticatedSessionRequests,0,
+    "Manual first pairing must not send unauthenticated session checks");
+  await manualContext.close();
+  console.log("PASS: manual pairing button works on first visit and when sync receiver is offline");
+  pairingTestMode = false;
+  pairingDesktopOnline = true;
 
   // Reproduce the old bug: the phone has no stored bearer so /api/session
   // returns 401 until the one-time QR has been exchanged. Further, simulate
