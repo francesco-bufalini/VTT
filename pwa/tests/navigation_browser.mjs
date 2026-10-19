@@ -175,6 +175,7 @@ try{
  assert.equal(await orcCard.locator('.creature-face').count(),1);
  await orcCard.locator('[data-act="open"]').click();
  assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ await sheet('info');
  assert.equal(await page.locator('.play-identity-mark .creature-face').count(),1);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
