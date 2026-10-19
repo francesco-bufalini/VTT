@@ -150,6 +150,15 @@ try {
     null, { timeout: 12000 });
   assert.match(await errorPage.locator("#startup-diagnostic").innerText(),
     /\/ui\.js — HTTP 503 \| MIME text\/plain/);
+  await errorPage.waitForFunction(() =>
+    document.querySelector("#startup-diagnostic-status")?.textContent?.includes("Import Safari: 27/27"),
+    null, { timeout: 30000 });
+  const errorReport = await errorPage.locator("#startup-diagnostic").innerText();
+  assert.match(errorReport, /VERIFICA DEGLI IMPORT REALI DI SAFARI/);
+  assert.match(errorReport, /\/ui\.js — TypeError:|\/ui\.js — Error:/);
+  assert.match(errorReport, /\/storage\.js — IMPORT OK/);
+  assert.doesNotMatch(errorReport, /\/main\.js — IMPORT OK/,
+    "Never re-import the boot module");
   assert.equal(await errorPage.locator("#copy-startup-diagnostic").count(), 1);
   assert.equal(failedNavigations, 2, "Do not loop forever on a permanently missing module");
   assert.match(await errorPage.locator("#startup-phase").innerText(), /Caricamento dei moduli/);
@@ -172,6 +181,12 @@ try {
   const mimeReport = await mimePage.locator("#startup-diagnostic").innerText();
   assert.match(mimeReport, /sheet_rules_view\.js — HTTP 200 \| MIME text\/html/);
   assert.match(mimeReport, /MIME non valido per moduli JS/);
+  await mimePage.waitForFunction(() =>
+    document.querySelector("#startup-diagnostic-status")?.textContent?.includes("Import Safari: 27/27"),
+    null, { timeout: 30000 });
+  const importReport = await mimePage.locator("#startup-diagnostic").innerText();
+  assert.match(importReport, /\/sheet_rules_view\.js — (TypeError|Error):/);
+  assert.match(importReport, /\/storage\.js — IMPORT OK/);
   assert.match(mimeReport, /Browser:/);
   assert.doesNotMatch(mimeReport, /paired-desktop-secret/);
   await mimeContext.close();

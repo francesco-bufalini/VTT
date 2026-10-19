@@ -49,6 +49,8 @@ const STARTUP_MODULE_PATHS = [
   "/creature_format.js", "/main.js"
 ];
 const startupBrowserErrors = [];
+// main.js invokes boot() at top level: never dynamically re-import it.
+const MODULE_IMPORT_PATHS = STARTUP_MODULE_PATHS.filter(path => path !== "/main.js");
 window.addEventListener("error", event => {
   if (startupBrowserErrors.length >= 6) return;
   const resourceUrl = event.target !== window && (event.target?.src || event.target?.href);
@@ -122,10 +124,27 @@ async function diagnoseStartupModules(phase, error) {
   const results = new Array(STARTUP_MODULE_PATHS.length);
   const until = Date.now() + 18000;
   let next = 0, completed = 0;
+  const importResults = new Array(MODULE_IMPORT_PATHS.length);
+  let importCompleted = 0;
+  let importStarted = false;
+  let importUntil = 0;
+  const initialTimings = (performance.getEntriesByType?.("resource") || [])
+    .filter(row => {
+      try {
+        const url = new URL(row.name);
+        return url.origin === location.origin && url.pathname.endsWith(".js");
+      } catch (_) { return false; }
+    })
+    .slice(-28).map(row => {
+      const path = new URL(row.name).pathname;
+      const code = row.responseStatus ? " HTTP " + row.responseStatus : "";
+      return path + ": " + Math.round(row.duration) + " ms" + code;
+    });
 
   function render() {
     if (!details.isConnected) return;
     const problems = results.filter(row => row?.problem);
+    const importProblems = importResults.filter(row => row?.problem);
     const untested = STARTUP_MODULE_PATHS.length - completed;
     const lines = [
       ...header,
@@ -135,9 +154,32 @@ async function diagnoseStartupModules(phase, error) {
       ...(problems.length ? ["FILE CON PROBLEMI:", ...problems.map(row =>
         row.path + " — " + row.details), ""] : []),
       ...(completed === STARTUP_MODULE_PATHS.length && !problems.length ?
-        ["Tutti i file rispondono ora con HTTP 200 e MIME JavaScript.",
-         "Possibile errore transitorio o errore di sintassi/collegamento degli import,",
-         "che Safari potrebbe non specificare nell'errore originale.", ""] : []),
+        ["Tutti i file sono ora scaricabili (HTTP 200, MIME JavaScript).",
+         "Il download NON verifica che Safari possa importarli.", ""] : []),
+      ...(importStarted ? [
+        "VERIFICA DEGLI IMPORT REALI DI SAFARI:",
+        "Controllati " + importCompleted + "/" + MODULE_IMPORT_PATHS.length +
+          " | import falliti: " + importProblems.length,
+        ...(importProblems.length ? [
+          "IMPORT NON RIUSCITI (un modulo può fallire per una sua dipendenza):",
+          ...importProblems.map(row => row.path + " — " + row.details)
+        ] : []),
+        ...(importCompleted === MODULE_IMPORT_PATHS.length && !importProblems.length ?
+          ["Tutti gli import diretti riescono ORA: probabile errore intermittente",
+           "nel caricamento iniziale o differenza tra import originali e successivi."]
+          : []),
+        ...(importCompleted < MODULE_IMPORT_PATHS.length && Date.now() >= importUntil ?
+          ["Import non completati entro 18 secondi."] : []),
+        "RISULTATI IMPORT:",
+        ...MODULE_IMPORT_PATHS.map((path, index) =>
+          path + " — " + (importResults[index]?.details || "non ancora verificato")),
+        ""
+      ] : []),
+      ...(initialTimings.length ? [
+        "TEMPI DELLE RICHIESTE JS DELL'AVVIO ORIGINALE:",
+        ...initialTimings,
+        ""
+      ] : []),
       ...(untested && Date.now() >= until ?
         ["Verifica incompleta: raggiunto il limite di 18 secondi.", ""] : []),
       "RISULTATO PER OGNI FILE:",
@@ -147,16 +189,21 @@ async function diagnoseStartupModules(phase, error) {
     ];
     details.textContent = lines.join("\n");
     const headline = app.querySelector("#startup-error");
-    if (headline && problems.length) {
+    const importHint = importProblems.find(row => row.path !== "/ui.js") || importProblems[0];
+    if (headline && importHint) {
       headline.textContent = (error?.message || String(error)) +
-        " | Controllo successivo: " + problems[0].path + " — " +
-        problems[0].details + (problems.length > 1 ?
-        " (+" + (problems.length - 1) + " altri file)" : "");
+        " | Import fallito: " + importHint.path + " — " + importHint.details;
+    } else if (headline && problems.length) {
+      headline.textContent = (error?.message || String(error)) +
+        " | Controllo HTTP: " + problems[0].path + " — " + problems[0].details;
     }
-    status.textContent = "Verifica moduli: " + completed + "/" +
-      STARTUP_MODULE_PATHS.length +
+    status.textContent = importStarted ?
+      "Import Safari: " + importCompleted + "/" + MODULE_IMPORT_PATHS.length +
+      (importCompleted === MODULE_IMPORT_PATHS.length ? " — completati" :
+        Date.now() >= importUntil ? " — parziali" : " — in corso…") :
+      "Verifica HTTP: " + completed + "/" + STARTUP_MODULE_PATHS.length +
       (completed === STARTUP_MODULE_PATHS.length ? " — completata" :
-        Date.now() >= until ? " — parziale (limite 18 s)" : " — in corso…");
+        Date.now() >= until ? " — parziale" : " — in corso…");
   }
 
   render();
@@ -167,6 +214,32 @@ async function diagnoseStartupModules(phase, error) {
       results[index] = await probeStartupModule(STARTUP_MODULE_PATHS[index],
         Math.max(1, until - Date.now()));
       ++completed;
+      render();
+    }
+  }));
+
+  // Unlike fetch(), the native ESM loader checks the entire import graph,
+  // parses JavaScript and validates named exports. Inspect the already-failed
+  // module map without changing URL fragments or reloading the document.
+  // A failing parent may simply inherit the error of a failing dependency.
+  importStarted = true;
+  importUntil = Date.now() + 18000;
+  render();
+  let nextImport = 0;
+  await Promise.all([0, 1].map(async () => {
+    while (nextImport < MODULE_IMPORT_PATHS.length && Date.now() < importUntil) {
+      const index = nextImport++;
+      const path = MODULE_IMPORT_PATHS[index];
+      try {
+        await deadline(import(path), Math.min(3500, Math.max(1, importUntil - Date.now())),
+          "Import del modulo " + path);
+        importResults[index] = {path, problem:false, details:"IMPORT OK"};
+      } catch (importError) {
+        importResults[index] = {
+          path, problem:true, details: diagnosticException(importError)
+        };
+      }
+      ++importCompleted;
       render();
     }
   }));
@@ -207,10 +280,10 @@ function showFailure(phase, error) {
     '<p id="startup-error" class="warning"></p>' +
     '<p>I dati locali non sono stati cancellati.</p>' +
     '<button type="button" class="btn primary" id="retry-startup">Riprova</button>' +
-    '<details open class="panel" id="startup-details">' +
+    '<details open class="panel" id="startup-details" style="min-width:0;max-width:100%;overflow:hidden">' +
     '<summary>Diagnostica caricamento moduli</summary>' +
     '<p id="startup-diagnostic-status" class="muted" role="status">Preparazione verifica…</p>' +
-    '<pre id="startup-diagnostic" tabindex="0" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;user-select:text;font-size:0.8rem"></pre>' +
+    '<pre id="startup-diagnostic" tabindex="0" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:360px;overflow-y:auto;overflow-x:hidden;user-select:text;font-size:0.78rem"></pre>' +
     '<button type="button" class="btn" id="copy-startup-diagnostic">Copia diagnostica</button>' +
     '</details></div>';
   app.querySelector("#startup-phase").textContent = phase;
