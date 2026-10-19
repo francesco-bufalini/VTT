@@ -5,7 +5,7 @@ import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
 export const SHEET_SECTIONS = [["info","Info"],
- ["battle","Battaglia"],["actions","Cosa posso fare?"],["magic","Poteri"],["inventory","Inventario"],
+ ["battle","Azioni"],["magic","Poteri"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
 // Mirrors CreatureArea._confirm_miniature for the portable fields only.
@@ -128,7 +128,6 @@ export function recoveryPatch(c,event,trackers){
  }
  if(event==='long_rest'){for(const id of Object.keys(ready))delete ready[id];for(const id of Object.keys(used))delete used[id];}
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
- // Native feature timing recovery ends activations on either rest.
  if(event==='short_rest'||event==='long_rest')patch.active_class_features={};
  if(event==='long_rest')patch.created_spell_slots=[];
  // Pact Magic and class spell slots retain their original explicit rest rules.
@@ -136,7 +135,6 @@ export function recoveryPatch(c,event,trackers){
  if(event==='long_rest')patch.spell_slots_spent=Array(10).fill(0);
  return patch;
 }
-
 
 /**
  * A finished rest is a single atomic creature patch, including native feature
