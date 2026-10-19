@@ -3,6 +3,7 @@
 import { setting } from "./storage.js";
 
 const PAIRING_KEY = "paired-desktop-secret";
+const PENDING_QR_KEY = "vtt-mobile-pending-qr-code";
 const TIMEOUT_MS = 20000;
 let volatileToken = "";
 
@@ -63,19 +64,47 @@ export async function pair(code, { remember = true } = {}) {
   if (!/^[0-9a-fA-F]{64}$/.test(token || "")) {
     throw new Error("Credenziale restituita dal desktop non valida.");
   }
-  const session = await exchange("/api/session", token);
+  // Persist the desktop-issued bearer immediately after the one-time QR
+  // exchange. If the subsequent session check times out, a redeemed QR must
+  // still be recoverable when the phone reconnects; 401 remains revocable.
   volatileToken = token;
   await setting(PAIRING_KEY, remember ? token : "");
-  return session;
+  try {
+    return await exchange("/api/session", token);
+  } catch (error) {
+    if (error.status === 401) {
+      volatileToken = "";
+      await setting(PAIRING_KEY, "");
+    }
+    throw error;
+  }
 }
 
 // URL fragments are not sent to the web server or Tailscale proxy.
 // Remove the one-time QR code from browser history immediately on opening.
 export function takeQrPairCode() {
   const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const code = fragment.get("pair") || "";
-  if (code) window.history.replaceState(null, "", window.location.pathname + window.location.search);
-  return /^[0-9a-fA-F]{16}$/.test(code) ? code.toUpperCase() : "";
+  const hashCode = fragment.get("pair");
+  if (hashCode !== null) {
+    // Never preserve the one-time code in history, even if invalid.
+    window.history.replaceState(window.history.state, "",
+      window.location.pathname + window.location.search);
+  }
+  let code = hashCode || "";
+  // main.js captures the code before the first dynamic module import so that
+  // WebKit can reload a failed module graph without losing the QR fragment.
+  // Read it exactly once, enforce a short TTL, then discard the temporary copy.
+  try {
+    const stored = sessionStorage.getItem(PENDING_QR_KEY);
+    sessionStorage.removeItem(PENDING_QR_KEY);
+    if (hashCode === null && stored) {
+      const pending = JSON.parse(stored);
+      if (Number(pending?.expiresAt) > Date.now())
+        code = String(pending.code || "");
+    }
+  } catch (_) {}
+  code = String(code).replace(/[\s-]/g, "").toUpperCase();
+  return /^[0-9A-F]{16}$/.test(code) ? code : "";
 }
 
 export async function unpair() {

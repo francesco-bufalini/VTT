@@ -6,11 +6,40 @@ const app = document.querySelector("#app");
 // imports. A fragment-only import retry cannot recover those dependencies.
 const MODULE_RELOAD_KEY = "vtt-mobile-module-reload-once";
 const COMPAT_START_KEY = "vtt-mobile-serial-modules";
+const PENDING_QR_KEY = "vtt-mobile-pending-qr-code";
 const DIAGNOSTIC_VERSION = "ios-module-debug-3";
+// All browsers on iOS use WebKit. Its module loader was unreliable with the
+// parallel startup graph even though the identical modules work on Android.
+// Keep the normal fast path for non-iOS platforms.
+function isIosWebKit() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+}
 function compatStartupEnabled() {
+  if (isIosWebKit()) return true;
   try { return sessionStorage.getItem(COMPAT_START_KEY) === "1"; }
   catch (_) { return false; }
 }
+// Capture a one-time QR fragment before importing the UI: failed ES module
+// graphs can trigger a full document navigation. The fragment must survive
+// that navigation without being left in the address bar or HTTP requests.
+// The ephemeral session entry is consumed by client.js; no IndexedDB write.
+function capturePendingQr() {
+  const raw = new URLSearchParams(location.hash.replace(/^#/, "")).get("pair");
+  if (raw === null) return;
+  const code = String(raw).replace(/[\s-]/g, "").toUpperCase();
+  try {
+    if (/^[0-9A-F]{16}$/.test(code))
+      sessionStorage.setItem(PENDING_QR_KEY, JSON.stringify({
+        code, expiresAt: Date.now() + 5 * 60 * 1000
+      }));
+  } catch (_) {
+    // If sessionStorage is unavailable, keep the fragment so UI can read it.
+    return;
+  }
+  history.replaceState(history.state, "", location.pathname + location.search);
+}
+capturePendingQr();
 
 function reloadFailedModuleGraph(error) {
   if (!retryableModuleError(error)) return false;

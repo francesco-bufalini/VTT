@@ -15,6 +15,11 @@ let transientUiFailures = 0;
 let failNestedModuleOnce = false;
 let transientNestedFailures = 0;
 let invalidSheetMime = false;
+let pairingTestMode = false;
+let pairRequests = 0;
+let unauthenticatedSessionRequests = 0;
+const testShortCode = "0123456789ABCDEF";
+const testBearer = "a".repeat(64);
 
 const server = createServer(async (request, response) => {
   try {
@@ -22,6 +27,33 @@ const server = createServer(async (request, response) => {
     response.setHeader("Cache-Control", "no-store");
     if (path.startsWith("/api/")) {
       response.setHeader("Content-Type", "application/json");
+      if (pairingTestMode) {
+        if (path === "/api/status") {
+          response.end(JSON.stringify({protocol:1,desktop_online:true})); return;
+        }
+        if (path === "/api/pair" && request.method === "POST") {
+          let body = "";
+          for await (const chunk of request) body += chunk;
+          if (JSON.parse(body).code === testShortCode) {
+            ++pairRequests;
+            response.end(JSON.stringify({ token:testBearer })); return;
+          }
+          response.writeHead(401);response.end(JSON.stringify({error:"invalid_pair_code"}));return;
+        }
+        if (path === "/api/session") {
+          if (request.headers.authorization !== "Bearer " + testBearer) {
+            ++unauthenticatedSessionRequests;
+            response.writeHead(401);response.end(JSON.stringify({error:"pairing_required"}));return;
+          }
+          response.end(JSON.stringify({protocol:1,session:"test-session",mobile_protocol:3}));return;
+        }
+        if (path === "/api/map") {
+          response.end(JSON.stringify({tokens:[],combat:{active:false}}));return;
+        }
+        if (path === "/api/conditions") {
+          response.end(JSON.stringify({editions:{"2014":[],"2024":[]}}));return;
+        }
+      }
       response.end(JSON.stringify({ protocol: 1, desktop_online: false }));
       return;
     }
@@ -96,6 +128,58 @@ try {
   assert.equal(await compatPage.locator("#startup-error").count(), 0);
   await compatContext.close();
   console.log("PASS: serial compatibility startup initializes the full local archive");
+  
+  // iOS WebKit must choose the successful sequential startup without waiting
+  // for an error or any sessionStorage preference; Android remains unchanged.
+  const iosUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1";
+  const iosContext = await browser.newContext({
+    viewport:{width:390,height:844},userAgent:iosUA,isMobile:true,hasTouch:true
+  });
+  const iosPage = await iosContext.newPage();
+  const requested = [];
+  iosPage.on("request", req => {
+    if (req.url().endsWith(".js")) requested.push(new URL(req.url()).pathname);
+  });
+  await iosPage.goto(origin);
+  await iosPage.locator('[data-act="create"]').waitFor({timeout:30000});
+  assert.ok(requested.indexOf("/spell_metadata.js") >= 0);
+  assert.ok(requested.indexOf("/ui.js") > requested.indexOf("/spell_metadata.js"),
+    "iPhone must preload independent modules before the large UI graph");
+  assert.equal(await iosPage.locator("#startup-error").count(), 0);
+  await iosContext.close();
+  console.log("PASS: iPhone WebKit defaults to serial bootstrap");
+
+  // Reproduce the old bug: the phone has no stored bearer so /api/session
+  // returns 401 until the one-time QR has been exchanged. Further, simulate
+  // the iOS module-loader failure and full reload that used to lose #pair.
+  pairingTestMode = true;
+  pairRequests = 0;
+  unauthenticatedSessionRequests = 0;
+  failNestedModuleOnce = true;
+  const qrContext = await browser.newContext({
+    viewport:{width:390,height:844},userAgent:iosUA,isMobile:true,hasTouch:true
+  });
+  const qrPage = await qrContext.newPage();
+  let qrNavigations = 0;
+  qrPage.on("framenavigated", frame => {
+    if (frame === qrPage.mainFrame()) ++qrNavigations;
+  });
+  await qrPage.goto(origin + "/#pair=" + testShortCode);
+  await qrPage.locator('[data-session-pane="table"][aria-pressed="true"]')
+    .waitFor({timeout:35000});
+  await qrPage.waitForFunction(() => document.querySelector("#connection")?.textContent?.includes("Collegato"));
+  assert.equal(pairRequests,1,"One-time QR must be redeemed exactly once");
+  assert.equal(unauthenticatedSessionRequests,0,
+    "The client must exchange #pair before trying /api/session without a bearer");
+  assert.ok(qrNavigations >= 2,"iOS module retry must preserve the pending QR across reload");
+  assert.equal(await qrPage.evaluate(()=>location.hash),"","QR code must be removed from history");
+  assert.equal(await qrPage.evaluate(()=>sessionStorage.getItem("vtt-mobile-pending-qr-code")),null,
+    "One-time QR must not remain in sessionStorage after pairing");
+  await qrContext.close();
+  pairingTestMode = false;
+  transientNestedFailures = 0; // isolate the existing one-shot nested-import test
+  console.log("PASS: iPhone QR fragment pairs automatically even across a module reload");
+
 
   // A Service Worker operation which never resolves must not block the UI.
   const slowContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
