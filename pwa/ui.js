@@ -2257,10 +2257,20 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
-  // Preserve expanded combat cards across sheet rerenders.
+  // Preserve expanded combat cards across sheet rerenders. Opening a parent
+  // from its heading reveals the index first, without auto-opening its children.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.querySelector(':scope > summary')?.addEventListener('click',()=>{
+      if(details.open)return;
+      for(const group of details.querySelectorAll(':scope > .play-battle-action-group')){
+        group.open=false;
+        const groupKey=group.dataset.actionAbility?'battle-ability:'+group.dataset.actionAbility:
+          'battle-timing:'+details.dataset.battleAction+':'+group.dataset.actionTiming;
+        state.disclosureState.set(groupKey,false);
+      }
+    });
     details.addEventListener('toggle',()=>{
       if(details.isConnected)state.disclosureState.set(key,details.open);
     });
