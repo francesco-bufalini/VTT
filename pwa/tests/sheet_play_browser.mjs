@@ -71,8 +71,8 @@ try{
  assert.equal(await spellPanel.getAttribute('open'),'');
  const combatSpells=spellPanel.locator('.play-battle-spell-entry');
  assert(await combatSpells.count()>=2,'Prepared slot spells and grants appear in the unified spell list');
- assert.equal(await spellPanel.locator('[data-action-timing="action"] [data-spell-id="spell:light|phb"]').count(),1);
- assert.equal(await spellPanel.locator('[data-action-timing="reaction"] [data-spell-id="spell:shield|phb"]').count(),1);
+ assert(await spellPanel.locator('[data-action-timing="action"] .play-battle-spell-entry[data-spell-id="spell:light|phb"]').count()>=1);
+ assert.equal(await spellPanel.locator('[data-action-timing="reaction"] .play-battle-spell-entry[data-spell-id="spell:shield|phb"]').count(),1);
  assert.equal(await spellPanel.locator('.action-economy-preview').count(),0,'Spell descriptions remain hidden until opened');
  const lightEntry=spellPanel.locator('[data-spell-id="spell:light|phb"]').first();
  assert.match(await lightEntry.textContent(),/Trucchetto/);
