@@ -561,10 +561,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }).join('');
   const untracked=['missing','free'].map(key=>{
    const powers=abilityButtons(key);
-   const freeActions=key==='free'?view.battleActions?.freeActions||'':'';
-   return powers||freeActions?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
-    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+
-    (freeActions?'<div class="play-resource-free-actions"><h4>Azioni gratuite</h4>'+freeActions+'</div>':'')+'</div>':'';
+   return powers?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
+    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+'</div>':'';
   }).join('');
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -573,6 +571,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
   html+=disclosure('resources','Risorse','reset',
    resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
+  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione delle azioni">'+
+   btn('Espandi tutto','increase','data-act="battle-expand-all"')+
+   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+'</div>';
   html+=disclosure('attacks','Attacchi fisici','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));

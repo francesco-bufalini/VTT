@@ -1050,7 +1050,7 @@ function inventoryItemDescription(obj,index){
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
     ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
-  const properties=inventoryReadout(obj,inventoryProperties({...obj,rarity:'' }),isSpellScroll(obj)).properties||"—";
+  const properties=inventoryReadout(obj,inventoryProperties({...obj,rarity:''}),isSpellScroll(obj)).properties||"—";
   const prose=flattenDescription(obj)||String(obj.description||'');
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
     '" data-item-key="description" rows="3">'+esc(obj.description||"")+'</textarea></label>':'';
@@ -2257,26 +2257,29 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
-  // Preserve expanded combat cards across sheet rerenders.
+  // Preserve expanded combat cards across sheet rerenders. Opening a parent
+  // from its heading reveals the index first, without auto-opening its children.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
+    details.querySelector(':scope > summary')?.addEventListener('click',()=>{
+      if(details.open)return;
+      for(const group of details.querySelectorAll(':scope > .play-battle-action-group')){
+        group.open=false;
+        const groupKey=group.dataset.actionAbility?'battle-ability:'+group.dataset.actionAbility:
+          'battle-timing:'+details.dataset.battleAction+':'+group.dataset.actionTiming;
+        state.disclosureState.set(groupKey,false);
+      }
+    });
     details.addEventListener('toggle',()=>{
       if(details.isConnected)state.disclosureState.set(key,details.open);
     });
   }
-  // Remember each timing group separately inside its battle panel.
+  // Remember timing groups and ability groups independently across rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group')){
     const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
-    const key='battle-timing:'+panel+':'+details.dataset.actionTiming;
-    if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
-    details.addEventListener('toggle',()=>{
-      if(details.isConnected)state.disclosureState.set(key,details.open);
-    });
-  }
-  // Each characteristic inside Prove abilità can be collapsed independently.
-  for(const details of app.querySelectorAll('#sheet-play-view .play-battle-action-group[data-action-ability]')){
-    const key='battle-ability:'+details.dataset.actionAbility;
+    const key=details.dataset.actionAbility?'battle-ability:'+details.dataset.actionAbility:
+      'battle-timing:'+panel+':'+details.dataset.actionTiming;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{
       if(details.isConnected)state.disclosureState.set(key,details.open);
@@ -2319,6 +2322,19 @@ function fillAppliedSpellOptions(query=''){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='battle-expand-all'||act==='battle-collapse-all'){
+    const expanded=act==='battle-expand-all';
+    for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure, #sheet-play-view .play-battle-action-group')){
+      details.open=expanded;
+      const panel=details.closest('.play-battle-disclosure')?.dataset.battleAction||'';
+      const key=details.classList.contains('play-battle-disclosure')?
+        'battle-disclosure:'+details.dataset.battleAction:
+        details.dataset.actionAbility?'battle-ability:'+details.dataset.actionAbility:
+        'battle-timing:'+panel+':'+details.dataset.actionTiming;
+      state.disclosureState.set(key,expanded);
+    }
+    return;
+  }
   if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
   if(act==='condition-add-spell'){

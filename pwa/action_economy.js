@@ -526,7 +526,7 @@ export function battleSkillChecksPanel(calculated={}){
    ...SKILLS.filter(row=>row[2]===ability).map(([id,name])=>({
     id:'skill:'+id,name,check_target:'skill:'+id,check_label:name,skill_code:id}))
   ];
-  return '<details class="play-battle-action-group" data-action-ability="'+esc(ability)+'" open>'+
+  return '<details class="play-battle-action-group" data-action-ability="'+esc(ability)+'">'+
    '<summary class="play-battle-action-heading">'+actionGlyph('proficiency')+
    '<span>'+esc(label)+'</span><span class="play-badge">'+choices.length+'</span></summary>'+
    '<div class="play-battle-action-rows">'+choices.map(row=>battleAttackRow(row,calculated,emptyAttacks,descriptions)).join('')+
@@ -578,9 +578,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const other=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
   !['attack','two_weapon'].includes(row.id)&&row.type!=='Incantesimo'&&
   !['spell_cast','cast_spell'].includes(row.id));
- // Free general actions belong with the no-cost options in Battle resources.
- const freeActions=other.filter(row=>row.time==='free'&&row.origin!=='personal');
- const remainingOthers=other.filter(row=>!freeActions.includes(row));
+ // All general free actions are listed under Altre azioni, whereas free
+ // powers still belong under Nessun costo in the Resources disclosure.
  // Put attacks using currently equipped weapons first within each action-time
  // group. The local attack projection only marks an item as main/off when it is
  // equipped; monster attacks, generic actions and improvised shield attacks
@@ -605,14 +604,13 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(kind==='attacks')matching.sort((a,b)=>equippedWeaponPriority(a)-equippedWeaponPriority(b));
   if(kind==='spells')matching.sort((a,b)=>(a.level??99)-(b.level??99)||
    String(a.name||'').localeCompare(String(b.name||''),'it'));
-  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'" open>'+
+  return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
    '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
    '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
- return {attacks:render(weapon,'attacks'),others:render(remainingOthers,'others'),
-  freeActions:freeActions.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join(''),
+ return {attacks:render(weapon,'attacks'),others:render(other,'others'),
   abilityEntries:classAbilities,checks:battleSkillChecksPanel(calculated),
   movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
