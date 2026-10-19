@@ -30,7 +30,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
  assert.equal(sword.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
- assert.equal(sword.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:sword');
+ assert.equal(sword.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
  assert.equal(sword.querySelector('[data-damage-formula]').dataset.damageFormula,'1d8');
  assert.equal(sword.querySelectorAll('.play-battle-effect').length,1);
  assert(!sword.querySelector('.play-battle-attack-chevron'));
@@ -39,7 +39,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
  assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
  assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Gittata 20/60 ft');
- assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:off:dagger');
+ assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:off:dagger');
  assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
@@ -62,7 +62,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
  assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
  assert.equal(opportunity.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
- assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:sword');
+ assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
