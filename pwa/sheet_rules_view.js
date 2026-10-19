@@ -591,7 +591,30 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
-  originPanels.forEach((node,i)=>{bind('power:'+i,node);const count=node.querySelectorAll('.magic-spell-row,.magic-ability-entry').length;html+=go('power:'+i,heading(node),'spark',count+(count===1?' potere':' poteri')+' · Apri dettagli e risorse');});
+  originPanels.forEach((node,i)=>{
+   const key='power:'+i;
+   bind(key,node);
+   const count=node.querySelectorAll('.magic-spell-row,.magic-ability-entry').length;
+   // Spell rows already belong to the right tracker (or origin) in the
+   // native power panel. Expose those same entries without opening it.
+   const spellRows=[...node.querySelectorAll('.magic-spell-row')].map(row=>{
+    const spell=row.querySelector('[data-act="power-spell"]');
+    if(!spell)return '';
+    const name=spell.textContent.trim(),level=row.closest('[data-magic-level]')?.dataset.magicLevel;
+    const cost=row.querySelector('.magic-power-cost')?.textContent.trim()||'';
+    const levelLabel=level==='0'?'Trucchetto':level&&level!=='null'?level+'°':'';
+    return '<div class="play-spell play-magic-origin-spell">'+
+      proxy(spell,'Apri '+name,'spark','<span>'+esc(name)+'</span>'+
+        (levelLabel?'<small class="play-spell-level">'+esc(levelLabel)+'</small>':'')+
+        (cost?'<small class="play-magic-spell-cost">'+esc(cost)+'</small>':''))+'</div>';
+   }).join('');
+   const trackerId=node.querySelector('[data-magic-tracker-id]')?.dataset.magicTrackerId||'';
+   html+='<section class="play-magic-origin-group"'+
+     (trackerId?' data-magic-origin-tracker="'+esc(trackerId)+'"':'')+'>'+
+     go(key,heading(node),'spark',count+(count===1?' potere':' poteri'))+
+     (spellRows?'<div class="play-magic-origin-spells">'+spellRows+'</div>':'')+
+     '</section>';
+  });
  }
  if(sheet==='inventory'){
   const documentsTab=view.inventorySubtab==='documents',scrollsTab=view.inventorySubtab==='scrolls';
