@@ -157,6 +157,12 @@ test('combat spells are sorted by level within action, bonus and reaction and op
   const button=row.querySelector('button');
   assert.equal(button.dataset.act,'action-cast-spell');
   assert.equal(button.dataset.spellId,row.dataset.spellId);
+  const cast=row.querySelector('.play-battle-spell-cast');
+  assert(cast,'Every action spell needs its own Cast control');
+  assert.equal(cast.textContent,'Lancia');
+  assert.equal(cast.dataset.spellId,row.dataset.spellId);
+  const direct=cast.dataset.grantId&&['bonus2','reaction1'].includes(row.dataset.spellId);
+  assert.equal(cast.dataset.act,direct?'battle-cast-resource-spell':'action-cast-spell');
   assert(!row.querySelector('details'),'A spell row should not expand its description inline');
  }
  assert.equal(entries('action')[0].querySelector('small').textContent.includes('Trucchetto'),true);
