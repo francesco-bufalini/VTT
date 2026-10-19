@@ -83,6 +83,50 @@ export function resolveOwnedItem(saved={}){
   if(saved?.infusion?.requires_attunement===true)effective.req_attune=true;
   return effective;
 }
+// Fold truly identical owned copies into one stack. An instance ID identifies
+// a physical copy, not a different item definition; equipped hand/body slots
+// are kept separately so two shields can occupy different hands.
+export function consolidateOwnedItems(inventory){
+  if(!Array.isArray(inventory))return [];
+  const rows=[],groups=new Map();
+  const stable=value=>Array.isArray(value)?value.map(stable):
+    value&&typeof value==="object"?Object.fromEntries(
+      Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
+  for(const original of inventory){
+    const row=structuredClone(original);
+    const quantity=Number(row?.quantity??1),kind=itemKind(row);
+    const slots=array(row?.equipped_slots);
+    const canStack=row&&typeof row==="object"&&!Array.isArray(row)&&
+      String(row.id||row.name||"").trim()&&kind!=="document"&&
+      !row.infusion&&row.attuned!==true&&
+      Number.isInteger(quantity)&&quantity>=1&&quantity<=99999&&
+      slots.every(slot=>["main","off","body"].includes(slot))&&
+      new Set(slots).size===slots.length&&slots.length<=quantity;
+    if(!canStack){rows.push(row);continue;}
+    const identity={...row};
+    delete identity.instance_id;delete identity.quantity;delete identity.equipped_slots;
+    identity.instance_overrides=identity.instance_overrides||{};
+    identity.equipped=identity.equipped===true;
+    identity.attuned=identity.attuned===true;
+    identity.active=identity.active!==false;
+    const key=JSON.stringify(stable(identity));
+    const candidates=groups.get(key)||[];
+    const found=candidates.find(index=>{
+      const previous=rows[index],used=array(previous.equipped_slots);
+      return Number(previous.quantity??1)+quantity<=99999&&
+        slots.every(slot=>!used.includes(slot));
+    });
+    if(found!==undefined){
+      rows[found].quantity=Number(rows[found].quantity??1)+quantity;
+      rows[found].equipped_slots=[...array(rows[found].equipped_slots),...slots];
+    }else{
+      groups.set(key,[...candidates,rows.length]);
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
 // Native inventory behavior: editing one item in a stack splits it off.
 export function changeItemOverride(inventory,index,key,value){
   if(!Array.isArray(inventory)||!Number.isInteger(index)||index<0||index>=inventory.length)
