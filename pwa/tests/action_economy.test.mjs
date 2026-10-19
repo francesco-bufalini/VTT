@@ -75,6 +75,38 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
 
+test('equipped weapon attacks lead each timing list and follow equipment changes',()=>{
+ const bonusAction={edition:'2014',id:'test_bonus',name:'Azione bonus generica',
+  timings:['bonus'],parent_action:'',source:'Test',description:'Opzione non legata ad armi'};
+ const rules=[bonusAction,...catalog.actions];
+ const monster={id:'monster:action:0',name:'Artiglio',melee:true,hit:5,damage:'1d4'};
+ const shield={id:'shield:improvised:off:shield',name:'Scudo improvvisato',slot:'shield',
+  melee:true,hit:3,damage:'1d4'};
+ const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
+ const thrown={id:'item:throw:main:blade',name:'Lama principale · lancio',slot:'main',
+  melee:false,hit:6,damage:'1d8'};
+ const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
+  offhand_bonus:true,hit:4,damage:'1d4'};
+ const panel=attacks=>doc(battleActionPanels({rules_version:'2014'}, {attacks},[],[],rules).attacks);
+ const ids=(root,time)=>[...root.querySelectorAll('[data-action-timing="'+time+'"] .play-battle-attack-entry')]
+  .map(node=>node.dataset.attackId);
+ const equipped=panel([monster,shield,off,main,thrown]);
+ assert.deepEqual(ids(equipped,'action').slice(0,2),['item:blade','item:throw:main:blade'],
+  'Main-hand attacks, including thrown variants, go before generic and monster attacks');
+ assert.equal(ids(equipped,'bonus')[0],'item:off:dagger',
+  'Offhand attack goes before generic bonus actions');
+ assert.equal(ids(equipped,'reaction')[0],'opportunity',
+  'An opportunity attack using an equipped melee weapon goes before other reactions');
+ const baseline=panel([monster,shield]);
+ const withoutEquipped=ids(equipped,'action').filter(id=>!id.startsWith('item:'));
+ assert.deepEqual(withoutEquipped,ids(baseline,'action'),
+  'The original order of non-weapon actions is unchanged');
+ const replaced=panel([monster,shield,{...main,id:'item:axe',name:'Ascia'}]);
+ assert.equal(ids(replaced,'action')[0],'item:axe',
+  'The priority follows the current weapon projection, not a previously equipped item');
+ assert(!ids(replaced,'action').includes('item:blade'));
+});
+
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
  const abilityNames=['Forza','Destrezza','Costituzione','Intelligenza','Saggezza','Carisma'];
  const calculated={values:{'ability_mod:str':3,'skill:athletics':7,'ability_mod:con':2},
