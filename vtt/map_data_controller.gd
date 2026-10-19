@@ -147,8 +147,11 @@ static func valid_data(value: Variant) -> bool:
 		return false
 	if value.tokens.size() > 512:
 		return false
-	if value.has("revision") and (not value.revision is int or value.revision < 0):
-		return false
+	if value.has("revision"):
+		# JSON numbers arrive as floats on the Android/UDP path too.
+		var revision: Variant = value.revision
+		if not (revision is int or revision is float) or not is_finite(float(revision)) or float(revision) < 0 or float(revision) != floorf(float(revision)):
+			return false
 	var ids: Dictionary = {}
 	for row: Variant in value.tokens:
 		if not row is Dictionary or not row.get("id") is String or not row.get("name") is String or not row.get("conditions") is Array:

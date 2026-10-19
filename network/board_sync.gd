@@ -2704,7 +2704,7 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "Comando sconosciuto."}
 	if _mobile_capture_busy:
 		return {"ok": false, "error": "Acquisizione in corso. Riprova tra un istante."}
-	var field: Variant = payload.get("field_feet", 120)
+	var field: Variant = payload.get("field_feet", 120 if target == null else 60)
 	var attack: Variant = payload.get("attack", {})
 	if not (field is float or field is int) or not is_finite(float(field)) or not attack is Dictionary:
 		return {"ok": false, "error": "Parametri snapshot non validi."}
@@ -2719,7 +2719,8 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 	var default_reach: float = float(target.call("get_reach_feet")) if target != null else 5.0
 	var default_long: float = float(target.get_meta("active_weapon_long_range_feet", 0)) if target != null and attack.is_empty() else 0.0
 	var range_feet: float = maxf(float(attack.get("range_feet", default_reach)), float(attack.get("long_range_feet", default_long)))
-	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else (120.0 if target == null else 60.0)
+	var field_feet := MobileMapCapture.field_for_range(range_feet) if not attack.is_empty() else clampf(
+		float(field), MobileMapCapture.MIN_FIELD_FEET, MobileMapCapture.MAX_FIELD_FEET)
 	_mobile_capture_busy = true
 	var result: Dictionary = await MobileMapCapture.capture(board_root as Node3D, target, field_feet, attack)
 	_mobile_capture_busy = false

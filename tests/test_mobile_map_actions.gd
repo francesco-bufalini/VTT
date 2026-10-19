@@ -244,7 +244,7 @@ func run() -> void:
 	spy.protocol = 0
 	spy.captured = {}
 	actions._send_interaction("move_token", {"direction": "east"})
-	assert(spy.captured.is_empty() and actions.caption.text.contains("Desktop da aggiornare"), "Old desktops must be identified before unsupported commands")
+	assert(spy.captured.is_empty() and actions.caption.text.contains("Aggiorna e riavvia"), "Old desktops must be identified before unsupported commands")
 	spy.protocol = 2
 	actions._send_interaction("move_token", {"direction": "east"})
 	assert(spy.captured.action == "move_token")
