@@ -111,6 +111,12 @@ func run() -> void:
 	assert(script.contains("indexedDB.open"))
 	var ui_script := await http("GET", "/ui.js")
 	assert(ui_script.begins_with("HTTP/1.1 200") and ui_script.contains("openCreatureEditor"))
+	# Read-only, unauthenticated telemetry must contain JS transfer health only.
+	var module_diag := await http("GET", "/__vtt_module_diagnostics")
+	assert(module_diag.begins_with("HTTP/1.1 200"))
+	assert(module_diag.contains("\"module_events\"") and module_diag.contains("\"bytes_written\""))
+	assert(module_diag.contains("\"/ui.js\"") and module_diag.contains("\"connections_peak\""))
+	assert(not module_diag.contains("\"token\"") and not module_diag.contains("\"authorization\""))
 	var condition_script := await http("GET", "/condition_catalog.js")
 	assert(condition_script.begins_with("HTTP/1.1 200") and condition_script.contains("conditionOptions"))
 	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")

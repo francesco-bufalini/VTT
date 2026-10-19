@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 
 const root = new URL("../../", import.meta.url);
 const nativeHost = await readFile(new URL("network/pwa_host.gd", root), "utf8");
@@ -66,7 +66,8 @@ const server = createServer(async (request, response) => {
 });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const origin = "http://127.0.0.1:" + server.address().port;
-const browser = await chromium.launch({ headless: true });
+const browserType = process.env.PWA_BROWSER === "webkit" ? webkit : chromium;
+const browser = await browserType.launch({ headless: true });
 try {
   // Completely new browser profile and IndexedDB, as in incognito mode.
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -82,6 +83,19 @@ try {
   assert.doesNotMatch(await page.locator("#app").innerText(), /Apertura archivio locale/);
   await context.close();
   console.log("PASS: clean Chrome profile opens and reloads the local archive");
+
+  // A reduced-concurrency import bootstrap can be enabled without modifying
+  // the local IndexedDB database or the normal fast startup path.
+  const compatContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const compatPage = await compatContext.newPage();
+  await compatPage.addInitScript(() => {
+    sessionStorage.setItem("vtt-mobile-serial-modules", "1");
+  });
+  await compatPage.goto(origin);
+  await compatPage.locator('[data-act="create"]').waitFor({ timeout: 30000 });
+  assert.equal(await compatPage.locator("#startup-error").count(), 0);
+  await compatContext.close();
+  console.log("PASS: serial compatibility startup initializes the full local archive");
 
   // A Service Worker operation which never resolves must not block the UI.
   const slowContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -151,10 +165,20 @@ try {
   assert.match(await errorPage.locator("#startup-diagnostic").innerText(),
     /\/ui\.js — HTTP 503 \| MIME text\/plain/);
   await errorPage.waitForFunction(() =>
-    document.querySelector("#startup-diagnostic-status")?.textContent?.includes("Import Safari: 27/27"),
+    document.querySelector("#startup-diagnostic")?.textContent?.includes("Controllati 27/27"),
     null, { timeout: 30000 });
   const errorReport = await errorPage.locator("#startup-diagnostic").innerText();
   assert.match(errorReport, /VERIFICA DEGLI IMPORT REALI DI SAFARI/);
+  assert.match(errorReport, /Versione diagnostica: ios-module-debug-3/);
+  await errorPage.waitForFunction(() =>
+    document.querySelector("#startup-diagnostic-status")?.textContent?.includes("Diagnostica completa"),
+    null, { timeout: 35000 });
+  const deepReport = await errorPage.locator("#startup-diagnostic").innerText();
+  assert.match(deepReport, /SECONDA PROVA CON URL MODULE MAP NUOVI/);
+  assert.match(deepReport, /ESITO FILE INDIPENDENTI:/);
+  assert.match(deepReport, /FRESH OK/);
+  assert.match(deepReport, /SERVER DOPO ERRORE: indisponibile \(HTTP 404\)/);
+  assert.equal(await errorPage.locator("#compat-startup").count(), 1);
   assert.match(errorReport, /\/ui\.js — TypeError:|\/ui\.js — Error:/);
   assert.match(errorReport, /\/storage\.js — IMPORT OK/);
   assert.doesNotMatch(errorReport, /\/main\.js — IMPORT OK/,
@@ -182,7 +206,7 @@ try {
   assert.match(mimeReport, /sheet_rules_view\.js — HTTP 200 \| MIME text\/html/);
   assert.match(mimeReport, /MIME non valido per moduli JS/);
   await mimePage.waitForFunction(() =>
-    document.querySelector("#startup-diagnostic-status")?.textContent?.includes("Import Safari: 27/27"),
+    document.querySelector("#startup-diagnostic")?.textContent?.includes("Controllati 27/27"),
     null, { timeout: 30000 });
   const importReport = await mimePage.locator("#startup-diagnostic").innerText();
   assert.match(importReport, /\/sheet_rules_view\.js — (TypeError|Error):/);

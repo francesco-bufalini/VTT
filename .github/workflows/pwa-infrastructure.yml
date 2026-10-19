@@ -74,6 +74,13 @@ jobs:
           node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
           node tests/offline_browser.mjs
+      - name: Check clean startup and diagnostics in Playwright WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          node ./node_modules/playwright/cli.js install --with-deps webkit
+          PWA_BROWSER=webkit node tests/startup_browser.mjs
       - name: Verify smartphone Back navigation and multiclass Info in Chromium
         shell: bash
         run: |
