@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {collectTraitRows,groupTraitRows} from '../trait_projection.js';
+import {collectTraitRows,groupTraitRows,withGrantedSpellPreviews} from '../trait_projection.js';
 
 const entry=(name,level=1,extra={})=>({name,level,entries:['Descrizione di '+name],...extra});
 const catalogs={
@@ -75,4 +75,28 @@ test('missing offline descriptive indexes preserve projected structured features
   {entries:async()=>{throw Error('offline');}});
  assert.equal(rows.filter(r=>r.name==='Portable Bonus').length,1);
  assert.equal(rows.find(r=>r.name==='Portable Bonus').feature_origin,'ability-a');
+});
+
+test('granted spells appear on their owning collapsed privilege, deduplicated and level sorted',async()=>{
+ const rows=await collectTraitRows(creature,{},provider);
+ const grants=[
+  {origin_id:'feat|phb|magic initiate',origin_name:'Magic Initiate',spell_id:'light'},
+  {origin_id:'feat|phb|magic initiate',origin_name:'Magic Initiate',spell_id:'shield'},
+  {origin_id:'feat|phb|magic initiate',origin_name:'Magic Initiate',spell_id:'light'}
+ ];
+ const preview=withGrantedSpellPreviews(rows,grants,[
+  {id:'light',name:'Light',level:0},{id:'shield',name:'Shield',level:1}]);
+ const feat=preview.find(row=>row.name==='Magic Initiate');
+ assert.deepEqual(feat.granted_spells.map(s=>s.name),['Light','Shield']);
+ assert.ok(preview.filter(row=>row.granted_spells.length).every(row=>row.name==='Magic Initiate'));
+});
+test('race-derived grants use their matching origin group when native race keys differ',async()=>{
+ const rows=await collectTraitRows(creature,{},provider);
+ const preview=withGrantedSpellPreviews(rows,[
+  {origin_id:'race|phb|elf',origin_name:'Elf',spell_id:'light',disabled:false},
+  {origin_id:'race|phb|elf',origin_name:'Elf',spell_id:'shield',disabled:true},
+  {origin_id:'unrelated',origin_name:'Not owned',spell_id:'shield'}
+ ],[{id:'light',name:'Light',level:0}]);
+ assert.equal(preview.flatMap(row=>row.granted_spells).length,1);
+ assert.equal(preview.find(row=>row.granted_spells.length)?.origin,'Specie · Elf');
 });
