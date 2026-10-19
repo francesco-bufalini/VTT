@@ -16,8 +16,8 @@ const find=(rows,id)=>rows.find(row=>row.id===id);
 const doc=html=>new JSDOM(html).window.document;
 
 test('battle panels reuse calculated attacks, optional manoeuvres and timed movement',()=>{
- const calculated={attacks:[{id:'item:sword',name:'Spada',slot:'main',melee:true,hit:5,damage:'1d8'},
-  {id:'item:off:dagger',name:'Pugnale',slot:'off',melee:false,offhand_bonus:true,hit:4,damage:'1d4'},
+ const calculated={attacks:[{id:'item:sword',name:'Spada',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8'},
+  {id:'item:off:dagger',name:'Pugnale',slot:'off',melee:false,range_feet:20,long_range_feet:60,offhand_bonus:true,hit:4,damage:'1d4'},
   {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',slot:'shield',melee:true,hit:2,damage:'1d4 + 2'}],skills:{athletics:3}};
  const panels=battleActionPanels({rules_version:'2014'},calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
  const attacks=doc(panels.attacks),movement=doc(panels.movement);
@@ -29,6 +29,8 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.equal(sword.querySelector('.play-battle-attack-roll b').textContent,'+5');
  assert.equal(sword.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
  assert(sword.querySelector('[data-act="battle-damage-roll"]'));
+ assert.equal(sword.querySelector('.play-battle-attack-range').textContent,'Portata 5 ft');
+ assert.equal(sword.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:sword');
  assert.equal(sword.querySelector('[data-damage-formula]').dataset.damageFormula,'1d8');
  assert.equal(sword.querySelectorAll('.play-battle-effect').length,1);
  assert(!sword.querySelector('.play-battle-attack-chevron'));
@@ -36,6 +38,8 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
  const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
  assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
+ assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Gittata 20/60 ft');
+ assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:off:dagger');
  assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
@@ -58,6 +62,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
  assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
  assert.equal(opportunity.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
+ assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.attackId,'item:sword');
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
@@ -170,6 +175,16 @@ test('combat spells are sorted by level within action, bonus and reaction and op
  assert.equal(entries('reaction')[0].querySelector('button').dataset.grantId,'spellreact');
  assert.match(entries('bonus')[0].textContent,/Capacità/);
  assert.match(entries('action')[2].textContent,/Slot incantesimo/);
+});
+
+test('catalog casting time wins over stale saved spell data (Absorb Elements is a reaction)',()=>{
+ const spell={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
+ const creature={prepared_spells:[{id:spell.id,name:spell.name,level:1,time:[{number:1,unit:'action'}]}]};
+ const panel=doc(battleActionPanels(creature,{casting_classes:[],origin_spells:[]},[spell],[],[]).spells);
+ assert.equal(panel.querySelector('[data-action-timing="action"] [data-spell-id="'+spell.id+'"]'),null);
+ const reaction=panel.querySelector('[data-action-timing="reaction"] [data-spell-id="'+spell.id+'"]');
+ assert(reaction,'Absorb Elements must be a reaction even if the stored copy has old metadata');
+ assert.equal(reaction.dataset.actionTimingSpell,'reaction');
 });
 
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
