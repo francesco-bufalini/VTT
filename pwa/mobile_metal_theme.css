@@ -1528,6 +1528,13 @@ input:disabled{opacity:.75;cursor:default}
 .magic-selection-summary{margin:0;padding:4px 0;color:#e4cda9;font-size:12px;font-weight:650}
 .magic-selection-status{margin-left:auto;white-space:nowrap;font-size:11px;color:#d8c29b}
 .magic-catalog-entry[disabled]{opacity:.66}
+.magic-selection-warning{margin:6px 0 9px;padding:8px 10px;border-left:3px solid #d9a45e;border-radius:4px;background:#b27d2830;color:#f4d5a5;font-size:12px;line-height:1.5}
+.magic-selection-current{padding:9px 0 11px;margin:0 0 12px;border-bottom:1px solid #a37b474b}
+.magic-selection-current>h3{margin:0 0 7px;color:#f0d4ad;font-size:13px}
+.magic-selection-current .magic-entries{display:grid;gap:2px}
+.magic-selection-current .magic-spell-row{display:flex;align-items:center;min-width:0;gap:8px}
+.magic-selection-current .magic-remove-spell{flex:0 0 auto;min-width:36px;min-height:32px}
+.magic-catalog-entry:not([disabled]) .magic-selection-status{font-weight:650}
 
 /* Keep each class's preparation/known-spell editor within direct reach. */
 .play-magic-selection{display:flex;flex-wrap:wrap;gap:7px;padding:9px 12px;border-bottom:1px solid #a37b472a}
