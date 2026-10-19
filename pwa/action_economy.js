@@ -562,6 +562,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const other=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
   !['attack','two_weapon'].includes(row.id)&&row.type!=='Incantesimo'&&
   !['spell_cast','cast_spell'].includes(row.id));
+ // Free general actions belong with the no-cost options in Battle resources.
+ const freeActions=other.filter(row=>row.time==='free'&&row.origin!=='personal');
+ const remainingOthers=other.filter(row=>!freeActions.includes(row));
  const render=(rows,kind)=>BATTLE_TIMINGS.map(([time,label])=>{
   const matching=rows.filter(row=>row.time===time);
   return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'" open>'+
@@ -570,7 +573,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?actionRow(row,calculated):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
- return {attacks:render(weapon,'attacks'),others:render(other,'others'),
+ return {attacks:render(weapon,'attacks'),others:render(remainingOthers,'others'),
+  freeActions:freeActions.map(row=>battleAttackRow(row,calculated,attacksById,descriptions)).join(''),
   abilityEntries:classAbilities,
   movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
