@@ -1,5 +1,4 @@
-// Canonical condition IDs are persisted verbatim in character/token state.
-// Italian is presentation-only; never translate a value sent to the desktop.
+// Persist native IDs unchanged. Italian labels are display-only.
 export const CORE_CONDITIONS = Object.freeze([
   "blinded","charmed","deafened","exhaustion","frightened",
   "grappled","incapacitated","invisible","paralyzed","petrified",
@@ -16,24 +15,26 @@ const ITALIAN_NAMES = Object.freeze({
   helped:"Aiutato",dead:"Morto",
   "5etools:effects:xphb:bloodied":"Sanguinante"
 });
-const compareItalian = new Intl.Collator("it", {sensitivity:"base"}).compare;
-export function conditionLabel(id, nativeName="") {
+export const CONDITION_CATEGORIES = Object.freeze([
+  ["conditions","Condizioni"],["diseases","Malattie"],["effects","Effetti"]
+]);
+const compareItalian = new Intl.Collator("it",{sensitivity:"base"}).compare;
+export function conditionLabel(id,nativeName=""){
   return ITALIAN_NAMES[id] || nativeName || id;
 }
-export function conditionOptions(catalog, edition="2014", active=[]) {
+export function conditionOptions(catalog,edition="2014",active=[]){
   const version=edition==="2024"?"2024":"2014";
   const nativeRows=catalog?.editions?.[version];
   const source=Array.isArray(nativeRows)&&nativeRows.length
     ? nativeRows : CORE_CONDITIONS.map(id=>({id,name:id,category:"conditions"}));
-  const result=[], seen=new Set();
-  for (const row of source) {
+  const result=[],seen=new Set();
+  for(const row of source){
     const id=String(row?.id||"");
     if(!id||seen.has(id))continue;
     seen.add(id);
-    result.push({id,label:conditionLabel(id,String(row.name||"")),category:String(row.category||"conditions")});
+    result.push({...row,id,label:conditionLabel(id,String(row.name||"")),category:String(row.category||"conditions")});
   }
-  // An already applied custom condition must remain visible and removable even
-  // when its source catalog is temporarily unavailable (offline or changed).
+  // Keep existing unknown/homebrew statuses removable when their source is offline.
   for(const raw of Array.isArray(active)?active:[]){
     const id=String(raw||"");
     if(!id||seen.has(id))continue;
@@ -41,4 +42,97 @@ export function conditionOptions(catalog, edition="2014", active=[]) {
     result.push({id,label:conditionLabel(id),category:"conditions"});
   }
   return result.sort((a,b)=>compareItalian(a.label,b.label)||a.id.localeCompare(b.id));
+}
+
+// Build the same selectable 2014/2024 5etools conditions, diseases and effects
+// as ContentCatalog.condition_definitions() without requiring a live desktop.
+// Legacy IDs are retained for condition effects already saved in creature sheets.
+export function conditionCatalogFrom5etools(payload){
+  const effects=Array.isArray(payload?.entries)?payload.entries:[];
+  const editions={};
+  for(const edition of ["2014","2024"]){
+    const rows=[],seen=new Set();
+    for(const id of CORE_CONDITIONS){
+      const effect=effects.find(row=>row?.edition===edition&&(
+        row.legacy_id===id ||
+        (id==="concentrating"&&row.name==="Concentration") ||
+        (id==="surprised"&&row.name==="Surprised")
+      ));
+      if(effect){
+        rows.push({...effect,id});
+        seen.add(id);
+      }else if(["helped","hidden","dead"].includes(id)){
+        rows.push({id,name:id,category:"conditions",source:"VTT",
+          entries:["Marcatore tattico senza effetti automatici."]});
+        seen.add(id);
+      }
+    }
+    for(const effect of effects){
+      if(effect?.edition!==edition||effect.legacy_id||
+        ["Concentration","Surprised"].includes(effect.name)||!effect.id||seen.has(effect.id))continue;
+      rows.push(effect);
+      seen.add(effect.id);
+    }
+    editions[edition]=rows;
+  }
+  return {editions};
+}
+
+// Live desktop rows carry optional homebrew content and override bundled rows.
+// An absent connection never discards the local 5etools catalog.
+export function mergeConditionCatalog(local,desktop){
+  if(!local)return desktop||null;
+  if(!desktop)return local;
+  const editions={};
+  for(const edition of ["2014","2024"]){
+    const ids=new Map();
+    for(const row of local.editions?.[edition]||[])if(row?.id)ids.set(row.id,row);
+    for(const row of desktop.editions?.[edition]||[]){
+      if(!row?.id)continue;
+      ids.set(row.id,{...(ids.get(row.id)||{}),...row});
+    }
+    editions[edition]=[...ids.values()];
+  }
+  return {editions};
+}
+
+const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+})[c]);
+// Strip 5etools reference markup while keeping its visible label. Never
+// interpret raw compendium strings as HTML.
+export function fiveToolsVisibleText(value){
+  return String(value??"").replace(/\{@([\w]+) ([^{}]+)\}/g,(_,kind,parts)=>{
+    const fields=parts.split("|");
+    return fields[2]||fields[0];
+  });
+}
+function renderEntry(value,depth=0){
+  if(depth>12||value==null)return "";
+  if(typeof value==="string")return '<p>'+escapeHtml(fiveToolsVisibleText(value))+'</p>';
+  if(Array.isArray(value))return value.map(v=>renderEntry(v,depth+1)).join("");
+  if(typeof value!=="object")return '<p>'+escapeHtml(value)+'</p>';
+  const name=value.name?'<h4>'+escapeHtml(fiveToolsVisibleText(value.name))+'</h4>':"";
+  if(value.type==="list")return name+'<ul>'+((value.items||[]).map(item=>
+    '<li>'+renderEntry(item,depth+1).replace(/^<p>/,"").replace(/<\/p>$/,"")+'</li>').join(""))+'</ul>';
+  if(value.type==="table")return name+'<div class="condition-table-scroll"><table><thead><tr>'+
+    (value.colLabels||[]).map(cell=>'<th>'+escapeHtml(fiveToolsVisibleText(cell))+'</th>').join("")+
+    '</tr></thead><tbody>'+(value.rows||[]).map(row=>'<tr>'+
+      (Array.isArray(row)?row:[]).map(cell=>'<td>'+escapeHtml(fiveToolsVisibleText(
+        typeof cell==="object"?cell?.entry??cell?.roll?.exact??"":cell
+      ))+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
+  const contents=[value.entry,...(Array.isArray(value.entries)?value.entries:[]),
+    ...(Array.isArray(value.items)?value.items:[])].filter(v=>v!=null);
+  return name+contents.map(item=>renderEntry(item,depth+1)).join("");
+}
+export function conditionDescriptionHtml(row){
+  const category=CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
+  const source=String(row?.source||row?.origin||"");
+  const metadata=[category,source&&(source==="VTT"?"VTT":source),
+    row?.page!=null?"pag. "+row.page:""].filter(Boolean);
+  const entries=row?.entries??row?.description;
+  const content=renderEntry(entries);
+  return '<div class="condition-description" data-condition-detail="'+escapeHtml(row?.id||"")+'">'+
+    '<p class="condition-description-source">'+escapeHtml(metadata.join(" · "))+'</p>'+
+    (content||'<p>Descrizione non disponibile nel catalogo locale.</p>')+'</div>';
 }
