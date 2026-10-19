@@ -135,12 +135,18 @@ try{
  assert(!String(await inlineClass.textContent()).includes(' / '));
  await inlineClass.locator('[data-act="sheet-context"]').click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Attiva un impulso magico/);
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
  assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
+ assert.match(await resourcesPanel.locator('[data-ability-resource="free"]').textContent(),/Azioni gratuite/);
+ assert(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-free-actions [data-attack-id]').count()>0);
  const linkedSpell=resourcesPanel.locator('[data-power-spell-id="arcane_light"]');
  assert.equal(await linkedSpell.count(),1,'Tracker-paid spells belong under their resource');
  assert.equal(await linkedSpell.locator('[data-act="battle-cast-resource-spell"]').count(),1,'Dedicated Lancia button is beside the spell details');
+ assert.match(await linkedSpell.textContent(),/Azione/);
+ assert.doesNotMatch(await linkedSpell.textContent(),/Incantesimo/);
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
@@ -154,7 +160,7 @@ try{
  assert.equal(await maneuver.count(),1,'Activated maneuvers should be visible under resources');
  assert.equal(await resourcesPanel.locator('.play-resource-power-row[data-ability-id="activated:ability:maneuver:phb:commander\'s_strike"]').count(),1,'Optional maneuver has its Use button');
  await maneuver.click();
- assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Consumo/);
+ assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
  await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
@@ -165,6 +171,11 @@ try{
  await resourcesPanel.locator('[data-power-spell-id="arcane_light"] [data-act="battle-cast-resource-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===6;});
  assert.equal(await page.locator('#action-cast-dialog').count(),0,'Quick Lancia casts without opening spell description');
+ await focusButton.click();
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="tracker-reset"][data-tracker-id="focus"]').count(),1);
+ await page.locator('#sheet-context-dialog [data-act="tracker-reset"][data-tracker-id="focus"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.resource_tracker_spent?.focus;});
+ await dismiss();
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
@@ -244,13 +255,16 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');await popup('trait-notes');await page.locator('#sheet-context-dialog textarea').fill('Una promessa mantenuta.');await dismiss();assert.equal((await record()).additional_traits,'Una promessa mantenuta.');
+ await sheet('traits');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
   for(const contextKey of keys){
-   try{await popup(contextKey);}catch(error){throw Error('Popup '+key+' / '+contextKey+': '+error.message);}
-   assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();
+   try{
+    await popup(contextKey);
+    assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);
+    await dismiss();
+   }catch(error){throw Error('Popup non raggiungibile · '+key+' · '+contextKey+' · '+error.message);}
   }
  }
  await sheet('actions');await page.locator('[data-timing-choice="reaction"]').click();assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi/);await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();await shot('action-popup');await dismiss();

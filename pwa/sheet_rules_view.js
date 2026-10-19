@@ -257,6 +257,31 @@ const powerIdentity=power=>{
  if(id==='vtt_wild_shape'||id==='wild_shape'||name==='wild shape'||name==='forma selvatica')return 'wild_shape';
  return name;
 };
+// Persistent self-effects are explicit: never turn a condition inflicted on a
+// target into a toggle on the actor. Native class-feature activations and
+// explicitly typed self/toggle powers have reversible sheet state.
+export function persistentBattleAbility(row={}){
+ const power=row.power||{},action=row.classAction||{};
+ if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
+   power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape')return true;
+ const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
+ return sources.some(source=>{
+  if(source.toggleable===true||source.persistent===true||
+     ['toggle','sustained'].includes(String(source.activation_mode||'').toLowerCase()))return true;
+  const effect=source.effect||source.effects;
+  const typed=Array.isArray(effect)?effect:[effect];
+  return typed.some(e=>e&&typeof e==='object'&&
+   (e.kind==='condition'||e.type==='condition'||e.condition)&&
+   isSelf(e.target||source.target));
+ });
+}
+const spellActionTime=spell=>{
+ const raw=Array.isArray(spell?.time)?spell.time[0]:spell?.time??spell?.casting_time;
+ const value=typeof raw==='object'&&raw?raw.unit||raw.type||raw.name:raw;
+ const key=String(value||'').trim().toLowerCase();
+ return ({action:'action',bonus:'bonus',reaction:'reaction',free:'free',minute:'contextual',hour:'contextual',
+  azione:'action','azione bonus':'bonus',reazione:'reaction'})[key]||'contextual';
+};
 export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
  const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
  const keyFor=(cost,trackerId)=>{
@@ -294,7 +319,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
     same.cost=cost;
     same.key=keyFor(cost,action.tracker_id);
    }
-   same.classAction=action;
+   if(!same.classAction?.class_feature_id||action.class_feature_id)same.classAction=action;
    continue;
   }
   rows.push({kind:'ability',source:'class',id,name:action.name,
@@ -309,7 +334,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   const spell=spells.find(row=>row.id===grant.spell_id);
   rows.push({kind:'spell',id:String(grant.id),name:spell?.name||grant.name||grant.spell_name||grant.spell_id,
    tracker_id:grant.tracker_id||'',cost,key:mode==='tracker'?keyFor(cost,grant.tracker_id):'free',
-   timing:'',grant});
+   timing:spellActionTime(spell),grant});
  }
  return rows;
 }
@@ -378,52 +403,82 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    });
    powerGroups.set(key,abilities);
   }
-  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],spells);
+  const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells);
+  const traits=view.battleTraits||[];
+  const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
+  const featureFor=(ids=[],name='')=>{
+   const candidates=ids.map(cleanOrigin).filter(Boolean);
+   const exact=traits.find(feature=>[feature.origin_id,feature.origin_key,feature.feature_key]
+     .some(value=>value&&candidates.includes(cleanOrigin(value))));
+   if(exact)return exact;
+   const normalized=powerName(name);
+   return normalized?traits.find(feature=>powerName(feature.name)===normalized):null;
+  };
   const timeLabels={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',
     movement:'Movimento',contextual:'Secondo il privilegio'};
+  // A resource popup must keep its original counters and editors, while also
+  // presenting the real originating trait and a full reset.
+  for(const tracker of d.trackers||[]){
+   if(tracker.disabled)continue;
+   const key='tracker:'+tracker.id,source=sources.get(powerGroups.has(key)?'power-resource:'+key:'resource:'+tracker.id)||
+     [...bank.querySelectorAll('.battle-resource-row')].find(node=>node.querySelector('[data-tracker-id]')?.dataset.trackerId===tracker.id);
+   if(!source)continue;
+   const origin=featureFor([tracker.origin_id,tracker.origin_feature_key],tracker.origin_name);
+   const originId=origin?.origin_id||tracker.origin_id||'';
+   const label=origin?.name||tracker.origin_name||'';
+   const detail='<section class="play-resource-origin-details">'+
+     (label?'<div class="play-resource-origin-facts"><span>Tratto di origine</span><strong>'+esc(label)+'</strong></div>':'')+
+     (origin?.description?'<p class="trait-description">'+esc(origin.description)+'</p>':'')+
+     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'')+
+     '<button type="button" class="play-resource-reset" data-act="tracker-reset" data-tracker-id="'+esc(tracker.id)+'"'+
+     (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
+   source.insertAdjacentHTML('beforeend',detail);
+  }
   const abilityButtons=key=>powerRows.filter(row=>row.key===key).map(row=>{
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    const disabled=row.cost>0&&(!tracker||tracker.disabled||available<row.cost);
    const glyph=icon(row.kind==='spell'?'spell_cast':
      actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
-   const caption=row.kind==='spell'?'Incantesimo':
-     (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
-   const note=row.cost>1?' · Costo '+row.cost:'';
+   const caption=timeLabels[row.timing]||row.timing||'Secondo il privilegio';
+   const note=row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
+     ' · '+(row.cost?'Costo '+row.cost:'Nessun costo');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="battle-cast-resource-spell" data-grant-id="'+esc(row.id)+'"'+(disabled?' disabled':'')+
     ' aria-label="Lancia '+esc(row.name)+'">Lancia</button></div>';
-   const id=row.id;
-   const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(row.power.id));
-   let context=powerDetail?.key;
-   if(!context){
-    const detail=document.createElement('section');
-    detail.className='panel play-battle-power-detail';
-    const action=row.classAction||row.power||{};
-    detail.innerHTML='<h2>'+esc(row.name)+'</h2>'+
-     '<div class="power-privilege-description"><p class="trait-description">'+
-     esc(action.description||'Descrizione non disponibile.')+'</p></div>'+
-     '<div class="power-privilege-facts"><div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
-     '<div><dt>Consumo</dt><dd>'+esc(row.cost?row.cost+' utilizzi':'Nessun costo')+'</dd></div></div>';
-    context=bind('battle-power:'+id,detail);
-   }
-   const action=row.classAction||{};
-   const persistent=['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id);
-   const active=!!(action.class_feature_id&&c.active_class_features?.[action.class_feature_id]);
+   const id=row.id,action=row.classAction||{},power=row.power||{};
+   const trait=featureFor([power.feature_id,power.origin_id,action.origin_id,action.feature_id],
+     action.feature||row.name);
+   const originId=trait?.origin_id||power.feature_id||power.origin_id||action.origin_id||'';
+   const originLabel=trait?.origin_key||power.origin||action.origin_id||'';
+   const description=trait?.description||power.description||action.description||'';
+   const detail=document.createElement('section');
+   detail.className='panel play-battle-power-detail';
+   detail.innerHTML='<h2>'+esc(row.name)+'</h2>'+
+    '<dl class="power-privilege-facts">'+
+     '<div><dt>Origine</dt><dd>'+esc(originLabel||'Non specificata')+'</dd></div>'+
+     '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
+     '<div><dt>Costo</dt><dd>'+esc(row.cost?row.cost+' utilizzi'+(tracker?' · '+tracker.name:''):'Nessun costo')+'</dd></div></dl>'+
+    (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
+    (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
+   const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
+   const context=bind(powerDetail?.key||'battle-power:'+id,detail);
+   const persistent=persistentBattleAbility(row);
+   const statusKey=action.class_feature_id||'battle:'+String(id);
+   const active=!!c.active_class_features?.[statusKey];
    const use=persistent?'Attiva':'Usa';
-   // Catalog details may represent native activated class features: invoke
-   // the native action to preserve its persistent effects and tracker updates.
-   const useId=persistent&&action.id?action.id:id;
+   const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="sheet-context" data-sheet-context="'+esc(context)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong>'+
     '<small>'+esc(caption+note)+'</small></span></button>'+
-    (active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(action.class_feature_id)+'"'+
+    (active?'<button type="button" class="play-resource-use play-resource-use--active" data-act="condition-remove-ability" data-ability-key="'+esc(statusKey)+'"'+
     ' aria-label="Disattiva '+esc(row.name)+'">Disattiva</button>':
-    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+(disabled?' disabled':'')+
-    ' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
+    '<button type="button" class="play-resource-use" data-act="battle-use-ability" data-ability-id="'+esc(useId)+'"'+
+    (persistent?' data-persistent-key="'+esc(statusKey)+'"':'')+
+    (disabled?' disabled':'')+' aria-label="'+esc(use+' '+row.name)+'">'+esc(use)+'</button>')+'</div>';
   }).join('');
   const resources=(d.trackers||[]).filter(t=>!t.disabled).map(t=>{
    const left=Math.max(0,t.max-t.spent),key='tracker:'+t.id;
@@ -435,8 +490,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }).join('');
   const untracked=['missing','free'].map(key=>{
    const powers=abilityButtons(key);
-   return powers?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
-    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+'</div>':'';
+   const freeActions=key==='free'?view.battleActions?.freeActions||'':'';
+   return powers||freeActions?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
+    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+
+    (freeActions?'<div class="play-resource-free-actions"><h4>Azioni gratuite</h4>'+freeActions+'</div>':'')+'</div>':'';
   }).join('');
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
@@ -599,7 +656,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
   html+=card('Privilegi e tratti',groups.map((node,i)=>{bind('trait:'+i,node);return go('trait:'+i,node.querySelector('summary')?.textContent||'Tratto','proficiency');}).join('')||'<p class="play-empty">Nessun tratto disponibile.</p>');
-  const notes=panelNamed('aggiuntivi');bind('trait-notes',notes);html+=go('trait-notes','Note sui tratti','scroll',c.additional_traits||'Aggiungi una nota personale');
+
  }
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
