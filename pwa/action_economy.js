@@ -280,7 +280,10 @@ export function spellActionEntries(record={},calculated={},spells=[]){
   const prefix=spell.casting_label&&spell.casting_label!=='Scheda'?spell.casting_label+' · ':'';
   const resource=mode==='tracker'?tracker?.name||tracker_id:mode==='free'?'Senza consumo · '+spell.casting_label:
    prefix+(Number(spell.level||0)===0?'Trucchetto · nessuno slot':'Slot · liv. '+spell.level+'+');
-  const values=spell.time??spell.casting_time??[];
+  // A sheet can retain a stale serialized time; the current catalogue is authoritative.
+  const definition=spells.find(row=>row.id===spell.id);
+  const published=definition?.time??definition?.casting_time;
+  const values=specified(published)?published:(spell.time??spell.casting_time??[]);
   const seen=new Set();
   for(const raw of Array.isArray(values)?values:[values]){
    const unit=String(typeof raw==='object'?raw?.unit:raw).trim().toLowerCase().replaceAll('_',' ').replace(/^1\s+/,'');
@@ -465,6 +468,14 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
  const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
+ const rangeFeet=Number(selectedAttack?.range_feet);
+ const longRangeFeet=Number(selectedAttack?.long_range_feet);
+ const rangeLabel=Number.isFinite(rangeFeet)&&rangeFeet>0?
+  (selectedAttack.melee?'Portata ':'Gittata ')+rangeFeet+
+   (!selectedAttack.melee&&Number.isFinite(longRangeFeet)&&longRangeFeet>rangeFeet?'/'+longRangeFeet:'')+' ft':'';
+ const mapButton=rangeLabel&&selectedAttack?.id?
+  '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
+  '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
  const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
@@ -478,16 +489,19 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
    '<div class="play-battle-attack-details"><div class="play-battle-check-heading">'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></div></div>':
    '<details class="play-battle-attack-details"><summary>'+icon+
-   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span>'+
+   '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong>'+
+    (rangeLabel?'<small class="play-battle-attack-range">'+esc(rangeLabel)+'</small>':'')+'</span>'+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
    source+target+resources+'</div></details>')+
-  (rolls.length?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map(row=>
+  (rolls.length||mapButton?'<div class="play-battle-attack-rolls"'+(rolls.length>1?' data-multiple-rolls="true"':'')+'>'+rolls.map((row,index)=>
    '<div class="play-battle-attack-roll-line"><span class="play-battle-roll-formula">'+
    esc(rollFormula(row.modifier))+' · '+esc(row.kind)+'</span>'+
+   (index===0?mapButton:'')+
    '<button type="button" class="play-battle-attack-roll" data-act="sheet-roll" data-target="'+esc(row.target)+
    '" data-label="'+esc(row.label)+'" aria-label="'+esc(row.label)+'">'+
-   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+'</div>':'')+
+   '<b>'+esc(rollSign(row.modifier))+'</b>'+diceGlyph()+'</button></div>').join('')+
+   (!rolls.length&&mapButton?'<div class="play-battle-attack-roll-line">'+mapButton+'</div>':'')+'</div>':'')+
   '</div>'+battleEffectMarkup({...item,name:actionName},selectedAttack)+'</article>';
 }
 

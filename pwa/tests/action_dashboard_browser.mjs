@@ -59,12 +59,12 @@ try{
       'Opening a main action category reveals collapsed timing groups only');
      const group=movement.locator('.play-battle-action-group').first();
      await group.locator('summary.play-battle-action-heading').click();
-     const tree=await group.locator('.play-battle-action-rows').evaluate(node=>({
+     const styles=await group.locator('.play-battle-action-rows').evaluate(node=>({
       rail:getComputedStyle(node).borderLeftStyle,
-      branch:getComputedStyle(node.querySelector('.play-battle-attack-entry'),'::before').borderTopStyle
+      branch:getComputedStyle(node.querySelector('.play-battle-attack-entry'),'::before').content
      }));
-     assert.equal(tree.rail,'solid','Nested action list has a vertical index rail');
-     assert.equal(tree.branch,'solid','Every action has a branch to its category');
+     assert.equal(styles.rail,'none','Nested action lists use a minimal layout without an index rail');
+     assert.equal(styles.branch,'none','Action rows have no index branches');
      await movement.locator('summary.play-battle-summary').click();
      await movement.locator('summary.play-battle-summary').click();
      assert.equal(await movement.locator('.play-battle-action-group[open]').count(),0,
@@ -74,6 +74,9 @@ try{
      await collapse.click();
      assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure[open], #sheet-play-view .play-battle-action-group[open]').count(),0);
     }
+    const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
+    assert(await rangedAttack.count(),'Each computed weapon has a map range action');
+    assert(await rangedAttack.getAttribute('aria-label'),'Map range action has an accessible label');
     // Cast stays at the far right of the spell row, not underneath its title.
     await page.locator('.play-battle-disclosure[data-battle-action="spells"]').evaluate(node=>{node.open=true;});
     await page.locator('[data-battle-action="spells"] .play-battle-action-group').evaluateAll(groups=>groups.forEach(node=>{node.open=true;}));
@@ -117,5 +120,5 @@ try{
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  assert((await page.locator('#app').textContent()).includes('Movimento furtivo'));
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 6 styled PWA sections at 360/390/768/1440px, expanded trees, three spell groups, native routes, stealth dice, persistent variants and offline reload');
+ console.log('PASS: 6 styled PWA sections at 360/390/768/1440px, compact groups without tree rails, three spell groups, native routes, stealth dice, persistent variants and offline reload');
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
