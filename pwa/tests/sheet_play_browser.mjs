@@ -263,7 +263,7 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');await popup('trait-notes');await page.locator('#sheet-context-dialog textarea').fill('Una promessa mantenuta.');await dismiss();assert.equal((await record()).additional_traits,'Una promessa mantenuta.');
+ await sheet('traits');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0,'Removed trait notes popup stays absent');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
