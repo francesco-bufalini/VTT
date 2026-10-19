@@ -19,7 +19,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses} from "./character_core.js";
 
@@ -155,10 +155,14 @@ function syncNav(){
     classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
     classLabel.hidden=!members.length;
   }
-  if(symbol){symbol.textContent=hasCreature&&creature?.kind==='monster'?'◆':'♜';symbol.setAttribute('aria-label',hasCreature&&creature?.kind==='monster'?'Mostro':'Personaggio');}
+  if(symbol){symbol.innerHTML=hasCreature?creatureFaceIcon(creature?.kind):'';symbol.setAttribute('aria-label',hasCreature&&creature?.kind==='monster'?'Mostro':hasCreature?'Personaggio':'VTT');}
   const dock=document.querySelector('#mobile-tabs'),primary=document.querySelector('#sheet-navigation'),more=document.querySelector('#more-navigation');
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
   primary.hidden=!hasCreature;more.hidden=!hasCreature;
+  const sessionTab=document.querySelector('#dock-session');
+  sessionTab.hidden=!hasCreature;
+  sessionTab.innerHTML=actionGlyph('map')+'<span class="destination-label">Partita</span>';
+  if(state.page==='session')sessionTab.setAttribute('aria-current','page');else sessionTab.removeAttribute('aria-current');
   more.innerHTML=actionGlyph('details')+'<span>Altro</span>';
   const secondary=state.page==='library'&&!state.libraryMode&&!PLAY_SECTIONS.some(([key])=>key===state.sheet);
   more.classList.toggle('is-current',secondary||state.page!=='library'||state.libraryMode);
@@ -308,11 +312,10 @@ async function libraryView() {
     '<article class="creature-card"><label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
       '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+
       (state.librarySelectedIds.has(c.id)?'checked':'')+'></label>'+
-      '<div class="creature-avatar" aria-hidden="true">'+
-      (c.kind === "monster" ? "◆" : "♜")+'</div><div class="creature-info"><div class="creature-name">'+
+      '<div class="creature-avatar" aria-hidden="true">'+creatureFaceIcon(c.kind)+'</div><div class="creature-info"><div class="creature-name">'+
       esc(c.name)+'</div><div class="creature-details">'+
-      esc(c.kind === "monster" ? "Mostro" : "Personaggio")+' · '+
-      esc(c.class || c.species || c.type || "Scheda locale")+
+      esc(c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata')+
+      (c.kind!=='monster'&&c.class?' · '+esc(c.class):'')+
       (c.level ? " · Liv. "+esc(c.level) : "")+'</div></div>'+
       '<button type="button" class="btn small" data-act="open" data-id="'+esc(c.id)+
       '" aria-label="Apri '+esc(c.name)+'">Apri →</button></article>').join("");
@@ -2307,8 +2310,8 @@ async function closeSheetContext(){
   [...app.querySelectorAll('#sheet-play-view [data-sheet-context]')].find(node=>node.dataset.sheetContext===key)?.focus({preventScroll:true});
 }
 function rememberUtilityDisclosures(){
-  for(const details of app.querySelectorAll('.archive-tools, .catalog-create')){
-    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+details.querySelector(':scope > summary')?.textContent;
+  for(const details of app.querySelectorAll('.archive-tools, .catalog-create, .play-skills-disclosure')){
+    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+(details.classList.contains('play-skills-disclosure')?(state.creatureId+'|'):'')+details.querySelector(':scope > summary')?.textContent;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
   }

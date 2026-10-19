@@ -5,6 +5,25 @@ import {actionGlyphKey} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
+// Lightweight inline portraits: share the same unmistakable character/monster
+// identity in the archive, persistent header, and creature sheet. No extra
+// network asset is required when the PWA is running offline.
+export function creatureFaceIcon(kind='character'){
+ const common='class="creature-face" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
+ if(kind==='monster')return '<svg '+common+'>'+
+  '<path d="M18 18 9 5l1 21 8 3M46 18 55 5l-1 21-8 3"/>'+
+  '<path d="M23 13 15 21l-3 17 9 15 11 7 11-7 9-15-3-17-8-8-9 3z"/>'+
+  '<path d="m17 27 12 4-6 5-7-2m31-7-12 4 6 5 7-2"/>'+
+  '<path d="m28 39 4 3 4-3M21 44q11 8 22 0l-3 11-4-8-4 6-4-6-4 8z"/>'+
+  '<path d="M18 21 25 16m21 5-7-5"/></svg>';
+ return '<svg '+common+'>'+
+  '<path d="M19 22 7 11l6 23 7 1M45 22l12-11-6 23-7 1"/>'+
+  '<path d="M19 21q1-13 13-13t13 13l1 18q-2 12-14 18-12-6-14-18z"/>'+
+  '<path d="M19 25q4-13 14-12 10-1 13 12M20 23l7-6 5 1 5-5 8 10"/>'+
+  '<path d="m23 32 7-2-2 4-5-1m18-1-7-2 2 4 5-1"/>'+
+  '<path d="m32 34-2 9h4m-8 4q6 4 12 0"/>'+
+  '<path d="M20 38q-1 8 3 12m21-12q1 8-3 12"/></svg>';
+}
 const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
@@ -591,7 +610,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+  html='<section class="play-identity"><div class="play-identity-mark">'+creatureFaceIcon(c.kind)+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
    edit('identity','Modifica identità','settings')+'</section>';
@@ -613,8 +632,21 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
-  html+=card('Abilità','<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label><div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>',proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings'));
-  const tools=panelNamed('Altre competenze');bind('tools',tools);html+=go('tools','Altre competenze','proficiency');
+  // Competences are one flat, line-divided section rather than another card.
+  // Skills expand inline while equipment/language proficiencies retain their
+  // existing full editor, including the button for changing selections.
+  const tools=panelNamed('Altre competenze');bind('tools',tools);
+  html+='<section class="play-competences" aria-labelledby="play-competences-heading">'+
+   '<h2 id="play-competences-heading" class="play-section-divider"><span>Competenze</span></h2>'+
+   '<details class="play-skills-disclosure">'+
+    '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
+    '<div class="play-skills-content">'+
+     '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
+     '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
+     '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>'<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,'<span>'+esc(label)+'<small>'+ability.toUpperCase()+((d.proficiencies||[]).includes('expertise:'+key)?' · Maestria':(d.proficiencies||[]).includes('skill:'+key)?' · Competente':'')+'</small></span><b>'+output('skill:'+key,true)+'</b>')+'</div>').join('')+'</div>'+
+    '</div></details>'+
+   '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
+   '</section>';
   // Traits belong at the end of Info, as visible cards grouped by origin.
   // The old traits tab flattened them into a list of context buttons.
   const traits=panelNamed('Tratti');
