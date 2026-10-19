@@ -1350,3 +1350,28 @@ input:disabled{opacity:.75;cursor:default}
 .play-resource-free-actions>.play-battle-attack-entry{
  margin:5px 0;border-color:#a6804e27;background:#47332526;
 }
+
+/* Shared equipment panel: weapons/attack options together, armor/AC together. */
+.equipment-unified-panel{min-width:0;display:grid;gap:10px}
+.equipment-unified-panel>h2{margin:0 0 2px}
+.equipment-unified-panel .equipment-weapons,
+.equipment-unified-panel .equipment-armor{min-width:0;display:grid;gap:8px}
+.equipment-unified-panel .equipment-armor{border-top:1px solid #a783514f;padding-top:10px}
+.equipment-unified-panel .equipment-weapons>h3,
+.equipment-unified-panel .equipment-armor>h3{color:#f0cd96;font-size:14px;font-weight:700;margin:0}
+.equipment-unified-panel .inventory-slots{display:grid;gap:6px}
+.equipment-unified-panel .inventory-slot-row{min-width:0;align-items:center}
+.equipment-unified-panel .equipment-attack-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:7px 9px}
+.equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:1/-1;display:flex;align-items:center;gap:9px;justify-content:space-between;min-width:0}
+.equipment-unified-panel .equipment-attack-options>label:first-child select{width:min(56%,245px);min-width:0}
+.equipment-unified-panel .equipment-attack-options .check{margin:0;display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.35}
+.equipment-unified-panel .equipment-attack-options .check input{flex:none}
+.equipment-unified-panel .equipment-defense{display:grid;gap:8px;min-width:0}
+.equipment-unified-panel .equipment-defense .battle-defense-values{display:grid;grid-template-columns:1fr}
+.equipment-unified-panel .equipment-defense .battle-stat{min-width:0}
+.equipment-unified-panel .battle-ac-manage{width:100%;min-height:36px}
+.sheet-context-dialog .equipment-unified-panel{border:0;box-shadow:none;padding:0;background:transparent}
+@media(max-width:360px){
+ .equipment-unified-panel .equipment-attack-options{grid-template-columns:1fr;gap:8px}
+ .equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:auto}
+}
