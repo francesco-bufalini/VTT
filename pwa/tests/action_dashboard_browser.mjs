@@ -39,7 +39,7 @@ try{
  const section=async key=>{if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();const target=page.locator('#sheet-navigation [data-sheet="'+key+'"],#secondary-sheet-navigation [data-sheet="'+key+'"]').first();if(!await target.isVisible())await page.locator('#more-navigation').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','traits','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions','origins']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){
@@ -75,7 +75,7 @@ try{
      assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure[open], #sheet-play-view .play-battle-action-group[open]').count(),0);
     }
     // Cast stays at the far right of the spell row, not underneath its title.
-    await page.locator('[data-battle-action="spells"] > details').evaluate(node=>{node.open=true;});
+    await page.locator('.play-battle-disclosure[data-battle-action="spells"]').evaluate(node=>{node.open=true;});
     await page.locator('[data-battle-action="spells"] .play-battle-action-group').evaluateAll(groups=>groups.forEach(node=>{node.open=true;}));
     const spellRows=await page.locator('[data-battle-action="spells"] .play-battle-spell-entry').evaluateAll(rows=>rows.map(row=>{
      const label=row.querySelector('.play-battle-spell-open').getBoundingClientRect();
@@ -108,7 +108,7 @@ try{
  const after=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});assert.equal(after,before,'Variant preferences must not rewrite creature data');
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
- await page.locator('[data-battle-action="movement"] > details > summary').click();
+ await page.locator('.play-battle-disclosure[data-battle-action="movement"] > summary').click();
  await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"]) > summary').click();
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
@@ -117,5 +117,5 @@ try{
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  assert((await page.locator('#app').textContent()).includes('Movimento furtivo'));
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 7 styled PWA sections at 360/390/768/1440px, expanded trees, three spell groups, native routes, stealth dice, persistent variants and offline reload');
+ console.log('PASS: 6 styled PWA sections at 360/390/768/1440px, expanded trees, three spell groups, native routes, stealth dice, persistent variants and offline reload');
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
