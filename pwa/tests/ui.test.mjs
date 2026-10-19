@@ -1111,3 +1111,52 @@ test("Info contains scores, skills, tools, languages, weapons and armor without 
  assert.ok(info.indexOf('Armi</dt>')<info.indexOf('Armature</dt>'));
  assert.match(info,/data-detail="proficiency_choices"/);
 });
+
+test('rapid changes to distinct resource counters preserve both commands',async()=>{
+ const {createCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Contatori rapidi');
+ const configured=await saveCreature({...saved.data,resource_trackers:[
+  {id:'rapid_a',name:'Prima risorsa',max:5,recharge:'manual'},
+  {id:'rapid_b',name:'Seconda risorsa',max:5,recharge:'turn'}
+ ]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('[data-field="name"]'));
+ click('[data-sheet="battle"]');
+ await until(()=>document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]'));
+ const a=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
+ const b=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_b"]');
+ assert.ok(b,'Second resource has its own use control');
+ a.click();b.click();
+ await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+2);
+ assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,
+  {rapid_a:1,rapid_b:1},'The later command must not replace the first resource update');
+ await until(()=>!a.isConnected);
+ const again=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
+ const turn=document.querySelector('[data-act="tracker-turn"]');
+ assert.ok(again&&turn);again.click();turn.click();
+ await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+4);
+ assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,{rapid_a:2},
+  'Turn recovery must preserve a simultaneous update to an unrelated resource');
+ click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test('rapid use of two spell slot levels preserves both spent counters',async()=>{
+ const {createCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Slot rapidi');
+ const configured=await saveCreature({...saved.data,class:'Wizard',class_source:'PHB',level:5,classes:[{name:'Wizard',source:'PHB',level:5}],spell_slots_manual:true,spell_slots_automatic:false,
+  spell_slots_total:[0,3,3,0,0,0,0,0,0,0]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('[data-field="name"]'));
+ click('[data-sheet="magic"]');
+ await until(()=>document.querySelector('[data-act="slot-use"][data-level="1"]'));
+ const one=document.querySelector('[data-act="slot-use"][data-level="1"]');
+ const two=document.querySelector('[data-act="slot-use"][data-level="2"]');
+ assert.ok(two);one.click();two.click();
+ await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+2);
+ assert.deepEqual((await loadCreature(saved.data.id)).data.spell_slots_spent.slice(1,3),[1,1]);
+ click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+});

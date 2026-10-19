@@ -2900,11 +2900,16 @@ async function handleAction(target){
     if(!grant)throw Error('Concessione non disponibile');
     if(grant.payment_mode==='slot'){
       const picker=[...app.querySelectorAll('[data-origin-slot]')].find(el=>el.dataset.originSlot===grant.id);if(!picker||picker.value==='')throw Error('Nessuno slot disponibile');
-      await patch(slotUsePatch(c,Number(picker.value),1,calculated));
+      const level=Number(picker.value);
+      await patch(current=>slotUsePatch(current,level,1,calculated));
     }else{
       const tracker=calculated.trackers.find(t=>t.id===grant.tracker_id),cost=Math.max(1,Number(grant.tracker_cost)||1);
       if(!tracker||tracker.max-tracker.spent<cost)throw Error('Utilizzi esauriti');
-      await patch({resource_tracker_spent:{...c.resource_tracker_spent,[tracker.id]:tracker.spent+cost}});
+      await patch(current=>{
+        const spent=Number(current.resource_tracker_spent?.[tracker.id]||0);
+        if(spent+cost>tracker.max)throw Error('Utilizzi esauriti');
+        return {resource_tracker_spent:{...current.resource_tracker_spent,[tracker.id]:spent+cost}};
+      });
     }
     await render();return;
   }
@@ -2915,7 +2920,10 @@ async function handleAction(target){
     const c=state.editor.read();
     if(act==='slots-automatic')await patch({spell_slots_manual:false,spell_slots_automatic:true});
     else if(act==='slots-restore')await patch({spell_slots_spent:Array(10).fill(0),pact_slots_spent:0});
-    else await patch(slotUsePatch(c,Number(target.dataset.level),act==='slot-use'?1:-1,await computeLocalData(c)));
+    else {
+      const calculated=await computeLocalData(c);
+      await patch(current=>slotUsePatch(current,Number(target.dataset.level),act==='slot-use'?1:-1,calculated));
+    }
     await render();return;
   }
   if(act==='hp-damage'||act==='hp-heal'){
@@ -3184,7 +3192,7 @@ async function handleAction(target){
         await render();message(row.name+': d6 = '+die+' · '+(success?'Ricaricata':'Non ricaricata'));return;
       }
       // Reuse the domain operation; no stale zero-valued spent counters.
-      await patch(changeTrackerUses(record,row.id,act==="tracker-more"?1:-1,calculated.trackers));
+      await patch(current=>changeTrackerUses(current,row.id,act==="tracker-more"?1:-1,calculated.trackers));
     }
     await render();return;
   }
@@ -3197,7 +3205,7 @@ async function handleAction(target){
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
     if(act==='tracker-turn'){
-      await patch(recoveryPatch(record,'turn',calculated.trackers));await render();return;
+      await patch(current=>recoveryPatch(current,'turn',calculated.trackers));await render();return;
     }
     const event=act==='tracker-long'?'long_rest':'short_rest';
     const dice={};

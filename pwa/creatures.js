@@ -174,6 +174,12 @@ export async function openCreatureEditor(id, scope = "default") {
     get revision() { return stored.revision; },
     update(patch) {
       if (blocked) return Promise.reject(blocked);
+      // Evaluate read-modify-write edits at submission against the current
+      // optimistic state, before any asynchronous persistence can interleave.
+      if (typeof patch === "function") {
+        try { patch = patch(structuredClone(latest)); }
+        catch (error) { return Promise.reject(error); }
+      }
       if (!patch || typeof patch !== "object" || Array.isArray(patch))
         return Promise.reject(new TypeError("Creature update must be an object"));
       const proposed = validateCreature({ ...latest, ...structuredClone(patch) });

@@ -143,3 +143,18 @@ test("import is atomic on invalid homebrew, backup keeps local edits", async () 
   await assert.rejects(importBackup(new Blob([JSON.stringify(damaged)])), /checksum/);
   assert.equal(await (await getAttachment(item.digest)).text(), "content-persisted");
 });
+
+
+test('functional edits compose against latest state and retain identity checks',async()=>{
+ const row=await createCreature('character','Aggiornamenti atomici');
+ const editor=await openCreatureEditor(row.id);
+ const first=editor.update(current=>({future_count:(current.future_count||0)+1}));
+ const second=editor.update(current=>({future_count:(current.future_count||0)+1}));
+ await Promise.all([first,second]);
+ assert.equal((await loadCreature(row.id)).data.future_count,2);
+ await assert.rejects(editor.update(current=>{current.name='Mutation on a copy';return null;}),/object/);
+ assert.equal(editor.read().name,'Aggiornamenti atomici');
+ await assert.rejects(editor.update(()=>({id:'another-id'})),/identity/);
+ await editor.update(current=>({name:current.name+' salvati'}));
+ assert.equal((await loadCreature(row.id)).data.name,'Aggiornamenti atomici salvati');
+});
