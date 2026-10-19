@@ -69,6 +69,18 @@ try{
  assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),1);
  await spellPanel.locator('summary.play-battle-summary').click();
  assert.equal(await spellPanel.getAttribute('open'),'');
+ const combatSpells=spellPanel.locator('.play-battle-spell-entry');
+ assert(await combatSpells.count()>=2,'Prepared slot spells and grants appear in the unified spell list');
+ assert.equal(await spellPanel.locator('[data-action-timing="action"] [data-spell-id="spell:light|phb"]').count(),1);
+ assert.equal(await spellPanel.locator('[data-action-timing="reaction"] [data-spell-id="spell:shield|phb"]').count(),1);
+ assert.equal(await spellPanel.locator('.action-economy-preview').count(),0,'Spell descriptions remain hidden until opened');
+ const lightEntry=spellPanel.locator('[data-spell-id="spell:light|phb"]').first();
+ assert.match(await lightEntry.textContent(),/Trucchetto/);
+ await lightEntry.locator('[data-act="action-cast-spell"]').click();
+ assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
+ assert(await page.locator('#action-cast-dialog .magic-spell-facts').count(),
+   'The same detailed Magia spell dialog opens from the action row');
+ await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').click();
  await spellPanel.locator('summary.play-battle-summary').click();
 
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
@@ -329,6 +341,9 @@ try{
   }
  }
  await sheet('battle');
+ assert(await page.locator('#sheet-play-view [data-battle-action="movement"]').evaluate(node=>
+  Boolean(node.compareDocumentPosition(document.querySelector('#sheet-play-view [data-battle-action="checks"]'))&Node.DOCUMENT_POSITION_FOLLOWING)),
+  'Spostamento is rendered before Prove abilità');
  const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
  await checks.locator('summary.play-battle-summary').click();
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
