@@ -29,7 +29,7 @@ globalThis.fetch=async (url,options={})=>{
 };
 const {mount,stopRealtime}=await import("../ui.js");
 const {takeQrPairCode}=await import("../client.js");
-const {listCreatures,loadCreature,exportCreature,openCreatureEditor}=await import("../creatures.js");
+const {listCreatures,loadCreature,exportCreature,openCreatureEditor,saveCreature}=await import("../creatures.js");
 const {getRecord}=await import("../storage.js");
 const pause = ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,limit=3000) {
@@ -721,6 +721,54 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-coin-code="gp"]'));
   assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("magic scrolls use a dedicated inventory tab and keep quantities across section changes",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Arcanista delle pergamene");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+  const saved=(await listCreatures()).find(row=>row.creature.name==="Arcanista delle pergamene");
+  assert.ok(saved);
+  await saveCreature({...saved.creature,inventory:[
+    {id:"local_dagger",name:"Pugnale",custom_item_type:"weapon",quantity:1},
+    {id:"local_spell_scroll",name:"Spell Scroll (3rd Level)",type:"SC",quantity:2},
+    {id:"local_named_scroll",name:"Pergamena di incantesimo (1° livello)",spell_name:"Scudo",quantity:1}
+  ]},"default",saved.revision);
+  click('[data-act="open"][data-id="'+saved.creature.id+'"]');
+  await until(()=>document.querySelector('[data-sheet="inventory"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="items"]'));
+  assert.equal(document.querySelectorAll(".inventory-subtabs [role=tab]").length,3);
+  assert.equal(document.querySelectorAll('.inventory-table-row').length,1);
+  assert.equal(document.querySelector('.inventory-scroll-panel'),null);
+  click('[data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelector('.inventory-scroll-panel .inventory-table-row'));
+  assert.equal(document.querySelectorAll('.inventory-scroll-panel .inventory-table-row').length,2);
+  assert.match(document.querySelector('.inventory-scroll-panel').textContent,/Incantesimo non specificato/);
+  assert.match(document.querySelector('.inventory-scroll-panel').textContent,/Scudo/);
+  assert.equal(document.querySelector('.inventory-scroll-panel .inventory-col-level').textContent,"3");
+  assert.equal(document.querySelector('[data-subtab="scrolls"]').getAttribute("aria-selected"),"true");
+  assert.equal(document.querySelector('.inventory-coins-panel'),null);
+  click('.inventory-scroll-panel [data-act="inventory-select"][data-index="1"]');
+  await until(()=>document.querySelector('.inventory-description-panel'));
+  assert.ok(document.querySelector('.inventory-description-panel').textContent.includes('Descrizione'));
+  change('.inventory-scroll-panel [data-item-index="1"][data-item-key="quantity"]',"4");
+  await until(async()=>{
+    const c=(await listCreatures()).find(r=>r.creature.id===saved.creature.id)?.creature;
+    return c?.inventory?.[1]?.quantity===4;
+  });
+  click('[data-act="inventory-subtab"][data-subtab="documents"]');
+  await until(()=>document.querySelector('[data-act="document-add"]'));
+  assert.equal(document.querySelector('.inventory-scroll-panel'),null);
+  click('[data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelector('.inventory-scroll-panel [data-item-index="1"][data-item-key="quantity"]')?.value==="4");
+  click('[data-act="inventory-subtab"][data-subtab="items"]');
+  await until(()=>document.querySelector('.inventory-coin-grid'));
+  assert.equal(document.querySelectorAll('.inventory-table-row').length,1);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
