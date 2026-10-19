@@ -1139,6 +1139,13 @@ test('rapid changes to distinct resource counters preserve both commands',async(
  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+4);
  assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,{rapid_a:2},
   'Turn recovery must preserve a simultaneous update to an unrelated resource');
+ await until(()=>!again.isConnected);
+ const consume=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
+ const rest=document.querySelector('[data-act="tracker-long"]');
+ assert.ok(consume&&rest);consume.click();rest.click();
+ await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+6);
+ assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,{rapid_a:3},
+  'Long rest must preserve simultaneous use of a manually recovered resource');
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 

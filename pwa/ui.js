@@ -3214,8 +3214,12 @@ async function handleAction(target){
         dice['d'+control.dataset.restDie]=Number(control.value);
       }
     }
-    const result=completeRest(record,event,calculated,dice);
-    await patch(result.patch);await render();
+    let result;
+    await patch(current=>{
+      result=completeRest(current,event,calculated,dice);
+      return result.patch;
+    });
+    await render();
     const detail=result.rolls.length?' · '+result.rolls.map(r=>'d'+r.die+': '+r.roll+(r.modifier>=0?'+':'')+r.modifier).join(', '):'';
     message((event==='long_rest'?'Riposo lungo':'Riposo breve')+' completato · '+result.healed+' PF recuperati'+detail);
     return;
