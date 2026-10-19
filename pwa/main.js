@@ -146,10 +146,17 @@ async function diagnoseStartupModules(phase, error) {
         path + " — non ancora verificato")
     ];
     details.textContent = lines.join("\n");
+    const headline = app.querySelector("#startup-error");
+    if (headline && problems.length) {
+      headline.textContent = (error?.message || String(error)) +
+        " | Controllo successivo: " + problems[0].path + " — " +
+        problems[0].details + (problems.length > 1 ?
+        " (+" + (problems.length - 1) + " altri file)" : "");
+    }
     status.textContent = "Verifica moduli: " + completed + "/" +
       STARTUP_MODULE_PATHS.length +
-      (completed === STARTUP_MODULE_PATHS.length || Date.now() >= until ?
-        " — completata" : " — in corso…");
+      (completed === STARTUP_MODULE_PATHS.length ? " — completata" :
+        Date.now() >= until ? " — parziale (limite 18 s)" : " — in corso…");
   }
 
   render();
