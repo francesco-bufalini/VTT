@@ -49,6 +49,24 @@ try{
     assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
     assert.equal(await page.locator('.page-head [data-act="action-variants"]').count(),1);
     assert.equal(await page.locator('#sheet-navigation [data-sheet="actions"]').count(),0);
+    // Cast stays at the far right of the spell row, not underneath its title.
+    await page.locator('[data-battle-action="spells"] > details').evaluate(node=>{node.open=true;});
+    const spellRows=await page.locator('[data-battle-action="spells"] .play-battle-spell-entry').evaluateAll(rows=>rows.map(row=>{
+     const label=row.querySelector('.play-battle-spell-open').getBoundingClientRect();
+     const cast=row.querySelector('.play-battle-spell-cast').getBoundingClientRect();
+     const bounds=row.getBoundingClientRect();
+     return {direction:getComputedStyle(row).flexDirection,height:bounds.height,
+      labelCenter:label.top+label.height/2,castCenter:cast.top+cast.height/2,
+      labelRight:label.right,castLeft:cast.left,castRight:cast.right,rowRight:bounds.right};
+    }));
+    assert.equal(spellRows.length,3,'The action, bonus and reaction spell rows must render');
+    for(const row of spellRows){
+     assert.equal(row.direction,'row','Spell buttons must share one horizontal line');
+     assert(row.castLeft>=row.labelRight-1,'Cast control must sit to the right of the spell name');
+     assert(Math.abs(row.castCenter-row.labelCenter)<=8,'Cast must be vertically centered with the spell');
+     assert(row.castRight<=row.rowRight+1,'Cast must fit inside the spell box');
+     assert(row.height<=56,'Spell row must remain compact (max 56px)');
+    }
     if(width===390||width===1440)await page.screenshot({path:fileURLToPath(new URL('actions-'+width+'.png',artifacts))});
    }
    if(width===390&&['info','inventory'].includes(key))await page.screenshot({path:fileURLToPath(new URL('sheet-'+key+'-390.png',artifacts))});
