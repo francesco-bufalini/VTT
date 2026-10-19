@@ -474,7 +474,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   (selectedAttack.melee?'Portata ':'Gittata ')+rangeFeet+
    (!selectedAttack.melee&&Number.isFinite(longRangeFeet)&&longRangeFeet>rangeFeet?'/'+longRangeFeet:'')+' ft':'';
  const mapButton=rangeLabel&&selectedAttack?.id?
-  '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-attack-id="'+esc(selectedAttack.id)+
+  '<button type="button" class="play-battle-attack-map" data-act="battle-attack-map" data-map-attack-id="'+esc(selectedAttack.id)+
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
