@@ -63,7 +63,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
  const actionGroup=attacks.querySelector('[data-action-timing="action"]');
  assert.equal(actionGroup.tagName,'DETAILS');
- assert.equal(actionGroup.open,true);
+ assert.equal(actionGroup.open,false,'Timing groups start collapsed');
  assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
  assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
  const rollLine=sword.querySelector('.play-battle-attack-roll-line');
@@ -184,7 +184,7 @@ test('unified battle shows every canonical skill and pure ability check grouped 
  assert.equal(checks.querySelectorAll('.play-battle-attack-entry').length,24);
  for(const group of groups){
   assert.equal(group.tagName,'DETAILS');
-  assert.equal(group.open,true);
+  assert.equal(group.open,false,'Ability checks start collapsed');
   const first=group.querySelector('.play-battle-attack-entry');
   assert.equal(first.dataset.attackId,'ability_mod:'+group.dataset.actionAbility);
   assert.equal(first.querySelector('.play-battle-attack-expanded'),null);
