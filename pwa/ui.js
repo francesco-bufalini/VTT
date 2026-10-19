@@ -2714,7 +2714,7 @@ async function handleAction(target){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura.');
     if(!state.paired||!state.online)throw Error('Collega la partita al desktop per vedere la gittata sulla mappa.');
-    const attackId=String(target.dataset.attackId||'');
+    const attackId=String(target.dataset.mapAttackId||'');
     const calculated=await computeLocalData(creature);
     const attack=(calculated.attacks||[]).find(row=>String(row.id)===attackId);
     if(!attack)throw Error('Attacco non più disponibile. Aggiorna la scheda.');
