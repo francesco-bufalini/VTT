@@ -14,6 +14,7 @@ let failUiModuleOnce = false;
 let transientUiFailures = 0;
 let failNestedModuleOnce = false;
 let transientNestedFailures = 0;
+let invalidSheetMime = false;
 
 const server = createServer(async (request, response) => {
   try {
@@ -43,6 +44,11 @@ const server = createServer(async (request, response) => {
       ++transientNestedFailures;
       response.writeHead(503, { "Content-Type": "text/plain" });
       response.end("temporary failure in a transitive ES module");
+      return;
+    }
+    if (path === "/sheet_rules_view.js" && invalidSheetMime) {
+      response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      response.end("<!doctype html><title>Proxy fallback</title>");
       return;
     }
     const route = routes.get(path);
@@ -139,11 +145,37 @@ try {
   });
   await errorPage.goto(origin);
   await errorPage.locator("#startup-error").waitFor({ timeout: 15000 });
+  await errorPage.waitForFunction(() =>
+    document.querySelector("#startup-diagnostic")?.textContent?.includes("/ui.js — HTTP 503"),
+    null, { timeout: 12000 });
+  assert.match(await errorPage.locator("#startup-diagnostic").innerText(),
+    /\/ui\.js — HTTP 503 \| MIME text\/plain/);
+  assert.equal(await errorPage.locator("#copy-startup-diagnostic").count(), 1);
   assert.equal(failedNavigations, 2, "Do not loop forever on a permanently missing module");
   assert.match(await errorPage.locator("#startup-phase").innerText(), /Caricamento dei moduli/);
   assert.doesNotMatch(await errorPage.locator("#app").innerText(), /Apertura archivio locale/);
   await errorContext.close();
-  console.log("PASS: failed module import reports startup error");
+  console.log("PASS: failed module import reports exact failing module and HTTP status");
+
+  // A reverse proxy serving 200 HTML for a transitive .js file must be
+  // reported as a MIME mismatch, even though its HTTP status is successful.
+  failUiModule = false;
+  invalidSheetMime = true;
+  const mimeContext = await browser.newContext();
+  const mimePage = await mimeContext.newPage();
+  await mimePage.goto(origin);
+  await mimePage.locator("#startup-error").waitFor({ timeout: 15000 });
+  await mimePage.waitForFunction(() =>
+    document.querySelector("#startup-diagnostic")?.textContent?.includes(
+      "/sheet_rules_view.js — HTTP 200 | MIME text/html"),
+    null, { timeout: 12000 });
+  const mimeReport = await mimePage.locator("#startup-diagnostic").innerText();
+  assert.match(mimeReport, /sheet_rules_view\.js — HTTP 200 \| MIME text\/html/);
+  assert.match(mimeReport, /MIME non valido per moduli JS/);
+  assert.match(mimeReport, /Browser:/);
+  assert.doesNotMatch(mimeReport, /paired-desktop-secret/);
+  await mimeContext.close();
+  console.log("PASS: proxy HTML response identifies faulty dependency and MIME");
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
