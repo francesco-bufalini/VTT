@@ -4,6 +4,7 @@ import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName} from "./item_controls.js";
 import {isDocument} from "./documents.js";
+import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
 const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const signed=value=>value===null||value===undefined?"—":Number(value)>=0?"+"+value:String(value);
@@ -394,7 +395,7 @@ export function isPersistentSpell(spell){
  if(raw&&typeof raw==='object')return raw.type!=='instant';
  return typeof raw==='string'&&!!raw.trim()&&!/instant|istantan/i.test(raw);
 }
-export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel,inventoryProperties=()=>'',isSpellScroll=()=>false,spells=[],classActions=[]}){
+export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,conditionLabel,conditionCatalog=null,inventoryProperties=()=>'',isSpellScroll=()=>false,spells=[],classActions=[]}){
  const root=app.querySelector('[data-local-sheet-calculations]');
  if(!root||sheet==='json')return new Map();
  const bank=document.createElement('div');bank.className='sheet-editor-bank';bank.hidden=true;
@@ -419,6 +420,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const panels=[...bank.querySelectorAll(':scope > .panel')];
  panels.forEach((node,i)=>bind('panel:'+i,node));
  const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
+ const activeConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[])
+   .filter(row=>(c.conditions||[]).includes(row.id));
+ for(const row of activeConditions){
+  const detail=document.createElement("section");
+  detail.innerHTML=conditionDescriptionHtml(row);
+  bind("condition:"+row.id,detail);
+ }
  const list=(title,rows,empty='Nessuna voce.')=>card(title,rows||'<p class="play-empty">'+esc(empty)+'</p>');
  let html='';
  if(sheet==='battle'){
@@ -431,7 +439,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
-  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+(c.conditions||[]).map(id=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">'+esc(conditionLabel(id))+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
+  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
   const dice=hitDicePools(c,d);
   const diceControls=dice.map(pool=>'<label class="play-rest-die">'+
     '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+'</span>'+
@@ -752,7 +760,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
-  html+=card('Stati attivi',(c.conditions||[]).map(id=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="conditions" aria-label="Gestisci '+esc(conditionLabel(id))+'">'+icon('condition')+esc(conditionLabel(id))+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
+  html+=card('Stati attivi',activeConditions.map(({id,label})=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
   const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name).slice(0,80);

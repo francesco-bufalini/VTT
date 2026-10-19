@@ -41,6 +41,7 @@ const FILES := {
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
 	"/spell_metadata.js": ["res://pwa/spell_metadata.js", "text/javascript; charset=utf-8"],
 	"/condition_catalog.js": ["res://pwa/condition_catalog.js", "text/javascript; charset=utf-8"],
+	"/catalog/effects_5etools.json": ["res://vtt/data/effects_5etools.json", "application/json; charset=utf-8"],
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],
 	"/action_economy.js": ["res://pwa/action_economy.js", "text/javascript; charset=utf-8"],
@@ -545,7 +546,10 @@ func _condition_public_catalog() -> Dictionary:
 			rows.append({
 				"id": String(definition.get("id", "")),
 				"name": String(definition.get("name", "")),
-				"category": String(definition.get("category", "conditions"))
+				"category": String(definition.get("category", "conditions")),
+				"source": String(definition.get("source", definition.get("origin", "VTT"))),
+				"page": definition.get("page", null),
+				"entries": definition.get("entries", definition.get("description", []))
 			})
 		editions[edition] = rows
 	return {"editions": editions}

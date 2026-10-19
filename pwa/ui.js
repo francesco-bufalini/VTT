@@ -4,7 +4,7 @@ import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwn
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
-import { conditionOptions, conditionLabel } from "./condition_catalog.js";
+import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
@@ -36,7 +36,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
-  hostReachable:false, conditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'',
@@ -70,7 +70,7 @@ function acceptSession(info){
     releaseSessionSnapshot();++snapshotGeneration;
     previousMapFingerprint="";
     tokenStatusFingerprint="";
-    state.conditionCatalog=null;
+    state.desktopConditionCatalog=null;state.conditionCatalog=state.offlineConditionCatalog;
   }
   if(next)currentGameSession=next;
   state.session=info;
@@ -672,10 +672,22 @@ function resourceView(c,configure=false,compact=false){
 function conditionGrid(active,attribute,edition="2014"){
  const applied=new Set(Array.isArray(active)?active:[]);
  const options=conditionOptions(state.conditionCatalog,edition,active);
- return '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="Condizioni">'+
-  options.map(({id,label})=>'<label class="check condition-toggle">'+
-   '<input type="checkbox" '+attribute+'="'+esc(id)+'" '+(applied.has(id)?'checked':'')+'>'+
-   '<span>'+esc(label)+'</span></label>').join('')+'</div>';
+ const knownCategories=CONDITION_CATEGORIES.map(([category,title])=>({category,title}));
+ const unknown=[...new Set(options.map(row=>row.category))]
+   .filter(category=>!knownCategories.some(group=>group.category===category))
+   .map(category=>({category,title:category}));
+ return '<div class="condition-category-list" aria-label="Stati e afflizioni">'+
+  [...knownCategories,...unknown].map(({category,title})=>{
+   const rows=options.filter(row=>row.category===category);
+   if(!rows.length)return "";
+   const expanded=category==="conditions"||rows.some(row=>applied.has(row.id));
+   return '<details class="condition-category" '+(expanded?'open':'')+'>'+
+     '<summary>'+esc(title)+' <span class="condition-category-count">'+rows.length+'</span></summary>'+
+     '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="'+esc(title)+'">'+
+     rows.map(({id,label})=>'<label class="check condition-toggle">'+
+       '<input type="checkbox" '+attribute+'="'+esc(id)+'" '+(applied.has(id)?'checked':'')+'>'+
+       '<span>'+esc(label)+'</span></label>').join('')+'</div></details>';
+  }).join('')+'</div>';
 }
 function equipmentView(c,slots=['main','off','body'],boxed=true){
   const rows=Array.isArray(c.inventory)?c.inventory:[];
@@ -1650,11 +1662,12 @@ async function refreshConnection(quiet=false) {
   if(!state.online){state.map=null;state.tokenId="";}
   // Fetch the same edition-dependent catalog used by the native token dialog.
   // Network failure cannot block offline creature editing.
-  if(state.online && state.paired && !state.conditionCatalog){
+  if(state.online && state.paired && !state.desktopConditionCatalog){
     try{
-      state.conditionCatalog=await conditionDefinitions();
-      if(state.page==="library"&&!state.libraryMode&&state.sheet==="conditions")void render();
-    }catch(error){console.warn("Desktop condition catalog unavailable; using offline labels",error);}
+      state.desktopConditionCatalog=await conditionDefinitions();
+      state.conditionCatalog=mergeConditionCatalog(state.offlineConditionCatalog,state.desktopConditionCatalog);
+      if(state.page==="library"&&!state.libraryMode&&["conditions","battle"].includes(state.sheet))void render();
+    }catch(error){console.warn("Desktop condition catalog unavailable; using bundled 5etools catalog",error);}
   }
   syncNav();
   if(state.online && state.paired && !realtimeStopped){
@@ -2145,8 +2158,8 @@ async function handleField(target) {
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
     await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
-    const count=app.querySelector('[data-condition-count]');
-    if(count)count.textContent=String(entries.size);
+    // Update active status chips and their description sources on every edit.
+    await render();
   }
 }
 async function refreshMapOnce() {
@@ -2236,7 +2249,7 @@ function organizeSheetPanels(){
   state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
-  ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
   // Preserve expanded combat cards across sheet rerenders.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
@@ -3309,7 +3322,7 @@ async function handleAction(target){
   if(act==="disconnect"){
     if(!confirm("Dissociare questo desktop? Le schede locali rimarranno sul dispositivo.")) return;
     await unpair();stopSubscriptions();state.sessionPane='connection';state.paired=false;state.session=null;state.map=null;
-    state.messages=[];state.after="";state.tokenId="";currentGameSession="";state.conditionCatalog=null;
+    state.messages=[];state.after="";state.tokenId="";currentGameSession="";state.desktopConditionCatalog=null;state.conditionCatalog=state.offlineConditionCatalog;
     await render();return;
   }
   if(act==="place-creature"||act==="claim-creature"){
@@ -3640,6 +3653,20 @@ function listen(){
 // Allows tests and future app lifecycle handlers to release polling resources.
 export function stopRealtime() { realtimeStopped=true;stopSubscriptions(); }
 
+// The public 5etools catalog ships with the PWA and is precached. Load it
+// after first paint so an offline desktop never delays the creature archive.
+async function loadBundledConditionCatalog(){
+ try{
+  const response=await fetch("/catalog/effects_5etools.json");
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const local=conditionCatalogFrom5etools(await response.json());
+  state.offlineConditionCatalog=local;
+  state.conditionCatalog=mergeConditionCatalog(local,state.desktopConditionCatalog);
+  if((state.page==="library"&&!state.libraryMode&&["conditions","battle"].includes(state.sheet))||
+    (state.page==="session"&&state.editTokenId))await render();
+ }catch(error){console.warn("Bundled 5etools effects not available; using standard conditions",error);}
+}
+
 // Notification taps should return to the live chat, not just focus the page.
 function openChatFromNotification(){
   if(!state.paired) return;
@@ -3665,6 +3692,7 @@ export async function mount(){
   if(qrCode){state.page="session";state.sessionPane="connection";}
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   await render();
+  void loadBundledConditionCatalog();
   if(qrCode){
     const input=document.querySelector("#pair-secret");
     if(input)input.value=qrCode;
