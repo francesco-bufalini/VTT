@@ -177,6 +177,26 @@ func run() -> void:
 	var status := await http("GET", "/api/status")
 	assert(status.begins_with("HTTP/1.1 200"))
 	assert(status.contains("\"pairing_required\":true"))
+	# PWA availability and authenticated actions do not depend on the legacy
+	# LAN TCP/UDP listener: it can fail to bind while the Godot board is open.
+	var local_sync: Node = load("res://network/board_sync.gd").new()
+	var local_controller: Node = load("res://vtt/map_data_controller.gd").new()
+	local_controller.call("use_board", func() -> Dictionary:
+		return {"tokens": []})
+	local_controller.call("set_action_provider", func(_action: String, _payload: Dictionary) -> Dictionary:
+		return {"ok": true})
+	local_sync.set("map_data_controller", local_controller)
+	assert(not bool(local_sync.get("receiving")))
+	assert(host.call("_web_board_controller", local_sync) == local_controller,
+		"HTTPS PWA must see a local board even without the native TCP listener")
+	var web_action: Dictionary = await local_controller.call("execute_web_action", "chat_poll", {})
+	assert(bool(web_action.get("ok", false)),
+		"Authenticated web actions should work without a legacy UDP listener")
+	var tcp_action: Dictionary = await local_controller.call("execute_local_action", "chat_poll", {})
+	assert(not bool(tcp_action.get("ok", false)),
+		"Legacy TCP actions still require their own listener")
+	local_controller.free()
+	local_sync.free()
 	# One-time codes are short, random, single-use and never replace the
 	# strong desktop bearer used for authenticated game actions.
 	var short_code: String = host.call("_new_short_code")

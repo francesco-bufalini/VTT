@@ -377,6 +377,20 @@ func _board_sync() -> Node:
 	return null
 
 
+func _web_board_controller(board: Node) -> MapDataController:
+	# This HTTPS bridge is independent of the legacy LAN/Tailscale TCP/UDP
+	# receivers. Their ports may fail to bind even while the actual Godot board
+	# and its local tactical action provider are fully available.
+	if board == null or not is_instance_valid(board):
+		return null
+	var value: Variant = board.get("map_data_controller")
+	if value is MapDataController and is_instance_valid(value):
+		var controller := value as MapDataController
+		if controller.source_name() == "board":
+			return controller
+	return null
+
+
 func _process(_delta: float) -> void:
 	# Stop accepting at capacity, letting TCP queue new requests. Previously
 	# requests above the cap were accepted and disconnected immediately, which
@@ -520,8 +534,9 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		return
 	if path == "/api/status" and method == "GET":
 		var board := _board_sync()
-		_answer(client, 200, {"protocol": 1, "desktop_online": board != null
-			and bool(board.get("receiving")), "pairing_required": true})
+		_answer(client, 200, {"protocol": 1,
+			"desktop_online": _web_board_controller(board) != null,
+			"pairing_required": true})
 		return
 	if path not in ["/api/session", "/api/map", "/api/action", "/api/conditions"]:
 		_answer(client, 404, {"error": "not_found"})
@@ -535,10 +550,10 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		_answer(client, 401, {"error": "pairing_required"})
 		return
 	var board := _board_sync()
-	if board == null or not bool(board.get("receiving")) or board.get("map_data_controller") == null:
+	var controller := _web_board_controller(board)
+	if controller == null:
 		_answer(client, 503, {"error": "no_active_desktop_session"})
 		return
-	var controller: MapDataController = board.get("map_data_controller") as MapDataController
 	if path == "/api/session":
 		_answer(client, 200, {"protocol": 1, "session": board.get("session_key"),
 			"mobile_protocol": 3})
@@ -554,7 +569,7 @@ func _handle_http(client: Dictionary, method: String, path: String,
 		if not request is Dictionary or not request.get("action") is String or not request.get("payload") is Dictionary:
 			_answer(client, 400, {"error": "invalid_action_envelope"})
 			return
-		var result: Dictionary = await controller.execute_local_action(
+		var result: Dictionary = await controller.execute_web_action(
 			String(request.action), request.payload)
 		_answer(client, 200, result)
 

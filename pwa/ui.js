@@ -282,7 +282,15 @@ async function render() {
     }
     if(ticket !== state.renderTicket) return;
     syncNav();
+    // A status refresh can redraw Partita while a manual QR code is already
+    // entered. Do not discard it or silently revert the Remember preference.
+    const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
+    const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    if(pendingCode && app.querySelector("#pair-secret"))
+      app.querySelector("#pair-secret").value=pendingCode;
+    if(rememberPair!==undefined && app.querySelector("#pair-remember"))
+      app.querySelector("#pair-remember").checked=rememberPair;
     app.dataset.page=state.page;
     app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
@@ -1490,7 +1498,7 @@ function sessionView() {
   const pairing='<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
     '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
-    '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Collega alla partita</button></form>';
+    '<button type="submit" class="btn primary full"'+(state.hostReachable?'':' disabled')+'>Collega alla partita</button></form>';
   const desktop=panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
   let html='';
   const image=state.snapshotObjectUrl;
@@ -1572,7 +1580,13 @@ function renderSessionIfIdle() {
   const focused=document.activeElement;
   if(focused && app.contains(focused) && ["INPUT","SELECT","TEXTAREA"].includes(focused.tagName))return;
   const scroll=window.scrollY;
+  const pendingCode=app.querySelector("#pair-secret")?.value||"";
+  const rememberPair=app.querySelector("#pair-remember")?.checked;
   app.innerHTML=sessionView();
+  if(pendingCode && app.querySelector("#pair-secret"))
+    app.querySelector("#pair-secret").value=pendingCode;
+  if(rememberPair!==undefined && app.querySelector("#pair-remember"))
+    app.querySelector("#pair-remember").checked=rememberPair;
   window.scrollTo(0,scroll);
 }
 async function refreshSessionSnapshot(force=false) {
@@ -1663,14 +1677,20 @@ async function refreshConnection(quiet=false) {
     const result=await status();
     state.hostReachable=true;
     state.online=!!result.desktop_online;
-    if(state.online){
+    // /api/status is intentionally public. An unpaired phone must NOT call
+    // /api/session yet: its expected HTTP 401 must not overwrite the public
+    // desktop-online result or disable the pairing button.
+    if(state.online && state.paired){
       try {
         acceptSession(await session());state.paired=true;
       }catch(error){
-        state.online=false;state.session=null;
+        state.session=null;
         if(error.status===401){
           await unpair();state.paired=false;
-        }else if(error.status!==503 && !quiet)message(errorMessage(error),true);
+        }else{
+          state.online=false;
+          if(error.status!==503 && !quiet)message(errorMessage(error),true);
+        }
       }
     }else state.session=null;
   }catch(error){
