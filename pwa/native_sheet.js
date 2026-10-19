@@ -5,7 +5,7 @@ import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
 export const SHEET_SECTIONS = [["info","Info"],
- ["battle","Azioni"],["magic","Poteri"],["inventory","Inventario"],
+ ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
  ["traits","Tratti"],["conditions","Condizioni"],["origins","Modifica personaggio"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
 // Mirrors CreatureArea._confirm_miniature for the portable fields only.
