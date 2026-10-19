@@ -998,6 +998,15 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="tracker-short"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
  click('[data-sheet="magic"]');
+ await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
+ assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara/i,
+   'Class spell selection is directly accessible in the mobile play card');
+ click('.play-magic-selection [data-act="sheet-proxy"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-class'));
+ assert.equal(document.querySelector('#spell-class').value,'class|phb|bard');
+ assert.equal(document.querySelector('#spell-target').value,'prepared_spells');
+ click('[data-act="magic-tool-close"]');
+ await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));
  assert.match(document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot').textContent,/3\s*\/\s*4/);
  assert.deepEqual([...document.querySelectorAll('.magic-panel .magic-source:first-of-type .magic-level[data-magic-level]')].map(x=>x.dataset.magicLevel),['1','2','3'],

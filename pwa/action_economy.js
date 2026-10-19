@@ -541,13 +541,20 @@ function battleSpellRow(item){
  const levelLabel=level===0?'Trucchetto':Number.isInteger(level)&&level>0?'Livello '+level:'Livello non disponibile';
  const payment=item.spell_mode==='tracker'?'Capacità · '+(item.tracker||'risorsa'):
   item.spell_mode==='free'?'Senza slot':level===0?'Senza slot':'Slot incantesimo';
+ const attrs=' data-spell-id="'+esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+
+  '" data-casting-class="'+esc(item.casting_class||'')+'"';
+ // Free/tracker origin spells use the exact same immediate casting action as
+ // the resources list. Other spells need the slot/pact selector in their popup.
+ const direct=!!item.grant_id&&['tracker','free'].includes(item.spell_mode);
  return '<article class="play-battle-attack-entry play-battle-spell-entry" data-spell-id="'+esc(item.spell_id)+
   '" data-spell-level="'+esc(level??'')+'" data-action-timing-spell="'+esc(item.time)+'">'+
-  '<button type="button" class="play-battle-spell-open" data-act="action-cast-spell" data-spell-id="'+
-   esc(item.spell_id)+'" data-grant-id="'+esc(item.grant_id||'')+'" data-casting-class="'+
-   esc(item.casting_class||'')+'" aria-label="Apri '+esc(item.name)+'">'+
+  '<button type="button" class="play-battle-spell-open" data-act="action-cast-spell"'+attrs+
+  ' aria-label="Apri '+esc(item.name)+'">'+
   actionGlyph('spell_cast')+'<span class="play-battle-attack-copy"><strong>'+esc(item.name)+
-  '</strong><small>'+esc(levelLabel+' · '+payment)+'</small></span></button></article>';
+  '</strong><small>'+esc(levelLabel+' · '+payment)+'</small></span></button>'+
+  '<button type="button" class="play-battle-spell-cast" data-act="'+
+  (direct?'battle-cast-resource-spell':'action-cast-spell')+'"'+attrs+
+  ' aria-label="Lancia '+esc(item.name)+'">Lancia</button></article>';
 }
 
 export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
