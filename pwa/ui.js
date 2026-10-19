@@ -12,7 +12,8 @@ import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
-import { collectTraitRows, groupTraitRows } from "./trait_projection.js";
+import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
+import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
@@ -531,7 +532,7 @@ async function editorView() {
     break;
   case "magic":
     body=magicToolbar(calculated)+
-      panel("Incantesimi disponibili",
+      panel("Magia",
         calculated.casting_classes.map(member=>{
           const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
           return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
@@ -668,8 +669,8 @@ async function traitsView(c){
   [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
    ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
   .map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
- const rows=await collectTraitRows(c,state.calculated||{},
-  {entries,detail:detailedEntry,isDocument});
+ const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
+  {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
@@ -678,7 +679,9 @@ async function traitsView(c){
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
   return '<details class="trait-card'+(active?'':' trait-inactive')+'"><summary>'+
-    esc(trait.name)+(active?'':' · disattivato')+'</summary>'+
+    esc(trait.name)+(active?'':' · disattivato')+
+    (trait.granted_spells?.length?'<span class="trait-granted-spells"><span class="trait-spell-label">Incantesimi concessi</span> '+
+      trait.granted_spells.map(spell=>'<span class="trait-granted-spell">'+esc(spell.name)+'</span>').join('')+'</span>':'')+'</summary>'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
     toggler+linked+'</details>';
@@ -2477,7 +2480,9 @@ async function handleAction(target){
     dialog.innerHTML='<h2>'+esc(spell.name||id)+'</h2>'+
       '<p class="hint magic-spell-metadata">'+(level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
       (spell.school?' · '+esc(spell.school):'')+(spell.source?' · '+esc(spell.source):'')+'</p>'+
-      '<div class="magic-spell-description">'+esc(description)+'</div>'+
+      '<dl class="magic-spell-facts">'+spellFacts(detailed).map(({label,value})=>
+         '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+ 
+       '<div class="magic-spell-description">'+esc(description)+'</div>'+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':

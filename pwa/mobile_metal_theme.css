@@ -1376,3 +1376,13 @@ input:disabled{opacity:.75;cursor:default}
  .equipment-unified-panel .equipment-attack-options{grid-template-columns:1fr;gap:8px}
  .equipment-unified-panel .equipment-attack-options>label:first-child{grid-column:auto}
 }
+
+/* Native spell metadata stays separate from freeform descriptions. */
+.magic-spell-facts{display:grid;grid-template-columns:1fr;gap:0;margin:10px 0 14px;padding:9px 11px;border:1px solid #ad875c70;border-radius:9px;background:#0e10125c}
+.magic-spell-fact{display:grid;grid-template-columns:minmax(100px,38%) minmax(0,1fr);gap:10px;padding:5px 0}
+.magic-spell-fact+.magic-spell-fact{border-top:1px solid #a0835b37}
+.magic-spell-fact dt{font-size:12px;font-weight:750;color:#e0b879}
+.magic-spell-fact dd{margin:0;min-width:0;overflow-wrap:anywhere;font-size:13px;color:#eee3d1}
+.trait-card summary .trait-granted-spells{display:flex;align-items:center;flex-wrap:wrap;gap:5px 7px;margin-top:6px;font-size:12px;font-weight:400;line-height:1.5}
+.trait-card summary .trait-spell-label{color:#d7b67f;font-weight:650}
+.trait-card summary .trait-granted-spell{padding:1px 7px;border:1px solid #b8915c72;border-radius:6px;background:#9d774526;color:#ece2d3}

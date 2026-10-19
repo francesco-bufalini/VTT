@@ -221,3 +221,42 @@ export function groupTraitRows(rows){
  }
  return groups;
 }
+
+/**
+ * Attach real calculated spell grants to the most specific visible owned
+ * privilege. Never infer grants by scanning localized rule descriptions.
+ * Race/background catalog descriptions can use a different origin ID than
+ * the structured 5etools grant; in that case use their matching origin group.
+ */
+export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
+ const result=rows.map(row=>({...row,granted_spells:[]}));
+ const catalogue=new Map(arr(spells).map(spell=>[String(spell.id),spell]));
+ for(const grant of arr(grants)){
+  if(!grant?.spell_id||grant.disabled)continue;
+  const originId=String(grant.origin_id||'');
+  const originName=norm(grant.origin_name);
+  const candidates=result.map((row,index)=>({row,index})).filter(({row})=>{
+   const ownedId=String(row.origin_key||'');
+   const display=norm(String(row.origin||'').split(' · ').pop());
+   return (originId&&
+       (String(row.feature_origin||'')===originId||ownedId===originId))||
+     (originName&&display===originName);
+  });
+  if(!candidates.length)continue;
+  const selected=candidates.find(({row})=>originId&&String(row.feature_origin||'')===originId)||
+   candidates.find(({row})=>originName&&norm(row.name)===originName)||
+   candidates.find(({row})=>/spellcasting|incantesim|magic|magia|legacy|eredità/i.test(row.name)&&
+     !/^Descrizione ·/.test(row.name))||
+   candidates.find(({row})=>/^Descrizione ·/.test(row.name))||
+   candidates[0];
+  const spell=catalogue.get(String(grant.spell_id));
+  const id=String(grant.spell_id);
+  if(selected.row.granted_spells.some(item=>item.id===id))continue;
+  const rawLevel=spell?.level,level=rawLevel==null?null:Number(rawLevel);
+  selected.row.granted_spells.push({id,name:String(spell?.name||grant.spell_name||id),
+    level:Number.isInteger(level)&&level>=0&&level<=9?level:null});
+ }
+ for(const row of result)row.granted_spells.sort((a,b)=>(a.level??10)-(b.level??10)||
+  a.name.localeCompare(b.name,'it',{sensitivity:'base'}));
+ return result;
+}
