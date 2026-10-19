@@ -3761,20 +3761,37 @@ export async function mount(){
     const input=document.querySelector("#pair-secret");
     if(input)input.value=qrCode;
   }
-  // Reconnection (and a QR pairing request) are background work. A dead proxy
-  // may take seconds to time out, but the local archive is already usable.
+  // Pairing from #pair is an AUTHENTICATION step, not a reconnect: an
+  // unpaired phone naturally gets HTTP 401 from /api/session. Do not run
+  // refreshConnection() first or let that 401 suppress the QR exchange.
+  // Keep the local creature library available while the request is pending.
   void (async()=>{
-    await refreshConnection(true);
-    if(qrCode && state.online){
+    if(qrCode){
       try {
         acceptSession(await pair(qrCode,{remember:true}));
-        state.paired=true;state.online=true;state.page="session";
-        state.sessionPane="table";state.messages=[];state.after="";state.tokenId="";
+        state.paired=true;state.online=true;state.hostReachable=true;
+        state.page="session";state.sessionPane="table";
+        state.messages=[];state.after="";state.tokenId="";
         await render();
         message("Telefono associato tramite QR.");
       }catch(error){
-        message("QR non valido o scaduto: "+errorMessage(error),true);
+        // A one-time code may have been redeemed before /api/session failed.
+        // pair() remembers the issued bearer so a reconnect can recover.
+        await refreshConnection(true);
+        if(state.paired&&state.online){
+          state.page="session";state.sessionPane="table";
+          await render();
+          message("Telefono associato tramite QR.");
+        }else{
+          state.page="session";state.sessionPane="connection";
+          await render();
+          const input=document.querySelector("#pair-secret");
+          if(input)input.value=qrCode;
+          message("Associazione QR non riuscita: "+errorMessage(error),true);
+        }
       }
+    }else{
+      await refreshConnection(true);
     }
   })().catch(error=>console.warn("VTT desktop unavailable; local archive stays open",error));
 }
