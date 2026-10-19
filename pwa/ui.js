@@ -1490,7 +1490,7 @@ function sessionView() {
   const pairing='<form id="pair-form" class="stack"><label>Codice temporaneo del desktop'+
     '<input id="pair-secret" type="text" inputmode="text" minlength="16" maxlength="19" pattern="[a-fA-F0-9 -]{16,19}" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>'+
     '<label class="check"><input id="pair-remember" type="checkbox" checked> Ricorda desktop</label>'+
-    '<button type="submit" class="btn primary full"'+(state.online?'':' disabled')+'>Collega alla partita</button></form>';
+    '<button type="submit" class="btn primary full"'+(state.hostReachable?'':' disabled')+'>Collega alla partita</button></form>';
   const desktop=panel('Desktop',statusMarkup+(state.paired?'<div class="actions">'+btn('disconnect','Dissocia desktop','danger')+'</div>':pairing),'session-desktop');
   let html='';
   const image=state.snapshotObjectUrl;
@@ -1663,14 +1663,20 @@ async function refreshConnection(quiet=false) {
     const result=await status();
     state.hostReachable=true;
     state.online=!!result.desktop_online;
-    if(state.online){
+    // /api/status is intentionally public. An unpaired phone must NOT call
+    // /api/session yet: its expected HTTP 401 must not overwrite the public
+    // desktop-online result or disable the pairing button.
+    if(state.online && state.paired){
       try {
         acceptSession(await session());state.paired=true;
       }catch(error){
-        state.online=false;state.session=null;
+        state.session=null;
         if(error.status===401){
           await unpair();state.paired=false;
-        }else if(error.status!==503 && !quiet)message(errorMessage(error),true);
+        }else{
+          state.online=false;
+          if(error.status!==503 && !quiet)message(errorMessage(error),true);
+        }
       }
     }else state.session=null;
   }catch(error){
