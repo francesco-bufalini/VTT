@@ -65,6 +65,10 @@ try{
      }));
      assert.equal(tree.rail,'solid','Nested action list has a vertical index rail');
      assert.equal(tree.branch,'solid','Every action has a branch to its category');
+     await movement.locator('summary.play-battle-summary').click();
+     await movement.locator('summary.play-battle-summary').click();
+     assert.equal(await movement.locator('.play-battle-action-group[open]').count(),0,
+      'Reopening a category shows its index instead of restoring expanded children');
      await expand.click();
      assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure:not([open]), #sheet-play-view .play-battle-action-group:not([open])').count(),0);
      await collapse.click();
