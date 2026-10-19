@@ -1126,13 +1126,13 @@ function magicToolsDialog(c,calculated){
    field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+
    '</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>';
  const selectedMember=calculated.casting_classes.find(member=>member.id===state.spellClass);
- const selectedTarget=selectedMember?.book&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
+ const selectedTarget=(!selectedMember||selectedMember.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
  const catalog='<label>Classe / origine<select id="spell-class"><option value="manual">Altre concessioni</option>'+
    calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+'</option>').join('')+
    '</select></label><label>Destinazione<select id="spell-target">'+
    '<option value="prepared_spells"'+(selectedTarget==='prepared_spells'?' selected':'')+'>'+
    esc(selectedMember?.mode==='Preparati'?'Incantesimi preparati':selectedMember?'Incantesimi conosciuti':'Incantesimi disponibili')+'</option>'+
-   (selectedMember?.book?'<option value="spellbook_spells"'+(selectedTarget==='spellbook_spells'?' selected':'')+'>Libro degli incantesimi</option>':'')+
+   (!selectedMember||selectedMember.book?'<option value="spellbook_spells"'+(selectedTarget==='spellbook_spells'?' selected':'')+'>Libro degli incantesimi</option>':'')+
    '</select></label>'+
    (selectedMember?'<p class="magic-selection-summary">'+esc(selectedMember.name)+' · '+
      (selectedMember.mode==='Preparati'?'Preparati':'Conosciuti')+' '+classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]).leveled+
@@ -1310,7 +1310,7 @@ function renderSpellResults(){
   const query=state.spellQuery.trim().toLocaleLowerCase('it');
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
-  const target=member?.book&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
+  const target=(!member||member.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
   if(!member&&!query)return '<p class="hint">Cerca un incantesimo per aggiungerlo alle concessioni della scheda.</p>';
   const prepared=availableSpells(record);
   const knownBook=new Set((record.spellbook_spells||[]).map(spellId));
