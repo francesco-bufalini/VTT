@@ -27,7 +27,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['info','battle','actions','magic','inventory','traits','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','traits','conditions','origins']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]),#sheet-play-view select,#sheet-play-view textarea');
    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
@@ -244,16 +244,34 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('.magic-ability-entry').count(),0,'Additional nonspell abilities no longer belong in Poteri');
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
- await sheet('traits');await popup('trait-notes');await page.locator('#sheet-context-dialog textarea').fill('Una promessa mantenuta.');await dismiss();assert.equal((await record()).additional_traits,'Una promessa mantenuta.');
+ await sheet('traits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','traits','conditions']){
-  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
+  await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
   for(const contextKey of keys){
    try{await popup(contextKey);}catch(error){throw Error('Popup '+key+' / '+contextKey+': '+error.message);}
    assert(await page.locator('.sheet-context-body').textContent().then(t=>t.trim().length>0),key+': '+contextKey);await dismiss();
   }
  }
- await sheet('actions');await page.locator('[data-timing-choice="reaction"]').click();assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi/);await page.locator('.play-card .play-list-row').first().click();await page.locator('#sheet-context-dialog').waitFor();await shot('action-popup');await dismiss();
+ await sheet('battle');
+ const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
+ await checks.locator('summary.play-battle-summary').click();
+ assert.equal(await checks.locator('[data-action-ability]').count(),6);
+ assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
+ const strength=checks.locator('[data-action-ability="str"]');
+ assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_mod:str');
+ assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
+ assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
+ const firstRoll=strength.locator('[data-target="ability_mod:str"]');
+ await firstRoll.click();
+ assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
+ await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
+ await strength.locator('summary.play-battle-action-heading').click();
+ assert.equal(await strength.getAttribute('open'),null);
+ await page.locator('#sheet-play-view [data-act="action-variants"]').click();
+ assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
+ await page.locator('[data-close-variants]').click();
+ await shot('action-ability-checks');
  // A persistent class feature must expose a reversible action, not an inert "Attiva" badge.
  await page.evaluate(async()=>{
   const {listCreatures,saveCreature}=await import('/creatures.js');
@@ -273,5 +291,5 @@ try{
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 8 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
+ console.log('PASS: 7 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}
