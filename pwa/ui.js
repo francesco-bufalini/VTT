@@ -2310,8 +2310,8 @@ async function closeSheetContext(){
   [...app.querySelectorAll('#sheet-play-view [data-sheet-context]')].find(node=>node.dataset.sheetContext===key)?.focus({preventScroll:true});
 }
 function rememberUtilityDisclosures(){
-  for(const details of app.querySelectorAll('.archive-tools, .catalog-create, .play-skills-disclosure')){
-    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+(details.classList.contains('play-skills-disclosure')?(state.creatureId+'|'):'')+details.querySelector(':scope > summary')?.textContent;
+  for(const details of app.querySelectorAll('.archive-tools, .catalog-create, .play-skills-disclosure, .play-traits-disclosure')){
+    const key=state.page+'|'+(state.libraryMode?'archive':state.sheet)+'|'+((details.classList.contains('play-skills-disclosure')||details.classList.contains('play-traits-disclosure'))?(state.creatureId+'|'):'')+details.querySelector(':scope > summary')?.textContent;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.addEventListener('toggle',()=>{if(details.isConnected)state.disclosureState.set(key,details.open);});
   }
