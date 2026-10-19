@@ -317,10 +317,20 @@ func _process_actions() -> void:
 			else:
 				_dispatch_action.call_deferred(item, message)
 
-## Common action boundary for TCP Android and browser clients.
-## The mobile allowlist remains authoritative here.
+## LAN TCP requests still require the legacy mobile UDP/TCP listener.
+## The mobile allowlist remains authoritative for both transports.
 func execute_local_action(action: String, payload: Dictionary) -> Dictionary:
 	if not _serving or not _action_provider.is_valid() or action not in ACTIONS:
+		return {"ok": false, "error": "Comando mobile non disponibile."}
+	var value: Variant = await _action_provider.call(action, payload)
+	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
+
+
+## HTTPS PWA requests are authenticated by PwaHost itself. They should still
+## work with an open local board even when the unrelated legacy listener is
+## disabled or its port cannot bind. Never allow actions on a remote map.
+func execute_web_action(action: String, payload: Dictionary) -> Dictionary:
+	if not _provider.is_valid() or not _action_provider.is_valid() or action not in ACTIONS:
 		return {"ok": false, "error": "Comando mobile non disponibile."}
 	var value: Variant = await _action_provider.call(action, payload)
 	return value if value is Dictionary else {"ok": false, "error": "Risposta non valida."}
