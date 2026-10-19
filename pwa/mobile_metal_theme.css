@@ -1518,3 +1518,24 @@ input:disabled{opacity:.75;cursor:default}
 .feature-effect-summary{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.45;margin-top:6px}
 #class-feature-dialog label,#class-feature-dialog p,.miniature-dialog p{overflow-wrap:anywhere}
 #class-feature-dialog input[type=number],#class-feature-dialog select{min-height:48px;max-width:100%}
+/* Compendium statuses: separate conditions, diseases and magical effects. */
+.condition-category-list{display:grid;gap:8px;min-width:0}
+.condition-category{border:1px solid #8a684d88;border-radius:10px;background:#211a1966;overflow:hidden}
+.condition-category>summary{display:flex;align-items:center;justify-content:space-between;min-height:43px;
+ padding:9px 12px;cursor:pointer;font-size:13px;font-weight:650;color:#e9d3b0;list-style:none}
+.condition-category>summary::-webkit-details-marker{display:none}
+.condition-category>summary:focus-visible{outline:2px solid #f5cb8c;outline-offset:-3px}
+.condition-category-count{border-radius:20px;border:1px solid #a57c5290;padding:2px 8px;
+ color:#d7bea0;font-size:11px;font-variant-numeric:tabular-nums}
+.condition-category .condition-toggle-grid{padding:8px;border-top:1px solid #8a684d44}
+.condition-description-source{color:#bfa587;font-size:12px;margin:0 0 12px;line-height:1.5}
+.condition-description{font-size:14px;line-height:1.6;color:#e6d7c3;overflow-wrap:anywhere}
+.condition-description p{margin:0 0 12px}
+.condition-description h4{font-size:14px;color:#f1d7a7;margin:14px 0 7px}
+.condition-description ul,.condition-description ol{padding-left:22px;margin:8px 0 14px}
+.condition-description li{margin:5px 0}
+.condition-table-scroll{overflow-x:auto;max-width:100%;margin:10px 0 15px}
+.condition-description table{width:100%;min-width:260px;border-collapse:collapse;font-size:12px}
+.condition-description th,.condition-description td{padding:8px;border:1px solid #89674788;text-align:left;vertical-align:top}
+.condition-description th{background:#61432c66;color:#f0d4ad}
+.sheet-context-dialog[data-context^="condition:"] .sheet-context-body{padding:16px 18px calc(24px + env(safe-area-inset-bottom))}
