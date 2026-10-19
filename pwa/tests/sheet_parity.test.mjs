@@ -277,9 +277,12 @@ test('shared equipment rules support every attack ability, finesse scope, off-ha
  assert.equal(finesseOnly.attacks.find(a=>a.id==='item:blade').ability,'str');
  assert.equal(finesseOnly.attacks.find(a=>a.id==='item:off:dagger').ability,'wis');
  const versatile=calculateSheet({...creature,hand_grip_two_handed:true},catalogs);
- assert.equal(versatile.attacks.find(a=>a.id==='item:blade').damage,'1d10 + 4');
+ assert.equal(versatile.attacks.find(a=>a.id==='item:blade').damage,'1d8 + 4',
+   'Stale occupied offhand prevents versatile damage until the slot is cleared');
  assert.equal(versatile.attacks.some(a=>a.id==='item:off:dagger'),false,
    'Offhand attacks cannot survive two-hand versatile grip, even for imported stale slots');
+ const freeHand=calculateSheet({...creature,hand_grip_two_handed:true,inventory:[longsword]},catalogs);
+ assert.equal(freeHand.attacks.find(a=>a.id==='item:blade').damage,'1d10 + 4');
  const twin={...creature,hand_grip_two_handed:false,
    inventory:[{...dagger,equipped_slots:['main']},{...dagger,id:'off-dagger',equipped_slots:['off']}]};
  const withoutStyle=calculateSheet(twin,catalogs);
