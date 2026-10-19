@@ -1480,3 +1480,11 @@ input:disabled{opacity:.75;cursor:default}
 .play-info-traits .trait-origin-group .trait-level:first-of-type{margin-top:0}
 .play-info-traits .trait-book{margin-left:9px}
 .play-info-traits .trait-description{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Scroll creation is a spell selector, not a link to the item compendium. */
+.scroll-creator-fields{display:grid;gap:11px;min-width:0}
+.scroll-creator-fields label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#edd3aa}
+.scroll-creator-fields input,.scroll-creator-fields select{width:100%;min-width:0;min-height:46px;border-radius:9px;padding:10px;font-size:14px;color:#f5e5ca}
+.scroll-creator-fields select:disabled{opacity:.55}
+.scroll-creator-fields .actions{display:flex;justify-content:flex-end;margin-top:4px}
+.scroll-creator-fields .actions .btn{min-height:44px;padding:9px 17px}

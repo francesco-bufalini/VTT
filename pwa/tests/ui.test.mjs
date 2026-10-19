@@ -774,6 +774,49 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
+test("scroll creation selects a spell and casting level without opening item catalog",async()=>{
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  change('[data-field="name"]',"Scriba degli incantesimi");
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-subtab="scrolls"]'));
+  click('#sheet-play-view [data-subtab="scrolls"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="scroll-create"]'));
+  assert.equal(document.querySelector('#sheet-play-view [data-act="item-catalog"]'),null);
+  click('#sheet-play-view [data-sheet-context="scroll-create"]');
+  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
+  const search=document.querySelector('#scroll-spell-query');
+  search.value="shi";
+  search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  assert.ok([...document.querySelectorAll('#scroll-spell-select option')].some(row=>row.value==='spell:shield|phb'));
+  change('#scroll-spell-select','spell:shield|phb');
+  assert.equal(document.querySelector('#scroll-spell-level').options[0].value,'1');
+  assert.ok([...document.querySelector('#scroll-spell-level').options].some(opt=>opt.value==='3'));
+  change('#scroll-spell-level','3');
+  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
+  await until(async()=>{
+    const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
+    return rows.length===1&&rows[0].spell_name==="Shield"&&rows[0].spell_level===3;
+  });
+  assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"]'));
+  assert.equal(document.querySelector('#app').dataset.page,'library');
+  click('#sheet-play-view [data-sheet-context="scroll-create"]');
+  await until(()=>document.querySelector('#sheet-context-dialog #scroll-spell-query'));
+  const again=document.querySelector('#scroll-spell-query');
+  again.value="shield";
+  again.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  change('#scroll-spell-select','spell:shield|phb');
+  change('#scroll-spell-level','3');
+  click('#sheet-context-dialog [data-act="scroll-spell-add"]');
+  await until(async()=>{
+    const rows=(await listCreatures()).find(row=>row.creature.name==="Scriba degli incantesimi")?.creature.inventory||[];
+    return rows.length===1&&rows[0].quantity===2;
+  });
+  assert.ok(document.querySelector('#sheet-play-view [data-sheet-context="item:0"] .play-badge')?.textContent.includes('2'));
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test("PWA document editor autosaves homebrew text and retains per-copy style",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
