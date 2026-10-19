@@ -2115,8 +2115,8 @@ async function handleField(target) {
     if(target.checked) entries.add(target.dataset.condition);
     else entries.delete(target.dataset.condition);
     await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
-    const count=app.querySelector('[data-condition-count]');
-    if(count)count.textContent=String(entries.size);
+    // Rebuild active status buttons and their detail sources immediately.
+    await render();
   }
 }
 async function refreshMapOnce() {
