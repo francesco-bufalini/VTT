@@ -617,7 +617,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    }).join('');
    const casting=source.querySelector('.casting-statistics'),ability=casting?.querySelector('select')?.value||'int';
    const stats='CD '+(d.values?.['casting_dc:'+ability]??'—')+' · Attacco '+signed(d.values?.['casting_hit:'+ability]);
-   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+(rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
+   // Reuse the class selector in the native mobile sheet rather than hiding it
+   // inside the source bank or inventing another spell-selection state.
+   const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
+     .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
+   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+
+     (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
+     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
