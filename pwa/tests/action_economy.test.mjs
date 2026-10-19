@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
-import {battleResourcePowers,persistentBattleAbility} from '../sheet_rules_view.js';
+import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
 import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
@@ -105,6 +105,24 @@ test('equipped weapon attacks lead each timing list and follow equipment changes
  assert.equal(ids(replaced,'action')[0],'item:axe',
   'The priority follows the current weapon projection, not a previously equipped item');
  assert(!ids(replaced,'action').includes('item:blade'));
+});
+
+test('spell casting times show structured values for tracker spells instead of privilege placeholder',()=>{
+ const spells=[
+  {id:'action',name:'Azione',time:[{number:1,unit:'action'}]},
+  {id:'bonus',name:'Bonus',time:[{number:1,unit:'bonus'}]},
+  {id:'reaction',name:'Reazione',time:[{number:1,unit:'reaction'}]},
+  {id:'ritual',name:'Rituale',time:[{number:10,unit:'minute'}]}
+ ];
+ const calculated={trackers:[{id:'focus',name:'Focus',max:4,spent:0}],
+  origin_spells:spells.map(spell=>({id:'grant:'+spell.id,spell_id:spell.id,
+   tracker_id:'focus',payment_mode:'tracker'}))};
+ const rows=battleResourcePowers(calculated,[],[],spells);
+ assert.deepEqual(rows.map(row=>row.casting_time_label),['Azione','Azione bonus','Reazione','10 minuti']);
+ assert.deepEqual(rows.map(row=>row.timing),['action','bonus','reaction','contextual']);
+ assert.equal(spellCastingTimeLabel({time:[{number:2,unit:'hour'}]}),'2 ore');
+ assert.equal(spellCastingTimeLabel({casting_time:'bonus action'}),'Azione bonus');
+ assert.equal(spellCastingTimeLabel({}), '');
 });
 
 test('combat spells are sorted by level within action, bonus and reaction and open Magia dialog',()=>{
