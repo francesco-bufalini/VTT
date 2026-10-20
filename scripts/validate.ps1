@@ -246,7 +246,7 @@ foreach ($test in $testFiles) {
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_mobile_map_actions.gd", "test_class_feature_ui.gd", "test_token_effects_and_group_movement.gd", "test_creature_gui_layout.gd", "test_mobile_touch_layout.gd", "test_mobile_sheet_navigation.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd",
+    } elseif ($test.Name -in @("test_mobile_map_actions.gd", "test_mobile_snapshot_targeting.gd", "test_mobile_miniature_picker.gd", "test_class_feature_ui.gd", "test_token_effects_and_group_movement.gd", "test_creature_gui_layout.gd", "test_mobile_touch_layout.gd", "test_mobile_sheet_navigation.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd",
     "test_desktop_menu_navigation.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
         45
     } else {
