@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import {createCreature,openCreatureEditor,loadCreature,saveHomebrewDefinition,editHomebrewDefinition} from '../creatures.js';
-import {exportBackup,importBackup,getRecord} from '../storage.js';
+import {exportBackup,importBackup,getRecord,openStorage} from '../storage.js';
 Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 const fresh=()=>{globalThis.indexedDB=new IDBFactory();};
 
@@ -37,7 +37,7 @@ test('homebrew restore rejects stale edits and advances on repeated restoration'
  assert.equal((await getRecord('global','homebrew',definition.id)).data.name,'Originale');
 });
 
-for(const revision of [0,-1,1.5,'1',null,undefined,Number.MAX_SAFE_INTEGER+1]){
+for(const revision of [0,-1,1.5,'1',null,undefined,Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER+1]){
  test('invalid backup revision is rejected atomically: '+String(revision),async()=>{
   fresh();const saved=await createCreature('character','Esistente'),archive=JSON.parse(await (await exportBackup()).text());
   archive.records[0].data.name='Non deve essere scritta';
@@ -48,3 +48,22 @@ for(const revision of [0,-1,1.5,'1',null,undefined,Number.MAX_SAFE_INTEGER+1]){
   assert.equal(await getRecord('global','homebrew','homebrew:personal:feats:invalid_revision'),null);
  });
 }
+
+
+test('revision exhaustion aborts the whole overwrite transaction',async()=>{
+ fresh();const saved=await createCreature('character','Da preservare');
+ const archive=JSON.parse(await (await exportBackup()).text());
+ archive.records.unshift({scope:'new',type:'note',id:'not-written',revision:1,data:{text:'Nuovo'}});
+ const original=await loadCreature(saved.id);
+ const db=await openStorage();
+ try{
+  const tx=db.transaction('records','readwrite');
+  tx.objectStore('records').put({...original,revision:Number.MAX_SAFE_INTEGER});
+  await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);tx.onerror=()=>reject(tx.error);});
+ }finally{db.close();}
+ await assert.rejects(importBackup(new Blob([JSON.stringify(archive)]),{overwrite:true}),/revision exhausted/);
+ assert.equal(await getRecord('new','note','not-written'),null);
+ const kept=await loadCreature(saved.id);
+ assert.equal(kept.revision,Number.MAX_SAFE_INTEGER);
+ assert.equal(kept.data.name,'Da preservare');
+});

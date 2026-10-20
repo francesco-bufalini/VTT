@@ -13,7 +13,8 @@
     "test:actions-browser": "node tests/action_dashboard_browser.mjs",
     "test:native-origins": "node tests/compare_native_origins.mjs",
     "test:native-mechanics": "node tests/compare_native_mechanics.mjs",
-    "test:rapid-browser": "node tests/rapid_updates_browser.mjs"
+    "test:rapid-browser": "node tests/rapid_updates_browser.mjs",
+    "test:save-failure-browser": "node tests/save_failure_browser.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",

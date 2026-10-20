@@ -1167,3 +1167,30 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  assert.deepEqual((await loadCreature(saved.data.id)).data.spell_slots_spent.slice(1,3),[1,1]);
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
+
+test('failed hit-point save keeps the dialog and entered amount open',async t=>{
+ t.after(stopRealtime);
+ const {createCreature}=await import('../creatures.js');
+ const saved=await createCreature('character','Errore di salvataggio');
+ await saveCreature({...saved.data,max_hp:20,max_hp_base:20,current_hp:10},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ await until(()=>document.querySelector('[data-field="name"]'));
+ click('[data-sheet="battle"]');
+ await until(()=>document.querySelector('[data-act="hp-damage"]'));
+ click('[data-act="hp-damage"]');
+ await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
+ const dialog=document.querySelector('#hp-adjust-dialog');
+ dialog.querySelector('#hp-adjust-amount').value='3';
+ const current=await loadCreature(saved.data.id);
+ await saveCreature({...current.data,name:'Aggiornata da altra finestra'},'default',current.revision);
+ const confirm=dialog.querySelector('#hp-adjust-confirm');confirm.click();
+ await until(()=>document.querySelector('#save-state')?.classList.contains('error'));
+ await until(()=>!confirm.disabled||!confirm.isConnected);
+ assert.ok(dialog.isConnected&&dialog.open,'A failed save must not close or replace the dialog');
+ assert.equal(dialog.querySelector('#hp-adjust-amount').value,'3');
+ const kept=await loadCreature(saved.data.id);
+ assert.equal(kept.data.current_hp,10);
+ assert.equal(kept.data.name,'Aggiornata da altra finestra');
+});

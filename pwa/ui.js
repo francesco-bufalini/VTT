@@ -1903,6 +1903,7 @@ async function patch(patchValue) {
     state.saveError=errorMessage(error);
     if(status){ status.textContent="Errore salvataggio";status.classList.add("error"); }
     message("Modifica non salvata: "+state.saveError,true);
+    throw error;
   }
 }
 async function persistDocumentEdit(index,part,creature){
