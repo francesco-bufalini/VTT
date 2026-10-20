@@ -382,6 +382,10 @@ export async function importBackup(file, { overwrite = false } = {}) {
     requiredString(item.scope, "scope");
     requiredString(item.type, "type");
     requiredString(item.id, "id");
+    if (!Number.isSafeInteger(item.revision) || item.revision < 1 ||
+        item.revision >= Number.MAX_SAFE_INTEGER) {
+      throw new Error("Invalid backup record revision");
+    }
     const key = JSON.stringify([item.scope, item.type, item.id]);
     if (recordKeys.has(key)) throw new Error("Duplicate record in backup");
     recordKeys.add(key);
@@ -420,17 +424,31 @@ export async function importBackup(file, { overwrite = false } = {}) {
     const tx = db.transaction(["records", "blobs", "outbox"], "readwrite");
     for (const entry of attachments) tx.objectStore("blobs").put(entry);
     const records = tx.objectStore("records");
-    let conflict = null;
+    let importError = null;
     const outbox = tx.objectStore("outbox");
     for (const record of restoredRecords) {
       if (overwrite) {
-        records.put(record);
+        const check = records.get([record.scope, record.type, record.id]);
+        check.onsuccess = () => {
+          if (!check.result) { records.put(record); return; }
+          // Restore content, never the old local concurrency token: otherwise
+          // an editor opened at the backup revision can overwrite restored data.
+          const liveRevision = Number.isSafeInteger(check.result.revision) &&
+            check.result.revision > 0 ? check.result.revision : 0;
+          const revision = Math.max(liveRevision, record.revision) + 1;
+          if (!Number.isSafeInteger(revision)) {
+            importError = new Error("Record revision exhausted");
+            tx.abort();
+            return;
+          }
+          records.put({ ...record, revision, updatedAt: Date.now() });
+        };
       } else {
         const check = records.get([record.scope, record.type, record.id]);
         check.onsuccess = () => {
           if (!check.result) records.put(record);
           else if (record.type === "homebrew" && !sameData(check.result.data, record.data)) {
-            conflict = new Error("Contenuto homebrew in conflitto: " + record.id);
+            importError = new Error("Contenuto homebrew in conflitto: " + record.id);
             tx.abort();
           } else {
             // Repair copies left read-only by older recovery versions while
@@ -450,7 +468,7 @@ export async function importBackup(file, { overwrite = false } = {}) {
         check.onsuccess = () => { if (!check.result) outbox.put(event); };
       }
     }
-    await completed(tx).catch(error => { throw conflict || error; });
+    await completed(tx).catch(error => { throw importError || error; });
   } finally {
     db.close();
   }
