@@ -2455,9 +2455,11 @@ async function handleAction(target){
     const id=String(target.dataset.trackerId||'');
     const row=(calculated.trackers||[]).find(tracker=>String(tracker.id)===id&&!tracker.disabled);
     if(!row)throw Error('Risorsa non disponibile.');
-    const spent={...(creature.resource_tracker_spent||{})};
-    delete spent[id];
-    await patch({resource_tracker_spent:spent});
+    await patch(current=>{
+      const spent={...(current.resource_tracker_spent||{})};
+      delete spent[id];
+      return {resource_tracker_spent:spent};
+    });
     await render();
     return;
   }
@@ -3247,14 +3249,19 @@ async function handleAction(target){
     if(!row)throw new Error("Tracker non disponibile.");
     if(act==="tracker-delete"){
       if(index<0||row.automatic)throw Error('Modifica questa risorsa dalla sua origine');
-      trackers.splice(index,1);
-      const spent={...(record.resource_tracker_spent||{})};delete spent[row.id];
-      await patch({resource_trackers:trackers,resource_tracker_spent:spent});
+      await patch(current=>{
+        const spent={...(current.resource_tracker_spent||{})};delete spent[row.id];
+        return {resource_trackers:(current.resource_trackers||[]).filter(tracker=>tracker.id!==row.id),
+          resource_tracker_spent:spent};
+      });
     }else{
       if(act==='tracker-recharge'){
         if(row.recharge!=='d6')throw Error('Questa risorsa non usa la ricarica d6');
-        const die=randomDie(6),success=die>=Number(row.recharge_min||6),spent={...(record.resource_tracker_spent||{})};
-        if(success){delete spent[row.id];await patch({resource_tracker_spent:spent});}
+        const die=randomDie(6),success=die>=Number(row.recharge_min||6);
+        if(success)await patch(current=>{
+          const spent={...(current.resource_tracker_spent||{})};delete spent[row.id];
+          return {resource_tracker_spent:spent};
+        });
         await render();message(row.name+': d6 = '+die+' · '+(success?'Ricaricata':'Non ricaricata'));return;
       }
       // Reuse the domain operation; no stale zero-valued spent counters.

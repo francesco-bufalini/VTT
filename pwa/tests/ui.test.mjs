@@ -1168,6 +1168,36 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
+for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
+ test('rapid resource use survives '+action,async()=>{
+  const {createCreature}=await import('../creatures.js');
+  const saved=await createCreature('character','Recupero concorrente '+action);
+  const configured=await saveCreature({...saved.data,resource_trackers:[
+   {id:'keep',name:'Risorsa conservata',max:5,recharge:'manual'},
+   {id:'recover',name:'Risorsa recuperata',max:5,recharge:'d6',recharge_min:1}
+  ],resource_tracker_spent:{recover:2}},'default',saved.revision);
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+  click('[data-act="open"][data-id="'+saved.data.id+'"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  if(action==='tracker-delete'){
+   click('[data-sheet="origins"]');
+   await until(()=>document.querySelector('#native-details'));
+   change('#native-details','resources');
+  }else click('[data-sheet="battle"]');
+  await until(()=>document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]'));
+  const use=document.querySelector('[data-act="tracker-more"][data-tracker-id="keep"]');
+  const recover=document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]');
+  assert.ok(use);use.click();recover.click();
+  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+2);
+  const actual=(await loadCreature(saved.data.id)).data;
+  assert.deepEqual(actual.resource_tracker_spent,{keep:1},
+   'Recovery/deletion must preserve the simultaneous consumption of another resource');
+  if(action==='tracker-delete')assert.deepEqual(actual.resource_trackers.map(row=>row.id),['keep']);
+  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+ });
+}
+
 test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  t.after(stopRealtime);
  const {createCreature}=await import('../creatures.js');
