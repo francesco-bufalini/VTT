@@ -244,8 +244,9 @@ function itemRows(record,warnings,infusionCatalog=[]){
     }
     if(seen.has(sid))continue;
     seen.add(sid);
-    for(const a of ABILITIES)add("save:"+a,"bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
-    for(const [id] of SKILLS)add("skill:"+id,"bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
+    add("saving_throw","bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
+    add("ability_check","bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
+    add("passive_perception","bonus_passive_perception","bonus_passive_perception","bonusPassivePerception");
     for(const [field,camel,target] of [
       ["bonus_spell_attack","bonusSpellAttack","spell_attack"],
       ["bonus_spell_save_dc","bonusSpellSaveDc","spell_dc"],
@@ -578,7 +579,9 @@ export function calculateSheet(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
+    if(prefix==="ability_check"&&ABILITIES.includes(key))
+      return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
       if(!armor){
         const base=kind==="monster"?monsterArmor(record.stat_block):int(record.armor_class_base,10);
@@ -623,7 +626,7 @@ export function calculateSheet(record={},catalogs={}){
       const legacy=record.stat_block?.save?.[key];
       if(kind==="monster"&&!hasProficiency(record,"save",key,proficiencies)&&legacy!==undefined&&
         /^[-+]?\d+$/.test(String(legacy)))return int(legacy);
-      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0);
+      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0)+sumGrants("saving_throw",stack);
     }
     if(prefix==="skill"){
       const skill=SKILLS.find(row=>row[0]===key);
@@ -637,7 +640,7 @@ export function calculateSheet(record={},catalogs={}){
           else if(difference===resolve("proficiency",stack))rank=Math.max(rank,1);
         }
       }
-      return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack);
+      return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
     }
     if(target==="passive_perception")return 10+resolve("skill:perception",stack);
     return 0;
@@ -747,6 +750,7 @@ export function calculateSheet(record={},catalogs={}){
   const abilities=Object.fromEntries(ABILITIES.map(a=>[a,{score:safe("ability:"+a),
     modifier:safe("ability_mod:"+a)}]));
   safe("attunement_max");
+  for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
   const progression=spellProgression(record,classes);
