@@ -289,6 +289,7 @@ try{
  await page.locator('#sheet-context-dialog [data-rest-roll-mode]').selectOption('manual');
  await page.locator('#sheet-context-dialog [data-rest-manual-results]').fill('3, 4');
  await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ await page.locator('#sheet-context-dialog .play-rest-confirm h3', {hasText:'Riposo completato'}).waitFor();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 3/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 4/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
@@ -302,6 +303,7 @@ try{
  await page.locator('#sheet-context-dialog [data-act="tracker-long"]').click();
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
  await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ await page.locator('#sheet-context-dialog .play-rest-confirm h3', {hasText:'Riposo completato'}).waitFor();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Dadi Vita d6: 2/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
  await dismiss();
