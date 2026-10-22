@@ -1068,11 +1068,18 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
  assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
  click('[data-sheet="info"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- click('[data-act="edit-bonus"][data-target="skill:stealth"]');
- await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
- change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
- click('[data-sheet="info"]');
+ // A manual bonus is now saved explicitly in the popup owned by a trait.
+ const traits=document.querySelector('.play-traits-disclosure');
+ if(traits)traits.open=true;
+ await until(()=>document.querySelector('[data-act="trait-benefits-open"]'));
+ click('[data-act="trait-benefits-open"]');
+ await until(()=>document.querySelector('#trait-benefits-dialog[open]'));
+ click('[data-act="trait-benefits-add"]');
+ change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]','skill:stealth');
+ change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="expression"]','2');
+ click('[data-act="trait-benefits-save"]');
  await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
+ assert.ok((await loadCreature(saved.data.id)).data.formula_bonuses?.some(row=>row.id?.startsWith('trait:')&&row.target==='skill:stealth'));
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -1097,7 +1104,7 @@ test("Info contains scores, skills, tools, languages, weapons and armor without 
  assert.match(info,/light/);
  assert.ok(info.indexOf('Strumenti</dt>')<info.indexOf('Armi</dt>'));
  assert.ok(info.indexOf('Armi</dt>')<info.indexOf('Armature</dt>'));
- assert.match(info,/data-detail="proficiency_choices"/);
+ assert.doesNotMatch(info,/data-detail="proficiency_choices"/,'Obsolete origin editor is removed');
 });
 
 test('rapid changes to distinct resource counters preserve both commands',async()=>{
