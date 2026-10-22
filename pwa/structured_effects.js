@@ -92,7 +92,15 @@ function fixedGrants(source){
         const key=grantLiteral(kind,row);
         if(key)result.push({kind,key});
       }else if(row&&typeof row==="object"&&!Array.isArray(row)){
+        // Some 5etools class sources describe optional firearms proficiency as
+        // {proficiency:"firearms",optional:true}. These are metadata fields,
+        // not proficiency names ("weapon:optional" was previously leaked).
+        if(typeof row.proficiency==="string"){
+          const key=grantLiteral(kind,row.proficiency);
+          if(key)result.push({kind,key});
+        }
         for(const [name,value] of Object.entries(row)){
+          if(["proficiency","optional"].includes(name))continue;
           if(value===true&&!("choose any anyArtisansTool anyGamingSet anyMusicalInstrument anyStandard anyExotic anyProficientSkill".split(" ")).includes(name))
             result.push({kind,key:norm(name.split("|")[0])});
         }

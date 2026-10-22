@@ -1755,8 +1755,13 @@ input:disabled{opacity:.75;cursor:default}
  box-shadow:inset 0 1px 0 #ffe0ae18,0 2px 5px #0004;
  color:#e9dfd2;font:inherit;font-size:12px;line-height:1.5;font-weight:400;text-align:left;
 }
-.trait-benefit-entry>span{min-width:0;overflow-wrap:anywhere}
-.trait-benefit-entry b{font-weight:650;color:#edbd77;overflow-wrap:anywhere}
+/* Quiet two-tone readout: warm, muted type on the left; neutral values on
+   the right. Never bold either column, including roll bonus formulas. */
+.trait-benefit-entry>span{min-width:0;overflow-wrap:anywhere;font-weight:400}
+.trait-benefit-entry>span:first-child{color:#cbb69c}
+.trait-benefit-entry .trait-benefit-value{
+ color:#e8e0d7;font-weight:400;text-align:right;
+}
 button.trait-benefit-entry{cursor:pointer}
 button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .trait-origin-kind{margin-left:9px;font-size:11px;font-weight:500;color:#c4a47c}

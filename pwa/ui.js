@@ -765,7 +765,7 @@ async function traitsView(c){
         const tag=isRollBonus?'button':'div';
         return '<'+tag+(isRollBonus?' type="button" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(item.id||'')+'"':'')+
           ' class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
-          (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</'+tag+'>';
+          (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</'+tag+'>';
       }).join('')+'</div>').join('')+'</div>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
