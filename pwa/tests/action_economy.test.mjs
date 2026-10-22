@@ -201,11 +201,11 @@ test('unified battle shows every canonical skill and pure ability check grouped 
   assert.equal(group.tagName,'DETAILS');
   assert.equal(group.open,false,'Ability checks start collapsed');
   const first=group.querySelector('.play-battle-attack-entry');
-  assert.equal(first.dataset.attackId,'ability_mod:'+group.dataset.actionAbility);
+  assert.equal(first.dataset.attackId,'ability_check:'+group.dataset.actionAbility);
   assert.equal(first.querySelector('.play-battle-attack-expanded'),null);
   assert.equal(first.querySelector('.play-battle-effect'),null);
  }
- assert.equal(checks.querySelector('[data-attack-id="ability_mod:str"] .play-battle-roll-formula').textContent,'1d20 + 3 · Forza');
+ assert.equal(checks.querySelector('[data-attack-id="ability_check:str"] .play-battle-roll-formula').textContent,'1d20 + 3 · Forza');
  assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] .play-battle-roll-formula').textContent,'1d20 + 7 · Atletica');
  assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] [data-act="sheet-roll"]').dataset.target,'skill:athletics');
  assert.equal(checks.querySelector('[data-action-ability="con"] .play-battle-attack-entry').dataset.attackId,'ability_mod:con');
