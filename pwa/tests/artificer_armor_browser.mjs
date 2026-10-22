@@ -3,7 +3,7 @@ import {browserFixture} from './browser_fixture.mjs';
 const f=await browserFixture();const {page,origin,sheet,shot}=f;
 const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature;});
 try{
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');const saved=await createCreature('character','Ore - verifica Armorer');
   await saveCreature({...saved.data,class:'Artificer',class_source:'TCE',level:8,

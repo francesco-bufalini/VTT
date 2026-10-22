@@ -25,7 +25,7 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  page.on('response',res=>{if(res.status()===404)missing.push(res.url());});
  page.on('request',req=>{if(req.method()!=='GET'&&req.url().includes('/api/'))writes.push(req.url());});
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Esploratrice di prova');

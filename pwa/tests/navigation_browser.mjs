@@ -56,7 +56,7 @@ try{
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
- assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ assert.equal(await page.locator('#creature-symbol').count(),0);
  assert.equal(await page.locator('[data-sheet="actions"]').count(),0);
  await sheet('magic');
  await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');

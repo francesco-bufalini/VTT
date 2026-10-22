@@ -74,7 +74,7 @@ async function changeScore(ability,value){
 }
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
-  assert.match(document.querySelector("#app").textContent,/Le tue creature/);
+  assert.ok(document.querySelector(".library-index"));
   assert.equal(document.querySelector("#section-menu"),null);
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
   assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
