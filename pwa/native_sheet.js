@@ -35,7 +35,8 @@ const list=v=>Array.isArray(v)?v:[];
 export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
- feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ backgrounds_catalog:[["name","Background"],["source","Fonte"],["disabled","Disattivato","checkbox"]],
+  feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  formula_bonuses:[["target","Valore"], ["expression","Formula"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  dice_bonuses:[["target","Tiro",[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']]],["dice","Dadi (es. 1d4)"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
@@ -219,7 +220,7 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
   if(key==='formula_bonuses'&&(automatic||String(row.id||'').startsWith('auto|')))return '';
   return '<article class="native-entry"><div class="row between"><strong>'+esc(row.name||row.origin_name||row.key||'Voce '+(i+1))+'</strong>'+
    (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
-    const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':'';
+    const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':key==='backgrounds_catalog'&&field==='name'?'backgrounds':'';
     const candidates=list(catalogs[category]).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
     if(category&&candidates.length){
       const chosen=candidates.find(ref=>ref.name===row[field]&&(!row[field==='name'?'source':'subclass_source']||ref.source===row[field==='name'?'source':'subclass_source']));
@@ -437,7 +438,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '')+
-   panel('Background',reference('Background','background','backgrounds'))+
+   panel('Background','<h3>Background principale</h3>'+reference('Background principale','background','backgrounds')+
+     '<h3>Altri background</h3>'+nativeRows(c,'backgrounds_catalog',catalogs))+
    panel('Classi e progressione',
       '<p class="sheet-section-description">Classi, sottoclassi, livelli e punti esperienza del personaggio.</p>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
