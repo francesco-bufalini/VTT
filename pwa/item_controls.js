@@ -340,12 +340,29 @@ export function learnInfusionPatch(record,option,definitions,classMechanics,item
    // A newly learnt infusion is not prepared until selected explicitly.
    prepared_features:preparedFeatureRows(record,known)};
 }
+// Reusable inventory targeting contract for infusions and object-targeting spells.
+// Eligibility comes exclusively from typed selectors, never narrative text.
+export function targetableInventoryItems(record,selector={},predicate=()=>true){
+ return array(record.inventory).flatMap((item,index)=>{
+   if(!item||Number(item.quantity??1)<=0||item.category==="documents")return [];
+   const resolved=resolveOwnedItem(item),kind=itemKind(resolved),id=String(item.id||"");
+   if(array(selector.kinds).length&&!selector.kinds.includes(kind))return [];
+   if(selector.nonmagical&&(id.startsWith("magic_item:")||resolved.magic===true||
+      !["","none","unknown","—"].includes(String(resolved.rarity||"").toLowerCase())))return [];
+   if(selector.id_prefix&&!id.startsWith(selector.id_prefix))return [];
+   if(array(selector.item_types).length&&!selector.item_types.includes(String(resolved.type||"").split("|")[0].toUpperCase()))return [];
+   if(array(selector.properties_all).length&&!selector.properties_all.every(code=>hasProperty(resolved,code)))return [];
+   if(array(selector.name_contains_any).length&&!selector.name_contains_any.some(part=>
+      String(resolved.name||"").toLowerCase().includes(String(part).toLowerCase())))return [];
+   return predicate(item,index)?[{item,index}]:[];
+ });
+}
 export function compatibleInfusionTargets(record,option,definitions=[],features=null){
  if(!isInfusionPrepared(record,option,definitions)||features!==null&&!infusionGrantingTrait(record,features))return [];
- return array(record.inventory).flatMap((item,index)=>Number(item?.quantity??1)>0&&
+ return targetableInventoryItems(record,option.item_selector||{},(item)=>
    infusionEligible(option,item)&&
    (option.application_kind!=="replicate"||option.plan_item_id===item.id)&&
-   (!item.infusion?.id||item.infusion.creator_id===record.id)?[{index,item}]:[]);
+   (!item.infusion?.id||item.infusion.creator_id===record.id));
 }
 export function applyInfusionPatch(record,known,definitions,classMechanics,index,features=null){
  const caps=infusionLimits(record,classMechanics,features),items=structuredClone(array(record.inventory));
@@ -402,13 +419,18 @@ export function forgetInfusionPatch(record,known){
      delete item.infusion;item.attuned=false;
    }
  }
- const prepared=preparedFeatureRows(record,learnedInfusions(record,[]));
+ const legacyKnown=array(record.optional_features_catalog).filter(row=>
+   String(row?.id||"").startsWith("infusion|")).map(row=>({id:row.id,
+     plan_item_id:row.plan_item_id||""}));
+ const prepared=preparedFeatureRows(record,legacyKnown);
  return {optional_features_catalog:updated,inventory,
    prepared_features:prepared.filter(row=>!(row.kind==="infusion"&&row.id===known.id&&
      String(row.plan_item_id||"")===String(known.plan_item_id||"")) )};
 }
 export const infusionInstanceOrigin=(item,index=0)=>
-  "infusion:"+String(item?.instance_id||item?.id||"unknown")+"|"+index;
+  "infusion:"+String(item?.infusion?.creator_id||"unknown")+"|"+
+  String(item?.infusion?.id||"unknown")+"|"+
+  String(item?.instance_id||item?.id||index);
 export function activeInfusions(record={},definitions=[],features=null){
  const source=features===null?null:infusionGrantingTrait(record,features);
  return array(record.inventory).flatMap((owned,index)=>{
