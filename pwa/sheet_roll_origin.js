@@ -7,12 +7,12 @@ const list = value => Array.isArray(value) ? value : [];
 const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const abilityNames = {str:'FOR',dex:'DES',con:'COS',int:'INT',wis:'SAG',cha:'CAR'};
 const signed = value => (value < 0 ? '−' : '+') + Math.abs(value);
-const symbol = value => String(value ?? '').replace(/\b(str|dex|con|int|wis|cha)_mod\b/gi,(_,a)=>'Mod.'+abilityNames[a.toLowerCase()])
+export const sheetRollSymbol = value => String(value ?? '').replace(/\b(str|dex|con|int|wis|cha)_mod\b/gi,(_,a)=>'Mod.'+abilityNames[a.toLowerCase()])
  .replace(/\b(str|dex|con|int|wis|cha)_score\b/gi,(_,a)=>'Punt.'+abilityNames[a.toLowerCase()])
  .replace(/\b(proficiency|prof)\b/gi,'Mod.Competenza')
  .replace(/\*/g,' × ');
 function bonusText(expression) {
- const raw=symbol(expression).trim();
+ const raw=sheetRollSymbol(expression).trim();
  return /^[+-]/.test(raw)?raw.startsWith('-')?'−'+raw.slice(1).trim():'+'+raw.slice(1).trim():'+'+raw;
 }
 function abilityFor(target,calculated){
