@@ -44,6 +44,11 @@ try{
  await page.keyboard.press('Escape');await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
  assert.equal((await record()).name,'Lyria, guardiana della Luna');assert.match(await page.locator('.play-identity h2').textContent(),/guardiana/);
  await sheet('battle');
+ const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
+ assert.equal(await classFilter.getAttribute('aria-pressed'),'true','Only character privileges are shown initially');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
+   'Empty generic action categories disappear by default');
+ await classFilter.click(); // Exercise general actions with the filter disabled.
  const weaponPanel=page.locator('#sheet-play-view [data-battle-action="attacks"]');
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="movement"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
@@ -238,11 +243,15 @@ try{
  for(const width of [320,390]){
   await page.setViewportSize({width,height:844});
   const aligned=await weaponsGroup.locator('.equipment-attack-options').evaluate(node=>{
-   const [ability,finesse,grip]=[...node.querySelectorAll(':scope > label')].map(label=>label.getBoundingClientRect());
-   return ability.right<=finesse.left+5&&finesse.right<=grip.left+5&&
-     Math.abs(ability.top-finesse.top)<24&&Math.abs(ability.top-grip.top)<24;
+   const labels=[...node.querySelectorAll(':scope > label')].map(label=>label.getBoundingClientRect());
+   const ability=node.querySelector('.equipment-attack-ability');
+   const select=ability.querySelector('select').getBoundingClientRect();
+   const captionRect=ability.getBoundingClientRect();
+   const separated=labels.every((rect,i)=>labels.every((other,j)=>i===j||
+     rect.bottom<=other.top+1||other.bottom<=rect.top+1));
+   return separated&&select.left>=captionRect.left-1&&select.right<=captionRect.right+1;
   });
-  assert(aligned,'Attack ability and both options share one horizontal row at '+width+'px');
+  assert(aligned,'Attack ability and option labels never overlap at '+width+'px');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
     'Equipment popup must not overflow at '+width+'px');
  }
@@ -275,6 +284,15 @@ try{
  assert.equal(await shortRestDice.count(),1,'Wizard Hit Dice appear in the resting popup');
  await shortRestDice.fill('2');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
+ assert.equal((await record()).hit_dice_spent.d6,undefined,'Preview cannot spend Hit Dice');
+ await page.locator('#sheet-context-dialog [data-rest-roll-mode]').selectOption('manual');
+ await page.locator('#sheet-context-dialog [data-rest-manual-results]').fill('3, 4');
+ await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ await page.locator('#sheet-context-dialog .play-rest-confirm h3', {hasText:'Riposo completato'}).waitFor();
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 3/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 4/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
  await dismiss();
  const afterShort=await record();
  assert.equal(afterShort.resource_tracker_spent.focus,undefined);
@@ -283,6 +301,11 @@ try{
  await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die="6"]').getAttribute('max'),'3');
  await page.locator('#sheet-context-dialog [data-act="tracker-long"]').click();
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
+ await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ await page.locator('#sheet-context-dialog .play-rest-confirm h3', {hasText:'Riposo completato'}).waitFor();
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Dadi Vita d6: 2/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
  await dismiss();
  const afterLong=await record();
  assert.equal(afterLong.temporary_hp,0,'Long rest expires temporary HP');
@@ -386,12 +409,12 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
  const strength=checks.locator('[data-action-ability="str"]');
- assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_mod:str');
+ assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_check:str');
  assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
  assert.equal(await strength.getAttribute('open'),null,'Ability groups start collapsed');
  await strength.locator('summary.play-battle-action-heading').click();
- const firstRoll=strength.locator('[data-target="ability_mod:str"]');
+ const firstRoll=strength.locator('[data-target="ability_check:str"]');
  await firstRoll.click();
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();

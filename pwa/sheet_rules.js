@@ -2,7 +2,7 @@
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
-import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies} from "./structured_effects.js";
+import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
 
@@ -146,7 +146,7 @@ function indexRows(record,index,warnings){
       if(grant)rows.push(grant);
     }
   };
-  const categories=[["race","species","species_source"],["background","background","background_source"]];
+  const categories=[["race","species","species_source"]];
   for(const [group,field,sourceField] of categories){
     const value=record[field];
     if(!value)continue;
@@ -157,6 +157,13 @@ function indexRows(record,index,warnings){
       continue;
     }
     for(const row of options)append(group+"|"+String(row.source||"").toLowerCase()+"|"+
+      String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
+  }
+  for(const background of effectiveBackgrounds(record)){
+    const options=arr(index.background).filter(row=>same(row.name,background.name)&&
+      (!background.source||same(row.source,background.source)));
+    if(!options.length){warnings.add("Bonus background non presenti nell’indice offline");continue;}
+    for(const row of options)append("background|"+String(row.source||"").toLowerCase()+"|"+
       String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
   }
   if(record.subrace){
@@ -244,8 +251,9 @@ function itemRows(record,warnings,infusionCatalog=[]){
     }
     if(seen.has(sid))continue;
     seen.add(sid);
-    for(const a of ABILITIES)add("save:"+a,"bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
-    for(const [id] of SKILLS)add("skill:"+id,"bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
+    add("saving_throw","bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
+    add("ability_check","bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
+    add("passive_perception","bonus_passive_perception","bonus_passive_perception","bonusPassivePerception");
     for(const [field,camel,target] of [
       ["bonus_spell_attack","bonusSpellAttack","spell_attack"],
       ["bonus_spell_save_dc","bonusSpellSaveDc","spell_dc"],
@@ -578,7 +586,9 @@ export function calculateSheet(record={},catalogs={}){
     if(target==="level")return int(record.level,1);
     if(target==="attunement_max")return Math.max(0,int(record.attunement_max_base,3));
     if(target==="proficiency")return proficiencyBase();
-    if(target==="initiative")return resolve("ability_mod:dex",stack);
+    if(target==="initiative")return resolve("ability_mod:dex",stack)+sumGrants("ability_check",stack);
+    if(prefix==="ability_check"&&ABILITIES.includes(key))
+      return resolve("ability_mod:"+key,stack)+sumGrants("ability_check",stack);
     if(target==="ac"){
       if(!armor){
         const base=kind==="monster"?monsterArmor(record.stat_block):int(record.armor_class_base,10);
@@ -622,8 +632,8 @@ export function calculateSheet(record={},catalogs={}){
     if(prefix==="save"&&ABILITIES.includes(key)){
       const legacy=record.stat_block?.save?.[key];
       if(kind==="monster"&&!hasProficiency(record,"save",key,proficiencies)&&legacy!==undefined&&
-        /^[-+]?\d+$/.test(String(legacy)))return int(legacy);
-      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0);
+        /^[-+]?\d+$/.test(String(legacy)))return int(legacy)+sumGrants("saving_throw",stack);
+      return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0)+sumGrants("saving_throw",stack);
     }
     if(prefix==="skill"){
       const skill=SKILLS.find(row=>row[0]===key);
@@ -637,7 +647,7 @@ export function calculateSheet(record={},catalogs={}){
           else if(difference===resolve("proficiency",stack))rank=Math.max(rank,1);
         }
       }
-      return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack);
+      return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
     }
     if(target==="passive_perception")return 10+resolve("skill:perception",stack);
     return 0;
@@ -685,8 +695,8 @@ export function calculateSheet(record={},catalogs={}){
       (!source||!record.species_source||same(record.species_source,source));
     if(group==="subrace")return same(record.subrace,name)&&
       (!source||!record.subrace_source||same(record.subrace_source,source));
-    if(group==="background")return same(record.background,name)&&
-      (!source||!record.background_source||same(record.background_source,source));
+    if(group==="background")return effectiveBackgrounds(record).some(b=>same(b.name,name)&&
+      (!source||!b.source||same(b.source,source)));
     if(group==="feat")return arr(record.feats_catalog).some(x=>!x.disabled&&
       same(x.name,name)&&(!source||same(x.source,source)));
     if(group==="class")return localClasses(record).some(x=>
@@ -747,6 +757,7 @@ export function calculateSheet(record={},catalogs={}){
   const abilities=Object.fromEntries(ABILITIES.map(a=>[a,{score:safe("ability:"+a),
     modifier:safe("ability_mod:"+a)}]));
   safe("attunement_max");
+  for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
   const progression=spellProgression(record,classes);
@@ -803,7 +814,9 @@ export function calculateSheet(record={},catalogs={}){
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
-  for(const [group,field] of [['race','species'],['subrace','subrace'],['background','background']])if(record[field])addOrigin(group+'|'+String(record[field+'_source']||'').toLowerCase()+'|'+String(record[field]).toLowerCase(),record[field]);
+  for(const [group,field] of [['race','species'],['subrace','subrace']])if(record[field])addOrigin(group+'|'+String(record[field+'_source']||'').toLowerCase()+'|'+String(record[field]).toLowerCase(),record[field]);
+  for(const background of effectiveBackgrounds(record))
+    addOrigin('background|'+String(background.source||'').toLowerCase()+'|'+String(background.name).toLowerCase(),background.name);
   for(const feat of arr(record.feats_catalog))if(feat?.name)addOrigin('feat|'+String(feat.source||'').toLowerCase()+'|'+feat.name.toLowerCase(),feat.name);
   for(const origin of arr(record.proficiency_origins))addOrigin(origin.id,origin.name||origin.label||origin.id);
   for(const tracker of trackers)addOrigin(tracker.origin_id,tracker.origin_name||tracker.name);

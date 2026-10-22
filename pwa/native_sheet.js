@@ -26,7 +26,7 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
-export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
+export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (incl. iniziativa)'],['saving_throw','Tutti i tiri salvezza'],['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
@@ -35,7 +35,8 @@ const list=v=>Array.isArray(v)?v:[];
 export const ROW_FIELDS = {
  classes:[["name","Classe"],["source","Fonte"],["subclass","Sottoclasse"],["subclass_source","Fonte sottoclasse"],["level","Livello","number",1,20]],
  proficiency_choices:[["kind","Tipo",[["skill","Abilità"],["expertise","Maestria"],["save","Tiro salvezza"],["weapon","Arma"],["armor","Armatura"],["tool","Strumento"],["language","Linguaggio"]]],["key","Competenza"],["origin_name","Origine"],["disabled","Disattivata","checkbox"]],
- feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
+ backgrounds_catalog:[["name","Background"],["source","Fonte"],["disabled","Disattivato","checkbox"]],
+  feats_catalog:[["name","Talento"],["source","Fonte"],["level","Livello del privilegio","number",1,20],["ability_choice","Caratteristica scelta",[['','Nessuna'],...['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()])]],["origin_name","Origine"],["disabled","Disattivato","checkbox"]],
  formula_bonuses:[["target","Valore"], ["expression","Formula"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  dice_bonuses:[["target","Tiro",[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']]],["dice","Dadi (es. 1d4)"],["origin_id","Origine"],["disabled","Disattivato","checkbox"]],
  damage_defense_entries:[["key","Danno o condizione"],["rank","Difesa",[[-1,"Vulnerabilità"],[1,"Resistenza"],[2,"Immunità danno"],[3,"Immunità condizione"]]],["disabled","Disattivata","checkbox"]],
@@ -141,7 +142,6 @@ export function recoveryPatch(c,event,trackers){
  const patch={resource_tracker_spent:spent,resource_recovery_ready:ready,resource_recovery_used:used};
  if(event==='short_rest'||event==='long_rest')patch.active_class_features=c.active_class_features?.wild_shape?
   {wild_shape:structuredClone(c.active_class_features.wild_shape)}:{};
- if(event==='long_rest')patch.created_spell_slots=Array(10).fill(0);
  if(event==='long_rest')patch.created_spell_slots=[];
  // Pact Magic and class spell slots retain their original explicit rest rules.
  if(event==='short_rest'||event==='long_rest')patch.pact_slots_spent=0;
@@ -219,7 +219,7 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
   if(key==='formula_bonuses'&&(automatic||String(row.id||'').startsWith('auto|')))return '';
   return '<article class="native-entry"><div class="row between"><strong>'+esc(row.name||row.origin_name||row.key||'Voce '+(i+1))+'</strong>'+
    (!automatic?'<button class="btn small danger" data-act="native-remove" data-list="'+key+'" data-index="'+i+'">Rimuovi</button>':'<span class="tag">Da origine</span>')+'</div><div class="columns">'+ROW_FIELDS[key].map(([field,label,type,min,max])=>{
-    const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':'';
+    const category=key==='classes'?(field==='name'?'classes':field==='subclass'?'subclasses':''):key==='feats_catalog'&&field==='name'?'feats':key==='backgrounds_catalog'&&field==='name'?'backgrounds':'';
     const candidates=list(catalogs[category]).filter(ref=>key!=='classes'||field==='name'||ref.class_name===row.name&&(!row.source||ref.class_source===row.source));
     if(category&&candidates.length){
       const chosen=candidates.find(ref=>ref.name===row[field]&&(!row[field==='name'?'source':'subclass_source']||ref.source===row[field==='name'?'source':'subclass_source']));
@@ -437,7 +437,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     cols(select('Taglia','size_name',[['Tiny','Minuscola'],['Small','Piccola'],['Medium','Media'],['Large','Grande'],['Huge','Enorme'],['Gargantuan','Mastodontica']],c.size_name||'Medium')+
       select('Fronte della miniatura','visual_front_quarter_turns',[[0,'−Z · 0°'],[1,'+X · 90°'],[2,'+Z · 180°'],[3,'−X · 270°']],c.visual_front_quarter_turns||0))+
     '')+
-   panel('Background',reference('Background','background','backgrounds'))+
+   panel('Background','<h3>Background principale</h3>'+reference('Background principale','background','backgrounds')+
+     '<h3>Altri background</h3>'+nativeRows(c,'backgrounds_catalog',catalogs))+
    panel('Classi e progressione',
       '<p class="sheet-section-description">Classi, sottoclassi, livelli e punti esperienza del personaggio.</p>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
@@ -497,22 +498,13 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '</div>'+
       '</form>'+
     '</dialog>'+
-    '<details class="battle-second-form"'+(hasSecondForm?' open':'')+'><summary>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</summary>'+
+    '<section class="battle-second-form"><h3>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</h3>'+
       '<div class="battle-hp-grid battle-form-stats">'+
         '<label class="battle-stat">PF attuali<input data-field="second_form_hp" type="number" min="0" max="99999" value="'+esc(c.second_form_hp??0)+'"></label>'+
         '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('second_max','Massimi seconda forma')+'</div>'+
       '</div>'+
       '<button type="button" class="btn small" data-act="hp-restore-second">↺ Ripristina seconda forma</button>'+
-    '</details>'+
-    '<details class="battle-hp-settings"><summary>Imposta PF massimi di base</summary>'+
-      '<div class="battle-base-fields">'+
-        number('PF base','max_hp_base',c.max_hp_base??c.max_hp??1,0,99999)+
-        number('Seconda forma · base','second_form_max_hp',c.second_form_max_hp??0,0,99999)+
-      '</div>'+
-      (calculated.stats?.automatic_hp?.available?
-        '<div class="battle-auto-hp"><span class="hint">PF da progressione: '+esc(calculated.stats.automatic_hp.value)+'</span>'+
-        '<button type="button" class="btn small" data-act="hp-automatic">Applica PF automatici</button></div>':'')+
-    '</details>',
+    '</section>',
     'battle-hp-panel')+
    panel('Classe armatura',
     equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,

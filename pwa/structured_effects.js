@@ -14,6 +14,17 @@ const fields={weapon:"weaponProficiencies",armor:"armorProficiencies",
 const legacy={skill:"skill_proficiencies",expertise:"skill_expertise",save:"saving_throw_proficiencies"};
 const classMembers=record=>array(record.classes).length?array(record.classes):
   record.class?[{name:record.class,source:record.class_source||"",level:record.level||1}]:[];
+// Treat older single-background characters as having a first background.
+export function effectiveBackgrounds(record={}){
+ const primary=record.background?[{name:record.background,id:record.background_id||'',source:record.background_source||''}]:[];
+ const rows=[...primary,...array(record.backgrounds_catalog)].filter(row=>row?.name&&!row.disabled);
+ const seen=new Set();
+ return rows.filter(row=>{
+  const key=norm(row.name)+'|'+norm(row.source);
+  if(seen.has(key))return false;
+  seen.add(key);return true;
+ });
+}
 function selectedSources(record,index={}){
   const selected=[];
   const push=(group,source,origin,mode="starting")=>{
@@ -21,13 +32,16 @@ function selectedSources(record,index={}){
     const id=identity(group,source);
     if(!selected.some(x=>x.id===id))selected.push({id,group,source,origin,mode});
   };
-  for(const [group,field,sourceField] of [["race","species","species_source"],
-      ["background","background","background_source"]]){
+  for(const [group,field,sourceField] of [["race","species","species_source"]]){
     if(!record[field])continue;
     for(const source of array(index[group]).filter(x=>match(x.name,record[field])&&
         (group==="background"&&!record[sourceField]||match(x.source,record[sourceField]))))
       push(group,source,record[field]);
   }
+  for(const background of effectiveBackgrounds(record))
+    for(const source of array(index.background).filter(x=>match(x.name,background.name)&&
+      (!background.source||match(x.source,background.source))))
+      push("background",source,background.name);
   if(record.subrace)for(const source of array(index.subrace).filter(x=>
     match(x.raceName,record.species)&&match(x.name,record.subrace)&&
     match(x.source,record.subrace_source)&&
@@ -98,8 +112,8 @@ function liveSource(record,id){
     source=parts[1]||"",name=parts.slice(2).join("|");
   if(group==="race")return match(record.species,name)&&match(record.species_source,source);
   if(group==="subrace")return match(record.subrace,name)&&match(record.subrace_source,source);
-  if(group==="background")return match(record.background,name)&&
-    (!record.background_source||match(record.background_source,source));
+  if(group==="background")return effectiveBackgrounds(record).some(row=>match(row.name,name)&&
+    (!source||!row.source||match(row.source,source)));
   if(group==="class")return classMembers(record).some(c=>match(c.name,name)&&match(c.source,source));
   if(group==="feat")return array(record.feats_catalog).some(f=>!f?.disabled&&(
     match(f.id,parts.slice(1).join("|"))||
@@ -180,9 +194,9 @@ export function collectStructuredFeatures(record,catalogs={}){
           Number(row.level||1));
       });
     }
-    if(record.background){
-      const background=lookup("backgrounds",record.background,record.background_source);
-      const origin="background|"+norm(background?.source||record.background_source)+"|"+norm(record.background);
+    for(const selection of effectiveBackgrounds(record)){
+      const background=lookup("backgrounds",selection.name,selection.source);
+      const origin="background|"+norm(background?.source||selection.source)+"|"+norm(selection.name);
       for(const row of array(background?.entries))
         if(row?.name&&(row.entries!==undefined||row.entry!==undefined))
           append({...row,entries:row.entries??row.entry},origin,1);

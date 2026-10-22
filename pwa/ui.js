@@ -21,7 +21,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses,spendTrackerUses} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -35,7 +35,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -957,7 +957,7 @@ function inventoryEquipmentView(c,calculated={}){
         '<option value="'+value+'"'+((c.attack_ability||"str")===value?' selected':'')+'>'+label+'</option>').join('')+
     '</select></label>'+
     '<label class="check"><input type="checkbox" data-field="attack_ability_finesse_only"'+
-      (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo Accurata</label>'+
+      (c.attack_ability_finesse_only!==false?' checked':'')+'>Usa solo per armi accurate</label>'+
     (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
       (c.hand_grip_two_handed?' checked':'')+'>Due mani (Versatile)</label>':'')+
     '</div>';
@@ -2276,6 +2276,10 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   }
 }
 function readActionVariants(){
+ const selected=state.editor?.read()?.action_variants_2014;
+ if(Array.isArray(selected))return selected;
+ // Older versions kept these globally; the fallback is read-only until saved
+ // explicitly for this character, so other characters keep distinct choices.
  try{const choices=JSON.parse(window.localStorage.getItem('vtt.actionVariants.2014')||'[]');return Array.isArray(choices)?choices:[];}catch{return [];}
 }
 function decorateSheetHeadings(){
@@ -2307,7 +2311,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
@@ -2376,6 +2380,9 @@ function fillAppliedSpellOptions(query=''){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='battle-toggle-class-only'){
+    state.battleOnlyClass=!state.battleOnlyClass;await render();return;
+  }
   if(act==='battle-expand-all'||act==='battle-collapse-all'){
     const expanded=act==='battle-expand-all';
     for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure, #sheet-play-view .play-battle-action-group')){
@@ -2429,7 +2436,7 @@ async function handleAction(target){
     const calculated=await computeLocalData(c);
     const panels=battleActionPanels(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
       state.generalActionSupplements||[],readActionVariants(),
-      abilitiesForCreature(c,state.abilityCatalog||[],calculated));
+      abilitiesForCreature(c,state.abilityCatalog||[],calculated),state.battleOnlyClass);
     const requested=String(target.dataset.abilityId||'');
     const power=requested.startsWith('activated:')?
       abilitiesForCreature(c,state.abilityCatalog||[],calculated)
@@ -2636,7 +2643,7 @@ async function handleAction(target){
     const enabled=readActionVariants();
     dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
     dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!row.textContent.toLocaleLowerCase('it').includes(e.target.value.toLocaleLowerCase('it'));});
-    dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{window.localStorage.setItem('vtt.actionVariants.2014',JSON.stringify([...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value)));dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
+    dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{const selected=[...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value);await patch({action_variants_2014:selected});dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
     dialog.querySelector('[data-close-variants]').addEventListener('click',()=>dialog.remove());
     dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return;
   }
@@ -3098,6 +3105,7 @@ async function handleAction(target){
       const defaults={classes:{name:"",source:"",level:1},
         proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
+        backgrounds_catalog:{name:"",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
         dice_bonuses:{id:'dice_'+crypto.randomUUID(),target:'ability_check',dice:'1d4',origin_id:'',origin_name:'',disabled:false},
         damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
@@ -3165,7 +3173,13 @@ async function handleAction(target){
         throw new Error("Talento già presente in questa scheda.");
       await editor.update({feats_catalog:[...current,feat],...quickGrantPatch(sheet,entry)});
     }else if(category==="backgrounds"){
-      await editor.update({background:entry.name,background_id:entry.id||"",background_source:entry.source||"",...quickGrantPatch(sheet,entry)});
+      const existing=(sheet.backgrounds_catalog||[]);
+      const duplicate=[{name:sheet.background,source:sheet.background_source},...existing]
+        .some(row=>row.name===entry.name&&String(row.source||"")===String(entry.source||""));
+      if(duplicate)throw Error("Background già presente in questa scheda.");
+      const changes=sheet.background?{backgrounds_catalog:[...existing,{name:entry.name,id:entry.id||"",source:entry.source||""}]}:
+        {background:entry.name,background_id:entry.id||"",background_source:entry.source||""};
+      await editor.update({...changes,...quickGrantPatch(sheet,entry)});
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
@@ -3298,21 +3312,129 @@ async function handleAction(target){
     if(act==='tracker-turn'){
       await patch(current=>recoveryPatch(current,'turn',calculated.trackers));await render();return;
     }
-    const event=act==='tracker-long'?'long_rest':'short_rest';
-    const dice={};
-    if(event==='short_rest'){
-      for(const control of app.querySelectorAll('#sheet-context-dialog [data-rest-die]')){
-        dice['d'+control.dataset.restDie]=Number(control.value);
-      }
-    }
-    let result;
-    await patch(current=>{
-      result=completeRest(current,event,calculated,dice);
-      return result.patch;
+    const dialog=app.querySelector('#sheet-context-dialog');
+    if(!dialog||dialog.dataset.context!=='rests')throw Error('Apri il pannello Riposi prima di continuare.');
+    const event=act==='tracker-long'?'long_rest':'short_rest',dice={};
+    if(event==='short_rest')for(const control of dialog.querySelectorAll('[data-rest-die]'))
+      dice['d'+control.dataset.restDie]=Number(control.value);
+    // Preview is deterministic; no die is rolled and no creature is changed.
+    const minimum=completeRest(record,event,calculated,dice,()=>1);
+    const maximum=completeRest(record,event,calculated,dice,sides=>sides);
+    // Compare the real rest patch, including partial short-rest recoveries.
+    const recovered=(calculated.trackers||[]).flatMap(row=>{
+      const before=Math.max(0,Number(record.resource_tracker_spent?.[row.id]||0));
+      const after=Math.max(0,Number(minimum.patch.resource_tracker_spent?.[row.id]||0));
+      return before>after?[row.name+': '+(before-after)+' usi recuperati']:[];
     });
-    await render();
-    const detail=result.rolls.length?' · '+result.rolls.map(r=>'d'+r.die+': '+r.roll+(r.modifier>=0?'+':'')+r.modifier).join(', '):'';
-    message((event==='long_rest'?'Riposo lungo':'Riposo breve')+' completato · '+result.healed+' PF recuperati'+detail);
+    const newlyReady=Object.entries(minimum.patch.resource_recovery_ready||{}).filter(([key,ready])=>
+      ready&&!record.resource_recovery_ready?.[key]).length;
+    if(newlyReady)recovered.push('Recuperi opzionali disponibili: '+newlyReady);
+    const pact=Number(record.pact_slots_spent||0);
+    if(pact)recovered.push('Magia del Patto: '+pact+' slot recuperati');
+    if(event==='long_rest'){
+      const slots=(record.spell_slots_spent||[]).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
+      if(slots)recovered.push('Slot incantesimo: '+slots+' recuperati');
+      const pools=hitDicePools(record,calculated);
+      const before=pools.reduce((sum,p)=>sum+p.spent,0);
+      const after=Object.values(minimum.patch.hit_dice_spent||{}).reduce((sum,n)=>sum+Number(n||0),0);
+      if(before>after)recovered.push('Dadi Vita: '+(before-after)+' recuperati');
+      if(Number(record.exhaustion)>0)recovered.push('Indebolimento: un livello rimosso');
+    }
+    const extra=dialog.querySelector('.sheet-context-body');
+    extra.querySelector('.play-rest-choices')?.setAttribute('hidden','');
+    extra.querySelector('.play-rest-dice')?.setAttribute('hidden','');
+    extra.querySelector('[data-rest-preview]')?.remove();
+    const chosen=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
+    const preview=document.createElement('section');
+    preview.className='play-rest-confirm';preview.dataset.restPreview=event;
+    preview.dataset.restDice=JSON.stringify(dice);
+    preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+
+      '<p><strong>PF recuperabili:</strong> '+(event==='long_rest'?minimum.healed:minimum.healed+'–'+maximum.healed)+
+      (event==='short_rest'?' · '+chosen+' Dadi Vita da spendere':'')+'</p>'+
+      '<p><strong>Recuperi previsti:</strong></p>'+
+      (recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
+       '<p>Nessun altro recupero disponibile.</p>')+
+      (event==='short_rest'&&chosen?
+        '<label>Come determinare i risultati dei Dadi Vita<select data-rest-roll-mode><option value="roll">Tira in app</option><option value="manual">Inserisci i risultati</option></select></label>'+
+        '<label data-rest-manual-label hidden>Risultato di ciascun dado, separato da virgole'+
+        '<input type="text" data-rest-manual-results placeholder="Es. 5, 7, 3" autocomplete="off" inputmode="text"></label>':'')+
+      '<p data-rest-error class="warning" role="alert"></p>'+
+      '<div class="actions"><button type="button" class="btn primary" data-act="tracker-rest-confirm">Conferma riposo</button>'+
+      '<button type="button" class="btn" data-act="tracker-rest-back">Indietro</button></div>';
+    extra.append(preview);
+    preview.querySelector('[data-rest-roll-mode]')?.addEventListener('change',event=>{
+      preview.querySelector('[data-rest-manual-label]').hidden=event.target.value!=='manual';
+    });
+    return;
+  }
+  if(act==='tracker-rest-back'){
+    const dialog=app.querySelector('#sheet-context-dialog');
+    dialog?.querySelector('[data-rest-preview]')?.remove();
+    dialog?.querySelector('.play-rest-choices')?.removeAttribute('hidden');
+    dialog?.querySelector('.play-rest-dice')?.removeAttribute('hidden');
+    return;
+  }
+  if(act==='tracker-rest-confirm'){
+    const dialog=app.querySelector('#sheet-context-dialog');
+    const preview=dialog?.querySelector('[data-rest-preview]');
+    if(!preview||preview.dataset.restDone==='true')throw Error('Conferma del riposo non disponibile.');
+    const event=preview.dataset.restPreview,dice=JSON.parse(preview.dataset.restDice||'{}');
+    const current=state.editor.read(),calculated=await computeLocalData(current);
+    const manual=preview.querySelector('[data-rest-roll-mode]')?.value==='manual';
+    const values=manual?String(preview.querySelector('[data-rest-manual-results]')?.value||'').split(/[,;\s]+/).filter(Boolean).map(Number):[];
+    const expected=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
+    const diceOrder=hitDicePools(current,calculated).filter(pool=>dice['d'+pool.die]>0)
+      .flatMap(pool=>Array(Number(dice['d'+pool.die])).fill(pool.die));
+    if(manual&&(values.length!==expected||values.some((number,i)=>!Number.isInteger(number)||number<1||number>diceOrder[i]))){
+      preview.querySelector('[data-rest-error]').textContent='Inserisci un risultato valido per ciascuno dei '+expected+' Dadi Vita.';return;
+    }
+    const button=preview.querySelector('[data-act="tracker-rest-confirm"]');button.disabled=true;
+    try{
+      let result;
+      await patch(record=>{
+        let index=0;
+        result=completeRest(record,event,calculated,dice,manual?()=>values[index++]:randomDie);
+        return result.patch;
+      });
+      if(state.saveError)throw Error(state.saveError);
+      await state.editor.flush();
+      preview.dataset.restDone='true';
+      const summary=dialog.querySelector('.sheet-context-body');
+      const rolled=result.rolls.length?'<ul>'+result.rolls.map(r=>
+        '<li>d'+r.die+' = '+r.roll+' · COS '+(r.modifier>=0?'+':'')+r.modifier+
+        ' · recupero potenziale '+r.healed+' PF</li>').join('')+'</ul>':'';
+      // Report the actual saved differences, not a generic recovery message.
+      const recovered=[];
+      for(const row of calculated.trackers||[]){
+        const before=Math.max(0,Number(current.resource_tracker_spent?.[row.id]||0));
+        const after=Math.max(0,Number(result.patch.resource_tracker_spent?.[row.id]||0));
+        if(before>after)recovered.push(row.name+': '+(before-after)+' usi');
+      }
+      const pactBefore=Math.max(0,Number(current.pact_slots_spent||0));
+      const pactAfter=Math.max(0,Number(result.patch.pact_slots_spent??pactBefore));
+      if(pactBefore>pactAfter)recovered.push('Slot del Patto: '+(pactBefore-pactAfter));
+      const beforeSlots=current.spell_slots_spent||[],afterSlots=result.patch.spell_slots_spent;
+      if(Array.isArray(afterSlots))for(let level=1;level<Math.max(beforeSlots.length,afterSlots.length);level++){
+        const restored=Math.max(0,Number(beforeSlots[level]||0)-Number(afterSlots[level]||0));
+        if(restored)recovered.push('Slot livello '+level+': '+restored);
+      }
+      const beforeDice=hitDicePools(current,calculated);
+      for(const pool of beforeDice){
+        const restored=Math.max(0,pool.spent-Number(result.patch.hit_dice_spent?.['d'+pool.die]||0));
+        if(restored)recovered.push('Dadi Vita d'+pool.die+': '+restored);
+      }
+      const exhaustion=Math.max(0,Number(current.exhaustion||0)-Number(result.patch.exhaustion??current.exhaustion??0));
+      if(exhaustion)recovered.push('Indebolimento: '+exhaustion+' livello rimosso');
+      const recoveryHtml=recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
+        '<p>Nessun altro recupero effettuato.</p>';
+      summary.innerHTML='<div class="play-rest-confirm"><h3>Riposo completato</h3>'+
+        '<p><strong>'+result.healed+' PF recuperati.</strong></p>'+rolled+
+        '<h4>Risorse recuperate</h4>'+recoveryHtml+
+        '<button type="button" class="btn primary" data-act="sheet-context-close">Chiudi</button></div>';
+    }catch(error){
+      button.disabled=false;
+      preview.querySelector('[data-rest-error]').textContent=errorMessage(error);
+    }
     return;
   }
   if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
@@ -3595,7 +3717,15 @@ function listen(){
   navigation.addEventListener('click',event=>{if(event.target!==navigation)return;const rect=navigation.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeNavigation(true);});
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
-    if(!button)return;
+    if(!button){
+      // An HP card is a single click target, except for its own controls.
+      const card=e.target.closest('#sheet-play-view .play-health[data-act="sheet-context"]');
+      if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health)')){
+        try{await flushPendingFields();await handleAction(card);}
+        catch(error){message(errorMessage(error),true);}
+      }
+      return;
+    }
     if(button.disabled)return;
     button.disabled=true;
     try {
@@ -3607,6 +3737,11 @@ function listen(){
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected)button.disabled=false;}
+  });
+  document.addEventListener('keydown',e=>{
+    const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
+    if(e.target!==card||!['Enter',' '].includes(e.key))return;
+    e.preventDefault();card.click();
   });
   // Right-click (and touch long-press where the browser emits contextmenu)
   // opens the same per-item actions as the explicit touch-friendly ⋯ button.
