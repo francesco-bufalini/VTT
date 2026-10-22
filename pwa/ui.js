@@ -751,6 +751,23 @@ async function traitsView(c){
  const groups=groupTraitRows(rows);
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
+  const ids=[trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean);
+  const granted=(state.calculated?.bonuses||[]).filter(row=>
+    ids.includes(row.origin_id)||ids.includes(row.parent_origin));
+  const known=new Set(granted.map(row=>String(row.id||'')));
+  const automatic=(state.calculated?.automatic_bonuses||[]).filter(row=>
+    !known.has(String(row.id||''))&&(ids.includes(row.origin_id)||ids.includes(row.parent_origin)));
+  const dice=(c.dice_bonuses||[]).filter(row=>!row.disabled&&ids.includes(row.origin_id));
+  const prof=Object.entries(state.calculated?.proficiency_sources||{}).filter(([,sources])=>
+    sources.some(source=>ids.includes(source.id))).map(([key])=>key);
+  const benefits=[...granted,...automatic].map(row=>
+    '<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(row.id||'')+'">'+
+    '<span>'+esc(row.target)+'</span><b>'+esc(row.expression)+(row.disabled?' · disattivato':'')+'</b></button>')
+    .concat(dice.map(row=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses">'+
+      '<span>'+esc(row.target)+'</span><b>'+esc(row.dice)+'</b></button>'))
+    .concat(prof.map(key=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="proficiency_choices">'+
+      '<span>Competenza</span><b>'+esc(key)+'</b></button>')).join('');
+  const benefitDetails=benefits?'<div class="trait-benefits"><strong>Benefici concessi</strong>'+benefits+'</div>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
@@ -761,7 +778,7 @@ async function traitsView(c){
       trait.granted_spells.map(spell=>'<span class="trait-granted-spell">'+esc(spell.name)+'</span>').join('')+'</span>':'')+'</summary>'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+linked+'</details>';
+    toggler+benefitDetails+linked+'</details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
@@ -3069,6 +3086,21 @@ async function handleAction(target){
     const name=app.querySelector("#quick-name");
     name?.scrollIntoView?.({block:"center"});
     name?.focus();
+    return;
+  }
+  if(act==="trait-benefit-open"){
+    state.magicPopup="";state.sheet="origins";state.detail=target.dataset.detail||'formula_bonuses';
+    state.sheetPopup="origin-editor";
+    state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||'Bonus';
+    await render();
+    const id=target.dataset.bonusId;
+    if(id){
+      const originRows=(state.editor?.read()?.formula_bonuses||[]);
+      const index=originRows.findIndex(row=>row.id===id);
+      const el=index>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"]'):
+        [...app.querySelectorAll('[data-auto-bonus]')].find(row=>row.dataset.autoBonus===id);
+      el?.scrollIntoView?.({block:'center'});
+    }
     return;
   }
   if(act==="sheet-details"){
