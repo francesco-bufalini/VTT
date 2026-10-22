@@ -68,7 +68,7 @@ export function traitBenefitTargetLabel(value=''){
 function proficiencyLabel(key){
  const [kind,...parts]=String(key).split(':'),name=parts.join(':');
  return {skill:SKILLS[name]||name,expertise:SKILLS[name]||name,
-  save:ABILITIES[name]||name,weapon:name,armor:name,tool:name,language:name}[kind]||name;
+  save:ABILITIES[name]||name,weapon:({'firearms':'Armi da fuoco','firearm':'Armi da fuoco'}[norm(name)]||name),armor:name,tool:name,language:name}[kind]||name;
 }
 const proficiencyKinds={skill:'Abilità',expertise:'Maestria',
  save:'Tiri salvezza',weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
@@ -113,13 +113,22 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   });
  for(const item of proficiencies)
   add('proficiency','Competenze',proficiencyKinds[item.kind]||'Altre competenze',item.name);
- for(const row of rows(record.damage_defense_entries)){
-  if(row.disabled||!belongs(row))continue;
-  const rank=Number(row.rank);
-  const group={[-1]:['vulnerability','Vulnerabilità'],1:['resistance','Resistenze'],
-   2:['damage_immunity','Immunità ai danni'],3:['condition_immunity','Immunità alle condizioni']}[rank];
-  if(group)add(group[0],group[1],DAMAGE[norm(row.key)]||String(row.key||''));
- }
+ // One section for all defenses and vulnerabilities, with the kind in the
+ // left-hand column and the protected/affected damage or condition on the right.
+ const defenseKinds={
+  1:['Resistenza',0],2:['Immunità ai danni',1],
+  3:['Immunità alle condizioni',2],[-1]:['Vulnerabilità',3]
+ };
+ const defenses=rows(record.damage_defense_entries)
+  .filter(row=>!row.disabled&&belongs(row)&&defenseKinds[Number(row.rank)])
+  .map(row=>({
+   label:defenseKinds[Number(row.rank)][0],
+   order:defenseKinds[Number(row.rank)][1],
+   value:DAMAGE[norm(row.key)]||String(row.key||'')
+  }))
+  .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
+ for(const row of defenses)
+  add('defenses','Resistenze, immunità e vulnerabilità',row.label,row.value);
  for(const row of rows(calculated.trackers)){
   if(!belongs(row)){
    // Unattributed automatic class pools are shown only in the class overview,
