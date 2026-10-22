@@ -286,7 +286,12 @@ try{
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
  assert.equal((await record()).hit_dice_spent.d6,undefined,'Preview cannot spend Hit Dice');
+ await page.locator('#sheet-context-dialog [data-rest-roll-mode]').selectOption('manual');
+ await page.locator('#sheet-context-dialog [data-rest-manual-results]').fill('3, 4');
  await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 3/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/d6 = 4/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
  await dismiss();
  const afterShort=await record();
  assert.equal(afterShort.resource_tracker_spent.focus,undefined);
