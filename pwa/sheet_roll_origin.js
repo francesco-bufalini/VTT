@@ -180,7 +180,10 @@ function damageModifierExpression(value,attack,notation){
  if(!value)return '';
  const ability=String(attack?.ability||'').toLowerCase();
  const source=normalizeDamage(attack?.damage_base_formula);
- const matches=source&&normalizeDamage(attack?.damage)===normalizeDamage(notation);
+ const rawModifier=Number(attack?.damage_ability_modifier)+Number(attack?.damage_extra_modifier);
+ const expected=source+(rawModifier>0?'+'+rawModifier:rawModifier<0?String(rawModifier):'');
+ const matches=source&&normalizeDamage(attack?.damage)===normalizeDamage(notation)&&
+   expected===normalizeDamage(notation);
  const sourceTerms=source.match(/[+-]?[^+-]+/g)||[];
  const staticBase=sourceTerms.filter(damageInteger).reduce((sum,term)=>sum+Number(term),0);
  const abilityAmount=Number(attack?.damage_ability_modifier);
