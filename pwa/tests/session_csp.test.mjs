@@ -35,3 +35,14 @@ test("PWA shell version changes so installed browsers receive the CSP repair",()
   assert.match(read("../sw.js"), /vtt-mobile-shell-v(?:4[5-9]|[5-9][0-9]|[0-9]{3,})/);
   assert.ok(read("../index.html").includes('name="mobile-web-app-capable"'));
 });
+
+test("Partita pinch gestures stay inside a high-DPI canvas and never zoom the app",()=>{
+ const ui=read("../ui.js");
+ const css=read("../styles.css");
+ const viewer=read("../session_map.js");
+ assert.match(ui,/id="session-map-canvas"/);
+ assert.match(css,/\.session-map-stage canvas\{[^}]*touch-action:none/);
+ assert.match(viewer,/setPointerCapture/);
+ assert.match(viewer,/devicePixelRatio/);
+ assert.ok(!ui.includes('id="session-map-image"'));
+});
