@@ -1033,8 +1033,14 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  const tracker='class:bard:phb:bardic_inspiration';
  click('[data-act="tracker-more"][data-tracker-id="'+tracker+'"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===1);
- click('[data-act="tracker-short"]');
+ click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
+ await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-short"]'));
+ click('#sheet-context-dialog [data-act="tracker-short"]');
+ await until(()=>document.querySelector('#sheet-context-dialog [data-rest-preview]'));
+ click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.[tracker]===undefined);
+ click('#sheet-context-dialog [data-act="sheet-context-close"]');
+ await until(()=>!document.querySelector('#sheet-context-dialog'));
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
  assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara/i,
