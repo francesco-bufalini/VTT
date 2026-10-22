@@ -42,12 +42,13 @@ try{
   if(!await target.isVisible())await page.locator('#more-navigation').click();
   await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
  };
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  assert.equal(await page.locator('.play-dock .btn:visible').count(),3);
  assert.equal(await page.locator('[data-act="import"]').isVisible(),false);
- await page.locator('.library-management > summary').click();
+ await page.locator('[data-act="library-add"]').click();
  assert(await page.locator('[data-act="import"]').isVisible());
- await page.locator('.library-management > summary').click();await shot('library');
+ await page.locator('[data-act="library-create-close"]').click();await shot('library');
+ await page.locator('[data-act="library-add"]').click();
  await page.locator('[data-act="create"]').click();await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
@@ -95,8 +96,7 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1,'Info keeps its former portrait symbol');
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
  assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),null,'Tratti begins collapsed');
  await page.locator('#sheet-play-view .play-traits-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'');
@@ -142,9 +142,9 @@ try{
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
  await globalPage('library');
- await page.locator('.library-management > summary').click();await page.locator('[data-act="library-select-all"]').click();
+ await page.locator('[data-library-select-all]').check();
  await page.locator('[data-act="library-export"]').waitFor();
- assert(await page.locator('.library-management').evaluate(n=>n.open),'Batch operations do not hide themselves after rerender');
+ assert(await page.locator('[data-library-select-all]').isChecked(),'Header checkbox retains bulk selection');
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
@@ -165,7 +165,7 @@ try{
  assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
  assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),4);
- // Gallery and persistent header must distinguish elven characters from monsters.
+ // Archive cards preserve species and class details without creature portraits.
  await globalPage('library');
  await page.evaluate(async()=>{
   const {listCreatures,openCreatureEditor,createCreature}=await import('/creatures.js');
@@ -180,15 +180,15 @@ try{
  const elfCard=page.locator('.creature-card').filter({hasText:'Lyria · Sentinella delle stelle'});
  assert.match(await elfCard.locator('.creature-details').textContent(),/Elfo/);
  assert.doesNotMatch(await elfCard.locator('.creature-details').textContent(),/Personaggio|Mostro/);
- assert.equal(await elfCard.locator('.creature-face').count(),1);
+ assert.equal(await elfCard.locator('.creature-face').count(),0);
+ assert.match(await elfCard.locator('.creature-classes').textContent(),/Guerriero 3 · Mago 2/);
  const orcCard=page.locator('.creature-card').filter({hasText:'Orco del crepuscolo'});
  assert.match(await orcCard.locator('.creature-details').textContent(),/Orco/);
- assert.equal(await orcCard.locator('.creature-face').count(),1);
+ assert.equal(await orcCard.locator('.creature-face').count(),0);
  await orcCard.locator('[data-act="open"]').click();
- assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ assert.equal(await page.locator('#creature-symbol').count(),0);
  await sheet('info');
- assert.equal(await page.locator('.play-identity-mark .vtt-action-glyph').count(),1);
- assert.equal(await page.locator('.play-identity-mark .creature-face').count(),0,'Only Info reverts to the original symbol');
+ assert.equal(await page.locator('.play-identity-mark').count(),0,'No portrait icon appears on Info');
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
  console.log('Screenshots: '+fileURLToPath(artifacts));

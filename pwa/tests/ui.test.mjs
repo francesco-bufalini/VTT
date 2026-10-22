@@ -410,7 +410,11 @@ test("importing multiple creatures stays in library and exposes only selected bu
   checkbox.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   assert.ok(document.querySelector('[data-act="library-delete"]'));
   assert.match(document.querySelector('[data-act="library-export"]').textContent,/1/);
-  click('[data-act="library-select-none"]');
+  const selectAll=document.querySelector('[data-library-select-all]');
+  selectAll.checked=true;selectAll.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  assert.equal(document.querySelectorAll('[data-library-select]:checked').length,
+    document.querySelectorAll('[data-library-select]').length);
+  selectAll.checked=false;selectAll.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
   await until(()=>!document.querySelector('[data-act="library-delete"]'));
 });
 

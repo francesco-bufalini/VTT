@@ -1913,3 +1913,53 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  color:#e9c899;font-size:11px;line-height:1.3;font-weight:600;
  text-align:center;white-space:normal;overflow-wrap:anywhere;
 }
+
+
+/* Compact creature archive: no portrait decoration, full-width interactive rows. */
+.library-index{margin:4px 0 12px;min-width:0}
+.library-list-header{display:flex;align-items:center;gap:10px;min-height:56px;padding:4px 4px 10px;border-bottom:1px solid #aa895d6b;margin-bottom:10px}
+.library-list-count{flex:1;min-width:0;color:#ccb99b;font:600 12px/1.3 system-ui,sans-serif;letter-spacing:.04em}
+.library-select-master{min-width:42px!important;min-height:42px!important;margin:0}
+.library-header-spacer{width:42px;flex:none}
+.library-add-button{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;padding:0;border:1px solid #c79e64;border-radius:12px;background:linear-gradient(155deg,#78543c,#422d27);box-shadow:inset 0 1px #ffe8bb42,0 3px 10px #0005;color:#ffe1ac;font:400 30px/1 system-ui,sans-serif;cursor:pointer}
+.library-add-button:hover{filter:brightness(1.12)}
+.library-rows{display:grid;gap:9px}
+.library-rows .creature-card{display:flex;align-items:center;gap:0;min-width:0;margin:0;padding:0;border:1px solid #a58155a1;border-top:1px solid #c29b66a8;border-radius:12px;background:linear-gradient(115deg,#49372d,#2b2422 80%);box-shadow:inset 0 1px 0 #e5bc7c23,0 3px 10px #0004;overflow:hidden}
+.library-rows .creature-card .library-batch-check{display:flex;min-width:44px;min-height:64px;align-items:center;justify-content:center;margin:0 0 0 2px;flex:none}
+.library-rows .creature-card .creature-open{appearance:none;display:flex;align-items:center;gap:10px;flex:1;min-width:0;min-height:70px;padding:12px 14px 12px 6px;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.library-rows .creature-card .creature-open:hover{background:#dcb3750d}
+.library-rows .creature-card .creature-open:focus-visible{outline:2px solid #ffd89a;outline-offset:-3px}
+.library-rows .creature-card .creature-info{display:grid;gap:3px;min-width:0;flex:1}
+.library-rows .creature-card .creature-name{font:650 16px/1.3 system-ui,sans-serif;letter-spacing:.01em;color:#ffe3b4}
+.library-rows .creature-card .creature-details{font:450 12px/1.45 system-ui,sans-serif;color:#c2b29c;margin:0}
+.library-rows .creature-card .creature-classes{display:block;font:550 12px/1.4 system-ui,sans-serif;color:#e5c28f;overflow-wrap:anywhere}
+.creature-open-chevron{flex:none;font:400 25px/1 system-ui;color:#c49c67;opacity:.9}
+.library-selection-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;padding:10px 12px;border:1px solid #99744775;border-radius:10px;background:#352923b8}
+.library-selection-actions[hidden]{display:none}
+.library-selection-count{flex:1;min-width:95px;font:600 12px system-ui,sans-serif;color:#e0c298}
+.library-selection-actions .btn{min-height:40px;margin:0}
+.library-empty{margin:12px 0 3px}
+.library-backup{margin:16px 0 22px;border:1px solid #876b4b8c;border-radius:13px;overflow:hidden;background:linear-gradient(165deg,#322923,#231e1d);box-shadow:inset 0 1px #e5ba7d1a}
+.library-backup>summary{display:flex;align-items:center;gap:12px;min-height:75px;padding:13px 16px;list-style:none;cursor:pointer}
+.library-backup>summary::-webkit-details-marker{display:none}
+.library-backup-symbol{display:grid;place-items:center;flex:none;width:38px;height:38px;border:1px solid #a07b4d80;border-radius:10px;background:#64463255;color:#e4bf88;font-size:23px}
+.library-backup-copy{flex:1;min-width:0;display:grid;gap:4px}
+.library-backup-copy strong{font:650 14px system-ui,sans-serif;color:#edcca1}
+.library-backup-copy small{font:400 12px/1.4 system-ui,sans-serif;color:#b3a28f}
+.library-backup-chevron{font-size:21px;color:#e0b97e;transition:transform .15s}
+.library-backup[open] .library-backup-chevron{transform:rotate(180deg)}
+.library-backup-content{padding:4px 16px 16px;border-top:1px solid #94734b62}
+.library-backup-content p{color:#bbab95;font:400 12px/1.55 system-ui,sans-serif}
+.library-backup-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.library-backup-actions>.btn{min-width:0;min-height:46px;padding:10px 7px;white-space:normal;font-size:12px}
+.library-create-dialog{box-sizing:border-box;position:fixed;max-width:calc(100vw - 28px);width:min(390px,100%);margin:auto;padding:0;border:1px solid #c69a60;border-radius:17px;background:linear-gradient(155deg,#413029,#201b1a);color:#f1ddbc;box-shadow:0 24px 75px #000c}
+.library-create-dialog::backdrop{background:#090707bc}
+.library-create-body{position:relative;padding:26px 22px 22px}
+.library-create-body h2{margin:0 36px 9px 0;color:#f4d4a3;font-size:22px}
+.library-create-body p{margin:0 0 20px;color:#c4b19c;font-size:13px;line-height:1.6}
+.library-create-close{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:transparent;color:#ebc697;font-size:26px;cursor:pointer}
+.library-create-options{display:grid;gap:10px}
+.library-create-options .btn{width:100%;min-height:49px}
+.play-identity{padding-top:0}
+.play-identity>.play-identity-classes{margin-top:8px}
+@media(max-width:360px){.library-selection-actions{padding:8px}.library-selection-actions .btn{flex:1;min-width:95px}.library-backup-actions{grid-template-columns:1fr}}

@@ -457,8 +457,7 @@ try{
  assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
  await popup('tools');
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
