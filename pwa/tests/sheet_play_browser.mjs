@@ -515,8 +515,10 @@ try{
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitDisclosure=page.locator('.play-info-traits .play-traits-disclosure');
  assert.equal(await traitDisclosure.count(),1);
- assert.equal(await traitDisclosure.getAttribute('open'),null,'Tratti starts folded');
- await traitDisclosure.locator(':scope > summary').click();
+ // A link from a proficiency roll can leave Tratti expanded.
+ // Keep the disclosure state when returning to Info and open it if necessary.
+ if((await traitDisclosure.getAttribute('open'))===null)
+  await traitDisclosure.locator(':scope > summary').click();
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
  // All primary context links must resolve on populated and empty sections.
