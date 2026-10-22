@@ -489,10 +489,11 @@ try{
  await dismiss();
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
- assert.equal(await page.locator('.play-info-traits').count(),1);
- assert.equal(await page.locator('.play-info-traits').getAttribute('open'),null,'Tratti starts folded');
- await page.locator('.play-info-traits > summary').click();
- assert.equal(await page.locator('.play-info-traits').getAttribute('open'),'');
+ const traitDisclosure=page.locator('.play-info-traits .play-traits-disclosure');
+ assert.equal(await traitDisclosure.count(),1);
+ assert.equal(await traitDisclosure.getAttribute('open'),null,'Tratti starts folded');
+ await traitDisclosure.locator(':scope > summary').click();
+ assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','conditions']){
