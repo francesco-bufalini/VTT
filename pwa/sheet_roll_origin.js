@@ -139,8 +139,18 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    kind:'rules',formula:(remainder<0?'−':'+')+' Altri modificatori',
    expanded:signed(remainder),value:remainder,originName:'Altre regole',
    originId:'',key:'rules'});
- // Each identifiable origin gets one segment even when it contributes to
- // both proficiency and a modifier, or grants multiple effects to one roll.
+ // Dado bonus selections belong to the same source as flat grants.
+ // The result is not thrown during a preview: show the symbolic die on
+ // both rows until the user actually rolls it.
+ for(const [i,row] of list(diceBonuses).entries()){
+   const dice=String(row?.dice||'').replace(/\s+/g,'');
+   if(!validBonusDice(dice))continue;
+   result.push({kind:'dice',formula:'+'+dice,expanded:'+'+dice,value:0,
+     originId:String(row.origin_id||''),originName:row.origin_name||'Dado bonus',
+     section:row.origin_id?'':'formula_bonuses',key:'dice:'+i});
+ }
+ // One source gets one segment even if it grants training and multiple
+ // flat/dice bonuses. Keep separate terms within that origin's two rows.
  const grouped=[],byOrigin=new Map();
  for(const row of result){
    const id=row.originId;
@@ -159,17 +169,9 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    const source=autoAdvantage&&mode==='advantage'?featureForAutoAdvantage(record,calculated,target):
      {id:'',name:'Modalità scelta'};
    ordered.push({kind:'mode',formula:mode==='advantage'?'ADV':'DIS',
-     expanded:'',value:0,
-     originId:source.id,originName:source.name,key:'mode'});
+     expanded:'',value:0,originId:source.id,originName:source.name,key:'mode'});
  }
  ordered.push(base,...grouped);
- for(const [i,row] of list(diceBonuses).entries()){
-   const dice=String(row?.dice||'').replace(/\s+/g,'');
-   if(!validBonusDice(dice))continue;
-   ordered.push({kind:'dice',formula:'+'+dice,expanded:'+'+dice,originId:String(row.origin_id||''),
-     originName:row.origin_name||'Dado bonus',
-     section:row.origin_id?'':'formula_bonuses',key:'dice:'+i});
- }
  return ordered;
 }
 export function sheetRollOriginHtml(segments,escapeHtml){
