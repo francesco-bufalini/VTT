@@ -18,7 +18,7 @@ export function initialCreature(kind,name,id,owner_id){
     level:1,xp:0,proficiency_bonus:2,spellcasting_calculation:{},
     species:"",species_id:"",species_source:"",subrace:"",subrace_id:"",
     subrace_source:"",subtype:"",subtype_is_custom:false,background:"",
-    background_source:"",alignment:"Completamente neutrale",sex:"",inspiration:false,
+    background_source:"",backgrounds_catalog:[],action_variants_2014:[],alignment:"Completamente neutrale",sex:"",inspiration:false,
     abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},
     saving_throw_proficiencies:[],skill_proficiencies:[],skill_expertise:[],
     armor_class:10,armor_class_base:10,armor_natural_formula:"",
