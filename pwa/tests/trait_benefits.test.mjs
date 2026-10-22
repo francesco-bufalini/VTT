@@ -28,6 +28,7 @@ test('benefits are grouped and attached only to their own trait',()=>{
   'bonus','dice','proficiency:skill','proficiency:language','resistance','resources','spells','actions']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
+ assert.equal(groups[0].items[0].id,'b1','bonus rows keep their editor target');
  assert.equal(groups[1].items[0].value,'+1d4');
  assert.equal(groups[3].items[0].label,'elvish');
  assert.equal(groups[4].items[0].label,'Fuoco');
