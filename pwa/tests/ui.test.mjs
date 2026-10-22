@@ -369,11 +369,17 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.ok(Number.isInteger(event.total)&&event.total>=1);
   assert.equal(document.querySelector('[data-roll-chat-status]')?.hidden,true,
     'Successful chat delivery does not add explanatory text');
-  assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,true,
-    'A completed roll cannot accidentally be sent twice');
-  click('[data-act="sheet-roll-edit-bonus"]');
-  await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
-  assert.equal(document.querySelector('#sheet-roll-dialog'),null);
+  await until(()=>document.querySelector('[data-act="roll-sheet-confirm"]').disabled===false);
+  assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,false,
+    'After a result the player can roll again without reopening the popup');
+  assert.ok(document.querySelector('[data-act="sheet-roll-add-bonus"]'));
+  assert.equal(document.querySelector('[data-act="sheet-roll-edit-bonus"]'),null);
+  assert.match(document.querySelector('#sheet-roll-dialog').textContent,/Tiro salvezza/);
+  click('[data-act="roll-sheet-confirm"]');
+  await until(()=>rollMessages().length===count+2);
+  assert.equal(document.querySelector('[data-roll-result]').hidden,false);
+  click('[data-act="close-sheet-roll"]');
+  await until(()=>document.querySelector('#sheet-roll-dialog')===null);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
