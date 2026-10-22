@@ -3,7 +3,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
-import {initialCreature,changeTrackerUses,recoveryPatch} from "../character_core.js";
+import {initialCreature,changeTrackerUses,spendTrackerUses,recoveryPatch} from "../character_core.js";
 import {classSpellSections,eligibleForClass,assignClassSpell,revokeClassSpell,classSpellId} from "../class_spells.js";
 import {quickDefinition,createQuickHomebrew,quickGrantPatch,deleteQuickHomebrew} from "../quick_homebrew.js";
 import {createCreature,openCreatureEditor,exportCreature,loadCreature} from "../creatures.js";
@@ -123,4 +123,18 @@ test("quick homebrew keeps native portable definitions, structured grants and sa
  assert.equal(await deleteQuickHomebrew(feat.id),true);
  assert.equal(await deleteQuickHomebrew(item.id),true);
  assert.equal(await deleteQuickHomebrew(item.id),false);
+});
+
+
+test('ability payments accept multiple uses and reject insufficient resources atomically',()=>{
+ const record={resource_trackers:[{id:'focus',max:5}],resource_tracker_spent:{focus:1,other:2}};
+ const change=spendTrackerUses(record,'focus',2);
+ assert.deepEqual(change.resource_tracker_spent,{focus:3,other:2});
+ assert.deepEqual(record.resource_tracker_spent,{focus:1,other:2});
+ assert.deepEqual(spendTrackerUses({...record,...change},'focus',2).resource_tracker_spent,{focus:5,other:2});
+ assert.throws(()=>spendTrackerUses({...record,...change},'focus',3),/insufficiente/);
+ for(const invalid of [0,-1,1.5,Infinity,Number.MAX_SAFE_INTEGER+1])
+  assert.throws(()=>spendTrackerUses(record,'focus',invalid),/non valido/);
+ assert.throws(()=>spendTrackerUses(record,'missing',1),/non disponibile/);
+ assert.throws(()=>spendTrackerUses(record,'focus',1,[{id:'focus',max:5,disabled:true}]),/non disponibile/);
 });

@@ -1198,6 +1198,39 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
  });
 }
 
+for(const maximum of [3,5]){
+ test('ability costs compose rapid activations with capacity '+maximum,async()=>{
+  const {createCreature}=await import('../creatures.js');
+  const saved=await createCreature('character','Capacità a costo multiplo');
+  const configured=await saveCreature({...saved.data,
+   resource_trackers:[{id:'focus',name:'Focus',max:maximum,recharge:'manual'}],
+   origin_spell_grants:[{ability_id:'test_pulse',name:'Impulso',action_kind:'ability',
+    tracker_id:'focus',tracker_cost:2,activation_mode:'action'},
+    {ability_id:'second_pulse',name:'Secondo impulso',action_kind:'ability',
+     tracker_id:'focus',tracker_cost:2,activation_mode:'action'}]
+  },'default',saved.revision);
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+  click('[data-act="open"][data-id="'+saved.data.id+'"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  click('[data-sheet="battle"]');
+  const selector='[data-act="battle-use-ability"][data-ability-id="activated:test_pulse"]';
+  await until(()=>document.querySelector(selector));
+  const button=document.querySelector(selector);
+  const second=document.querySelector('[data-act="battle-use-ability"][data-ability-id="activated:second_pulse"]');
+  assert.ok(second);button.click();second.click();
+  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+(maximum===3?1:2));
+  await until(()=>!button.isConnected);
+  assert.equal((await loadCreature(saved.data.id)).data.resource_tracker_spent.focus,maximum===3?2:4);
+  if(maximum===3){
+   await pause(100);
+   assert.equal((await loadCreature(saved.data.id)).revision,configured.revision+1,
+    'The second activation must not spend a resource that is no longer available');
+  }
+  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
+ });
+}
+
 test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  t.after(stopRealtime);
  const {createCreature}=await import('../creatures.js');

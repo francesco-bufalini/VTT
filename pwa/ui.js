@@ -21,7 +21,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses} from "./character_core.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -2424,24 +2424,19 @@ async function handleAction(target){
     const cost=Math.max(0,Number(ability.cost)||0);
     const persistentKey=String(target.dataset.persistentKey||'');
     if(persistentKey){
-      if(c.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
-      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id&&!row.disabled);
-      if(cost&&(!tracker||tracker.max-tracker.spent<cost))
-        throw Error('Risorsa insufficiente per attivare la capacità.');
-      const effects={...(c.active_class_features||{}),
-        [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
-          rules_version:c.rules_version||'2014',enhanced:false}};
-      const changes={active_class_features:effects};
-      if(cost)changes.resource_tracker_spent={...(c.resource_tracker_spent||{}),[tracker.id]:tracker.spent+cost};
-      await patch(changes);
+      await patch(current=>{
+        if(current.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+        const changes=cost?spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers):{};
+        changes.active_class_features={...(current.active_class_features||{}),
+          [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
+            rules_version:current.rules_version||'2014',enhanced:false}};
+        return changes;
+      });
       await render();
       return;
     }
     if(cost){
-      const tracker=(calculated.trackers||[]).find(row=>row.id===ability.tracker_id);
-      if(!tracker||tracker.disabled||tracker.max-tracker.spent<cost)
-        throw Error('Risorsa insufficiente per usare la capacità.');
-      await patch(changeTrackerUses(c,tracker.id,cost,calculated.trackers));
+      await patch(current=>spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers));
     }
     await render();
     message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':

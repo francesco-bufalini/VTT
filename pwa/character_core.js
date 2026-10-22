@@ -69,6 +69,18 @@ export function changeTrackerUses(record,id,delta,trackers=record.resource_track
   return {resource_tracker_spent:spent};
 }
 
+// Ability payments are atomic: never clamp an unaffordable cost into a partial payment.
+export function spendTrackerUses(record,id,cost,trackers=record.resource_trackers){
+  const row=array(trackers).find(t=>t&&t.id===id&&!t.disabled);
+  if(!row)throw Error("Risorsa non disponibile.");
+  if(!Number.isSafeInteger(cost)||cost<=0)throw Error("Costo utilizzi non valido.");
+  const spent={...(record.resource_tracker_spent||{})};
+  const used=Math.max(0,integer(spent[id]));
+  if(cost>Math.max(0,integer(row.max))-used)throw Error("Risorsa insufficiente per usare la capacità.");
+  spent[id]=used+cost;
+  return {resource_tracker_spent:spent};
+}
+
 // Same recovery contract as StructuredResourceTrackers.spent_after_recovery.
 // Short rest restores pact magic; long rest restores both types of spell slot.
 // Does not invent recovery for HP, hit dice, or manual/dice-recharge resources.
