@@ -75,13 +75,13 @@ const proficiencyKinds={skill:'Competenze nelle abilità',expertise:'Maestrie',
 export function traitBenefitGroups(trait={},record={},calculated={}){
  const ids=traitBenefitSources(trait,record),groups=new Map();
  const belongs=row=>row&&[row.origin_id,row.parent_origin].some(id=>id&&ids.has(id));
- const add=(type,title,label,value='')=>{
+ const add=(type,title,label,value='',id='')=>{
   label=String(label??'').trim();value=String(value??'').trim();
   if(!label)return;
   if(!groups.has(type))groups.set(type,{type,title,items:[],seen:new Set()});
   const group=groups.get(type),key=label+'\u0000'+value;
   if(group.seen.has(key))return;
-  group.seen.add(key);group.items.push({label,value});
+  group.seen.add(key);group.items.push({label,value,id});
  };
  const bonusSeen=new Set();
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){
@@ -90,7 +90,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(id&&bonusSeen.has(id))continue;
   if(id)bonusSeen.add(id);
   add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),
-   signedTraitFormula(row.expression)+(row.disabled?' · Disattivato':''));
+   signedTraitFormula(row.expression)+(row.disabled?' · Disattivato':''),row.id||'');
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;

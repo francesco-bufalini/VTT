@@ -745,36 +745,39 @@ async function traitsView(c){
   }
   return state.referenceCatalogs[category];
  };
- const linked='<div class="actions">'+
+ const linked='<div class="trait-editor-links" aria-label="Gestisci benefici e origini">'+
   [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
    ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
-  .map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
+  .map(([detail,label])=>'<button type="button" class="trait-editor-link" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  // The summary is always visible, even while the description is collapsed.
-  // Keep the preview read-only: edits remain in the existing origin editors.
+  // Benefits belong to the expanded trait body, never to its summary.
   const benefitGroups=traitBenefitGroups(trait,c,state.calculated||{});
   const benefitDetails=benefitGroups.length?
-    '<span class="trait-benefits"><strong>Benefici concessi</strong>'+
+    '<div class="trait-benefits"><strong>Benefici concessi</strong>'+
     benefitGroups.map(group=>
-      '<span class="trait-benefit-group"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-      group.items.map(item=>
-        '<span class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
-        (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</span>').join('')+
-      '</span>').join('')+'</span>':'';
+      '<div class="trait-benefit-group trait-benefit-group--'+esc(group.type.split(':')[0])+'"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
+      group.items.map(item=>{
+        const isRollBonus=group.type==='bonus'||group.type==='dice';
+        const tag=isRollBonus?'button':'div';
+        return '<'+tag+(isRollBonus?' type="button" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(item.id||'')+'"':'')+
+          ' class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
+          (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</'+tag+'>';
+      }).join('')+'</div>').join('')+'</div>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
   return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
-    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span>'+
-    benefitDetails+'</summary>'+
+    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span></summary>'+
+    '<div class="trait-content">'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
+    benefitDetails+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+linked+'</details>';
+    toggler+'</div></details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
@@ -786,7 +789,7 @@ async function traitsView(c){
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
- return panel('Tratti',content||'<p>Nessun privilegio da mostrare.</p>')+
+ return panel('Tratti',(content?linked+content:'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
 }
 function documentRow(item,index,stored){

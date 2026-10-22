@@ -145,3 +145,19 @@ test('origin groups are contiguous and their levels ordered independently',()=>{
  assert.deepEqual(groups[0].origins[0].levels.map(t=>t.level),[1,5]);
  assert.deepEqual(groups[0].origins[0].levels.flatMap(t=>t.rows).map(r=>r.name),['A','C']);
 });
+
+test('species description uses flavor text and falls back to parent lore for subraces',async()=>{
+ const species={id:'race-elf',name:'Elf',source:'PHB',entries:[
+  {name:'Keen Senses',entries:['You are proficient in Perception.']}],
+  fluff:[{type:'entries',entries:['Elves are magical forest-dwellers.']}]};
+ const subrace={name:'Elf (High Elf)',source:'PHB',entries:[
+  {name:'Elf Weapon Training',entries:['Trained with elven weapons.']}]};
+ const provider={entries:async category=>category==='races'?[species,subrace]:[],
+  detail:async(_category,row)=>row};
+ const result=await collectTraitRows({kind:'character',species:'Elf',species_id:'race-elf',
+  species_source:'PHB',subrace:'High Elf',subrace_source:'PHB'}, {}, provider);
+ const story=result.find(row=>row.name==='Descrizione · Elf');
+ assert.deepEqual(story.entries,species.fluff);
+ assert.ok(result.some(row=>row.name==='Elf Weapon Training'));
+ assert.notDeepEqual(story.entries,subrace.entries);
+});

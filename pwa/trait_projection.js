@@ -89,11 +89,17 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  }else if(record.species){
   const selected=record.subrace?
    await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source):null;
-  const race=selected||await lookup('races',record.species,record.species_source,record.species_id);
+  const baseRace=await lookup('races',record.species,record.species_source,record.species_id);
+  const race=selected||baseRace;
   if(race){
    const key='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
    const options={category:'razza',origin:'Specie · '+record.species,origin_key:key,level:1};
-   add({name:'Descrizione · '+record.species,entries:race.entries??race.description??'',source:race.source},
+   // The subrace may have its own traits but no narrative: fall back to the
+   // base species' fluff, never mistake PHB/source metadata for its description.
+   const story=(arr(race.fluff).length?race.fluff:null)??
+    (arr(baseRace?.fluff).length?baseRace.fluff:null)??
+    race.description??baseRace?.description??race.entries??'';
+   add({name:'Descrizione · '+record.species,entries:story,source:race.source},
     {...options,rank:0});
    named(race,options,{includeUnnamed:true});
   }
