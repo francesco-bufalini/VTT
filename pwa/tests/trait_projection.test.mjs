@@ -161,3 +161,44 @@ test('species description uses flavor text and falls back to parent lore for sub
  assert.ok(result.some(row=>row.name==='Elf Weapon Training'));
  assert.notDeepEqual(story.entries,subrace.entries);
 });
+
+test('species and subrace have separate level-sorted origin groups',async()=>{
+ const race={id:'elf',name:'Elf',source:'PHB',
+  entries:[{name:'Keen Senses',entries:['Base trait']},
+   {name:'Higher Awareness',level:5,entries:['Level five base trait']},
+   {name:'Fey Legacy',level:3,entries:['Level three base trait']}]};
+ const sub={id:'high-elf',name:'Elf (High Elf)',source:'PHB',entries:[
+  {name:'Cantrip',entries:['Subrace only']},
+  {name:'Ancient Memory',level:3,entries:['Level three subrace trait']}]};
+ const record={kind:'character',species:'Elf',species_id:'elf',species_source:'PHB',
+  subrace:'High Elf',subrace_source:'PHB',level:5};
+ const computed={features:[{name:'Fey Legacy',level:3,origin_key:'race|phb|elf',
+  origin_id:'feature:fey-legacy'}]};
+ const found=await collectTraitRows(record,computed,{
+  entries:async category=>category==='races'?[race,sub]:[],
+  detail:async(_category,row)=>row
+ });
+ const groups=groupTraitRows(found)[0];
+ assert.equal(groups.id,'razza');
+ assert.equal(groups.origins.length,2);
+ assert.ok(groups.origins[0].key.startsWith('species|'));
+ assert.ok(groups.origins[1].key.startsWith('subrace|'));
+ assert.deepEqual(groups.origins[0].levels.map(t=>t.level),[1,3,5]);
+ assert.deepEqual(groups.origins[1].levels.map(t=>t.level),[1,3]);
+ assert.deepEqual(groups.origins[0].levels.flatMap(t=>t.rows).map(t=>t.name).filter(n=>n==='Cantrip'),[]);
+ assert.ok(groups.origins[1].levels.flatMap(t=>t.rows).some(t=>t.name==='Cantrip'));
+ assert.equal(found.find(t=>t.name==='Fey Legacy')?.feature_origin,'feature:fey-legacy');
+ assert.equal(found.filter(t=>t.name==='Fey Legacy').length,1);
+});
+
+test('future racial traits are hidden until their requested level',async()=>{
+ const record={kind:'character',species:'Elf',species_source:'PHB',level:1};
+ const found=await collectTraitRows(record,{},{
+  entries:async category=>category==='races'?[{name:'Elf',source:'PHB',
+   entries:[{name:'First Gift',entries:['First']},
+    {name:'Fifth Gift',level:5,entries:['Fifth']}]}]:[],
+  detail:async(_category,row)=>row
+ });
+ assert.ok(found.some(t=>t.name==='First Gift'));
+ assert.ok(!found.some(t=>t.name==='Fifth Gift'));
+});
