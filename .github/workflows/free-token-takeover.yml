@@ -24,6 +24,8 @@ jobs:
             /*.tscn
             /vtt/
             /network/
+            /encounter/
+            /pwa/icons/
             /interaction/
             /items/
             /homebrew/
