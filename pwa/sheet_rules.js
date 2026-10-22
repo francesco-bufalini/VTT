@@ -413,6 +413,13 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
   });
   const feature=matches.length===1?matches[0]:null;
+  // A class table only supplies capacity. Without its granting class trait,
+  // the class does not independently produce an actionable resource.
+  if(row.origin_class&&!feature){
+    row.disabled=true;
+    row.origin_id='';
+    continue;
+  }
   row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id;
   row.origin_name=feature?'Tratto · '+feature.name:row.origin_name||row.name;
   if(feature?.parent_origin)row.parent_origin=feature.parent_origin;
