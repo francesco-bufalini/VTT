@@ -32,15 +32,24 @@ try{
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  const target=page.locator('button[data-sheet="'+key+'"]').first();
-  if(!await target.isVisible())await page.locator('#more-navigation').click();
-  await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
-  assert.equal(await page.locator('#navigation-dialog').evaluate(n=>n.open),false);
+  if(['conditions','origins'].includes(key)){
+    if(!await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').isVisible()){
+      await page.locator('#sheet-navigation [data-sheet="info"]').click();
+      await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
+    }
+    await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').click();
+  }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
+  await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
  };
  const globalPage=async key=>{
-  const target=page.locator('#nav [data-nav="'+key+'"]');
-  if(!await target.isVisible())await page.locator('#more-navigation').click();
-  await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
+  const back=page.locator('#creature-back');
+  if(key==='library'&&await back.isVisible())await back.click();
+  else {
+    const fromCreature=await page.locator('#mobile-tabs').evaluate(n=>n.classList.contains('has-creature'));
+    const target=fromCreature&&key!=='library'?page.locator('#dock-'+key):page.locator('#nav [data-nav="'+key+'"]');
+    await target.click();
+  }
+  await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
  };
  await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  assert.equal(await page.locator('.play-dock .btn:visible').count(),3);
@@ -55,7 +64,10 @@ try{
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
+ assert(await page.locator('#dock-catalog').isVisible(),'Catalogo is directly available');
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
+ assert.equal(await page.locator('#more-navigation').count(),0);
+ assert(await page.locator('#creature-back').isVisible(),'Back replaces the portrait');
  assert.equal(await page.locator('#creature-symbol').count(),0);
  assert.equal(await page.locator('[data-sheet="actions"]').count(),0);
  await sheet('magic');
@@ -83,13 +95,11 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
- assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
- await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),6);
- assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
- assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
- await shot('menu');await page.keyboard.press('Escape');
- await page.waitForFunction(()=>document.querySelector('#more-navigation')?.getAttribute('aria-expanded')==='false');
+ assert(await page.locator('.sheet-quick-links [data-sheet="origins"]').isVisible());
+ assert(await page.locator('.sheet-quick-links [data-sheet="info"]').isVisible());
+ assert.equal(await page.locator('#navigation-dialog').count(),0);
+ await sheet('origins');await shot('tools');
+ await sheet('conditions');
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
@@ -142,6 +152,11 @@ try{
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
  await globalPage('library');
+ assert.equal(await page.locator('#creature-back').isVisible(),false,'Archive hides character back');
+ assert(await page.locator('#nav [data-nav="library"]').isVisible(),'Archive dock is restored');
+ assert.equal(await page.locator('#sheet-navigation').isVisible(),false,'Character dock is hidden');
+ assert.equal(await page.locator('#creature-name').textContent(),'VTT Mobile');
+ assert.equal(await page.locator('#creature-classes').isVisible(),false);
  await page.locator('[data-library-select-all]').check();
  await page.locator('[data-act="library-export"]').waitFor();
  assert(await page.locator('[data-library-select-all]').isChecked(),'Header checkbox retains bulk selection');
@@ -149,6 +164,7 @@ try{
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
  assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
+ assert(await page.locator('#creature-back').isVisible());
  // Opening a multiclass character shows every class both in the persistent
  // header and directly below the name on the Info tab.
  await globalPage('library');
@@ -190,6 +206,6 @@ try{
  await sheet('info');
  assert.equal(await page.locator('.play-identity-mark').count(),0,'No portrait icon appears on Info');
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
+ console.log('PASS: six direct creature destinations at 320/360/390/430px and landscape, header back restores archive bars, quick condition/origin links, pending saves, catalog, session, offline and disclosure regressions.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

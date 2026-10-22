@@ -25,7 +25,13 @@ export async function browserFixture({live=false}={}){
  const shot=name=>page.screenshot({path:fileURLToPath(new URL('play-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('[data-act="sheet-context-close"]').first().click();
-  const target=page.locator('button[data-sheet="'+key+'"]').first();if(!await target.isVisible())await page.locator('#more-navigation').click();await target.click();
+  if(['conditions','origins'].includes(key)){
+   if(!await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').isVisible()){
+    await page.locator('#sheet-navigation [data-sheet="info"]').click();
+    await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
+   }
+   await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').click();
+  }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
   await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
  };
  const popup=async key=>{await page.locator('#sheet-play-view [data-sheet-context="'+key+'"]').first().click();await page.locator('#sheet-context-dialog[open]').waitFor();};
