@@ -665,15 +665,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '</div></details>'+
    '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
    '</section>';
-  // Traits belong at the end of Info, as visible cards grouped by origin.
-  // The old traits tab flattened them into a list of context buttons.
+  // Same borderless disclosure pattern as Abilità: no nested cards.
   const traits=panelNamed('Tratti');
   if(traits){
    const content=[...traits.children].filter(child=>child.tagName!=='H2')
      .map(child=>child.outerHTML).join('');
-   html+='<details class="play-card play-info-traits play-traits-disclosure">'+
-    '<summary class="play-card-head"><h2>Tratti</h2></summary>'+
-    '<div class="play-info-traits-content">'+content+'</div></details>';
+   html+='<section class="play-info-traits"><details class="play-traits-disclosure">'+
+    '<summary class="play-competence-heading">'+icon('proficiency')+'<strong>Tratti</strong></summary>'+
+    '<div class="play-info-traits-content">'+content+'</div></details></section>';
   }
  }
  if(sheet==='magic'){
