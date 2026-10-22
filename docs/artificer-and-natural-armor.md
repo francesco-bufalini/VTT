@@ -13,6 +13,36 @@ The artificer normalization in this change targets Tasha's Cauldron of Everythin
 
 Context actions record their use and retain the granting trait. Their targets, attack/healing rolls, spell-slot-funded extra elixirs/cannons, companion creation/commands, the launcher's once-per-turn extra die, spell-storing-item configuration and destruction of an infusion for Soul of Artifice remain explicit player operations. Context actions do not apply changes to another creature or the board automatically. Defensive Field temporary HP lost by doffing the armor must be removed by the player. Conditional Alchemical Savant, Arcane Firearm, Battle Ready and Tool Expertise are not newly automated by this change; their original descriptions remain available.
 
+## PWA: trait-bound infusion lifecycle
+
+An Artificer class entry does not itself grant infusions. The actual enabled,
+owned **Infuse Item** class feature (TCE) is the gate for learning, preparation,
+item application and item-derived numeric benefits. Class level determines
+the limits only after the feature is present.
+
+- `optional_features_catalog` continues to hold learned infusion definitions.
+- `prepared_features` is a generic list of prepared feature choices,
+  including `{kind: "infusion", id, plan_item_id, origin_id}`. It is distinct
+  from learning and from applying the infusion. Existing saved characters that
+  lack this list treat previously learned infusions as prepared until the player
+  changes preparation explicitly; newly learned infusions require preparation.
+- `inventory[].infusion` remains the existing serialized link between a
+  physical item instance, its infusion and its creator. Activation in the PWA
+  asks the user to select a compatible inventory target before writing it.
+  Typed inventory targeting is reusable for spells with explicit
+  `item_target_selector` metadata.
+- A qualifying equipped/attuned item projects a source-linked infusion trait
+  and appears under active magical abilities in Conditions. Numeric effects
+  come from the existing item enhancement schema, not from parsing prose;
+  unstructured descriptive powers are visible but are not falsely automated.
+- Generated class trackers and class casting/spell slots must resolve a live
+  granting feature. Class-level tables remain progression inputs, **not**
+  independent origins for granted privileges.
+
+The PWA portable creature schema preserves unknown fields, including
+`prepared_features`. The desktop keeps its legacy infusion serialization;
+this change does not migrate or replace existing item instances.
+
 ## Alternative armor class
 
 Unarmored Defense (Barbarian/Monk, PHB and XPHB), Draconic Resilience (PHB: 13 + DEX; XPHB: 10 + DEX + CHA) and College of Dance Unarmored Defense are evaluated from actual enabled traits. Monk/Dance require no shield; Barbarian and Draconic Resilience permit a shield. Worn armor suppresses these formulas. Alternative formulas compete with the saved unarmored formula; the highest legal base applies, then the shield and additive bonuses. Formulas never add together. Native AC tooltips list the granting traits/formulas.
