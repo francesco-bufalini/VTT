@@ -554,8 +554,9 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
   return (await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:')&&x.expression==='2');
  });
+ await benefitDialog.locator('[data-trait-add-form]').waitFor({state:'hidden'});
  assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
-  'Saved form must close rather than stay expanded');
+  'Saved form must close once persistence and refresh complete');
  await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
  await trigger.click();
  assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
