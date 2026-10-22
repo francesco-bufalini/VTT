@@ -109,17 +109,26 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group)add(group[0],group[1],DAMAGE[norm(row.key)]||String(row.key||''));
  }
  for(const row of rows(calculated.trackers)){
-  if(!belongs(row)){
-   // Unattributed automatic class pools are shown only in the class overview,
-   // never against an unrelated individual class feature.
-   if(!(trait.rank===0&&trait.category==='classi'&&
-     !row.origin_id?.startsWith('feature:')&&row.origin_class&&
-     ids.has('class|'+norm(row.origin_class_source)+'|'+norm(row.origin_class))))continue;
-  }
+  if(!belongs(row))continue; // Privileges/resources belong to their granting trait only.
   const maximum=Number(row.max);
   const suffix=Number.isFinite(maximum)?String(maximum):'';
   const reset=RECOVERY[row.recharge]||'';
   add('resources','Risorse e tracker',row.name,(suffix?('Max '+suffix):'')+(reset?((suffix?' · ':'')+reset):''));
+ }
+ // Learned optional capabilities are benefits of their actual granting trait.
+ // Never infer ownership merely from membership in the Artificer class.
+ if(norm(trait.name)==='infuse item'&&trait.feature_origin){
+   const prepared=Object.hasOwn(record,'prepared_optional_features')
+     ?rows(record.prepared_optional_features)
+     :rows(record.optional_features_catalog).filter(r=>String(r?.id||'').startsWith('infusion|tce|'));
+   for(const infusion of rows(record.optional_features_catalog)){
+     if(!String(infusion?.id||'').startsWith('infusion|tce|'))continue;
+     if(infusion.source_trait_id&&infusion.source_trait_id!==trait.feature_origin)continue;
+     const ready=prepared.some(row=>row.id===infusion.id&&
+       String(row.plan_item_id||'')===String(infusion.plan_item_id||''));
+     add('features','Infusioni concesse',infusion.name+
+       (infusion.plan_item_name?' · '+infusion.plan_item_name:''),ready?'Preparata':'Conosciuta');
+   }
  }
  for(const spell of rows(trait.granted_spells))
   add('spells','Incantesimi concessi',spell.name,spell.level===0?'Trucchetto':
