@@ -34,6 +34,10 @@ function trainingRank(calculated,target){
 function trainingOrigin(record,target,calculated){
  const kind=target.startsWith('skill:')?'skill':target.startsWith('save:')?'save':'';
  const key=target.split(':')[1]||'';
+ const declared=kind==='skill'&&trainingRank(calculated,target)===2?
+   list(calculated?.proficiency_sources?.['expertise:'+key]):
+   list(calculated?.proficiency_sources?.[kind+':'+key]);
+ if(declared.length)return {id:declared[0].id,name:declared[0].name};
  const choices=list(record?.proficiency_choices);
  const row=choices.find(c=>!c?.disabled&&(c.kind===kind||
    kind==='skill'&&c.kind==='expertise')&&c.key===key&&c.origin_id);
