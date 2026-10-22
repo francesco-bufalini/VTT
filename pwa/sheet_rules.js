@@ -1,7 +1,7 @@
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
+import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
@@ -201,15 +201,15 @@ function itemActive(item,record={}){
   return item.equipped===true||(requiresAttunement(item)&&item.attuned===true);
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
-function itemRows(record,warnings,infusionCatalog=[]){
+function itemRows(record,warnings,infusionCatalog=[],features=[]){
   const rows=[],seen=new Set(),seenAttacks=new Set();
-  for(const saved of arr(record.inventory)){
+  for(const [index,saved] of arr(record.inventory).entries()){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
     if(item.infusion&&Object.keys(item.infusion).length)
       warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
     const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
-    const infusion=infusionNumericBonuses(record,item,infusionCatalog);
+    const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
       const raw=item?.[snake]??item?.[camel];
@@ -233,7 +233,7 @@ function itemRows(record,warnings,infusionCatalog=[]){
         ])add(target,field,snake,camel);
         if(Number.isFinite(infusion.bonus_weapon)){
           for(const type of ["attack_hit:","attack_damage:"]){
-            const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
+            const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
             if(grant)rows.push(grant);
           }
         }
@@ -548,7 +548,7 @@ export function calculateSheet(record={},catalogs={}){
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[]),...structuredFeatureGrants(record,catalogs,features)];
+    ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id))];
