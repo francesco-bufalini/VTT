@@ -13,6 +13,11 @@ try{
      {kind:'skill',key:'arcana'}, {kind:'expertise',key:'stealth'}],
    resource_trackers:[...(creature.resource_trackers||[]),
      {id:'superiority',name:'Superiority Die',max:4,recharge:'short_rest'}],
+   dice_bonuses:[...(creature.dice_bonuses||[]),
+     {id:'charge-damage',target:'attack_damage:item:local_sword',dice:'1d6',
+      damage_type:'L',origin_name:'Carica fulmine',tracker_id:'focus',tracker_cost:1},
+     {id:'charge-hit',target:'attack_roll',dice:'1d4',
+      origin_name:'Precisione arcana',tracker_id:'focus',tracker_cost:1}],
    optional_features_catalog:[...(creature.optional_features_catalog||[]),
      {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}],
    action_grants:[...(creature.action_grants||[]),
@@ -176,8 +181,21 @@ try{
    const dialog=node.closest('#sheet-roll-dialog').getBoundingClientRect();
    return bounds.width<dialog.width-25&&bounds.height<220;
  }),'Damage formula tiles must remain compact and fit within the dialog');
+ assert.equal(await rollDialog.locator('[data-roll-add-status]').count(),0);
+ assert.equal(await rollDialog.locator('[data-roll-chat-status]').count(),0);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-choice').textContent(),/Carica fulmine/);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-tracker').textContent(),/5 \/ 7/);
+ await rollDialog.locator('[data-roll-bonus]').check();
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+   ['Tagliente','Fuoco','Fulmine']);
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-symbol').last().textContent(),'+1d6');
+ assert(await rollDialog.locator('.sheet-roll-origin-damage-type').last().evaluate(node=>
+   getComputedStyle(node).whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1));
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
- assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
+ assert.equal(await rollDialog.locator('[data-roll-extra]').isVisible(),false);
+ assert.equal(await rollDialog.locator('[data-roll-bonus]').isChecked(),true);
+ await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  const layout=async()=>rollDialog.evaluate(dialog=>{
    const mode=dialog.querySelector('[data-roll-mode]').getBoundingClientRect();
    const button=dialog.querySelector('[data-act="roll-sheet-confirm"]').getBoundingClientRect();
@@ -187,7 +205,11 @@ try{
  assert(Math.abs(damageLayout.modeY-damageLayout.buttonY)<=25,'Mode and roll action belong on the same row');
  assert(damageLayout.buttonWidth>damageLayout.modeWidth,'Roll action must take most of the width');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
- assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/Formula/);
+ assert.equal(await rollDialog.locator('[data-roll-result] p').count(),0);
+ assert.equal(await rollDialog.locator('.sheet-roll-die-value').count(),4,
+   '1d6 base + 2d4 damage + 1d6 bonus show four individual die results');
+ assert.equal((await record()).resource_tracker_spent.focus,3,
+   'Selected bonus spends one tracked use');
  assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true,
    'Roll action stays visible after damage roll');
  assert(await rollDialog.evaluate(dialog=>{
@@ -197,6 +219,8 @@ try{
  }),'Roll controls stay below damage results');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
+ assert.equal((await record()).resource_tracker_spent.focus,4,
+   'Selection persists while its resource still has uses');
  await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
@@ -207,6 +231,7 @@ try{
    'Tiro per colpire · Mischia');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
  // The fixture is Poisoned: its attack disadvantage cancels manually selected advantage.
  await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
@@ -225,8 +250,8 @@ try{
  }),'Mode and roll button move below the d20 result');
  await rollDialog.locator('[data-roll-mode]').selectOption('disadvantage');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
- assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/d20 · svantaggio/,
-   'An existing disadvantage and another selected disadvantage still roll just two d20');
+ assert.equal(await rollDialog.locator('.sheet-roll-die-value').count(),2,
+   'Disadvantage must show exactly two individual d20 results');
  await rollDialog.locator('[data-roll-mode]').selectOption('normal');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
