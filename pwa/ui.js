@@ -3047,7 +3047,11 @@ async function handleAction(target){
       cards.find(card=>card.dataset.traitOrigin===id||card.dataset.traitOrigin===normalized||
         (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key))||
       (feature?cards.find(card=>card.querySelector('summary')?.textContent?.toLowerCase().includes(String(feature.name||'').toLowerCase())):null);
-    if(match){match.open=true;match.scrollIntoView?.({block:'center'});}
+    if(match){
+      const disclosure=match.closest('.play-info-traits');
+      if(disclosure)disclosure.open=true;
+      match.open=true;match.scrollIntoView?.({block:'center'});
+    }
     else {
       // Missing catalog entries must not become dead provenance links.
       state.sheet='origins';state.detail='overview';await render();
