@@ -214,6 +214,42 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   add(feature,{category,origin,origin_key:originKey,level:feature.level||0,
    rank:2,inactive:!!feature.disabled});
  }
+ // Ordinary class/species/background proficiencies have a stable origin ID,
+ // but no concrete feature ID. Give them a read-only trait representing
+ // the granted competences instead of opening an unrelated class trait.
+ const proficiencySources=new Map();
+ for(const [key,sources] of Object.entries(calculated.proficiency_sources||{})){
+  const kind=key.split(':')[0];
+  if(!['skill','expertise','save'].includes(kind))continue;
+  for(const source of arr(sources)){
+   const id=String(source?.id||'');
+   if(!/^(class|race|subrace|background|feat)[|]/.test(id))continue;
+   if(!proficiencySources.has(id))proficiencySources.set(id,{name:source.name,grants:new Set()});
+   proficiencySources.get(id).grants.add(key);
+  }
+ }
+ for(const [id,source] of proficiencySources){
+  const normId=id.toLowerCase();
+  const anchor=rows.find(row=>norm(row.origin_key)===normId)||
+    rows.find(row=>normId.startsWith('race|')&&row.category==='razza'&&
+      norm(row.origin).endsWith(norm(id.split('|').slice(2).join('|'))))||
+    rows.find(row=>normId.startsWith('subrace|')&&row.category==='razza'&&
+      norm(row.origin).includes(norm(record.species)));
+  const idGroup=id.split('|')[0];
+  const category=anchor?.category||({class:'classi',race:'razza',subrace:'razza',
+    background:'background',feat:'talenti'}[idGroup]||'altro');
+  const names=[...source.grants].map(key=>{
+   const [kind,...parts]=key.split(':');
+   const name=parts.join(':');
+   const label=kind==='save'?'Tiro salvezza':kind==='expertise'?'Maestria':'Abilità';
+   return label+' · '+name;
+  });
+  rows.push({name:'Competenze',entries:names.join(' · '),
+    category,origin:anchor?.origin||String(source.name||id),
+    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,
+    rank:2,inactive:false,feature_origin:'',proficiency_origin:id,
+    key:'proficiency:'+id});
+ }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
   a.origin.localeCompare(b.origin,'it',{sensitivity:'base',numeric:true})||
