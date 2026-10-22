@@ -674,7 +674,7 @@ async function editorView() {
     break;
   }
   return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    (['info','conditions','origins'].includes(state.sheet)?sheetQuickLinks():'')+
+    (state.sheet==='json'?'':sheetQuickLinks())+
     '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
