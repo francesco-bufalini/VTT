@@ -99,10 +99,11 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
      originName:source.name,section:source.section||'',key:'training'});
    for(const row of list(all.proficiency))add(row,rank);
  }
- const targetKeys=[target];
- if(target==='initiative'||target.startsWith('skill:')||target.startsWith('ability_check:')||target.startsWith('ability_mod:'))targetKeys.push('ability_check');
+ const targetKeys=[];
+ if(target==='initiative'||target.startsWith('skill:')||target.startsWith('ability_check:'))targetKeys.push('ability_check');
  if(target.startsWith('save:'))targetKeys.push('saving_throw');
  if(target.startsWith('casting_hit:'))targetKeys.push('spell_attack');
+ targetKeys.push(target);
  for(const key of targetKeys)for(const row of list(all[key]))add(row);
  // Some legacy monsters and attack rules have additional built-in terms not
  // represented by a grant. Keep their value in Base instead of inventing an
