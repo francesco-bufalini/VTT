@@ -2,7 +2,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Read-only portable counterpart of CreatureFeatures.collect_features in the desktop.
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
-import {localClasses} from './sheet_rules.js';
+import {localClasses,SKILLS} from './sheet_rules.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -241,8 +241,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const names=[...source.grants].map(key=>{
    const [kind,...parts]=key.split(':');
    const name=parts.join(':');
+   const localized=SKILLS.find(([key])=>key===name)?.[1]||name;
    const label=kind==='save'?'Tiro salvezza':kind==='expertise'?'Maestria':'Abilità';
-   return label+' · '+name;
+   return label+' · '+(kind==='save'?({str:'Forza',dex:'Destrezza',con:'Costituzione',
+     int:'Intelligenza',wis:'Saggezza',cha:'Carisma'}[name]||name):localized);
   });
   rows.push({name:'Competenze',entries:names.join(' · '),
     category,origin:anchor?.origin||String(source.name||id),
