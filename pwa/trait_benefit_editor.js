@@ -51,9 +51,7 @@ export function removeBenefitPatch(record,trait,item){
  }): -1;
  // A user-created row is genuinely removed. Catalog-defined rows are masked
  // and recovered verbatim when the suppression is cleared.
- if(idx>=0&&!original[idx].automatic&&
-   (item.type!=='proficiency'||String(original[idx].id||'').startsWith('trait:'))&&
-   (item.type!=='defenses'||String(original[idx].id||'').startsWith('trait:'))){
+ if(idx>=0&&String(original[idx].id||'').startsWith('trait:')){
   const updated=structuredClone(original);updated.splice(idx,1);return {[collection]:updated};
  }
  const removed={...(record.trait_benefit_removed||{})};
