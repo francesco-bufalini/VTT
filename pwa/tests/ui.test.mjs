@@ -624,12 +624,10 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
   await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='2');
   assert.equal((await loadCreature(id)).data.resource_tracker_spent['shared-power-uses'],1);
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','resources');
-  await until(()=>document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]'));
-  const resourceRow=document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]').closest('article');
-  assert.match(resourceRow.textContent,/2\s*\/\s*3/,'origins sees the same tracker availability');
+  // The retired Modifica personaggio panel is gone. The existing resource
+  // controls in Magia remain the canonical way to spend/recover its tracker.
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
+  assert.equal(document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent,'2');
   click('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]');
   await until(async()=>!(await loadCreature(id)).data.resource_tracker_spent?.['shared-power-uses']);
   click('[data-sheet="magic"]');
