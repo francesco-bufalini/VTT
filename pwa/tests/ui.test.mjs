@@ -139,11 +139,19 @@ test("mobile navigation and local creature editing persist through tabs",async()
     const rows=await listCreatures();
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
   });
-  click('[data-act="tracker-long"]');
+  click('[data-sheet="battle"]');
+  await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
+  click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
+  await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-long"]'));
+  click('#sheet-context-dialog [data-act="tracker-long"]');
+  await until(()=>document.querySelector('#sheet-context-dialog [data-rest-preview]'));
+  click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
   await until(async()=>{
     const rows=await listCreatures();
     return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
   });
+  click('#sheet-context-dialog [data-act="sheet-context-close"]');
+  await until(()=>!document.querySelector('#sheet-context-dialog'));
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-field="party_id"]'));
   const pendingNote=document.querySelector('[data-field="party_id"]');
@@ -967,11 +975,11 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'The death-save section is absent');
  assert.equal(document.querySelectorAll('.battle-root [data-calculated="second_max"]').length,1,
   'Second form has one computed maximum and one separately named base editor');
- assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"]').length,1);
- assert.ok(document.querySelector('.battle-hp-settings:not([open])'),
-  'Manual HP maxima are folded away by default');
- assert.ok(document.querySelector('.battle-second-form[open]'),
-  'A populated second form stays visible');
+ assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"],[data-field="max_hp_base"]').length,0,
+   'The old HP maximum editors are no longer shown');
+ assert.equal(document.querySelectorAll('.battle-hp-settings').length,0);
+ assert.ok(document.querySelector('.battle-second-form'),
+   'The second form is always displayed');
  assert.ok(document.querySelector('.battle-defense-settings [data-equip-slot="body"]'),
   'Worn armor is editable without expanding an accordion');
  assert.ok(document.querySelector('.battle-ac-formula output'),
@@ -1141,11 +1149,16 @@ test('rapid changes to distinct resource counters preserve both commands',async(
   'Turn recovery must preserve a simultaneous update to an unrelated resource');
  await until(()=>!again.isConnected);
  const consume=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
- const rest=document.querySelector('[data-act="tracker-long"]');
- assert.ok(consume&&rest);consume.click();rest.click();
+ assert.ok(consume);consume.click();
+ await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
+ click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
+ await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-long"]'));
+ click('#sheet-context-dialog [data-act="tracker-long"]');
+ await until(()=>document.querySelector('#sheet-context-dialog [data-rest-preview]'));
+ click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+6);
  assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,{rapid_a:3},
-  'Long rest must preserve simultaneous use of a manually recovered resource');
+  'Confirmed rest must preserve simultaneous use of manually recovered resources');
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
