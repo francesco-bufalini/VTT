@@ -107,14 +107,19 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:900});await section('battle');
+ // Optional general actions are hidden while the class-only filter is on.
+ await page.locator('[data-act="battle-toggle-class-only"]').click();
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
  await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
  await page.locator('[data-variant-search]').fill('Disarmare');
  await page.locator('input[value="disarm_dmg"]').check();await page.locator('[data-save-variants]').click();
  assert((await page.locator('#app').textContent()).includes('Disarmare'));
- const after=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});assert.equal(after,before,'Variant preferences must not rewrite creature data');
+ const after=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
+ assert.notEqual(after,before,'The selected variants are now transferred with the creature');
+ assert(JSON.parse(after).action_variants_2014.includes('disarm_dmg'),'Variant selection must persist on the character');
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
+ await page.locator('[data-act="battle-toggle-class-only"]').click();
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
  await page.locator('.play-battle-disclosure[data-battle-action="movement"] > summary').click();
  await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"]) > summary').click();
@@ -123,6 +128,7 @@ try{
  await page.locator('[data-act="close-sheet-roll"]').click();
  await page.waitForFunction(()=> !!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
+ await page.locator('[data-act="battle-toggle-class-only"]').click();
  assert((await page.locator('#app').textContent()).includes('Movimento furtivo'));
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
  console.log('PASS: 6 styled PWA sections at 360/390/768/1440px, compact groups without tree rails, three spell groups, native routes, stealth dice, persistent variants and offline reload');
