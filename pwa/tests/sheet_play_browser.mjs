@@ -172,8 +172,10 @@ try{
    'Base dice and their modifier must stay in the same compact tile');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
  assert(await rollDialog.locator('.sheet-roll-origin-term').first().evaluate(node=>{
-   return getComputedStyle(node).maxWidth==='148px'&&node.clientWidth<175;
- }),'Restore original compact tile widths instead of expanding for the whole formula');
+   const bounds=node.getBoundingClientRect();
+   const dialog=node.closest('#sheet-roll-dialog').getBoundingClientRect();
+   return bounds.width<dialog.width-25&&bounds.height<220;
+ }),'Damage formula tiles must remain compact and fit within the dialog');
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
  const layout=async()=>rollDialog.evaluate(dialog=>{
