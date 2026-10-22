@@ -836,9 +836,11 @@ function infusionPanel(c,calculated){
    '<button type="button" class="btn small" data-act="infusion-forget" data-inf-index="'+index+'">Dimentica</button>'+
    '</span></div>';
  }).join('');
- const activated=active.length?'<div class="infusion-active-list"><strong>Oggetti infusi equipaggiati</strong>'+
-  active.map(row=>'<div class="play-effect-row"><span>'+esc(row.name)+' · '+esc(row.item_name)+
-   '</span><button type="button" class="btn small" data-act="infusion-clear" data-index="'+row.item_index+'">Termina</button></div>').join('')+
+ const infused=(c.inventory||[]).map((item,index)=>({item,index})).filter(row=>row.item?.infusion?.id);
+ const activated=infused.length?'<div class="infusion-active-list"><strong>Oggetti infusi</strong>'+
+  infused.map(({item,index})=>'<div class="play-effect-row"><span>'+esc(item.infusion.name)+
+   ' · '+esc(item.name||item.id)+(active.some(row=>row.item_index===index)?' · Attiva':' · Non equipaggiato / inattiva')+
+   '</span><button type="button" class="btn small" data-act="infusion-clear" data-index="'+index+'">Termina</button></div>').join('')+
   '</div>':'';
  return panel('Infusioni · Infuse Item',
   '<p class="hint">Tratto: '+esc(trait?.name||'Infuse Item non disponibile')+
