@@ -1563,46 +1563,73 @@ input:disabled{opacity:.75;cursor:default}
 .trait-card summary .trait-spell-label{color:#d7b67f;font-weight:650}
 .trait-card summary .trait-granted-spell{padding:1px 7px;border:1px solid #b8915c72;border-radius:6px;background:#9d774526;color:#ece2d3}
 
-/* Info → Tratti: each owned origin has its own compact, visible container.
-   Keep these groups inline in the sheet rather than hiding them in popups. */
-.play-info-traits{margin-top:15px}
-.play-info-traits-content{display:flex;flex-direction:column;gap:14px}
+/* Info -> Tratti: exactly the same light disclosure geometry as Abilità.
+   Source groups and individual traits use separators, never nested cards. */
+.play-info-traits{margin-top:15px;min-width:0}
+.play-info-traits .play-traits-disclosure{
+ border:0;border-bottom:1px solid #a37b4766;background:transparent;min-width:0;
+}
+.play-info-traits .play-traits-disclosure>.play-competence-heading{
+ display:flex;align-items:center;gap:10px;min-height:54px;padding:8px;
+ cursor:pointer;list-style:none;color:#ecd4a9;
+}
+.play-info-traits .play-traits-disclosure>.play-competence-heading::-webkit-details-marker{display:none}
+.play-info-traits .play-traits-disclosure>.play-competence-heading strong{flex:1;font-size:14px;font-weight:600}
+.play-info-traits .play-traits-disclosure>.play-competence-heading::after{
+ content:"＋";font:20px/1 system-ui;color:#d7b078;
+}
+.play-info-traits .play-traits-disclosure[open]>.play-competence-heading::after{content:"−"}
+.play-info-traits .play-traits-disclosure>.play-competence-heading:hover{background:#a981511a}
+.play-info-traits-content{display:grid;gap:14px;padding:2px 8px 14px;min-width:0}
 .play-info-traits .trait-category{margin:0}
-.play-info-traits .trait-category+.trait-category{border-top:1px solid #a5794870;padding-top:15px}
-.play-info-traits .trait-category-title{margin:0 0 12px}
+.play-info-traits .trait-category+.trait-category{border-top:1px solid #a5794870;padding-top:14px}
+.play-info-traits .trait-category-title{margin:4px 0 10px;font-size:13px}
 .play-info-traits .trait-origin-group{
- border:1px solid #9e784d9e;
- border-top:2px solid #c8a06d;
- border-radius:10px;
- margin:0 0 12px;
- padding:10px;
- background:linear-gradient(155deg,#4b372b6a,#241d1bd9 55%);
- box-shadow:inset 0 1px 0 #f6d99b18;
+ border:0;border-radius:0;box-shadow:none;background:transparent;
+ margin:0;padding:0;min-width:0;
+}
+.play-info-traits .trait-origin-group+.trait-origin-group{
+ border-top:1px solid #a579484a;margin-top:14px;padding-top:12px;
 }
 .play-info-traits .trait-origin-title{
- margin:0 0 10px;
- padding:0 0 9px;
- border-bottom:1px solid #ae885b85;
- font-size:14px;
- color:#f0d3a5;
- overflow-wrap:anywhere;
+ margin:0 0 5px;padding:0;font-size:13px;font-weight:650;
+ color:#e8c999;overflow-wrap:anywhere;
 }
-.play-info-traits .trait-origin-cards{display:grid;gap:7px}
-.play-info-traits .trait-origin-cards .trait-card{margin:0}
-.play-info-traits .trait-level{margin:10px 0 7px;font-size:12px}
-.play-info-traits .trait-origin-group .trait-level:first-of-type{margin-top:0}
-.play-info-traits .trait-book{margin-left:9px}
-.play-info-traits .trait-description{white-space:pre-wrap;overflow-wrap:anywhere}
-
-/* Info details: retain the existing Tratti card and nested origin groups,
-   but allow the whole section to fold like Abilità. */
-.play-traits-disclosure>.play-card-head{cursor:pointer;list-style:none}
-.play-traits-disclosure>.play-card-head::-webkit-details-marker{display:none}
-.play-traits-disclosure>.play-card-head:after{content:"＋";font:20px/1 system-ui;color:#d7b078}
-.play-traits-disclosure[open]>.play-card-head:after{content:"−"}
-.play-traits-disclosure:not([open])>.play-card-head{border-bottom:0}
-.play-traits-disclosure>.play-card-head:focus-visible{outline:2px solid #ffda9d;outline-offset:-2px}
-.play-traits-disclosure>.play-info-traits-content{padding:12px 12px 2px}
+.play-info-traits .trait-origin-cards{display:block}
+.play-info-traits .trait-level{margin:11px 0 4px;font-size:11px}
+.play-info-traits .trait-card{
+ display:block;margin:0;padding:0;min-width:0;
+ border:0;border-bottom:1px solid #a37b473d;border-radius:0;
+ box-shadow:none;background:transparent;
+}
+.play-info-traits .trait-card>summary{
+ display:flex;align-items:center;gap:9px;min-height:47px;
+ cursor:pointer;list-style:none;padding:9px 4px;
+ color:#f0e3d2;font-size:13px;
+}
+.play-info-traits .trait-card>summary::-webkit-details-marker{display:none}
+.play-info-traits .trait-card>summary>.trait-title{
+ display:block;flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600;
+}
+.play-info-traits .trait-card>summary::after{
+ content:"＋";font:17px/1 system-ui;color:#cda875;flex:none;
+}
+.play-info-traits .trait-card[open]>summary::after{content:"−"}
+.play-info-traits .trait-card>summary:hover{background:#a981511a}
+.play-info-traits .trait-card>summary:focus-visible{
+ outline:2px solid #ffda9d;outline-offset:-2px;
+}
+.play-info-traits .trait-content{min-width:0;padding:1px 5px 12px}
+.play-info-traits .trait-book{display:block;margin:0 0 8px;color:var(--muted);font-size:11px}
+.play-info-traits .trait-description{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.65}
+.trait-editor-links{display:flex;align-items:center;gap:4px 11px;flex-wrap:wrap;padding:3px 0 9px}
+.trait-editor-link{
+ appearance:none;padding:5px 0;border:0;border-radius:0;background:none;box-shadow:none;
+ font:inherit;font-size:11px;font-weight:550;color:#d7b78b;text-decoration:underline;
+ text-decoration-color:#9c764899;text-underline-offset:3px;cursor:pointer;
+}
+.trait-editor-link:hover{color:#f2d39c}
+.trait-editor-link:focus-visible{outline:2px solid #f2d39c;outline-offset:2px}
 
 /* Distinct compact icons immediately after trained skill names. */
 .play-skills .play-skill-name{min-width:0}
@@ -1711,23 +1738,31 @@ input:disabled{opacity:.75;cursor:default}
 .play-rest-confirm ul{margin:0;padding-left:20px}
 .play-rest-confirm [data-rest-error]:empty{display:none}
 
-/* Trait summaries display source-bound benefits even when collapsed. */
-.trait-card > summary .trait-title{display:block;font-weight:650;overflow-wrap:anywhere}
-.trait-card > summary .trait-benefits{
- display:grid;gap:7px;margin:9px 0 1px;padding-top:9px;
- border-top:1px solid #8f724d55;font-weight:400;
+/* Benefits are shown only inside an expanded trait. Roll bonuses reuse the
+   former filled clickable-row treatment; other kinds stay light and flat. */
+.trait-benefits{
+ display:grid;gap:10px;margin:12px 0;padding:11px 0 2px;
+ border-top:1px solid #9c76485a;
 }
-.trait-benefits > strong{font-size:11px;font-weight:700;color:#edbd77;letter-spacing:.02em}
-.trait-benefit-group{display:grid;gap:4px;padding-left:9px;border-left:2px solid #a782546b;min-width:0}
-.trait-benefit-kind{font-size:11px;font-weight:650;color:#d5b990}
+.trait-benefits>strong{font-size:12px;font-weight:700;color:#edbd77}
+.trait-benefit-group{display:grid;gap:4px;min-width:0}
+.trait-benefit-kind{font-size:11px;font-weight:650;color:#d5b990;margin:0 0 2px}
 .trait-benefit-entry{
- display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;
- gap:2px 9px;min-width:0;padding:3px 0;
- color:#e9dfd2;font-size:12px;line-height:1.5;font-weight:400;
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+ gap:3px 10px;min-width:0;width:100%;padding:5px 2px;
+ color:#e9dfd2;font-size:12px;line-height:1.5;font-weight:400;text-align:left;
 }
-.trait-benefit-entry > span{min-width:0;overflow-wrap:anywhere}
+.trait-benefit-entry>span{min-width:0;overflow-wrap:anywhere}
 .trait-benefit-entry b{font-weight:650;color:#edbd77;overflow-wrap:anywhere}
-
+.trait-benefit-group--bonus .trait-benefit-entry,
+.trait-benefit-group--dice .trait-benefit-entry{
+ border:1px solid #9c7048;border-radius:7px;
+ background:linear-gradient(180deg,#ffffff12,transparent 49%),linear-gradient(155deg,#40302d,#302625);
+ box-shadow:inset 0 1px 0 #ffe0ae18,0 2px 5px #0004;
+ padding:8px 10px;cursor:pointer;font:inherit;font-size:12px;text-align:left;
+}
+.trait-benefit-group--bonus .trait-benefit-entry:hover,
+.trait-benefit-group--dice .trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 
 /* Combat states remain one distinct, softly outlined surface. */
 .play-status-strip{
