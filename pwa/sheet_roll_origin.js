@@ -15,11 +15,13 @@ function bonusText(expression) {
  const raw=symbol(expression).trim();
  return /^[+-]/.test(raw)?raw.startsWith('-')?'−'+raw.slice(1).trim():'+'+raw.slice(1).trim():'+'+raw;
 }
-function abilityFor(target){
+function abilityFor(target,calculated){
  if(target.startsWith('skill:'))return SKILLS.find(([key])=>key===target.slice(6))?.[2]||'';
  if(target.startsWith('save:'))return target.slice(5);
  if(target.startsWith('ability_check:')||target.startsWith('ability_mod:'))return target.split(':')[1]||'';
  if(target==='initiative')return 'dex';
+ if(target.startsWith('casting_hit:'))return target.slice('casting_hit:'.length);
+ if(target.startsWith('attack_hit:'))return list(calculated?.attacks).find(a=>'attack_hit:'+a.id===target)?.ability||'';
  return '';
 }
 function trainingRank(calculated,target){
@@ -29,6 +31,9 @@ function trainingRank(calculated,target){
    return skills.includes('expertise:'+name)?2:skills.includes('skill:'+name)?1:0;
  }
  if(target.startsWith('save:'))return skills.includes('save:'+target.slice(5))?1:0;
+ if(target.startsWith('casting_hit:'))return 1;
+ if(target.startsWith('attack_hit:')&&!target.startsWith('attack_hit:monster:'))
+   return list(calculated?.attacks).find(a=>'attack_hit:'+a.id===target)?.proficient?1:0;
  return 0;
 }
 function trainingOrigin(record,target,calculated){
@@ -42,7 +47,12 @@ function trainingOrigin(record,target,calculated){
  const row=choices.find(c=>!c?.disabled&&(c.kind===kind||
    kind==='skill'&&c.kind==='expertise')&&c.key===key&&c.origin_id);
  if(row)return {id:row.origin_id,name:row.origin_name||list(calculated?.origins).find(o=>o.id===row.origin_id)?.name||'Competenza'};
- return {id:'',name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',section:'proficiency_choices'};
+ const singleClass=list(record?.classes).length===1?record.classes[0]:
+   record?.class?{name:record.class,source:record.class_source||''}:null;
+ const classOrigin=singleClass&&['casting_hit:','attack_hit:'].some(prefix=>target.startsWith(prefix))?
+   'class|'+String(singleClass.source||'').toLowerCase()+'|'+String(singleClass.name||'').toLowerCase():'';
+ return {id:classOrigin,name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
+   section:classOrigin?'':'proficiency_choices'};
 }
 function featureForAutoAdvantage(record,calculated,target){
  const names=target==='save:dex'&&record?.active_class_features?.patient_defense?['Patient Defense']:
@@ -67,7 +77,7 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  if(!Number.isFinite(total))return [];
  const all=calculated?.roll_components||{};
  const result=[];
- const ability=abilityFor(target),rank=trainingRank(calculated,target);
+ const ability=abilityFor(target,calculated),rank=trainingRank(calculated,target);
  const score=num(record?.abilities?.[ability]??10);
  const abilityBase=ability?Math.floor((score-10)/2):0;
  const profTotal=num(calculated?.values?.proficiency);
