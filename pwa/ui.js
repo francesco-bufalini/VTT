@@ -3308,25 +3308,76 @@ async function handleAction(target){
     name?.focus();
     return;
   }
-  if(act==="trait-benefit-open"){
-    state.magicPopup="";state.sheet="origins";state.detail=target.dataset.detail||'formula_bonuses';
-    state.sheetPopup="origin-editor";
-    state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||'Bonus';
-    await render();
-    const id=target.dataset.bonusId;
-    if(id){
-      const originRows=(state.editor?.read()?.formula_bonuses||[]);
-      const index=originRows.findIndex(row=>row.id===id);
-      const el=index>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"]'):
-        [...app.querySelectorAll('[data-auto-bonus]')].find(row=>row.dataset.autoBonus===id);
-      el?.scrollIntoView?.({block:'center'});
-    }
+  if(act==='trait-benefits-open'){
+    if(state.sheet!=='info')return;
+    const key=target.dataset.traitKey;
+    if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
+    state.traitPopupKey=key;state.traitPopupConfirm='';
+    mountTraitBenefitDialog();return;
+  }
+  if(act==='trait-benefits-close'){
+    state.traitPopupKey='';state.traitPopupConfirm='';
+    const dialog=app.querySelector('#trait-benefits-dialog');
+    if(dialog?.close)dialog.close();else dialog?.remove();
     return;
   }
-  if(act==="sheet-details"){
-    state.magicPopup="";
-    if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
-    state.sheet="origins";state.detail=target.dataset.detail;state.sheetPopup="origin-editor";state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||"Modifica personaggio";await render();return;
+  if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
+    const editor=app.querySelector('#trait-benefits-dialog [data-trait-add-form]');
+    if(editor)editor.hidden=act!=='trait-benefits-add';
+    return;
+  }
+  if(act==='trait-benefits-save'){
+    const dialog=app.querySelector('#trait-benefits-dialog');
+    const type=dialog?.querySelector('[data-trait-add-kind]')?.value||'';
+    const fields=dialog?.querySelector('[data-trait-fields="'+type+'"]');
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!fields||!trait)throw Error('Tratto o campi mancanti');
+    const values=Object.fromEntries([...fields.querySelectorAll('[name]')].map(node=>[node.name,node.value]));
+    const changes=addBenefitPatch(state.editor.read(),trait,type,values,'trait:'+crypto.randomUUID());
+    // Validate before committing, but do not write any draft field on input.
+    if(type==='bonus'&&/Formula non applicata/.test(formulaPreview(values.expression,state.calculated)))
+      throw Error('Formula non valida');
+    if(type==='dice'&&!validBonusDice(values.dice))throw Error('Formula dei dadi non valida');
+    await patch(changes);
+    await state.editor.flush();
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-request'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    const id=target.dataset.benefitId;
+    if(!trait||!traitBenefitGroups(trait,state.editor.read(),state.calculated)
+      .some(group=>group.items.some(item=>item.id===id)))throw Error('Beneficio non presente');
+    state.traitPopupConfirm=id;
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-cancel'){
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-confirm'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    const id=target.dataset.benefitId,type=target.dataset.benefitType;
+    if(!trait||id!==state.traitPopupConfirm)throw Error('Eliminazione non confermata');
+    const group=traitBenefitGroups(trait,state.editor.read(),state.calculated)
+      .find(row=>row.type===type&&row.items.some(item=>item.id===id));
+    if(!group)throw Error('Beneficio non più presente');
+    await patch(removeBenefitPatch(state.editor.read(),trait,{id,type}));
+    await state.editor.flush();
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-restore'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!trait)throw Error('Tratto non disponibile');
+    await patch(restoreBenefitPatch(state.editor.read(),trait));
+    await state.editor.flush();
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==="sheet-details"||act==="trait-benefit-open"){
+    message('I benefici si gestiscono dall’icona accanto al tratto.');
+    return;
   }
   if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
     if(act==='sheet-roll-edit-bonus'){
@@ -3973,6 +4024,11 @@ function listen(){
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
+    if(e.target?.matches('[data-trait-add-kind]')){
+      const dialog=e.target.closest('#trait-benefits-dialog');
+      for(const fields of dialog?.querySelectorAll('[data-trait-fields]')||[])
+        fields.hidden=fields.dataset.traitFields!==e.target.value;
+    }
   });
   const navigation=document.querySelector('#navigation-dialog');
   navigation.addEventListener('close',()=>document.querySelector('#more-navigation').setAttribute('aria-expanded','false'));
