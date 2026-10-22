@@ -115,7 +115,6 @@ test("mobile navigation and local creature editing persist through tabs",async()
   assert.equal(document.querySelector('#tracker-name'),null);
   // Legacy resource-creation panel was removed with Modifica personaggio.
   assert.equal(document.querySelector('[data-sheet="origins"]'),null);
-  click('[data-sheet="battle"]');
   await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
   click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
   await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-long"]'));
@@ -124,7 +123,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
   await until(async()=>{
     const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
+    return rows.some(r=>r.creature.spell_slots_spent?.[1]===0);
   });
   click('#sheet-context-dialog [data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
