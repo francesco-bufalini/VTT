@@ -1,6 +1,6 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, activeInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -2832,6 +2832,11 @@ async function handleAction(target){
     const spell=entry||catalogSpell||stored;
     const detailed=await detailedEntry('spells',{...catalogSpell,...spell,_category:'spells'});
     const description=flattenDescription(detailed)||'Descrizione non disponibile nel catalogo locale.';
+    // Object-targeted spells and infusions reuse typed eligibility, never prose
+    // guessing. Catalogue/homebrew spells can declare item_target_selector.
+    const targetSelector=detailed.item_target_selector||spell.item_target_selector||
+      detailed.target_item_selector||spell.target_item_selector||null;
+    const targetItems=targetSelector?targetableInventoryItems(record,targetSelector):[];
     const level=magicSpellInfo({...spell,id}).level;
     const options=[];
     if(entry&&level!==null){
@@ -2861,9 +2866,13 @@ async function handleAction(target){
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':
         '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+      (entry&&targetSelector?
+        (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
+          targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
+         '<p class="warning">Nessun oggetto compatibile in inventario per questo incantesimo.</p>'):'')+
       (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
       '<div class="actions magic-dialog-actions">'+
-      (entry&&options.length?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
+      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
@@ -2881,6 +2890,16 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    const selector=selection.item_target_selector||selection.target_item_selector||null;
+    if(selector){
+      const index=Number(app.querySelector('#action-cast-item-target')?.value);
+      const matches=targetableInventoryItems(record,selector);
+      const choice=matches.find(row=>row.index===index);
+      if(!choice)throw Error('Scegli un oggetto bersaglio compatibile.');
+      // Identity is preserved for the online targeting pipeline and local casts.
+      selection.item_target={inventory_index:index,
+        item_id:String(choice.item.id||''),instance_id:String(choice.item.instance_id||'')};
+    }
     const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
     if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
       eligible_damage:!!app.querySelector('[data-metamagic-damage]')?.checked,damage_type:app.querySelector('[data-metamagic-element]')?.value||''};
