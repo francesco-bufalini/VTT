@@ -1,3 +1,4 @@
+import {effectiveBackgrounds} from './structured_effects.js';
 // Read-only portable counterpart of CreatureFeatures.collect_features in the desktop.
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
@@ -97,16 +98,15 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    named(race,options,{includeUnnamed:true});
   }
  }
- if(record.background){
-  const background=await lookup('backgrounds',record.background,record.background_source,record.background_id);
+ for(const selection of effectiveBackgrounds(record)){
+  const background=await lookup('backgrounds',selection.name,selection.source,selection.id);
   if(background){
-   const options={category:'background',origin:'Background · '+record.background,
-    origin_key:'background|'+norm(background.source||record.background_source)+'|'+norm(record.background),level:1};
-   add({name:'Descrizione · '+record.background,entries:background.entries??background.description??'',source:background.source}, {...options,rank:0});
+   const options={category:'background',origin:'Background · '+selection.name,
+    origin_key:'background|'+norm(background.source||selection.source)+'|'+norm(selection.name),level:1};
+   add({name:'Descrizione · '+selection.name,entries:background.entries??background.description??'',source:background.source}, {...options,rank:0});
    named(background,options);
    if(!arr(background.entries).some(e=>e&&typeof e==='object'&&e.name))
-    add({name:'Tratti del background · '+record.background,entries:background.entries||background.description,source:background.source},
-     {...options,rank:2});
+    add({name:'Tratti del background · '+selection.name,entries:background.entries||background.description,source:background.source}, {...options,rank:2});
   }
  }
  const classes=localClasses(record).filter(c=>c?.name&&norm(c.name)!=='mostro');
