@@ -121,7 +121,8 @@ test('two advantages never stack, and one disadvantage cancels both; the preview
  const c={...character(),active_class_features:{rage:{}},conditions:['poisoned']};
  const calc=calculateSheet(c);
  const fixtures=[
-   {name:'Rage',origin_key:'class|phb|barbarian',origin_id:'feature:rage',class_name:'Barbarian'},
+   {name:'Rage',origin_key:'class|phb|barbarian',origin_id:'feature:rage',class_name:'Barbarian',
+     roll_modes:[{mode:'advantage',target:'skill:athletics'}]},
    {name:'Vigore arcano',origin_key:'class|phb|barbarian',origin_id:'feature:arcane',
      roll_modes:[{mode:'advantage',targets:['ability_check','skill:athletics']}]},
  ];
