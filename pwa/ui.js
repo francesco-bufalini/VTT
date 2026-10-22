@@ -745,10 +745,10 @@ async function traitsView(c){
   }
   return state.referenceCatalogs[category];
  };
- const linked='<div class="actions">'+
+ const linked='<div class="trait-editor-links" aria-label="Gestisci benefici e origini">'+
   [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
    ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
-  .map(([detail,label])=>'<button class="btn small" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
+  .map(([detail,label])=>'<button type="button" class="trait-editor-link" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
@@ -777,7 +777,7 @@ async function traitsView(c){
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     benefitDetails+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+linked+'</div></details>';
+    toggler+'</div></details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
@@ -789,7 +789,7 @@ async function traitsView(c){
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
- return panel('Tratti',content||'<p>Nessun privilegio da mostrare.</p>')+
+ return panel('Tratti',(content?linked+content:'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
 }
 function documentRow(item,index,stored){
