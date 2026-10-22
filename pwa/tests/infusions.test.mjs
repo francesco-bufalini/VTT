@@ -32,28 +32,29 @@ test("all 16 source-qualified TCE infusions are available in served offline cata
  assert.equal(definitions.length,16);
  assert.ok(definitions.every(entry=>entry.id?.startsWith("infusion|tce|")&&entry.item_selector));
  assert.equal(byName("Enhanced Weapon").numeric_item_bonuses.bonus_weapon,1);
- assert.deepEqual(infusionLimits(make(10),mechanics),{level:10,active:4,known:8});
- assert.deepEqual(infusionLimits(make(1),mechanics),{level:1,active:0,known:0});
+ assert.deepEqual(infusionLimits(make(10),mechanics,[infusionTrait]),{level:10,active:4,known:8});
+ assert.deepEqual(infusionLimits(make(1),mechanics,[infusionTrait]),{level:1,active:0,known:0});
  assert.equal(artificerLevel({class:"Artificer",class_source:"TCE",level:5}),5);
 });
 
 test("learn, infuse one stacked sword, and compute upgraded +2 attack/damage entirely offline",()=>{
  let record=make(10),entry=byName("Enhanced Weapon");
  record.inventory=[sword()];
- record={...record,...learnInfusionPatch(record,entry,definitions,mechanics)};
+ record={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,[infusionTrait])};
+ record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,[infusionTrait],true)};
  const known=learnedInfusions(record,definitions);
  assert.equal(known.length,1);
- record={...record,...applyInfusionPatch(record,known[0],definitions,mechanics,0)};
+ record={...record,...applyInfusionPatch(record,known[0],definitions,mechanics,0,[infusionTrait])};
  assert.equal(record.inventory.length,2);
  assert.equal(record.inventory[0].quantity,1);
  assert.equal(record.inventory[1].quantity,2);
  assert.equal(record.inventory[1].infusion,undefined);
  assert.equal(record.inventory[0].infusion.creator_id,record.id);
- assert.equal(infusionNumericBonuses(record,record.inventory[0],definitions).bonus_weapon,2);
+ assert.equal(infusionNumericBonuses(record,record.inventory[0],definitions,[infusionTrait]).bonus_weapon,2);
  const output=calculateSheet(record,sheetCatalogs);
  assert.equal(output.attacks[0].hit,3+4+2);
  assert.equal(output.attacks[0].damage,"1d8 + 5");
- assert.throws(()=>applyInfusionPatch(record,known[0],definitions,mechanics,1),/già applicata/);
+ assert.throws(()=>applyInfusionPatch(record,known[0],definitions,mechanics,1,[infusionTrait]),/già applicata/);
  record={...record,...clearInfusionPatch(record,0)};
  assert.equal(calculateSheet(record,sheetCatalogs).attacks[0].hit,3+4);
 });
@@ -64,8 +65,9 @@ test("infusion attunement, low-level restrictions and forgetting",()=>{
  let record=make(10);record.inventory=[wand];
  const focus=byName("Enhanced Arcane Focus");
  assert.equal(infusionEligible(focus,wand),true);
- record={...record,...learnInfusionPatch(record,focus,definitions,mechanics)};
- record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,mechanics,0)};
+ record={...record,...learnInfusionPatch(record,focus,definitions,mechanics,-1,[infusionTrait])};
+ record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,[infusionTrait],true)};
+ record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,mechanics,0,[infusionTrait])};
  assert.equal(record.inventory[0].infusion.requires_attunement,true);
  const output=calculateSheet(record,sheetCatalogs);
  assert.equal(output.values.spell_attack,0,"Senza sintonia nessun bonus ai tiri di incantesimo");
@@ -76,7 +78,7 @@ test("infusion attunement, low-level restrictions and forgetting",()=>{
  assert.equal(record.optional_features_catalog.length,0);
  assert.equal(record.inventory[0].infusion,undefined);
  assert.equal(record.inventory[0].attuned,false);
- assert.throws(()=>learnInfusionPatch(make(1),focus,definitions,mechanics),/limite|non disponibile/i);
+ assert.throws(()=>learnInfusionPatch(make(1),focus,definitions,mechanics,-1,[infusionTrait]),/limite|non disponibile/i);
 });
 
 test("typed selectors reject mismatched or magical items; Repeating Shot applies only on ranged weapons",()=>{
@@ -90,8 +92,8 @@ test("typed selectors reject mismatched or magical items; Repeating Shot applies
  assert.equal(infusionEligible(repeating,magical),false);
  const record=make(10);
  const onItem={...arrow,infusion:{id:repeating.id,creator_id:record.id,level:10}};
- assert.equal(infusionNumericBonuses(record,onItem,definitions).bonus_weapon,1);
- assert.deepEqual(infusionNumericBonuses(record,{...melee,infusion:onItem.infusion},definitions),{});
+ assert.equal(infusionNumericBonuses(record,onItem,definitions,[infusionTrait]).bonus_weapon,1);
+ assert.deepEqual(infusionNumericBonuses(record,{...melee,infusion:onItem.infusion},definitions,[infusionTrait]),{});
 });
 
 
