@@ -754,27 +754,30 @@ async function traitsView(c){
  const groups=groupTraitRows(rows);
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  // The summary is always visible, even while the description is collapsed.
-  // Keep the preview read-only: edits remain in the existing origin editors.
+  // Benefits belong to the expanded trait body, never to its summary.
   const benefitGroups=traitBenefitGroups(trait,c,state.calculated||{});
   const benefitDetails=benefitGroups.length?
-    '<span class="trait-benefits"><strong>Benefici concessi</strong>'+
+    '<div class="trait-benefits"><strong>Benefici concessi</strong>'+
     benefitGroups.map(group=>
-      '<span class="trait-benefit-group"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-      group.items.map(item=>
-        '<span class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
-        (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</span>').join('')+
-      '</span>').join('')+'</span>':'';
+      '<div class="trait-benefit-group trait-benefit-group--'+esc(group.type.split(':')[0])+'"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
+      group.items.map(item=>{
+        const isRollBonus=group.type==='bonus'||group.type==='dice';
+        const tag=isRollBonus?'button':'div';
+        return '<'+tag+(isRollBonus?' type="button" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(item.id||'')+'"':'')+
+          ' class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
+          (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</'+tag+'>';
+      }).join('')+'</div>').join('')+'</div>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
   return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
-    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span>'+
-    benefitDetails+'</summary>'+
+    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span></summary>'+
+    '<div class="trait-content">'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
+    benefitDetails+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+linked+'</details>';
+    toggler+linked+'</div></details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
