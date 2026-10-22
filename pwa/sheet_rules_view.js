@@ -74,8 +74,8 @@ export function sheetModifierBreakdown(data,target){
  };
  const abilityFrom=key=>Number(data?.values?.['ability_mod:'+key]);
  const proficiency=Number(data?.values?.proficiency||0);
- if(target.startsWith('ability_mod:')){
-  const key=target.slice('ability_mod:'.length),score=Number(data?.values?.['ability:'+key]);
+ if(target.startsWith('ability_check:')||target.startsWith('ability_mod:')){
+  const key=target.split(':')[1],score=Number(data?.values?.['ability:'+key]);
   if(Number.isFinite(score))push('⌊('+score+' − 10)/2⌋',Math.floor((score-10)/2));
  }else if(target==='initiative')push('Mod. DES',abilityFrom('dex'));
  else if(target.startsWith('save:')){
@@ -464,7 +464,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Both battle entry points display the exact same editor and computed AC.
   bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+edit('hp','Gestisci punti ferita','settings')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
@@ -597,21 +597,24 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
-  html+=disclosure('resources','Risorse','reset',
-   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
-  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione delle azioni">'+
+
+  const onlyClass=view.battleOnlyClass!==false;
+  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione e filtro delle azioni">'+
    btn('Espandi tutto','increase','data-act="battle-expand-all"')+
-   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+'</div>';
-  html+=disclosure('attacks','Attacchi fisici','weapon',
+   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+
+   btn('Mostra solo privilegi di classe','proficiency','data-act="battle-toggle-class-only" aria-pressed="'+onlyClass+'"','<span>Mostra solo privilegi di classe</span>')+'</div>';
+  if(resources+untracked||!onlyClass)html+=disclosure('resources','Risorse','reset',
+   resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
+  if(view.battleActions?.attacks||!onlyClass)html+=disclosure('attacks','Attacchi fisici','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
-  html+=disclosure('others','Altre azioni','hand',
+  if(view.battleActions?.others||!onlyClass)html+=disclosure('others','Altre azioni','hand',
    view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
-  html+=disclosure('movement','Spostamento','dash',
+  if(view.battleActions?.movement||!onlyClass)html+=disclosure('movement','Spostamento','dash',
    view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
-  html+=disclosure('checks','Prove abilità','skill',
+  if(view.battleActions?.checks||!onlyClass)html+=disclosure('checks','Prove abilità','skill',
    view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
-  html+=disclosure('spells','Incantesimi','spell_cast',
+  if(view.battleActions?.spells||!onlyClass)html+=disclosure('spells','Incantesimi','spell_cast',
    view.battleActions?.spells||'<p class="play-empty">Nessun incantesimo disponibile.</p>',false,
    btn('Gestisci incantesimi','spell_cast','data-act="action-open-spells"','<span>Gestisci</span>'));
  }
@@ -639,7 +642,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
    html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
   }
-  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_mod:'+key,'Prova di '+key.toUpperCase(),output('ability_mod:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_check:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
