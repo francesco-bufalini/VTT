@@ -23,7 +23,7 @@ function available(record,entry,level=1,classMember=null){
    levelOf(localClasses(record).find(c=>same(c.name,gate.class_name)&&
      (!gate.class_source||same(c.source,gate.class_source)))?.level):
    classMember?levelOf(classMember.level):
-   localClasses(record).reduce((total,c)=>total+levelOf(c.level),0)||levelOf(record.level);
+   localClasses(record).reduce((total,c)=>total+levelOf(c.level),0)||levelOf(record.level)||1;
  return current>=threshold&&current<=maximum;
 }
 function sourceDisabled(record,id){
