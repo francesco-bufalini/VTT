@@ -3665,9 +3665,9 @@ async function handleAction(target){
     const selected=known[Number(target.dataset.index??state.infusionPending)];
     if(act==='infusion-start'){
       if(!selected||!isInfusionPrepared(creature,selected,definitions))throw Error('Prepara prima l’infusione.');
-      state.infusionPending=Number(target.dataset.index);await render();return;
+      state.infusionPending=Number(target.dataset.index);state.sheetPopup='infusions';state.sheetPopupTitle='Applica infusione';await render();return;
     }
-    if(act==='infusion-cancel'){state.infusionPending=-1;await render();return;}
+    if(act==='infusion-cancel'){state.infusionPending=-1;state.sheetPopup='';await render();return;}
     let changes;
     if(act==='infusion-learn'){
       const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
@@ -3678,10 +3678,10 @@ async function handleAction(target){
       if(!selected)throw Error('Infusione non selezionata.');
       const index=Number(app.querySelector('#infusion-item')?.value);
       changes=applyInfusionPatch(creature,selected,definitions,mechanics,index,features);
-      state.infusionPending=-1;
+      state.infusionPending=-1;state.sheetPopup='';
     }else if(act==='infusion-forget'){
       changes=forgetInfusionPatch(creature,selected);
-      state.infusionPending=-1;
+      state.infusionPending=-1;state.sheetPopup='';
     }else changes=clearInfusionPatch(creature,Number(target.dataset.index));
     await patch(changes);await render();return;
   }
