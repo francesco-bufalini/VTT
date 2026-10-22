@@ -113,32 +113,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-sheet="battle"][aria-pressed="true"]'));
   assert.equal(document.querySelector('#tracker-name'),null);
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','resources');
-  await until(()=>document.querySelector("#tracker-name"));
-  change("#tracker-name","Impulsi");
-  change("#tracker-max","3");
-  change("#tracker-recharge","short_rest");
-  click('[data-act="tracker-add"]');
-  await until(()=>document.querySelector('[data-act="tracker-more"]'));
-  click('[data-act="tracker-more"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
-      r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
-  });
-  click('[data-act="tracker-less"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
-      !Object.hasOwn(r.creature.resource_tracker_spent||{},r.creature.resource_trackers[0].id));
-  });
-  click('[data-act="tracker-more"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
-  });
+  // Legacy resource-creation panel was removed with Modifica personaggio.
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
   click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
@@ -465,7 +441,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Azioni","Magia","Inventario","Condizioni","Modifica personaggio"]);
+  assert.deepEqual(sections,["Info","Azioni","Magia","Inventario","Condizioni"]);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
   assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
@@ -504,17 +480,8 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.ok(document.querySelector('#sheet-context-dialog .condition-description-source'));
   click('[data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','proficiency_choices');
-  await until(()=>document.querySelector('[data-act="native-add"][data-list="proficiency_choices"]'));
-  click('[data-act="native-add"][data-list="proficiency_choices"]');
-  await until(()=>document.querySelector('[data-native-list="proficiency_choices"]'));
-  change('[data-native-list="proficiency_choices"][data-key="key"]',"athletics");
-  await until(async()=>{
-    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
-    return c?.proficiency_choices?.some(row=>row.key==="athletics");
-  });
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
+  // Trait benefits have their own modal instead of a general character editor.
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -1198,7 +1165,7 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
+for(const action of ['tracker-reset','tracker-recharge']){
  test('rapid resource use survives '+action,async()=>{
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Recupero concorrente '+action);
@@ -1210,11 +1177,7 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]'));
-  if(action==='tracker-delete'){
-   click('[data-sheet="origins"]');
-   await until(()=>document.querySelector('#native-details'));
-   change('#native-details','resources');
-  }else click('[data-sheet="battle"]');
+  click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]'));
   const use=document.querySelector('[data-act="tracker-more"][data-tracker-id="keep"]');
   const recover=document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]');
@@ -1223,7 +1186,6 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
   const actual=(await loadCreature(saved.data.id)).data;
   assert.deepEqual(actual.resource_tracker_spent,{keep:1},
    'Recovery/deletion must preserve the simultaneous consumption of another resource');
-  if(action==='tracker-delete')assert.deepEqual(actual.resource_trackers.map(row=>row.id),['keep']);
   click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
  });
 }
