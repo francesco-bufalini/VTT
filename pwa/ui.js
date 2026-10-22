@@ -761,6 +761,20 @@ async function traitsView(c){
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
   const ids=[trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean);
+  const norm=value=>String(value||'').trim().toLowerCase();
+  // Catalog cards use stable catalog IDs, whereas calculated grants use
+  // portable source/name IDs. Resolve both without changing saved identities.
+  if(trait.rank===0&&trait.category==='razza'){
+    if(c.species)ids.push('race|'+norm(c.species_source)+'|'+norm(c.species));
+    if(c.subrace)ids.push('subrace|'+norm(c.subrace_source)+'|'+norm(c.subrace));
+  }
+  if(trait.rank===0&&trait.category==='talenti'){
+    for(const feat of c.feats_catalog||[]){
+      if(!feat?.name)continue;
+      const localKey='feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source));
+      if(localKey===trait.origin_key)ids.push('feat|'+norm(feat.source)+'|'+norm(feat.name));
+    }
+  }
   const granted=(state.calculated?.bonuses||[]).filter(row=>
     ids.includes(row.origin_id)||ids.includes(row.parent_origin));
   const known=new Set(granted.map(row=>String(row.id||'')));
@@ -3069,7 +3083,16 @@ async function handleAction(target){
     await render();
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
     const feature=(state.calculated?.features||[]).find(f=>f.origin_id===id);
-    const normalized=id.startsWith('race|')?'species|'+id.split('|').slice(2).join('|')+'|'+id.split('|')[1]:id;
+    const parts=id.split('|'),current=state.editor?.read()||{};
+    let normalized=id;
+    if(parts[0]==='race'&&String(current.species||'').toLowerCase()===parts.slice(2).join('|')){
+      normalized='species|'+(current.species_id||parts.slice(2).join('|'))+'|'+parts[1];
+    }else if(parts[0]==='feat'){
+      const feat=(current.feats_catalog||[]).find(row=>
+        String(row.name||'').toLowerCase()===parts.slice(2).join('|')&&
+        String(row.source||'').toLowerCase()===parts[1]);
+      if(feat)normalized='feat|'+(feat.id||parts.slice(2).join('|')+'|'+parts[1]);
+    }
     const matchedByName=feature?cards.find(card=>{
       const name=String(card.querySelector('summary')?.textContent||'').trim().toLowerCase();
       return (card.dataset.traitOrigin===feature.origin_key||
