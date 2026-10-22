@@ -28,6 +28,13 @@ test('ability-check and save category bonuses affect every roll exactly once, in
  assert.equal(result.stats.passive_perception,without.stats.passive_perception+4);
 });
 
+test('monster fixed saving throws also include general saving throw bonuses',()=>{
+ const monster=initialCreature('monster','Guardiano','monster-id','owner-id');
+ monster.stat_block={save:{str:'+5'}};
+ monster.formula_bonuses=[{id:'ward',target:'saving_throw',expression:'2'}];
+ assert.equal(calculateSheet(monster).saves.str,7);
+});
+
 test('Stone of Good Luck bonuses are category grants, and require an active equipped item',()=>{
  const stone={id:'stone-of-good-luck',name:'Stone of Good Luck',custom_item_type:'magic',
   quantity:1,req_attune:true,attuned:true,equipped:true,
