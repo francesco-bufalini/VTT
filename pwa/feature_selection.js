@@ -1,7 +1,8 @@
 // Generic two-stage choice lifecycle for features with learned and prepared banks.
 // Existing lists without a prepared bank are treated as already prepared (migration).
 const rows=value=>Array.isArray(value)?value:[];
-export const choiceIdentity=row=>String(row?.id||'')+'|'+String(row?.plan_item_id||'');
+export const choiceIdentity=row=>String(typeof row==='string'?row:row?.id||'')+'|'+
+  String(row&&typeof row==='object'?row.plan_item_id||'':'');
 export const sameChoice=(a,b)=>choiceIdentity(a)===choiceIdentity(b);
 export function choiceBanks(record,knownField,preparedField,accept=()=>true){
  const known=rows(record[knownField]).filter(accept);
