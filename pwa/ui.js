@@ -3297,9 +3297,15 @@ async function handleAction(target){
     // Preview is deterministic; no die is rolled and no creature is changed.
     const minimum=completeRest(record,event,calculated,dice,()=>1);
     const maximum=completeRest(record,event,calculated,dice,sides=>sides);
-    const trackers=(calculated.trackers||[]).filter(row=>row.spent>0&&
-      (row.recharge===event||event==='long_rest'&&row.recharge==='short_rest'));
-    const recovered=trackers.map(row=>row.name+': '+row.spent+' usi recuperati');
+    // Compare the real rest patch, including partial short-rest recoveries.
+    const recovered=(calculated.trackers||[]).flatMap(row=>{
+      const before=Math.max(0,Number(record.resource_tracker_spent?.[row.id]||0));
+      const after=Math.max(0,Number(minimum.patch.resource_tracker_spent?.[row.id]||0));
+      return before>after?[row.name+': '+(before-after)+' usi recuperati']:[];
+    });
+    const newlyReady=Object.entries(minimum.patch.resource_recovery_ready||{}).filter(([key,ready])=>
+      ready&&!record.resource_recovery_ready?.[key]).length;
+    if(newlyReady)recovered.push('Recuperi opzionali disponibili: '+newlyReady);
     const pact=Number(record.pact_slots_spent||0);
     if(pact)recovered.push('Magia del Patto: '+pact+' slot recuperati');
     if(event==='long_rest'){
