@@ -5,7 +5,7 @@ import {effectiveBackgrounds,fixedProficiencies} from '../structured_effects.js'
 import {battleActionPanels} from '../action_economy.js';
 import {initialCreature} from '../character_core.js';
 import {makeCreatureExport,parseCreatureExport,makeOwnedCopy} from '../creature_format.js';
-import {completeRest} from '../native_sheet.js';
+import {completeRest,restRecoveryPreview} from '../native_sheet.js';
 
 const player=()=>initialCreature('character','Esploratore','character-id','owner-id');
 const base=()=>({...player(),abilities:{str:10,dex:14,con:12,int:10,wis:12,cha:10},max_hp_base:20});
@@ -118,4 +118,54 @@ test('rest calculations can preview and accept exact manual Hit Dice results wit
  assert.equal(outcome.rolls[1].roll,7);
  assert(outcome.healed>=preview.healed);
  assert.deepEqual(c,untouched);
+});
+
+
+test('rest forecast lists all eligible recovery pools even when nothing is spent',()=>{
+ const c={...base(),current_hp:12,hit_dice:'3d8',resource_tracker_spent:{},pact_slots_spent:0,
+  spell_slots_spent:Array(10).fill(0)};
+ const original=structuredClone(c);
+ const computed=calculateSheet(c);
+ const calc={...computed,stats:{...computed.stats,hit_dice:'3d8'},
+  trackers:[
+   {id:'short',name:'Risorsa breve piena',max:4,recharge:'short_rest',spent:0},
+   {id:'long',name:'Risorsa lunga piena',max:2,recharge:'long_rest',spent:0},
+   {id:'partial',name:'Recupero parziale pieno',max:3,recharge:'manual',spent:0,
+    partial_recoveries:[{id:'partial-rule',event:'short_rest',mode:'partial',amount:1}]}
+  ],pact_slots:{total:2,level:2,spent:0},
+  spell_slots:[{level:1,total:4,spent:0},{level:2,total:2,spent:0}]};
+ const short=restRecoveryPreview(c,'short_rest',calc,{d8:1});
+ assert(short.entries.some(row=>row.name==='Risorsa breve piena'&&row.detail.includes('0 utilizzi recuperati')));
+ assert(short.entries.some(row=>row.name==='Recupero parziale pieno'));
+ assert(short.entries.some(row=>row.name==='Slot del Patto (livello 2)'&&row.detail.includes('0 recuperati')));
+ assert(!short.entries.some(row=>row.name==='Risorsa lunga piena'));
+ assert(short.entries.some(row=>row.name==='d8'&&row.detail.includes('1 da spendere')));
+ assert(short.maximum.healed>=short.minimum.healed);
+ const long=restRecoveryPreview(c,'long_rest',calc);
+ assert(long.entries.some(row=>row.name==='Risorsa breve piena'));
+ assert(long.entries.some(row=>row.name==='Risorsa lunga piena'));
+ assert(long.entries.some(row=>row.name==='Slot incantesimo livello 1'&&row.detail.includes('0 recuperati')));
+ assert(long.entries.some(row=>row.name==='d8'&&row.detail.includes('0 recuperati')));
+ assert(long.entries.some(row=>row.name==='Indebolimento'));
+ assert(long.entries.some(row=>row.name==='Punti ferita temporanei'));
+ assert.deepEqual(c,original,'Forecast must not change the creature record');
+});
+
+test('rest forecast includes actual recoverable uses and restored Hit Dice',()=>{
+ const c={...base(),current_hp:5,hit_dice:'4d8',hit_dice_spent:{d8:2},
+  resource_tracker_spent:{'short':2,'long':1},pact_slots_spent:1,
+  spell_slots_spent:[0,2,0]};
+ const computed=calculateSheet(c);
+ const calc={...computed,stats:{...computed.stats,hit_dice:'4d8'},
+  trackers:[
+   {id:'short',name:'Breve',max:3,recharge:'short_rest'},
+   {id:'long',name:'Lungo',max:2,recharge:'long_rest'}
+  ],pact_slots:{total:2,level:1},spell_slots:[{level:1,total:4}]};
+ const short=restRecoveryPreview(c,'short_rest',calc,{d8:1});
+ assert(short.entries.some(row=>row.name==='Breve'&&row.detail.includes('2 utilizzi recuperati')));
+ assert(short.entries.some(row=>row.name==='Slot del Patto (livello 1)'&&row.detail.includes('1 recuperati')));
+ const long=restRecoveryPreview(c,'long_rest',calc);
+ assert(long.entries.some(row=>row.name==='d8'&&row.detail.includes('2 recuperati')));
+ assert(long.entries.some(row=>row.name==='Slot incantesimo livello 1'&&row.detail.includes('2 recuperati')));
+ assert(long.entries.some(row=>row.name==='Lungo'&&row.detail.includes('1 utilizzi recuperati')));
 });
