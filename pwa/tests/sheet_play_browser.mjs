@@ -137,14 +137,61 @@ try{
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
  await damageButton.click();
- assert.match(await page.locator('#battle-damage-dialog').textContent(),/Lama lunare/);
- await page.locator('#battle-damage-dialog [data-act="battle-damage-confirm"]').click();
- assert.match(await page.locator('#battle-damage-dialog [data-damage-result]').textContent(),/Formula/);
- await page.locator('#battle-damage-dialog [data-act="battle-damage-close"]').click();
+ const rollDialog=page.locator('#sheet-roll-dialog');
+ assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
+ assert.match(await rollDialog.textContent(),/Lama lunare/);
+ assert.match(await rollDialog.textContent(),/Tiro per danni/);
+ assert.equal(await rollDialog.locator('.sheet-roll-close').count(),1);
+ assert.equal(await rollDialog.locator('[data-act="battle-damage-close"]').count(),0);
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
+ assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
+   'Damage rolls must not offer an advantage/disadvantage mechanic');
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
+ await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
+ assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
+ const layout=async()=>rollDialog.evaluate(dialog=>{
+   const mode=dialog.querySelector('[data-roll-mode]').getBoundingClientRect();
+   const button=dialog.querySelector('[data-act="roll-sheet-confirm"]').getBoundingClientRect();
+   return {modeY:mode.y,buttonY:button.y,modeWidth:mode.width,buttonWidth:button.width};
+ });
+ const damageLayout=await layout();
+ assert(Math.abs(damageLayout.modeY-damageLayout.buttonY)<=25,'Mode and roll action belong on the same row');
+ assert(damageLayout.buttonWidth>damageLayout.modeWidth,'Roll action must take most of the width');
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/Formula/);
+ assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true,
+   'Roll action stays visible after damage roll');
+ assert(await rollDialog.evaluate(dialog=>{
+   const result=dialog.querySelector('[data-roll-result]').getBoundingClientRect();
+   const actions=dialog.querySelector('.sheet-roll-actions').getBoundingClientRect();
+   return actions.top>=result.bottom;
+ }),'Roll controls stay below damage results');
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
+ await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
- assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
- await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
+ assert.equal(await rollDialog.getAttribute('data-roll-kind'),'d20');
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/1d20/);
+ assert.match(await rollDialog.textContent(),/Tiro per colpire/);
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
+ assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
+ await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true);
+ assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/vantaggio/);
+ const d20Layout=await layout();
+ assert(d20Layout.buttonWidth>d20Layout.modeWidth);
+ assert(await rollDialog.evaluate(dialog=>{
+   const result=dialog.querySelector('[data-roll-result]').getBoundingClientRect();
+   const actions=dialog.querySelector('.sheet-roll-actions').getBoundingClientRect();
+   return actions.top>=result.bottom;
+ }),'Mode and roll button move below the d20 result');
+ await rollDialog.locator('[data-roll-mode]').selectOption('normal');
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
+ await rollDialog.locator('.sheet-roll-close').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
  await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"]) > summary').click();
