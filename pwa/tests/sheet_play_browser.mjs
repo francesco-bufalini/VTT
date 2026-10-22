@@ -136,11 +136,16 @@ try{
  assert.equal(await mainAttack.locator('.play-battle-effect').count(),1);
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
+ // Exercise damage-type localization without changing saved creature data.
+ await damageButton.evaluate(node=>{node.dataset.damageType='slashing';});
  await damageButton.click();
  const rollDialog=page.locator('#sheet-roll-dialog');
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
  assert.match(await rollDialog.textContent(),/Lama lunare/);
- assert.match(await rollDialog.textContent(),/Tiro per danni/);
+ assert.equal((await rollDialog.locator('h2').textContent()).includes('Lyria'),false,
+   'The popup title must never contain the character name');
+ assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
+   'Tipo di danno · Tagliente');
  assert.equal(await rollDialog.locator('.sheet-roll-close').count(),1);
  assert.equal(await rollDialog.locator('[data-act="battle-damage-close"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
@@ -173,7 +178,9 @@ try{
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'d20');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/1d20/);
- assert.match(await rollDialog.textContent(),/Tiro per colpire/);
+ assert.doesNotMatch(await rollDialog.locator('h2').textContent(),/Lyria/);
+ assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
+   'Tiro per colpire · Mischia');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
@@ -206,6 +213,11 @@ try{
  const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
  assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
+ await escapeAction.locator('[data-target="skill:athletics"]').click();
+ assert.doesNotMatch(await page.locator('#sheet-roll-dialog h2').textContent(),/Lyria/);
+ assert.equal((await page.locator('#sheet-roll-dialog .sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
+   'Prova di abilità · Forza');
+ await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  const escapeRolls=await escapeAction.locator('.play-battle-attack-roll').evaluateAll(nodes=>
    nodes.map(node=>{const {x,y}=node.getBoundingClientRect();return {x,y}}));
  assert(escapeRolls[1].y>escapeRolls[0].y+10);
@@ -350,6 +362,8 @@ try{
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel').count(),1);
  await dismiss();
  await page.locator('#sheet-play-view [data-target="initiative"]').click();
+ assert.equal((await page.locator('#sheet-roll-dialog .sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
+   'Prova di abilità · Destrezza');
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
@@ -507,6 +521,8 @@ try{
  await strength.locator('summary.play-battle-action-heading').click();
  const firstRoll=strength.locator('[data-target="ability_check:str"]');
  await firstRoll.click();
+ assert.equal((await page.locator('#sheet-roll-dialog .sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
+   'Prova di caratteristica');
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  await strength.locator('summary.play-battle-action-heading').click();
