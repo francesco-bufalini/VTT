@@ -244,6 +244,7 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
   const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):null;
   if(remaining!==null&&remaining<Math.max(1,Number(row.tracker_cost)||1))continue;
   result.push({...row,selectionId:'bonus:'+i,remaining,
+    spent:tracker?Number(tracker.spent||0):null,
     tracker_name:tracker?.name||'',tracker_cost:tracker?Math.max(1,Number(row.tracker_cost)||1):0});
  }
  if(kind==='damage'&&attackId==='class_feature:lightning_launcher'){
@@ -252,7 +253,7 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
   if(remaining>0)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
    dice:'1d6',damage_type:'lightning',origin_name:'Lightning Launcher',
    origin_id:tracker.origin_id,tracker_id:tracker.id,tracker_cost:1,
-   tracker_name:tracker.name,remaining});
+   tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
  }
  return result;
 }
