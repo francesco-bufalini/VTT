@@ -296,8 +296,11 @@ export function activeInfusions(record={}){
  return array(record.inventory).flatMap((saved,index)=>{
    const item=resolveOwnedItem(saved),infusion=item?.infusion;
    if(!infusion?.id||Number(item.quantity??1)<1||item.active===false)return [];
-   if(!array(item.equipped_slots).length&&!item.equipped&&!item.attuned)return [];
-   if(requiresAttunement(item)&&!item.attuned)return [];
+   const kind=itemKind(item),slots=array(item.equipped_slots);
+   const equipped=kind==='armor'?slots.includes('body'):
+     ['weapon','shield'].includes(kind)?slots.includes('main')||slots.includes('off'):
+     item.equipped===true||item.attuned===true;
+   if(!equipped||requiresAttunement(item)&&!item.attuned)return [];
    if(record.origin_enabled?.['infusion:'+(item.instance_id||item.id)]===false)return [];
    if(infusion.creator_id===record.id&&infusion.source_trait_id&&
      record.origin_enabled?.[infusion.source_trait_id]===false)return [];
@@ -323,8 +326,8 @@ function replicableItem(option,entry,level){
 }
 export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1,features){
  const caps=infusionLimits(record,classMechanics,features),known=learnedInfusions(record,definitions);
- if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2)||
-    known.length>=caps.known)throw Error("Infusione non disponibile o limite di conoscenza raggiunto.");
+ if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2))
+    throw Error("Infusione non disponibile per questo tratto o livello.");
  let plan_item_id="",plan_item_name="";
  if(option.application_kind==="replicate"){
    const item=array(record.inventory)[itemIndex];
