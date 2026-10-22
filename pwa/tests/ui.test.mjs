@@ -1156,13 +1156,18 @@ test('rapid changes to distinct resource counters preserve both commands',async(
  await until(()=>!again.isConnected);
  const consume=document.querySelector('[data-act="tracker-more"][data-tracker-id="rapid_a"]');
  assert.ok(consume);consume.click();
+ await until(async()=>(await loadCreature(saved.data.id)).data.resource_tracker_spent?.rapid_a===3);
  await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
  click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
  await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-long"]'));
  click('#sheet-context-dialog [data-act="tracker-long"]');
  await until(()=>document.querySelector('#sheet-context-dialog [data-rest-preview]'));
  click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
- await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+6);
+ await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+6).catch(error=>{
+  throw Error(error.message+' — riposo: '+
+    (document.querySelector('#sheet-context-dialog [data-rest-error]')?.textContent||
+     document.querySelector('#toast')?.textContent||'nessun errore visibile'));
+ });
  assert.deepEqual((await loadCreature(saved.data.id)).data.resource_tracker_spent,{rapid_a:3},
   'Confirmed rest must preserve simultaneous use of manually recovered resources');
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
