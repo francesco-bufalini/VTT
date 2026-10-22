@@ -86,8 +86,7 @@ jobs:
               assert name in served, f"{name} missing from app shell"
           assert '/api/' in served and "indexedDB" not in served
           for icon in manifest["icons"]:
-              # Ignore cache-busting query strings when reading the local PNG.
-              path = root / icon["src"].split("?", 1)[0].lstrip("/")
+              path = root / icon["src"].split("?", 1)[0].split("#", 1)[0].lstrip("/")
               data = path.read_bytes()
               assert data.startswith(b"\x89PNG\r\n\x1a\n")
               off = 8

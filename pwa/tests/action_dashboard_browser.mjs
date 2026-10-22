@@ -39,8 +39,7 @@ try{
  const section=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())
    await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  if(['conditions','origins'].includes(key)){
-   // Directly exercise legacy panels in tests; no shortcut is exposed to players.
+  if(key==='conditions'){
    await page.evaluate(tab=>{
     const button=document.createElement('button');
     button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
@@ -51,7 +50,7 @@ try{
  };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){

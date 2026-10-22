@@ -79,7 +79,7 @@ const STARTUP_MODULE_PATHS = [
   "/spell_selection.js", "/structured_effects.js", "/client.js",
   "/activated_abilities.js", "/condition_catalog.js", "/documents.js",
   "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js",
-  "/trait_benefits.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
+  "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/demo.js", "/catalog_data.js",
   "/creature_format.js", "/main.js"
 ];
@@ -95,7 +95,7 @@ const SERIAL_STARTUP_ORDER = [
   "/character_core.js", "/client.js", "/feature_mechanics.js", "/sheet_rules.js",
   "/sheet_rules_view.js", "/native_sheet.js", "/action_economy.js", "/creatures.js",
   "/activated_abilities.js", "/class_spells.js", "/class_trackers.js",
-  "/trait_benefits.js", "/trait_projection.js", "/quick_homebrew.js", "/catalog_data.js", "/demo.js"
+  "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/quick_homebrew.js", "/catalog_data.js", "/demo.js"
 ];
 window.addEventListener("error", event => {
   if (startupBrowserErrors.length >= 6) return;

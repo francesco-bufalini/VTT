@@ -836,12 +836,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }
- if(sheet==='origins'){
-  const select=bank.querySelector('#native-details');
-  const options=[...(select?.options||[])];
-  html+=card('Configurazione del personaggio',options.map(option=>'<button type="button" class="play-list-row" data-act="sheet-origin-editor" data-detail="'+esc(option.value)+'">'+icon(option.value==='resources'?'reset':'settings')+'<span class="play-row-copy"><strong>'+esc(option.textContent)+'</strong></span><span class="play-chevron">›</span></button>').join(''));
-  bind('origin-editor',panels[0]);
- }
  // The action variants shortcut belongs to the page title, not to an action group.
  // Preserve the 2014-only availability and the existing delegated popup action.
  if(sheet==='battle'&&c.rules_version!=='2024'){

@@ -29,7 +29,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]):visible,#sheet-play-view select:visible,#sheet-play-view textarea:visible');
    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
@@ -346,7 +346,7 @@ try{
  assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
  assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),0,
    'The two-weapon fighting style is not toggled manually');
- assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
+ assert.equal(await armorGroup.locator('.battle-ac-manage').count(),0,'No shortcuts into the obsolete character modification editor');
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
@@ -368,7 +368,7 @@ try{
  await page.setViewportSize({width:390,height:844});
  assert.doesNotMatch(await shared.textContent(),/Iniziativa/);
  assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
- assert.equal(await shared.locator('.battle-ac-manage').count(),1);
+ assert.equal(await shared.locator('.battle-ac-manage').count(),0,'Retired bonus editor is absent from the shared defense modal');
  await dismiss();
  await popup('equipment');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
@@ -533,6 +533,47 @@ try{
   await traitDisclosure.locator(':scope > summary').click();
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
+ // Benefits and description must be independent controls.
+ const firstTrait=page.locator('.play-info-traits .trait-row').first();
+ const traitDescription=firstTrait.locator('details.trait-card');
+ assert.equal(await traitDescription.getAttribute('open'),null);
+ const trigger=firstTrait.locator('[data-act="trait-benefits-open"]');
+ assert.equal(await trigger.count(),1);
+ await trigger.click();
+ const benefitDialog=page.locator('#trait-benefits-dialog[open]');
+ await benefitDialog.waitFor();
+ assert.equal(await traitDescription.getAttribute('open'),null,'Benefit icon must not expand trait lore');
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false);
+ await benefitDialog.locator('[data-act="trait-benefits-add"]').click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),true);
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="target"]').selectOption('initiative');
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="expression"]').fill('2');
+ assert.equal((await record()).formula_bonuses?.filter(x=>x.id?.startsWith('trait:')).length||0,0,
+  'Typing a benefit must not autosave');
+ await benefitDialog.locator('[data-act="trait-benefits-save"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:')&&x.expression==='2');
+ });
+ await benefitDialog.locator('[data-trait-add-form]').waitFor({state:'hidden'});
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Saved form must close once persistence and refresh complete');
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ await trigger.click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Reopening the popup must never reopen its add form');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-request"][data-benefit-id^="bonus:trait:"]').click();
+ assert.equal((await record()).formula_bonuses.filter(x=>x.id?.startsWith('trait:')).length,1,
+  'First removal click only asks for confirmation');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-confirm"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return !(await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:'));
+ });
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ assert.equal(await benefitDialog.count(),0);
+ await traitDescription.locator(':scope > summary').click();
+ assert.equal(await traitDescription.getAttribute('open'),'');
+ assert.equal(await traitDescription.locator('.trait-benefits').count(),0,
+  'Expanded trait contains only description, never benefits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
@@ -589,5 +630,5 @@ try{
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 7 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
+ console.log('PASS: 5 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}

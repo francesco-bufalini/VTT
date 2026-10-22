@@ -32,8 +32,8 @@ try{
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  if(['conditions','origins'].includes(key)){
-    // Keep regression coverage for legacy panels without adding buttons back to the UI.
+  if(key==='conditions'){
+    // Exercise the existing conditions panel without creating new sheet controls.
     await page.evaluate(tab=>{
       const button=document.createElement('button');
       button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
@@ -47,7 +47,7 @@ try{
   if(key==='library'&&await back.isVisible())await back.click();
   else {
     const fromCreature=await page.locator('#mobile-tabs').evaluate(n=>n.classList.contains('has-creature'));
-    if(fromCreature&&key==='catalog')await back.click(); // Catalogo belongs to the archive.
+    if(fromCreature&&key==='catalog')await back.click();
     const target=fromCreature&&key==='session'?page.locator('#dock-session'):page.locator('#nav [data-nav="'+key+'"]');
     await target.click();
   }
@@ -66,7 +66,7 @@ try{
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
- assert.equal(await page.locator('#dock-catalog').count(),0,'No Catalogo in the creature dock');
+ assert.equal(await page.locator('#dock-catalog').count(),0,'Catalogo belongs to the archive');
  assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
  assert.equal(await page.locator('#more-navigation').count(),0);
@@ -88,7 +88,7 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['battle','magic','inventory','conditions','info','origins']){
+  for(const key of ['battle','magic','inventory','conditions','info']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
@@ -98,9 +98,9 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
- assert.equal(await page.locator('.sheet-quick-links').count(),0,'No added controls above sheets');
+ assert.equal(await page.locator('.sheet-quick-links').count(),0,'No new controls above sheets');
  assert.equal(await page.locator('#navigation-dialog').count(),0);
- await sheet('origins');await shot('tools');
+ await shot('tools');
  await sheet('conditions');
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
