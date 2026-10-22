@@ -1622,3 +1622,14 @@ input:disabled{opacity:.75;cursor:default}
 .play-competence-tools{border-bottom:1px solid #a37b4766}
 .play-competence-tools .play-list-row{border:0;border-radius:0;background:transparent;box-shadow:none;width:100%;min-height:54px;padding:8px}
 .play-competence-tools .play-list-row:hover,.play-competence-heading:hover{background:#a981511a}
+
+/* Leave room for the characteristic label on narrow equipment dialogs. */
+.equipment-unified-panel .equipment-attack-options{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:9px}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability{font-size:12px;gap:7px;line-height:1.35}
+.equipment-unified-panel .equipment-attack-options>.equipment-attack-ability select{width:100%;box-sizing:border-box;min-height:42px}
+.equipment-unified-panel .equipment-attack-options>.check{font-size:12px;line-height:1.4}
+@media(max-width:360px){.equipment-unified-panel .equipment-attack-options{grid-template-columns:minmax(0,1fr)}}
+.play-battle-expansion-tools [aria-pressed="true"]{border-color:#d5ab6c;background:#936d3745}
+.play-battle-expansion-tools{display:flex;flex-wrap:wrap;gap:7px}
+.play-health[role="button"]{cursor:pointer}
+.battle-second-form>h3{font-size:15px;font-weight:700;letter-spacing:.02em;color:#f3d4a2;margin:0 0 8px}
