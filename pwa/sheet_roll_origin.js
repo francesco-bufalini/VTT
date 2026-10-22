@@ -1,7 +1,7 @@
 // Explain a complete d20 roll without re-implementing the character evaluator.
 // Every applied formula grant comes from calculateSheet.roll_components; it has
 // already passed origin, requirements and circular-dependency checks.
-import {SKILLS} from './sheet_rules.js';
+import {SKILLS,validBonusDice} from './sheet_rules.js';
 
 const list = value => Array.isArray(value) ? value : [];
 const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -129,8 +129,8 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  }
  ordered.push(base,...result);
  for(const [i,row] of list(diceBonuses).entries()){
-   const dice=String(row?.dice||'');
-   if(!/^\d{1,2}d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/i.test(dice))continue;
+   const dice=String(row?.dice||'').replace(/\s+/g,'');
+   if(!validBonusDice(dice))continue;
    ordered.push({kind:'dice',formula:'+'+dice,expanded:'+'+dice,originId:String(row.origin_id||''),
      originName:row.origin_name||'Dado bonus',
      section:row.origin_id?'':'formula_bonuses',key:'dice:'+i});
