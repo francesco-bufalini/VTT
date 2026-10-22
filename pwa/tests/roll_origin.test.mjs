@@ -58,16 +58,25 @@ test('initiative draws ability check item once, manual disadvantage and a dice g
  assert.equal(terms.at(-1).formula,'+1d4');
  assert.equal(terms.at(-1).originId,'feature:bless');
 });
-test('changes to ability scores and ability modifiers remain independently attributable',()=>{
+test('changes to scores stay inside Mod.Characteristic while modifier-only grants remain distinct',()=>{
  const c={...character(),formula_bonuses:[
    {id:'score',target:'ability:str',expression:'2',origin_id:'feature:score',origin_name:'Punteggio'},
    {id:'mod',target:'ability_mod:str',expression:'1',origin_id:'feature:mod',origin_name:'Modificatore'}
  ]};
  const calculated=calculateSheet(c);
  const terms=sheetRollOriginSegments(c,calculated,'skill:athletics');
- assert.equal(terms.find(t=>t.originId==='feature:score')?.expanded,'+1');
+ assert.equal(terms.find(t=>t.originId==='feature:score'),undefined);
+ assert.equal(terms.find(t=>t.kind==='base')?.formula,'1d20 + Mod.FOR');
+ assert.equal(terms.find(t=>t.kind==='base')?.expanded,'1d20 +5');
  assert.equal(terms.find(t=>t.originId==='feature:mod')?.expanded,'+1');
  assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['skill:athletics']);
+ const toHit={...calculated,attacks:[{id:'main',ability:'str',proficient:true}],
+   values:{...calculated.values,'attack_hit:main':calculated.values['ability_mod:str']+2}};
+ const attackTerms=sheetRollOriginSegments(c,toHit,'attack_hit:main');
+ assert.equal(attackTerms.find(row=>row.kind==='base')?.expanded,'1d20 +5');
+ assert(!attackTerms.some(row=>row.originId==='feature:score'),
+   'Score increases must never create an extra attack bonus segment');
+ assert.equal(attackTerms.reduce((sum,row)=>sum+(row.value||0),0),toHit.values['attack_hit:main']);
 });
 
 test('spell attacks show casting modifier, proficiency and spell attack grants separately',()=>{
@@ -186,19 +195,49 @@ test('short provenance labels remove generic prefixes without changing navigatio
  assert.match(html,/data-origin-id="item:stone-of-good-luck"/);
 });
 
-test('each damage component has a distinct type between its formula and source',()=>{
+test('damage base dice and modifier share a section; only different types create more sections',()=>{
  const roll=rollBattleDamage('1d6+3+2d4',()=>1);
  const rows=damageRollSegments(roll,'slashing; fire');
- assert.deepEqual(rows.map(row=>row.formula),['1d6','+3','+2d4']);
- assert.deepEqual(rows.map(row=>row.damageType),['slashing','slashing','fire']);
+ assert.deepEqual(rows.map(row=>row.formula),['1d6 + Modificatore',' + 2d4']);
+ assert.deepEqual(rows.map(row=>row.damageType),['slashing','fire']);
+ assert.equal(rows[0].value,3);
  const html=sheetRollOriginHtml(rows,x=>x);
- assert.equal((html.match(/class="sheet-roll-origin-damage-type"/g)||[]).length,3);
+ assert.equal((html.match(/class="sheet-roll-origin-damage-type"/g)||[]).length,2);
  assert(html.indexOf('sheet-roll-origin-symbol')<html.indexOf('sheet-roll-origin-damage-type'));
  assert(html.indexOf('sheet-roll-origin-damage-type')<html.indexOf('sheet-roll-origin-name'));
+ const oneType=damageRollSegments(roll,'slashing');
+ assert.deepEqual(oneType.map(row=>row.formula),['1d6 + 2d4 + Modificatore']);
+ assert.equal(oneType[0].damageType,'slashing');
  const ambiguous=damageRollSegments(roll,'slashing; fire; cold');
- assert(ambiguous.every(row=>row.damageType===''),'An ambiguous mixture must not get an invented type');
- const single=damageRollSegments(roll,'slashing');
- assert(single.every(row=>row.damageType==='slashing'));
+ assert(ambiguous.every(row=>row.damageType===''),'An ambiguous mixture must not invent damage types');
+});
+test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
+ const c={...character(),inventory:[{id:'test-sword',name:'Test sword',
+   custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d8',quantity:1,
+   equipped_slots:['main']}]};
+ const calculated=calculateSheet(c);
+ const attack=calculated.attacks.find(row=>row.id==='item:test-sword');
+ assert(attack,'Weapon must be available from the real attack calculation');
+ assert.equal(attack.damage_ability_modifier,4);
+ const roll=rollBattleDamage(attack.damage,()=>1);
+ const rows=damageRollSegments(roll,'slashing',attack);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].formula,'1d8 + Mod.FOR');
+ assert.equal(rows[0].damageType,'slashing');
+ assert.equal(rows[0].value,roll.modifier);
+});
+test('mixed typed damages show only verifiable source-derived characteristic and extra modifiers',()=>{
+ const roll=rollBattleDamage('1d6+2+2d4+4',()=>1);
+ const attack={ability:'str',damage:'1d6+2+2d4+4',
+   damage_base_formula:'1d6+2+2d4',damage_ability_modifier:4,damage_extra_modifier:0};
+ const grouped=damageRollSegments(roll,'slashing;fire',attack);
+ assert.equal(grouped[0].formula,'1d6 + Mod.FOR + 2');
+ assert.equal(grouped[1].formula,' + 2d4');
+ assert.deepEqual(grouped.map(row=>row.damageType),['slashing','fire']);
+ const incorrect={...attack,damage_base_formula:'1d6+2d4',
+   damage_extra_modifier:2};
+ assert.equal(damageRollSegments(roll,'slashing;fire',incorrect)[0].formula,
+   '1d6 + Modificatore','Inconsistent sources must not claim an ability modifier');
 });
 test('fixed proficiency provenance has its own navigable class trait when no feature owns it',async()=>{
  const record=character(),calculated=calculateSheet(record);

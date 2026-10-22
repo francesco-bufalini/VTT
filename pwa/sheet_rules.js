@@ -456,11 +456,15 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
   let damageMod=baseHit!==null?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
+  const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
-  damageMod+=bonus('attack_damage:'+attack.id)+featureDamage;
+  const damageExtraModifier=bonus('attack_damage:'+attack.id)+featureDamage;
+  damageMod+=damageExtraModifier;
   const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
   const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
-  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',range_feet:range,long_range_feet:longRange,
+  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',
+    damage_base_formula:damage||'',damage_ability_modifier:damageAbilityModifier,
+    damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'&&!!offAllowed});

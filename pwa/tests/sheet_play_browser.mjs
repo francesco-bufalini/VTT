@@ -136,13 +136,23 @@ try{
  assert.equal(await mainAttack.locator('.play-battle-effect').count(),1);
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
- // Exercise damage-type localization without changing saved creature data.
+ const rollDialog=page.locator('#sheet-roll-dialog');
+ // An actual calculated weapon attack must use the characteristic's keyword
+ // instead of showing only the numerical modifier.
+ assert.equal(await damageButton.getAttribute('data-damage-attack-id'),'item:local_sword');
+ await damageButton.click();
+ assert.doesNotMatch(await rollDialog.locator('h2').textContent(),/Danni/i,
+   'The weapon name alone identifies this damage roll');
+ assert.match(await rollDialog.locator('.sheet-roll-origin-symbol').first().textContent(),
+   /Mod.FOR/,'Original weapon damage must name its actual attack characteristic');
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),1);
+ await rollDialog.locator('.sheet-roll-close').click();
+ // A second synthetic fire damage component gets its own damage-type row.
  await damageButton.evaluate(node=>{
    node.dataset.damageFormula='1d6+3+2d4';
    node.dataset.damageType='slashing;fire';
  });
  await damageButton.click();
- const rollDialog=page.locator('#sheet-roll-dialog');
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
  assert.match(await rollDialog.textContent(),/Lama lunare/);
  assert.equal((await rollDialog.locator('h2').textContent()).includes('Lyria'),false,
@@ -155,14 +165,17 @@ try{
    'Damage rolls must not offer an advantage/disadvantage mechanic');
  assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
  assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
-   ['Tagliente','Tagliente','Fuoco']);
+   ['Tagliente','Fuoco']);
  assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
-   ['1d6','+3','+2d4']);
+   ['1d6 + Modificatore',' + 2d4']);
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),2,
+   'Base dice and their modifier must stay in the same compact tile');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
- assert(await rollDialog.locator('.sheet-roll-origin-symbol').first().evaluate(node=>{
-   const computed=getComputedStyle(node);
-   return computed.whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1;
- }),'The formula must remain unbroken and unclipped in its tile');
+ assert(await rollDialog.locator('.sheet-roll-origin-term').first().evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   const dialog=node.closest('#sheet-roll-dialog').getBoundingClientRect();
+   return bounds.width<dialog.width-25&&bounds.height<220;
+ }),'Damage formula tiles must remain compact and fit within the dialog');
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
  const layout=async()=>rollDialog.evaluate(dialog=>{
