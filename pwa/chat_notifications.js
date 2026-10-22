@@ -2,13 +2,15 @@
 // True delivery after the browser is terminated requires a remote Web Push sender.
 const PREF_KEY = "vtt-chat-notifications-enabled";
 let initialized = false;
-let enabled = false;
+// Opt-out rather than opt-in: enabled by default for browsers already granted
+// permission. Never request permission without a user gesture.
+let enabled = true;
 export function notificationsSupported() {
   return self.isSecureContext && "Notification" in window && "serviceWorker" in navigator;
 }
 export function notificationsEnabled() {
   if (!initialized) {
-    try { enabled = localStorage.getItem(PREF_KEY) === "true"; } catch (_) {}
+    try { enabled = localStorage.getItem(PREF_KEY) !== "false"; } catch (_) {}
     initialized = true;
   }
   return enabled && notificationsSupported() && Notification.permission === "granted";
