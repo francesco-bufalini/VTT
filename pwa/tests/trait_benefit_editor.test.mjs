@@ -68,9 +68,9 @@ test('traits with no grant still have no benefit groups; suppression affects its
  assert.equal(group[0].items[0].id,'bonus:base');
  const record={trait_benefit_removed:{[trait.key]:['bonus:base']}};
  assert.deepEqual(traitBenefitGroups(trait,record,calculated),[]);
- assert.equal(traitBenefitGroups(empty,record,calculated)[0].items.length,1);
+ assert.deepEqual(traitBenefitGroups(empty,record,calculated),[],'Sibling trait never inherits this manual bonus');
 });
-test('a species benefit attaches to the native race rather than an unmatched species catalog key',()=>{
+test('a manually added racial benefit belongs to the individual trait, not all species features',()=>{
  const own={...trait,feature_origin:'',category:'razza',origin_key:'species|race-elf|phb'};
  const record={species:'Elf',species_source:'PHB'};
  assert.equal(traitOriginId(own,record),'feature:trait:'+trait.key);
