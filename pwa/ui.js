@@ -14,6 +14,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups } from "./trait_benefits.js";
+import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
@@ -37,7 +38,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -126,12 +127,12 @@ function errorMessage(error) {
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
- magic:'spark',inventory:'inventory',conditions:'condition',origins:'settings'};
+ magic:'spark',inventory:'inventory',conditions:'condition'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione']];
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -231,7 +232,7 @@ async function restoreBrowserScreen(screen){
     state.inventorySubtab=screen.inventorySubtab||'items';
     state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
     if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
-    state.sheetPopup='';state.magicPopup='';
+    state.sheetPopup='';state.magicPopup='';state.traitPopupKey='';
     closeNavigation();
     await render();
     window.scrollTo(0,0);
@@ -264,7 +265,7 @@ async function navigate(page){
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
-  state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
@@ -300,6 +301,7 @@ async function render() {
     decorateSheetHeadings();
     organizeSheetPanels();
     rememberUtilityDisclosures();
+    mountTraitBenefitDialog();
     syncBrowserHistory();
     const magicDialog=app.querySelector('#magic-tools-dialog');
     if(magicDialog){
@@ -513,11 +515,12 @@ function promptEndWildShape(creatureId){
 }
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
+  if(state.sheet==='origins')state.sheet='info';
   const c = state.editor.read();
   // The persistent header owns creature identity and tab navigation.
   let body = "";
-  if(['info','origins'].includes(state.sheet)){
-    await Promise.all(["races","classes","subclasses","backgrounds",...(['info','origins'].includes(state.sheet)?['feats']:[])].map(async key=>{
+  if(state.sheet==='info'){
+    await Promise.all(["races","classes","subclasses","backgrounds",...['feats']].map(async key=>{
       if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
       catch{ /* References stay editable offline. */ }
     }));
@@ -529,7 +532,7 @@ async function editorView() {
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -671,7 +674,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -780,39 +783,25 @@ async function traitsView(c){
   }
   return state.referenceCatalogs[category];
  };
- const linked='<div class="trait-editor-links" aria-label="Gestisci benefici e origini">'+
-  [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
-   ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
-  .map(([detail,label])=>'<button type="button" class="trait-editor-link" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  // Benefits belong to the expanded trait body, never to its summary.
-  const benefitGroups=traitBenefitGroups(trait,c,state.calculated||{});
-  const benefitDetails=benefitGroups.length?
-    '<div class="trait-benefits"><strong>Benefici concessi</strong>'+
-    benefitGroups.map(group=>
-      '<div class="trait-benefit-group trait-benefit-group--'+esc(group.type.split(':')[0])+'"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-      group.items.map(item=>{
-        const isRollBonus=group.type==='bonus'||group.type==='dice';
-        const tag=isRollBonus?'button':'div';
-        return '<'+tag+(isRollBonus?' type="button" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(item.id||'')+'"':'')+
-          ' class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
-          (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</'+tag+'>';
-      }).join('')+'</div>').join('')+'</div>':'';
+  const benefitCount=traitBenefitGroups(trait,c,state.calculated||{})
+    .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const toggler=trait.feature_origin?
-    '<label class="check"><input type="checkbox" data-feature-origin="'+
-       esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
-  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'"><summary>'+
-    '<span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?'':' · disattivato')+'</span></summary>'+
+  // The icon is a separate control, not a nested button inside <summary>.
+  // A chevron belongs exclusively to expanding the description.
+  return '<div class="trait-row"><button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
+      (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
+    '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
+    '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?' · disattivato':'')+'</span></summary>'+
     '<div class="trait-content">'+
-    (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    benefitDetails+
-    (description?'<section class="trait-description-section"><h5 class="trait-description-heading">Descrizione</h5><p class="trait-description">'+esc(description)+'</p></section>':'')+
-    toggler+'</div></details>';
+      (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
+      (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
+    '</div></details></div>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
@@ -828,8 +817,74 @@ async function traitsView(c){
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
- return panel('Tratti',(content?linked+content:'<p>Nessun privilegio da mostrare.</p>'))+
+ return panel('Tratti',(content||'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
+}
+// Benefits are edited only here. The disclosure never owns an edit form, and
+// entering values does not persist anything until the explicit Salva action.
+function mountTraitBenefitDialog(){
+ if(!state.traitPopupKey||state.sheet!=='info'||!state.editor)return;
+ const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+ if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';return;}
+ const record=state.editor.read();
+ const groups=traitBenefitGroups(trait,record,state.calculated||{});
+ const hidden=traitRemovedIds(record,trait);
+ const optionList=(options,selected='')=>options.map(([value,label])=>
+  '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
+ const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
+ const formInput=(label,name,placeholder='',type='text')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" required></label>';
+ const kinds=BENEFIT_TYPES;
+ const targets=[...BONUS_TARGETS,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
+ const diceTargets=[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']];
+ const fields=[
+  ['bonus',formSelect('Tiro o valore','target',targets)+formInput('Formula','expression','Es. 1 oppure proficiency')],
+  ['dice',formSelect('Tipo di tiro','target',diceTargets)+formInput('Dadi','dice','Es. 1d4')],
+  ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
+  ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
+    [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
+  ['resources',formInput('Nome risorsa','name')+formInput('Utilizzi massimi','max','Es. 3','number')+
+    formSelect('Recupero','recharge',[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']])],
+  ['spells',formSelect('Incantesimo','spell_id',(state.spellCatalog||[]).filter(row=>row.id&&!row.internal_grant)
+     .map(row=>[row.id,row.name+' · '+(row.source||'')]))+
+     formSelect('Consumo','payment_mode',[['free','Gratuito'],['slot','Slot']])],
+  ['actions',formInput('Azione concessa','name')+
+     formSelect('Tipo di azione','action_type',[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Nessun costo']])]
+ ];
+ const benefits=groups.map(group=>'<section class="trait-benefit-group trait-benefit-group--'+esc(group.type)+'">'+
+   '<span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
+   group.items.map(item=>'<div class="trait-benefit-manage-row">'+
+     '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
+      (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
+     (item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+    '</div>').join('')+
+   '</section>').join('');
+ const confirmId=state.traitPopupConfirm;
+ const match=groups.flatMap(group=>group.items.map(item=>({...item,type:group.type}))).find(item=>item.id===confirmId);
+ const dialog=document.createElement('dialog');
+ dialog.id='trait-benefits-dialog';dialog.className='trait-benefits-dialog';
+ dialog.setAttribute('aria-labelledby','trait-benefits-title');
+ dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
+  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+'</h2>'+
+  '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
+  '<div class="trait-benefits-dialog-body">'+
+   '<div class="trait-benefits">'+(benefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
+   (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
+     '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
+     '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
+   (hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
+   '<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
+   '<section class="trait-benefits-add-form" hidden data-trait-add-form>'+
+    '<h3>Nuovo beneficio</h3>'+
+    formSelect('Tipo di beneficio','benefit_type',kinds).replace('name="benefit_type"','name="benefit_type" data-trait-add-kind')+
+    fields.map(([kind,html])=>'<div class="trait-benefits-fields" data-trait-fields="'+kind+'"'+(kind==='bonus'?'':' hidden')+'>'+html+'</div>').join('')+
+    '<div class="actions"><button type="button" class="btn primary" data-act="trait-benefits-save">Salva beneficio</button>'+
+    '<button type="button" class="btn" data-act="trait-benefits-cancel-add">Annulla</button></div>'+
+   '</section>'+
+  '</div>';
+ app.append(dialog);
+ dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -1020,7 +1075,7 @@ function inventoryEquipmentView(c,calculated={}){
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
     '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
       '</strong><output>'+esc(formula)+'</output></div>'+
-    '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+
     '</div>';
   return panel("Equipaggiamento",
     '<section class="equipment-weapons"><h3>Armi</h3>'+
@@ -1220,7 +1275,7 @@ function magicToolbar(calculated){
    actions.map(([key,icon,label])=>'<button type="button" class="magic-tool-button" data-act="magic-tool-open" data-magic-tool="'+key+
     '" aria-label="'+esc(label)+'" title="'+esc(label)+'" aria-haspopup="dialog" aria-expanded="'+(state.magicPopup===key?'true':'false')+'">'+
     actionGlyph(icon)+'<span>'+esc(label)+'</span></button>').join('')+
-   '<button type="button" class="magic-tool-button" data-act="sheet-details" data-detail="origin_spell_grants" aria-label="Gestisci incantesimi dalle origini" title="Gestisci incantesimi dalle origini">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
+   '<button type="button" class="magic-tool-button" data-act="sheet" data-sheet="info" aria-label="Apri tratti per gestire gli incantesimi dalle origini" title="Apri i tratti">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
    '</nav></details>';
 }
 function magicToolsDialog(c,calculated){
@@ -2648,7 +2703,7 @@ async function handleAction(target){
     await patch({active_class_features:effects});await render();return;
   }
 
-  if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
+
   if(act==='sheet-proxy'){
     const source=state.sheetSources.get(target.dataset.sheetSource);if(!source)throw Error('Controllo non disponibile');
     if(source.disabled)return;
@@ -3260,20 +3315,8 @@ async function handleAction(target){
       match.open=true;match.scrollIntoView?.({block:'center'});
     }
     else {
-      // Missing catalog entries must not become dead provenance links.
-      const hasBonus=(state.calculated?.bonuses||[]).some(row=>row.origin_id===id)||
-        (state.calculated?.automatic_bonuses||[]).some(row=>row.origin_id===id);
-      state.sheet='origins';state.detail=hasBonus?'formula_bonuses':'overview';await render();
-      if(hasBonus){
-        const auto=(state.calculated?.automatic_bonuses||[]).find(row=>row.origin_id===id);
-        const manual=(state.editor?.read()?.formula_bonuses||[]).findIndex(row=>row.origin_id===id);
-        const el=manual>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+manual+'"]'):
-          auto?[...app.querySelectorAll('[data-auto-bonus]')].find(el=>el.dataset.autoBonus===auto.id):null;
-        el?.scrollIntoView?.({block:'center'});
-      }else{
-        [...app.querySelectorAll('[data-origin-enabled]')].find(el=>el.dataset.originEnabled===id)
-          ?.scrollIntoView?.({block:'center'});
-      }
+      // A missing provenance should never open the retired origins editor.
+      message('Tratto non trovato nella scheda.');
     }
     return;
    }
@@ -3289,40 +3332,85 @@ async function handleAction(target){
     name?.focus();
     return;
   }
-  if(act==="trait-benefit-open"){
-    state.magicPopup="";state.sheet="origins";state.detail=target.dataset.detail||'formula_bonuses';
-    state.sheetPopup="origin-editor";
-    state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||'Bonus';
-    await render();
-    const id=target.dataset.bonusId;
-    if(id){
-      const originRows=(state.editor?.read()?.formula_bonuses||[]);
-      const index=originRows.findIndex(row=>row.id===id);
-      const el=index>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"]'):
-        [...app.querySelectorAll('[data-auto-bonus]')].find(row=>row.dataset.autoBonus===id);
-      el?.scrollIntoView?.({block:'center'});
-    }
+  if(act==='trait-benefits-open'){
+    if(state.sheet!=='info')return;
+    const key=target.dataset.traitKey;
+    if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
+    state.traitPopupKey=key;state.traitPopupConfirm='';
+    mountTraitBenefitDialog();return;
+  }
+  if(act==='trait-benefits-close'){
+    state.traitPopupKey='';state.traitPopupConfirm='';
+    const dialog=app.querySelector('#trait-benefits-dialog');
+    if(dialog?.close)dialog.close();else dialog?.remove();
     return;
   }
-  if(act==="sheet-details"){
-    state.magicPopup="";
-    if(!DETAILS.some(([key])=>key===target.dataset.detail))return;
-    state.sheet="origins";state.detail=target.dataset.detail;state.sheetPopup="origin-editor";state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||"Modifica personaggio";await render();return;
+  if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
+    const editor=app.querySelector('#trait-benefits-dialog [data-trait-add-form]');
+    if(editor)editor.hidden=act!=='trait-benefits-add';
+    return;
   }
-  if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
-    if(act==='sheet-roll-edit-bonus'){
-      const dialog=document.querySelector('#sheet-roll-dialog');
-      dialog?.close?.();dialog?.remove();
-    }
-    const c=state.editor.read(),targetKey=target.dataset.target;
-    const rows=rowsFor(c,'formula_bonuses');
-    if(!rows.some(row=>row.target===targetKey&&!row.automatic)){
-      rows.push({id:'bonus_'+crypto.randomUUID(),target:targetKey,expression:'0',origin_id:'',origin_name:'',disabled:false,automatic:false});
-      await patch({formula_bonuses:rows});
-    }
-    state.sheet='origins';state.detail='formula_bonuses';await render();
-    const index=rows.findIndex(row=>row.target===targetKey&&!row.automatic);
-    app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"][data-key="expression"]')?.focus();
+  if(act==='trait-benefits-save'){
+    const dialog=app.querySelector('#trait-benefits-dialog');
+    const type=dialog?.querySelector('[data-trait-add-kind]')?.value||'';
+    const fields=dialog?.querySelector('[data-trait-fields="'+type+'"]');
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!fields||!trait)throw Error('Tratto o campi mancanti');
+    const values=Object.fromEntries([...fields.querySelectorAll('[name]')].map(node=>[node.name,node.value]));
+    const changes=addBenefitPatch(state.editor.read(),trait,type,values,'trait:'+crypto.randomUUID());
+    // Validate before committing, but do not write any draft field on input.
+    if(type==='bonus'&&/Formula non applicata/.test(formulaPreview(values.expression,state.calculated)))
+      throw Error('Formula non valida');
+    if(type==='dice'&&!validBonusDice(values.dice))throw Error('Formula dei dadi non valida');
+    await patch(changes);
+    await state.editor.flush();
+    // A persisted record may become visible before the asynchronous rerender.
+    // Hide the now-committed draft synchronously to prevent an editable stale
+    // form from lingering after Save, without discarding it on save failure.
+    const form=dialog?.querySelector('[data-trait-add-form]');
+    if(form)form.hidden=true;
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-request'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    const id=target.dataset.benefitId;
+    if(!trait||!traitBenefitGroups(trait,state.editor.read(),state.calculated)
+      .some(group=>group.items.some(item=>item.id===id)))throw Error('Beneficio non presente');
+    state.traitPopupConfirm=id;
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-cancel'){
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-remove-confirm'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    const id=target.dataset.benefitId,type=target.dataset.benefitType;
+    if(!trait||id!==state.traitPopupConfirm)throw Error('Eliminazione non confermata');
+    const group=traitBenefitGroups(trait,state.editor.read(),state.calculated)
+      .find(row=>row.type===type&&row.items.some(item=>item.id===id));
+    if(!group)throw Error('Beneficio non più presente');
+    await patch(removeBenefitPatch(state.editor.read(),trait,{id,type}));
+    await state.editor.flush();
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==='trait-benefits-restore'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!trait)throw Error('Tratto non disponibile');
+    await patch(restoreBenefitPatch(state.editor.read(),trait));
+    await state.editor.flush();
+    state.traitPopupConfirm='';
+    await render();return;
+  }
+  if(act==="sheet-details"||act==="trait-benefit-open"||
+      act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
+    state.sheet='info';state.sheetPopup='';state.traitPopupKey='';
+    await render();
+    const disclosure=app.querySelector('.play-traits-disclosure');
+    if(disclosure){disclosure.open=true;disclosure.scrollIntoView?.({block:'nearest'});}
+    message('Apri l’icona prima del nome di un tratto per gestire i benefici.');
     return;
   }
   if(act==="native-add"||act==="native-remove"){
@@ -3961,6 +4049,11 @@ function listen(){
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
+    if(e.target?.matches('[data-trait-add-kind]')){
+      const dialog=e.target.closest('#trait-benefits-dialog');
+      for(const fields of dialog?.querySelectorAll('[data-trait-fields]')||[])
+        fields.hidden=fields.dataset.traitFields!==e.target.value;
+    }
   });
   const navigation=document.querySelector('#navigation-dialog');
   navigation.addEventListener('close',()=>document.querySelector('#more-navigation').setAttribute('aria-expanded','false'));
