@@ -278,7 +278,7 @@ export function preparedInfusions(record={},definitions=[]){
 export function prepareInfusionPatch(record,known,prepared,definitions=[],features){
  if(!learnedInfusions(record,definitions).some(row=>sameChoice(row,known)))
    throw Error('Infusione non conosciuta.');
- if(features!==undefined&&!infusionGrantingTrait(record,features))
+ if(prepared&&features!==undefined&&!infusionGrantingTrait(record,features))
    throw Error('Il privilegio Infuse Item non è disponibile.');
  const changes=prepareChoice(record,'optional_features_catalog','prepared_optional_features',known,prepared,infusionChoice);
  if(!prepared){
@@ -326,6 +326,8 @@ function replicableItem(option,entry,level){
 }
 export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1,features){
  const caps=infusionLimits(record,classMechanics,features),known=learnedInfusions(record,definitions);
+ if(features!==undefined&&!infusionGrantingTrait(record,features))
+   throw Error('Le infusioni richiedono il tratto Infuse Item attivo.');
  if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2))
     throw Error("Infusione non disponibile per questo tratto o livello.");
  let plan_item_id="",plan_item_name="";
