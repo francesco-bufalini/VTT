@@ -552,6 +552,13 @@ export function calculateSheet(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
+  const grantingCastingTrait=member=>{
+    const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
+    const origin='class|'+String(source).toLowerCase()+'|'+String(member.name||'').toLowerCase();
+    return features.find(feature=>feature.origin_key===origin&&
+      ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
+      featureEnabled(record,feature));
+  };
   const automatic=[...(index?indexRows(record,index,warnings):[]),
     ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
@@ -777,7 +784,10 @@ export function calculateSheet(record={},catalogs={}){
   for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
-  const progression=spellProgression(record,classes);
+  // Actual spell capacity also comes from an enabled Spellcasting/Pact Magic
+  // trait. Class levels only determine its progression once granted.
+  const progression=spellProgression(record,
+    catalogs.classFeatures?classes.filter(member=>grantingCastingTrait(member)):classes);
   progression.warnings.forEach(w=>warnings.add(w));
   const saved=arr(record.spell_slots_total);
   const hasLegacy=saved.some(x=>int(x)>0);
@@ -810,14 +820,10 @@ export function calculateSheet(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['level','ac','initiative','hp','second_max','passive_perception'])safe(target);
-  // Spellcasting, like Infuse Item, is granted by an owned trait. Class
-  // identity selects the spell list; it never grants casting by itself.
+  // Class spell entries retain the owning structured trait, not the class.
   const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
     .map(member=>{
-      const origin='class|'+String(member.source||'').toLowerCase()+'|'+String(member.name||'').toLowerCase();
-      const trait=features.find(feature=>feature.origin_key===origin&&
-        ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
-        featureEnabled(record,feature));
+      const trait=grantingCastingTrait(member);
       return {...member,granting_trait_id:trait?.origin_id||'',
         granting_trait_name:trait?.name||''};
     }).filter(member=>!catalogs.classFeatures||member.granting_trait_id);
