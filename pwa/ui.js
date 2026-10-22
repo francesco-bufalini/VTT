@@ -3061,10 +3061,17 @@ async function handleAction(target){
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
     const feature=(state.calculated?.features||[]).find(f=>f.origin_id===id);
     const normalized=id.startsWith('race|')?'species|'+id.split('|').slice(2).join('|')+'|'+id.split('|')[1]:id;
+    const matchedByName=feature?cards.find(card=>{
+      const name=String(card.querySelector('summary')?.textContent||'').trim().toLowerCase();
+      return (card.dataset.traitOrigin===feature.origin_key||
+        card.dataset.traitFeature===feature.origin_id)&&
+        (name===String(feature.name||'').toLowerCase()||
+         name.startsWith(String(feature.name||'').toLowerCase()+' ·'));
+    }):null;
     const match=cards.find(card=>card.dataset.traitFeature===id)||
+      matchedByName||
       cards.find(card=>card.dataset.traitOrigin===id||card.dataset.traitOrigin===normalized||
-        (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key))||
-      (feature?cards.find(card=>card.querySelector('summary')?.textContent?.toLowerCase().includes(String(feature.name||'').toLowerCase())):null);
+        (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key));
     if(match){
       const disclosure=match.closest('.play-info-traits');
       if(disclosure)disclosure.open=true;
@@ -3072,8 +3079,19 @@ async function handleAction(target){
     }
     else {
       // Missing catalog entries must not become dead provenance links.
-      state.sheet='origins';state.detail='overview';await render();
-      app.querySelector('[data-origin-enabled]')?.scrollIntoView?.({block:'center'});
+      const hasBonus=(state.calculated?.bonuses||[]).some(row=>row.origin_id===id)||
+        (state.calculated?.automatic_bonuses||[]).some(row=>row.origin_id===id);
+      state.sheet='origins';state.detail=hasBonus?'formula_bonuses':'overview';await render();
+      if(hasBonus){
+        const auto=(state.calculated?.automatic_bonuses||[]).find(row=>row.origin_id===id);
+        const manual=(state.editor?.read()?.formula_bonuses||[]).findIndex(row=>row.origin_id===id);
+        const el=manual>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+manual+'"]'):
+          auto?[...app.querySelectorAll('[data-auto-bonus]')].find(el=>el.dataset.autoBonus===auto.id):null;
+        el?.scrollIntoView?.({block:'center'});
+      }else{
+        [...app.querySelectorAll('[data-origin-enabled]')].find(el=>el.dataset.originEnabled===id)
+          ?.scrollIntoView?.({block:'center'});
+      }
     }
     return;
    }
