@@ -39,7 +39,7 @@ try{
  const section=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())
    await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  const target=['conditions','origins'].includes(key)?
+  const target=['conditions'].includes(key)?
    page.locator('.sheet-quick-links [data-sheet="'+key+'"]'):
    page.locator('#sheet-navigation [data-sheet="'+key+'"]');
   await target.click();
