@@ -2917,6 +2917,7 @@ async function handleAction(target){
     dialog.addEventListener('click',event=>{
       const button=event.target.closest('[data-act="roll-origin-open"]');
       if(!button)return;
+      event.stopPropagation(); // The global delegated click listener must not handle this twice.
       const originId=button.dataset.originId,section=button.dataset.originSection;
       dialog.close?.();dialog.remove();
       const actionTarget={dataset:originId?{act:'power-trait',originId}:{act:'sheet-details',detail:section||'proficiency_choices'}};
