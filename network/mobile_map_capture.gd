@@ -1,7 +1,7 @@
 extends RefCounted
 ## One-shot orthographic render in the board world. No desktop camera/UI changes.
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
-const SIZE := Vector2i(1536, 1536)
+const SIZE := Vector2i(2048, 2048)
 const MIN_FIELD_FEET := 20.0
 const MAX_FIELD_FEET := 1500.0
 const Elevation = preload("res://vtt/top_down_elevation_levels.gd")

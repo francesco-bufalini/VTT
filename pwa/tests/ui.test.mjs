@@ -277,7 +277,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.equal(JSON.parse(enrollment.options.body).code,"AB12CD34EF56AB78");
   assert.match(document.querySelector("#app").textContent,/Guardiano/);
   assert.match(document.querySelector("#app").textContent,/Round 2/);
-  await until(()=>document.querySelector("#session-map-image"));
+  await until(()=>document.querySelector("#session-map-canvas"));
   const desktop=document.querySelector(".session-desktop");
   const preview=document.querySelector(".session-map-panel");
   const roster=document.querySelector(".session-token-panel");

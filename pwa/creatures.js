@@ -268,6 +268,15 @@ export function linkedTokenStatusPatch(record, token, spells=[]){
     if(typeof token[key]==="string"&&token[key]&&token[key]!==record[key])
       patch[key]=token[key];
   }
+  // Party and size are native token properties; update only these public
+  // appearance fields. Never infer them from a miniature catalogue on mobile.
+  if(typeof token.party_id==="string"&&token.party_id.length<=80&&
+     token.party_id!==(record.party_id||""))patch.party_id=token.party_id;
+  if(typeof token.size_name==="string"&&token.size_name.length<=80&&
+     token.size_name&&token.size_name!==record.size_name)patch.size_name=token.size_name;
+  if(typeof token.footprint_cells==="number"&&Number.isFinite(token.footprint_cells)&&
+     token.footprint_cells>=0.5&&token.footprint_cells<=100&&
+     token.footprint_cells!==record.footprint)patch.footprint=token.footprint_cells;
   return patch;
 }
 

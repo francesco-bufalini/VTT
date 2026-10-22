@@ -568,7 +568,8 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .session-map-panel{padding:7px;margin-bottom:8px;overflow:hidden}
 .session-map-stage{position:relative;display:flex;justify-content:center;align-items:center;
   height:min(51vw,42dvh,390px);min-height:195px;background:#101827;border-radius:6px;overflow:hidden}
-.session-map-stage img{width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.session-map-stage canvas{display:block;width:100%;height:100%;touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;cursor:grab}
+.session-map-stage canvas:active{cursor:grabbing}
 .session-map-placeholder{display:grid;justify-items:center;gap:7px;text-align:center;color:var(--muted);font-size:13px;padding:18px}
 .session-map-placeholder:first-letter{font-size:25px;color:var(--accent)}
 .session-map-loading{position:absolute;right:8px;bottom:8px;border-radius:6px;
@@ -584,7 +585,10 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .session-environment-name{cursor:default}
 .session-token-name{display:flex;align-items:center;gap:8px;min-width:0;flex:1;text-align:left;
   padding:8px 4px;background:none;border:0;color:inherit;font-weight:650;font-size:13px;cursor:pointer}
-.session-token-name span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session-token-labels{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
+.session-token-labels strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.session-token-labels .session-status-line{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:400;line-height:1.35}
+.session-token-name .session-token-labels small{font-size:11px;color:var(--muted);font-weight:400}
 .session-token-name small{font-size:11px;color:var(--muted);font-weight:400}
 .session-turn{color:var(--accent);font-size:12px}
 .session-initiative{min-width:24px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}

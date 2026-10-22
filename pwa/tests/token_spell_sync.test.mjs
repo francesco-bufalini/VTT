@@ -71,3 +71,23 @@ test("map changes persist through the live editor without invalidating IndexedDB
  assert.equal(updated.notes.startsWith("Una modifica"),true);
  assert.deepEqual(await syncLinkedTokenStatuses({tokens:[]},options),[]);
 });
+
+test("desktop faction, size, miniature and conditions update the linked sheet",()=>{
+ const own={id:"own",linked_token_sync_id:"token-hero",party_id:"Vecchi alleati",
+   size_name:"Medium",footprint:1,current_miniature_id:"mini:old",
+   conditions:[],proficiency_origins:[]};
+ const sceneToken={id:"token-hero",party_id:"Culto del Drago",size_name:"Large",
+   footprint_cells:2,current_miniature_id:"mini:new",conditions:["grappled"],
+   active_spell_ids:[],concentrating_spell_id:""};
+ const patch=linkedTokenStatusPatch(own,sceneToken);
+ assert.equal(patch.party_id,"Culto del Drago");
+ assert.equal(patch.size_name,"Large");
+ assert.equal(patch.footprint,2);
+ assert.equal(patch.current_miniature_id,"mini:new");
+ assert.deepEqual(patch.conditions,["grappled"]);
+ const current={...own,...patch};
+ assert.deepEqual(linkedTokenStatusPatch(current,sceneToken),{});
+ sceneToken.party_id="";
+ assert.equal(linkedTokenStatusPatch(current,sceneToken).party_id,"",
+   "clearing a faction must also synchronize");
+});

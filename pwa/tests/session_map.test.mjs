@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {tokenGroups,snapshotRevision,snapshotBlob,casterToken} from "../session_map.js";
+import {tokenGroups,snapshotRevision,snapshotBlob,casterToken,SessionMapViewer} from "../session_map.js";
 
 test("connected casting recovers only the exact owned creature token, never a display name",()=>{
  const creature={id:"creature-a",name:"Maga"};
@@ -96,4 +96,37 @@ test("area changes and token elevations refresh the passive map without a networ
  assert.notEqual(snapshotRevision(data),key);
  key=snapshotRevision(data);data.tokens[0].position[1]=5;
  assert.notEqual(snapshotRevision(data),key);
+});
+
+test("party, size and miniature changes invalidate passive map snapshots",()=>{
+ const token={id:"a",name:"Orco",conditions:[],party_id:"Nord",size_name:"Medium",
+   footprint_cells:1,current_miniature_id:"mini-a"};
+ const data={tokens:[token]};
+ let key=snapshotRevision(data);
+ token.party_id="Sud";assert.notEqual(snapshotRevision(data),key);
+ key=snapshotRevision(data);
+ token.size_name="Large";token.footprint_cells=2;
+ assert.notEqual(snapshotRevision(data),key);
+ key=snapshotRevision(data);
+ token.current_miniature_id="mini-b";
+ assert.notEqual(snapshotRevision(data),key);
+});
+
+test("session map zoom stays attached to its own viewport",()=>{
+ const viewer=new SessionMapViewer();
+ viewer.canvas={clientWidth:320,clientHeight:320,isConnected:false};
+ viewer.zoomAt(2,160,160);
+ assert.equal(viewer.zoom,2);
+ assert.equal(viewer.panX,0);
+ assert.equal(viewer.panY,0);
+ viewer.zoomAt(2,80,80);
+ assert.equal(viewer.zoom,4);
+ assert.equal(viewer.panX,80);
+ assert.equal(viewer.panY,80);
+ viewer.zoomAt(100,160,160);
+ assert.equal(viewer.zoom,4,"pinch zoom clamps at its source-resolution budget");
+ viewer.reset();
+ assert.equal(viewer.zoom,1);
+ assert.equal(viewer.panX,0);
+ assert.equal(viewer.panY,0);
 });
