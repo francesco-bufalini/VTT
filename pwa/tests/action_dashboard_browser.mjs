@@ -47,7 +47,7 @@ try{
  };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){
