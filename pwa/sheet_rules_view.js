@@ -188,10 +188,11 @@ export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
   return (sign?signed(value):value??"—")+suffix;
 }
 export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility='',showBonus=true}={}){
-  const rollable=/^(?:ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
+  const rollable=/^(?:ability_check:|ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
+  const rollTarget=target.startsWith('ability_mod:')?'ability_check:'+target.slice('ability_mod:'.length):target;
   const tag=rollable||scoreAbility?'button':'output';
   const click=scoreAbility?' type="button" class="sheet-result score-editor-trigger" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'"':
-   rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(target)+'" data-label="'+esc(label)+'"':'';
+   rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(rollTarget)+'" data-label="'+esc(label)+'"':'';
   return '<span class="sheet-formula"><'+tag+click+' data-calculated="'+esc(target)+
     '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
     esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
