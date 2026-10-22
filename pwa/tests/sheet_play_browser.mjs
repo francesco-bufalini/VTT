@@ -346,7 +346,7 @@ try{
  assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
  assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),0,
    'The two-weapon fighting style is not toggled manually');
- assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
+ assert.equal(await armorGroup.locator('.battle-ac-manage').count(),0,'No shortcuts into the obsolete character modification editor');
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
