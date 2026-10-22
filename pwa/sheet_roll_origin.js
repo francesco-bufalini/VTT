@@ -61,6 +61,7 @@ function featureForAutoAdvantage(record,calculated,target){
    ['Rage'];
  const matching=list(calculated?.features).find(f=>names.some(n=>String(f.name||'').toLowerCase()===n.toLowerCase())&&!f.disabled);
  const name=matching?.name||names[0];
+ const displayName=String(name).toLowerCase()==='rage'?'Ira':name;
  const classNames={'Rage':'Barbarian','Reckless Attack':'Barbarian',
    'Patient Defense':'Monk','Innate Sorcery':'Sorcerer'};
  const className=classNames[names[0]];
@@ -68,7 +69,7 @@ function featureForAutoAdvantage(record,calculated,target){
    (String(record?.class||'').toLowerCase()===String(className||'').toLowerCase()?
      {name:record.class,source:record.class_source||''}:null);
  const classOrigin=member?'class|'+String(member.source||'').toLowerCase()+'|'+String(member.name).toLowerCase():'';
- return {id:matching?.origin_id||matching?.origin_key||classOrigin,name};
+ return {id:matching?.origin_id||matching?.origin_key||classOrigin,name:displayName};
 }
 // Returns symbolic and expanded numeric forms for each source. No random dice
 // are evaluated merely by opening the popup.
@@ -77,7 +78,10 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  if(!Number.isFinite(total))return [];
  const all=calculated?.roll_components||{};
  const result=[];
- const ability=abilityFor(target,calculated),rank=trainingRank(calculated,target);
+ const monsterAttack=target.startsWith('attack_hit:')&&
+   String(list(calculated?.attacks).find(a=>'attack_hit:'+a.id===target)?.explanation||'').startsWith('Bestiario ');
+ const ability=monsterAttack?'':abilityFor(target,calculated);
+ const rank=monsterAttack?0:trainingRank(calculated,target);
  const score=num(record?.abilities?.[ability]??10);
  const abilityBase=ability?Math.floor((score-10)/2):0;
  const profTotal=num(calculated?.values?.proficiency);
@@ -126,18 +130,39 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  // Some legacy monsters and attack rules have additional built-in terms not
  // represented by a grant. Keep their value in Base instead of inventing an
  // origin or silently dropping it.
- core+=total-core-consumed;
- const base={kind:'base',formula:'1d20'+(ability?' + Mod.'+abilityNames[ability]:' + Base'),
-   expanded:'1d20 '+signed(core),value:core,originName:'Base · regole',originId:'',key:'base'};
+ const remainder=total-core-consumed;
+ const base={kind:'base',formula:'1d20'+(ability?' + Mod.'+abilityNames[ability]:
+   monsterAttack?' + Attacco del bestiario':' + Base'),
+   expanded:'1d20 '+signed(monsterAttack?total-consumed:core),value:monsterAttack?total-consumed:core,
+   originName:'Base · regole',originId:'',key:'base'};
+ if(!monsterAttack&&Math.abs(remainder)>0.000001)result.push({
+   kind:'rules',formula:(remainder<0?'−':'+')+' Altri modificatori',
+   expanded:signed(remainder),value:remainder,originName:'Altre regole',
+   originId:'',key:'rules'});
+ // Each identifiable origin gets one segment even when it contributes to
+ // both proficiency and a modifier, or grants multiple effects to one roll.
+ const grouped=[],byOrigin=new Map();
+ for(const row of result){
+   const id=row.originId;
+   if(!id||!byOrigin.has(id)){
+     grouped.push({...row});
+     if(id)byOrigin.set(id,grouped[grouped.length-1]);
+     continue;
+   }
+   const previous=byOrigin.get(id);
+   previous.formula+=' '+row.formula;
+   previous.expanded+=' '+row.expanded;
+   previous.value+=row.value;
+ }
  const ordered=[];
  if(mode==='advantage'||mode==='disadvantage'){
    const source=autoAdvantage&&mode==='advantage'?featureForAutoAdvantage(record,calculated,target):
      {id:'',name:'Modalità scelta'};
    ordered.push({kind:'mode',formula:mode==='advantage'?'ADV':'DIS',
-     expanded:mode==='advantage'?'2d20kh1':'2d20kl1',value:0,
+     expanded:'',value:0,
      originId:source.id,originName:source.name,key:'mode'});
  }
- ordered.push(base,...result);
+ ordered.push(base,...grouped);
  for(const [i,row] of list(diceBonuses).entries()){
    const dice=String(row?.dice||'').replace(/\s+/g,'');
    if(!validBonusDice(dice))continue;
@@ -155,7 +180,7 @@ export function sheetRollOriginHtml(segments,escapeHtml){
    return '<'+tag+(clickable?' type="button" data-act="roll-origin-open" data-origin-id="'+esc(row.originId)+'" data-origin-section="'+esc(row.section||'')+'"':'')+
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
-     '<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>'+
+     (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
      '<span class="sheet-roll-origin-name">'+esc(row.originName)+'</span></'+tag+'>';
  }).join('')+'</div>';
 }
