@@ -36,6 +36,11 @@ on:
       - ".github/workflows/pwa-infrastructure.yml"
   workflow_dispatch:
 
+# A newer commit supersedes older CI on the same PR or branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   browser-assets:
     runs-on: ubuntu-latest
@@ -74,13 +79,6 @@ jobs:
           node ./node_modules/playwright/cli.js install chromium
           node tests/startup_browser.mjs
           node tests/offline_browser.mjs
-      - name: Check clean startup and diagnostics in Playwright WebKit
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd pwa
-          node ./node_modules/playwright/cli.js install --with-deps webkit
-          PWA_BROWSER=webkit node tests/startup_browser.mjs
       - name: Verify smartphone Back navigation and multiclass Info in Chromium
         shell: bash
         run: |
@@ -128,6 +126,38 @@ jobs:
                   off += size + 12
               assert zlib.decompress(compressed), f"invalid PNG: {path}"
           print("PASS: PWA shell, ES modules, manifest and PNG integrity")
+
+  # Run the iPhone/Safari-compatible startup regression independently so that
+  # installing WebKit system packages does not block Chromium and unit tests.
+  webkit-startup:
+    name: WebKit startup (iPhone compatibility)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /pwa/
+            /network/pwa_host.gd
+            /network/board_sync.gd
+            /vtt/content_catalog.gd
+            /vtt/data/
+            /vtt/icons/
+            /assets/creature_info/
+      - name: Install WebKit test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          npm install --no-audit --no-fund --no-package-lock
+          node ./node_modules/playwright/cli.js install --with-deps webkit
+      - name: Check clean startup and diagnostics in Playwright WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          PWA_BROWSER=webkit node tests/startup_browser.mjs
 
   native-loopback:
     runs-on: ubuntu-latest
