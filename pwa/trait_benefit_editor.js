@@ -14,17 +14,13 @@ export const PROFICIENCY_KINDS=[
 ];
 export const DEFENSE_RANKS=[[-1,'Vulnerabilità'],[1,'Resistenza'],[2,'Immunità ai danni'],[3,'Immunità alle condizioni']];
 export const DAMAGE_TYPES=['acid','bludgeoning','cold','fire','force','lightning','necrotic','piercing','poison','psychic','radiant','slashing','thunder'];
-export function traitOriginId(trait={},record={}){
- if(trait.feature_origin)return trait.feature_origin;
- if(trait.proficiency_origin)return trait.proficiency_origin;
- if(trait.category==='razza'&&String(trait.origin_key).startsWith('species|'))
-  return 'race|'+norm(record.species_source)+'|'+norm(record.species);
- if(trait.category==='talenti'&&String(trait.origin_key).startsWith('feat|')){
-  const feat=rows(record.feats_catalog).find(f=>f?.name&&
-   ('feat|'+(f.id||norm(f.name)+'|'+norm(f.source)))===trait.origin_key);
-  if(feat)return 'feat|'+norm(feat.source)+'|'+norm(feat.name);
- }
- return String(trait.origin_key||'');
+// Every manually entered grant is attached to exactly one trait, not to a
+// whole class/species source shared by other trait cards. This also gives
+// native sourceEnabled() a stable valid feature: identity.
+export function traitOriginId(trait={}){
+ const key=String(trait.key||'').trim();
+ if(!key)throw Error('Tratto senza identificativo stabile');
+ return 'feature:trait:'+key;
 }
 export function removedBenefitIds(record={}){
  return new Set(Object.values(record.trait_benefit_removed||{}).flatMap(rows));
