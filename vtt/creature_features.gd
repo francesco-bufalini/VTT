@@ -339,12 +339,11 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 	# Learned recipes belong to the actual Infuse Item trait, never the class
 	# origin. For older records resolve the existing grant feature by identity.
 	for known: Dictionary in Infusions.known(record):
-		var source_id: String = String(known.get("source_trait_id", ""))
-		if source_id.is_empty():
-			for existing: Dictionary in result:
-				if String(existing.get("name", "")).nocasecmp_to("Infuse Item") == 0 and String(existing.get("origin_key", "")).begins_with("class|tce|artificer"):
-					source_id = "feature:" + String(existing.get("key", ""))
-					break
+		var source_id := ""
+		for existing: Dictionary in result:
+			if String(existing.get("name", "")).nocasecmp_to("Infuse Item") == 0 and String(existing.get("origin_key", "")).begins_with("class|tce|artificer"):
+				source_id = "feature:" + String(existing.get("key", ""))
+				break
 		if source_id.is_empty():
 			continue
 		var option: Dictionary = PlayerCatalog.detailed_entry("optional_features", known)
