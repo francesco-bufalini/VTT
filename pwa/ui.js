@@ -3663,7 +3663,15 @@ function listen(){
   navigation.addEventListener('click',event=>{if(event.target!==navigation)return;const rect=navigation.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeNavigation(true);});
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
-    if(!button)return;
+    if(!button){
+      // An HP card is a single click target, except for its own controls.
+      const card=e.target.closest('#sheet-play-view .play-health[data-act="sheet-context"]');
+      if(card&&!e.target.closest('button,input,select,textarea,a,[role="button"]:not(.play-health)')){
+        try{await flushPendingFields();await handleAction(card);}
+        catch(error){message(errorMessage(error),true);}
+      }
+      return;
+    }
     if(button.disabled)return;
     button.disabled=true;
     try {
@@ -3675,6 +3683,11 @@ function listen(){
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
     finally{if(button.isConnected)button.disabled=false;}
+  });
+  document.addEventListener('keydown',e=>{
+    const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
+    if(e.target!==card||!['Enter',' '].includes(e.key))return;
+    e.preventDefault();card.click();
   });
   // Right-click (and touch long-press where the browser emits contextmenu)
   // opens the same per-item actions as the explicit touch-friendly ⋯ button.
