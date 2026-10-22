@@ -93,7 +93,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(race){
    const key='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
    const options={category:'razza',origin:'Specie · '+record.species,origin_key:key,level:1};
-   add({name:'Descrizione · '+record.species,entries:race.entries??race.description??'',source:race.source},
+   // Descriptive 5etools prose lives in fluff; entries are mechanical species traits.
+   add({name:'Descrizione · '+record.species,entries:(arr(race.fluff).length?race.fluff:null)??race.description??race.entries??'',source:race.source},
     {...options,rank:0});
    named(race,options,{includeUnnamed:true});
   }
