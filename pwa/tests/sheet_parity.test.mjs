@@ -99,7 +99,7 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
  assert.match(markup,/stats-abilities-panel/);
  assert.match(markup,/stats-skills-panel/);
  assert.match(markup,/Altre competenze/);
- assert.match(markup,/data-detail="proficiency_choices"/);
+ assert.doesNotMatch(markup,/data-detail="proficiency_choices"/,'The removed origin editor has no shortcut');
  assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
  assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
@@ -385,7 +385,7 @@ test('battle context separates movement from identity and displays the equipped 
  assert.doesNotMatch(battle,/data-field="armor_natural_formula"/);
  assert.doesNotMatch(battle,/<summary>Armatura e CA naturale<\/summary>/);
  assert.doesNotMatch(battle,/data-calculated="initiative"/);
- assert.match(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
+ assert.doesNotMatch(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
  assert.doesNotMatch(view(creature,'info'),/<h3>Velocità<\/h3>/);
  const natural=view({...creature,inventory:[]},'battle');
  assert.match(natural,/Formula CA naturale/);
