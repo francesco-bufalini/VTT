@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
 import {rollSheetDice,rollBattleDamage} from '../sheet_rules_view.js';
 import {collectTraitRows} from '../trait_projection.js';
@@ -252,4 +252,40 @@ test('fixed proficiency provenance has its own navigable class trait when no fea
  assert.match(String(trait?.entries),/Atletica/);
  assert.equal(trait?.origin_key,source);
  assert.equal(rows.filter(row=>row.proficiency_origin===source).length,1);
+});
+
+test('Lightning Launcher abbreviation renders as full Lightning damage and optional bonus links its tracker',()=>{
+ assert.equal(rollDamageName('L'),'Fulmine');
+ assert.equal(rollDamageName('T'),'Tuono');
+ const html=sheetRollOriginHtml([{kind:'base',formula:'1d6',damageType:'L',
+   originName:'Lightning Launcher'}],x=>x);
+ assert.match(html,/>Fulmine<\/span>/);
+ assert.doesNotMatch(html,/>L<\/span>/);
+ const record=character(),calculated={trackers:[{
+   id:'feature:lightning_launcher:extra_damage',name:'Lightning Launcher · danno aggiuntivo',
+   max:1,spent:0,origin_id:'feature:class|tce|artificer|lightning_launcher'
+ }]};
+ const options=rollOptionalDice(record,calculated,[],{
+   kind:'damage',attackId:'class_feature:lightning_launcher'});
+ assert.equal(options.length,1);
+ assert.equal(options[0].dice,'1d6');
+ assert.equal(rollDamageName(options[0].damage_type),'Fulmine');
+ assert.equal(options[0].tracker_cost,1);
+ assert.equal(options[0].remaining,1);
+ assert.equal(rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
+   kind:'damage',attackId:'class_feature:lightning_launcher'}).length,0);
+ assert.equal(rollOptionalDice(record,calculated,[],{
+   kind:'damage',attackId:'item:normal_weapon'}).length,0);
+});
+test('generic one-time bonus requires unspent tracker and can target specific weapon damage',()=>{
+ const bonus={id:'extra',target:'attack_damage:item:sword',dice:'1d6',
+  damage_type:'lightning',tracker_id:'focus',tracker_cost:1,origin_name:'Fonte'};
+ const calculated={trackers:[{id:'focus',name:'Focus',max:2,spent:1}]};
+ const available=rollOptionalDice(character(),calculated,[bonus],{
+   kind:'damage',attackId:'item:sword'});
+ assert.equal(available.length,1);
+ assert.equal(available[0].remaining,1);
+ assert.equal(available[0].spent,1);
+ assert.equal(rollOptionalDice(character(),{trackers:[{...calculated.trackers[0],spent:2}]},[bonus],{
+   kind:'damage',attackId:'item:sword'}).length,0);
 });
