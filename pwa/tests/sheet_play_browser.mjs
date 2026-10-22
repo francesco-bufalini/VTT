@@ -46,6 +46,25 @@ try{
  await sheet('battle');
  const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
  assert.equal(await classFilter.getAttribute('aria-pressed'),'true','Only character privileges are shown initially');
+
+ const toolbar=page.locator('#sheet-play-view .play-battle-expansion-tools');
+ assert.equal(await toolbar.locator('button').count(),3);
+ const activeState=page.locator('#sheet-play-view .play-status-strip');
+ assert.equal(await activeState.count(),1);
+ assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'solid',
+  'States display a visible enclosing border');
+ for(const width of [320,360,390,430]){
+  await page.setViewportSize({width,height:844});
+  const buttons=await toolbar.locator('button').evaluateAll(nodes=>
+   nodes.map(node=>{const rect=node.getBoundingClientRect();return {top:rect.top,right:rect.right};}));
+  assert.equal(buttons.length,3);
+  assert(buttons.every(rect=>Math.abs(rect.top-buttons[0].top)<2),
+   'Expand, collapse and class filter remain on one row at '+width+'px');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
+   'Single-row action buttons must not overflow at '+width+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
+
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
    'Empty generic action categories disappear by default');
  await classFilter.click(); // Exercise general actions with the filter disabled.
@@ -280,11 +299,20 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  await popup('rests');
- const shortRestDice=page.locator('#sheet-context-dialog [data-rest-die="6"]');
- assert.equal(await shortRestDice.count(),1,'Wizard Hit Dice appear in the resting popup');
- await shortRestDice.fill('2');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
+  'Hit Dice must not be editable in the initial rest chooser');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
+ const shortRestDice=page.locator('#sheet-context-dialog [data-rest-preview] [data-rest-die="6"]');
+ assert.equal(await shortRestDice.count(),1,'Hit Dice selector belongs to the short-rest confirmation');
+ assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/Superiority Die/);
+ assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/0 utilizzi recuperati/,
+  'Resources with no spent uses still appear in rest forecast');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-roll-controls]').isVisible(),false,
+  'Roll details stay hidden until Hit Dice are selected');
+ await shortRestDice.fill('2');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-roll-controls]').isVisible(),true);
+ assert.match(await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent(),/2 da spendere/);
  assert.equal((await record()).hit_dice_spent.d6,undefined,'Preview cannot spend Hit Dice');
  await page.locator('#sheet-context-dialog [data-rest-roll-mode]').selectOption('manual');
  await page.locator('#sheet-context-dialog [data-rest-manual-results]').fill('3, 4');
@@ -299,9 +327,17 @@ try{
  assert.equal(afterShort.hit_dice_spent.d6,2,'Short rest saves spent Hit Dice');
  assert(afterShort.current_hp>=37,'Short rest heals without exceeding maximum');
  await popup('rests');
- assert.equal(await page.locator('#sheet-context-dialog [data-rest-die="6"]').getAttribute('max'),'3');
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0);
  await page.locator('#sheet-context-dialog [data-act="tracker-long"]').click();
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
+ assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
+  'Long rest restores dice automatically without asking how many to spend');
+ const longForecast=await page.locator('#sheet-context-dialog [data-rest-recoveries]').textContent();
+ assert.match(longForecast,/Dadi Vita/);
+ assert.match(longForecast,/d6/);
+ assert.match(longForecast,/Superiority Die/);
+ assert.match(longForecast,/Slot incantesimo livello/);
+ assert.match(longForecast,/Punti ferita temporanei/);
  await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
  await page.locator('#sheet-context-dialog .play-rest-confirm h3', {hasText:'Riposo completato'}).waitFor();
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Dadi Vita d6: 2/);
