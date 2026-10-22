@@ -692,6 +692,15 @@ export function calculateSheet(record={},catalogs={}){
       }
     }
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
+    // A generated infusion is a separate, verifiable equipment origin, not
+    // an unknown manual bonus or an unconditional class privilege.
+    if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,index)=>
+      infusionInstanceOrigin(owned,index)===sid&&
+      itemActive(resolveOwnedItem(owned),record)&&
+      !!infusionNumericBonuses(record,resolveOwnedItem(owned),
+        indexCatalog?.artificer_infusions||[],features)&&
+      (owned.infusion?.creator_id!==record.id||
+        features.some(f=>f.name==='Infuse Item'&&featureEnabled(record,f))));
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
     const fragments=sid.split("|"),group=fragments[0],
