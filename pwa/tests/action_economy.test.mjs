@@ -208,7 +208,7 @@ test('unified battle shows every canonical skill and pure ability check grouped 
  assert.equal(checks.querySelector('[data-attack-id="ability_check:str"] .play-battle-roll-formula').textContent,'1d20 + 3 · Forza');
  assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] .play-battle-roll-formula').textContent,'1d20 + 7 · Atletica');
  assert.equal(checks.querySelector('[data-attack-id="skill:athletics"] [data-act="sheet-roll"]').dataset.target,'skill:athletics');
- assert.equal(checks.querySelector('[data-action-ability="con"] .play-battle-attack-entry').dataset.attackId,'ability_mod:con');
+ assert.equal(checks.querySelector('[data-action-ability="con"] .play-battle-attack-entry').dataset.attackId,'ability_check:con');
  assert.equal(checks.querySelectorAll('[data-attack-id^="skill:"]').length,18);
 });
 
