@@ -111,7 +111,7 @@ export function classFeatureDamage(record,calculated,attack,ability){
 export function classFeatureRollAdvantage(record,calculated,target){
  if(target==='save:dex'&&classFeatureActive(record,calculated,'patient_defense')&&
   !rows(record.conditions).includes('incapacitated')&&(record.rules_version!=='2024'||record.active_class_features.patient_defense.enhanced))return true;
- if(classFeatureActive(record,calculated,'rage')&&['ability_mod:str','save:str','skill:athletics'].includes(target))return true;
+ if(classFeatureActive(record,calculated,'rage')&&['ability_mod:str','ability_check:str','save:str','skill:athletics'].includes(target))return true;
  if(target.startsWith('attack_hit:')){
   const attack=rows(calculated.attacks).find(a=>'attack_hit:'+a.id===target);
   return !!attack&&attack.ability==='str'&&classFeatureActive(record,calculated,'reckless_attack')&&
