@@ -779,13 +779,15 @@ async function traitsView(c){
     (description?'<section class="trait-description-section"><h5 class="trait-description-heading">Descrizione</h5><p class="trait-description">'+esc(description)+'</p></section>':'')+
     toggler+'</div></details>';
  };
- const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\\s*·\\s*/i,'');
+ const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
   group.origins.map(origin=>
    '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
    (['talenti','oggetti'].includes(group.id)?'':
-    '<h4 class="trait-origin-title">'+esc(originTitle(origin.title))+'</h4>')+
+    '<h4 class="trait-origin-title">'+esc(originTitle(origin.title))+
+      (origin.key.startsWith('subrace|')?'<span class="trait-origin-kind">Sottorazza</span>':
+       origin.key.includes('|subclass|')?'<span class="trait-origin-kind">Sottoclasse</span>':'')+'</h4>')+
    origin.levels.map(tier=>
     (tier.level>=0?'<h5 class="trait-level">LIVELLO '+tier.level+'</h5>':'')+
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
