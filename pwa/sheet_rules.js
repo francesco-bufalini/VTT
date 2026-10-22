@@ -687,6 +687,14 @@ export function calculateSheet(record={},catalogs={}){
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
+    if(sid.startsWith("infusion:"))
+      return inventory.some(it=>
+        "infusion:"+(it.instance_id||it.id)===sid&&it.infusion?.id&&
+        itemActive(it,record)&&
+        (!it.infusion.source_trait_id||
+          record.origin_enabled?.[it.infusion.source_trait_id]!==false)&&
+        (!it.infusion.source_trait_id||
+          !arr(record.proficiency_origins).some(o=>o?.id===it.infusion.source_trait_id&&o.disabled)));
     const fragments=sid.split("|"),group=fragments[0],
       source=fragments[1]||"",name=fragments.slice(2).join("|");
     if(group==="race")return same(record.species,name)&&
