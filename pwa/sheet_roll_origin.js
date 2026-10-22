@@ -223,6 +223,40 @@ export function damageRollSegments(roll,type='',attack=null){
      originId:'',value:base?modifier:0};
  });
 }
+export const rollDamageName=type=>{
+ const labels={L:'Fulmine',T:'Tuono',A:'Acido',C:'Freddo',F:'Fuoco',
+  N:'Necrotico',P:'Veleno',R:'Radioso',Y:'Psichico',B:'Contundente',
+  S:'Tagliente',I:'Perforante',lightning:'Fulmine',thunder:'Tuono',
+  bludgeoning:'Contundente',piercing:'Perforante',slashing:'Tagliente',
+  acid:'Acido',cold:'Freddo',fire:'Fuoco',force:'Forza',
+  necrotic:'Necrotico',poison:'Veleno',psychic:'Psichico',radiant:'Radiante'};
+ const raw=String(type||'').trim();
+ return labels[raw]||labels[raw.toLowerCase()]||raw||'Non specificato';
+};
+// These optional sources are never added automatically. They remain a
+// selection belonging to the roll dialog and are validated before rolling.
+export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attackId=''}={}){
+ const result=[];
+ const trackerFor=id=>(calculated?.trackers||[]).find(t=>t.id===id&&!t.disabled);
+ for(const [i,row] of (Array.isArray(bonuses)?bonuses:[]).entries()){
+  const tracker=row.tracker_id?trackerFor(row.tracker_id):null;
+  if(row.tracker_id&&!tracker)continue;
+  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):null;
+  if(remaining!==null&&remaining<Math.max(1,Number(row.tracker_cost)||1))continue;
+  result.push({...row,selectionId:'bonus:'+i,remaining,
+    spent:tracker?Number(tracker.spent||0):null,
+    tracker_name:tracker?.name||'',tracker_cost:tracker?Math.max(1,Number(row.tracker_cost)||1):0});
+ }
+ if(kind==='damage'&&attackId==='class_feature:lightning_launcher'){
+  const tracker=trackerFor('feature:lightning_launcher:extra_damage');
+  const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+  if(remaining>0)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
+   dice:'1d6',damage_type:'lightning',origin_name:'Lightning Launcher',
+   origin_id:tracker.origin_id,tracker_id:tracker.id,tracker_cost:1,
+   tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
+ }
+ return result;
+}
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
@@ -232,7 +266,7 @@ export function sheetRollOriginHtml(segments,escapeHtml){
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
      (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
-     (row.damageType!==undefined?'<span class="sheet-roll-origin-damage-type">'+esc(row.damageType||'Tipo non specificato')+'</span>':'')+
+     (row.damageType!==undefined?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damageType))+'</span>':'')+
      '<span class="sheet-roll-origin-name">'+esc(sheetRollOriginLabel(row.originName))+'</span></'+tag+'>';
  }).join('')+'</div>';
 }
