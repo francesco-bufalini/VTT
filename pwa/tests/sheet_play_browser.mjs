@@ -345,6 +345,15 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
+ // Restore two previously spent Focus uses using the normal controls;
+ // subsequent spell/action tests keep their original available budget.
+ for(const spent of [3,2]){
+   await page.locator('#sheet-context-dialog [data-act="tracker-less"][data-tracker-id="focus"]').click();
+   await page.waitForFunction(async expected=>{
+     const {listCreatures}=await import('/creatures.js');
+     return (await listCreatures())[0].creature.resource_tracker_spent?.focus===expected;
+   },spent);
+ }
  await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
  await dismiss();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
