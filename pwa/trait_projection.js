@@ -337,7 +337,7 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
   const id=String(grant.spell_id);
   if(selected.row.granted_spells.some(item=>item.id===id))continue;
   const rawLevel=spell?.level,level=rawLevel==null?null:Number(rawLevel);
-  selected.row.granted_spells.push({id,name:String(spell?.name||grant.spell_name||id),
+  selected.row.granted_spells.push({id,origin_id:originId,name:String(spell?.name||grant.spell_name||id),
     level:Number.isInteger(level)&&level>=0&&level<=9?level:null});
  }
  for(const row of result)row.granted_spells.sort((a,b)=>(a.level??10)-(b.level??10)||
