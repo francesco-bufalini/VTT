@@ -242,11 +242,26 @@ export function artificerLevel(record={}){
  const members=classes.length?classes:[{name:record.class,source:record.class_source,level:record.level}];
  return Math.max(0,Math.min(20,Number(members.find(c=>sameText(c?.name,"Artificer")&&sameText(c?.source,"TCE"))?.level)||0));
 }
-export function infusionLimits(record={},classMechanics={}){
+// A class level is a prerequisite, never the source of a privilege.
+export function infusionGrantingTrait(record={},features=null){
+ const rows=Array.isArray(features)?features:[];
+ const feature=rows.find(f=>sameText(f?.name,"Infuse Item")&&
+   sameText(f.class_name||f.requirements?.class_name||String(f.origin_key||"").split("|")[2],"Artificer")&&
+   sameText(f.class_source||f.requirements?.class_source||String(f.origin_key||"").split("|")[1],"TCE")&&
+   String(f.origin_key||"").startsWith("class|"));
+ if(!feature||feature.inactive||feature.disabled)return null;
+ const base="class|tce|artificer";
+ if([feature.origin_id,feature.origin_key,base].some(id=>id&&
+     (record.origin_enabled?.[id]===false||array(record.proficiency_origins).some(o=>o?.id===id&&o.disabled))))
+   return null;
+ return feature;
+}
+export function infusionLimits(record={},classMechanics={},features=null){
  const level=artificerLevel(record);
  const cls=array(classMechanics?.classes).find(c=>sameText(c.name,"Artificer")&&sameText(c.source,"TCE"));
  const column=array(cls?.columns).find(c=>sameText(c.name,"Infused Items"));
- const active=level<2?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
+ const enabled=features===null||!!infusionGrantingTrait(record,features);
+ const active=level<2||!enabled?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
  return {level,active,known:active*2};
 }
 export function learnedInfusions(record={},definitions=[]){
@@ -272,8 +287,43 @@ function replicableItem(option,entry,level){
  if(array(option.replicable_items).some(row=>sameText(row.name,entry.name)&&level>=Number(row.level||99)))return true;
  return String(entry.rarity||"").toLowerCase()==="common"&&!["P","SC"].includes(String(entry.type||"").toUpperCase());
 }
-export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1){
- const caps=infusionLimits(record,classMechanics),known=learnedInfusions(record,definitions);
+// Generic learnt/prepared feature selections; other nonspell features may reuse
+// this collection instead of masquerading as class spells or trackers.
+const preparationIdentity=row=>[String(row?.kind||""),String(row?.id||""),String(row?.plan_item_id||"")].join("|");
+export function preparedFeatureRows(record={},known=[]){
+ if(Array.isArray(record.prepared_features))return record.prepared_features;
+ // Existing characters knew and could immediately use all their learnt infusions.
+ return known.map(row=>({kind:"infusion",id:row.id,plan_item_id:row.plan_item_id||""}));
+}
+export function featurePreparationPatch(record,choice,enabled,known=[]){
+ const item={kind:String(choice?.kind||""),id:String(choice?.id||""),
+   plan_item_id:String(choice?.plan_item_id||""),origin_id:String(choice?.origin_id||"")};
+ if(!item.kind||!item.id)throw Error("Capacità non disponibile.");
+ const choices=preparedFeatureRows(record,known).map(row=>({...row}));
+ const key=preparationIdentity(item);
+ const present=choices.some(row=>preparationIdentity(row)===key);
+ if(enabled&&!present)choices.push(item);
+ if(!enabled&&present)return {prepared_features:choices.filter(row=>preparationIdentity(row)!==key)};
+ return {prepared_features:choices};
+}
+export function isInfusionPrepared(record,option,definitions=[]){
+ const known=learnedInfusions(record,definitions);
+ if(!known.some(row=>row.id===option?.id&&String(row.plan_item_id||"")===String(option.plan_item_id||"")))return false;
+ return preparedFeatureRows(record,known).some(row=>preparationIdentity(row)===
+   preparationIdentity({kind:"infusion",id:option.id,plan_item_id:option.plan_item_id||""}));
+}
+export function prepareInfusionPatch(record,option,definitions,features=null,enabled=true){
+ if(features!==null&&!infusionGrantingTrait(record,features))throw Error("Il tratto Infuse Item non è disponibile.");
+ const trait=features===null?null:infusionGrantingTrait(record,features);
+ if(!learnedInfusions(record,definitions).some(row=>row.id===option?.id&&
+   String(row.plan_item_id||"")===String(option.plan_item_id||"")))
+   throw Error("Infusione non conosciuta.");
+ return featurePreparationPatch(record,{kind:"infusion",id:option.id,
+   plan_item_id:option.plan_item_id||"",origin_id:trait?.origin_id||option.origin_id||""},
+   enabled,learnedInfusions(record,definitions));
+}
+export function learnInfusionPatch(record,option,definitions,classMechanics,itemIndex=-1,features=null){
+ const caps=infusionLimits(record,classMechanics,features),known=learnedInfusions(record,definitions);
  if(!option?.id||!array(definitions).some(row=>row.id===option.id)||caps.level<Math.max(2,Number(option.min_level)||2)||
     known.length>=caps.known)throw Error("Infusione non disponibile o limite di conoscenza raggiunto.");
  let plan_item_id="",plan_item_name="";
@@ -283,17 +333,29 @@ export function learnInfusionPatch(record,option,definitions,classMechanics,item
    plan_item_id=item.id;plan_item_name=item.name||"";
  }
  if(known.some(row=>row.id===option.id&&row.plan_item_id===plan_item_id))throw Error("Infusione già conosciuta.");
+ const trait=features===null?null:infusionGrantingTrait(record,features);
  return {optional_features_catalog:[...array(record.optional_features_catalog),
-   {id:option.id,name:option.name,source:option.source||"TCE",...(plan_item_id?{plan_item_id,plan_item_name}:{})}]};
+   {id:option.id,name:option.name,source:option.source||"TCE",
+    ...(trait?{origin_id:trait.origin_id}:{}),...(plan_item_id?{plan_item_id,plan_item_name}:{})}],
+   // A newly learnt infusion is not prepared until selected explicitly.
+   prepared_features:preparedFeatureRows(record,known)};
 }
-export function applyInfusionPatch(record,known,definitions,classMechanics,index){
- const caps=infusionLimits(record,classMechanics),items=structuredClone(array(record.inventory));
+export function compatibleInfusionTargets(record,option,definitions=[],features=null){
+ if(!isInfusionPrepared(record,option,definitions)||features!==null&&!infusionGrantingTrait(record,features))return [];
+ return array(record.inventory).flatMap((item,index)=>Number(item?.quantity??1)>0&&
+   infusionEligible(option,item)&&
+   (option.application_kind!=="replicate"||option.plan_item_id===item.id)&&
+   (!item.infusion?.id||item.infusion.creator_id===record.id)?[{index,item}]:[]);
+}
+export function applyInfusionPatch(record,known,definitions,classMechanics,index,features=null){
+ const caps=infusionLimits(record,classMechanics,features),items=structuredClone(array(record.inventory));
  const option=array(definitions).find(row=>row.id===known?.id),item=items[index];
  if(!option||!item||!array(record.optional_features_catalog).some(row=>
    row.id===option.id&&String(row.plan_item_id||"")===String(known.plan_item_id||"")))
    throw Error("Infusione non conosciuta oppure oggetto non disponibile.");
+ if(!isInfusionPrepared(record,known,definitions))throw Error("Prepara prima questa infusione.");
  if(caps.level<Math.max(2,Number(option.min_level)||2)||!infusionEligible(option,item))
-   throw Error("Oggetto incompatibile o livello dell'Artefice insufficiente.");
+   throw Error("Oggetto incompatibile o tratto Infuse Item non disponibile.");
  if(option.application_kind==="replicate"&&(!known.plan_item_id||known.plan_item_id!==item.id))
    throw Error("Questo piano replica un altro oggetto.");
  for(const [i,other] of items.entries()){
@@ -313,8 +375,10 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
    remaining.instance_id="pwa_instance_"+crypto.randomUUID();
    items.splice(index+1,0,remaining);item.quantity=1;
  }
+ const trait=features===null?null:infusionGrantingTrait(record,features);
  item.infusion={id:option.id,name:option.name,source:"TCE",level:caps.level,
    creator_id:record.id,plan_item_id:known.plan_item_id||"",
+   ...(trait?{origin_id:trait.origin_id}:{}),
    requires_attunement:Boolean(option.requires_attunement)};
  return {inventory:items};
 }
@@ -334,15 +398,34 @@ export function forgetInfusionPatch(record,known){
  for(const item of inventory){
    const inf=item.infusion||{};
    if(inf.creator_id===record.id&&inf.id===known.id&&
-      String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
+     String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
      delete item.infusion;item.attuned=false;
    }
  }
- return {optional_features_catalog:updated,inventory};
+ const prepared=preparedFeatureRows(record,learnedInfusions(record,[]));
+ return {optional_features_catalog:updated,inventory,
+   prepared_features:prepared.filter(row=>!(row.kind==="infusion"&&row.id===known.id&&
+     String(row.plan_item_id||"")===String(known.plan_item_id||"")) )};
 }
-export function infusionNumericBonuses(record,item,definitions=[]){
+export const infusionInstanceOrigin=(item,index=0)=>
+  "infusion:"+String(item?.instance_id||item?.id||"unknown")+"|"+index;
+export function activeInfusions(record={},definitions=[],features=null){
+ const source=features===null?null:infusionGrantingTrait(record,features);
+ return array(record.inventory).flatMap((owned,index)=>{
+   const inf=owned?.infusion;
+   if(!inf?.id||Number(owned.quantity??1)<=0||owned.disabled|| 
+     !(owned.equipped===true||owned.attuned===true||array(owned.equipped_slots).length))return [];
+   if(inf.requires_attunement&&!owned.attuned)return [];
+   if(inf.creator_id===record.id&&features!==null&&!source)return [];
+   const definition=array(definitions).find(row=>row.id===inf.id);
+   if(!definition)return [];
+   return [{id:infusionInstanceOrigin(owned,index),index,item:owned,infusion:inf,
+     name:definition.name,definition,origin_id:inf.origin_id||source?.origin_id||""}];
+ });
+}
+export function infusionNumericBonuses(record,item,definitions=[],features=null){
  const inf=item?.infusion;
- if(!inf?.id)return {};
+ if(!inf?.id||inf.creator_id===record.id&&features!==null&&!infusionGrantingTrait(record,features))return {};
  const row=array(definitions).find(r=>r.id===inf.id);
  const data=row?.numeric_item_bonuses;
  if(!data||!infusionEligible(row,item))return {};
