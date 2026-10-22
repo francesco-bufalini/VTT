@@ -697,8 +697,8 @@ export function calculateSheet(record={},catalogs={}){
     if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,index)=>
       infusionInstanceOrigin(owned,index)===sid&&
       itemActive(resolveOwnedItem(owned),record)&&
-      !!infusionNumericBonuses(record,resolveOwnedItem(owned),
-        index?.artificer_infusions||[],features)&&
+      Object.keys(infusionNumericBonuses(record,resolveOwnedItem(owned),
+        index?.artificer_infusions||[],features)).length>0&&
       (owned.infusion?.creator_id!==record.id||
         features.some(f=>f.name==='Infuse Item'&&featureEnabled(record,f))));
     if(sid.startsWith("item:"))
