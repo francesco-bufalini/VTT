@@ -2,7 +2,7 @@
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
-import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds} from "./structured_effects.js";
+import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
 
@@ -853,6 +853,10 @@ export function calculateSheet(record={},catalogs={}){
     values:Object.fromEntries(memo),explanations,
     roll_components:Object.fromEntries(Object.entries(rollComponents).map(([target,rows])=>[target,[...rows.values()]])),
     proficiencies:[...proficiencies.keys()],
+    proficiency_sources:Object.fromEntries([...proficiencies.keys()]
+      .filter(key=>/^(skill|expertise|save):/.test(key))
+      .map(key=>{const [kind,...parts]=key.split(':');return [key,
+        proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'))];})),
     casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},
     active_feature_effects:classFeatureEffects(record,featureContext),
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
