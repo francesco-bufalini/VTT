@@ -2948,7 +2948,9 @@ async function handleAction(target){
       event.stopPropagation(); // The global delegated click listener must not handle this twice.
       const originId=button.dataset.originId,section=button.dataset.originSection;
       dialog.close?.();dialog.remove();
-      const actionTarget={dataset:originId?{act:'power-trait',originId}:{act:'sheet-details',detail:section||'proficiency_choices'}};
+      const actionTarget={dataset:originId?{act:'power-trait',originId}:
+        section==='conditions'?{act:'sheet',sheet:'conditions'}:
+          {act:'sheet-details',detail:section||'proficiency_choices'}};
       void handleAction(actionTarget).catch(error=>message(errorMessage(error),true));
     });
     document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
