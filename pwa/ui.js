@@ -13,6 +13,7 @@ import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapVie
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
+import { traitBenefitGroups } from "./trait_benefits.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
@@ -751,59 +752,29 @@ async function traitsView(c){
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
- const labelOfBenefit=key=>{
-   const native=BONUS_TARGETS.find(([id])=>id===key);
-   if(native)return native[1];
-   if(key.startsWith('skill:'))return 'Abilità · '+(SKILLS.find(row=>row[0]===key.slice(6))?.[1]||key.slice(6));
-   if(key.startsWith('save:'))return 'TS · '+(abilities[key.slice(5)]||key.slice(5));
-   if(key.startsWith('ability_mod:'))return 'Modificatore · '+(abilities[key.slice(12)]||key.slice(12));
-   if(key.startsWith('ability:'))return 'Punteggio · '+(abilities[key.slice(8)]||key.slice(8));
-   return key;
-  };
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  const ids=[trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean);
-  const norm=value=>String(value||'').trim().toLowerCase();
-  // Catalog cards use stable catalog IDs, whereas calculated grants use
-  // portable source/name IDs. Resolve both without changing saved identities.
-  if(trait.rank===0&&trait.category==='razza'){
-    if(c.species)ids.push('race|'+norm(c.species_source)+'|'+norm(c.species));
-    if(c.subrace)ids.push('subrace|'+norm(c.subrace_source)+'|'+norm(c.subrace));
-  }
-  if(trait.rank===0&&trait.category==='talenti'){
-    for(const feat of c.feats_catalog||[]){
-      if(!feat?.name)continue;
-      const localKey='feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source));
-      if(localKey===trait.origin_key)ids.push('feat|'+norm(feat.source)+'|'+norm(feat.name));
-    }
-  }
-  const granted=(state.calculated?.bonuses||[]).filter(row=>
-    ids.includes(row.origin_id)||ids.includes(row.parent_origin));
-  const known=new Set(granted.map(row=>String(row.id||'')));
-  const automatic=(state.calculated?.automatic_bonuses||[]).filter(row=>
-    !known.has(String(row.id||''))&&(ids.includes(row.origin_id)||ids.includes(row.parent_origin)));
-  const dice=(c.dice_bonuses||[]).filter(row=>!row.disabled&&ids.includes(row.origin_id));
-  const prof=Object.entries(state.calculated?.proficiency_sources||{}).filter(([,sources])=>
-    sources.some(source=>ids.includes(source.id))).map(([key])=>key);
-  const benefits=[...granted,...automatic].map(row=>
-    '<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(row.id||'')+'">'+
-    '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(sheetRollSymbol(row.expression))+(row.disabled?' · disattivato':'')+'</b></button>')
-    .concat(dice.map(row=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses">'+
-      '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(row.dice)+'</b></button>'))
-    .concat(prof.map(key=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="proficiency_choices">'+
-      '<span>Competenza</span><b>'+esc(key)+'</b></button>')).join('');
-  const benefitDetails=benefits?'<div class="trait-benefits"><strong>Benefici concessi</strong>'+benefits+'</div>':'';
+  // The summary is always visible, even while the description is collapsed.
+  // Keep the preview read-only: edits remain in the existing origin editors.
+  const benefitGroups=traitBenefitGroups(trait,c,state.calculated||{});
+  const benefitDetails=benefitGroups.length?
+    '<span class="trait-benefits"><strong>Benefici concessi</strong>'+
+    benefitGroups.map(group=>
+      '<span class="trait-benefit-group"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
+      group.items.map(item=>
+        '<span class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
+        (item.value?'<b>'+esc(sheetRollSymbol(item.value))+'</b>':'')+'</span>').join('')+
+      '</span>').join('')+'</span>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
   return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
-    esc(trait.name)+(active?'':' · disattivato')+
-    (trait.granted_spells?.length?'<span class="trait-granted-spells"><span class="trait-spell-label">Incantesimi concessi</span> '+
-      trait.granted_spells.map(spell=>'<span class="trait-granted-spell">'+esc(spell.name)+'</span>').join('')+'</span>':'')+'</summary>'+
+    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span>'+
+    benefitDetails+'</summary>'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+benefitDetails+linked+'</details>';
+    toggler+linked+'</details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
@@ -3199,7 +3170,7 @@ async function handleAction(target){
       if(feat)normalized='feat|'+(feat.id||parts.slice(2).join('|')+'|'+parts[1]);
     }
     const matchedByName=feature?cards.find(card=>{
-      const name=String(card.querySelector('summary')?.textContent||'').trim().toLowerCase();
+      const name=String(card.querySelector('.trait-title')?.textContent||'').trim().toLowerCase();
       return (card.dataset.traitOrigin===feature.origin_key||
         card.dataset.traitFeature===feature.origin_id)&&
         (name===String(feature.name||'').toLowerCase()||

@@ -853,8 +853,9 @@ export function calculateSheet(record={},catalogs={}){
     values:Object.fromEntries(memo),explanations,
     roll_components:Object.fromEntries(Object.entries(rollComponents).map(([target,rows])=>[target,[...rows.values()]])),
     proficiencies:[...proficiencies.keys()],
+    // Preserve origins for every structured proficiency kind (including
+    // weapons, armor, tools and languages), not only d20-linked skills/saves.
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
-      .filter(key=>/^(skill|expertise|save):/.test(key))
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'))];})),
     casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},

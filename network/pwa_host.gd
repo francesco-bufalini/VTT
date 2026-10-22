@@ -41,6 +41,7 @@ const FILES := {
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/sheet_roll_origin.js": ["res://pwa/sheet_roll_origin.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/trait_benefits.js": ["res://pwa/trait_benefits.js", "text/javascript; charset=utf-8"],
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
 	"/spell_metadata.js": ["res://pwa/spell_metadata.js", "text/javascript; charset=utf-8"],
 	"/condition_catalog.js": ["res://pwa/condition_catalog.js", "text/javascript; charset=utf-8"],
