@@ -801,7 +801,17 @@ export function calculateSheet(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['level','ac','initiative','hp','second_max','passive_perception'])safe(target);
-  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
+  // Spellcasting, like Infuse Item, is granted by an owned trait. Class
+  // identity selects the spell list; it never grants casting by itself.
+  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
+    .map(member=>{
+      const origin='class|'+String(member.source||'').toLowerCase()+'|'+String(member.name||'').toLowerCase();
+      const trait=features.find(feature=>feature.origin_key===origin&&
+        ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
+        featureEnabled(record,feature));
+      return {...member,granting_trait_id:trait?.origin_id||'',
+        granting_trait_name:trait?.name||''};
+    }).filter(member=>!catalogs.classFeatures||member.granting_trait_id);
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
