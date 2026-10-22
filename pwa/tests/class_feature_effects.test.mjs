@@ -99,9 +99,11 @@ test('Wild Shape changes appearance, uses one charge, preserves base HP and rest
 });
 test('advantage rolls two actual dice, keeps the right die and leaves other bonuses independent',()=>{
  let dice=[2,18,3];const rolled=rollSheetDice(4,[{dice:'1d4',origin_name:'Bless'}],()=>dice.shift(),'advantage');
- assert.equal(rolled.total,25);assert.deepEqual(rolled.rolls,[2,18]);assert.match(rolled.notation,/2d20kh1/);
+ assert.equal(rolled.total,25);assert.deepEqual(rolled.rolls,[2,18]);assert.match(rolled.notation,/^ADV · 1d20/);
+ assert.doesNotMatch(rolled.notation,/2d20kh1/);
  dice=[2,18];assert.equal(rollSheetDice(4,[],()=>dice.shift(),'disadvantage').total,6);
- assert.equal(sheetRollFormula(4,[],'advantage'),'2d20kh1 + 4');
+ assert.equal(sheetRollFormula(4,[],'advantage'),'ADV · 1d20 + 4');
+ assert.equal(sheetRollFormula(4,[],'disadvantage'),'DIS · 1d20 + 4');
 });
 test('Metamagic validates acquired options and charges together with spell payment only in a confirmed plan',()=>{
  const spell={id:'test',name:'Spell',level:1,range_feet:60,range:'60 feet',time:[{unit:'action'}],components:{v:true,s:true},duration:[{type:'timed',duration:{type:'minute',amount:1}}]};
