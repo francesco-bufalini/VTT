@@ -258,8 +258,7 @@ export function infusionLimits(record={},classMechanics={},features){
  const column=array(cls?.columns).find(c=>sameText(c.name,"Infused Items"));
  const unlocked=features===undefined||!!infusionGrantingTrait(record,features);
  const active=level<2||!unlocked?0:Math.max(0,Number(array(column?.levels)[level-1])||0);
- return {level,active,known:active*2,granting_trait:unlocked?
-   infusionGrantingTrait(record,features)?.origin_id||'':null};
+ return {level,active,known:active*2};
 }
 const infusionChoice=row=>String(row?.id||'').startsWith('infusion|tce|');
 export function learnedInfusions(record={},definitions=[]){
