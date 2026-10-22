@@ -177,10 +177,14 @@ try{
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
+ // The fixture is Poisoned: its attack disadvantage cancels manually selected advantage.
  await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/ADV/);
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/DIS/);
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true);
- assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/vantaggio/);
+ assert.doesNotMatch(await rollDialog.locator('[data-roll-result]').textContent(),/d20 · vantaggio/,
+   'Poisoned and situational advantage must cancel to a single d20');
  const d20Layout=await layout();
  assert(d20Layout.buttonWidth>d20Layout.modeWidth);
  assert(await rollDialog.evaluate(dialog=>{
@@ -188,6 +192,10 @@ try{
    const actions=dialog.querySelector('.sheet-roll-actions').getBoundingClientRect();
    return actions.top>=result.bottom;
  }),'Mode and roll button move below the d20 result');
+ await rollDialog.locator('[data-roll-mode]').selectOption('disadvantage');
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/d20 · svantaggio/,
+   'An existing disadvantage and another selected disadvantage still roll just two d20');
  await rollDialog.locator('[data-roll-mode]').selectOption('normal');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
