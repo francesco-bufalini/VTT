@@ -847,6 +847,10 @@ function infusionPanel(c,calculated){
   ' · Conosciute '+known.length+'/'+caps.known+' · Preparate '+prepared.length+
   ' · Oggetti infusi '+(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length+'/'+caps.active+
   '. Le infusioni e gli effetti derivano dal tratto, non direttamente dalla classe.</p>'+
+  (trait&&known.length!==caps.known?'<p class="magic-selection-warning" role="status">⚠ Infusioni conosciute: '+
+   known.length+' / '+caps.known+' ('+(known.length<caps.known?'ne mancano '+(caps.known-known.length):(known.length-caps.known)+' in eccesso')+')</p>':'')+
+  (trait&&prepared.length>caps.active?'<p class="magic-selection-warning" role="status">⚠ Infusioni preparate: '+
+   prepared.length+' / '+caps.active+'; il limite degli oggetti infusi resta in vigore.</p>':'')+
   (!trait?'<p class="warning">Per imparare, preparare o attivare infusioni serve il tratto Infuse Item attivo.</p>':'')+
   '<div class="magic-source-controls"><label>Impara un’infusione'+
   select('infusion-available',options.map(row=>[row.id,row.name]))+'</label>'+
