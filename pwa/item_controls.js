@@ -298,6 +298,7 @@ export function activeInfusions(record={}){
    if(!infusion?.id||Number(item.quantity??1)<1||item.active===false)return [];
    if(!array(item.equipped_slots).length&&!item.equipped&&!item.attuned)return [];
    if(requiresAttunement(item)&&!item.attuned)return [];
+   if(record.origin_enabled?.['infusion:'+(item.instance_id||item.id)]===false)return [];
    if(infusion.creator_id===record.id&&infusion.source_trait_id&&
      record.origin_enabled?.[infusion.source_trait_id]===false)return [];
    return [{...infusion,item_name:item.name||item.id,item_id:item.id,item_index:index}];
@@ -388,7 +389,7 @@ export function forgetInfusionPatch(record,known){
 }
 export function infusionNumericBonuses(record,item,definitions=[]){
  const inf=item?.infusion;
- if(!inf?.id)return {};
+ if(!inf?.id||record.origin_enabled?.['infusion:'+(item.instance_id||item.id)]===false)return {};
  if(inf.creator_id===record.id&&inf.source_trait_id&&
    record.origin_enabled?.[inf.source_trait_id]===false)return {};
  const row=array(definitions).find(r=>r.id===inf.id);
