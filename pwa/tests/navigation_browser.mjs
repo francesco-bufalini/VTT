@@ -61,6 +61,11 @@ try{
  await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');
  await page.goForward();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');await shot('actions');
+ const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
+ assert.equal(await classFilter.getAttribute('aria-pressed'),'true');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0,
+  'Generic ability checks are initially hidden by the new filter');
+ await classFilter.click();
  const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
  assert.equal(await checks.count(),1,'Generic ability checks belong in the unified Actions tab');
  await checks.locator('summary.play-battle-summary').click();
