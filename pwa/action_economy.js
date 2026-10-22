@@ -147,7 +147,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  for(const row of featureActionEntries(record,arr(calculated.trackers),calculated.feature_rules||{},arr(calculated.features))){
   const rule=arr(calculated.feature_rules?.actions).find(r=>r.id===row.rule_id);
   const base=out.find(r=>r.id===rule?.action_id);
-  if(base){base.alternate_action=base.time==='action'&&timing(row.time)==='bonus';base.time=timing(row.time);}
+  if(base){base.origin='personal';base.alternate_action=base.time==='action'&&timing(row.time)==='bonus';base.time=timing(row.time);}
   else out.push({...row,id:rule?.action_id||row.rule_id,time:timing(row.time)});
  }
  const already=new Set();
@@ -536,7 +536,7 @@ export function battleSkillChecksPanel(calculated={}){
  const emptyAttacks=new Map(),descriptions={main:'',off:''};
  return abilities.map(([ability,label])=>{
   const choices=[
-   {id:'ability_mod:'+ability,name:'Prova di '+label,check_target:'ability_mod:'+ability,check_label:label},
+   {id:'ability_check:'+ability,name:'Prova di '+label,check_target:'ability_check:'+ability,check_label:label},
    ...SKILLS.filter(row=>row[2]===ability).map(([id,name])=>({
     id:'skill:'+id,name,check_target:'skill:'+id,check_label:name,skill_code:id}))
   ];
@@ -571,7 +571,7 @@ function battleSpellRow(item){
   ' aria-label="Lancia '+esc(item.name)+'">Lancia</button></article>';
 }
 
-export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
+export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[],onlyClass=false){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const descriptions={
   main:entries.find(row=>row.id==='attack')?.description||'Attaccare con un’arma o con un colpo senz’armi.',
@@ -583,13 +583,13 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
 
  const classAbilities=battleAbilityEntries(record,calculated,entries,activatedAbilities);
  const classIds=new Set(classAbilities.filter(row=>!String(row.id||'').startsWith('activated:')));
- const weapon=entries.filter(row=>row.id!=='attack'&&row.id!=='two_weapon'&&
+ const weapon=entries.filter(row=>(!onlyClass||row.origin!=='general')&&row.id!=='attack'&&row.id!=='two_weapon'&&
   (row.type==='Attacco'||row.parent_action==='attack'||row.parent_action==='two_weapon'||row.id==='opportunity'));
  const weaponIds=new Set(weapon);
- const movement=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&
+ const movement=entries.filter(row=>(!onlyClass||row.origin!=='general')&&!weaponIds.has(row)&&!classIds.has(row)&&
   (row.time==='movement'||MOVEMENT_ACTION_IDS.has(row.id)));
  const movementIds=new Set(movement);
- const other=entries.filter(row=>!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
+ const other=entries.filter(row=>(!onlyClass||row.origin!=='general')&&!weaponIds.has(row)&&!classIds.has(row)&&!movementIds.has(row)&&
   !['attack','two_weapon'].includes(row.id)&&row.type!=='Incantesimo'&&
   !['spell_cast','cast_spell'].includes(row.id));
  // All general free actions are listed under Altre azioni, whereas free
@@ -623,9 +623,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
- }).join('')||'<p class="play-empty">Nessuna azione disponibile.</p>';
+ }).join('')||(onlyClass?'':'<p class="play-empty">Nessuna azione disponibile.</p>');
  return {attacks:render(weapon,'attacks'),others:render(other,'others'),
-  abilityEntries:classAbilities,checks:battleSkillChecksPanel(calculated),
+  abilityEntries:classAbilities,checks:onlyClass?'':battleSkillChecksPanel(calculated),
   movement:render(movement,'movement'),spells:render(spellActionEntries(record,calculated,spells),'spells')};
 }
 
