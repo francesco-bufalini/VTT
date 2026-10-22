@@ -208,8 +208,10 @@ try{
  assert.equal(await rollDialog.locator('[data-roll-result] p').count(),0);
  assert.equal(await rollDialog.locator('.sheet-roll-die-value').count(),4,
    '1d6 base + 2d4 damage + 1d6 bonus show four individual die results');
- assert.equal((await record()).resource_tracker_spent.focus,3,
-   'Selected bonus spends one tracked use');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
+ });
  assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true,
    'Roll action stays visible after damage roll');
  assert(await rollDialog.evaluate(dialog=>{
@@ -219,8 +221,10 @@ try{
  }),'Roll controls stay below damage results');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
- assert.equal((await record()).resource_tracker_spent.focus,4,
-   'Selection persists while its resource still has uses');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===4;
+ });
  await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
