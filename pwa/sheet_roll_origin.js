@@ -52,26 +52,9 @@ function trainingOrigin(record,target,calculated){
  return {id:'',name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
    section:'proficiency_choices'};
 }
-function featureForAutoAdvantage(record,calculated,target){
- const names=target==='save:dex'&&record?.active_class_features?.patient_defense?['Patient Defense']:
-   target.startsWith('attack_hit:')?['Reckless Attack']:
-   target.startsWith('casting_hit:')?['Innate Sorcery']:
-   ['Rage'];
- const matching=list(calculated?.features).find(f=>names.some(n=>String(f.name||'').toLowerCase()===n.toLowerCase())&&!f.disabled);
- const name=matching?.name||names[0];
- const displayName=String(name).toLowerCase()==='rage'?'Ira':name;
- const classNames={'Rage':'Barbarian','Reckless Attack':'Barbarian',
-   'Patient Defense':'Monk','Innate Sorcery':'Sorcerer'};
- const className=classNames[names[0]];
- const member=list(record?.classes).find(row=>String(row.name||'').toLowerCase()===String(className||'').toLowerCase())||
-   (String(record?.class||'').toLowerCase()===String(className||'').toLowerCase()?
-     {name:record.class,source:record.class_source||''}:null);
- const classOrigin=member?'class|'+String(member.source||'').toLowerCase()+'|'+String(member.name).toLowerCase():'';
- return {id:matching?.origin_id||matching?.origin_key||classOrigin,name:displayName};
-}
 // Returns symbolic and expanded numeric forms for each source. No random dice
 // are evaluated merely by opening the popup.
-export function sheetRollOriginSegments(record,calculated,target,{mode='normal',diceBonuses=[],autoAdvantage=false}={}){
+export function sheetRollOriginSegments(record,calculated,target,{mode='normal',diceBonuses=[],modeSources=[],cancelled=false}={}){
  const total=Number(calculated?.values?.[target]);
  if(!Number.isFinite(total))return [];
  const all=calculated?.roll_components||{};
@@ -163,11 +146,21 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    previous.value+=row.value;
  }
  const ordered=[];
- if(mode==='advantage'||mode==='disadvantage'){
-   const source=autoAdvantage&&mode==='advantage'?featureForAutoAdvantage(record,calculated,target):
-     {id:'',name:'Modalità scelta'};
+ const activeModes=list(modeSources).filter(row=>['advantage','disadvantage'].includes(row.mode));
+ if(activeModes.length){
+   const seen=new Set();
+   for(const row of activeModes){
+     const key=row.mode+'|'+String(row.origin_id||'')+'|'+String(row.origin_name||'');
+     if(seen.has(key))continue;
+     seen.add(key);
+     ordered.push({kind:'mode',formula:row.mode==='advantage'?'ADV':'DIS',
+       expanded:cancelled?'Annullato':'',value:0,
+       originId:row.origin_id||'',originName:row.origin_name||'Origine',
+       section:row.kind==='condition'?'conditions':'',key});
+   }
+ }else if(mode==='advantage'||mode==='disadvantage'){
    ordered.push({kind:'mode',formula:mode==='advantage'?'ADV':'DIS',
-     expanded:'',value:0,originId:source.id,originName:source.name,key:'mode'});
+     expanded:'',value:0,originId:'',originName:'Modalità scelta',key:'mode'});
  }
  ordered.push(base,...grouped);
  return ordered;
