@@ -174,19 +174,6 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 					"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
 					bool(owned.get("disabled", false)))
 
-	# Known artificer infusions are already optional class features; display
-	# their existing 5etools descriptions among ordinary class traits.
-	for known: Dictionary in Infusions.known(record):
-		var option: Dictionary = PlayerCatalog.detailed_entry("optional_features", known)
-		var display_name: String = String(known.get("name", ""))
-		var plan: String = String(known.get("plan_item_name", ""))
-		if not plan.is_empty():
-			display_name += " · " + plan
-		_append(result, {"id": String(known.get("id", "")) + "|" + plan.to_lower(),
-			"name": "Infusione · " + display_name,
-			"source": "TCE", "entries": PlayerCatalog.description_text("optional_features", option)},
-			int(known.get("min_level", 2)), "Classe · Artificer", "class|tce|artificer", "Artificer", "TCE", 3)
-
 	# Inventory entries remain visible as traits while owned. Equipment
 	# controls only their effective origins, not whether the item exists.
 	var inventory: Variant = record.get("inventory", [])
@@ -229,6 +216,29 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			_append_named_entries(result, detailed.get("entries", []),
 				"Oggetto · " + item_label, "item:" + item_id,
 				String(definition.get("source", "")), 4, inactive, record)
+
+
+	# Infusion effects are item-granted traits and require the equipped target.
+	if inventory is Array:
+		for raw_infused: Variant in inventory:
+			if not raw_infused is Dictionary:
+				continue
+			var owned_infused: Dictionary = raw_infused
+			var infusion_raw: Variant = owned_infused.get("infusion", {})
+			if not infusion_raw is Dictionary or not Items.origin_active(owned_infused, record):
+				continue
+			var infusion_data: Dictionary = infusion_raw
+			if String(infusion_data.get("id", "")).is_empty():
+				continue
+			var info: Dictionary = PlayerCatalog.detailed_entry("optional_features", infusion_data)
+			var item_name: String = String(owned_infused.get("name", owned_infused.get("id", "")))
+			var infusion_name: String = String(infusion_data.get("name", ""))
+			var instance_id: String = String(owned_infused.get("instance_id", owned_infused.get("id", "")))
+			_append(result, {"id": String(infusion_data.get("id", "")),
+				"name": "Infusione · " + infusion_name, "source": "TCE",
+				"entries": PlayerCatalog.description_text("optional_features", info),
+				"granted_by_trait": infusion_data.get("source_trait_id", "")},
+				0, "Infusione · " + item_name, "infusion:" + instance_id)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
@@ -326,6 +336,26 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				class_level):
 				continue
 			_append(result, feature, level, subclass_origin, subclass_key, class_label, class_book)
+	# Learned recipes belong to the actual Infuse Item trait, never the class
+	# origin. For older records resolve the existing grant feature by identity.
+	for known: Dictionary in Infusions.known(record):
+		var source_id: String = String(known.get("source_trait_id", ""))
+		if source_id.is_empty():
+			for existing: Dictionary in result:
+				if String(existing.get("name", "")).nocasecmp_to("Infuse Item") == 0 and String(existing.get("origin_key", "")).begins_with("class|tce|artificer"):
+					source_id = "feature:" + String(existing.get("key", ""))
+					break
+		if source_id.is_empty():
+			continue
+		var option: Dictionary = PlayerCatalog.detailed_entry("optional_features", known)
+		var display_name: String = String(known.get("name", ""))
+		var plan: String = String(known.get("plan_item_name", ""))
+		if not plan.is_empty():
+			display_name += " · " + plan
+		_append(result, {"id": String(known.get("id", "")) + "|" + plan.to_lower(),
+			"name": "Infusione conosciuta · " + display_name, "source": "TCE",
+			"entries": PlayerCatalog.description_text("optional_features", option)},
+			int(known.get("min_level", 2)), "Tratto · Infuse Item", source_id, "Artificer", "TCE", 3)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var categories: Array[String] = ["razza", "background", "classi", "talenti", "incantesimi", "oggetti", "mostro", "altro"]
 		var group_a: int = categories.find(String(a.get("category", "altro")))
@@ -401,17 +431,17 @@ static func _append(
 		category = "razza"
 	elif origin_key.begins_with("background|"):
 		category = "background"
-	elif origin_key.begins_with("class|"):
+	elif origin_key.begins_with("class|") or origin_key.begins_with("feature:class|"):
 		category = "classi"
 	elif origin_key.begins_with("feat|"):
 		category = "talenti"
-	elif origin_key.begins_with("item:"):
+	elif origin_key.begins_with("item:") or origin_key.begins_with("infusion:"):
 		category = "oggetti"
 	elif origin_key.begins_with("spell:"):
 		category = "incantesimi"
 	elif origin_key.begins_with("monster|"):
 		category = "mostro"
-	var gate_scope: String = "class" if origin_key.begins_with("class|") else "character"
+	var gate_scope: String = "class" if origin_key.begins_with("class|") or origin_key.begins_with("feature:class|") else "character"
 	var gate: Dictionary = BenefitRequirements.normalize(
 		feature, gate_scope, class_label, class_book, "min_level", level
 	)
