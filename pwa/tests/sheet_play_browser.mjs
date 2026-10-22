@@ -368,7 +368,7 @@ try{
  await page.setViewportSize({width:390,height:844});
  assert.doesNotMatch(await shared.textContent(),/Iniziativa/);
  assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
- assert.equal(await shared.locator('.battle-ac-manage').count(),1);
+ assert.equal(await shared.locator('.battle-ac-manage').count(),0,'Retired bonus editor is absent from the shared defense modal');
  await dismiss();
  await popup('equipment');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
