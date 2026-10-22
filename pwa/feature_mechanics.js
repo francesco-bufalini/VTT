@@ -119,7 +119,9 @@ export function classFeatureRollSources(record,calculated,target){
  const actions=classFeatureEntries(record,calculated);
  const add=(mode,id,name,kind='feature')=>{
    if(!['advantage','disadvantage'].includes(mode))return;
-   const key=String(id||'')+'|'+mode+'|'+name;
+   // A class rule and structured metadata may describe the *same* trait.
+   // Distinct sources remain separate, but one trait must never be counted twice.
+   const key=String(id||'')?String(id)+'|'+mode:mode+'|'+String(name||'');
    if(!result.some(row=>row.key===key))result.push({mode,origin_id:String(id||''),
      origin_name:String(name||'Origine sconosciuta'),key,kind});
  };
