@@ -99,7 +99,10 @@ export function sheetModifierBreakdown(data,target){
 export function sheetRollFormula(modifier,bonuses=[],mode='normal'){
  const number=Number(modifier);
  if(!Number.isFinite(number))throw Error('Modificatore del tiro non disponibile');
- const fixed=(mode==='advantage'?'2d20kh1':mode==='disadvantage'?'2d20kl1':'1d20')+(number<0?' − '+Math.abs(number):' + '+number);
+ // ADV/DIS are game-rule labels in the UI and chat. The actual dice and
+ // highest/lowest selection remain handled by rollSheetDice, not this caption.
+ const fixed=(mode==='advantage'?'ADV · ':mode==='disadvantage'?'DIS · ':'')+
+   '1d20'+(number<0?' − '+Math.abs(number):' + '+number);
  return fixed+bonuses.map(row=>' + '+String(row.dice)).join('');
 }
 export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
