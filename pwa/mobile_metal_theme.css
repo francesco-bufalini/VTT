@@ -1739,3 +1739,55 @@ input:disabled{opacity:.75;cursor:default}
  outline:2px solid #edbd77;
  outline-offset:2px;
 }
+
+
+/* Combat states remain one distinct, softly outlined surface. */
+.play-status-strip{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ flex-wrap:wrap;
+ margin:1px 0 5px;
+ padding:9px;
+ border:1px solid #b48c5070;
+ border-radius:11px;
+ background:linear-gradient(145deg,#67472e16,#251e1b50);
+}
+
+/* Keep the three expansion/filter controls on one phone-sized row. */
+.play-battle-expansion-tools{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.18fr);
+ justify-content:stretch;
+ gap:5px;
+ padding:6px 0 9px;
+}
+.play-battle-expansion-tools>.play-button{
+ display:flex;
+ justify-content:center;
+ width:100%;
+ min-width:0;
+ min-height:36px;
+ white-space:nowrap;
+ gap:4px;
+ padding:6px 4px;
+ font-size:clamp(9px,2.65vw,11px);
+}
+.play-battle-expansion-tools>.play-button .vtt-action-glyph{
+ width:13px;
+ height:13px;
+ flex:0 0 13px;
+}
+
+/* The Hit Dice editor belongs to the confirmation, not the rest picker. */
+.play-rest-confirm .play-rest-dice{margin:0}
+.play-rest-confirm [data-rest-roll-controls][hidden]{display:none!important}
+.play-rest-recovery{display:grid;gap:9px}
+.play-rest-recovery>h4{font-size:13px;color:#f3d4a2;margin:1px 0 0}
+.play-rest-recovery-group{border:1px solid #a77c493f;border-radius:9px;padding:9px 11px;background:#241f1dcc}
+.play-rest-recovery-group h5{margin:0 0 7px;color:#d9b983;font-size:12px}
+.play-rest-recovery-group ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.play-rest-recovery-group li{display:flex;flex-direction:column;gap:2px;line-height:1.4;font-size:12px}
+.play-rest-recovery-group li+li{border-top:1px solid #a77c4928;padding-top:7px}
+.play-rest-recovery-group li strong{font-weight:650;color:#f0dfc4}
+.play-rest-recovery-group li span{color:#c6b39a;overflow-wrap:anywhere}
