@@ -3,6 +3,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
+import {activeInfusions} from './item_controls.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -57,7 +58,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   used.add(key);
   const projected=arr(calculated.features).find(row=>same(row.name,name)&&
    same(row.origin_key,origin_key)&&levelOf(row.level)===at);
-  const id=projected?.origin_id||'';
+  const id=projected?.origin_id||entry.feature_origin||'';
   rows.push({name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
    inactive:inactive||!!projected?.disabled||sourceDisabled(record,origin_key)||
@@ -196,6 +197,15 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   // don't turn individual descriptive paragraphs into separate traits.
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
    source:info.source||item.source}, {...options,rank:0});
+ }
+ // Only an equipped, eligible infusion produces a visible subordinate trait.
+ for(const applied of activeInfusions(record,calculated.infusion_catalog||[],calculated.features||[])){
+   const detail=await lookup('optional_features',applied.name,'TCE')||applied.definition;
+   add({name:'Infusione · '+applied.name,
+     entries:detail.entries??detail.description??applied.definition.item_prerequisite??'',
+     source:'TCE',feature_origin:applied.id},
+     {category:'oggetti',origin:'Oggetto · '+(applied.item.name||applied.item.id),
+      origin_key:applied.id,level:0,rank:2});
  }
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
