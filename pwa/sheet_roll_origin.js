@@ -165,6 +165,13 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  ordered.push(base,...grouped);
  return ordered;
 }
+// UI-only abbreviation: keep the original provenance ID and full name
+// unchanged for navigation/tooltips while skipping generic prefixes.
+export function sheetRollOriginLabel(name){
+ const full=String(name||'').trim();
+ const short=full.replace(/^(?:(?:oggetto|tratto|privilegio|item)\s*[-–—:·]\s*)+/gi,'').trim();
+ return short||full;
+}
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
@@ -174,6 +181,6 @@ export function sheetRollOriginHtml(segments,escapeHtml){
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
      (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
-     '<span class="sheet-roll-origin-name">'+esc(row.originName)+'</span></'+tag+'>';
+     '<span class="sheet-roll-origin-name">'+esc(sheetRollOriginLabel(row.originName))+'</span></'+tag+'>';
  }).join('')+'</div>';
 }

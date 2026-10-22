@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
 import {rollSheetDice} from '../sheet_rules_view.js';
 
@@ -167,4 +167,20 @@ test('two disadvantages and one advantage still give a normal d20',()=>{
  assert.equal(resolveClassRollMode(sources.slice(0,2)).mode,'disadvantage');
  assert.equal(resolveClassRollMode(sources.slice(0,2),'advantage').mode,'normal');
  assert.equal(resolveClassRollMode(sources,'normal').mode,'normal');
+});
+
+test('short provenance labels remove generic prefixes without changing navigation data',()=>{
+ assert.equal(sheetRollOriginLabel('Oggetto - Stone of Good Luck'),'Stone of Good Luck');
+ assert.equal(sheetRollOriginLabel('Oggetto · Stone of Good Luck'),'Stone of Good Luck');
+ assert.equal(sheetRollOriginLabel('Tratto · Fortunato'),'Fortunato');
+ assert.equal(sheetRollOriginLabel('Privilegio: Ira'),'Ira');
+ assert.equal(sheetRollOriginLabel('Condizione · Avvelenato'),'Condizione · Avvelenato');
+ assert.equal(sheetRollOriginLabel('Oggetto'),'Oggetto');
+ const html=sheetRollOriginHtml([{
+   kind:'formula',key:'stone',formula:'+1',expanded:'+1',
+   originId:'item:stone-of-good-luck',originName:'Oggetto - Stone of Good Luck',
+ }],text=>text);
+ assert.match(html,/>Stone of Good Luck<\/span>/);
+ assert.match(html,/title="Oggetto - Stone of Good Luck"/);
+ assert.match(html,/data-origin-id="item:stone-of-good-luck"/);
 });

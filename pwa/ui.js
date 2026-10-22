@@ -2395,12 +2395,43 @@ function fillAppliedSpellOptions(query=''){
 }
 // D20 checks and weapon damage use one sheet-roll popup structure.
 // Damage has no advantage/disadvantage in 5e; its mode selector is read-only.
-function rollCategory(target){
- if(target==='initiative')return 'Prova di caratteristica · Iniziativa';
- if(target.startsWith('skill:')||target.startsWith('ability_check:')||target.startsWith('ability_mod:'))return 'Prova di caratteristica';
+// Keep the title about *what* the character is rolling, and this second
+// row about *which kind* of roll it is. Do not repeat the roll name.
+function rollHeading(label,target){
+ const text=String(label||'Tiro').trim();
+ if(target.startsWith('save:')){
+   const stat=target.slice(5);
+   if(/^tiro\s+(?:di\s+)?salvezza\b/i.test(text))
+     return abilities[stat]||text;
+ }
+ if(target.startsWith('attack_hit:')||target.startsWith('casting_hit:'))
+   return text.replace(/^tiro\s+per\s+colpire\s*[·:–-]\s*/i,'')||text;
+ return text;
+}
+function rollCategory(target,calculated){
+ if(target.startsWith('skill:')){
+   const stat=SKILLS.find(([id])=>id===target.slice(6))?.[2];
+   return 'Prova di abilità'+(abilities[stat]?' · '+abilities[stat]:'');
+ }
+ if(target==='initiative')return 'Prova di abilità · Destrezza';
+ if(target.startsWith('ability_check:')||target.startsWith('ability_mod:'))
+   return 'Prova di caratteristica';
  if(target.startsWith('save:'))return 'Tiro salvezza';
- if(target.startsWith('attack_hit:')||target.startsWith('casting_hit:'))return 'Tiro per colpire';
+ if(target.startsWith('casting_hit:'))return 'Tiro per colpire · Incantesimo';
+ if(target.startsWith('attack_hit:')){
+   const attack=(calculated?.attacks||[]).find(a=>'attack_hit:'+a.id===target);
+   if(attack)return 'Tiro per colpire · '+(attack.melee?'Mischia':'Distanza');
+   return 'Tiro per colpire';
+ }
  return 'Tiro d20';
+}
+const DAMAGE_LABELS={slashing:'Tagliente',piercing:'Perforante',bludgeoning:'Contundente',
+ acid:'Acido',cold:'Freddo',fire:'Fuoco',force:'Forza',lightning:'Fulmine',
+ necrotic:'Necrotico',poison:'Veleno',psychic:'Psichico',radiant:'Radiante',thunder:'Tuono'};
+function rollDamageType(type){
+ const source=String(type||'').trim();
+ return source?'Tipo di danno · '+(DAMAGE_LABELS[source.toLowerCase()]||source):
+   'Tipo di danno non specificato';
 }
 function damageRollTerms(formula){
  // Validate using exactly the same restricted parser as the actual damage roll,
@@ -2927,7 +2958,7 @@ async function handleAction(target){
     const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
     const preview=damageRollTerms(formula);
     openUnifiedRollDialog({kind:'damage',heading:'Danni · '+label,modifier:preview.modifier,
-      rollType:'Tiro per danni'+(type?' · '+type:''),formula:sheetRollOriginHtml(preview.segments,esc),
+      rollType:rollDamageType(type),formula:sheetRollOriginHtml(preview.segments,esc),
       creatureId:state.editor.read().id||'',damageFormula:formula,damageLabel:label,damageType:type});
     return;
   }
@@ -2950,7 +2981,7 @@ async function handleAction(target){
     const key=String(target.dataset.target||'');
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
-    const label=target.dataset.label||'Tiro',author=selectedName();
+    const label=target.dataset.label||'Tiro';
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
     const autoSources=classFeatureRollSources(creature,calculated,key);
     const automatic=resolveClassRollMode(autoSources);
@@ -2963,8 +2994,8 @@ async function handleAction(target){
     const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
       automatic.mode==='advantage'?' · vantaggio':
       automatic.mode==='disadvantage'?' · svantaggio':'';
-    const dialog=openUnifiedRollDialog({kind:'d20',heading:author+' · '+label,rollLabel:label,modifier,
-      rollType:rollCategory(key),formula:formulaMarkup(),bonuses,autoLabel,
+    const dialog=openUnifiedRollDialog({kind:'d20',heading:rollHeading(label,key),rollLabel:label,modifier,
+      rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.addEventListener('change',event=>{
       if(!event.target.matches('[data-roll-bonus],[data-roll-mode]'))return;
