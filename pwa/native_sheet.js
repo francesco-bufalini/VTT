@@ -202,6 +202,71 @@ export function completeRest(record,event,calculated={},spend={},rollDie=sides=>
  return {patch,healed:Math.max(0,patch.current_hp-Math.max(0,Number(record.current_hp)||0)),rolls};
 }
 
+
+/**
+ * Full, non-mutating rest forecast. Keep eligible recoveries visible even at
+ * full capacity so the confirmation dialog describes everything the rest can
+ * restore, instead of only currently spent resources.
+ */
+export function restRecoveryPreview(record,event,calculated={},spend={}){
+ const minimum=completeRest(record,event,calculated,spend,()=>1);
+ const maximum=completeRest(record,event,calculated,spend,sides=>sides);
+ const entries=[];
+ const add=(group,name,detail)=>entries.push({group,name,detail});
+ const maxHp=Math.max(0,Number(calculated.stats?.max_hp??record.max_hp??0));
+ const currentHp=Math.max(0,Number(record.current_hp)||0);
+ const healing=event==='short_rest'?
+  (minimum.healed===maximum.healed?String(minimum.healed):minimum.healed+'–'+maximum.healed):
+  String(minimum.healed);
+ add('Salute','Punti ferita',currentHp+' / '+maxHp+' PF · recupero '+healing+' PF');
+ const pools=hitDicePools(record,calculated);
+ for(const pool of pools){
+  const chosen=event==='short_rest'?Number(spend?.['d'+pool.die]||0):0;
+  const after=Math.max(0,Number(minimum.patch.hit_dice_spent?.['d'+pool.die]||0));
+  add('Dadi Vita','d'+pool.die,
+    pool.available+' / '+pool.total+' disponibili · '+
+    (event==='short_rest'?chosen+' da spendere':(pool.spent-after)+' recuperati'));
+ }
+ for(const row of calculated.trackers||[]){
+  if(row.disabled)continue;
+  const full=row.recharge===event||event==='long_rest'&&row.recharge==='short_rest';
+  const rules=event==='short_rest'?(row.partial_recoveries||[]).filter(rule=>rule.event==='short_rest'):[];
+  if(!full&&!rules.length)continue;
+  const max=Math.max(0,Number(row.max)||0);
+  const before=Math.max(0,Math.min(max,Number(record.resource_tracker_spent?.[row.id]||0)));
+  const after=Math.max(0,Math.min(max,Number(minimum.patch.resource_tracker_spent?.[row.id]||0)));
+  const optional=rules.filter(rule=>rule.mode==='optional_partial'&&
+    minimum.patch.resource_recovery_ready?.[rule.id]&&!record.resource_recovery_used?.[rule.id]).length;
+  add('Risorse',row.name||row.id,
+    (max-before)+' / '+max+' disponibili · '+Math.max(0,before-after)+' utilizzi recuperati'+
+    (optional?' · '+optional+' recuperi opzionali pronti':''));
+ }
+ const pact=Math.max(0,Number(calculated.pact_slots?.total)||0);
+ if(pact){
+  const spent=Math.max(0,Math.min(pact,Number(record.pact_slots_spent||0)));
+  add('Magia','Slot del Patto (livello '+(calculated.pact_slots?.level||1)+')',
+    (pact-spent)+' / '+pact+' disponibili · '+spent+' recuperati');
+ }
+ if(event==='long_rest'){
+  for(const slot of calculated.spell_slots||[]){
+   const max=Math.max(0,Number(slot.total)||0);
+   if(!max)continue;
+   const spent=Math.max(0,Math.min(max,Number(record.spell_slots_spent?.[slot.level]||0)));
+   add('Magia','Slot incantesimo livello '+slot.level,
+     (max-spent)+' / '+max+' disponibili · '+spent+' recuperati');
+  }
+  const exhausted=Math.max(0,Number(record.exhaustion)||0);
+  add('Altri effetti','Indebolimento',
+    exhausted+' livelli attuali · '+Math.min(1,exhausted)+' rimossi');
+  add('Altri effetti','Punti ferita temporanei',
+    (Math.max(0,Number(record.temporary_hp)||0))+' attuali · azzerati');
+  const death=Number(record.death_save_successes||0)+Number(record.death_save_failures||0);
+  add('Altri effetti','Tiri salvezza contro la morte',
+    death+' segnati · azzerati');
+ }
+ return {minimum,maximum,entries,pools};
+}
+
 function control(label,attrs,value,type='text',min,max){
  if(Array.isArray(type)){
   const options=type.some(([v])=>String(v)===String(value??''))?type:[[value??'',value||'Non selezionato'],...type];
