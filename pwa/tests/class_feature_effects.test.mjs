@@ -28,7 +28,8 @@ test('Rage applies damage, advantage and defenses, cancels concentration and blo
   assert.equal(out.attacks.find(a=>a.id==='item:throw:main:axe').feature_damage,edition==='2024'?3:0);
   assert.deepEqual(out.feature_damage_resistances,['bludgeoning','piercing','slashing']);
   assert(classFeatureRollAdvantage(active,out,'save:str'));
-  assert(classFeatureRollAdvantage(active,out,'skill:athletics'));
+  assert(!classFeatureRollAdvantage(active,out,'skill:athletics'),
+   'Poisoned cancels the advantage granted by Rage on Strength checks');
   assert(!classFeatureRollAdvantage(active,out,'save:dex'));
   assert.throws(()=>spellCastPlan(active,{id:'light',level:0},0,out),/Ira/);
   const trait=out.features.find(f=>f.name==='Rage');
