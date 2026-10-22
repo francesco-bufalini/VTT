@@ -137,7 +137,10 @@ try{
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
  // Exercise damage-type localization without changing saved creature data.
- await damageButton.evaluate(node=>{node.dataset.damageType='slashing';});
+ await damageButton.evaluate(node=>{
+   node.dataset.damageFormula='1d6+3+2d4';
+   node.dataset.damageType='slashing;fire';
+ });
  await damageButton.click();
  const rollDialog=page.locator('#sheet-roll-dialog');
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
@@ -151,7 +154,16 @@ try{
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
    'Damage rolls must not offer an advantage/disadvantage mechanic');
+ assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+   ['Tagliente','Tagliente','Fuoco']);
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
+   ['1d6','+3','+2d4']);
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
+ assert(await rollDialog.locator('.sheet-roll-origin-symbol').first().evaluate(node=>{
+   const computed=getComputedStyle(node);
+   return computed.whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1;
+ }),'The formula must remain unbroken and unclipped in its tile');
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
  const layout=async()=>rollDialog.evaluate(dialog=>{
@@ -367,6 +379,18 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
+ // A class saving-throw proficiency must navigate to the exact granted
+ // proficiency trait, never a random feature or the generic bonus editor.
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
+ assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
+ await proficiencyLink.click();
+ assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
+ const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
+ assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
+ assert.equal(await granted.getAttribute('open'),'');
+ assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
+ assert.match(await granted.textContent(),/Intelligenza/);
  await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
