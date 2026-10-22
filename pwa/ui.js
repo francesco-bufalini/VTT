@@ -2945,7 +2945,7 @@ async function handleAction(target){
     const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
     const preview=damageRollTerms(formula);
     openUnifiedRollDialog({kind:'damage',heading:'Danni · '+label,modifier:preview.modifier,
-      rollType:'Danni'+(type?' · '+type:''),formula:sheetRollOriginHtml(preview.segments,esc),
+      rollType:'Tiro per danni'+(type?' · '+type:''),formula:sheetRollOriginHtml(preview.segments,esc),
       creatureId:state.editor.read().id||'',damageFormula:formula,damageLabel:label,damageType:type});
     return;
   }
