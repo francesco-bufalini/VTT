@@ -35,7 +35,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(),
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -955,7 +955,7 @@ function inventoryEquipmentView(c,calculated={}){
         '<option value="'+value+'"'+((c.attack_ability||"str")===value?' selected':'')+'>'+label+'</option>').join('')+
     '</select></label>'+
     '<label class="check"><input type="checkbox" data-field="attack_ability_finesse_only"'+
-      (c.attack_ability_finesse_only!==false?' checked':'')+'>Solo Accurata</label>'+
+      (c.attack_ability_finesse_only!==false?' checked':'')+'>Usa solo per armi accurate</label>'+
     (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
       (c.hand_grip_two_handed?' checked':'')+'>Due mani (Versatile)</label>':'')+
     '</div>';
@@ -2253,6 +2253,10 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   }
 }
 function readActionVariants(){
+ const selected=state.editor?.read()?.action_variants_2014;
+ if(Array.isArray(selected))return selected;
+ // Older versions kept these globally; the fallback is read-only until saved
+ // explicitly for this character, so other characters keep distinct choices.
  try{const choices=JSON.parse(window.localStorage.getItem('vtt.actionVariants.2014')||'[]');return Array.isArray(choices)?choices:[];}catch{return [];}
 }
 function decorateSheetHeadings(){
@@ -2284,7 +2288,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated)):null,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
@@ -2353,6 +2357,9 @@ function fillAppliedSpellOptions(query=''){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='battle-toggle-class-only'){
+    state.battleOnlyClass=!state.battleOnlyClass;await render();return;
+  }
   if(act==='battle-expand-all'||act==='battle-collapse-all'){
     const expanded=act==='battle-expand-all';
     for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure, #sheet-play-view .play-battle-action-group')){
@@ -2406,7 +2413,7 @@ async function handleAction(target){
     const calculated=await computeLocalData(c);
     const panels=battleActionPanels(c,calculated,state.spellCatalog||[],state.featureActionOverrides||[],
       state.generalActionSupplements||[],readActionVariants(),
-      abilitiesForCreature(c,state.abilityCatalog||[],calculated));
+      abilitiesForCreature(c,state.abilityCatalog||[],calculated),state.battleOnlyClass);
     const requested=String(target.dataset.abilityId||'');
     const power=requested.startsWith('activated:')?
       abilitiesForCreature(c,state.abilityCatalog||[],calculated)
@@ -2613,7 +2620,7 @@ async function handleAction(target){
     const enabled=readActionVariants();
     dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
     dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!row.textContent.toLocaleLowerCase('it').includes(e.target.value.toLocaleLowerCase('it'));});
-    dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{window.localStorage.setItem('vtt.actionVariants.2014',JSON.stringify([...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value)));dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
+    dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{const selected=[...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value);await patch({action_variants_2014:selected});dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
     dialog.querySelector('[data-close-variants]').addEventListener('click',()=>dialog.remove());
     dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return;
   }
