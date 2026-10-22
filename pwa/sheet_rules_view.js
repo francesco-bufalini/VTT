@@ -635,7 +635,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      'Taglia '+(c.size_name||'Medium'),
      c.default_miniature_id?'Miniatura base assegnata':'Miniatura base da assegnare',
      c.current_miniature_id&&c.current_miniature_id!==c.default_miniature_id?'Forma alternativa attiva':''].filter(Boolean).join(' · '):
-    title==='Background'?(c.background||'Nessun background assegnato'):
+    title==='Background'?([c.background,...(c.backgrounds_catalog||[]).filter(row=>!row.disabled).map(row=>row.name)].filter(Boolean).join(' · ')||'Nessun background assegnato'):
     title.includes('Classi')?
      [classNames||'Nessuna classe assegnata',c.subclass?'Sottoclasse '+c.subclass:'',
       'Livello totale '+totalClassLevel,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
