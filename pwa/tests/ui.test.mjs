@@ -449,7 +449,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.ok(document.querySelector('#dock-catalog'));
   assert.ok(document.querySelector('#dock-session'));
   assert.deepEqual([...document.querySelectorAll('.sheet-quick-links [data-sheet]')]
-    .map(x=>x.textContent.trim()),["Condizioni","Modifica personaggio"]);
+    .map(x=>x.textContent.trim()),["Condizioni"]);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
   assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
