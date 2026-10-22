@@ -3289,21 +3289,99 @@ async function handleAction(target){
     if(act==='tracker-turn'){
       await patch(current=>recoveryPatch(current,'turn',calculated.trackers));await render();return;
     }
-    const event=act==='tracker-long'?'long_rest':'short_rest';
-    const dice={};
-    if(event==='short_rest'){
-      for(const control of app.querySelectorAll('#sheet-context-dialog [data-rest-die]')){
-        dice['d'+control.dataset.restDie]=Number(control.value);
-      }
+    const dialog=app.querySelector('#sheet-context-dialog');
+    if(!dialog||dialog.dataset.context!=='rests')throw Error('Apri il pannello Riposi prima di continuare.');
+    const event=act==='tracker-long'?'long_rest':'short_rest',dice={};
+    if(event==='short_rest')for(const control of dialog.querySelectorAll('[data-rest-die]'))
+      dice['d'+control.dataset.restDie]=Number(control.value);
+    // Preview is deterministic; no die is rolled and no creature is changed.
+    const minimum=completeRest(record,event,calculated,dice,()=>1);
+    const maximum=completeRest(record,event,calculated,dice,sides=>sides);
+    const trackers=(calculated.trackers||[]).filter(row=>row.spent>0&&
+      (row.recharge===event||event==='long_rest'&&row.recharge==='short_rest'));
+    const recovered=trackers.map(row=>row.name+': '+row.spent+' usi recuperati');
+    const pact=Number(record.pact_slots_spent||0);
+    if(pact)recovered.push('Magia del Patto: '+pact+' slot recuperati');
+    if(event==='long_rest'){
+      const slots=(record.spell_slots_spent||[]).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
+      if(slots)recovered.push('Slot incantesimo: '+slots+' recuperati');
+      const pools=hitDicePools(record,calculated);
+      const before=pools.reduce((sum,p)=>sum+p.spent,0);
+      const after=Object.values(minimum.patch.hit_dice_spent||{}).reduce((sum,n)=>sum+Number(n||0),0);
+      if(before>after)recovered.push('Dadi Vita: '+(before-after)+' recuperati');
+      if(Number(record.exhaustion)>0)recovered.push('Indebolimento: un livello rimosso');
     }
-    let result;
-    await patch(current=>{
-      result=completeRest(current,event,calculated,dice);
-      return result.patch;
+    const extra=dialog.querySelector('.sheet-context-body');
+    extra.querySelector('.play-rest-choices')?.setAttribute('hidden','');
+    extra.querySelector('.play-rest-dice')?.setAttribute('hidden','');
+    extra.querySelector('[data-rest-preview]')?.remove();
+    const chosen=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
+    const preview=document.createElement('section');
+    preview.className='play-rest-confirm';preview.dataset.restPreview=event;
+    preview.dataset.restDice=JSON.stringify(dice);
+    preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+
+      '<p><strong>PF recuperabili:</strong> '+(event==='long_rest'?minimum.healed:minimum.healed+'–'+maximum.healed)+
+      (event==='short_rest'?' · '+chosen+' Dadi Vita da spendere':'')+'</p>'+
+      '<p><strong>Recuperi previsti:</strong></p>'+
+      (recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
+       '<p>Nessun altro recupero disponibile.</p>')+
+      (event==='short_rest'&&chosen?
+        '<label>Come determinare i risultati dei Dadi Vita<select data-rest-roll-mode><option value="roll">Tira in app</option><option value="manual">Inserisci i risultati</option></select></label>'+
+        '<label data-rest-manual-label hidden>Risultato di ciascun dado, separato da virgole'+
+        '<input type="text" data-rest-manual-results placeholder="Es. 5, 7, 3" autocomplete="off" inputmode="text"></label>':'')+
+      '<p data-rest-error class="warning" role="alert"></p>'+
+      '<div class="actions"><button type="button" class="btn primary" data-act="tracker-rest-confirm">Conferma riposo</button>'+
+      '<button type="button" class="btn" data-act="tracker-rest-back">Indietro</button></div>';
+    extra.append(preview);
+    preview.querySelector('[data-rest-roll-mode]')?.addEventListener('change',event=>{
+      preview.querySelector('[data-rest-manual-label]').hidden=event.target.value!=='manual';
     });
-    await render();
-    const detail=result.rolls.length?' · '+result.rolls.map(r=>'d'+r.die+': '+r.roll+(r.modifier>=0?'+':'')+r.modifier).join(', '):'';
-    message((event==='long_rest'?'Riposo lungo':'Riposo breve')+' completato · '+result.healed+' PF recuperati'+detail);
+    return;
+  }
+  if(act==='tracker-rest-back'){
+    const dialog=app.querySelector('#sheet-context-dialog');
+    dialog?.querySelector('[data-rest-preview]')?.remove();
+    dialog?.querySelector('.play-rest-choices')?.removeAttribute('hidden');
+    dialog?.querySelector('.play-rest-dice')?.removeAttribute('hidden');
+    return;
+  }
+  if(act==='tracker-rest-confirm'){
+    const dialog=app.querySelector('#sheet-context-dialog');
+    const preview=dialog?.querySelector('[data-rest-preview]');
+    if(!preview||preview.dataset.restDone==='true')throw Error('Conferma del riposo non disponibile.');
+    const event=preview.dataset.restPreview,dice=JSON.parse(preview.dataset.restDice||'{}');
+    const current=state.editor.read(),calculated=await computeLocalData(current);
+    const manual=preview.querySelector('[data-rest-roll-mode]')?.value==='manual';
+    const values=manual?String(preview.querySelector('[data-rest-manual-results]')?.value||'').split(/[,;\\s]+/).filter(Boolean).map(Number):[];
+    const expected=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
+    const diceOrder=hitDicePools(current,calculated).filter(pool=>dice['d'+pool.die]>0)
+      .flatMap(pool=>Array(Number(dice['d'+pool.die])).fill(pool.die));
+    if(manual&&(values.length!==expected||values.some((number,i)=>!Number.isInteger(number)||number<1||number>diceOrder[i]))){
+      preview.querySelector('[data-rest-error]').textContent='Inserisci un risultato valido per ciascuno dei '+expected+' Dadi Vita.';return;
+    }
+    const button=preview.querySelector('[data-act="tracker-rest-confirm"]');button.disabled=true;
+    try{
+      let result;
+      await patch(record=>{
+        let index=0;
+        result=completeRest(record,event,calculated,dice,manual?()=>values[index++]:randomDie);
+        return result.patch;
+      });
+      if(state.saveError)throw Error(state.saveError);
+      await state.editor.flush();
+      preview.dataset.restDone='true';
+      const summary=dialog.querySelector('.sheet-context-body');
+      const rolled=result.rolls.length?'<ul>'+result.rolls.map(r=>
+        '<li>d'+r.die+' = '+r.roll+' · COS '+(r.modifier>=0?'+':'')+r.modifier+
+        ' · recupero '+r.healed+' PF</li>').join('')+'</ul>':'';
+      summary.innerHTML='<div class="play-rest-confirm"><h3>Riposo completato</h3>'+
+        '<p><strong>'+result.healed+' PF recuperati.</strong></p>'+rolled+
+        '<p>Risorse, slot e Dadi Vita aggiornati secondo le regole del riposo.</p>'+
+        '<button type="button" class="btn primary" data-act="sheet-context-close">Chiudi</button></div>';
+    }catch(error){
+      button.disabled=false;
+      preview.querySelector('[data-rest-error]').textContent=errorMessage(error);
+    }
     return;
   }
   if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
