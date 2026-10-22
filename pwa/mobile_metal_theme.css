@@ -1633,3 +1633,10 @@ input:disabled{opacity:.75;cursor:default}
 .play-battle-expansion-tools{display:flex;flex-wrap:wrap;gap:7px}
 .play-health[role="button"]{cursor:pointer}
 .battle-second-form>h3{font-size:15px;font-weight:700;letter-spacing:.02em;color:#f3d4a2;margin:0 0 8px}
+
+.play-rest-choices[hidden],.play-rest-dice[hidden],[data-rest-manual-label][hidden]{display:none!important}
+.play-rest-confirm{display:grid;gap:10px}
+.play-rest-confirm h3{font-size:16px;margin:0;color:#f3d4a2}
+.play-rest-confirm p{margin:0}
+.play-rest-confirm ul{margin:0;padding-left:20px}
+.play-rest-confirm [data-rest-error]:empty{display:none}
