@@ -347,12 +347,15 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(event.notation,/^1d20/);
   assert.match(event.detail,/d20 \[\d+\] =/);
   assert.ok(Number.isInteger(event.total)&&event.total>=1);
-  assert.equal(document.querySelector('[data-roll-chat-status]')?.hidden,true,
-    'Successful chat delivery does not add explanatory text');
+  assert.equal(document.querySelector('[data-roll-chat-status]'),null,
+    'Roll popup has no redundant warning stripe');
+  assert.equal(document.querySelectorAll('.sheet-roll-die-value').length,1,
+    'Single-die outcome is rendered as one concise value');
   await until(()=>document.querySelector('[data-act="roll-sheet-confirm"]').disabled===false);
   assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,false,
     'After a result the player can roll again without reopening the popup');
-  assert.ok(document.querySelector('[data-act="sheet-roll-add-bonus"]'));
+  assert.equal(document.querySelector('[data-act="sheet-roll-add-bonus"]'),null,
+    'Bonus control appears only when selectable dice are available');
   assert.equal(document.querySelector('[data-act="sheet-roll-edit-bonus"]'),null);
   assert.match(document.querySelector('#sheet-roll-dialog').textContent,/Tiro salvezza/);
   click('[data-act="roll-sheet-confirm"]');
