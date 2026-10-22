@@ -130,55 +130,57 @@ const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
+const REFERENCE_SECTIONS=[['conditions','Condizioni','condition'],['origins','Modifica personaggio','settings']];
 const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
-function navigationButton(key,title,description='',menu=false){
-  const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
-  const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
-  return '<button type="button" class="btn '+(description||menu?'navigation-row':'dock-destination')+'" data-act="sheet" data-sheet="'+key+'" aria-pressed="'+current+'" aria-label="'+esc(fullTitle)+'">'+actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span><span class="destination-label">'+esc(title)+'</span>'+(description?'<small>'+esc(description)+'</small>':'')+'</span>'+(description||menu?'<span class="navigation-chevron" aria-hidden="true">›</span>':'')+'</button>';
+function navigationButton(key,title){
+  const current=state.page==='library'&&!state.libraryMode&&
+    (state.sheet===key||(key==='info'&&['conditions','origins','json'].includes(state.sheet)));
+  return '<button type="button" class="btn dock-destination" data-act="sheet" data-sheet="'+key+
+    '" aria-pressed="'+current+'" aria-label="'+esc(title)+'">'+
+    actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span class="destination-label">'+esc(title)+'</span></button>';
 }
-function closeNavigation(restoreFocus=false){
-  const dialog=document.querySelector('#navigation-dialog');
-  if(dialog.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
-  document.querySelector('#more-navigation').setAttribute('aria-expanded','false');
-  if(restoreFocus)document.querySelector('#more-navigation').focus();
-}
-function openNavigation(){
-  const dialog=document.querySelector('#navigation-dialog');
-  if(dialog.open)return;
-  document.querySelector('#more-navigation').setAttribute('aria-expanded','true');
-  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+function sheetQuickLinks(){
+  // These destinations previously lived under Altro; keep both available.
+  const links=[['info','Info','information'],...REFERENCE_SECTIONS];
+  return '<nav class="sheet-quick-links" aria-label="Strumenti del personaggio">'+
+    links.filter(([key])=>key!==state.sheet).map(([key,title,glyph])=>
+      '<button type="button" class="sheet-quick-button" data-act="sheet" data-sheet="'+key+'">'+
+      actionGlyph(glyph)+'<span>'+esc(title)+'</span></button>').join('')+
+    '</nav>';
 }
 function syncNav(){
-  const creature=state.editor?.read()||(state.cachedCreatures||[]).find(x=>x.id===state.creatureId);
-  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
-  if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):'VTT Mobile';
+  const hasCreature=Boolean(state.creatureId)&&!state.libraryMode;
+  const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
+  const label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
+  const back=document.querySelector('#creature-back'),primary=document.querySelector('#sheet-navigation');
+  const dock=document.querySelector('#mobile-tabs'),catalogTab=document.querySelector('#dock-catalog');
+  const sessionTab=document.querySelector('#dock-session');
+  back.hidden=!hasCreature;
+  if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):
+    state.page==='catalog'?'Catalogo':state.page==='session'?'Partita':'VTT Mobile';
   if(classLabel){
     const members=hasCreature?localClasses(creature||{}):[];
     classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
     classLabel.hidden=!members.length;
   }
-  const dock=document.querySelector('#mobile-tabs'),primary=document.querySelector('#sheet-navigation'),more=document.querySelector('#more-navigation');
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
-  primary.hidden=!hasCreature;more.hidden=!hasCreature;
-  const sessionTab=document.querySelector('#dock-session');
-  sessionTab.hidden=!hasCreature;
-  sessionTab.innerHTML=actionGlyph('map')+'<span class="destination-label">Partita</span>';
-  if(state.page==='session')sessionTab.setAttribute('aria-current','page');else sessionTab.removeAttribute('aria-current');
-  more.innerHTML=actionGlyph('details')+'<span>Altro</span>';
-  const secondary=state.page==='library'&&!state.libraryMode&&!PLAY_SECTIONS.some(([key])=>key===state.sheet);
-  more.classList.toggle('is-current',secondary||state.page!=='library'||state.libraryMode);
-  more.setAttribute('aria-label',secondary?'Altro · '+(SECTION_COPY[state.sheet]?.[0]||'Scheda'):'Altro');
-  document.querySelector('#secondary-sheet-navigation').innerHTML=REFERENCE_SECTIONS.map(([key,title])=>navigationButton(key,title,'',true)).join('');
-  const destination=hasCreature?document.querySelector('#global-navigation-slot'):dock;
-  if(nav.parentElement!==destination)destination.prepend(nav);
+  primary.hidden=!hasCreature;
+  nav.hidden=hasCreature;
   dock.classList.toggle('has-creature',hasCreature);
-  for(const [page,glyph,title,description] of [['library','proficiency','Creature','Cambia personaggio, importa o crea'],['catalog','book','Catalogo','Cerca oggetti, incantesimi e contenuti'],['session','map','Partita','Mappa, chat, dadi e collegamento']]){
+  catalogTab.hidden=!hasCreature;
+  sessionTab.hidden=!hasCreature;
+  for(const [button,page,glyph,title] of [
+    [catalogTab,'catalog','book','Catalogo'],[sessionTab,'session','map','Partita']]){
+    button.innerHTML=actionGlyph(glyph)+'<span class="destination-label">'+title+'</span>';
+    if(state.page===page)button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  }
+  for(const [page,glyph,title] of [['library','proficiency','Creature'],['catalog','book','Catalogo'],['session','map','Partita']]){
     const button=nav.querySelector('[data-nav="'+page+'"]');
-    const current=state.page===page&&(page!=='library'||state.libraryMode||!hasCreature);
-    button.className='btn '+(hasCreature?'navigation-row':'dock-destination');
-    button.innerHTML=actionGlyph(glyph)+'<span><span class="destination-label">'+title+'</span></span>'+(hasCreature?'<span class="navigation-chevron" aria-hidden="true">›</span>':'');
-    if(current)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+    button.className='btn dock-destination';
+    button.innerHTML=actionGlyph(glyph)+'<span class="destination-label">'+title+'</span>';
+    if(state.page===page)button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
   }
   connection.textContent=state.paired&&state.online?'● Collegato':state.online?'● Desktop disponibile':state.hostReachable?'○ Nessuna partita':'○ Offline';
   connection.title=state.paired&&state.online?'Partita collegata':state.online?'Desktop in partita':state.hostReachable?'Nessuna partita aperta':'Archivio locale disponibile offline';
@@ -224,7 +226,7 @@ async function restoreBrowserScreen(screen){
     const oldCreatureId=state.creatureId;
     state.page=screen.page;
     state.libraryMode=Boolean(screen.libraryMode);
-    state.creatureId=screen.creatureId||null;
+    state.creatureId=state.libraryMode?null:(screen.creatureId||null);
     state.sheet=screen.sheet;
     state.detail=screen.detail||'overview';
     state.sessionPane=screen.sessionPane||'';
@@ -232,7 +234,6 @@ async function restoreBrowserScreen(screen){
     state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
     if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
     state.sheetPopup='';state.magicPopup='';
-    closeNavigation();
     await render();
     window.scrollTo(0,0);
     app.focus({preventScroll:true});
@@ -265,6 +266,7 @@ async function navigate(page){
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
   state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  if(page==="library")state.creatureId=null;
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
@@ -361,8 +363,8 @@ async function libraryView() {
     (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
       '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
       '<span class="library-header-spacer" aria-hidden="true"></span>')+
-    '<span class="library-list-count">'+rows.length+' '+(rows.length===1?'scheda':'schede')+'</span>'+
-    '<button type="button" class="library-add-button" data-act="library-add" aria-label="Aggiungi personaggio" title="Aggiungi personaggio">+</button>'+
+    '<span class="library-list-count"><span class="library-count-number">'+rows.length+'</span> '+(rows.length===1?'scheda':'schede')+'</span>'+
+    '<button type="button" class="library-add-button" data-act="library-add" aria-label="Aggiungi personaggio" title="Aggiungi personaggio"><span aria-hidden="true">+</span></button>'+
     '</div><div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
       librarySelectionActions()+'</div>'+
     '<div class="library-rows">'+list+'</div></section>'+
@@ -671,7 +673,9 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
+    (['info','conditions','origins'].includes(state.sheet)?sheetQuickLinks():'')+
+    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -2655,8 +2659,6 @@ async function handleAction(target){
     if(source.dataset.magicTool){state.sheetPopup='';app.querySelector('#sheet-context-dialog')?.close?.();}
     await handleAction(source);return;
   }
-  if(act==='navigation-open'){openNavigation();return;}
-  if(act==='navigation-close'){closeNavigation(true);return;}
   if(act==='session-pane'){state.sessionPane=target.dataset.sessionPane;await render();return;}
   if(act==='catalog-close'){state.catalogSelected=-1;await render();return;}
   if(act==="open-place-token"){
@@ -3477,9 +3479,9 @@ async function handleAction(target){
   }
   if(act==="open"){state.magicPopup="";state.creatureId=target.dataset.id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;}
   if(act==="back"){
-    state.magicPopup="";
-    try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
-    state.editor=null;state.libraryMode=true;await render();return;
+    await navigate("library");
+    window.scrollTo(0,0);app.focus({preventScroll:true});
+    return;
   }
   if(act==="sheet"){
     state.magicPopup="";
@@ -3962,9 +3964,6 @@ function listen(){
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
   });
-  const navigation=document.querySelector('#navigation-dialog');
-  navigation.addEventListener('close',()=>document.querySelector('#more-navigation').setAttribute('aria-expanded','false'));
-  navigation.addEventListener('click',event=>{if(event.target!==navigation)return;const rect=navigation.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeNavigation(true);});
   document.addEventListener("click", async e=>{
     const button=e.target.closest("button[data-nav],button[data-act]");
     if(!button){
@@ -3981,7 +3980,6 @@ function listen(){
     try {
       await flushPendingFields();
       const isDestination=Boolean(button.dataset.nav)||button.dataset.act==='sheet';
-      if(isDestination)closeNavigation();
       if(button.dataset.nav)await navigate(button.dataset.nav);
       else await handleAction(button);
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
