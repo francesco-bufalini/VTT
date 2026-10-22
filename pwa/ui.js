@@ -127,12 +127,12 @@ function errorMessage(error) {
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
- magic:'spark',inventory:'inventory',conditions:'condition',origins:'settings'};
+ magic:'spark',inventory:'inventory',conditions:'condition'};
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione'],['origins','Modifica personaggio','Origini, bonus e regole della scheda']];
-const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],origins:['Modifica personaggio','Personalizza origini, competenze e benefici.'],json:['Editor avanzato','Documento completo della scheda.']};
+const REFERENCE_SECTIONS=[['conditions','Condizioni','Stati attivi e concentrazione']];
+const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title,description='',menu=false){
   const current=state.page==='library'&&!state.libraryMode&&state.sheet===key;
   const fullTitle=sheetSections.find(([id])=>id===key)?.[1]||title;
@@ -233,7 +233,7 @@ async function restoreBrowserScreen(screen){
     state.inventorySubtab=screen.inventorySubtab||'items';
     state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
     if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
-    state.sheetPopup='';state.magicPopup='';
+    state.sheetPopup='';state.magicPopup='';state.traitPopupKey='';
     closeNavigation();
     await render();
     window.scrollTo(0,0);
@@ -266,7 +266,7 @@ async function navigate(page){
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
-  state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
+  state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
@@ -480,11 +480,12 @@ function promptEndWildShape(creatureId){
 }
 async function editorView() {
   if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
+  if(state.sheet==='origins')state.sheet='info';
   const c = state.editor.read();
   // The persistent header owns creature identity and tab navigation.
   let body = "";
-  if(['info','origins'].includes(state.sheet)){
-    await Promise.all(["races","classes","subclasses","backgrounds",...(['info','origins'].includes(state.sheet)?['feats']:[])].map(async key=>{
+  if(state.sheet==='info'){
+    await Promise.all(["races","classes","subclasses","backgrounds",...['feats']].map(async key=>{
       if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
       catch{ /* References stay editable offline. */ }
     }));
@@ -496,7 +497,7 @@ async function editorView() {
     state.actionCatalogError=generalRules.status==='rejected'?
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls"||state.sheet==='origins'&&state.detail==='origin_spell_grants')&&!state.spellCatalog){
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
     try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
     catch(error){state.spellCatalogError=errorMessage(error);}
   }
@@ -638,7 +639,7 @@ async function editorView() {
       btn("save-json","Salva modifiche JSON","primary")+'</div>');
     break;
   }
-  return header(['info','origins','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+  return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+'<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -2667,7 +2668,7 @@ async function handleAction(target){
     await patch({active_class_features:effects});await render();return;
   }
 
-  if(act==='sheet-origin-editor'){state.sheetPopupTitle=target.textContent.trim();state.detail=target.dataset.detail;state.sheetPopup='origin-editor';await render();return;}
+
   if(act==='sheet-proxy'){
     const source=state.sheetSources.get(target.dataset.sheetSource);if(!source)throw Error('Controllo non disponibile');
     if(source.disabled)return;
@@ -3279,20 +3280,8 @@ async function handleAction(target){
       match.open=true;match.scrollIntoView?.({block:'center'});
     }
     else {
-      // Missing catalog entries must not become dead provenance links.
-      const hasBonus=(state.calculated?.bonuses||[]).some(row=>row.origin_id===id)||
-        (state.calculated?.automatic_bonuses||[]).some(row=>row.origin_id===id);
-      state.sheet='origins';state.detail=hasBonus?'formula_bonuses':'overview';await render();
-      if(hasBonus){
-        const auto=(state.calculated?.automatic_bonuses||[]).find(row=>row.origin_id===id);
-        const manual=(state.editor?.read()?.formula_bonuses||[]).findIndex(row=>row.origin_id===id);
-        const el=manual>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+manual+'"]'):
-          auto?[...app.querySelectorAll('[data-auto-bonus]')].find(el=>el.dataset.autoBonus===auto.id):null;
-        el?.scrollIntoView?.({block:'center'});
-      }else{
-        [...app.querySelectorAll('[data-origin-enabled]')].find(el=>el.dataset.originEnabled===id)
-          ?.scrollIntoView?.({block:'center'});
-      }
+      // A missing provenance should never open the retired origins editor.
+      message('Tratto non trovato nella scheda.');
     }
     return;
    }
@@ -3380,19 +3369,7 @@ async function handleAction(target){
     return;
   }
   if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
-    if(act==='sheet-roll-edit-bonus'){
-      const dialog=document.querySelector('#sheet-roll-dialog');
-      dialog?.close?.();dialog?.remove();
-    }
-    const c=state.editor.read(),targetKey=target.dataset.target;
-    const rows=rowsFor(c,'formula_bonuses');
-    if(!rows.some(row=>row.target===targetKey&&!row.automatic)){
-      rows.push({id:'bonus_'+crypto.randomUUID(),target:targetKey,expression:'0',origin_id:'',origin_name:'',disabled:false,automatic:false});
-      await patch({formula_bonuses:rows});
-    }
-    state.sheet='origins';state.detail='formula_bonuses';await render();
-    const index=rows.findIndex(row=>row.target===targetKey&&!row.automatic);
-    app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"][data-key="expression"]')?.focus();
+    message('Per aggiungere bonus apri Info → Tratti e usa il pulsante + nel popup benefici.');
     return;
   }
   if(act==="native-add"||act==="native-remove"){
