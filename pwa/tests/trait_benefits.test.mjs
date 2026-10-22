@@ -29,7 +29,7 @@ test('benefits are grouped and attached only to their own trait',()=>{
   'bonus','dice','proficiency','defenses','resources','spells','actions']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
- assert.equal(groups[0].items[0].id,'b1','bonus rows keep their editor target');
+ assert.equal(groups[0].items[0].id,'bonus:b1','bonus rows keep their stable editor identity');
  assert.equal(groups[1].items[0].value,'+1d4');
  assert.deepEqual(groups[2].items.map(item=>[item.label,item.value]),[
   ['Abilità','Percezione'],['Lingue','elvish']]);
@@ -84,8 +84,8 @@ test('species overview never includes subrace grants, and vice versa',()=>{
   origin_key:'subrace|phb|high elf'},record,calculated);
  assert.equal(species.some(group=>group.items.some(item=>item.id==='sub'||item.value==='elvish')),false);
  assert.equal(subrace.some(group=>group.items.some(item=>item.id==='base'||item.value==='Percezione')),false);
- assert.equal(species.find(group=>group.type==='bonus').items[0].id,'base');
- assert.equal(subrace.find(group=>group.type==='bonus').items[0].id,'sub');
+ assert.equal(species.find(group=>group.type==='bonus').items[0].id,'bonus:base');
+ assert.equal(subrace.find(group=>group.type==='bonus').items[0].id,'bonus:sub');
 });
 
 test('resistances, immunities and vulnerabilities share one ordered section',()=>{

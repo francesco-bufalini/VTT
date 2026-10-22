@@ -39,7 +39,7 @@ try{
  const section=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())
    await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  const target=['conditions','origins'].includes(key)?
+  const target=['conditions'].includes(key)?
    page.locator('.sheet-quick-links [data-sheet="'+key+'"]'):
    page.locator('#sheet-navigation [data-sheet="'+key+'"]');
   await target.click();
@@ -47,7 +47,7 @@ try{
  };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){

@@ -32,7 +32,7 @@ try{
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  if(['conditions','origins'].includes(key)){
+  if(['conditions'].includes(key)){
     if(!await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').isVisible()){
       await page.locator('#sheet-navigation [data-sheet="info"]').click();
       await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
@@ -85,7 +85,7 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['battle','magic','inventory','conditions','info','origins']){
+  for(const key of ['battle','magic','inventory','conditions','info']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
@@ -95,10 +95,10 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
- assert(await page.locator('.sheet-quick-links [data-sheet="origins"]').isVisible());
+ assert.equal(await page.locator('.sheet-quick-links [data-sheet="origins"]').count(),0);
  assert(await page.locator('.sheet-quick-links [data-sheet="info"]').isVisible());
  assert.equal(await page.locator('#navigation-dialog').count(),0);
- await sheet('origins');await shot('tools');
+ await shot('tools');
  await sheet('conditions');
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
