@@ -442,7 +442,7 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const actionName=opportunityWeapon?
   String(opportunityWeapon.name||'Arma')+' · '+item.name:item.name;
  if(item.check_target){
-  const key=String(item.check_target),stat=key.slice('ability_mod:'.length);
+  const key=String(item.check_target),stat=key.split(':')[1];
   const bonus=key.startsWith('skill:')?calculated.skills?.[key.slice(6)]:
    calculated.abilities?.[stat]?.modifier;
   addRoll(key,actionName,item.check_label||actionName,calculated.values?.[key]??bonus);
