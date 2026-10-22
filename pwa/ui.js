@@ -9,7 +9,7 @@ import { notificationsSupported, notificationsEnabled, toggleChatNotifications, 
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
-import { tokenGroups, snapshotRevision, snapshotBlob, casterToken } from "./session_map.js";
+import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
@@ -42,6 +42,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
+const sessionMapViewer=new SessionMapViewer();
 let tokenStatusFingerprint="";
 let tokenSyncQueue=Promise.resolve();
 let mapGeneration=0;
@@ -287,6 +288,7 @@ async function render() {
     const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
     const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    if(state.page==="session")sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
     if(pendingCode && app.querySelector("#pair-secret"))
       app.querySelector("#pair-secret").value=pendingCode;
     if(rememberPair!==undefined && app.querySelector("#pair-remember"))
@@ -1442,7 +1444,7 @@ function chatView(){
   return panel("Chat della partita",
     '<div class="row between chat-toolbar"><span class="chat-caption">'+
     (state.paired&&state.online?'Messaggi e tiri della partita':'Chat disponibile con una partita collegata')+
-    '</span>'+(notificationsSupported()?'<button type="button" class="btn chat-notify-toggle" data-act="toggle-chat-notifications" aria-label="Notifiche chat" title="Notifiche di sistema (mentre la PWA è attiva)">'+(notificationsEnabled()?'🔔 Attive':'🔕 Notifiche')+'</button>':'')+'<button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
+    '</span>'+(notificationsSupported()?'<button type="button" class="btn chat-notify-toggle" data-act="toggle-chat-notifications" aria-label="Notifiche chat" title="Notifiche di sistema (mentre la PWA è attiva)">'+(notificationsEnabled()?'🔔 Attive':Notification.permission==='default'?'🔔 Autorizza':'🔕 Notifiche')+'</button>':'')+'<button type="button" class="btn chat-dice-trigger" data-act="open-chat-dice" aria-label="Apri lanciadadi" title="Lancia i dadi">🎲</button></div>'+
     (state.paired?
     '<div id="events" class="scroll-y" aria-live="polite">'+renderEvents()+'</div>'+
     '<form id="chat-form" class="stack" autocomplete="off">'+
@@ -1460,6 +1462,26 @@ function renderEvents() {
       '</div></article>').join("") :
     '<p class="hint">Nessun evento recente. La cronologia è disponibile mentre il desktop è collegato.</p>';
 }
+function sessionTokenDetails(token) {
+  const edition=token.rules_version==="2024"?"2024":"2014";
+  const conditionNames=Array.isArray(token.conditions)?[...new Set(token.conditions)].filter(Boolean).map(id=>{
+    const row=(state.conditionCatalog?.editions?.[edition]||[]).find(item=>item.id===id);
+    return conditionLabel(id,row?.name||"");
+  }):[];
+  const spellIds=Array.isArray(token.active_spell_ids)?[...new Set(token.active_spell_ids)]:[];
+  const spellName=id=>(state.spellCatalog||[]).find(row=>row.id===id)?.name||id;
+  const effects=spellIds.filter(Boolean).map(id=>spellName(id));
+  if(token.concentrating_spell_id&&!spellIds.includes(token.concentrating_spell_id))
+    effects.push("Concentrazione: "+spellName(token.concentrating_spell_id));
+  const identity=[token.party_id?"Fazione: "+token.party_id:"",
+    token.size_name?"Taglia: "+token.size_name:""].filter(Boolean);
+  return '<span class="session-token-labels"><strong>'+esc(token.name)+
+    (token.free?' <small>· libero</small>':'')+'</strong>'+
+    (identity.length?'<span class="session-status-line">'+esc(identity.join(" · "))+'</span>':'')+
+    (conditionNames.length?'<span class="session-status-line" title="'+esc(conditionNames.join(", "))+'">Stati: '+esc(conditionNames.join(", "))+'</span>':'')+
+    (effects.length?'<span class="session-status-line" title="'+esc(effects.join(", "))+'">Incantesimi: '+esc(effects.join(", "))+'</span>':'')+
+    '</span>';
+}
 function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
   return rows.map(token => token.environment ?
     '<div class="session-token-row session-environment-row'+(activeEnvironment?' active':'')+'"' +
@@ -1473,7 +1495,7 @@ function sessionTokenRows(rows, turnId="", activeEnvironment=false) {
     '<button type="button" class="session-token-name" data-act="select-token" data-id="'+esc(token.id)+
     '" aria-pressed="'+(state.tokenId===token.id)+'">'+
     (token.id===turnId?'<span class="session-turn" aria-label="Turno attivo">▶</span>':'')+
-    '<span>'+esc(token.name)+(token.free?' <small>· libero</small>':'')+'</span></button>'+
+    sessionTokenDetails(token)+'</button>'+
     (token.initiative!==undefined?'<span class="session-initiative" title="Iniziativa">'+esc(token.initiative)+'</span>':'')+
     '<button class="btn small session-edit-btn" type="button" data-act="edit-token" data-id="'+esc(token.id)+
     '" aria-label="Modifica '+esc(token.name)+'" title="Condizioni, incantesimi e miniatura">⚙</button></div>').join('');
@@ -1505,14 +1527,14 @@ function sessionView() {
   const snapshotMatches=state.liveSnapshot?.token_id===state.tokenId;
   html+='<section class="panel session-map-panel" aria-label="Mappa della partita">'+
     '<div class="session-map-stage">'+
-    (image?'<img id="session-map-image" src="'+image+'" alt="Snapshot della mappa desktop" draggable="false">':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il desktop è collegato')+'</span></div>')+
+    (image?'<canvas id="session-map-canvas" role="img" aria-label="Mappa della partita: trascina per spostarti, pizzica per ingrandire"></canvas>':'<div class="session-map-placeholder">⧉<span>'+(online?'Acquisizione mappa…':'Mappa disponibile quando il desktop è collegato')+'</span></div>')+
     (state.snapshotPending||image&&!snapshotMatches?'<span class="session-map-loading" role="status">Aggiornamento…</span>':'')+
     '</div>'+
     (selected?'<div class="session-selected-controls"><strong>'+esc(selected.name)+'</strong>'+
     '<div class="session-move-buttons" aria-label="Sposta il token">'+
     '<button type="button" class="btn small" data-act="move" data-direction="north" aria-label="Nord">↑</button>'+
-    '<button type="button" class="btn small" data-act="move" data-direction="west" aria-label="Ovest">←</button>'+
     '<button type="button" class="btn small" data-act="move" data-direction="south" aria-label="Sud">↓</button>'+
+    '<button type="button" class="btn small" data-act="move" data-direction="west" aria-label="Ovest">←</button>'+
     '<button type="button" class="btn small" data-act="move" data-direction="east" aria-label="Est">→</button>'+
     '<button type="button" class="btn small" data-act="move-up" aria-label="Quota più">+↑</button>'+
     '<button type="button" class="btn small" data-act="move-down" aria-label="Quota meno">−↓</button></div></div>':'')+
@@ -1583,6 +1605,7 @@ function renderSessionIfIdle() {
   const pendingCode=app.querySelector("#pair-secret")?.value||"";
   const rememberPair=app.querySelector("#pair-remember")?.checked;
   app.innerHTML=sessionView();
+  sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
   if(pendingCode && app.querySelector("#pair-secret"))
     app.querySelector("#pair-secret").value=pendingCode;
   if(rememberPair!==undefined && app.querySelector("#pair-remember"))
@@ -1617,8 +1640,7 @@ async function refreshSessionSnapshot(force=false) {
       state.liveSnapshot={token_id:result.token_id};
       // An open token editor deliberately blocks a whole session rerender.
       // Keep the image current without closing that dialog.
-      const image=app.querySelector("#session-map-image");
-      if(image)image.src=newUrl;
+      sessionMapViewer.setImage(newUrl);
       if(oldUrl)URL.revokeObjectURL(oldUrl);
     }catch(error){
       if(generation!==snapshotGeneration)return;
@@ -1737,7 +1759,8 @@ function startMap() {
     // Match Android's local ownership boundary: public token status is
     // projected into the linked sheet only, never the server's private data.
     const fingerprint=JSON.stringify(entries.map(row=>[row.id,row.conditions,
-      row.concentrating_spell_id,row.active_spell_ids,row.current_miniature_id,row.default_miniature_id]));
+      row.concentrating_spell_id,row.active_spell_ids,row.current_miniature_id,row.default_miniature_id,
+      row.party_id,row.size_name,row.footprint_cells]));
     if(fingerprint!==tokenStatusFingerprint){
       tokenSyncQueue=tokenSyncQueue.then(async()=>{
         if(generation!==mapGeneration)return;
@@ -3482,6 +3505,7 @@ async function handleAction(target){
     return;
   }
   if(act==="select-token"){
+    if(state.tokenId!==target.dataset.id)sessionMapViewer.reset();
     state.tokenId=target.dataset.id;
     await render();
     app.querySelector(".session-map-panel")?.scrollIntoView?.({behavior:"smooth",block:"start"});
