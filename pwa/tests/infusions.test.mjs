@@ -115,3 +115,10 @@ test("infusions require their granting trait, not mere class ownership",()=>{
  const legacy={...record};delete legacy.prepared_optional_features;
  assert.equal(preparedInfusions(legacy,definitions).length,1,"Legacy learned infusions remain ready");
 });
+
+test('shared feature-selection module is served by Godot and cached offline',()=>{
+ const host=readFileSync(new URL('../../network/pwa_host.gd',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
+ assert.match(host,/["']\/feature_selection\.js["']\s*:\s*\[["']res:\/\/pwa\/feature_selection\.js["']/);
+ assert.match(worker,/'?\/feature_selection\.js'?/);
+});
