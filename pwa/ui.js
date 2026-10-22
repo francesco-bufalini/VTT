@@ -21,7 +21,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol} from "./sheet_roll_origin.js";
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments} from "./sheet_roll_origin.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
@@ -771,7 +771,7 @@ async function traitsView(c){
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
-  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
+  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'"><summary>'+
     '<span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?'':' · disattivato')+'</span></summary>'+
     '<div class="trait-content">'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
@@ -2437,14 +2437,10 @@ function rollDamageType(type){
  return source?'Tipo di danno · '+(DAMAGE_LABELS[source.toLowerCase()]||source):
    'Tipo di danno non specificato';
 }
-function damageRollTerms(formula){
- // Validate using exactly the same restricted parser as the actual damage roll,
- // but with a fixed local die: no random result is consumed for the preview.
- const validated=rollBattleDamage(formula,()=>1);
- const terms=validated.notation.match(/[+-]?[^+-]+/g)||[];
- const segments=terms.map((term,i)=>({
-   key:'damage:'+i,kind:i===0?'base':'formula',formula:term,expanded:'',
-   originName:/d/i.test(term)?'Dadi danno':'Modificatore',originId:'',value:0
+function damageRollTerms(formula,damageType=''){
+ const validated=rollBattleDamage(formula,()=>1); // Preview never consumes randomness.
+ const segments=damageRollSegments(validated,damageType).map(row=>({
+   ...row,damageType:rollDamageType(row.damageType).replace(/^Tipo di danno · /,'')
  }));
  return {modifier:validated.modifier,segments};
 }
@@ -2960,9 +2956,9 @@ async function handleAction(target){
     const formula=String(target.dataset.damageFormula||'');
     if(!formula||!state.editor)throw Error('Danni non disponibili.');
     const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
-    const preview=damageRollTerms(formula);
+    const preview=damageRollTerms(formula,type);
     openUnifiedRollDialog({kind:'damage',heading:'Danni · '+label,modifier:preview.modifier,
-      rollType:rollDamageType(type),formula:sheetRollOriginHtml(preview.segments,esc),
+      rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
       creatureId:state.editor.read().id||'',damageFormula:formula,damageLabel:label,damageType:type});
     return;
   }
@@ -3215,11 +3211,12 @@ async function handleAction(target){
          name.startsWith(String(feature.name||'').toLowerCase()+' ·'));
     }):null;
     const match=cards.find(card=>card.dataset.traitFeature===id)||
+      cards.find(card=>card.dataset.traitProficiency===id)||
       matchedByName||
       cards.find(card=>card.dataset.traitOrigin===id||card.dataset.traitOrigin===normalized||
         (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key));
     if(match){
-      const disclosure=match.closest('.play-info-traits');
+      const disclosure=match.closest('.play-traits-disclosure');
       if(disclosure)disclosure.open=true;
       match.open=true;match.scrollIntoView?.({block:'center'});
     }
