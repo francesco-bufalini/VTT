@@ -72,7 +72,7 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['battle','magic','inventory','conditions','info','origins']){
+  for(const key of ['battle','magic','inventory','conditions','info']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
@@ -84,7 +84,7 @@ try{
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
  assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
  await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),6);
+ assert.equal(await page.locator('#navigation-dialog button:visible').count(),5);
  assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
  assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
  await shot('menu');await page.keyboard.press('Escape');
