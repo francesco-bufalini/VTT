@@ -772,18 +772,20 @@ async function traitsView(c){
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
   return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'"><summary>'+
-    '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span></summary>'+
+    '<span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?'':' · disattivato')+'</span></summary>'+
     '<div class="trait-content">'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     benefitDetails+
-    (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
+    (description?'<section class="trait-description-section"><h5 class="trait-description-heading">Descrizione</h5><p class="trait-description">'+esc(description)+'</p></section>':'')+
     toggler+'</div></details>';
  };
+ const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\\s*·\\s*/i,'');
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
   group.origins.map(origin=>
    '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
-   '<h4 class="trait-origin-title">'+esc(origin.title)+'</h4>'+
+   (['talenti','oggetti'].includes(group.id)?'':
+    '<h4 class="trait-origin-title">'+esc(originTitle(origin.title))+'</h4>')+
    origin.levels.map(tier=>
     (tier.level>=0?'<h5 class="trait-level">LIVELLO '+tier.level+'</h5>':'')+
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
