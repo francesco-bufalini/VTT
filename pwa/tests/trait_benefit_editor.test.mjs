@@ -6,7 +6,7 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 import {fixedProficiencies} from '../structured_effects.js';
 
 const trait={key:'feature:arcane|3|gift',name:'Arcane Gift',origin_key:'class|phb|wizard',
- feature_origin:'feature:trait:'+trait.key,category:'classi',level:3};
+ feature_origin:'feature:arcane',category:'classi',level:3};
 
 test('adding a benefit is an explicit pure patch, not a draft autosave',()=>{
  const creature={name:'Wizard',formula_bonuses:[]};
