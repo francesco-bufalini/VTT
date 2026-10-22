@@ -810,6 +810,15 @@ export function calculateSheet(record={},catalogs={}){
   const trackerMap=new Map();
   for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
     if(!trackerMap.has(row.id)&&sourceEnabled(row))trackerMap.set(row.id,row);
+  // Once per turn, the Lightning Launcher can add 1d6 lightning damage.
+  // Expose its actual trait origin and a regular turn-reset tracker.
+  const lightning=armorerWeapons(record,features).find(row=>row.id==='class_feature:lightning_launcher');
+  if(lightning){
+    const id='feature:lightning_launcher:extra_damage';
+    trackerMap.set(id,{id,name:'Lightning Launcher · danno aggiuntivo',max:1,
+      recharge:'turn',automatic:true,origin_id:lightning.origin_id,
+      origin_name:'Tratto · Lightning Launcher'});
+  }
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
