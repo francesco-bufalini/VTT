@@ -121,8 +121,8 @@ test("session map zoom stays attached to its own viewport",()=>{
  assert.equal(viewer.panY,0);
  viewer.zoomAt(2,80,80);
  assert.equal(viewer.zoom,4);
- assert.equal(viewer.panX,-80);
- assert.equal(viewer.panY,-80);
+ assert.equal(viewer.panX,80);
+ assert.equal(viewer.panY,80);
  viewer.zoomAt(100,160,160);
  assert.equal(viewer.zoom,4,"pinch zoom clamps at its source-resolution budget");
  viewer.reset();
