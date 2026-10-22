@@ -1836,3 +1836,30 @@ input:disabled{opacity:.75;cursor:default}
  width:100%;min-width:0;min-height:46px;font-size:15px;font-weight:650;
 }
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-actions .btn:disabled{opacity:.6}
+
+/* Compact bonus provenance horizontally; long feature names use height, not
+   wider boxes. The base die may be a little wider for its formula. */
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-term{
+ width:max-content;
+ min-width:68px;
+ max-width:124px;
+ padding:8px 6px 7px;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-term.is-base{max-width:148px}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-name{
+ overflow-wrap:anywhere;
+ word-break:normal;
+ hyphens:auto;
+ text-wrap:pretty;
+ line-height:1.38;
+ max-width:100%;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-symbol,
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-value{
+ max-width:100%;
+ overflow-wrap:anywhere;
+}
+@media(max-width:420px){
+ .sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-term{max-width:110px}
+ .sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-term.is-base{max-width:135px}
+}
