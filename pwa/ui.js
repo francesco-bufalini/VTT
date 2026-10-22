@@ -784,6 +784,72 @@ async function traitsView(c){
  return panel('Tratti',(content||'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
 }
+// Benefits are edited only here. The disclosure never owns an edit form, and
+// entering values does not persist anything until the explicit Salva action.
+function mountTraitBenefitDialog(){
+ if(!state.traitPopupKey||state.sheet!=='info'||!state.editor)return;
+ const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+ if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';return;}
+ const record=state.editor.read();
+ const groups=traitBenefitGroups(trait,record,state.calculated||{});
+ const hidden=traitRemovedIds(record,trait);
+ const optionList=(options,selected='')=>options.map(([value,label])=>
+  '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
+ const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
+ const formInput=(label,name,placeholder='',type='text')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" required></label>';
+ const kinds=BENEFIT_TYPES;
+ const targets=[...BONUS_TARGETS,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
+ const diceTargets=[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']];
+ const fields=[
+  ['bonus',formSelect('Tiro o valore','target',targets)+formInput('Formula','expression','Es. 1 oppure proficiency')],
+  ['dice',formSelect('Tipo di tiro','target',diceTargets)+formInput('Dadi','dice','Es. 1d4')],
+  ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
+  ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
+    [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
+  ['resources',formInput('Nome risorsa','name')+formInput('Utilizzi massimi','max','Es. 3','number')+
+    formSelect('Recupero','recharge',[['manual','Manuale'],['short_rest','Riposo breve'],['long_rest','Riposo lungo'],['turn','Inizio turno'],['d6','Ricarica d6']])],
+  ['spells',formSelect('Incantesimo','spell_id',(state.spellCatalog||[]).filter(row=>row.id&&!row.internal_grant)
+     .map(row=>[row.id,row.name+' · '+(row.source||'')]))+
+     formSelect('Consumo','payment_mode',[['free','Gratuito'],['slot','Slot']])],
+  ['actions',formInput('Azione concessa','name')+
+     formSelect('Tipo di azione','action_type',[['action','Azione'],['bonus','Azione bonus'],['reaction','Reazione'],['free','Nessun costo']])]
+ ];
+ const benefits=groups.map(group=>'<section class="trait-benefit-group trait-benefit-group--'+esc(group.type)+'">'+
+   '<span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
+   group.items.map(item=>'<div class="trait-benefit-manage-row">'+
+     '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
+      (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
+     (item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+    '</div>').join('')+
+   '</section>').join('');
+ const confirmId=state.traitPopupConfirm;
+ const match=groups.flatMap(group=>group.items.map(item=>({...item,type:group.type}))).find(item=>item.id===confirmId);
+ const dialog=document.createElement('dialog');
+ dialog.id='trait-benefits-dialog';dialog.className='trait-benefits-dialog';
+ dialog.setAttribute('aria-labelledby','trait-benefits-title');
+ dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
+  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+'</h2>'+
+  '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
+  '<div class="trait-benefits-dialog-body">'+
+   '<div class="trait-benefits">'+(benefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
+   (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
+     '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
+     '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
+   (hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
+   '<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
+   '<section class="trait-benefits-add-form" hidden data-trait-add-form>'+
+    '<h3>Nuovo beneficio</h3>'+
+    formSelect('Tipo di beneficio','benefit_type',kinds).replace('name="benefit_type"','name="benefit_type" data-trait-add-kind')+
+    fields.map(([kind,html])=>'<div class="trait-benefits-fields" data-trait-fields="'+kind+'"'+(kind==='bonus'?'':' hidden')+'>'+html+'</div>').join('')+
+    '<div class="actions"><button type="button" class="btn primary" data-act="trait-benefits-save">Salva beneficio</button>'+
+    '<button type="button" class="btn" data-act="trait-benefits-cancel-add">Annulla</button></div>'+
+   '</section>'+
+  '</div>';
+ app.append(dialog);
+ dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
   const editable=!!stored;
