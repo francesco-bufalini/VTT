@@ -3373,10 +3373,34 @@ async function handleAction(target){
       const summary=dialog.querySelector('.sheet-context-body');
       const rolled=result.rolls.length?'<ul>'+result.rolls.map(r=>
         '<li>d'+r.die+' = '+r.roll+' · COS '+(r.modifier>=0?'+':'')+r.modifier+
-        ' · recupero '+r.healed+' PF</li>').join('')+'</ul>':'';
+        ' · recupero potenziale '+r.healed+' PF</li>').join('')+'</ul>':'';
+      // Report the actual saved differences, not a generic recovery message.
+      const recovered=[];
+      for(const row of calculated.trackers||[]){
+        const before=Math.max(0,Number(current.resource_tracker_spent?.[row.id]||0));
+        const after=Math.max(0,Number(result.patch.resource_tracker_spent?.[row.id]||0));
+        if(before>after)recovered.push(row.name+': '+(before-after)+' usi');
+      }
+      const pactBefore=Math.max(0,Number(current.pact_slots_spent||0));
+      const pactAfter=Math.max(0,Number(result.patch.pact_slots_spent??pactBefore));
+      if(pactBefore>pactAfter)recovered.push('Slot del Patto: '+(pactBefore-pactAfter));
+      const beforeSlots=current.spell_slots_spent||[],afterSlots=result.patch.spell_slots_spent;
+      if(Array.isArray(afterSlots))for(let level=1;level<Math.max(beforeSlots.length,afterSlots.length);level++){
+        const restored=Math.max(0,Number(beforeSlots[level]||0)-Number(afterSlots[level]||0));
+        if(restored)recovered.push('Slot livello '+level+': '+restored);
+      }
+      const beforeDice=hitDicePools(current,calculated);
+      for(const pool of beforeDice){
+        const restored=Math.max(0,pool.spent-Number(result.patch.hit_dice_spent?.['d'+pool.die]||0));
+        if(restored)recovered.push('Dadi Vita d'+pool.die+': '+restored);
+      }
+      const exhaustion=Math.max(0,Number(current.exhaustion||0)-Number(result.patch.exhaustion??current.exhaustion??0));
+      if(exhaustion)recovered.push('Indebolimento: '+exhaustion+' livello rimosso');
+      const recoveryHtml=recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
+        '<p>Nessun altro recupero effettuato.</p>';
       summary.innerHTML='<div class="play-rest-confirm"><h3>Riposo completato</h3>'+
         '<p><strong>'+result.healed+' PF recuperati.</strong></p>'+rolled+
-        '<p>Risorse, slot e Dadi Vita aggiornati secondo le regole del riposo.</p>'+
+        '<h4>Risorse recuperate</h4>'+recoveryHtml+
         '<button type="button" class="btn primary" data-act="sheet-context-close">Chiudi</button></div>';
     }catch(error){
       button.disabled=false;
