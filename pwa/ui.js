@@ -17,7 +17,7 @@ import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
+import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol} from "./sheet_roll_origin.js";
@@ -752,7 +752,7 @@ async function traitsView(c){
  const labelOfBenefit=key=>{
    const native=BONUS_TARGETS.find(([id])=>id===key);
    if(native)return native[1];
-   if(key.startsWith('skill:'))return 'Abilità · '+(skills.find(row=>row[0]===key.slice(6))?.[1]||key.slice(6));
+   if(key.startsWith('skill:'))return 'Abilità · '+(SKILLS.find(row=>row[0]===key.slice(6))?.[1]||key.slice(6));
    if(key.startsWith('save:'))return 'TS · '+(abilities[key.slice(5)]||key.slice(5));
    if(key.startsWith('ability_mod:'))return 'Modificatore · '+(abilities[key.slice(12)]||key.slice(12));
    if(key.startsWith('ability:'))return 'Punteggio · '+(abilities[key.slice(8)]||key.slice(8));
