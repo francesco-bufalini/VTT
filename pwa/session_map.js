@@ -146,7 +146,7 @@ export class SessionMapViewer {
   setImage(url){
     if(!url||url===this.url)return;
     this.url=url;
-    const image=new Image();
+    const image=new window.Image();
     image.onload=()=>{if(this.url===url){this.image=image;this.draw();}};
     image.onerror=()=>{if(this.url===url){this.image=null;this.draw();}};
     image.src=url;
