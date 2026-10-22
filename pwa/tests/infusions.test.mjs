@@ -8,6 +8,7 @@ import {
  learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch
 } from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
+import {collectTraitRows} from "../trait_projection.js";
 const index=JSON.parse(readFileSync(new URL("../catalog/ability_grants.json",import.meta.url),"utf8"));
 const definitions=index.artificer_infusions;
 const byName=name=>definitions.find(entry=>entry.name===name);
@@ -143,4 +144,31 @@ test("legacy learned infusions remain prepared until preparation is explicitly s
  const changed={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],
    definitions,[infusionTrait],false)};
  assert.equal(isInfusionPrepared(changed,learnedInfusions(changed,definitions)[0],definitions),false);
+});
+
+test("only a worn/attuned infused item adds its source-bound descriptive trait",async()=>{
+ const entry=byName("Enhanced Arcane Focus");
+ const item={id:"local_arcane_wand",name:"Arcane Wand",quantity:1,
+   custom_item_type:"other",active:true,equipped:true,attuned:true,rarity:"none"};
+ let record={...make(10),inventory:[item]};
+ record={...record,...learnInfusionPatch(record,entry,definitions,mechanics,-1,[infusionTrait])};
+ const known=learnedInfusions(record,definitions)[0];
+ record={...record,...prepareInfusionPatch(record,known,definitions,[infusionTrait],true)};
+ record={...record,...applyInfusionPatch(record,known,definitions,mechanics,0,[infusionTrait])};
+ const providers={
+   entries:async category=>category==="class_features"?[infusionTrait]:
+     category==="optional_features"?[{name:entry.name,source:"TCE"}]:[],
+   detail:async(_category,row)=>({...row,entries:["Magical focus effect"]}),
+   isDocument:()=>false
+ };
+ const calc={features:[infusionTrait],infusion_catalog:definitions};
+ const traits=await collectTraitRows(record,calc,providers);
+ const active=traits.filter(row=>row.name==="Infusione · Enhanced Arcane Focus");
+ assert.equal(active.length,1);
+ assert.equal(active[0].category,"oggetti");
+ assert.equal(active[0].feature_origin,activeInfusions(record,definitions,[infusionTrait])[0].id);
+ assert.deepEqual(active[0].entries,["Magical focus effect"]);
+ const unequipped={...record,inventory:[{...record.inventory[0],equipped:false,attuned:false}]};
+ const hidden=await collectTraitRows(unequipped,calc,providers);
+ assert.equal(hidden.some(row=>row.name==="Infusione · Enhanced Arcane Focus"),false);
 });
