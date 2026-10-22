@@ -2437,9 +2437,9 @@ function rollDamageType(type){
  return source?'Tipo di danno · '+(DAMAGE_LABELS[source.toLowerCase()]||source):
    'Tipo di danno non specificato';
 }
-function damageRollTerms(formula,damageType=''){
+function damageRollTerms(formula,damageType='',attack=null){
  const validated=rollBattleDamage(formula,()=>1); // Preview never consumes randomness.
- const segments=damageRollSegments(validated,damageType).map(row=>({
+ const segments=damageRollSegments(validated,damageType,attack).map(row=>({
    ...row,damageType:rollDamageType(row.damageType).replace(/^Tipo di danno · /,'')
  }));
  return {modifier:validated.modifier,segments};
@@ -2956,8 +2956,12 @@ async function handleAction(target){
     const formula=String(target.dataset.damageFormula||'');
     if(!formula||!state.editor)throw Error('Danni non disponibili.');
     const type=String(target.dataset.damageType||''),label=String(target.dataset.damageLabel||'Attacco');
-    const preview=damageRollTerms(formula,type);
-    openUnifiedRollDialog({kind:'damage',heading:'Danni · '+label,modifier:preview.modifier,
+    const attackId=String(target.dataset.damageAttackId||'');
+    const attack=(state.calculated?.attacks||[]).find(row=>
+      String(row.id)===attackId&&
+      String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
+    const preview=damageRollTerms(formula,type,attack||null);
+    openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
       creatureId:state.editor.read().id||'',damageFormula:formula,damageLabel:label,damageType:type});
     return;
