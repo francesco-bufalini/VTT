@@ -226,18 +226,18 @@ test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
  assert.equal(rows[0].damageType,'slashing');
  assert.equal(rows[0].value,roll.modifier);
 });
-test('mixed typed damages preserve static bonuses and distinguish actual ability from extra grants',()=>{
- const roll=rollBattleDamage('1d6+2+4+2d4',()=>1);
- const attack={ability:'str',damage:'1d6+2+4+2d4',
-   damage_base_formula:'1d6+2d4',damage_ability_modifier:4,damage_extra_modifier:2};
- // A context inconsistent with base damage (this one has a literal +2)
- // must not falsely attribute a number to an ability.
- assert.equal(damageRollSegments(roll,'slashing;fire',attack)[0].formula,'1d6 + Modificatore');
- const correct={...attack,damage_base_formula:'1d6+2+2d4',damage_extra_modifier:4};
- // Exact arithmetic matching source is required before assigning Mod.FOR.
- assert.equal(damageRollSegments(roll,'slashing;fire',correct)[0].formula,'1d6 + Modificatore');
- const verified={...attack,damage_base_formula:'1d6+2+2d4',damage_extra_modifier:2};
- assert.equal(damageRollSegments(roll,'slashing;fire',verified)[0].formula,'1d6 + Mod.FOR + 4');
+test('mixed typed damages show only verifiable source-derived characteristic and extra modifiers',()=>{
+ const roll=rollBattleDamage('1d6+2+2d4+4',()=>1);
+ const attack={ability:'str',damage:'1d6+2+2d4+4',
+   damage_base_formula:'1d6+2+2d4',damage_ability_modifier:4,damage_extra_modifier:0};
+ const grouped=damageRollSegments(roll,'slashing;fire',attack);
+ assert.equal(grouped[0].formula,'1d6 + Mod.FOR + 2');
+ assert.equal(grouped[1].formula,' + 2d4');
+ assert.deepEqual(grouped.map(row=>row.damageType),['slashing','fire']);
+ const incorrect={...attack,damage_base_formula:'1d6+2d4',
+   damage_extra_modifier:2};
+ assert.equal(damageRollSegments(roll,'slashing;fire',incorrect)[0].formula,
+   '1d6 + Modificatore','Inconsistent sources must not claim an ability modifier');
 });
 test('fixed proficiency provenance has its own navigable class trait when no feature owns it',async()=>{
  const record=character(),calculated=calculateSheet(record);
