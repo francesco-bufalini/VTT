@@ -144,6 +144,26 @@ export function fixedProficiencies(record,index={}){
   }
   return result;
 }
+// Expose the actual grant sources, not a guessed name from the skill.
+export function proficiencyGrantOrigins(record={},index={},kind,key){
+ const wanted=String(key||'').toLowerCase(),sources=[],seen=new Set();
+ const add=(id,name)=>{
+   if(!id||seen.has(id))return;
+   seen.add(id);sources.push({id,name:name||id});
+ };
+ for(const row of array(record.proficiency_choices))
+   if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
+     !muted(record,row.origin_id)&&liveSource(record,row.origin_id))
+     add(row.origin_id,row.origin_name||row.origin_id);
+ for(const source of selectedSources(record,index)){
+   if(muted(record,source.id))continue;
+   if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
+   const override=array(record.proficiency_choices).find(row=>row.kind===kind&&
+     norm(row.key)===wanted&&row.origin_id===source.id);
+   if(!override?.disabled)add(source.id,source.origin||source.source?.name);
+ }
+ return sources;
+}
 export const automaticId=(sid,field,target,suffix="")=>
   "auto|"+sid+"|"+field+"|"+target+suffix;
 export function numericGrant(sid,name,field,target,value,suffix=""){
