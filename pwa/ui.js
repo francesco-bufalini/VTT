@@ -2470,8 +2470,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
    '<fieldset class="sheet-roll-bonus-list" data-roll-extra hidden><legend>Dadi bonus disponibili</legend>'+
    bonuses.map((row,i)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+i+'">'+
      esc(row.origin_name||'Bonus')+' · '+esc(row.dice)+'</label>').join('')+'</fieldset>':'';
- dialog.innerHTML='<h2>'+esc(heading)+'</h2>'+
-   '<button type="button" class="sheet-roll-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button>'+
+ dialog.innerHTML='<h2>'+esc(heading)+
+   '<button type="button" class="sheet-roll-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
    '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
    '<div class="sheet-roll-math"><span>Tipo di tiro</span><strong>'+esc(rollType)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
