@@ -1,5 +1,5 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -3428,64 +3428,76 @@ async function handleAction(target){
     }
     const dialog=app.querySelector('#sheet-context-dialog');
     if(!dialog||dialog.dataset.context!=='rests')throw Error('Apri il pannello Riposi prima di continuare.');
-    const event=act==='tracker-long'?'long_rest':'short_rest',dice={};
-    if(event==='short_rest')for(const control of dialog.querySelectorAll('[data-rest-die]'))
-      dice['d'+control.dataset.restDie]=Number(control.value);
-    // Preview is deterministic; no die is rolled and no creature is changed.
-    const minimum=completeRest(record,event,calculated,dice,()=>1);
-    const maximum=completeRest(record,event,calculated,dice,sides=>sides);
-    // Compare the real rest patch, including partial short-rest recoveries.
-    const recovered=(calculated.trackers||[]).flatMap(row=>{
-      const before=Math.max(0,Number(record.resource_tracker_spent?.[row.id]||0));
-      const after=Math.max(0,Number(minimum.patch.resource_tracker_spent?.[row.id]||0));
-      return before>after?[row.name+': '+(before-after)+' usi recuperati']:[];
-    });
-    const newlyReady=Object.entries(minimum.patch.resource_recovery_ready||{}).filter(([key,ready])=>
-      ready&&!record.resource_recovery_ready?.[key]).length;
-    if(newlyReady)recovered.push('Recuperi opzionali disponibili: '+newlyReady);
-    const pact=Number(record.pact_slots_spent||0);
-    if(pact)recovered.push('Magia del Patto: '+pact+' slot recuperati');
-    if(event==='long_rest'){
-      const slots=(record.spell_slots_spent||[]).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
-      if(slots)recovered.push('Slot incantesimo: '+slots+' recuperati');
-      const pools=hitDicePools(record,calculated);
-      const before=pools.reduce((sum,p)=>sum+p.spent,0);
-      const after=Object.values(minimum.patch.hit_dice_spent||{}).reduce((sum,n)=>sum+Number(n||0),0);
-      if(before>after)recovered.push('Dadi Vita: '+(before-after)+' recuperati');
-      if(Number(record.exhaustion)>0)recovered.push('Indebolimento: un livello rimosso');
-    }
+    const event=act==='tracker-long'?'long_rest':'short_rest';
     const extra=dialog.querySelector('.sheet-context-body');
     extra.querySelector('.play-rest-choices')?.setAttribute('hidden','');
-    extra.querySelector('.play-rest-dice')?.setAttribute('hidden','');
     extra.querySelector('[data-rest-preview]')?.remove();
-    const chosen=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
+    const pools=event==='short_rest'?hitDicePools(record,calculated):[];
+    const diceControls=pools.map(pool=>'<label class="play-rest-die">'+
+      '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+' disponibili</span>'+
+      '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+
+      '" min="0" max="'+pool.available+'" step="1" value="0" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
     const preview=document.createElement('section');
     preview.className='play-rest-confirm';preview.dataset.restPreview=event;
-    preview.dataset.restDice=JSON.stringify(dice);
     preview.innerHTML='<h3>Conferma '+(event==='long_rest'?'riposo lungo':'riposo breve')+'</h3>'+
-      '<p><strong>PF recuperabili:</strong> '+(event==='long_rest'?minimum.healed:minimum.healed+'–'+maximum.healed)+
-      (event==='short_rest'?' · '+chosen+' Dadi Vita da spendere':'')+'</p>'+
-      '<p><strong>Recuperi previsti:</strong></p>'+
-      (recovered.length?'<ul>'+recovered.map(row=>'<li>'+esc(row)+'</li>').join('')+'</ul>':
-       '<p>Nessun altro recupero disponibile.</p>')+
-      (event==='short_rest'&&chosen?
-        '<label>Come determinare i risultati dei Dadi Vita<select data-rest-roll-mode><option value="roll">Tira in app</option><option value="manual">Inserisci i risultati</option></select></label>'+
-        '<label data-rest-manual-label hidden>Risultato di ciascun dado, separato da virgole'+
-        '<input type="text" data-rest-manual-results placeholder="Es. 5, 7, 3" autocomplete="off" inputmode="text"></label>':'')+
+      (event==='short_rest'?
+        '<div class="play-rest-dice"><strong>Dadi Vita da spendere</strong>'+
+          (diceControls||'<p>Nessun Dado Vita disponibile.</p>')+'</div>':'')+
+      '<div class="play-rest-recovery" data-rest-recoveries aria-live="polite"></div>'+
+      (event==='short_rest'&&pools.length?
+        '<div data-rest-roll-controls hidden>'+
+          '<label>Come determinare i risultati dei Dadi Vita<select data-rest-roll-mode>'+
+            '<option value="roll">Tira in app</option><option value="manual">Inserisci i risultati</option>'+
+          '</select></label>'+
+          '<label data-rest-manual-label hidden>Risultato di ciascun dado, separato da virgole'+
+            '<input type="text" data-rest-manual-results placeholder="Es. 5, 7, 3" autocomplete="off" inputmode="text">'+
+          '</label></div>':'')+
       '<p data-rest-error class="warning" role="alert"></p>'+
       '<div class="actions"><button type="button" class="btn primary" data-act="tracker-rest-confirm">Conferma riposo</button>'+
       '<button type="button" class="btn" data-act="tracker-rest-back">Indietro</button></div>';
     extra.append(preview);
-    preview.querySelector('[data-rest-roll-mode]')?.addEventListener('change',event=>{
-      preview.querySelector('[data-rest-manual-label]').hidden=event.target.value!=='manual';
-    });
+    const updateForecast=()=>{
+      const dice={},error=preview.querySelector('[data-rest-error]');
+      error.textContent='';
+      for(const control of preview.querySelectorAll('[data-rest-die]')){
+        const amount=Number(control.value);
+        if(!Number.isInteger(amount)||amount<0||amount>Number(control.max)){
+          error.textContent='Scegli una quantità valida di Dadi Vita.';
+          preview.querySelector('[data-act="tracker-rest-confirm"]').disabled=true;
+          return;
+        }
+        dice['d'+control.dataset.restDie]=amount;
+      }
+      // No random rolls and no write to the creature during the forecast.
+      const forecast=restRecoveryPreview(record,event,calculated,dice);
+      const chosen=Object.values(dice).reduce((sum,n)=>sum+n,0);
+      preview.dataset.restDice=JSON.stringify(dice);
+      const grouped=new Map();
+      for(const entry of forecast.entries){
+        if(!grouped.has(entry.group))grouped.set(entry.group,[]);
+        grouped.get(entry.group).push(entry);
+      }
+      preview.querySelector('[data-rest-recoveries]').innerHTML=
+        '<h4>Recuperi previsti</h4>'+
+        [...grouped.entries()].map(([group,rows])=>
+          '<section class="play-rest-recovery-group"><h5>'+esc(group)+'</h5><ul>'+
+          rows.map(row=>'<li><strong>'+esc(row.name)+'</strong><span>'+esc(row.detail)+'</span></li>').join('')+
+          '</ul></section>').join('');
+      const modeArea=preview.querySelector('[data-rest-roll-controls]');
+      if(modeArea)modeArea.hidden=chosen===0;
+      const manualLabel=preview.querySelector('[data-rest-manual-label]');
+      if(manualLabel)manualLabel.hidden=chosen===0||preview.querySelector('[data-rest-roll-mode]').value!=='manual';
+      preview.querySelector('[data-act="tracker-rest-confirm"]').disabled=false;
+    };
+    preview.querySelectorAll('[data-rest-die]').forEach(control=>control.addEventListener('input',updateForecast));
+    preview.querySelector('[data-rest-roll-mode]')?.addEventListener('change',updateForecast);
+    updateForecast();
     return;
   }
   if(act==='tracker-rest-back'){
     const dialog=app.querySelector('#sheet-context-dialog');
     dialog?.querySelector('[data-rest-preview]')?.remove();
     dialog?.querySelector('.play-rest-choices')?.removeAttribute('hidden');
-    dialog?.querySelector('.play-rest-dice')?.removeAttribute('hidden');
     return;
   }
   if(act==='tracker-rest-confirm'){
