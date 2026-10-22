@@ -26,7 +26,7 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
-export const BONUS_TARGETS=[['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
+export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (incl. iniziativa)'],['saving_throw','Tutti i tiri salvezza'],['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
@@ -497,22 +497,13 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '</div>'+
       '</form>'+
     '</dialog>'+
-    '<details class="battle-second-form"'+(hasSecondForm?' open':'')+'><summary>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</summary>'+
+    '<section class="battle-second-form"><h3>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</h3>'+
       '<div class="battle-hp-grid battle-form-stats">'+
         '<label class="battle-stat">PF attuali<input data-field="second_form_hp" type="number" min="0" max="99999" value="'+esc(c.second_form_hp??0)+'"></label>'+
         '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('second_max','Massimi seconda forma')+'</div>'+
       '</div>'+
       '<button type="button" class="btn small" data-act="hp-restore-second">↺ Ripristina seconda forma</button>'+
-    '</details>'+
-    '<details class="battle-hp-settings"><summary>Imposta PF massimi di base</summary>'+
-      '<div class="battle-base-fields">'+
-        number('PF base','max_hp_base',c.max_hp_base??c.max_hp??1,0,99999)+
-        number('Seconda forma · base','second_form_max_hp',c.second_form_max_hp??0,0,99999)+
-      '</div>'+
-      (calculated.stats?.automatic_hp?.available?
-        '<div class="battle-auto-hp"><span class="hint">PF da progressione: '+esc(calculated.stats.automatic_hp.value)+'</span>'+
-        '<button type="button" class="btn small" data-act="hp-automatic">Applica PF automatici</button></div>':'')+
-    '</details>',
+    '</section>',
     'battle-hp-panel')+
    panel('Classe armatura',
     equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,
