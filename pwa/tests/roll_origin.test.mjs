@@ -2,9 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
-import {rollSheetDice} from '../sheet_rules_view.js';
+import {rollSheetDice,rollBattleDamage} from '../sheet_rules_view.js';
+import {collectTraitRows} from '../trait_projection.js';
 
 function character(){
  const c=initialCreature('character','Guerriero','origin-test','local');
@@ -183,4 +184,33 @@ test('short provenance labels remove generic prefixes without changing navigatio
  assert.match(html,/>Stone of Good Luck<\/span>/);
  assert.match(html,/title="Oggetto - Stone of Good Luck"/);
  assert.match(html,/data-origin-id="item:stone-of-good-luck"/);
+});
+
+test('each damage component has a distinct type between its formula and source',()=>{
+ const roll=rollBattleDamage('1d6+3+2d4',()=>1);
+ const rows=damageRollSegments(roll,'slashing; fire');
+ assert.deepEqual(rows.map(row=>row.formula),['1d6','+3','+2d4']);
+ assert.deepEqual(rows.map(row=>row.damageType),['slashing','slashing','fire']);
+ const html=sheetRollOriginHtml(rows,x=>x);
+ assert.equal((html.match(/class="sheet-roll-origin-damage-type"/g)||[]).length,3);
+ assert(html.indexOf('sheet-roll-origin-symbol')<html.indexOf('sheet-roll-origin-damage-type'));
+ assert(html.indexOf('sheet-roll-origin-damage-type')<html.indexOf('sheet-roll-origin-name'));
+ const ambiguous=damageRollSegments(roll,'slashing; fire; cold');
+ assert(ambiguous.every(row=>row.damageType===''),'An ambiguous mixture must not get an invented type');
+ const single=damageRollSegments(roll,'slashing');
+ assert(single.every(row=>row.damageType==='slashing'));
+});
+test('fixed proficiency provenance has its own navigable class trait when no feature owns it',async()=>{
+ const record=character(),calculated=calculateSheet(record);
+ const source='class|phb|barbarian';
+ const training=sheetRollOriginSegments(record,calculated,'skill:athletics')
+   .find(row=>row.kind==='training');
+ assert.equal(training?.originId,source);
+ const rows=await collectTraitRows(record,calculated,{entries:async()=>[]});
+ const trait=rows.find(row=>row.proficiency_origin===source);
+ assert.equal(trait?.category,'classi');
+ assert.equal(trait?.name,'Competenze');
+ assert.match(String(trait?.entries),/Atletica/);
+ assert.equal(trait?.origin_key,source);
+ assert.equal(rows.filter(row=>row.proficiency_origin===source).length,1);
 });
