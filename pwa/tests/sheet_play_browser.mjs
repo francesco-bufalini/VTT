@@ -302,6 +302,8 @@ try{
  await page.locator('#sheet-context-dialog [data-act="tracker-long"]').click();
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-preview]').count(),1);
  await page.locator('#sheet-context-dialog [data-act="tracker-rest-confirm"]').click();
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Dadi Vita d6: 2/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Risorse recuperate/);
  await dismiss();
  const afterLong=await record();
  assert.equal(afterLong.temporary_hp,0,'Long rest expires temporary HP');
