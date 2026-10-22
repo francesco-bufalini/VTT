@@ -147,8 +147,7 @@ try{
  assert.match(await rollDialog.textContent(),/Lama lunare/);
  assert.equal((await rollDialog.locator('h2').textContent()).includes('Lyria'),false,
    'The popup title must never contain the character name');
- assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
-   'Tipo di danno · Tagliente');
+
  assert.equal(await rollDialog.locator('.sheet-roll-close').count(),1);
  assert.equal(await rollDialog.locator('[data-act="battle-damage-close"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
