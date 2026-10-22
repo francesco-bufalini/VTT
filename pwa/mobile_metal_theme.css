@@ -1711,34 +1711,22 @@ input:disabled{opacity:.75;cursor:default}
 .play-rest-confirm ul{margin:0;padding-left:20px}
 .play-rest-confirm [data-rest-error]:empty{display:none}
 
-/* Compact, source-specific grants inside the already expandable trait cards. */
-.trait-benefits{
- display:grid;
- gap:5px;
- margin:10px 0;
+/* Trait summaries display source-bound benefits even when collapsed. */
+.trait-card > summary .trait-title{display:block;font-weight:650;overflow-wrap:anywhere}
+.trait-card > summary .trait-benefits{
+ display:grid;gap:7px;margin:9px 0 1px;padding-top:9px;
+ border-top:1px solid #8f724d55;font-weight:400;
 }
-.trait-benefits > strong{font-size:12px;color:#edbd77}
+.trait-benefits > strong{font-size:11px;font-weight:700;color:#edbd77;letter-spacing:.02em}
+.trait-benefit-group{display:grid;gap:4px;padding-left:9px;border-left:2px solid #a782546b;min-width:0}
+.trait-benefit-kind{font-size:11px;font-weight:650;color:#d5b990}
 .trait-benefit-entry{
- display:flex;
- justify-content:space-between;
- align-items:baseline;
- flex-wrap:wrap;
- gap:4px 10px;
- padding:7px 9px;
- border:1px solid #8f724d70;
- border-radius:6px;
- background:#2a2b2d;
- color:#e9dfd2;
- font:inherit;
- font-size:12px;
- text-align:left;
- cursor:pointer;
+ display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;
+ gap:2px 9px;min-width:0;padding:3px 0;
+ color:#e9dfd2;font-size:12px;line-height:1.5;font-weight:400;
 }
-.trait-benefit-entry b{font-weight:650;color:#edbd77}
-.trait-benefit-entry:focus-visible{
- outline:2px solid #edbd77;
- outline-offset:2px;
-}
+.trait-benefit-entry > span{min-width:0;overflow-wrap:anywhere}
+.trait-benefit-entry b{font-weight:650;color:#edbd77;overflow-wrap:anywhere}
 
 
 /* Combat states remain one distinct, softly outlined surface. */
