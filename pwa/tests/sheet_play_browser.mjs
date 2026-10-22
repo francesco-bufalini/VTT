@@ -400,12 +400,12 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  assert.equal(await checks.locator('.play-battle-attack-entry').count(),24);
  const strength=checks.locator('[data-action-ability="str"]');
- assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_mod:str');
+ assert.equal(await strength.locator('.play-battle-attack-entry').first().getAttribute('data-attack-id'),'ability_check:str');
  assert.equal(await strength.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await checks.locator('[data-action-ability="con"] .play-battle-attack-entry').count(),1);
  assert.equal(await strength.getAttribute('open'),null,'Ability groups start collapsed');
  await strength.locator('summary.play-battle-action-heading').click();
- const firstRoll=strength.locator('[data-target="ability_mod:str"]');
+ const firstRoll=strength.locator('[data-target="ability_check:str"]');
  await firstRoll.click();
  assert.match(await page.locator('#sheet-roll-dialog [data-roll-formula]').textContent(),/1d20/);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
