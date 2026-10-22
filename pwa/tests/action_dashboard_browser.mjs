@@ -39,10 +39,14 @@ try{
  const section=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())
    await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  const target=['conditions','origins'].includes(key)?
-   page.locator('.sheet-quick-links [data-sheet="'+key+'"]'):
-   page.locator('#sheet-navigation [data-sheet="'+key+'"]');
-  await target.click();
+  if(['conditions','origins'].includes(key)){
+   // Directly exercise legacy panels in tests; no shortcut is exposed to players.
+   await page.evaluate(tab=>{
+    const button=document.createElement('button');
+    button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
+    document.body.append(button);button.click();button.remove();
+   },key);
+  }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
   await page.waitForFunction(tab=>document.querySelector('#app').dataset.renderedSheet===tab,key);
  };
  for(const width of [360,390,768,1440]){

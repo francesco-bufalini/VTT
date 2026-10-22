@@ -26,11 +26,11 @@ export async function browserFixture({live=false}={}){
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('[data-act="sheet-context-close"]').first().click();
   if(['conditions','origins'].includes(key)){
-   if(!await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').isVisible()){
-    await page.locator('#sheet-navigation [data-sheet="info"]').click();
-    await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
-   }
-   await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').click();
+   await page.evaluate(tab=>{
+    const button=document.createElement('button');
+    button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
+    document.body.append(button);button.click();button.remove();
+   },key);
   }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
   await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
  };

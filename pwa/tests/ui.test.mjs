@@ -45,6 +45,12 @@ function click(selector){
   assert.ok(elem,"Missing clickable "+selector);
   elem.click();
 }
+function openLegacyPanel(sheet){
+  // Test a preserved internal panel without creating a user-facing navigation control.
+  const button=document.createElement("button");
+  button.dataset.act="sheet";button.dataset.sheet=sheet;button.type="button";
+  document.body.append(button);button.click();button.remove();
+}
 function change(selector,value){
   const elem=document.querySelector(selector);assert.ok(elem,"Missing field "+selector);
   elem.value=value;
@@ -113,7 +119,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-sheet="battle"][aria-pressed="true"]'));
   assert.equal(document.querySelector('#tracker-name'),null);
-  click('[data-sheet="origins"]');
+  openLegacyPanel('origins');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','resources');
   await until(()=>document.querySelector("#tracker-name"));
@@ -471,10 +477,9 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
   assert.deepEqual(sections,["Info","Azioni","Magia","Zaino"]);
   assert.equal(document.querySelector('#more-navigation'),null);
-  assert.ok(document.querySelector('#dock-catalog'));
+  assert.equal(document.querySelector('#dock-catalog'),null);
   assert.ok(document.querySelector('#dock-session'));
-  assert.deepEqual([...document.querySelectorAll('.sheet-quick-links [data-sheet]')]
-    .map(x=>x.textContent.trim()),["Condizioni","Modifica personaggio"]);
+  assert.equal(document.querySelector('.sheet-quick-links'),null);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
   assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
@@ -489,7 +494,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
   await changeScore('str',14);
-  click('[data-sheet="conditions"]');
+  openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
   assert.equal(sheetChoices.length,20);
@@ -513,7 +518,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.ok(document.querySelector('#sheet-context-dialog .condition-description-source'));
   click('[data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
-  click('[data-sheet="origins"]');
+  openLegacyPanel('origins');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','proficiency_choices');
   await until(()=>document.querySelector('[data-act="native-add"][data-list="proficiency_choices"]'));
@@ -667,7 +672,7 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
   await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='2');
   assert.equal((await loadCreature(id)).data.resource_tracker_spent['shared-power-uses'],1);
-  click('[data-sheet="origins"]');
+  openLegacyPanel('origins');
   await until(()=>document.querySelector('#native-details'));
   change('#native-details','resources');
   await until(()=>document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]'));
@@ -1220,7 +1225,7 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   if(action==='tracker-delete'){
-   click('[data-sheet="origins"]');
+   openLegacyPanel('origins');
    await until(()=>document.querySelector('#native-details'));
    change('#native-details','resources');
   }else click('[data-sheet="battle"]');
