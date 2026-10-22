@@ -47,12 +47,10 @@ function trainingOrigin(record,target,calculated){
  const row=choices.find(c=>!c?.disabled&&(c.kind===kind||
    kind==='skill'&&c.kind==='expertise')&&c.key===key&&c.origin_id);
  if(row)return {id:row.origin_id,name:row.origin_name||list(calculated?.origins).find(o=>o.id===row.origin_id)?.name||'Competenza'};
- const singleClass=list(record?.classes).length===1?record.classes[0]:
-   record?.class?{name:record.class,source:record.class_source||''}:null;
- const classOrigin=singleClass&&['casting_hit:','attack_hit:'].some(prefix=>target.startsWith(prefix))?
-   'class|'+String(singleClass.source||'').toLowerCase()+'|'+String(singleClass.name||'').toLowerCase():'';
- return {id:classOrigin,name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
-   section:classOrigin?'':'proficiency_choices'};
+ // Weapon/spell attack proficiency follows general rules. In multiclass
+ // characters, assigning it to a guessed class would fabricate provenance.
+ return {id:'',name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
+   section:'proficiency_choices'};
 }
 function featureForAutoAdvantage(record,calculated,target){
  const names=target==='save:dex'&&record?.active_class_features?.patient_defense?['Patient Defense']:
