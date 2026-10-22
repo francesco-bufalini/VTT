@@ -177,13 +177,13 @@ export function sheetRollOriginLabel(name){
 // Never invent a type when an ambiguous list does not match the die groups.
 export function damageRollSegments(roll,type=''){
  const terms=String(roll?.notation||'').match(/[+-]?[^+-]+/g)||[];
- const diceCount=terms.filter(term=>/^\\+?\\d+d\\d+$/i.test(term)).length;
- const declared=Array.isArray(type)?type.map(String):String(type||'').split(/\\s*(?:[,;]|\\s+\\+\\s+)\\s*/);
+ const diceCount=terms.filter(term=>/^[+]?[0-9]+d[0-9]+$/i.test(term)).length;
+ const declared=Array.isArray(type)?type.map(String):String(type||'').split(/[,;]/);
  const labels=declared.map(label=>label.trim()).filter(Boolean);
  const typed=labels.length===1||labels.length===diceCount;
  let diceIndex=-1;
  return terms.map((term,i)=>{
-   const isDie=/^\\+?\\d+d\\d+$/i.test(term);
+   const isDie=/^[+]?[0-9]+d[0-9]+$/i.test(term);
    if(isDie)diceIndex++;
    return {key:'damage:'+i,kind:i===0?'base':'formula',
      formula:term,expanded:'',damageType:typed?(labels.length===1?labels[0]:labels[Math.max(0,diceIndex)]):'',
