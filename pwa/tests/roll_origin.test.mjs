@@ -65,3 +65,21 @@ test('changes to ability scores and ability modifiers remain independently attri
  assert.equal(terms.find(t=>t.originId==='feature:mod')?.expanded,'+1');
  assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['skill:athletics']);
 });
+
+test('spell attacks show casting modifier, proficiency and spell attack grants separately',()=>{
+ const c=character(),calculated=calculateSheet(c);
+ const terms=sheetRollOriginSegments(c,calculated,'casting_hit:str');
+ assert.equal(terms[0].formula,'1d20 + Mod.FOR');
+ assert.equal(terms.find(t=>t.kind==='training')?.expanded,'+2');
+ assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['casting_hit:str']);
+});
+test('weapon hit rolls preserve ability and proficiency without folding them into base',()=>{
+ const c=character(),calculated={values:{'attack_hit:main':6,proficiency:2},
+   attacks:[{id:'main',ability:'str',proficient:true}],proficiencies:[],
+   roll_components:{}};
+ const terms=sheetRollOriginSegments(c,calculated,'attack_hit:main');
+ assert.equal(terms[0].formula,'1d20 + Mod.FOR');
+ assert.equal(terms[0].expanded,'1d20 +4');
+ assert.equal(terms.find(t=>t.kind==='training')?.expanded,'+2');
+ assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),6);
+});
