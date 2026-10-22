@@ -206,7 +206,7 @@ function itemRows(record,warnings,infusionCatalog=[]){
   for(const saved of arr(record.inventory)){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
-    const sid="item:"+item.id,infusionSid="infusion:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
+    const sid="item:"+item.id,infusionSid="infusion:"+(item.instance_id||item.id),kind=itemKind(item),slots=arr(item.equipped_slots);
     const infusion=infusionNumericBonuses(record,item,infusionCatalog);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
