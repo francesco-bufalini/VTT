@@ -1913,3 +1913,91 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  color:#e9c899;font-size:11px;line-height:1.3;font-weight:600;
  text-align:center;white-space:normal;overflow-wrap:anywhere;
 }
+
+
+/* Trait benefits are a separate operation from the description disclosure. */
+.play-info-traits .trait-row{
+ display:grid;grid-template-columns:40px minmax(0,1fr);align-items:start;
+ border-bottom:1px solid #a37b473d;min-width:0;
+}
+.play-info-traits .trait-row>.trait-card{
+ border:0!important;border-radius:0;background:transparent;box-shadow:none;
+ margin:0!important;min-width:0;
+}
+.play-info-traits .trait-row>.trait-card>summary{
+ min-height:47px;padding:9px 4px;gap:9px;
+}
+.play-info-traits .trait-card>summary::after{
+ content:"⌄";font:20px/1 system-ui;color:#cda875;
+}
+.play-info-traits .trait-card[open]>summary::after{content:"⌃"}
+.play-info-traits .trait-row .trait-content{padding:0 4px 12px}
+.play-info-traits .trait-row .trait-description{
+ padding:0;margin:0;line-height:1.68;border:0;
+}
+.play-info-traits .trait-row .trait-book{
+ display:block;margin:9px 0 0;padding:0;border:0;
+ font-size:11px;color:#ac9c89;
+}
+.trait-benefits-trigger{
+ display:flex;justify-content:center;align-items:center;
+ min-width:36px;width:36px;height:44px;
+ border:0;background:transparent;color:#d2b387;border-radius:7px;
+ cursor:pointer;font:23px/1 system-ui;
+}
+.trait-benefits-trigger .vtt-action-glyph{width:21px;height:21px}
+.trait-benefits-trigger:hover,.trait-benefits-trigger:focus-visible{background:#ad86502b;color:#f3d29d}
+.trait-benefits-dialog{
+ position:fixed;inset:0;width:min(94vw,560px);
+ max-width:94vw;max-height:min(86dvh,850px);
+ margin:auto;padding:0;overflow:hidden;
+ border:1px solid #a9855c;border-radius:12px;
+ background:#27201e;color:#ebe0d3;box-shadow:0 20px 70px #000b;
+}
+.trait-benefits-dialog::backdrop{background:#000b}
+.trait-benefits-dialog-head{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:12px 15px;border-bottom:1px solid #9c76485c;background:#2c2421;
+}
+.trait-benefits-dialog-head h2{font-size:16px;font-weight:600;color:#e8d4b5;margin:0;min-width:0}
+.trait-benefits-close{
+ display:flex;align-items:center;justify-content:center;width:36px;height:36px;
+ flex:none;border:0;border-radius:7px;background:transparent;color:#e0c5ab;
+ cursor:pointer;font:25px/1 system-ui;
+}
+.trait-benefits-close:hover{background:#ad86502b}
+.trait-benefits-dialog-body{overflow-y:auto;max-height:calc(min(86dvh,850px) - 62px);padding:8px 16px 18px}
+.trait-benefits-dialog .trait-benefits{border:0;margin:0;padding:5px 0 10px;gap:13px}
+.trait-benefit-manage-row{display:grid;grid-template-columns:minmax(0,1fr) 32px;align-items:center;gap:6px}
+.trait-benefit-manage-row .trait-benefit-entry{min-height:35px}
+.trait-benefit-remove{
+ display:flex;align-items:center;justify-content:center;
+ width:32px;height:35px;padding:0;border:1px solid #8c615850;border-radius:7px;
+ background:#64352c29;color:#c5a092;cursor:pointer;font-size:19px;
+}
+.trait-benefit-remove:hover{border-color:#c38979;color:#ffe1ce}
+.trait-benefit-confirm{
+ border-top:1px solid #ad85584b;margin-top:12px;padding-top:12px;
+}
+.trait-benefit-confirm p{margin:0 0 9px;font-size:13px}
+.trait-benefit-confirm .actions{display:flex;gap:8px;flex-wrap:wrap}
+.trait-benefits-dialog-actions{display:flex;justify-content:flex-end;margin:10px 0}
+.trait-benefits-add-toggle{
+ display:flex;align-items:center;justify-content:center;min-width:38px;height:38px;
+ border:1px solid #a27d52;border-radius:7px;background:#45332a;color:#dec29b;
+ cursor:pointer;font:22px/1 system-ui;
+}
+.trait-benefits-restore{border:0;background:transparent;padding:9px 0;color:#d4b58e;font-size:12px;text-decoration:underline;cursor:pointer}
+.trait-benefits-add-form{border-top:1px solid #96734760;padding-top:13px}
+.trait-benefits-add-form[hidden],.trait-benefits-fields[hidden]{display:none!important}
+.trait-benefits-add-form h3{margin:0 0 12px;font-size:14px;font-weight:600}
+.trait-benefits-add-form label,.trait-benefits-fields label{display:grid;gap:6px;font-size:12px;color:#d8c4aa;margin:0 0 11px}
+.trait-benefits-add-form select,.trait-benefits-add-form input{
+ min-width:0;width:100%;min-height:42px;padding:8px 10px;border-radius:7px;
+ border:1px solid #987449;background:#211c1c;color:#f4e9d9;
+}
+.trait-benefits-add-form .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:390px){
+ .trait-benefits-dialog-body{padding:8px 11px 15px}
+ .trait-benefits-dialog-head{padding:10px 11px}
+}
