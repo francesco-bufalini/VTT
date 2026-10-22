@@ -623,7 +623,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+  html='<section class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
    edit('identity','Modifica identità','settings')+'</section>';

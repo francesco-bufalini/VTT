@@ -20,7 +20,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments} from "./sheet_roll_origin.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
@@ -151,14 +151,13 @@ function openNavigation(){
 }
 function syncNav(){
   const creature=state.editor?.read()||(state.cachedCreatures||[]).find(x=>x.id===state.creatureId);
-  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes'),symbol=document.querySelector('#creature-symbol');
+  const hasCreature=Boolean(state.creatureId),label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
   if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):'VTT Mobile';
   if(classLabel){
     const members=hasCreature?localClasses(creature||{}):[];
     classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
     classLabel.hidden=!members.length;
   }
-  if(symbol){symbol.innerHTML=hasCreature?creatureFaceIcon(creature?.kind):'';symbol.setAttribute('aria-label',hasCreature&&creature?.kind==='monster'?'Mostro':hasCreature?'Personaggio':'VTT');}
   const dock=document.querySelector('#mobile-tabs'),primary=document.querySelector('#sheet-navigation'),more=document.querySelector('#more-navigation');
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
   primary.hidden=!hasCreature;more.hidden=!hasCreature;
@@ -290,6 +289,7 @@ async function render() {
     const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
     const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    syncLibrarySelectionUI();
     if(state.page==="session")sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
     if(pendingCode && app.querySelector("#pair-secret"))
       app.querySelector("#pair-secret").value=pendingCode;
@@ -315,36 +315,71 @@ async function render() {
       btn("refresh","Riprova","primary");
   }
 }
+function librarySelectionActions(){
+  const count=state.librarySelectedIds.size;
+  return count?'<span class="library-selection-count">'+count+' selezionate</span>'+
+    btn("library-export","Esporta ("+count+")")+
+    btn("library-delete","Elimina ("+count+")","danger"):'';
+}
+function syncLibrarySelectionUI(){
+  const boxes=[...app.querySelectorAll('input[data-library-select]')];
+  const all=app.querySelector('[data-library-select-all]');
+  if(all){
+    const selected=boxes.filter(box=>box.checked).length;
+    all.checked=boxes.length>0&&selected===boxes.length;
+    all.indeterminate=selected>0&&selected<boxes.length;
+  }
+  const actions=app.querySelector('#library-selected-actions');
+  if(actions){actions.innerHTML=librarySelectionActions();actions.hidden=!state.librarySelectedIds.size;}
+}
 async function libraryView() {
   if(state.creatureId && !state.libraryMode) return editorView();
-  const rows = await listCreatures();
+  const rows=await listCreatures();
   const availableIds=new Set(rows.map(row=>row.creature.id));
   for(const id of state.librarySelectedIds)if(!availableIds.has(id))state.librarySelectedIds.delete(id);
-  let list = rows.map(({creature:c}) =>
-    '<article class="creature-card"><label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
+  const allSelected=rows.length>0&&rows.every(row=>state.librarySelectedIds.has(row.creature.id));
+  let list=rows.map(({creature:c})=>{
+    const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
+    const classNames=localClasses(c).map(member=>esc(member.name)+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+    return '<article class="creature-card">'+
+      '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
       '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+
       (state.librarySelectedIds.has(c.id)?'checked':'')+'></label>'+
-      '<div class="creature-avatar" aria-hidden="true">'+creatureFaceIcon(c.kind)+'</div><div class="creature-info"><div class="creature-name">'+
-      esc(c.name)+'</div><div class="creature-details">'+
-      esc(c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata')+
-      (c.kind!=='monster'&&c.class?' · '+esc(c.class):'')+
-      (c.level ? " · Liv. "+esc(c.level) : "")+'</div></div>'+
-      '<button type="button" class="btn small" data-act="open" data-id="'+esc(c.id)+
-      '" aria-label="Apri '+esc(c.name)+'">Apri →</button></article>').join("");
-  if(!list) list = '<div class="empty"><div class="symbol">♜</div>'+
-    '<strong>Nessuna creatura salvata</strong><p>Crea una scheda, importa un JSON da VTT desktop o Android, oppure prova il personaggio dimostrativo.</p>'+btn("demo","Prova personaggio demo","primary")+'</div>';
-  return header("Archivio delle creature", "Le tue creature")+
-    '<div class="actions">'+btn("create","＋ Nuovo personaggio","primary")+
-    '</div>'+
-    '<details class="archive-tools library-management"><summary>Importa e gestisci l’archivio</summary><div class="actions">'+btn("import","Importa JSON")+'</div>'+
-    '<details class="archive-tools"><summary>Backup dell’archivio</summary><div class="actions">'+
-    btn("backup","Esporta backup")+btn("restore-backup","Importa backup")+'</div></details>'+
-    (rows.length?'<div class="actions">'+btn("library-select-all","Seleziona tutte")+
-      '<span id="library-selected-actions">'+(state.librarySelectedIds.size ?
-        btn("library-select-none","Deseleziona")+
-        btn("library-export","Esporta ('+state.librarySelectedIds.size+')")+
-        btn("library-delete","Elimina ('+state.librarySelectedIds.size+')","danger") : '')+
-      '</span></div>':'')+'</details>'+list;
+      '<button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+
+      '" aria-label="Visualizza scheda di '+esc(c.name)+'">'+
+      '<span class="creature-info"><span class="creature-name">'+esc(c.name)+'</span>'+
+      '<span class="creature-details">'+esc(species)+'</span>'+
+      (classNames?'<span class="creature-classes">'+classNames+'</span>':
+        c.level?'<span class="creature-classes">Liv. '+esc(c.level)+'</span>':'')+
+      '</span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article>';
+  }).join('');
+  if(!list)list='<div class="empty library-empty"><strong>Nessuna creatura salvata</strong>'+
+    '<p>Aggiungi un personaggio oppure importa una scheda esistente.</p>'+
+    btn("demo","Prova personaggio demo","primary")+'</div>';
+  return '<section class="library-index" aria-label="Archivio delle creature">'+
+    '<div class="library-list-header">'+
+    (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
+      '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
+      '<span class="library-header-spacer" aria-hidden="true"></span>')+
+    '<span class="library-list-count">'+rows.length+' '+(rows.length===1?'scheda':'schede')+'</span>'+
+    '<button type="button" class="library-add-button" data-act="library-add" aria-label="Aggiungi personaggio" title="Aggiungi personaggio">+</button>'+
+    '</div><div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
+      librarySelectionActions()+'</div>'+
+    '<div class="library-rows">'+list+'</div></section>'+
+    '<details class="library-backup"><summary>'+
+      '<span class="library-backup-symbol" aria-hidden="true">↺</span>'+
+      '<span class="library-backup-copy"><strong>Backup e ripristino</strong>'+
+      '<small>Conserva una copia del tuo archivio locale</small></span>'+
+      '<span class="library-backup-chevron" aria-hidden="true">⌄</span></summary>'+
+      '<div class="library-backup-content"><p>Esporta una copia dei personaggi e dei contenuti locali, oppure importa un backup precedente.</p>'+
+      '<div class="library-backup-actions">'+btn("backup","Esporta backup")+
+      btn("restore-backup","Ripristina backup")+'</div></div></details>'+
+    '<dialog id="library-create-dialog" class="library-create-dialog" aria-labelledby="library-create-title">'+
+      '<div class="library-create-body"><button type="button" class="library-create-close" data-act="library-create-close" aria-label="Chiudi">×</button>'+
+      '<h2 id="library-create-title">Aggiungi personaggio</h2>'+
+      '<p>Vuoi creare una nuova scheda o importarne una esistente?</p>'+
+      '<div class="library-create-options">'+btn("create","Crea personaggio","primary")+
+      btn("import","Importa personaggio")+'</div></div></dialog>';
 }
 function renderCatalogRows() {
   const filter=state.catalogQuery.trim().toLocaleLowerCase();
@@ -3388,13 +3423,6 @@ async function handleAction(target){
     state.creatureId=await createDemoCreature();state.libraryMode=false;state.editor=null;state.sheet="info";
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
-  if(act==="library-select-all"){
-    state.librarySelectedIds=new Set((await listCreatures()).map(row=>row.creature.id));
-    await render();return;
-  }
-  if(act==="library-select-none"){
-    state.librarySelectedIds.clear();await render();return;
-  }
   if(act==="library-export"||act==="library-delete"){
     const rows=(await listCreatures()).filter(row=>state.librarySelectedIds.has(row.creature.id));
     if(!rows.length)throw new Error("Seleziona almeno una creatura.");
@@ -3421,12 +3449,26 @@ async function handleAction(target){
     }
     await render();message("Eliminate "+deleted+" creature dall'archivio locale.");return;
   }
+  if(act==="library-add"){
+    const dialog=app.querySelector('#library-create-dialog');
+    if(dialog){if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');}
+    return;
+  }
+  if(act==="library-create-close"){
+    const dialog=app.querySelector('#library-create-dialog');
+    if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
+    return;
+  }
   if(act==="create"){
     state.magicPopup="";
     const row=await createCreature("character","Nuovo personaggio");
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";await render();return;
   }
-  if(act==="import"){creatureInput.click();return;}
+  if(act==="import"){
+    const dialog=app.querySelector('#library-create-dialog');
+    if(dialog?.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
+    creatureInput.click();return;
+  }
   if(act==="restore-backup"){backupInput.click();return;}
   if(act==="backup"){
     const blob=await exportBackup();download(blob,"vtt-pwa-backup-"+new Date().toISOString().slice(0,10)+".json");
@@ -4012,15 +4054,18 @@ function listen(){
   });
   app.addEventListener("change",e=>{
     const target=e.target;
+    if(target?.matches?.('[data-library-select-all]')){
+      for(const box of app.querySelectorAll('input[data-library-select]')){
+        box.checked=target.checked;
+        if(box.checked)state.librarySelectedIds.add(box.dataset.librarySelect);
+        else state.librarySelectedIds.delete(box.dataset.librarySelect);
+      }
+      syncLibrarySelectionUI();return;
+    }
     if(target?.dataset?.librarySelect){
       if(target.checked)state.librarySelectedIds.add(target.dataset.librarySelect);
       else state.librarySelectedIds.delete(target.dataset.librarySelect);
-      const actions=app.querySelector("#library-selected-actions");
-      if(actions)actions.innerHTML=state.librarySelectedIds.size ?
-        btn("library-select-none","Deseleziona")+
-        btn("library-export","Esporta ("+state.librarySelectedIds.size+")")+
-        btn("library-delete","Elimina ("+state.librarySelectedIds.size+")","danger") : "";
-      return;
+      syncLibrarySelectionUI();return;
     }
     if(target?.id==="scroll-spell-select"){updateScrollSpellLevels();return;}
     if(target?.id==="spell-target"){

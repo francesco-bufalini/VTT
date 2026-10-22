@@ -52,8 +52,8 @@ try {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const archive = async () => {
-    await page.locator('[data-act="create"]').waitFor({ timeout: 15000 });
-    assert.match(await page.locator("#app").innerText(), /Le tue creature/);
+    await page.locator('[data-act="library-add"]').waitFor({ timeout: 15000 });
+    assert(await page.locator(".library-index").isVisible());
   };
   const rename = async name => {
     await page.locator('[data-sheet-context="identity"]').first().click();
@@ -81,6 +81,7 @@ try {
     return (await Promise.all(paths.map(path => cache.match(path)))).every(Boolean);
   }, null, { timeout: 60000 });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
+  await page.locator('[data-act="library-add"]').click();
   await page.locator('[data-act="create"]').click();
   await rename("Creatura iniziale");
   console.log("PASS: complete offline shell installed and creature saved locally");
