@@ -1,0 +1,67 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {calculateSheet} from '../sheet_rules.js';
+import {initialCreature} from '../character_core.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml} from '../sheet_roll_origin.js';
+
+function character(){
+ const c=initialCreature('character','Guerriero','origin-test','local');
+ return {...c,level:1,classes:[{name:'Barbarian',source:'PHB',level:1}],
+   abilities:{str:18,dex:16,con:12,int:10,wis:10,cha:10},
+   proficiency_choices:[{kind:'skill',key:'athletics',origin_id:'class|phb|barbarian',
+     origin_name:'Barbarian',disabled:false}],
+   inventory:[{id:'stone-of-good-luck',name:'Stone of Good Luck',quantity:1,
+     req_attune:true,attuned:true,equipped:true,bonus_ability_check:1,bonus_saving_throw:1}],
+   formula_bonuses:[{id:'feature-dex',target:'skill:athletics',expression:'dex_mod',
+     origin_id:'feature:privilegio-a',origin_name:'PRIVILEGIO A'}]};
+}
+test('full athletic roll separates base, proficiency, category item and symbolic feature terms',()=>{
+ const c=character(),calculated=calculateSheet(c);
+ assert.equal(calculated.values['skill:athletics'],10);
+ const terms=sheetRollOriginSegments(c,calculated,'skill:athletics',{mode:'advantage',
+   autoAdvantage:true});
+ assert.equal(terms[0].formula,'ADV');
+ assert.equal(terms[1].formula,'1d20 + Mod.FOR');
+ assert.equal(terms[1].expanded,'1d20 +4');
+ assert.equal(terms[2].formula,'+Mod.Competenza');
+ assert.equal(terms[2].expanded,'+2');
+ assert.equal(terms[2].originId,'class|phb|barbarian');
+ const stone=terms.find(t=>t.originId==='item:stone-of-good-luck');
+ assert.ok(stone);assert.equal(stone.expanded,'+1');
+ const feature=terms.find(t=>t.originId==='feature:privilegio-a');
+ assert.ok(feature);assert.equal(feature.formula,'+Mod.DES');
+ assert.equal(feature.expanded,'+3');
+ assert.equal(terms.filter(t=>t.value!==undefined).reduce((sum,t)=>sum+t.value,0),
+   calculated.values['skill:athletics']);
+ const html=sheetRollOriginHtml(terms,x=>x);
+ assert.match(html,/data-act="roll-origin-open"/);
+ assert.match(html,/PRIVILEGIO A/);
+ assert.doesNotMatch(html,/Calcolo del modificatore|Origini e bonus applicati/);
+});
+test('saving throw draws item saving_throw category but not ability_check',()=>{
+ const c=character(),calculated=calculateSheet(c);
+ const terms=sheetRollOriginSegments(c,calculated,'save:dex');
+ assert.equal(terms.filter(t=>t.originId==='item:stone-of-good-luck').length,1);
+ assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['save:dex']);
+});
+test('initiative draws ability check item once, manual disadvantage and a dice grant',()=>{
+ const c=character(),calculated=calculateSheet(c);
+ const terms=sheetRollOriginSegments(c,calculated,'initiative',{mode:'disadvantage',
+   diceBonuses:[{dice:'1d4',origin_id:'feature:bless',origin_name:'Bless'}]});
+ assert.equal(terms[0].formula,'DIS');
+ assert.equal(terms[0].expanded,'2d20kl1');
+ assert.equal(terms.filter(t=>t.originId==='item:stone-of-good-luck').length,1);
+ assert.equal(terms.at(-1).formula,'+1d4');
+ assert.equal(terms.at(-1).originId,'feature:bless');
+});
+test('changes to ability scores and ability modifiers remain independently attributable',()=>{
+ const c={...character(),formula_bonuses:[
+   {id:'score',target:'ability:str',expression:'2',origin_id:'feature:score',origin_name:'Punteggio'},
+   {id:'mod',target:'ability_mod:str',expression:'1',origin_id:'feature:mod',origin_name:'Modificatore'}
+ ]};
+ const calculated=calculateSheet(c);
+ const terms=sheetRollOriginSegments(c,calculated,'skill:athletics');
+ assert.equal(terms.find(t=>t.originId==='feature:score')?.expanded,'+1');
+ assert.equal(terms.find(t=>t.originId==='feature:mod')?.expanded,'+1');
+ assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['skill:athletics']);
+});
