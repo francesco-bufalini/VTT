@@ -341,7 +341,12 @@ try {
   assert.match(mimeReport, /sheet_rules_view\.js — HTTP 200 \| MIME text\/html/);
   assert.match(mimeReport, /MIME non valido per moduli JS/);
   await mimePage.waitForFunction(() =>
-    document.querySelector("#startup-diagnostic")?.textContent?.includes("Controllati 27/27"),
+    (() => {
+      const progress = document.querySelector("#startup-diagnostic")?.textContent
+        ?.match(/Controllati (\d+)\/(\d+)/);
+      return progress && Number(progress[1]) === Number(progress[2]) &&
+        Number(progress[1]) >= 27;
+    })(),
     null, { timeout: 30000 });
   const importReport = await mimePage.locator("#startup-diagnostic").innerText();
   assert.match(importReport, /\/sheet_rules_view\.js — (TypeError|Error):/);
