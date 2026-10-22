@@ -70,7 +70,26 @@ static func known(record: Dictionary) -> Array[Dictionary]:
 		var row: Dictionary = (_by_id[String(saved.get("id", ""))] as Dictionary).duplicate(true)
 		row["plan_item_id"] = String(saved.get("plan_item_id", ""))
 		row["plan_item_name"] = String(saved.get("plan_item_name", ""))
+		row["source_trait_id"] = String(saved.get("source_trait_id", ""))
 		result.append(row)
+	return result
+
+
+# The prepared bank is shared with the PWA. Legacy characters without this
+# field keep their previously learned infusions ready instead of losing them.
+static func prepared(record: Dictionary) -> Array[Dictionary]:
+	var all_known: Array[Dictionary] = known(record)
+	if not record.has("prepared_optional_features"):
+		return all_known
+	var result: Array[Dictionary] = []
+	var saved: Variant = record.get("prepared_optional_features", [])
+	if not saved is Array:
+		return result
+	for option: Dictionary in all_known:
+		for entry: Variant in saved:
+			if entry is Dictionary and String(entry.get("id", "")) == String(option.get("id", "")) and String(entry.get("plan_item_id", "")) == String(option.get("plan_item_id", "")):
+				result.append(option)
+				break
 	return result
 
 
@@ -126,6 +145,10 @@ static func numeric_bonuses(record: Dictionary, owned: Dictionary) -> Dictionary
 	if not raw is Dictionary:
 		return {}
 	var infusion: Dictionary = raw
+	if String(infusion.get("creator_id", "")) == String(record.get("id", "")):
+		var grant: String = String(infusion.get("source_trait_id", ""))
+		if not grant.is_empty() and record.get("origin_enabled", {}).get(grant, true) == false:
+			return {}
 	var option: Dictionary = definition(infusion)
 	if option.is_empty() or String(option.get("application_kind", "")) == "replicate":
 		return {}
