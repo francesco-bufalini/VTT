@@ -3082,6 +3082,7 @@ async function handleAction(target){
       const defaults={classes:{name:"",source:"",level:1},
         proficiency_choices:{kind:"skill",key:"",origin_id:"",origin_name:"",disabled:false},
         feats_catalog:{name:"Nuovo talento",source:"",disabled:false},
+        backgrounds_catalog:{name:"",source:"",disabled:false},
         formula_bonuses:{id:"bonus_"+crypto.randomUUID(),target:"initiative",expression:"0",origin_id:"",origin_name:"",disabled:false,automatic:false},
         dice_bonuses:{id:'dice_'+crypto.randomUUID(),target:'ability_check',dice:'1d4',origin_id:'',origin_name:'',disabled:false},
         damage_defense_entries:{key:"fire",rank:1,origin_id:"",automatic:false},
@@ -3149,7 +3150,13 @@ async function handleAction(target){
         throw new Error("Talento già presente in questa scheda.");
       await editor.update({feats_catalog:[...current,feat],...quickGrantPatch(sheet,entry)});
     }else if(category==="backgrounds"){
-      await editor.update({background:entry.name,background_id:entry.id||"",background_source:entry.source||"",...quickGrantPatch(sheet,entry)});
+      const existing=(sheet.backgrounds_catalog||[]);
+      const duplicate=[{name:sheet.background,source:sheet.background_source},...existing]
+        .some(row=>row.name===entry.name&&String(row.source||"")===String(entry.source||""));
+      if(duplicate)throw Error("Background già presente in questa scheda.");
+      const changes=sheet.background?{backgrounds_catalog:[...existing,{name:entry.name,id:entry.id||"",source:entry.source||""}]}:
+        {background:entry.name,background_id:entry.id||"",background_source:entry.source||""};
+      await editor.update({...changes,...quickGrantPatch(sheet,entry)});
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
