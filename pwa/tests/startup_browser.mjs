@@ -297,7 +297,7 @@ try {
   await errorPage.waitForFunction(() =>
     (() => {
       const progress = document.querySelector("#startup-diagnostic")?.textContent
-        ?.match(/Controllati (\\d+)\\/(\\d+)/);
+        ?.match(/Controllati (\d+)\/(\d+)/);
       return progress && Number(progress[1]) === Number(progress[2]) &&
         Number(progress[1]) >= 27;
     })(),
