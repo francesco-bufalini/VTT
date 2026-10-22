@@ -108,20 +108,89 @@ export function classFeatureDamage(record,calculated,attack,ability){
  const level=classFeatureLevel(record,'Barbarian');
  return level>=16?4:level>=9?3:2;
 }
-export function classFeatureRollAdvantage(record,calculated,target){
- if(target==='save:dex'&&classFeatureActive(record,calculated,'patient_defense')&&
-  !rows(record.conditions).includes('incapacitated')&&(record.rules_version!=='2024'||record.active_class_features.patient_defense.enhanced))return true;
- if(classFeatureActive(record,calculated,'rage')&&['ability_mod:str','ability_check:str','save:str','skill:athletics'].includes(target))return true;
+// D&D 5e: advantages never add together; any advantage and any
+// disadvantage cancel, regardless of how many sources exist on each side.
+// Retain each applicable source separately so the roll dialog can explain and
+// open every contributing trait instead of guessing one from the roll type.
+export function classFeatureRollSources(record,calculated,target){
+ const result=[],features=rows(calculated?.features),nameToLabel={
+   rage:'Ira',reckless_attack:'Attacco irruento',
+   patient_defense:'Difesa paziente',innate_sorcery:'Stregoneria innata'};
+ const actions=classFeatureEntries(record,calculated);
+ const add=(mode,id,name,kind='feature')=>{
+   if(!['advantage','disadvantage'].includes(mode))return;
+   // A class rule and structured metadata may describe the *same* trait.
+   // Distinct sources remain separate, but one trait must never be counted twice.
+   const key=String(id||'')?String(id)+'|'+mode:mode+'|'+String(name||'');
+   if(!result.some(row=>row.key===key))result.push({mode,origin_id:String(id||''),
+     origin_name:String(name||'Origine sconosciuta'),key,kind});
+ };
+ const activeFeature=key=>{
+   if(!classFeatureActive(record,calculated,key))return;
+   const row=actions.find(a=>a.class_feature_id===key);
+   if(row)add('advantage',row.origin_id||'',nameToLabel[key]||row.name);
+ };
+ if(['ability_mod:str','ability_check:str','save:str','skill:athletics'].includes(target))activeFeature('rage');
+ if(target==='save:dex'&&
+   !rows(record.conditions).includes('incapacitated')&&
+   (record.rules_version!=='2024'||record.active_class_features?.patient_defense?.enhanced))
+   activeFeature('patient_defense');
  if(target.startsWith('attack_hit:')){
-  const attack=rows(calculated.attacks).find(a=>'attack_hit:'+a.id===target);
-  return !!attack&&attack.ability==='str'&&classFeatureActive(record,calculated,'reckless_attack')&&
-   (record.rules_version==='2024'||!attack.thrown&&attack.weapon_kind!=='R'&&attack.melee!==false);
+   const attack=rows(calculated.attacks).find(a=>'attack_hit:'+a.id===target);
+   if(attack?.ability==='str'&&(record.rules_version==='2024'||
+     !attack.thrown&&attack.weapon_kind!=='R'&&attack.melee!==false))
+     activeFeature('reckless_attack');
  }
- if(target.startsWith('casting_hit:')&&classFeatureActive(record,calculated,'innate_sorcery')){
-  const sources=rows(calculated.casting_classes).filter(c=>c.ability===target.slice('casting_hit:'.length));
-  return sources.length===1&&low(sources[0].name)==='sorcerer';
+ if(target.startsWith('casting_hit:')){
+   const sources=rows(calculated.casting_classes).filter(c=>c.ability===target.slice('casting_hit:'.length));
+   if(sources.length===1&&low(sources[0].name)==='sorcerer')activeFeature('innate_sorcery');
  }
- return false;
+ // Additional structured traits can supply explicit, data-driven roll-mode
+ // effects. Text descriptions are never parsed to infer mechanical effects.
+ const applies=(rule)=>{
+   const targets=rows(rule?.targets).length?rule.targets:[rule?.target];
+   return targets.some(t=>t===target||
+     t==='ability_check'&&(target.startsWith('skill:')||target.startsWith('ability_check:')||target==='initiative')||
+     t==='saving_throw'&&target.startsWith('save:')||
+     t==='attack_roll'&&target.startsWith('attack_hit:')||
+     t==='spell_attack'&&target.startsWith('casting_hit:'));
+ };
+ for(const feature of features){
+   if(!featureEnabled(record,feature))continue;
+   for(const rule of rows(feature.roll_modes)){
+     if(applies(rule))add(rule.mode,feature.origin_id,'Tratto · '+feature.name);
+   }
+ }
+ // Common unconditional conditions. Context-dependent modifiers (e.g.
+ // Frightened only while its source is visible, or a ranged attack on a prone
+ // target) must not be applied without the necessary situational information.
+ const conditions=new Set(rows(record.conditions).map(low));
+ const isCheck=target.startsWith('skill:')||target.startsWith('ability_check:')||target.startsWith('ability_mod:')||target==='initiative';
+ const attack=target.startsWith('attack_hit:')||target.startsWith('casting_hit:');
+ const fromCondition=(code,mode,label,when)=>{
+   if(conditions.has(code)&&when)add(mode,'','Condizione · '+label,'condition');
+ };
+ fromCondition('poisoned','disadvantage','Avvelenato',isCheck||attack);
+ fromCondition('blinded','disadvantage','Accecato',attack);
+ fromCondition('restrained','disadvantage','Trattenuto',attack||target==='save:dex');
+ fromCondition('prone','disadvantage','Prono',attack);
+ fromCondition('invisible','advantage','Invisibile',attack);
+ return result;
+}
+export function resolveClassRollMode(sources=[],selection='auto'){
+ if(selection==='normal')return {mode:'normal',sources:[]};
+ const applied=[...rows(sources)];
+ if(selection==='advantage'||selection==='disadvantage')
+   applied.push({mode:selection,origin_id:'',origin_name:'Modalità scelta',kind:'manual'});
+ const adv=applied.some(row=>row.mode==='advantage');
+ const dis=applied.some(row=>row.mode==='disadvantage');
+ return {mode:adv&&dis?'normal':adv?'advantage':dis?'disadvantage':'normal',
+   sources:applied,cancelled:adv&&dis};
+}
+// Retained for callers that need to know whether an automatic advantage
+// applies. It must also account for disadvantages that neutralize it.
+export function classFeatureRollAdvantage(record,calculated,target){
+ return resolveClassRollMode(classFeatureRollSources(record,calculated,target)).mode==='advantage';
 }
 export function classFeatureEffects(record,calculated){
  return Object.entries(record.active_class_features||{}).map(([key,state])=>{

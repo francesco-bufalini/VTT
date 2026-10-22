@@ -1,5 +1,5 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -17,10 +17,11 @@ import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
-import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
+import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
-import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol} from "./sheet_roll_origin.js";
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
 const app = document.querySelector("#app");
@@ -750,8 +751,48 @@ async function traitsView(c){
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ const labelOfBenefit=key=>{
+   const native=BONUS_TARGETS.find(([id])=>id===key);
+   if(native)return native[1];
+   if(key.startsWith('skill:'))return 'Abilità · '+(SKILLS.find(row=>row[0]===key.slice(6))?.[1]||key.slice(6));
+   if(key.startsWith('save:'))return 'TS · '+(abilities[key.slice(5)]||key.slice(5));
+   if(key.startsWith('ability_mod:'))return 'Modificatore · '+(abilities[key.slice(12)]||key.slice(12));
+   if(key.startsWith('ability:'))return 'Punteggio · '+(abilities[key.slice(8)]||key.slice(8));
+   return key;
+  };
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
+  const ids=[trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean);
+  const norm=value=>String(value||'').trim().toLowerCase();
+  // Catalog cards use stable catalog IDs, whereas calculated grants use
+  // portable source/name IDs. Resolve both without changing saved identities.
+  if(trait.rank===0&&trait.category==='razza'){
+    if(c.species)ids.push('race|'+norm(c.species_source)+'|'+norm(c.species));
+    if(c.subrace)ids.push('subrace|'+norm(c.subrace_source)+'|'+norm(c.subrace));
+  }
+  if(trait.rank===0&&trait.category==='talenti'){
+    for(const feat of c.feats_catalog||[]){
+      if(!feat?.name)continue;
+      const localKey='feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source));
+      if(localKey===trait.origin_key)ids.push('feat|'+norm(feat.source)+'|'+norm(feat.name));
+    }
+  }
+  const granted=(state.calculated?.bonuses||[]).filter(row=>
+    ids.includes(row.origin_id)||ids.includes(row.parent_origin));
+  const known=new Set(granted.map(row=>String(row.id||'')));
+  const automatic=(state.calculated?.automatic_bonuses||[]).filter(row=>
+    !known.has(String(row.id||''))&&(ids.includes(row.origin_id)||ids.includes(row.parent_origin)));
+  const dice=(c.dice_bonuses||[]).filter(row=>!row.disabled&&ids.includes(row.origin_id));
+  const prof=Object.entries(state.calculated?.proficiency_sources||{}).filter(([,sources])=>
+    sources.some(source=>ids.includes(source.id))).map(([key])=>key);
+  const benefits=[...granted,...automatic].map(row=>
+    '<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(row.id||'')+'">'+
+    '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(sheetRollSymbol(row.expression))+(row.disabled?' · disattivato':'')+'</b></button>')
+    .concat(dice.map(row=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses">'+
+      '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(row.dice)+'</b></button>'))
+    .concat(prof.map(key=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="proficiency_choices">'+
+      '<span>Competenza</span><b>'+esc(key)+'</b></button>')).join('');
+  const benefitDetails=benefits?'<div class="trait-benefits"><strong>Benefici concessi</strong>'+benefits+'</div>':'';
   const active=!trait.inactive;
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
@@ -762,7 +803,7 @@ async function traitsView(c){
       trait.granted_spells.map(spell=>'<span class="trait-granted-spell">'+esc(spell.name)+'</span>').join('')+'</span>':'')+'</summary>'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
-    toggler+linked+'</details>';
+    toggler+benefitDetails+linked+'</details>';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
   '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
@@ -2889,20 +2930,25 @@ async function handleAction(target){
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro',author=selectedName();
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
-    const autoAdvantage=classFeatureRollAdvantage(creature,calculated,key);
+    const autoSources=classFeatureRollSources(creature,calculated,key);
+    const automatic=resolveClassRollMode(autoSources);
+    const formulaMarkup=(chosen=[],choice='auto')=>{
+      const resolved=resolveClassRollMode(autoSources,choice);
+      return sheetRollOriginHtml(sheetRollOriginSegments(creature,calculated,key,
+        {mode:resolved.mode,modeSources:resolved.sources,cancelled:resolved.cancelled,
+          diceBonuses:chosen}),esc);
+    };
+    const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
+      automatic.mode==='advantage'?' · vantaggio':
+      automatic.mode==='disadvantage'?' · svantaggio':'';
     document.querySelector('#sheet-roll-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-roll-preview';
     dialog.id='sheet-roll-dialog';dialog.dataset.rollTarget=key;
     dialog.dataset.rollLabel=label;dialog.dataset.creatureId=creature.id||'';
     dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2>'+
       '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
-      '<div class="sheet-roll-math"><span>Formula del tiro</span><strong data-roll-formula>'+
-      esc(sheetRollFormula(modifier,[],autoAdvantage?'advantage':'normal'))+'</strong></div>'+
-      '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+(autoAdvantage?' · vantaggio dal privilegio':'')+'</option><option value="normal">Normale</option><option value="advantage">Vantaggio</option><option value="disadvantage">Svantaggio</option></select></label>'+
-      '<p class="sheet-roll-components"><strong>Calcolo del modificatore:</strong> '+
-      esc(sheetModifierBreakdown(calculated,key))+'</p>'+
-      (key==='initiative'?'':'<p class="sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
-      esc(calculated.explanations?.[key]||'')+'</p>')+
+      '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span><div data-roll-formula>'+formulaMarkup()+'</div></div>'+
+      '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+esc(autoLabel)+'</option><option value="normal">Forza tiro normale</option><option value="advantage">Aggiungi vantaggio</option><option value="disadvantage">Aggiungi svantaggio</option></select></label>'+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
        ''+
        bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
@@ -2917,7 +2963,18 @@ async function handleAction(target){
       const selected=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
-      if(formula)formula.textContent=sheetRollFormula(modifier,selected,choice==='auto'?(autoAdvantage?'advantage':'normal'):choice);
+      if(formula)formula.innerHTML=formulaMarkup(selected,choice);
+    });
+    dialog.addEventListener('click',event=>{
+      const button=event.target.closest('[data-act="roll-origin-open"]');
+      if(!button)return;
+      event.stopPropagation(); // The global delegated click listener must not handle this twice.
+      const originId=button.dataset.originId,section=button.dataset.originSection;
+      dialog.close?.();dialog.remove();
+      const actionTarget={dataset:originId?{act:'power-trait',originId}:
+        section==='conditions'?{act:'sheet',sheet:'conditions'}:
+          {act:'sheet-details',detail:section||'proficiency_choices'}};
+      void handleAction(actionTarget).catch(error=>message(errorMessage(error),true));
     });
     document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
@@ -2934,8 +2991,8 @@ async function handleAction(target){
     const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
        bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
     const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
-    const mode=choice==='auto'?(classFeatureRollAdvantage(creature,calculated,key)?'advantage':'normal'):choice;
-    const outcome=rollSheetDice(modifier,chosen,randomDie,mode);
+    const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
+    const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
     dialog.dataset.rolled='true';
     state.roll={...outcome,label,author:selectedName()};
     state.rollHistory.unshift({...state.roll});
@@ -3055,10 +3112,52 @@ async function handleAction(target){
     state.sheet="info";state.sheetPopup="";state.sheetPopupTitle="";
     await render();
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
-    const exact=cards.find(card=>card.dataset.traitFeature===id);
-    const match=exact||cards.find(card=>card.dataset.traitOrigin===id);
-    if(match){match.open=true;match.scrollIntoView?.({block:'center'});}
-    else app.querySelector('.play-info-traits')?.scrollIntoView?.({block:'start'});
+    const feature=(state.calculated?.features||[]).find(f=>f.origin_id===id);
+    const parts=id.split('|'),current=state.editor?.read()||{};
+    let normalized=id;
+    if(parts[0]==='race'&&String(current.species||'').toLowerCase()===parts.slice(2).join('|')){
+      normalized='species|'+(current.species_id||parts.slice(2).join('|'))+'|'+parts[1];
+    }else if(parts[0]==='subrace'&&String(current.subrace||'').toLowerCase()===parts.slice(2).join('|')){
+      const raceKey=(current.species_id||String(current.species||'').toLowerCase());
+      normalized='species|'+raceKey+'|'+String(current.species_source||'').toLowerCase();
+    }else if(parts[0]==='feat'){
+      const feat=(current.feats_catalog||[]).find(row=>
+        String(row.name||'').toLowerCase()===parts.slice(2).join('|')&&
+        String(row.source||'').toLowerCase()===parts[1]);
+      if(feat)normalized='feat|'+(feat.id||parts.slice(2).join('|')+'|'+parts[1]);
+    }
+    const matchedByName=feature?cards.find(card=>{
+      const name=String(card.querySelector('summary')?.textContent||'').trim().toLowerCase();
+      return (card.dataset.traitOrigin===feature.origin_key||
+        card.dataset.traitFeature===feature.origin_id)&&
+        (name===String(feature.name||'').toLowerCase()||
+         name.startsWith(String(feature.name||'').toLowerCase()+' ·'));
+    }):null;
+    const match=cards.find(card=>card.dataset.traitFeature===id)||
+      matchedByName||
+      cards.find(card=>card.dataset.traitOrigin===id||card.dataset.traitOrigin===normalized||
+        (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key));
+    if(match){
+      const disclosure=match.closest('.play-info-traits');
+      if(disclosure)disclosure.open=true;
+      match.open=true;match.scrollIntoView?.({block:'center'});
+    }
+    else {
+      // Missing catalog entries must not become dead provenance links.
+      const hasBonus=(state.calculated?.bonuses||[]).some(row=>row.origin_id===id)||
+        (state.calculated?.automatic_bonuses||[]).some(row=>row.origin_id===id);
+      state.sheet='origins';state.detail=hasBonus?'formula_bonuses':'overview';await render();
+      if(hasBonus){
+        const auto=(state.calculated?.automatic_bonuses||[]).find(row=>row.origin_id===id);
+        const manual=(state.editor?.read()?.formula_bonuses||[]).findIndex(row=>row.origin_id===id);
+        const el=manual>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+manual+'"]'):
+          auto?[...app.querySelectorAll('[data-auto-bonus]')].find(el=>el.dataset.autoBonus===auto.id):null;
+        el?.scrollIntoView?.({block:'center'});
+      }else{
+        [...app.querySelectorAll('[data-origin-enabled]')].find(el=>el.dataset.originEnabled===id)
+          ?.scrollIntoView?.({block:'center'});
+      }
+    }
     return;
    }
   if(act==="new-homebrew-item"){
@@ -3071,6 +3170,21 @@ async function handleAction(target){
     const name=app.querySelector("#quick-name");
     name?.scrollIntoView?.({block:"center"});
     name?.focus();
+    return;
+  }
+  if(act==="trait-benefit-open"){
+    state.magicPopup="";state.sheet="origins";state.detail=target.dataset.detail||'formula_bonuses';
+    state.sheetPopup="origin-editor";
+    state.sheetPopupTitle=DETAILS.find(([key])=>key===state.detail)?.[1]||'Bonus';
+    await render();
+    const id=target.dataset.bonusId;
+    if(id){
+      const originRows=(state.editor?.read()?.formula_bonuses||[]);
+      const index=originRows.findIndex(row=>row.id===id);
+      const el=index>=0?app.querySelector('[data-native-list="formula_bonuses"][data-index="'+index+'"]'):
+        [...app.querySelectorAll('[data-auto-bonus]')].find(row=>row.dataset.autoBonus===id);
+      el?.scrollIntoView?.({block:'center'});
+    }
     return;
   }
   if(act==="sheet-details"){

@@ -39,6 +39,7 @@ const FILES := {
 	"/catalog/class_resource_overrides.json": ["res://vtt/data/class_resource_overrides.json", "application/json; charset=utf-8"],
 	"/structured_effects.js": ["res://pwa/structured_effects.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
+	"/sheet_roll_origin.js": ["res://pwa/sheet_roll_origin.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
 	"/spell_metadata.js": ["res://pwa/spell_metadata.js", "text/javascript; charset=utf-8"],
