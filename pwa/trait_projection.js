@@ -323,7 +323,8 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
    const ownedId=String(row.origin_key||'');
    const display=norm(String(row.origin||'').split(' · ').pop());
    return (originId&&
-       (String(row.feature_origin||'')===originId||ownedId===originId))||
+       (String(row.feature_origin||'')===originId||ownedId===originId||
+         originId==='feature:trait:'+row.key))||
      (originName&&display===originName);
   });
   if(!candidates.length)continue;
