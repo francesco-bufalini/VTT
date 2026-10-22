@@ -36,7 +36,15 @@ try{
    resource_trackers:[{id:'charge',name:'Cariche',max:3,recharge:'long_rest'}],resource_tracker_spent:{charge:1}},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();
- const section=async key=>{if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();const target=page.locator('#sheet-navigation [data-sheet="'+key+'"],#secondary-sheet-navigation [data-sheet="'+key+'"]').first();if(!await target.isVisible())await page.locator('#more-navigation').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
+ const section=async key=>{
+  if(await page.locator('#sheet-context-dialog[open]').count())
+   await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
+  const target=['conditions','origins'].includes(key)?
+   page.locator('.sheet-quick-links [data-sheet="'+key+'"]'):
+   page.locator('#sheet-navigation [data-sheet="'+key+'"]');
+  await target.click();
+  await page.waitForFunction(tab=>document.querySelector('#app').dataset.renderedSheet===tab,key);
+ };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
   for(const key of ['info','battle','magic','inventory','conditions','origins']){
