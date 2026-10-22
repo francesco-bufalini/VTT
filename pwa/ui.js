@@ -19,7 +19,8 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
+import {sheetRollOriginSegments,sheetRollOriginHtml} from "./sheet_roll_origin.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
@@ -2867,19 +2868,19 @@ async function handleAction(target){
     const label=target.dataset.label||'Tiro',author=selectedName();
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
     const autoAdvantage=classFeatureRollAdvantage(creature,calculated,key);
+    const formulaMarkup=(chosen=[],choice='auto')=>{
+      const mode=choice==='auto'?(autoAdvantage?'advantage':'normal'):choice;
+      return sheetRollOriginHtml(sheetRollOriginSegments(creature,calculated,key,
+        {mode,diceBonuses:chosen,autoAdvantage:choice==='auto'&&autoAdvantage}),esc);
+    };
     document.querySelector('#sheet-roll-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-roll-preview';
     dialog.id='sheet-roll-dialog';dialog.dataset.rollTarget=key;
     dialog.dataset.rollLabel=label;dialog.dataset.creatureId=creature.id||'';
     dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2>'+
       '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
-      '<div class="sheet-roll-math"><span>Formula del tiro</span><strong data-roll-formula>'+
-      esc(sheetRollFormula(modifier,[],autoAdvantage?'advantage':'normal'))+'</strong></div>'+
+      '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span><div data-roll-formula>'+formulaMarkup()+'</div></div>'+
       '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+(autoAdvantage?' · vantaggio dal privilegio':'')+'</option><option value="normal">Normale</option><option value="advantage">Vantaggio</option><option value="disadvantage">Svantaggio</option></select></label>'+
-      '<p class="sheet-roll-components"><strong>Calcolo del modificatore:</strong> '+
-      esc(sheetModifierBreakdown(calculated,key))+'</p>'+
-      (key==='initiative'?'':'<p class="sheet-roll-provenance"><strong>Origini e bonus applicati:</strong> '+
-      esc(calculated.explanations?.[key]||'')+'</p>')+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
        ''+
        bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
@@ -2894,7 +2895,15 @@ async function handleAction(target){
       const selected=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
-      if(formula)formula.textContent=sheetRollFormula(modifier,selected,choice==='auto'?(autoAdvantage?'advantage':'normal'):choice);
+      if(formula)formula.innerHTML=formulaMarkup(selected,choice);
+    });
+    dialog.addEventListener('click',event=>{
+      const button=event.target.closest('[data-act="roll-origin-open"]');
+      if(!button)return;
+      const originId=button.dataset.originId,section=button.dataset.originSection;
+      dialog.close?.();dialog.remove();
+      const actionTarget={dataset:originId?{act:'power-trait',originId}:{act:'sheet-details',detail:section||'proficiency_choices'}};
+      void handleAction(actionTarget).catch(error=>message(errorMessage(error),true));
     });
     document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
@@ -3032,10 +3041,18 @@ async function handleAction(target){
     state.sheet="info";state.sheetPopup="";state.sheetPopupTitle="";
     await render();
     const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
-    const exact=cards.find(card=>card.dataset.traitFeature===id);
-    const match=exact||cards.find(card=>card.dataset.traitOrigin===id);
+    const feature=(state.calculated?.features||[]).find(f=>f.origin_id===id);
+    const normalized=id.startsWith('race|')?'species|'+id.split('|').slice(2).join('|')+'|'+id.split('|')[1]:id;
+    const match=cards.find(card=>card.dataset.traitFeature===id)||
+      cards.find(card=>card.dataset.traitOrigin===id||card.dataset.traitOrigin===normalized||
+        (feature?.origin_key&&card.dataset.traitOrigin===feature.origin_key))||
+      (feature?cards.find(card=>card.querySelector('summary')?.textContent?.toLowerCase().includes(String(feature.name||'').toLowerCase())):null);
     if(match){match.open=true;match.scrollIntoView?.({block:'center'});}
-    else app.querySelector('.play-info-traits')?.scrollIntoView?.({block:'start'});
+    else {
+      // Missing catalog entries must not become dead provenance links.
+      state.sheet='origins';state.detail='overview';await render();
+      app.querySelector('[data-origin-enabled]')?.scrollIntoView?.({block:'center'});
+    }
     return;
    }
   if(act==="new-homebrew-item"){
