@@ -2439,11 +2439,19 @@ function damageRollTerms(formula){
  }));
  return {modifier:validated.modifier,segments};
 }
+function currentlyAvailableRollBonus(original,available){
+ if(!original)return null;
+ return available.find(row=>String(row.id||'')===String(original.id||'')&&
+   String(row.origin_id||'')===String(original.origin_id||'')&&
+   String(row.dice||'')===String(original.dice||'')&&
+   String(row.target||'')===String(original.target||''))||null;
+}
 function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
  document.querySelector('#sheet-roll-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='sheet-roll-dialog';dialog.className='sheet-roll-dialog sheet-roll-preview';
  dialog.dataset.rollKind=kind;dialog.dataset.creatureId=creatureId;
+ dialog.rollBonuses=bonuses;
  if(kind==='damage'){
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
@@ -3030,7 +3038,7 @@ async function handleAction(target){
         if(!Number.isFinite(modifier))throw Error('Modificatore non disponibile.');
         const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
         const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
-          bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+          currentlyAvailableRollBonus(dialog.rollBonuses[Number(input.dataset.rollBonus)],bonuses)).filter(Boolean);
         const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
         const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
         const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
@@ -3050,7 +3058,7 @@ async function handleAction(target){
           // The next throw is independent. Previously consumed spell bonuses
           // must not be selectable or silently re-applied on a second click.
           for(const input of dialog.querySelectorAll('[data-roll-bonus]:checked')){
-            const row=bonuses[Number(input.dataset.rollBonus)];
+            const row=dialog.rollBonuses[Number(input.dataset.rollBonus)];
             if(consumed.has(row?.consumes_spell)){input.checked=false;input.disabled=true;}
           }
           try{
@@ -3066,8 +3074,16 @@ async function handleAction(target){
         const current=state.editor.read();
         const fresh=await computeLocalData(current);
         const freshBonuses=applicableDiceBonuses(current,key,state.spellCatalog||[]);
+        // Consuming a spell shifts the current bonus array. The original
+        // checkbox index must never select an unrelated bonus.
+        for(const input of dialog.querySelectorAll('[data-roll-bonus]')){
+          const original=dialog.rollBonuses[Number(input.dataset.rollBonus)];
+          if(!currentlyAvailableRollBonus(original,freshBonuses)){
+            input.checked=false;input.disabled=true;
+          }
+        }
         const stillChosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
-          freshBonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+          currentlyAvailableRollBonus(dialog.rollBonuses[Number(input.dataset.rollBonus)],freshBonuses)).filter(Boolean);
         const effective=resolveClassRollMode(classFeatureRollSources(current,fresh,key),choice);
         dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
           sheetRollOriginSegments(current,fresh,key,{mode:effective.mode,
