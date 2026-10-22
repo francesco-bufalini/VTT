@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
 import {sheetRollOriginSegments,sheetRollOriginHtml} from '../sheet_roll_origin.js';
+import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
+import {rollSheetDice} from '../sheet_rules_view.js';
 
 function character(){
  const c=initialCreature('character','Guerriero','origin-test','local');
@@ -19,7 +21,7 @@ test('full athletic roll separates base, proficiency, category item and symbolic
  const c=character(),calculated=calculateSheet(c);
  assert.equal(calculated.values['skill:athletics'],10);
  const terms=sheetRollOriginSegments(c,calculated,'skill:athletics',{mode:'advantage',
-   autoAdvantage:true});
+   modeSources:[{mode:'advantage',origin_id:'feature:rage',origin_name:'Ira'}]});
  assert.equal(terms[0].formula,'ADV');
  assert.equal(terms[1].formula,'1d20 + Mod.FOR');
  assert.equal(terms[1].expanded,'1d20 +4');
@@ -108,8 +110,60 @@ test('an unexplained non-base modifier is never silently attributed to standard 
 });
 test('the automatic Rage advantage segment is named Ira without an extra dice formula',()=>{
  const c=character(),calc=calculateSheet(c);
- const terms=sheetRollOriginSegments(c,calc,'skill:athletics',{mode:'advantage',autoAdvantage:true});
+ const terms=sheetRollOriginSegments(c,calc,'skill:athletics',{mode:'advantage',
+   modeSources:[{mode:'advantage',origin_id:'feature:rage',origin_name:'Ira'}]});
  assert.equal(terms[0].formula,'ADV');
  assert.equal(terms[0].originName,'Ira');
  assert.equal(terms[0].expanded,'');
+});
+
+test('two advantages never stack, and one disadvantage cancels both; the preview shows every origin',()=>{
+ const c={...character(),active_class_features:{rage:{}},conditions:['poisoned']};
+ const calc=calculateSheet(c);
+ const fixtures=[
+   {name:'Rage',origin_key:'class|phb|barbarian',origin_id:'feature:rage',class_name:'Barbarian'},
+   {name:'Vigore arcano',origin_key:'class|phb|barbarian',origin_id:'feature:arcane',
+     roll_modes:[{mode:'advantage',targets:['ability_check','skill:athletics']}]},
+ ];
+ const calculated={...calc,features:fixtures};
+ const sources=classFeatureRollSources(c,calculated,'skill:athletics');
+ assert.deepEqual(sources.filter(r=>r.mode==='advantage').map(r=>r.origin_name),
+   ['Ira','Tratto · Vigore arcano']);
+ assert.equal(sources.filter(r=>r.mode==='disadvantage').length,1);
+ const state=resolveClassRollMode(sources);
+ assert.equal(state.mode,'normal');
+ assert.equal(state.cancelled,true);
+ assert.equal(classFeatureRollAdvantage(c,calculated,'skill:athletics'),false);
+ const segments=sheetRollOriginSegments(c,calculated,'skill:athletics',
+   {mode:state.mode,modeSources:state.sources,cancelled:state.cancelled});
+ assert.deepEqual(segments.slice(0,3).map(row=>row.formula),['ADV','ADV','DIS']);
+ assert(segments.slice(0,3).every(row=>row.expanded==='Annullato'));
+ assert.deepEqual(segments.slice(0,3).map(row=>row.originName),
+   ['Ira','Tratto · Vigore arcano','Condizione · Avvelenato']);
+ assert.doesNotMatch(sheetRollOriginHtml(segments,x=>x),/2d20kh1|2d20kl1/);
+ let dice=[7,19];
+ const neutral=rollSheetDice(calc.values['skill:athletics'],[],()=>dice.shift(),state.mode);
+ assert.deepEqual(neutral.rolls,[7], 'Cancelled roll must consume one d20');
+ assert.equal(dice.length,1);
+ const withoutPoison=classFeatureRollSources({...c,conditions:[]},calculated,'skill:athletics');
+ assert.equal(resolveClassRollMode(withoutPoison).mode,'advantage');
+ let pairs=[6,17,2];
+ const advantage=rollSheetDice(0,[],()=>pairs.shift(),resolveClassRollMode(withoutPoison).mode);
+ assert.deepEqual(advantage.rolls,[6,17], 'Multiple advantages roll only two dice');
+ assert.equal(advantage.total,17);
+ assert.equal(resolveClassRollMode(withoutPoison,'disadvantage').mode,'normal',
+   'Manual situational disadvantage also cancels automatic privilege advantage');
+ const disabled=classFeatureRollSources({...c,origin_enabled:{'feature:arcane':false}},calculated,'skill:athletics');
+ assert(!disabled.some(row=>row.origin_id==='feature:arcane'));
+});
+test('two disadvantages and one advantage still give a normal d20',()=>{
+ const sources=[
+   {mode:'disadvantage',origin_id:'feature:a',origin_name:'A'},
+   {mode:'disadvantage',origin_id:'feature:b',origin_name:'B'},
+   {mode:'advantage',origin_id:'feature:c',origin_name:'C'}
+ ];
+ assert.equal(resolveClassRollMode(sources).mode,'normal');
+ assert.equal(resolveClassRollMode(sources.slice(0,2)).mode,'disadvantage');
+ assert.equal(resolveClassRollMode(sources.slice(0,2),'advantage').mode,'normal');
+ assert.equal(resolveClassRollMode(sources,'normal').mode,'normal');
 });
