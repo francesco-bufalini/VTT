@@ -135,8 +135,8 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    originName:'Base · regole',originId:'',key:'base'};
  if(!monsterAttack&&Math.abs(remainder)>0.000001)result.push({
    kind:'rules',formula:(remainder<0?'−':'+')+' Altri modificatori',
-   expanded:signed(remainder),value:remainder,originName:'Altre regole',
-   originId:'',key:'rules'});
+   expanded:signed(remainder),value:remainder,originName:'Contributo non attribuito',
+   originId:'',section:'formula_bonuses',key:'rules'});
  // Dado bonus selections belong to the same source as flat grants.
  // The result is not thrown during a preview: show the symbolic die on
  // both rows until the user actually rolls it.
