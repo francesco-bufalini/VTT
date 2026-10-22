@@ -172,6 +172,24 @@ export function sheetRollOriginLabel(name){
  const short=full.replace(/^(?:(?:oggetto|tratto|privilegio|item)\s*[-–—:·]\s*)+/gi,'').trim();
  return short||full;
 }
+// The damage formula and the damage types are independent data: one type
+// covers every die group, or an ordered list maps to the respective groups.
+// Never invent a type when an ambiguous list does not match the die groups.
+export function damageRollSegments(roll,type=''){
+ const terms=String(roll?.notation||'').match(/[+-]?[^+-]+/g)||[];
+ const diceCount=terms.filter(term=>/^\\+?\\d+d\\d+$/i.test(term)).length;
+ const declared=Array.isArray(type)?type.map(String):String(type||'').split(/\\s*(?:[,;]|\\s+\\+\\s+)\\s*/);
+ const labels=declared.map(label=>label.trim()).filter(Boolean);
+ const typed=labels.length===1||labels.length===diceCount;
+ let diceIndex=-1;
+ return terms.map((term,i)=>{
+   const isDie=/^\\+?\\d+d\\d+$/i.test(term);
+   if(isDie)diceIndex++;
+   return {key:'damage:'+i,kind:i===0?'base':'formula',
+     formula:term,expanded:'',damageType:typed?(labels.length===1?labels[0]:labels[Math.max(0,diceIndex)]):'',
+     originName:isDie?'Dadi danno':'Modificatore',originId:'',value:0};
+ });
+}
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
@@ -181,6 +199,7 @@ export function sheetRollOriginHtml(segments,escapeHtml){
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
      (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
+     (row.damageType!==undefined?'<span class="sheet-roll-origin-damage-type">'+esc(row.damageType||'Tipo non specificato')+'</span>':'')+
      '<span class="sheet-roll-origin-name">'+esc(sheetRollOriginLabel(row.originName))+'</span></'+tag+'>';
  }).join('')+'</div>';
 }
