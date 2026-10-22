@@ -534,6 +534,46 @@ try{
   await traitDisclosure.locator(':scope > summary').click();
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
+ // Benefits and description must be independent controls.
+ const firstTrait=page.locator('.play-info-traits .trait-row').first();
+ const traitDescription=firstTrait.locator('details.trait-card');
+ assert.equal(await traitDescription.getAttribute('open'),null);
+ const trigger=firstTrait.locator('[data-act="trait-benefits-open"]');
+ assert.equal(await trigger.count(),1);
+ await trigger.click();
+ const benefitDialog=page.locator('#trait-benefits-dialog[open]');
+ await benefitDialog.waitFor();
+ assert.equal(await traitDescription.getAttribute('open'),null,'Benefit icon must not expand trait lore');
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false);
+ await benefitDialog.locator('[data-act="trait-benefits-add"]').click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),true);
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="target"]').selectOption('initiative');
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="expression"]').fill('2');
+ assert.equal((await record()).formula_bonuses?.filter(x=>x.id?.startsWith('trait:')).length||0,0,
+  'Typing a benefit must not autosave');
+ await benefitDialog.locator('[data-act="trait-benefits-save"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:')&&x.expression==='2');
+ });
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Saved form must close rather than stay expanded');
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ await trigger.click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Reopening the popup must never reopen its add form');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-request"][data-benefit-id^="bonus:trait:"]').click();
+ assert.equal((await record()).formula_bonuses.filter(x=>x.id?.startsWith('trait:')).length,1,
+  'First removal click only asks for confirmation');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-confirm"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return !(await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:'));
+ });
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ assert.equal(await benefitDialog.count(),0);
+ await traitDescription.locator(':scope > summary').click();
+ assert.equal(await traitDescription.getAttribute('open'),'');
+ assert.equal(await traitDescription.locator('.trait-benefits').count(),0,
+  'Expanded trait contains only description, never benefits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
