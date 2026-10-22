@@ -771,7 +771,7 @@ async function traitsView(c){
   const toggler=trait.feature_origin?
     '<label class="check"><input type="checkbox" data-feature-origin="'+
        esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
-  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'"><summary>+
+  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'"><summary>'+
     '<span class="trait-title">'+esc(trait.name)+(active?'':' · disattivato')+'</span></summary>'+
     '<div class="trait-content">'+
     (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
