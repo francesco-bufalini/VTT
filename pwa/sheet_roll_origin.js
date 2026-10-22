@@ -51,7 +51,14 @@ function featureForAutoAdvantage(record,calculated,target){
    ['Rage'];
  const matching=list(calculated?.features).find(f=>names.some(n=>String(f.name||'').toLowerCase()===n.toLowerCase())&&!f.disabled);
  const name=matching?.name||names[0];
- return {id:matching?.origin_id||matching?.origin_key||'',name};
+ const classNames={'Rage':'Barbarian','Reckless Attack':'Barbarian',
+   'Patient Defense':'Monk','Innate Sorcery':'Sorcerer'};
+ const className=classNames[names[0]];
+ const member=list(record?.classes).find(row=>String(row.name||'').toLowerCase()===String(className||'').toLowerCase())||
+   (String(record?.class||'').toLowerCase()===String(className||'').toLowerCase()?
+     {name:record.class,source:record.class_source||''}:null);
+ const classOrigin=member?'class|'+String(member.source||'').toLowerCase()+'|'+String(member.name).toLowerCase():'';
+ return {id:matching?.origin_id||matching?.origin_key||classOrigin,name};
 }
 // Returns symbolic and expanded numeric forms for each source. No random dice
 // are evaluated merely by opening the popup.
@@ -76,7 +83,8 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    appended.add(id);consumed+=value;
    result.push({kind,formula:bonusText(scale===1?row.expression:scale+' × ('+row.expression+')'),
      expanded:signed(value),value,originId:String(row.origin_id||''),
-     originName:row.origin_name||'Bonus',key:id});
+     originName:row.origin_name||'Bonus',
+     section:row.origin_id?'':'formula_bonuses',key:id});
  };
  if(ability){
    let running=score;
@@ -124,7 +132,8 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    const dice=String(row?.dice||'');
    if(!/^\d{1,2}d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/i.test(dice))continue;
    ordered.push({kind:'dice',formula:'+'+dice,expanded:'+'+dice,originId:String(row.origin_id||''),
-     originName:row.origin_name||'Dado bonus',key:'dice:'+i});
+     originName:row.origin_name||'Dado bonus',
+     section:row.origin_id?'':'formula_bonuses',key:'dice:'+i});
  }
  return ordered;
 }
