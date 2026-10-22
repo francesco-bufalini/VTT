@@ -21,7 +21,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, sheetRollFormula, rollSheetDice, rollBattleDamage, sheetRollChatFields, sheetModifierBreakdown, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
-import {changeTrackerUses,spendTrackerUses} from "./character_core.js";
+import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -3352,7 +3352,7 @@ async function handleAction(target){
     const event=preview.dataset.restPreview,dice=JSON.parse(preview.dataset.restDice||'{}');
     const current=state.editor.read(),calculated=await computeLocalData(current);
     const manual=preview.querySelector('[data-rest-roll-mode]')?.value==='manual';
-    const values=manual?String(preview.querySelector('[data-rest-manual-results]')?.value||'').split(/[,;\\s]+/).filter(Boolean).map(Number):[];
+    const values=manual?String(preview.querySelector('[data-rest-manual-results]')?.value||'').split(/[,;\s]+/).filter(Boolean).map(Number):[];
     const expected=Object.values(dice).reduce((sum,n)=>sum+Number(n||0),0);
     const diceOrder=hitDicePools(current,calculated).filter(pool=>dice['d'+pool.die]>0)
       .flatMap(pool=>Array(Number(dice['d'+pool.die])).fill(pool.die));
