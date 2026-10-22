@@ -3087,6 +3087,9 @@ async function handleAction(target){
     let normalized=id;
     if(parts[0]==='race'&&String(current.species||'').toLowerCase()===parts.slice(2).join('|')){
       normalized='species|'+(current.species_id||parts.slice(2).join('|'))+'|'+parts[1];
+    }else if(parts[0]==='subrace'&&String(current.subrace||'').toLowerCase()===parts.slice(2).join('|')){
+      const raceKey=(current.species_id||String(current.species||'').toLowerCase());
+      normalized='species|'+raceKey+'|'+String(current.species_source||'').toLowerCase();
     }else if(parts[0]==='feat'){
       const feat=(current.feats_catalog||[]).find(row=>
         String(row.name||'').toLowerCase()===parts.slice(2).join('|')&&
