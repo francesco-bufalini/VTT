@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
  artificerLevel,infusionLimits,learnedInfusions,infusionEligible,infusionNumericBonuses,
- learnInfusionPatch,applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch
+ learnInfusionPatch,prepareInfusionPatch,preparedInfusions,activeInfusions,infusionGrantingTrait,
+ applyInfusionPatch,clearInfusionPatch,forgetInfusionPatch
 } from "../item_controls.js";
 import {calculateSheet} from "../sheet_rules.js";
 const index=JSON.parse(readFileSync(new URL("../catalog/ability_grants.json",import.meta.url),"utf8"));
@@ -36,6 +37,8 @@ test("learn, infuse one stacked sword, and compute upgraded +2 attack/damage ent
  record={...record,...learnInfusionPatch(record,entry,definitions,mechanics)};
  const known=learnedInfusions(record,definitions);
  assert.equal(known.length,1);
+ assert.equal(preparedInfusions(record,definitions).length,0,"New infusions require preparation");
+ record={...record,...prepareInfusionPatch(record,known[0],true,definitions)};
  record={...record,...applyInfusionPatch(record,known[0],definitions,mechanics,0)};
  assert.equal(record.inventory.length,2);
  assert.equal(record.inventory[0].quantity,1);
@@ -58,6 +61,7 @@ test("infusion attunement, low-level restrictions and forgetting",()=>{
  const focus=byName("Enhanced Arcane Focus");
  assert.equal(infusionEligible(focus,wand),true);
  record={...record,...learnInfusionPatch(record,focus,definitions,mechanics)};
+ record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],true,definitions)};
  record={...record,...applyInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,mechanics,0)};
  assert.equal(record.inventory[0].infusion.requires_attunement,true);
  const output=calculateSheet(record,{abilityGrants:index});
@@ -85,4 +89,29 @@ test("typed selectors reject mismatched or magical items; Repeating Shot applies
  const onItem={...arrow,infusion:{id:repeating.id,creator_id:record.id,level:10}};
  assert.equal(infusionNumericBonuses(record,onItem,definitions).bonus_weapon,1);
  assert.deepEqual(infusionNumericBonuses(record,{...melee,infusion:onItem.infusion},definitions),{});
+});
+
+test("infusions require their granting trait, not mere class ownership",()=>{
+ const trait={name:"Infuse Item",origin_key:"class|tce|artificer",
+   origin_id:"feature:class|tce|artificer|2|infuse item",level:2};
+ const known=byName("Enhanced Defense");
+ let record=make(10);
+ assert.equal(infusionGrantingTrait(record,[]),null);
+ assert.throws(()=>learnInfusionPatch(record,known,definitions,mechanics,-1,[]),/Infuse Item/);
+ record={...record,...learnInfusionPatch(record,known,definitions,mechanics,-1,[trait])};
+ assert.equal(record.optional_features_catalog[0].source_trait_id,trait.origin_id);
+ assert.equal(preparedInfusions(record,definitions).length,0);
+ assert.throws(()=>applyInfusionPatch(record,learnedInfusions(record,definitions)[0],definitions,mechanics,0,[trait]),/non preparata/);
+ record={...record,...prepareInfusionPatch(record,learnedInfusions(record,definitions)[0],true,definitions,[trait])};
+ record.inventory=[{name:"Armor",id:"armor:test",type:"HA",rarity:"none",quantity:1,equipped_slots:["body"]}];
+ record={...record,...applyInfusionPatch(record,preparedInfusions(record,definitions)[0],definitions,mechanics,0,[trait])};
+ assert.equal(activeInfusions(record).length,1);
+ const disabled={...record,origin_enabled:{[trait.origin_id]:false}};
+ assert.equal(activeInfusions(disabled).length,0);
+ assert.deepEqual(infusionNumericBonuses(disabled,disabled.inventory[0],definitions),{});
+ record={...record,...prepareInfusionPatch(record,preparedInfusions(record,definitions)[0],false,definitions,[trait])};
+ assert.equal(record.inventory[0].infusion,undefined);
+ assert.equal(preparedInfusions(record,definitions).length,0);
+ const legacy={...record};delete legacy.prepared_optional_features;
+ assert.equal(preparedInfusions(legacy,definitions).length,1,"Legacy learned infusions remain ready");
 });
