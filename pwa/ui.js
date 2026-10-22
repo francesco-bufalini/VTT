@@ -14,6 +14,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups } from "./trait_benefits.js";
+import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
@@ -37,7 +38,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -300,6 +301,7 @@ async function render() {
     decorateSheetHeadings();
     organizeSheetPanels();
     rememberUtilityDisclosures();
+    mountTraitBenefitDialog();
     syncBrowserHistory();
     const magicDialog=app.querySelector('#magic-tools-dialog');
     if(magicDialog){
@@ -745,39 +747,25 @@ async function traitsView(c){
   }
   return state.referenceCatalogs[category];
  };
- const linked='<div class="trait-editor-links" aria-label="Gestisci benefici e origini">'+
-  [['overview','Origini'],['proficiency_choices','Competenze'],['formula_bonuses','Bonus'],
-   ['resources','Tracker'],['origin_spell_grants','Incantesimi da origini']]
-  .map(([detail,label])=>'<button type="button" class="trait-editor-link" data-act="sheet-details" data-detail="'+detail+'">'+label+'</button>').join('')+'</div>';
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  // Benefits belong to the expanded trait body, never to its summary.
-  const benefitGroups=traitBenefitGroups(trait,c,state.calculated||{});
-  const benefitDetails=benefitGroups.length?
-    '<div class="trait-benefits"><strong>Benefici concessi</strong>'+
-    benefitGroups.map(group=>
-      '<div class="trait-benefit-group trait-benefit-group--'+esc(group.type.split(':')[0])+'"><span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-      group.items.map(item=>{
-        const isRollBonus=group.type==='bonus'||group.type==='dice';
-        const tag=isRollBonus?'button':'div';
-        return '<'+tag+(isRollBonus?' type="button" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(item.id||'')+'"':'')+
-          ' class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
-          (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</'+tag+'>';
-      }).join('')+'</div>').join('')+'</div>':'';
+  const benefitCount=traitBenefitGroups(trait,c,state.calculated||{})
+    .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
-  const toggler=trait.feature_origin?
-    '<label class="check"><input type="checkbox" data-feature-origin="'+
-       esc(trait.feature_origin)+'" '+(active?'checked':'')+'>Beneficio attivo</label>':'';
-  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'"><summary>'+
-    '<span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?'':' · disattivato')+'</span></summary>'+
+  // The icon is a separate control, not a nested button inside <summary>.
+  // A chevron belongs exclusively to expanding the description.
+  return '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
+    '<button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
+      (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
+    '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?' · disattivato':'')+'</span></summary>'+
     '<div class="trait-content">'+
-    (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    benefitDetails+
-    (description?'<section class="trait-description-section"><h5 class="trait-description-heading">Descrizione</h5><p class="trait-description">'+esc(description)+'</p></section>':'')+
-    toggler+'</div></details>';
+      (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
+      (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
+    '</div></details>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
@@ -793,7 +781,7 @@ async function traitsView(c){
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
- return panel('Tratti',(content?linked+content:'<p>Nessun privilegio da mostrare.</p>'))+
+ return panel('Tratti',(content||'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
 }
 function documentRow(item,index,stored){
