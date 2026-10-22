@@ -474,13 +474,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
-  const dice=hitDicePools(c,d);
-  const diceControls=dice.map(pool=>'<label class="play-rest-die">'+
-    '<span>d'+pool.die+' · '+pool.available+' / '+pool.total+'</span>'+
-    '<input type="number" inputmode="numeric" data-rest-die="'+pool.die+'" min="0" max="'+pool.available+'" value="0" aria-label="Dadi Vita d'+pool.die+' da spendere"></label>').join('');
   const rest=document.createElement('div');
-  rest.innerHTML=(dice.length?'<div class="play-rest-dice"><strong>Dadi Vita</strong>'+diceControls+'</div>':'')+
-    '<div class="play-rest-choices">'+[['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+'</div>';
+  rest.innerHTML='<div class="play-rest-choices">'+
+    [['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+
+    '</div>';
   bind('rests',rest);
   // Link each tracker to the exact power group exposed by the spell/ability
   // editor, and offer direct ability details in the collapsible list.
@@ -606,7 +603,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione e filtro delle azioni">'+
    btn('Espandi tutto','increase','data-act="battle-expand-all"')+
    btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+
-   btn('Mostra solo privilegi di classe','proficiency','data-act="battle-toggle-class-only" aria-pressed="'+onlyClass+'"','<span>Mostra solo privilegi di classe</span>')+'</div>';
+   btn('Mostra solo privilegi di classe','proficiency','data-act="battle-toggle-class-only" aria-pressed="'+onlyClass+'"','<span>Solo privilegi</span>')+'</div>';
   if(resources+untracked||!onlyClass)html+=disclosure('resources','Risorse','reset',
    resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
   if(view.battleActions?.attacks||!onlyClass)html+=disclosure('attacks','Attacchi fisici','weapon',
