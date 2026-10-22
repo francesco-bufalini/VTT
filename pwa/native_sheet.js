@@ -467,7 +467,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const nativeNote='';
  const skillPanels=()=>panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Altre competenze',summary(['tool','language','weapon','armor'].map((kind,i)=>[['Strumenti','Linguaggi','Armi','Armature'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
-  '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
+  '';
  const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
@@ -513,7 +513,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
-   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>')+
+   panel('Talenti',feats)+
    statsIntro()+
    skillPanels();
  if(section==='battle'){
@@ -539,7 +539,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<div class="battle-defense-settings">'+armor+
       '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
       '<output>'+esc(acFormula)+'</output></div>'+
-      '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+
     '</div>';
   return '<div class="battle-root">'+
    panel('Punti ferita',
