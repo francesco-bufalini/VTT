@@ -295,7 +295,12 @@ try {
   assert.match(await errorPage.locator("#startup-diagnostic").innerText(),
     /\/ui\.js — HTTP 503 \| MIME text\/plain/);
   await errorPage.waitForFunction(() =>
-    document.querySelector("#startup-diagnostic")?.textContent?.includes("Controllati 27/27"),
+    (() => {
+      const progress = document.querySelector("#startup-diagnostic")?.textContent
+        ?.match(/Controllati (\\d+)\\/(\\d+)/);
+      return progress && Number(progress[1]) === Number(progress[2]) &&
+        Number(progress[1]) >= 27;
+    })(),
     null, { timeout: 30000 });
   const errorReport = await errorPage.locator("#startup-diagnostic").innerText();
   assert.match(errorReport, /VERIFICA DEGLI IMPORT REALI DI SAFARI/);
