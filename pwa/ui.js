@@ -3133,6 +3133,13 @@ async function handleAction(target){
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
+        const tracked=chosen.filter(row=>row.tracker_id&&row.tracker_cost);
+        if(tracked.length){
+          const used={...creature.resource_tracker_spent};
+          for(const row of tracked)used[row.tracker_id]=(Number(used[row.tracker_id])||0)+row.tracker_cost;
+          try{await patch({resource_tracker_spent:used});}
+          catch(error){message('Tiro registrato; consumo risorsa non salvato: '+errorMessage(error),true);}
+        }
         const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
         if(consumed.size){
           // The next throw is independent. Previously consumed spell bonuses
