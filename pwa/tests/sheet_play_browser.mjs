@@ -380,6 +380,7 @@ try{
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
  // A class saving-throw proficiency must navigate to the exact granted
  // proficiency trait, never a random feature or the generic bonus editor.
+ await sheet('info');
  await page.locator('#sheet-play-view [data-target="save:int"]').click();
  const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
  assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
@@ -390,7 +391,7 @@ try{
  assert.equal(await granted.getAttribute('open'),'');
  assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
  assert.match(await granted.textContent(),/Intelligenza/);
- await popup('rests');
+ await sheet('battle');await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
