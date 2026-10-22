@@ -206,9 +206,7 @@ function itemRows(record,warnings,infusionCatalog=[]){
   for(const saved of arr(record.inventory)){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
-    if(item.infusion&&Object.keys(item.infusion).length)
-      warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
-    const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
+    const sid="item:"+item.id,infusionSid="infusion:"+(item.instance_id||item.id),kind=itemKind(item),slots=arr(item.equipped_slots);
     const infusion=infusionNumericBonuses(record,item,infusionCatalog);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
@@ -233,7 +231,7 @@ function itemRows(record,warnings,infusionCatalog=[]){
         ])add(target,field,snake,camel);
         if(Number.isFinite(infusion.bonus_weapon)){
           for(const type of ["attack_hit:","attack_damage:"]){
-            const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
+            const grant=numericGrant(infusionSid,infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
             if(grant)rows.push(grant);
           }
         }
@@ -242,11 +240,11 @@ function itemRows(record,warnings,infusionCatalog=[]){
     // General infusion grants are per active item, while weapon grants
     // above follow the actual equipped hand and thrown-attack identities.
     if(infusion.bonus_ac!==undefined&&["armor","shield"].includes(kind)){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
+      const grant=numericGrant(infusionSid,infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
       if(grant)rows.push(grant);
     }
     if(infusion.bonus_spell_attack!==undefined){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
+      const grant=numericGrant(infusionSid,infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
       if(grant)rows.push(grant);
     }
     if(seen.has(sid))continue;
@@ -689,6 +687,14 @@ export function calculateSheet(record={},catalogs={}){
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
+    if(sid.startsWith("infusion:"))
+      return inventory.some(it=>
+        "infusion:"+(it.instance_id||it.id)===sid&&it.infusion?.id&&
+        itemActive(it,record)&&
+        (!it.infusion.source_trait_id||
+          record.origin_enabled?.[it.infusion.source_trait_id]!==false)&&
+        (!it.infusion.source_trait_id||
+          !arr(record.proficiency_origins).some(o=>o?.id===it.infusion.source_trait_id&&o.disabled)));
     const fragments=sid.split("|"),group=fragments[0],
       source=fragments[1]||"",name=fragments.slice(2).join("|");
     if(group==="race")return same(record.species,name)&&

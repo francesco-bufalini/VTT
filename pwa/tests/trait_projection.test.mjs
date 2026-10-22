@@ -202,3 +202,30 @@ test('future racial traits are hidden until their requested level',async()=>{
  assert.ok(found.some(t=>t.name==='First Gift'));
  assert.ok(!found.some(t=>t.name==='Fifth Gift'));
 });
+
+test('Artificer recipes belong to Infuse Item and grant item traits only while equipped',async()=>{
+ const origin='feature:class|tce|artificer|2|infuse item';
+ const record={kind:'character',id:'artificer',
+  classes:[{name:'Artificer',source:'TCE',level:5}],
+  optional_features_catalog:[{id:'infusion|tce|enhanced defense',name:'Enhanced Defense',
+    source:'TCE',source_trait_id:origin}],
+  prepared_optional_features:[{id:'infusion|tce|enhanced defense'}],
+  inventory:[{id:'armor:test',instance_id:'armor-instance',name:'Armor',type:'HA',
+    quantity:1,equipped_slots:['body'],infusion:{
+      id:'infusion|tce|enhanced defense',name:'Enhanced Defense',
+      creator_id:'artificer',source_trait_id:origin}}]};
+ const calculated={features:[{name:'Infuse Item',origin_key:'class|tce|artificer',
+   origin_id:origin,level:2}]};
+ const providers={entries:async category=>
+   category==='class_features'?[{name:'Infuse Item',level:2,class_name:'Artificer',class_source:'TCE'}]:
+   category==='optional_features'?[{name:'Enhanced Defense',source:'TCE',
+     entries:['Armor Class bonus']}]:[],detail:async(_category,row)=>row};
+ const rows=await collectTraitRows(record,calculated,providers);
+ assert.ok(rows.some(row=>row.name==='Infusione conosciuta · Enhanced Defense'&&row.origin_key===origin));
+ const active=rows.find(row=>row.name==='Infusione · Enhanced Defense');
+ assert.equal(active?.feature_origin,'infusion:armor-instance');
+ assert.deepEqual(active?.entries,['Armor Class bonus']);
+ const unequipped={...record,inventory:record.inventory.map(item=>({...item,equipped_slots:[]}))};
+ const collapsed=await collectTraitRows(unequipped,calculated,providers);
+ assert.ok(!collapsed.some(row=>row.name==='Infusione · Enhanced Defense'));
+});

@@ -2,7 +2,7 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
 // Lightweight inline portraits: share the same unmistakable character/monster
@@ -456,6 +456,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
  const activeConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[])
    .filter(row=>(c.conditions||[]).includes(row.id));
+ const equippedInfusions=activeInfusions(c);
  for(const row of activeConditions){
   const detail=document.createElement("section");
   detail.innerHTML=conditionDescriptionHtml(row);
@@ -473,7 +474,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
-  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
+  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+equippedInfusions.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(row.name)+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
   const rest=document.createElement('div');
   rest.innerHTML='<div class="play-rest-choices">'+
     [['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+
@@ -719,7 +720,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const trackerId=node.querySelector('[data-magic-tracker-id]')?.dataset.magicTrackerId||'';
    html+='<section class="play-magic-origin-group"'+
      (trackerId?' data-magic-origin-tracker="'+esc(trackerId)+'"':'')+'>'+
-     go(key,heading(node),'spark',count+(count===1?' potere':' poteri'))+
+     go(key,heading(node),'spark',
+       heading(node).startsWith('Infusioni ·')
+        ?(c.optional_features_catalog||[]).filter(x=>String(x?.id||'').startsWith('infusion|tce|')).length+' infusioni conosciute'
+        :count+(count===1?' potere':' poteri'))+
      (spellRows?'<div class="play-magic-origin-spells">'+spellRows+'</div>':'')+
      '</section>';
   });
@@ -821,6 +825,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const picker='<div class="play-effect-add"><label>Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
   html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
+  const infusionRows=equippedInfusions.map(row=>
+   '<div class="play-effect-row"><span>'+icon('spark')+
+   '<span><strong>'+esc(row.name)+'</strong><small>Oggetto: '+esc(row.item_name)+
+   ' · Tratto: Infuse Item</small></span></span>'+
+   btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.item_index+'"',
+      '<span class="sr-only">Termina</span>')+'</div>').join('');
+  if(infusionRows)html+=card('Capacità magiche attive',infusionRows,'','play-effect-card');
   const active=Object.entries(c.active_class_features||{});
   const effectRows=active.map(([key,row])=>{
    const effect=(d.active_feature_effects||[]).find(e=>e.key===key);

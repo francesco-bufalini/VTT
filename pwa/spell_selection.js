@@ -1,3 +1,4 @@
+import {choiceBanks} from './feature_selection.js';
 // Godot SpellcastingTab mirrors legacy 'spells' with available 'prepared_spells'.
 const arr=v=>Array.isArray(v)?v:[];
 const norm=v=>String(v??'').trim().toLowerCase();
@@ -63,6 +64,12 @@ export function classSelectionWarnings(member,count){
   .map(([label,actual,max])=>label+': '+actual+' / '+max+
    ' ('+(actual<max?'ne mancano '+(max-actual):(actual-max)+' in eccesso')+')');
 }
+// Wizard books and Artificer infusion recipes share the same known/prepared
+// bank semantics; this adapter preserves the Wizard's spell and class metadata.
+export function wizardSpellChoices(creature={}){
+ return choiceBanks({...creature,prepared_spells:availableSpells(creature)},
+   'spellbook_spells','prepared_spells',row=>!!spellId(row));
+}
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[]}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
@@ -71,7 +78,7 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
     if(!spellEligible(entry,member))throw Error('Incantesimo non disponibile per questa classe e livello.');
     if(target==='spellbook_spells'&&!member.book)throw Error('Questa classe non usa il libro degli incantesimi.');
     if(target==='prepared_spells'){
-      if(member.book&&spell.level>0&&!arr(creature.spellbook_spells).some(row=>spellId(row)===spell.id))throw Error('Aggiungi prima l’incantesimo al libro.');
+      if(member.book&&spell.level>0&&!wizardSpellChoices(creature).known.some(row=>spellId(row)===spell.id))throw Error('Aggiungi prima l’incantesimo al libro.');
     }
     spell.casting_classes=[member.id];
   }
