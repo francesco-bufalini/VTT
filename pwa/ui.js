@@ -2439,7 +2439,7 @@ function damageRollTerms(formula){
  }));
  return {modifier:validated.modifier,segments};
 }
-function openUnifiedRollDialog({kind,heading,modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
+function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
  document.querySelector('#sheet-roll-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='sheet-roll-dialog';dialog.className='sheet-roll-dialog sheet-roll-preview';
@@ -2448,7 +2448,7 @@ function openUnifiedRollDialog({kind,heading,modifier,rollType,formula,bonuses=[
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
  }else{
-   dialog.dataset.rollTarget=target;dialog.dataset.rollLabel=heading;
+   dialog.dataset.rollTarget=target;dialog.dataset.rollLabel=rollLabel;
  }
  const mode=kind==='damage'
    ?'<option value="normal">Normale</option>'
@@ -2981,7 +2981,7 @@ async function handleAction(target){
     const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
       automatic.mode==='advantage'?' · vantaggio':
       automatic.mode==='disadvantage'?' · svantaggio':'';
-    const dialog=openUnifiedRollDialog({kind:'d20',heading:author+' · '+label,modifier,
+    const dialog=openUnifiedRollDialog({kind:'d20',heading:author+' · '+label,rollLabel:label,modifier,
       rollType:rollCategory(key),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.addEventListener('change',event=>{
@@ -3006,52 +3006,84 @@ async function handleAction(target){
   }
   if(act==='roll-sheet-confirm'){
     const dialog=document.querySelector('#sheet-roll-dialog');
-    if(!dialog||dialog.dataset.rolled==='true')return;
+    if(!dialog||dialog.dataset.rolling==='true')return;
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
-    const key=dialog.dataset.rollTarget,label=dialog.dataset.rollLabel;
-    const calculated=await computeLocalData(creature),modifier=calculated.values[key];
-    const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
-    const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
-       bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
-    const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
-    const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
-    const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
-    dialog.dataset.rolled='true';
-    state.roll={...outcome,label,author:selectedName()};
-    state.rollHistory.unshift({...state.roll});
-    const result=dialog.querySelector('[data-roll-result]');
-    result.hidden=false;
-    result.innerHTML='<div class="dice-result">'+esc(outcome.total)+'</div>'+
-      '<p><strong>Formula:</strong> '+esc(outcome.notation)+'</p>'+
-      '<ol class="sheet-roll-breakdown">'+outcome.parts.map(part=>
-       '<li><strong>'+esc(part.name)+'</strong> · '+esc(part.notation)+
-       ' → ['+esc(part.rolls.join(', '))+']'+(part.flat?' '+esc((part.flat>0?'+ ':'− ')+Math.abs(part.flat)):'')+
-       ' = '+esc(part.subtotal)+'</li>').join('')+'</ol>'+
-      '<p class="sheet-roll-total">Modificatore '+esc((modifier>=0?'+':'')+modifier)+
-      ' · risultato finale <strong>'+esc(outcome.total)+'</strong></p>';
-    const rollButton=dialog.querySelector('[data-act="roll-sheet-confirm"]');
-    if(rollButton)rollButton.hidden=true;
-    for(const input of dialog.querySelectorAll('[data-roll-bonus]'))input.disabled=true;
-    const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
-    if(consumed.size){
-      try{
-        const live=state.editor.read(),contexts={...live.active_spell_context},enabled={...live.origin_enabled};
-        for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
-        await patch({proficiency_origins:(live.proficiency_origins||[]).filter(o=>
-           !consumed.has(String(o.id).slice(6))||o.group!=='spell'),
-           active_spell_context:contexts,origin_enabled:enabled});
-      }catch(error){message('Tiro registrato; consumo bonus non salvato: '+errorMessage(error),true);}
-    }
-    const chatStatus=dialog.querySelector('[data-roll-chat-status]');
-    if(state.paired&&state.online){
-      try{
-        await shareRoll({quiet:true});
-        // Successful automatic delivery needs no explanatory footer.
-      }catch(error){
-        if(chatStatus){chatStatus.hidden=false;chatStatus.textContent='Invio chat non riuscito: '+errorMessage(error);}
-        message('Invio chat non riuscito: '+errorMessage(error),true);
+    const button=dialog.querySelector('[data-act="roll-sheet-confirm"]');
+    dialog.dataset.rolling='true';
+    if(button)button.disabled=true;
+    try{
+      const result=dialog.querySelector('[data-roll-result]'),status=dialog.querySelector('[data-roll-chat-status]');
+      if(status){status.hidden=true;status.textContent='';}
+      if(dialog.dataset.rollKind==='damage'){
+        const outcome=rollBattleDamage(dialog.dataset.damageFormula,randomDie);
+        state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
+          (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName()};
+        state.rollHistory.unshift({...state.roll});
+        result.hidden=false;
+        result.innerHTML='<div class="dice-result">'+esc(outcome.total)+'</div>'+
+          '<p><strong>Formula:</strong> '+esc(outcome.notation)+'</p>'+
+          '<p><strong>Sviluppo:</strong> '+esc(outcome.detail)+'</p>';
+      }else{
+        const key=dialog.dataset.rollTarget,label=dialog.dataset.rollLabel;
+        const calculated=await computeLocalData(creature),modifier=calculated.values[key];
+        if(!Number.isFinite(modifier))throw Error('Modificatore non disponibile.');
+        const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
+        const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
+          bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+        const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
+        const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
+        const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
+        state.roll={...outcome,label,author:selectedName()};
+        state.rollHistory.unshift({...state.roll});
+        result.hidden=false;
+        result.innerHTML='<div class="dice-result">'+esc(outcome.total)+'</div>'+
+          '<p><strong>Formula:</strong> '+esc(outcome.notation)+'</p>'+
+          '<ol class="sheet-roll-breakdown">'+outcome.parts.map(part=>
+           '<li><strong>'+esc(part.name)+'</strong> · '+esc(part.notation)+
+           ' → ['+esc(part.rolls.join(', '))+']'+(part.flat?' '+esc((part.flat>0?'+ ':'− ')+Math.abs(part.flat)):'')+
+           ' = '+esc(part.subtotal)+'</li>').join('')+'</ol>'+
+          '<p class="sheet-roll-total">Modificatore '+esc((modifier>=0?'+':'')+modifier)+
+          ' · risultato finale <strong>'+esc(outcome.total)+'</strong></p>';
+        const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
+        if(consumed.size){
+          // The next throw is independent. Previously consumed spell bonuses
+          // must not be selectable or silently re-applied on a second click.
+          for(const input of dialog.querySelectorAll('[data-roll-bonus]:checked')){
+            const row=bonuses[Number(input.dataset.rollBonus)];
+            if(consumed.has(row?.consumes_spell)){input.checked=false;input.disabled=true;}
+          }
+          try{
+            const live=state.editor.read(),contexts={...live.active_spell_context},enabled={...live.origin_enabled};
+            for(const id of consumed){delete contexts[id];delete enabled['spell:'+id];}
+            await patch({proficiency_origins:(live.proficiency_origins||[]).filter(o=>
+              !consumed.has(String(o.id).slice(6))||o.group!=='spell'),
+              active_spell_context:contexts,origin_enabled:enabled});
+          }catch(error){message('Tiro registrato; consumo bonus non salvato: '+errorMessage(error),true);}
+        }
+        // Keep the next-roll formula in sync with the controls even after a
+        // once-only bonus is consumed. Each click produces a new history entry.
+        const current=state.editor.read();
+        const fresh=await computeLocalData(current);
+        const freshBonuses=applicableDiceBonuses(current,key,state.spellCatalog||[]);
+        const stillChosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
+          freshBonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+        const effective=resolveClassRollMode(classFeatureRollSources(current,fresh,key),choice);
+        dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
+          sheetRollOriginSegments(current,fresh,key,{mode:effective.mode,
+            modeSources:effective.sources,cancelled:effective.cancelled,
+            diceBonuses:stillChosen}),esc);
       }
+      if(state.paired&&state.online){
+        try{await shareRoll({quiet:true});}
+        catch(error){
+          if(status){status.hidden=false;status.textContent='Invio chat non riuscito: '+errorMessage(error);}
+          message('Invio chat non riuscito: '+errorMessage(error),true);
+        }
+      }
+    }finally{
+      delete dialog.dataset.rolling;
+      if(button&&button.isConnected)button.disabled=false;
     }
     return;
   }
