@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {calculateSheet} from '../sheet_rules.js';
+import {calculateSheet,applicableDiceBonuses} from '../sheet_rules.js';
 import {effectiveBackgrounds,fixedProficiencies} from '../structured_effects.js';
 import {battleActionPanels} from '../action_economy.js';
 import {initialCreature} from '../character_core.js';
@@ -28,6 +28,17 @@ test('ability-check and save category bonuses affect every roll exactly once, in
  assert.equal(result.stats.passive_perception,without.stats.passive_perception+4);
 });
 
+test('dice bonuses for ability checks apply to the new roll target and not saving throws',()=>{
+ const c={...base(),dice_bonuses:[
+  {id:'checks',target:'ability_check',dice:'1d4'},
+  {id:'d20',target:'any_d20',dice:'1d6'},
+  {id:'saves',target:'saving_throw',dice:'1d8'}
+ ]};
+ for(const target of ['ability_check:str','ability_mod:str','skill:athletics','initiative'])
+  assert.deepEqual(applicableDiceBonuses(c,target).map(row=>row.id),['checks','d20'],target);
+ assert.deepEqual(applicableDiceBonuses(c,'save:str').map(row=>row.id),['d20','saves']);
+});
+
 test('monster fixed saving throws also include general saving throw bonuses',()=>{
  const monster=initialCreature('monster','Guardiano','monster-id','owner-id');
  monster.stat_block={save:{str:'+5'}};
@@ -47,8 +58,14 @@ test('Stone of Good Luck bonuses are category grants, and require an active equi
  assert.equal(active.saves.str,before.saves.str+1);
  assert.equal(active.automatic_bonuses.filter(row=>row.target==='ability_check').length,1);
  assert.equal(active.automatic_bonuses.filter(row=>row.target==='saving_throw').length,1);
+ const attunedOnly=calculateSheet({...base(),inventory:[{...stone,equipped:false}]});
+ assert.equal(attunedOnly.stats.initiative,before.stats.initiative+1,
+  'Attuned magic item bonuses also work when not separately equipped');
+ assert.equal(attunedOnly.saves.str,before.saves.str+1);
  const inactive=calculateSheet({...base(),inventory:[{...stone,attuned:false}]});
  assert.equal(inactive.stats.initiative,before.stats.initiative);
+ const unequipped=calculateSheet({...base(),inventory:[{...stone,equipped:false,attuned:false}]});
+ assert.equal(unequipped.stats.initiative,before.stats.initiative);
 });
 
 test('primary and additional backgrounds grant their own proficiencies with stable deduplication',()=>{

@@ -115,7 +115,7 @@ export function validBonusDice(value){
  return !!match&&Number(match[1])<=100;
 }
 export function applicableDiceBonuses(record,target,spells=[]){
- const scope=target==='initiative'||/^(ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
+ const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
  if(!scope)return [];
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
  const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll';
@@ -198,7 +198,7 @@ function itemActive(item,record={}){
   const slots=arr(item.equipped_slots),kind=itemKind(item);
   if(kind==="armor")return slots.includes("body");
   if(["weapon","shield"].includes(kind))return slots.includes("main")||slots.includes("off");
-  return item.equipped===true;
+  return item.equipped===true||(requiresAttunement(item)&&item.attuned===true);
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
 function itemRows(record,warnings,infusionCatalog=[]){
