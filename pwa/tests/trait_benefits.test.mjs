@@ -25,14 +25,15 @@ test('benefits are grouped and attached only to their own trait',()=>{
  };
  const groups=traitBenefitGroups(trait,record,calculated);
  assert.deepEqual(groups.map(group=>group.type),[
-  'bonus','dice','proficiency:skill','proficiency:language','resistance','resources','spells','actions']);
+  'bonus','dice','proficiency','resistance','resources','spells','actions']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
  assert.equal(groups[0].items[0].id,'b1','bonus rows keep their editor target');
  assert.equal(groups[1].items[0].value,'+1d4');
- assert.equal(groups[3].items[0].label,'elvish');
- assert.equal(groups[4].items[0].label,'Fuoco');
- assert.equal(groups[5].items[0].value,'Max 3 · Riposo lungo');
+ assert.deepEqual(groups[2].items.map(item=>[item.label,item.value]),[
+  ['Abilità','Percezione'],['Lingue','elvish']]);
+ assert.equal(groups[3].items[0].label,'Fuoco');
+ assert.equal(groups[4].items[0].value,'Max 3 · Riposo lungo');
  assert.ok(!JSON.stringify(groups).includes('Arcano'));
 });
 test('feature-granted numeric and active effects stay on exact feature; unrelated trait stays empty',()=>{
@@ -42,4 +43,46 @@ test('feature-granted numeric and active effects stay on exact feature; unrelate
  const groups=traitBenefitGroups({feature_origin:'feature:rage'}, {},c);
  assert.equal(groups[0].items[0].value,'-2');
  assert.equal(groups[1].type,'effects');
+});
+
+test('all proficiencies share one group ordered by kind then name',()=>{
+ const trait={feature_origin:'feature:training'};
+ const calculated={proficiency_sources:{
+  'language:draconic':[{id:'feature:training'}],
+  'weapon:longsword':[{id:'feature:training'}],
+  'skill:stealth':[{id:'feature:training'}],
+  'save:dex':[{id:'feature:training'}],
+  'skill:arcana':[{id:'feature:training'}],
+  'tool:thieves tools':[{id:'feature:training'}],
+  'expertise:perception':[{id:'feature:training'}],
+  'armor:light':[{id:'feature:training'}]
+ }};
+ const group=traitBenefitGroups(trait,{},calculated);
+ assert.equal(group.length,1);
+ assert.equal(group[0].type,'proficiency');
+ assert.deepEqual(group[0].items.map(row=>[row.label,row.value]),[
+  ['Abilità','Arcano'],['Abilità','Furtività'],['Maestria','Percezione'],
+  ['Tiri salvezza','Destrezza'],['Armi','longsword'],['Armature','light'],
+  ['Strumenti','thieves tools'],['Lingue','draconic']
+ ]);
+});
+
+test('species overview never includes subrace grants, and vice versa',()=>{
+ const record={species:'Elf',species_source:'PHB',subrace:'High Elf',subrace_source:'PHB'};
+ const calculated={
+  bonuses:[{id:'base',origin_id:'race|phb|elf',target:'speed',expression:'5'},
+   {id:'sub',origin_id:'subrace|phb|high elf',target:'ability:int',expression:'1'}],
+  proficiency_sources:{
+   'skill:perception':[{id:'race|phb|elf'}],
+   'language:elvish':[{id:'subrace|phb|high elf'}]
+  }
+ };
+ const species=traitBenefitGroups({category:'razza',rank:0,
+  origin_key:'species|some-id|phb'},record,calculated);
+ const subrace=traitBenefitGroups({category:'razza',rank:0,
+  origin_key:'subrace|phb|high elf'},record,calculated);
+ assert.equal(species.some(group=>group.items.some(item=>item.id==='sub'||item.value==='elvish')),false);
+ assert.equal(subrace.some(group=>group.items.some(item=>item.id==='base'||item.value==='Percezione')),false);
+ assert.equal(species.find(group=>group.type==='bonus').items[0].id,'base');
+ assert.equal(subrace.find(group=>group.type==='bonus').items[0].id,'sub');
 });
