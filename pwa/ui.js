@@ -21,7 +21,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol} from "./sheet_roll_origin.js";
-import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
 const app = document.querySelector("#app");
@@ -2907,12 +2907,17 @@ async function handleAction(target){
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro',author=selectedName();
     const bonuses=applicableDiceBonuses(creature,key,state.spellCatalog||[]);
-    const autoAdvantage=classFeatureRollAdvantage(creature,calculated,key);
+    const autoSources=classFeatureRollSources(creature,calculated,key);
+    const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
-      const mode=choice==='auto'?(autoAdvantage?'advantage':'normal'):choice;
+      const resolved=resolveClassRollMode(autoSources,choice);
       return sheetRollOriginHtml(sheetRollOriginSegments(creature,calculated,key,
-        {mode,diceBonuses:chosen,autoAdvantage:choice==='auto'&&autoAdvantage}),esc);
+        {mode:resolved.mode,modeSources:resolved.sources,cancelled:resolved.cancelled,
+          diceBonuses:chosen}),esc);
     };
+    const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
+      automatic.mode==='advantage'?' · vantaggio':
+      automatic.mode==='disadvantage'?' · svantaggio':'';
     document.querySelector('#sheet-roll-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-roll-preview';
     dialog.id='sheet-roll-dialog';dialog.dataset.rollTarget=key;
@@ -2920,7 +2925,7 @@ async function handleAction(target){
     dialog.innerHTML='<h2>'+esc(author)+' · '+esc(label)+'</h2>'+
       '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
       '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span><div data-roll-formula>'+formulaMarkup()+'</div></div>'+
-      '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+(autoAdvantage?' · vantaggio dal privilegio':'')+'</option><option value="normal">Normale</option><option value="advantage">Vantaggio</option><option value="disadvantage">Svantaggio</option></select></label>'+
+      '<label>Modalità del tiro<select data-roll-mode><option value="auto">Automatica'+esc(autoLabel)+'</option><option value="normal">Forza tiro normale</option><option value="advantage">Aggiungi vantaggio</option><option value="disadvantage">Aggiungi svantaggio</option></select></label>'+
       (bonuses.length?'<fieldset class="sheet-roll-bonus-list"><legend>Dadi bonus disponibili</legend>'+
        ''+
        bonuses.map((row,index)=>'<label class="check"><input type="checkbox" data-roll-bonus="'+index+'">'+
@@ -2961,8 +2966,8 @@ async function handleAction(target){
     const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
        bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
     const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
-    const mode=choice==='auto'?(classFeatureRollAdvantage(creature,calculated,key)?'advantage':'normal'):choice;
-    const outcome=rollSheetDice(modifier,chosen,randomDie,mode);
+    const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
+    const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
     dialog.dataset.rolled='true';
     state.roll={...outcome,label,author:selectedName()};
     state.rollHistory.unshift({...state.roll});
