@@ -107,8 +107,9 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:900});await section('battle');
- // Optional general actions are hidden while the class-only filter is on.
- await page.locator('[data-act="battle-toggle-class-only"]').click();
+ // The earlier viewport checks may already have turned the filter off.
+ const filter=page.locator('[data-act="battle-toggle-class-only"]');
+ if(await filter.getAttribute('aria-pressed')==='true')await filter.click();
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
  await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
