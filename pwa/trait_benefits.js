@@ -33,8 +33,12 @@ export function traitBenefitSources(trait={},record={}){
  // Catalog summary cards and rule grants sometimes use different IDs for
  // the same *owned* species or feat. Only the summary card gets these aliases.
  if(trait.rank===0&&trait.category==='razza'){
-  if(record.species)ids.add('race|'+norm(record.species_source)+'|'+norm(record.species));
-  if(record.subrace)ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
+  // Parent species and subrace are independent sources. Never attribute a
+  // subrace grant to the parent species' summary (or vice versa).
+  if(String(trait.origin_key||'').startsWith('species|')&&record.species)
+   ids.add('race|'+norm(record.species_source)+'|'+norm(record.species));
+  if(String(trait.origin_key||'').startsWith('subrace|')&&record.subrace)
+   ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
  }
  if(trait.rank===0&&trait.category==='talenti'){
   for(const feat of rows(record.feats_catalog)){
@@ -66,9 +70,9 @@ function proficiencyLabel(key){
  return {skill:SKILLS[name]||name,expertise:SKILLS[name]||name,
   save:ABILITIES[name]||name,weapon:name,armor:name,tool:name,language:name}[kind]||name;
 }
-const proficiencyKinds={skill:'Competenze nelle abilità',expertise:'Maestrie',
- save:'Competenze nei tiri salvezza',weapon:'Competenze nelle armi',
- armor:'Competenze nelle armature',tool:'Competenze negli strumenti',language:'Lingue'};
+const proficiencyKinds={skill:'Abilità',expertise:'Maestria',
+ save:'Tiri salvezza',weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
+const proficiencyOrder=['skill','expertise','save','weapon','armor','tool','language'];
 /** Returns ordered groups with {type,title,items:[{label,value}]}.
  * No grouping by guessed trait names: every grant must match an origin ID.
  */
@@ -96,11 +100,19 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(row.disabled||!belongs(row))continue;
   add('dice','Dadi bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice));
  }
- for(const [key,sources] of Object.entries(calculated.proficiency_sources||{})){
-  if(!rows(sources).some(source=>source?.id&&ids.has(source.id)))continue;
-  const kind=key.split(':')[0];
-  add('proficiency:'+kind,proficiencyKinds[kind]||'Competenze',proficiencyLabel(key));
- }
+ // One Competenze section: each filled row has the proficiency *type* at
+ // left (where a numeric bonus has its target) and its value on the right.
+ // Stable kind/name sorting keeps expertise and language rows easy to scan.
+ const proficiencies=Object.entries(calculated.proficiency_sources||{})
+  .filter(([,sources])=>rows(sources).some(source=>source?.id&&ids.has(source.id)))
+  .map(([key])=>({kind:key.split(':')[0],name:proficiencyLabel(key)}))
+  .sort((a,b)=>{
+   const ai=proficiencyOrder.indexOf(a.kind),bi=proficiencyOrder.indexOf(b.kind);
+   return (ai<0?100:ai)-(bi<0?100:bi)||
+    a.name.localeCompare(b.name,'it',{sensitivity:'base',numeric:true});
+  });
+ for(const item of proficiencies)
+  add('proficiency','Competenze',proficiencyKinds[item.kind]||'Altre competenze',item.name);
  for(const row of rows(record.damage_defense_entries)){
   if(row.disabled||!belongs(row))continue;
   const rank=Number(row.rank);
