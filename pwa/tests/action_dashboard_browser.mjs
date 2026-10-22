@@ -43,6 +43,11 @@ try{
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){
+    const classFilter=page.locator('[data-act="battle-toggle-class-only"]');
+    assert.equal(await classFilter.count(),1,'Class-only filter should always be available');
+    if(width===360)assert.equal(await classFilter.getAttribute('aria-pressed'),'true',
+      'The initial filter shows character privileges only');
+    if(await classFilter.getAttribute('aria-pressed')==='true')await classFilter.click();
     const checks=page.locator('[data-battle-action="checks"]');
     assert.equal(await checks.count(),1);
     assert.equal(await checks.locator('[data-action-ability]').count(),6);
