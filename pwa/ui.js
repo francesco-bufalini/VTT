@@ -3329,6 +3329,11 @@ async function handleAction(target){
     if(type==='dice'&&!validBonusDice(values.dice))throw Error('Formula dei dadi non valida');
     await patch(changes);
     await state.editor.flush();
+    // A persisted record may become visible before the asynchronous rerender.
+    // Hide the now-committed draft synchronously to prevent an editable stale
+    // form from lingering after Save, without discarding it on save failure.
+    const form=dialog?.querySelector('[data-trait-add-form]');
+    if(form)form.hidden=true;
     state.traitPopupConfirm='';
     await render();return;
   }
