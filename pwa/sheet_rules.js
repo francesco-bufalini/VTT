@@ -632,7 +632,7 @@ export function calculateSheet(record={},catalogs={}){
     if(prefix==="save"&&ABILITIES.includes(key)){
       const legacy=record.stat_block?.save?.[key];
       if(kind==="monster"&&!hasProficiency(record,"save",key,proficiencies)&&legacy!==undefined&&
-        /^[-+]?\d+$/.test(String(legacy)))return int(legacy);
+        /^[-+]?\d+$/.test(String(legacy)))return int(legacy)+sumGrants("saving_throw",stack);
       return resolve("ability_mod:"+key,stack)+(hasProficiency(record,"save",key,proficiencies)?resolve("proficiency",stack):0)+sumGrants("saving_throw",stack);
     }
     if(prefix==="skill"){
