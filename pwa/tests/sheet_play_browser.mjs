@@ -137,21 +137,32 @@ try{
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
  // Exercise damage-type localization without changing saved creature data.
- await damageButton.evaluate(node=>{node.dataset.damageType='slashing';});
+ await damageButton.evaluate(node=>{
+   node.dataset.damageFormula='1d6+3+2d4';
+   node.dataset.damageType='slashing;fire';
+ });
  await damageButton.click();
  const rollDialog=page.locator('#sheet-roll-dialog');
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
  assert.match(await rollDialog.textContent(),/Lama lunare/);
  assert.equal((await rollDialog.locator('h2').textContent()).includes('Lyria'),false,
    'The popup title must never contain the character name');
- assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
-   'Tipo di danno · Tagliente');
+
  assert.equal(await rollDialog.locator('.sheet-roll-close').count(),1);
  assert.equal(await rollDialog.locator('[data-act="battle-damage-close"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
    'Damage rolls must not offer an advantage/disadvantage mechanic');
+ assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+   ['Tagliente','Tagliente','Fuoco']);
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
+   ['1d6','+3','+2d4']);
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
+ assert(await rollDialog.locator('.sheet-roll-origin-symbol').first().evaluate(node=>{
+   const computed=getComputedStyle(node);
+   return computed.whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1;
+ }),'The formula must remain unbroken and unclipped in its tile');
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
  const layout=async()=>rollDialog.evaluate(dialog=>{
@@ -367,7 +378,20 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
- await popup('rests');
+ // A class saving-throw proficiency must navigate to the exact granted
+ // proficiency trait, never a random feature or the generic bonus editor.
+ await sheet('info');
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
+ assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
+ await proficiencyLink.click();
+ assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
+ const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
+ assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
+ assert.equal(await granted.getAttribute('open'),'');
+ assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
+ assert.match(await granted.textContent(),/Intelligenza/);
+ await sheet('battle');await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
@@ -491,8 +515,10 @@ try{
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitDisclosure=page.locator('.play-info-traits .play-traits-disclosure');
  assert.equal(await traitDisclosure.count(),1);
- assert.equal(await traitDisclosure.getAttribute('open'),null,'Tratti starts folded');
- await traitDisclosure.locator(':scope > summary').click();
+ // A link from a proficiency roll can leave Tratti expanded.
+ // Keep the disclosure state when returning to Info and open it if necessary.
+ if((await traitDisclosure.getAttribute('open'))===null)
+  await traitDisclosure.locator(':scope > summary').click();
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
  // All primary context links must resolve on populated and empty sections.
