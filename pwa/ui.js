@@ -1040,7 +1040,7 @@ function inventoryEquipmentView(c,calculated={}){
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
     '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
       '</strong><output>'+esc(formula)+'</output></div>'+
-    '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+
     '</div>';
   return panel("Equipaggiamento",
     '<section class="equipment-weapons"><h3>Armi</h3>'+
@@ -1240,7 +1240,7 @@ function magicToolbar(calculated){
    actions.map(([key,icon,label])=>'<button type="button" class="magic-tool-button" data-act="magic-tool-open" data-magic-tool="'+key+
     '" aria-label="'+esc(label)+'" title="'+esc(label)+'" aria-haspopup="dialog" aria-expanded="'+(state.magicPopup===key?'true':'false')+'">'+
     actionGlyph(icon)+'<span>'+esc(label)+'</span></button>').join('')+
-   '<button type="button" class="magic-tool-button" data-act="sheet-details" data-detail="origin_spell_grants" aria-label="Gestisci incantesimi dalle origini" title="Gestisci incantesimi dalle origini">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
+   '<button type="button" class="magic-tool-button" data-act="sheet" data-sheet="info" aria-label="Apri tratti per gestire gli incantesimi dalle origini" title="Apri i tratti">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
    '</nav></details>';
 }
 function magicToolsDialog(c,calculated){
@@ -3364,12 +3364,13 @@ async function handleAction(target){
     state.traitPopupConfirm='';
     await render();return;
   }
-  if(act==="sheet-details"||act==="trait-benefit-open"){
-    message('I benefici si gestiscono dall’icona accanto al tratto.');
-    return;
-  }
-  if(act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
-    message('Per aggiungere bonus apri Info → Tratti e usa il pulsante + nel popup benefici.');
+  if(act==="sheet-details"||act==="trait-benefit-open"||
+      act==='edit-bonus'||act==='sheet-roll-edit-bonus'){
+    state.sheet='info';state.sheetPopup='';state.traitPopupKey='';
+    await render();
+    const disclosure=app.querySelector('.play-traits-disclosure');
+    if(disclosure){disclosure.open=true;disclosure.scrollIntoView?.({block:'nearest'});}
+    message('Apri l’icona prima del nome di un tratto per gestire i benefici.');
     return;
   }
   if(act==="native-add"||act==="native-remove"){
