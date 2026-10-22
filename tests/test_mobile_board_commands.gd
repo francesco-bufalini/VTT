@@ -70,6 +70,18 @@ func run() -> void:
 	sheet._sync_mobile_map_status(board.board_sync.get_tactical_map_data())
 	assert(archive.records[0].current_miniature_id == "test-mobile-form" and archive.records[0].default_miniature_id == "test-mobile-base")
 	assert(archive.records[0].private_note == "preserve")
+	hero.set_party_id("Culto del Drago")
+	hero.set_size_category("Large", 2.0, false)
+	var projected: Dictionary = {}
+	for row: Dictionary in board.board_sync.get_tactical_map_data().tokens:
+		if String(row.id) == token_id:
+			projected = row
+			break
+	assert(projected.get("party_id") == "Culto del Drago")
+	assert(projected.get("size_name") == "Large")
+	assert(is_equal_approx(float(projected.get("footprint_cells", 0)), 2.0))
+	assert(projected.get("conditions") is Array)
+	print("PASS: mobile projection includes live faction, size and footprint")
 	print("PASS: mobile appearance restore, ownership, combat preservation and desktop appearance polling")
 	print("PASS: production movement, unchanged desktop selection, foreign conditions and private mobile sheet sync")
 	sheet.queue_free()
