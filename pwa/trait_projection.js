@@ -3,6 +3,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses} from './sheet_rules.js';
+import {activeInfusions} from './item_controls.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -57,7 +58,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   used.add(key);
   const projected=arr(calculated.features).find(row=>same(row.name,name)&&
    same(row.origin_key,origin_key)&&levelOf(row.level)===at);
-  const id=projected?.origin_id||'';
+  const id=projected?.origin_id||entry.feature_origin||'';
   rows.push({name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
    inactive:inactive||!!projected?.disabled||sourceDisabled(record,origin_key)||
@@ -196,6 +197,32 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   // don't turn individual descriptive paragraphs into separate traits.
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
    source:info.source||item.source}, {...options,rank:0});
+ }
+ // A learned infusion belongs to the Infuse Item trait, not to the class
+ // identity. This remains descriptive until it is prepared and applied.
+ const infuseTrait=arr(calculated.features).find(f=>norm(f.name)==='infuse item'&&
+   norm(f.origin_key).startsWith('class|tce|artificer'));
+ for(const learned of arr(record.optional_features_catalog).filter(r=>String(r?.id||'').startsWith('infusion|tce|'))){
+  const originId=learned.source_trait_id||infuseTrait?.origin_id;
+  if(!originId)continue;
+  const definition=await lookup('optional_features',learned.name,'TCE');
+  add({name:'Infusione conosciuta · '+learned.name+(learned.plan_item_name?' · '+learned.plan_item_name:''),
+   entries:definition?.entries??definition?.description??'',source:'TCE'},
+   {category:'classi',origin:'Tratto · Infuse Item',origin_key:originId,
+    level:levelOf(infuseTrait?.level||2),rank:2,
+    inactive:sourceDisabled(record,originId)||!!infuseTrait?.inactive});
+ }
+ // An infusion grants traits only while its specific enchanted item is
+ // actually equipped (including the attunement requirement when applicable).
+ for(const infusion of activeInfusions(record)){
+  const stored=arr(record.inventory)[infusion.item_index]||{};
+  const sourceId='infusion:'+(stored.instance_id||infusion.item_id);
+  const info=await lookup('optional_features',infusion.name,'TCE');
+  add({name:'Infusione · '+infusion.name,
+   entries:info?.entries??info?.description??'',
+   source:'TCE',feature_origin:sourceId},
+   {category:'oggetti',origin:'Infusione · '+infusion.item_name,
+    origin_key:sourceId,level:0,rank:2});
  }
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
