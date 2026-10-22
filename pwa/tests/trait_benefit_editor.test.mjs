@@ -6,14 +6,14 @@ import {traitBenefitGroups} from '../trait_benefits.js';
 import {fixedProficiencies} from '../structured_effects.js';
 
 const trait={key:'feature:arcane|3|gift',name:'Arcane Gift',origin_key:'class|phb|wizard',
- feature_origin:'feature:arcane',category:'classi',level:3};
+ feature_origin:'feature:trait:'+trait.key,category:'classi',level:3};
 
 test('adding a benefit is an explicit pure patch, not a draft autosave',()=>{
  const creature={name:'Wizard',formula_bonuses:[]};
  const patch=addBenefitPatch(creature,trait,'bonus',{target:'initiative',expression:'2'},'trait:0000abcd');
  assert.deepEqual(creature.formula_bonuses,[]);
  assert.equal(patch.formula_bonuses.length,1);
- assert.deepEqual(patch.formula_bonuses[0].origin_id,'feature:arcane');
+ assert.deepEqual(patch.formula_bonuses[0].origin_id,'feature:trait:'+trait.key);
  assert.deepEqual(patch.formula_bonuses[0].target,'initiative');
  assert.equal(patch.formula_bonuses[0].expression,'2');
  assert.throws(()=>addBenefitPatch(creature,trait,'bonus',{target:'initiative',expression:''},'trait:1234'),/expression/);
@@ -56,14 +56,14 @@ test('all editable benefit types validate their required base inputs',()=>{
   ['actions',{name:'Hide',action_type:'bonus'},'action_grants']]){
   const patch=addBenefitPatch({},trait,kind,values,'trait:1234abcdef');
   assert.equal(patch[field].length,1);
-  assert.equal(patch[field][0].origin_id,'feature:arcane');
+  assert.equal(patch[field][0].origin_id,'feature:trait:'+trait.key);
  }
  assert.throws(()=>addBenefitPatch({},trait,'resources',{name:'Empty',max:'-1'},'trait:1234'),/massimi/);
 });
 test('traits with no grant still have no benefit groups; suppression affects its own popup only',()=>{
  const empty={...trait,key:'empty'};
  assert.deepEqual(traitBenefitGroups(empty,{},{}),[]);
- const calculated={bonuses:[{id:'base',origin_id:'feature:arcane',target:'initiative',expression:'1'}]};
+ const calculated={bonuses:[{id:'base',origin_id:'feature:trait:'+trait.key,target:'initiative',expression:'1'}]};
  const group=traitBenefitGroups(trait,{},calculated);
  assert.equal(group[0].items[0].id,'bonus:base');
  const record={trait_benefit_removed:{[trait.key]:['bonus:base']}};
@@ -73,5 +73,14 @@ test('traits with no grant still have no benefit groups; suppression affects its
 test('a species benefit attaches to the native race rather than an unmatched species catalog key',()=>{
  const own={...trait,feature_origin:'',category:'razza',origin_key:'species|race-elf|phb'};
  const record={species:'Elf',species_source:'PHB'};
- assert.equal(traitOriginId(own,record),'race|phb|elf');
+ assert.equal(traitOriginId(own,record),'feature:trait:'+trait.key);
+});
+
+test('manual bonuses are visible on their owning individual trait, not on sibling class features',()=>{
+ const card={...trait,feature_origin:'',rank:2};
+ const sibling={...card,key:card.key+'|sibling',name:'Other Gift'};
+ const row=addBenefitPatch({},card,'bonus',{target:'initiative',expression:'2'},'trait:1234abcd').formula_bonuses[0];
+ const computed={bonuses:[row]};
+ assert.deepEqual(traitBenefitGroups(card,{formula_bonuses:[row]},computed)[0].items.map(item=>item.value),['+2']);
+ assert.deepEqual(traitBenefitGroups(sibling,{},computed),[]);
 });
