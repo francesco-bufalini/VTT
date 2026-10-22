@@ -206,8 +206,6 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
   for(const [index,saved] of arr(record.inventory).entries()){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
-    if(item.infusion&&Object.keys(item.infusion).length)
-      warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
     const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
     const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
@@ -242,11 +240,11 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
     // General infusion grants are per active item, while weapon grants
     // above follow the actual equipped hand and thrown-attack identities.
     if(infusion.bonus_ac!==undefined&&["armor","shield"].includes(kind)){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
+      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
       if(grant)rows.push(grant);
     }
     if(infusion.bonus_spell_attack!==undefined){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
+      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
       if(grant)rows.push(grant);
     }
     if(seen.has(sid))continue;
