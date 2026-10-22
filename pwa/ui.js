@@ -1,5 +1,5 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
-import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
+import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -20,7 +20,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell, creatureFaceIcon } from "./sheet_rules_view.js";
-import {sheetRollOriginSegments,sheetRollOriginHtml} from "./sheet_roll_origin.js";
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol} from "./sheet_roll_origin.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
@@ -749,6 +749,15 @@ async function traitsView(c){
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ const labelOfBenefit=key=>{
+   const native=BONUS_TARGETS.find(([id])=>id===key);
+   if(native)return native[1];
+   if(key.startsWith('skill:'))return 'Abilità · '+(skills.find(row=>row[0]===key.slice(6))?.[1]||key.slice(6));
+   if(key.startsWith('save:'))return 'TS · '+(abilities[key.slice(5)]||key.slice(5));
+   if(key.startsWith('ability_mod:'))return 'Modificatore · '+(abilities[key.slice(12)]||key.slice(12));
+   if(key.startsWith('ability:'))return 'Punteggio · '+(abilities[key.slice(8)]||key.slice(8));
+   return key;
+  };
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
   const ids=[trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean);
@@ -762,9 +771,9 @@ async function traitsView(c){
     sources.some(source=>ids.includes(source.id))).map(([key])=>key);
   const benefits=[...granted,...automatic].map(row=>
     '<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses" data-bonus-id="'+esc(row.id||'')+'">'+
-    '<span>'+esc(row.target)+'</span><b>'+esc(row.expression)+(row.disabled?' · disattivato':'')+'</b></button>')
+    '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(sheetRollSymbol(row.expression))+(row.disabled?' · disattivato':'')+'</b></button>')
     .concat(dice.map(row=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="formula_bonuses">'+
-      '<span>'+esc(row.target)+'</span><b>'+esc(row.dice)+'</b></button>'))
+      '<span>'+esc(labelOfBenefit(row.target))+'</span><b>'+esc(row.dice)+'</b></button>'))
     .concat(prof.map(key=>'<button type="button" class="trait-benefit-entry" data-act="trait-benefit-open" data-detail="proficiency_choices">'+
       '<span>Competenza</span><b>'+esc(key)+'</b></button>')).join('');
   const benefitDetails=benefits?'<div class="trait-benefits"><strong>Benefici concessi</strong>'+benefits+'</div>':'';
