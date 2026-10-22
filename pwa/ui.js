@@ -131,7 +131,6 @@ const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
 const INFO_HEADING_ICONS={'Identità':'identity',
  'Classi e progressione':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Magia'],['inventory','Zaino']];
-const REFERENCE_SECTIONS=[['conditions','Condizioni','condition']];
 const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Magia','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title){
   const current=state.page==='library'&&!state.libraryMode&&
@@ -140,21 +139,12 @@ function navigationButton(key,title){
     '" aria-pressed="'+current+'" aria-label="'+esc(title)+'">'+
     actionGlyph(SHEET_TAB_GLYPHS[key]||'information')+'<span class="destination-label">'+esc(title)+'</span></button>';
 }
-function sheetQuickLinks(){
-  // These destinations previously lived under Altro; keep both available.
-  const links=[['info','Info','information'],...REFERENCE_SECTIONS];
-  return '<nav class="sheet-quick-links" aria-label="Strumenti del personaggio">'+
-    links.filter(([key])=>key!==state.sheet).map(([key,title,glyph])=>
-      '<button type="button" class="sheet-quick-button" data-act="sheet" data-sheet="'+key+'">'+
-      actionGlyph(glyph)+'<span>'+esc(title)+'</span></button>').join('')+
-    '</nav>';
-}
 function syncNav(){
   const hasCreature=Boolean(state.creatureId)&&!state.libraryMode;
   const creature=hasCreature?(state.editor?.read()||(state.cachedCreatures||[]).find(c=>c.id===state.creatureId)):null;
   const label=document.querySelector('#creature-name'),classLabel=document.querySelector('#creature-classes');
   const back=document.querySelector('#creature-back'),primary=document.querySelector('#sheet-navigation');
-  const dock=document.querySelector('#mobile-tabs'),catalogTab=document.querySelector('#dock-catalog');
+  const dock=document.querySelector('#mobile-tabs');
   const sessionTab=document.querySelector('#dock-session');
   back.hidden=!hasCreature;
   if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):
@@ -168,14 +158,10 @@ function syncNav(){
   primary.hidden=!hasCreature;
   nav.hidden=hasCreature;
   dock.classList.toggle('has-creature',hasCreature);
-  catalogTab.hidden=!hasCreature;
   sessionTab.hidden=!hasCreature;
-  for(const [button,page,glyph,title] of [
-    [catalogTab,'catalog','book','Catalogo'],[sessionTab,'session','map','Partita']]){
-    button.innerHTML=actionGlyph(glyph)+'<span class="destination-label">'+title+'</span>';
-    if(state.page===page)button.setAttribute('aria-current','page');
-    else button.removeAttribute('aria-current');
-  }
+  sessionTab.innerHTML=actionGlyph('map')+'<span class="destination-label">Partita</span>';
+  if(state.page==='session')sessionTab.setAttribute('aria-current','page');
+  else sessionTab.removeAttribute('aria-current');
   for(const [page,glyph,title] of [['library','proficiency','Creature'],['catalog','book','Catalogo'],['session','map','Partita']]){
     const button=nav.querySelector('[data-nav="'+page+'"]');
     button.className='btn dock-destination';
@@ -677,7 +663,6 @@ async function editorView() {
     break;
   }
   return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    (state.sheet==='json'?'':sheetQuickLinks())+
     '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';

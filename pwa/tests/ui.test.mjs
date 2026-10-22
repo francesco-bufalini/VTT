@@ -45,6 +45,11 @@ function click(selector){
   assert.ok(elem,"Missing clickable "+selector);
   elem.click();
 }
+function openLegacyPanel(sheet){
+  const button=document.createElement("button");
+  button.dataset.act="sheet";button.dataset.sheet=sheet;button.type="button";
+  document.body.append(button);button.click();button.remove();
+}
 function change(selector,value){
   const elem=document.querySelector(selector);assert.ok(elem,"Missing field "+selector);
   elem.value=value;
@@ -446,10 +451,9 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
   assert.deepEqual(sections,["Info","Azioni","Magia","Zaino"]);
   assert.equal(document.querySelector('#more-navigation'),null);
-  assert.ok(document.querySelector('#dock-catalog'));
+  assert.equal(document.querySelector('#dock-catalog'),null);
   assert.ok(document.querySelector('#dock-session'));
-  assert.deepEqual([...document.querySelectorAll('.sheet-quick-links [data-sheet]')]
-    .map(x=>x.textContent.trim()),["Condizioni"]);
+  assert.equal(document.querySelector('.sheet-quick-links'),null);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
   assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
@@ -464,7 +468,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
   await changeScore('str',14);
-  click('[data-sheet="conditions"]');
+  openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
   assert.equal(sheetChoices.length,20);

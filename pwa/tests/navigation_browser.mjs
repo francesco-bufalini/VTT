@@ -32,12 +32,13 @@ try{
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  if(['conditions'].includes(key)){
-    if(!await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').isVisible()){
-      await page.locator('#sheet-navigation [data-sheet="info"]').click();
-      await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
-    }
-    await page.locator('.sheet-quick-links [data-sheet="'+key+'"]').click();
+  if(key==='conditions'){
+    // Exercise the existing conditions panel without creating new sheet controls.
+    await page.evaluate(tab=>{
+      const button=document.createElement('button');
+      button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
+      document.body.append(button);button.click();button.remove();
+    },key);
   }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
   await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
  };
@@ -46,7 +47,8 @@ try{
   if(key==='library'&&await back.isVisible())await back.click();
   else {
     const fromCreature=await page.locator('#mobile-tabs').evaluate(n=>n.classList.contains('has-creature'));
-    const target=fromCreature&&key!=='library'?page.locator('#dock-'+key):page.locator('#nav [data-nav="'+key+'"]');
+    if(fromCreature&&key==='catalog')await back.click();
+    const target=fromCreature&&key==='session'?page.locator('#dock-session'):page.locator('#nav [data-nav="'+key+'"]');
     await target.click();
   }
   await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
@@ -64,7 +66,8 @@ try{
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
- assert(await page.locator('#dock-catalog').isVisible(),'Catalogo is directly available');
+ assert.equal(await page.locator('#dock-catalog').count(),0,'Catalogo belongs to the archive');
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
  assert.equal(await page.locator('#more-navigation').count(),0);
  assert(await page.locator('#creature-back').isVisible(),'Back replaces the portrait');
@@ -89,14 +92,13 @@ try{
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,6);
+   assert.equal(dock.length,5);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
  }
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
- assert.equal(await page.locator('.sheet-quick-links [data-sheet="origins"]').count(),0);
- assert(await page.locator('.sheet-quick-links [data-sheet="info"]').isVisible());
+ assert.equal(await page.locator('.sheet-quick-links').count(),0,'No new controls above sheets');
  assert.equal(await page.locator('#navigation-dialog').count(),0);
  await shot('tools');
  await sheet('conditions');
@@ -163,7 +165,7 @@ try{
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
  assert(await page.locator('#creature-back').isVisible());
  // Opening a multiclass character shows every class both in the persistent
  // header and directly below the name on the Info tab.
