@@ -45,7 +45,8 @@ export function snapshotRevision(data) {
   if(!data)return "";
   return JSON.stringify([data.revision||0,data.view_revision||0,data.area_revision||0,data.combat||{},
     (data.tokens||[]).map(t=>[t.id,t.name,t.conditions,t.active_spell_ids,
-      t.current_miniature_id,t.default_miniature_id,t.position])]);
+      t.current_miniature_id,t.default_miniature_id,t.party_id,t.size_name,
+      t.footprint_cells,t.position])]);
 }
 
 // The desktop returns WebP as base64 JSON. Do NOT use a data: URL in an
@@ -62,5 +63,107 @@ export function snapshotBlob(snapshot) {
     return new Blob([bytes],{type:"image/webp"});
   }catch{
     return null;
+  }
+}
+
+
+// The passive Partita map is a dedicated viewport. Pointer gestures are
+// consumed by this canvas, not by the page (especially important on iOS).
+// Preserve its zoom/pan across the session's frequent polling rerenders.
+export class SessionMapViewer {
+  constructor(){
+    this.canvas=null;this.image=null;this.url="";this.zoom=1;
+    this.panX=0;this.panY=0;this.pointers=new Map();this.observer=null;
+  }
+  reset(){this.zoom=1;this.panX=0;this.panY=0;this.draw();}
+  mount(canvas,url){
+    if(!canvas)return;
+    if(this.canvas!==canvas){
+      this.observer?.disconnect();
+      this.canvas=canvas;this.pointers.clear();
+      canvas.addEventListener("pointerdown",e=>{
+        e.preventDefault();
+        canvas.setPointerCapture?.(e.pointerId);
+        this.pointers.set(e.pointerId,this.point(e));
+      });
+      canvas.addEventListener("pointermove",e=>{
+        if(!this.pointers.has(e.pointerId))return;
+        e.preventDefault();
+        const next=this.point(e),prev=this.pointers.get(e.pointerId);
+        if(this.pointers.size===1){
+          this.panX+=next[0]-prev[0];this.panY+=next[1]-prev[1];
+        }else if(this.pointers.size===2){
+          const other=[...this.pointers].find(([id])=>id!==e.pointerId)?.[1];
+          if(other){
+            const oldDistance=Math.hypot(prev[0]-other[0],prev[1]-other[1]);
+            const newDistance=Math.hypot(next[0]-other[0],next[1]-other[1]);
+            const oldMid=[(prev[0]+other[0])/2,(prev[1]+other[1])/2];
+            const newMid=[(next[0]+other[0])/2,(next[1]+other[1])/2];
+            if(oldDistance>1)this.zoomAt(newDistance/oldDistance,...oldMid);
+            this.panX+=newMid[0]-oldMid[0];this.panY+=newMid[1]-oldMid[1];
+          }
+        }
+        this.pointers.set(e.pointerId,next);this.draw();
+      });
+      const end=e=>{this.pointers.delete(e.pointerId);};
+      canvas.addEventListener("pointerup",end);
+      canvas.addEventListener("pointercancel",end);
+      canvas.addEventListener("lostpointercapture",end);
+      canvas.addEventListener("wheel",e=>{
+        e.preventDefault();
+        this.zoomAt(Math.exp(-e.deltaY*0.001),...this.point(e));
+      },{passive:false});
+      canvas.addEventListener("dblclick",e=>{
+        e.preventDefault();this.zoomAt(1.5,...this.point(e));
+      });
+      this.observer=typeof ResizeObserver!=="undefined"?
+        new ResizeObserver(()=>this.draw()):null;
+      this.observer?.observe(canvas);
+    }
+    this.setImage(url);
+    this.draw();
+  }
+  point(event){
+    const rect=this.canvas.getBoundingClientRect();
+    return [event.clientX-rect.left,event.clientY-rect.top];
+  }
+  transform(){
+    const w=this.canvas?.clientWidth||300,h=this.canvas?.clientHeight||300;
+    const iw=this.image?.naturalWidth||2048,ih=this.image?.naturalHeight||2048;
+    const scale=Math.min(w/iw,h/ih)*this.zoom;
+    return {w,h,iw,ih,scale,x:(w-iw*scale)/2+this.panX,y:(h-ih*scale)/2+this.panY};
+  }
+  zoomAt(factor,x,y){
+    if(!Number.isFinite(factor)||factor<=0)return;
+    const before=this.transform();
+    const px=(x-before.x)/before.scale,py=(y-before.y)/before.scale;
+    this.zoom=Math.max(1,Math.min(4,this.zoom*factor));
+    const after=this.transform();
+    this.panX+=x-(after.x+px*after.scale);
+    this.panY+=y-(after.y+py*after.scale);
+    this.draw();
+  }
+  setImage(url){
+    if(!url||url===this.url)return;
+    this.url=url;
+    const image=new Image();
+    image.onload=()=>{if(this.url===url){this.image=image;this.draw();}};
+    image.onerror=()=>{if(this.url===url){this.image=null;this.draw();}};
+    image.src=url;
+  }
+  draw(){
+    const canvas=this.canvas;
+    if(!canvas||!canvas.isConnected)return;
+    const t=this.transform(),dpr=Math.min(window.devicePixelRatio||1,3);
+    const w=Math.max(1,Math.round(t.w*dpr)),h=Math.max(1,Math.round(t.h*dpr));
+    if(canvas.width!==w)canvas.width=w;
+    if(canvas.height!==h)canvas.height=h;
+    const ctx=canvas.getContext("2d");if(!ctx)return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle="#101827";ctx.fillRect(0,0,t.w,t.h);
+    if(!this.image||!this.image.complete)return;
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality="high";
+    ctx.drawImage(this.image,t.x,t.y,t.iw*t.scale,t.ih*t.scale);
   }
 }
