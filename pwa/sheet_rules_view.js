@@ -720,7 +720,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const trackerId=node.querySelector('[data-magic-tracker-id]')?.dataset.magicTrackerId||'';
    html+='<section class="play-magic-origin-group"'+
      (trackerId?' data-magic-origin-tracker="'+esc(trackerId)+'"':'')+'>'+
-     go(key,heading(node),'spark',count+(count===1?' potere':' poteri'))+
+     go(key,heading(node),'spark',
+       heading(node).startsWith('Infusioni ·')
+        ?(c.optional_features_catalog||[]).filter(x=>String(x?.id||'').startsWith('infusion|tce|')).length+' infusioni conosciute'
+        :count+(count===1?' potere':' poteri'))+
      (spellRows?'<div class="play-magic-origin-spells">'+spellRows+'</div>':'')+
      '</section>';
   });
@@ -828,8 +831,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    ' · Tratto: Infuse Item</small></span></span>'+
    btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.item_index+'"',
       '<span class="sr-only">Termina</span>')+'</div>').join('');
-  html+=card('Capacità magiche attive',infusionRows||
-   '<p class="play-empty">Nessuna infusione attiva su oggetti equipaggiati.</p>','','play-effect-card');
+  if(infusionRows)html+=card('Capacità magiche attive',infusionRows,'','play-effect-card');
   const active=Object.entries(c.active_class_features||{});
   const effectRows=active.map(([key,row])=>{
    const effect=(d.active_feature_effects||[]).find(e=>e.key===key);
