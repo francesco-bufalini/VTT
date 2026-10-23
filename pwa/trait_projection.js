@@ -4,6 +4,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses,SKILLS} from './sheet_rules.js';
 import {activeInfusions} from './item_controls.js';
+import {traitIsActive} from './trait_benefit_editor.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -64,12 +65,13 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const projected=arr(calculated.features).find(row=>same(row.name,name)&&
    compatibleOrigins.has(norm(row.origin_key))&&levelOf(row.level)===at);
   const id=projected?.origin_id||entry.feature_origin||'';
-  rows.push({name,entries:entry.entries??entry.entry??entry.description??'',
+  const trait={name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
-   inactive:inactive||!!projected?.disabled||sourceDisabled(record,origin_key)||
-     (id&&sourceDisabled(record,id)),
-   // Only existing structured traits can be toggled; catalog text is read-only.
-   feature_origin:id, key:origin_key+'|'+(entry.id||at+'|'+norm(name))});
+   feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name))};
+  // A calculated disabled flag is not a user decision. Treat privileges as
+  // enabled by default; only an explicit owner/trait override can dim them.
+  rows.push({...trait,inactive:Boolean(inactive||!traitIsActive(record,trait)||
+    sourceDisabled(record,origin_key))});
  };
  const named=(entry,options,{includeUnnamed=false,requireGates=false}={})=>{
   arr(entry?.entries).forEach((part,index)=>{
@@ -280,8 +282,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   rows.push({name:'Competenze',entries:names.join(' · '),
     category,origin:anchor?.origin||String(source.name||id),
     origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,
-    rank:2,inactive:false,feature_origin:'',proficiency_origin:id,
-    key:'proficiency:'+id});
+    rank:2,feature_origin:'',proficiency_origin:id,
+    key:'proficiency:'+id,inactive:record.origin_enabled?.[id]===false||
+      arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled===true)});
  }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
