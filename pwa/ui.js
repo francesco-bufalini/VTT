@@ -3702,6 +3702,8 @@ async function handleAction(target){
   }
   if(act==='action-cast-spell'||act==='power-spell'){
     const record=state.editor?.read();if(!record)throw Error('Apri una scheda prima del lancio.');
+    const clickedSlot=state.magicPopup==='slot-spells'?
+      (state.magicSlotPact?'pact:':'slot:')+state.magicSlotLevel:'';
     if(state.magicPopup==='slot-spells'){
       state.magicPopup='';
       const previous=app.querySelector('#magic-tools-dialog');
@@ -3758,7 +3760,7 @@ async function handleAction(target){
        '<div class="magic-spell-description">'+esc(description)+'</div>'+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (entry&&options.length?
-        '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':
+        '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
         '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
       (entry&&targetSelector?
         (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
