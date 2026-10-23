@@ -126,10 +126,11 @@ export function applicableDiceBonuses(record,target,spells=[]){
  const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
    .flatMap(row=>{
     const id=String(row.origin_id||'');
-    if(!id.startsWith('item:'))return enabled(id)?[row]:[];
+    const fromItem=id.startsWith('item:')||id.startsWith('feature:trait:item:');
+    if(!fromItem)return enabled(id)?[row]:[];
     const copies=arr(record.inventory).reduce((sum,saved)=>{
-     const item=resolveOwnedItem(saved);
-     return id==='item:'+String(item.id||'')&&itemActive(item,record)?
+     const item=resolveOwnedItem(saved),itemKey='item:'+String(item.id||'');
+     return (id===itemKey||id.startsWith('feature:trait:'+itemKey+'|'))&&itemActive(item,record)?
        sum+(['weapon','armor','shield'].includes(itemKind(item))?1:Math.max(1,int(item.quantity,1))):sum;
     },0);
     if(!copies)return [];
