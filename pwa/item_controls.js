@@ -1,6 +1,50 @@
 // Native-compatible inventory item instance helpers.
 // Keep the mobile spell-scroll inventory in parity with the desktop table.
 // These are display helpers: scrolls remain ordinary owned inventory instances.
+// Per-creature flat storage: old inventory rows without container_id belong to Zaino.
+export const DEFAULT_INVENTORY_CONTAINER = "backpack";
+export function inventoryContainers(record={}){
+  const rows=Array.isArray(record.inventory_containers)?record.inventory_containers:[];
+  const used=new Set([DEFAULT_INVENTORY_CONTAINER]);
+  return [{id:DEFAULT_INVENTORY_CONTAINER,name:"Zaino"},...rows.flatMap(row=>{
+    const id=String(row?.id||"").trim(),name=String(row?.name||"").trim();
+    if(!id||!name||used.has(id))return [];
+    used.add(id);return [{id,name}];
+  })];
+}
+export function itemContainerId(item={},containers=[]){
+  const id=String(item?.container_id||DEFAULT_INVENTORY_CONTAINER);
+  return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
+}
+export function moveInventoryItem(record,index,destination){
+  const containers=inventoryContainers(record);
+  if(!containers.some(row=>row.id===destination))throw Error("Contenitore non disponibile.");
+  const inventory=structuredClone(Array.isArray(record.inventory)?record.inventory:[]);
+  if(!inventory[index])throw Error("Oggetto non trovato.");
+  if(destination===DEFAULT_INVENTORY_CONTAINER)delete inventory[index].container_id;
+  else inventory[index].container_id=destination;
+  return {inventory};
+}
+export function createInventoryContainer(record,id,name){
+  id=String(id||"").trim();name=String(name||"").trim();
+  if(!id||id===DEFAULT_INVENTORY_CONTAINER||!name||name.length>80||
+    inventoryContainers(record).some(row=>row.id===id||row.name.toLowerCase()===name.toLowerCase()))
+    throw Error("Nome o identificativo del contenitore non valido.");
+  return {inventory_containers:[...inventoryContainers(record).slice(1),{id,name}]};
+}
+export function deleteInventoryContainer(record,id,destination){
+  const containers=inventoryContainers(record);
+  if(id===DEFAULT_INVENTORY_CONTAINER||!containers.some(row=>row.id===id))
+    throw Error("Lo Zaino non si può eliminare.");
+  if(id===destination||!containers.some(row=>row.id===destination))
+    throw Error("Seleziona un altro contenitore di destinazione.");
+  const inventory=structuredClone(Array.isArray(record.inventory)?record.inventory:[]);
+  for(const item of inventory)if(itemContainerId(item,containers)===id){
+    if(destination===DEFAULT_INVENTORY_CONTAINER)delete item.container_id;
+    else item.container_id=destination;
+  }
+  return {inventory,inventory_containers:containers.slice(1).filter(row=>row.id!==id)};
+}
 export function isSpellScroll(item={}){
   if(item.category==="documents")return false;
   const type=String(item.type||"").split("|")[0].toUpperCase();
