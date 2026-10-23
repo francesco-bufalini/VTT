@@ -141,15 +141,15 @@ static func _selected_armor_state(record: Dictionary) -> String:
 static func _armor_model_actions(record: Dictionary, features: Array[Dictionary]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for rule: Dictionary in _armor_state_rules():
-		var trait := _model_trait(record, rule, features)
-		if trait.is_empty():
+		var model_feature: Dictionary = _model_trait(record, rule, features)
+		if model_feature.is_empty():
 			continue
 		var id := String(rule.get("id", ""))
 		var mode := String(rule.get("legacy_value", ""))
 		result.append({"id": "class_feature:armor_" + mode, "key": "armor_" + mode,
 			"name": String(rule.get("name", "")), "class_name": String(rule.get("class_name", "")),
-			"origin_id": "feature:" + String(trait.get("key", "")),
-			"feature_name": String(trait.get("name", "")), "mode": "armor_model",
+			"origin_id": "feature:" + String(model_feature.get("key", "")),
+			"feature_name": String(model_feature.get("name", "")), "mode": "armor_model",
 			"state_id": id, "activation": "free", "resource_name": "", "cost": 0,
 			"detail": String(rule.get("summary", "")), "active": _selected_armor_state(record) == id})
 	return result
