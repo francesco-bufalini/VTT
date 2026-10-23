@@ -51,8 +51,8 @@ try{
   await saveCreature({...saved.creature,origin_spell_grants:grants},'default',saved.revision);
  });await page.reload();await page.locator('[data-act="open"]').click();await sheet('magic');
  await page.locator('#sheet-play-view [data-sheet-context^="power:"]').filter({hasText:'Senza consumo'}).click();
- await page.locator('#sheet-context-dialog .power-origin-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='info');
- assert(await page.locator('.play-info-traits .trait-card[open]').isVisible(),'Open the precise origin trait in Info');
+ await page.locator('#sheet-context-dialog .power-origin-link').click();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='traits');
+ assert(await page.locator('#sheet-context-dialog .trait-card').isVisible(),'Open the precise origin trait in its detail popup');
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
  console.log('PASS: structured inventory facts/totals/search at 320–430px; no writes on read; privilege origin, activation, cost, description, recovery, exact consumption and stable-ID origin detail.');
 }finally{await f.close();}

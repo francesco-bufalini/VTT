@@ -644,7 +644,7 @@ async function editorView() {
           castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
           spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>':''),
         'magic-panel')+
-      originPowersView(c,calculated,abilitiesForCreature(c,state.abilityCatalog||[],calculated))+
+      originPowersView(c,calculated)+
       infusionPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;

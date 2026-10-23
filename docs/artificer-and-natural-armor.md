@@ -67,9 +67,10 @@ The integration preserves main's trait benefit editor and Info presentation.
 Automatic resource origins select the exact granting trait before considering
 its named upgrades, so Bardic Inspiration retains its level-one origin at level
 five. Infusion numeric origin validation reads the ability catalog rather than
-the inventory position. Magic receives the same eligible abilities as Battle.
+the inventory position. Nonspell class abilities retain main's placement in
+Battle; infusion learning and preparation remain in Magic.
 
 Validation includes the complete PWA unit suite and real Chrome tests for
 learning, preparation, object confirmation, attunement, active conditions,
-trait disabling, mobile/desktop layouts, inventory and privilege navigation.
+trait disabling, mobile/desktop layouts, inventory and contextual editing.
 The installed shell cache is v102; existing local character data is retained.
