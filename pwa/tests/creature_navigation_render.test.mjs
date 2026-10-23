@@ -70,7 +70,7 @@ test('a stalled catalog request has a bounded loading deadline',async()=>{
  await assert.rejects(
   deadline(new Promise(()=>{}),8,'catalogo di prova'),
   error=>error.code==='SHEET_LOADING_TIMEOUT');
- assert.match(source,/sheetLoadingDeadline\(request,2500,"del catalogo "/);
- assert.match(source,/sheetLoadingDeadline\(request,4500,"dei tratti"\)/);
- assert.match(source,/sheetLoadingDeadline\(request,4500,"delle regole"\)/);
+ assert.match(source,/sheetLoadingDeadline\(request,1600,"del catalogo "/);
+ assert.match(source,/sheetLoadingDeadline\(request,2500,"dei tratti"\)/);
+ assert.match(source,/sheetLoadingDeadline\(request,3000,"delle regole"\)/);
 });
