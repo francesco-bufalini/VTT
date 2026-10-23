@@ -3024,7 +3024,7 @@ function openPendingChoiceDialog(choice){
  const inputType='checkbox';
  const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
  Object.assign(labels,abilities);
- const rows=choice.options.map(key=>'<label class="pending-choice-option"><input type="'+inputType+
+ const rows=choice.options.map(key=>'<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
    '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
    '><span>'+esc(labels[key]||key)+'</span></label>').join('');
  dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+

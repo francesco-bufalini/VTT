@@ -103,3 +103,16 @@ test('trait benefit choices belong only to their structured grant origins',()=>{
   assert.equal(choicesForTrait({category:'classi',rank:2,origin_key:'other',
     feature_origin:'feature:other',key:'unrelated'},c,all).length,0);
 });
+
+test('single-choice options retain the radio styling and checkbox deselection',()=>{
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(ui,/const inputType='checkbox'/,
+   'single choice must remain a togglable checkbox rather than a radio input');
+ assert.match(ui,/choice\.count===1\?' pending-choice-option--single'/,
+   'only one-option selectors should receive the former radio appearance');
+ assert.match(css,/\.pending-choice-option--single input\[type="checkbox"\]:checked/,
+   'the selected state should use the circular radio indicator');
+ assert.match(css,/\.pending-choice-option--single input\[type="checkbox"\]\{[\s\S]*?border-radius:50%/,
+   'the single-choice control must look circular');
+});
