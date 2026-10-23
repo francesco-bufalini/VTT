@@ -140,6 +140,15 @@ test("Fight Club counter aliases resolve to exact PHB subclass traits without ch
   assert.equal(row?.recharge,"short_rest");
  }
 });
+test("2024 Rogue Stroke of Luck is unlocked only at level 20 with its own edition ID",()=>{
+ const rowsAt=level=>classResourceTrackers({kind:"character",level,
+  classes:[{name:"Rogue",source:"XPHB",level}]},index,{classes:index.resource_overrides});
+ assert.equal(rowsAt(19).some(row=>row.name==="Stroke of Luck"),false);
+ const stroke=rowsAt(20).find(row=>row.name==="Stroke of Luck");
+ assert.equal(stroke?.id,"class:rogue:xphb:stroke_of_luck");
+ assert.equal(stroke?.max,1);
+ assert.equal(stroke?.recharge,"short_rest");
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],

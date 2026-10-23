@@ -176,6 +176,18 @@ func run() -> void:
 			and String(alias_row.get("origin_id", "")).begins_with("feature:")
 			and String(alias_row.get("recharge", "")) == "short_rest",
 			"Fight Club counter alias must retain stored ID and use the 5etools trait: " + str(example))
+	var rogue_19: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Rogue", "source": "XPHB", "level": 19}]
+	})
+	assert(_find_resource(rogue_19, "Stroke of Luck").is_empty(),
+		"2024 Stroke of Luck is unavailable before Rogue level 20")
+	var rogue_stroke: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Rogue", "source": "XPHB", "level": 20}]
+	}), "Stroke of Luck")
+	assert(String(rogue_stroke.get("id", "")) == "class:rogue:xphb:stroke_of_luck"
+		and int(rogue_stroke.get("max", 0)) == 1
+		and String(rogue_stroke.get("recharge", "")) == "short_rest",
+		"2024 Rogue must use its own source-qualified Stroke of Luck counter")
 
 	# The runtime accepts only the existing VTT formula symbols, never the
 	# Fight Club placeholders consumed by the offline asset generator.

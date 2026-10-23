@@ -201,7 +201,7 @@ Own Luck, l'attacco specifico annullato da Illusory Self e la scelta fra le
 quattro modalità temporanee di The Third Eye. I nomi corretti non trasformano
 questi effetti contestuali in bonus passivi.
 
-Dopo la correzione, tutte le **54 definizioni di contatore** nel supplemento
+Dopo la correzione e il lotto Rogue, tutte le **55 definizioni di contatore** nel supplemento
 si collegano per classe, fonte, sottoclasse e nome d'origine a un `classFeature`
 o `subclassFeature` del catalogo 5etools locale. Questa verifica riguarda
 l'identità del tratto; non prova da sola ogni limite numerico o l'effetto
@@ -220,6 +220,49 @@ dell'attivazione.
 - **Spell-Storing Item (11) e Magical Tinkering (1):** oggetto concreto,
   effetto scelto, portatore e capacità non sono un contatore di classe
   consumabile; richiedono identità e stato dei singoli oggetti.
+
+## Lotto 2026-10-23: Rogue XPHB
+
+Controllate tutte le **32 voci** del catalogo `class_features` Rogue XPHB
+(25 nomi distinti, inclusi i livelli ripetuti). La versione PHB di Stroke of
+Luck è nel supplemento FightClub5eXML
+`class-rogue-phb.xml` (`0b8a42809ecfc061182437856d8c3e42eae80078`);
+il testo XPHB in `creature_references_5etools.json` conferma un uso dal
+livello 20 e recupero breve/lungo. Il nuovo passo XPHB è separato dal PHB,
+con ID `class:rogue:xphb:stroke_of_luck`.
+
+| Privilegio XPHB | Esito della verifica |
+| --- | --- |
+| Expertise 1, 6 | Due scelte di competenza per ciascun livello; non assegnare abilità consigliate come scelte effettive. |
+| Sneak Attack 1 | Progressione dei dadi e condizioni di attacco; non è un pool da recuperare. |
+| Thieves' Cant 1 | Linguaggio speciale e un'altra lingua scelta; scelta da conservare. |
+| Weapon Mastery 1 | Due tipi d'arma scelti; capacità, non usi. |
+| Cunning Action 2 | Dash, Disengage o Hide come azione bonus; nessun contatore. |
+| Rogue Subclass 3 | Segnaposto della sottoclasse scelta. |
+| Steady Aim 3 | Vantaggio sul successivo attacco solo se non si è mossi; velocità a zero dopo l'uso. |
+| Ability Score Improvement 4, 8, 10, 12, 16 | Scelta di talento/incremento, non bonus automatico uguale per tutti. |
+| Cunning Strike 5 | Opzioni pagate rinunciando a dadi di Sneak Attack nello stesso colpo. |
+| Poison (Cost: 1d6) 5 | Salvezza CON, Poisoned, ripetizione del TS; costo contestuale. |
+| Trip (Cost: 1d6) 5 | Taglia e salvezza DES prima di Prone. |
+| Uncanny Dodge 5 | Reazione dopo essere colpiti da attaccante visibile; danno dimezzato contestualmente. |
+| Withdraw (Cost: 1d6) 5 | Movimento immediato senza attacchi di opportunità; costo contestuale. |
+| Evasion 7 | Esito del TS DES e condizioni d'uso; non bonus numerico universale. |
+| Reliable Talent 7 | Soglia del d20 soltanto alle prove con competenza. |
+| Subclass Feature 9, 13, 17 | Segnaposto: gli effetti appartengono ai tratti della sottoclasse reale. |
+| Improved Cunning Strike 11 | Fino a due effetti pagati separatamente sullo stesso Sneak Attack. |
+| Daze (Cost: 2d6) 14 | Salvezza CON e limitazione delle opzioni del turno. |
+| Devious Strikes 14 | Sblocca le tre opzioni successive, senza risorsa autonoma. |
+| Knock Out (Cost: 6d6) 14 | Salvezza CON e Unconscious con ripetizione del TS. |
+| Obscure (Cost: 3d6) 14 | Salvezza DES e Blinded temporaneo. |
+| Slippery Mind 15 | Competenze ai TS Saggezza e Carisma nel testo; origine del tratto da conservare. |
+| Elusive 18 | Nega vantaggio agli attacchi contro il Rogue salvo Incapacitated. |
+| Epic Boon 19 | Scelta del talento. |
+| Stroke of Luck 20 | **Ora nei dati condivisi:** un uso, recupero breve, fonte XPHB distinta. La sostituzione del risultato del D20 Test resta contestuale. |
+
+I costi di Cunning Strike sono dadi di danno rinunciati durante un singolo
+attacco, non una risorsa accumulata. Le opzioni con salvezza, condizione,
+durata o bersaglio restano nella lista dei privilegi non automatizzati; non
+vengono trasformate in contatori generici.
 
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
