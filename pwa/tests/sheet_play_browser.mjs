@@ -228,7 +228,7 @@ try{
    assert(bounds.headRight<=bounds.areaRight+1&&bounds.listRight<=bounds.areaRight+1,
      'Heading and bonus list stay within their own section at '+width+'px');
    assert(bounds.tileWidth>=130&&bounds.bodyOverflow<=1,
-     'Tiles remain legible without page overflow at '+width+'px');
+     'Tiles remain legible without page overflow at '+width+'px: '+JSON.stringify(bounds));
  }
  await page.setViewportSize({width:390,height:844});
  // A short +1 must not squeeze long origin names into letter-wide columns.
