@@ -682,12 +682,19 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
+    const containers=inventoryContainers(c);
+    const validTabs=new Set(['items','all','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)]);
+    if(!validTabs.has(state.inventorySubtab))state.inventorySubtab='items';
     const isDocuments=state.inventorySubtab==="documents",isScrolls=state.inventorySubtab==="scrolls";
-    const nav='<nav class="inventory-subtabs" role="tablist" aria-label="Sezioni inventario">'+
-      [['items','Oggetti','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book']].map(([key,label,glyph])=>
-        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+'" '+
-        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+label+'">'+
-        actionGlyph(glyph)+'<span>'+label+'</span></button>').join('')+'</nav>';
+    const inventoryTabs=[['items','Zaino','inventory'],['all','Tutti gli oggetti','inventory'],
+      ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
+      ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
+    const nav='<nav class="inventory-subtabs inventory-container-tabs" role="tablist" aria-label="Sezioni inventario">'+
+      inventoryTabs.map(([key,label,glyph])=>
+        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+esc(key)+'" '+
+        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+esc(label)+'">'+
+        actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>').join('')+
+      '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
     if(isDocuments){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
       const definitions=await Promise.all(documents.map(({item})=>
@@ -700,10 +707,10 @@ async function editorView() {
     }else{
       const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
       const ordinary=owned.filter(({item})=>!isSpellScroll(item));
-      const containers=inventoryContainers(c);
       const scrolls=owned.filter(({item})=>isSpellScroll(item));
       const attunements=owned.filter(({item})=>requiresAttunement(item));
-      const visibleRows=isScrolls?scrolls:ordinary;
+      const visibleRows=isScrolls?scrolls:ordinary.filter(({item})=>state.inventorySubtab==='all'||
+        itemContainerId(item,containers)===(state.inventorySubtab.startsWith('container:')?state.inventorySubtab.slice(10):DEFAULT_INVENTORY_CONTAINER));
       let selected=visibleRows.find(({index})=>index===state.inventorySelectedIndex);
       if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
       let resolvedDetail=selected?.item||{};
@@ -910,6 +917,8 @@ async function traitsView(c){
       (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
     '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
+      (trait.category==='oggetti'&&trait.rank===0&&trait.item_quantity>1?
+        '<span class="trait-item-quantity" aria-label="Quantità '+trait.item_quantity+'">×'+trait.item_quantity+'</span>':'')+
       '<span class="trait-chevron" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15" fill="none"><path d="M3 6 L12 11 L21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>'+
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
@@ -969,6 +978,14 @@ function mountTraitBenefitDialog(){
   activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
  const groups=traitBenefitGroups(trait,record,benefitProjection);
+ const isOwnedItem=trait.category==='oggetti'&&trait.rank===0&&
+   String(trait.origin_key||'').startsWith('item:');
+ const ownedCopies=isOwnedItem?(record.inventory||[]).filter(item=>
+   String(item.id||'')===String(trait.origin_key).slice(5)):[];
+ const passiveItem=isOwnedItem&&ownedCopies.length>0&&ownedCopies.every(item=>
+   !['weapon','shield','armor'].includes(itemKind(item)));
+ const itemQuantity=isOwnedItem?Math.max(1,ownedCopies.reduce((total,item)=>
+   total+Math.max(0,Number(item.quantity??1)||0),0)):1;
  const hidden=traitRemovedIds(record,trait);
  const ownedChoices=choicesForTrait(trait,record,state.calculated?.pending_choices||[]);
  const optionList=(options,selected='')=>options.map(([value,label])=>
@@ -1046,15 +1063,20 @@ function mountTraitBenefitDialog(){
  dialog.id='trait-benefits-dialog';dialog.className='trait-benefits-dialog';
  dialog.setAttribute('aria-labelledby','trait-benefits-title');
  dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
-  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+'</h2>'+
+  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+
+   (itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
   '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
   '<div class="trait-benefits-dialog-body">'+
+   (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
+     '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
+      '<span class="trait-activation-description">Attivi per ogni copia posseduta'+(itemQuantity>1?' · ×'+itemQuantity:'')+
+       (ownedCopies.some(item=>requiresAttunement(item))?' · Richiede sintonia':'')+'</span></div></div>':
    '<div class="trait-activation-control" data-trait-activation>'+
     '<div class="trait-activation-copy"><span class="trait-activation-heading">'+(trait.readonly?'Stato attivo':'Stato del privilegio')+'</span>'+
      '<span class="trait-activation-description">'+(trait.inactive?'Benefici disattivati':'Benefici attivi')+'</span></div>'+
     '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="'+(trait.readonly?'trait-state-end':'trait-benefits-toggle')+'" aria-label="'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
      '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
-   '</div>'+
+   '</div>')+
    '<div class="trait-benefits">'+(benefits+choiceBenefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
    (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
      '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
@@ -1142,7 +1164,8 @@ function infusionPanel(c,calculated){
        '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+
          '" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>'+
        applied.map(({item,index:itemIndex})=>'<div class="infusion-equipped"><span>'+esc(item.name||item.id)+
-         ' · '+(item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
+         ' · '+(!['weapon','shield','armor'].includes(itemKind(item))?'Attivo nell’inventario':
+          item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
          '<button type="button" class="btn small" data-act="infusion-clear" data-index="'+itemIndex+'">Rimuovi infusione</button></div>').join('');
    }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta. Imparane una dal catalogo.</p>';
  const selected=known[state.infusionPending];
@@ -1354,14 +1377,14 @@ function inventoryAttunementView(c,entries){
 }
 function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
   if(!entries.length)return '<p class="hint">Nessun '+(scrolls?'incantesimo su pergamena.':'oggetto.')+'</p>';
-  const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Eq.","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
+  const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Slot","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
   return '<div class="inventory-table" role="table" aria-label="'+(scrolls?'Pergamene':'Oggetti')+'">'+
     '<div class="inventory-table-head" role="row">'+headings.map((x,i)=>
       '<span class="inventory-col-'+(scrolls?["quantity","level","name"][i]:
         ["equip","value","weight","quantity","source","property","name"][i])+'" role="columnheader">'+x+'</span>').join('')+'</div>'+
     entries.map(({item,index})=>{
       const kind=itemKind(item),slots=Array.isArray(item.equipped_slots)?item.equipped_slots:[],
-        canEquip=kind!=="document",
+        canEquip=['weapon','shield','armor'].includes(kind),
         eqIcon=canEquip?((item.equipped||slots.length)?"✓":""):(slots.includes("main")?"⚔":"")+
           (slots.includes("off")?"🛡":"")+(slots.includes("body")?"▣":""),
         qty=Math.max(1,Number(item.quantity)||1),
@@ -1404,20 +1427,18 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
     }).join('')+'</div>';
 }
 function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex){
-  const sections=containers.map(container=>{
-    const rows=entries.filter(({item})=>itemContainerId(item,containers)===container.id);
-    const controls=container.id===DEFAULT_INVENTORY_CONTAINER?'': 
-      '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(container.id)+'">Rinomina</button>'+
-      '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(container.id)+'">Elimina</button>';
-    return '<section class="inventory-container"><header class="inventory-container-head"><h3>'+esc(container.name)+
-      '</h3><span class="hint">'+rows.length+' oggetti</span><div class="actions">'+controls+'</div></header>'+
-      inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
-      '<div class="actions"><button class="btn small" data-act="item-catalog" data-container-id="'+esc(container.id)+'">＋ Dal catalogo</button>'+
-      '<button class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(container.id)+'">＋ Homebrew</button></div></section>';
-  }).join('');
-  return panel("Oggetti posseduti",'<div class="inventory-container-list">'+sections+'</div>'+
-    '<div class="actions"><button type="button" class="btn" data-act="inventory-container-add">＋ Contenitore</button></div>',
-    "inventory-native-panel");
+  const key=state.inventorySubtab;
+  const active=key.startsWith('container:')?containers.find(row=>row.id===key.slice(10)):null;
+  const destination=active?.id||DEFAULT_INVENTORY_CONTAINER;
+  const rows=entries.filter(({item})=>key==='all'||itemContainerId(item,containers)===destination);
+  const controls=active?'<div class="inventory-container-management">'+
+    '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button>'+
+    '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(active.id)+'">Elimina sezione</button></div>':'';
+  return panel(key==='all'?'Tutti gli oggetti':active?.name||'Zaino',
+    controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
+    '<div class="actions"><button type="button" class="btn small" data-act="item-catalog" data-container-id="'+esc(destination)+'">＋ Dal catalogo</button>'+
+    '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
+    "inventory-native-panel inventory-items-panel");
 }
 function inventoryItemDescription(obj,index){
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
@@ -1460,7 +1481,7 @@ function inventoryRow(item,index) {
     '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
     '<p class="hint">'+esc(tags||"Oggetto personale")+'</p>'+quantity+
     '<div class="inventory-switches">'+
-    (!["weapon","shield","armor","document"].includes(kind)?enabled("equipped","Equipaggiato"):'')+
+    ''+
     (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
     enabled("active","Attivo")+'</div>'+
     (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
@@ -3997,6 +4018,9 @@ async function handleAction(target){
     const record=state.editor.read();
     if(trait.category==='oggetti'&&trait.rank===0&&String(trait.origin_key||'').startsWith('item:')){
       const id=String(trait.origin_key).slice(5);
+      if((record.inventory||[]).filter(item=>String(item.id||'')===id)
+        .every(item=>!['weapon','shield','armor'].includes(itemKind(item))))
+        throw Error('I benefici degli oggetti comuni sono automatici.');
       const active=(record.inventory||[]).some(item=>String(item.id||'')===id&&
         (item.equipped===true||(item.equipped_slots||[]).length>0));
       const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id&&
@@ -4137,7 +4161,9 @@ async function handleAction(target){
       const inventory=[...(record.inventory||[]),item];
       await editor.update({inventory});
       state.page="library";state.libraryMode=false;state.creatureId=owner;
-      state.editor=editor;state.sheet="inventory";state.inventorySubtab="items";
+      state.editor=editor;state.sheet="inventory";
+      state.inventorySubtab=state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?
+        'container:'+state.pendingItemContainer:'items';
       state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";state.pendingItemContainer="";
       await render();message("Oggetto homebrew aggiunto all'inventario.");return;
     }
@@ -4186,7 +4212,9 @@ async function handleAction(target){
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     if(state.pendingItemOwner&&category!=='feats'){
        state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
-       state.sheet='inventory';state.inventorySubtab='items';state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
+       state.sheet='inventory';state.inventorySubtab=state.pendingItemContainer&&
+        state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?'container:'+state.pendingItemContainer:'items';
+       state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
        state.pendingItemOwner='';state.pendingItemContainer='';await render();
      }
      if(category==='feats'&&state.featAssignReturnId===cId){
@@ -4504,7 +4532,9 @@ async function handleAction(target){
     const containers=inventoryContainers(record),id=target.dataset.containerId;
     if(act==="inventory-container-add"){
       const name=window.prompt("Nome del nuovo contenitore:");if(name===null)return;
-      await patch(createInventoryContainer(record,"container_"+crypto.randomUUID(),name));
+      const newId="container_"+crypto.randomUUID();
+      await patch(createInventoryContainer(record,newId,name));
+      state.inventorySubtab='container:'+newId;
     }else if(act==="inventory-container-rename"){
       const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Contenitore non rinominabile.");
       const name=window.prompt("Rinomina contenitore:",original.name);if(name===null)return;
@@ -4522,12 +4552,14 @@ async function handleAction(target){
         destination=other[index].id;
       }else if(!window.confirm("Eliminare il contenitore vuoto "+original.name+"?"))return;
       await patch(deleteInventoryContainer(record,id,destination));
+      state.inventorySubtab='items';
     }
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(act==="inventory-subtab"){
     const subtab=target.dataset.subtab;
-    if(!["items","scrolls","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
+    if(!["items","all","scrolls","documents",...inventoryContainers(state.editor.read()).slice(1).map(row=>'container:'+row.id)].includes(subtab))
+      throw Error("Sottoscheda inventario non valida.");
     state.inventorySubtab=subtab;state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }
@@ -4551,6 +4583,7 @@ async function handleAction(target){
     const record=state.editor.read(),index=Number(target.dataset.index);
     const owned=record.inventory?.[index];
     if(!owned)throw Error("Oggetto non trovato.");
+    if(!['weapon','armor','shield'].includes(itemKind(owned)))throw Error("Questo oggetto è sempre attivo; non richiede equipaggiamento.");
     const enabled=!(owned.equipped===true||(owned.equipped_slots||[]).length>0);
     const inventory=setItemEquipped(record.inventory,index,enabled);
     const itemKey='item:'+String(owned.id||'');
