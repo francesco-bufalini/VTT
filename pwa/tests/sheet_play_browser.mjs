@@ -657,7 +657,7 @@ try{
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitSection=page.locator('.play-info-traits');
  assert.equal(await traitSection.count(),1);
- assert.equal(await traitSection.locator(':scope > h2.play-section-divider').innerText(),'Tratti',
+ assert.equal(await traitSection.locator(':scope > h2.play-section-divider').textContent(),'Tratti',
   'Tratti uses the same fixed divider heading as Competenze');
  assert.equal(await traitSection.locator('.play-traits-disclosure').count(),0,
   'Tratti must not be collapsible');
