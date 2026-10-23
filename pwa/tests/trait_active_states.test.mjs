@@ -4,6 +4,8 @@ import {collectTraitRows,groupTraitRows} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {nativeSection} from '../native_sheet.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {classFeatureRollSources} from '../feature_mechanics.js';
+import {sheetScoreOriginSegments} from '../sheet_roll_origin.js';
 
 test('a sheet with zero talents still offers the talent catalog',()=>{
  const record={kind:'character',name:'Eroe',feats_catalog:[],abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
@@ -79,4 +81,25 @@ test('a condition trait identifies disadvantage coming from the roll rules',()=>
  const calculated={features:[],attacks:[]};
  const groups=traitBenefitGroups(trait,{conditions:['poisoned']},calculated);
  assert.ok(groups.find(g=>g.type==='roll_modes')?.items.some(row=>row.value==='Svantaggio'));
+});
+
+test('saved roll modes apply to real d20 rolls and stop with their granting trait',()=>{
+ const grant={id:'trait:mode1000',origin_id:'feature:trait:mode-card',parent_origin:'feature:owned',
+  trait_key:'mode-card',mode:'disadvantage',target:'saving_throw',origin_name:'Tratto personalizzato'};
+ const record={roll_mode_grants:[grant]};
+ const calculated={features:[],attacks:[]};
+ assert.ok(classFeatureRollSources(record,calculated,'save:dex').some(row=>row.mode==='disadvantage'&&row.origin_id===grant.origin_id));
+ assert.ok(!classFeatureRollSources(record,calculated,'initiative').some(row=>row.origin_id===grant.origin_id));
+ assert.ok(!classFeatureRollSources({...record,trait_enabled:{'mode-card':false}},calculated,'save:dex').some(row=>row.origin_id===grant.origin_id));
+ assert.ok(!classFeatureRollSources({...record,origin_enabled:{'feature:owned':false}},calculated,'save:dex').some(row=>row.origin_id===grant.origin_id));
+});
+test('a once-rolled static bonus changes HP and links back to the real origin',()=>{
+ const bonus={id:'trait:hp1000',origin_id:'feature:trait:hp-card',origin_name:'Dono',
+  target:'hp',expression:'3',dice_notation:'1d4',disabled:false};
+ const record={kind:'character',max_hp_base:10,abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},
+  formula_bonuses:[bonus]};
+ const calculated=calculateSheet(record);
+ assert.equal(calculated.values.hp,13);
+ const sources=sheetScoreOriginSegments(record,calculated,'hp');
+ assert.ok(sources.some(row=>row.originId===bonus.origin_id&&row.formula.includes('1d4')&&row.expanded==='+3'));
 });
