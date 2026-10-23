@@ -166,6 +166,39 @@ function errorMessage(error) {
   if (code === 401) return "Associazione necessaria: inserisci il codice del desktop.";
   return error instanceof Error ? error.message : String(error);
 }
+// A character sheet must open from local storage even if one of its optional
+// reference catalogs is slow or unavailable. Do not clear locally saved data.
+function sheetLoadingDeadline(promise,ms,label){
+  let timer;
+  return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      const error=new Error("Caricamento "+label+" oltre il tempo massimo.");
+      error.code="SHEET_LOADING_TIMEOUT";
+      reject(error);
+    },ms);
+  })]).finally(()=>clearTimeout(timer));
+}
+let sheetLateRefreshTimer=null;
+function refreshSheetAfterLateLoad(promise,creatureId,sheet){
+  Promise.resolve(promise).then(()=>{
+    if(sheetLateRefreshTimer)clearTimeout(sheetLateRefreshTimer);
+    sheetLateRefreshTimer=setTimeout(()=>{
+      sheetLateRefreshTimer=null;
+      if(state.page==='library'&&!state.libraryMode&&
+        state.creatureId===creatureId&&state.sheet===sheet&&
+        app.querySelector('#sheet-play-view')){
+        void render();
+      }
+    },180);
+  }).catch(error=>console.warn("Catalogo opzionale della scheda non disponibile",error));
+}
+function sheetLoadingView(){
+  return '<section class="sheet-loading-view" role="status" aria-live="polite">'+
+    '<span class="sheet-loading-indicator" aria-hidden="true"></span>'+
+    '<h2>Caricamento della scheda</h2>'+
+    '<p>Sto aprendo i dati salvati sul dispositivo.</p>'+
+    '</section>';
+}
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
  magic:'spark',inventory:'inventory',conditions:'condition'};
@@ -302,6 +335,14 @@ async function navigate(page){
 async function render() {
   const ticket = ++state.renderTicket;
   syncNav();
+  const viewKey=[state.page,state.libraryMode?'archive':'sheet',state.creatureId||'',state.sheet].join('|');
+  // The header and the dock change synchronously. Change the central panel
+  // at the same time instead of leaving the old Creature list visible until
+  // asynchronous catalog requests and calculations finish.
+  if(app.dataset.renderViewKey!==viewKey){
+    app.innerHTML=sheetLoadingView();
+    app.dataset.renderViewKey=viewKey;
+  }
   try {
     let html = "";
     if (state.page === "library") html = await libraryView();
@@ -319,6 +360,7 @@ async function render() {
     const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
     const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    app.dataset.renderViewKey=viewKey;
     syncLibrarySelectionUI();
     syncLibraryFilterUI();
     if(state.page==="session")sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
@@ -346,6 +388,7 @@ async function render() {
     console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
       btn("refresh","Riprova","primary");
+    app.dataset.renderViewKey='';
   }
 }
 function librarySelectionActions(){
