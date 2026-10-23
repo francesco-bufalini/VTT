@@ -339,24 +339,23 @@ async function libraryView() {
       '<button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+
       '" aria-label="Visualizza scheda di '+esc(c.name)+'">'+
       '<span class="creature-info"><span class="creature-name">'+esc(c.name)+'</span>'+
-      '<span class="creature-details">'+esc(species)+'</span>'+
+      '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
       (classNames?'<span class="creature-classes">'+classNames+'</span>':
         c.level?'<span class="creature-classes">Liv. '+esc(c.level)+'</span>':'')+
-      '</span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article>';
+      '</span></span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article>';
   }).join('');
   if(!list)list='<div class="empty library-empty"><strong>Nessuna creatura salvata</strong>'+
     '<p>Aggiungi un personaggio oppure importa una scheda esistente.</p>'+
     btn("demo","Prova personaggio demo","primary")+'</div>';
   return '<section class="library-index" aria-label="Archivio delle creature">'+
-    '<div class="library-intro"><h1>Le tue creature</h1></div>'+
-    '<div class="library-list-header">'+
-    (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
-      '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
-      '<span class="library-header-spacer" aria-hidden="true"></span>')+
-    '<span class="library-list-count"><span class="library-count-number">'+rows.length+'</span> '+(rows.length===1?'scheda':'schede')+'</span>'+
+    '<div class="library-intro"><div class="library-title-block"><h1>Le tue creature</h1>'+
+    '<span class="library-list-count"><span class="library-count-number">'+rows.length+'</span> '+(rows.length===1?'scheda':'schede')+'</span></div>'+
     '<button type="button" class="library-add-button" data-act="library-add" aria-label="Aggiungi personaggio" title="Aggiungi personaggio">'+
-    '<span class="library-add-glyph" aria-hidden="true">+</span><span class="library-add-text" aria-hidden="true">Aggiungi</span></button>'+
-    '</div><div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
+    '<span class="library-add-glyph" aria-hidden="true">+</span><span class="library-add-text" aria-hidden="true">Aggiungi</span></button></div>'+
+    (rows.length?'<div class="library-list-header"><label class="library-batch-check library-select-master">'+
+      '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'>'+
+      '<span class="library-select-label">Seleziona tutte</span></label></div>':'')+
+    '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
       librarySelectionActions()+'</div>'+
     '<div class="library-rows">'+list+'</div></section>'+
     '<details class="library-backup"><summary>'+
