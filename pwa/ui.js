@@ -4124,9 +4124,11 @@ async function handleAction(target){
   }
   if(act==='tracker-optional-recovery'){
     const record=state.editor.read(),calculated=await computeLocalData(record);
-    const change=optionalRecoveryPatch(record,target.dataset.ruleId,calculated.trackers);
-    if(!change)throw Error('Questo recupero è già stato usato o non è disponibile dopo un riposo breve.');
-    await patch(change);await render();return;
+    await patch(current=>{
+      const change=optionalRecoveryPatch(current,target.dataset.ruleId,calculated.trackers);
+      if(!change)throw Error('Questo recupero è già stato usato o non è disponibile dopo un riposo breve.');
+      return change;
+    });await render();return;
   }
   if(["tracker-short","tracker-long","tracker-turn"].includes(act)){
     const record=state.editor.read(),calculated=await computeLocalData(record);
