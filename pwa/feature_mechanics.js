@@ -119,13 +119,13 @@ export function classFeatureRollSources(record,calculated,target){
    rage:'Ira',reckless_attack:'Attacco irruento',
    patient_defense:'Difesa paziente',innate_sorcery:'Stregoneria innata'};
  const actions=classFeatureEntries(record,calculated);
- const add=(mode,id,name,kind='feature')=>{
+ const add=(mode,id,name,kind='feature',condition_id='')=>{
    if(!['advantage','disadvantage'].includes(mode))return;
    // A class rule and structured metadata may describe the *same* trait.
    // Distinct sources remain separate, but one trait must never be counted twice.
    const key=String(id||'')?String(id)+'|'+mode:mode+'|'+String(name||'');
    if(!result.some(row=>row.key===key))result.push({mode,origin_id:String(id||''),
-     origin_name:String(name||'Origine sconosciuta'),key,kind});
+     origin_name:String(name||'Origine sconosciuta'),key,kind,condition_id});
  };
  const activeFeature=key=>{
    if(!classFeatureActive(record,calculated,key))return;
@@ -170,7 +170,7 @@ export function classFeatureRollSources(record,calculated,target){
  const isCheck=target.startsWith('skill:')||target.startsWith('ability_check:')||target.startsWith('ability_mod:')||target==='initiative';
  const attack=target.startsWith('attack_hit:')||target.startsWith('casting_hit:');
  const fromCondition=(code,mode,label,when)=>{
-   if(conditions.has(code)&&when)add(mode,'','Condizione · '+label,'condition');
+   if(conditions.has(code)&&when)add(mode,'','Condizione · '+label,'condition',code);
  };
  fromCondition('poisoned','disadvantage','Avvelenato',isCheck||attack);
  fromCondition('blinded','disadvantage','Accecato',attack);

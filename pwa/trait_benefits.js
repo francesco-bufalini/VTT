@@ -1,6 +1,7 @@
 // Read-only, source-bound summaries for the PWA's trait cards.
 // Use structured grants only; never extract mechanics from free-form descriptions.
-import {CLASS_FEATURE_RULES} from './feature_mechanics.js';
+import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
+import {resolveOwnedItem} from './item_controls.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -79,6 +80,8 @@ export function traitBenefitTargetLabel(value=''){
  if(TARGETS[key])return TARGETS[key];
  const [type,...rest]=key.split(':'),name=rest.join(':');
  if(type==='skill')return 'Abilità · '+(SKILLS[name]||name);
+ if(type==='ability_check')return 'Prova · '+(ABILITIES[name]||name);
+ if(type==='casting_hit')return 'Attacco magico · '+(ABILITIES[name]||name);
  if(type==='save')return 'TS · '+(ABILITIES[name]||name);
  if(type==='ability')return 'Punteggio · '+(ABILITIES[name]||name);
  if(type==='ability_mod')return 'Modificatore · '+(ABILITIES[name]||name);
@@ -103,7 +106,10 @@ const proficiencyOrder=['skill','expertise','save','weapon','armor','tool','lang
  */
 export function traitBenefitGroups(trait={},record={},calculated={}){
  const ids=traitBenefitSources(trait,record),groups=new Map();
- const belongs=row=>row&&[row.origin_id,row.parent_origin].some(id=>id&&ids.has(id));
+ const stateRule=rows(calculated.trait_state_catalog).find(rule=>
+  trait.state_id&&rule.id===trait.state_id);
+ const belongs=row=>row&&([row.origin_id,row.parent_origin].some(id=>id&&ids.has(id))||
+  stateRule&&String(row.id||'').startsWith('trait_state:'+stateRule.id+':'));
  const add=(type,title,label,value='',id='',extra={})=>{
   label=String(label??'').trim();value=String(value??'').trim();
   if(!label)return;
@@ -124,6 +130,79 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;
   add('dice','Dadi bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
+ }
+ // An attack is a benefit in its own right; bonuses to an attack are
+ // separate numeric benefits and must not be confused with the granted attack.
+ const stateAttackIds=new Set(rows(stateRule?.attacks).map(attack=>String(attack.id)));
+ for(const attack of rows(calculated.attacks)){
+  const itemId=String(trait.origin_key||'').replace(/^item:/,'');
+  const fromItem=trait.category==='oggetti'&&trait.rank===0&&
+   String(trait.origin_key||'').startsWith('item:')&&
+   (String(attack.id||'').startsWith('item:'+itemId)||
+    String(attack.id||'').includes(':'+itemId));
+  if(!belongs(attack)&&!stateAttackIds.has(String(attack.id))&&!fromItem)continue;
+  const reach=attack.melee?'Portata ':'Gittata ';
+  const range=Number(attack.range_feet);
+  const details=[attack.damage&&String(attack.damage)+' '+String(attack.damage_type||''),
+   Number.isFinite(range)&&range>0?reach+range+' ft':'',
+   Number(attack.long_range_feet)>0?'Lunga '+attack.long_range_feet+' ft':''].filter(Boolean).join(' · ');
+  add('attacks','Attacchi concessi',attack.name,details,'attack:'+String(attack.id||''));
+ }
+ // Equipping armor or a shield supplies AC even when no numeric bonus row
+ // exists: their base/bonus is stored on the owned item, not on a trait formula.
+ if(trait.category==='oggetti'&&trait.rank===0){
+  for(const saved of rows(record.inventory)){
+   const item=resolveOwnedItem(saved);
+   if(trait.origin_key!=='item:'+String(item.id||saved.id||''))continue;
+   const slots=rows(item.equipped_slots);
+   const kind=String(item.type||'').split('|')[0].toUpperCase();
+   const amount=Number(item.ac);
+   if(!Number.isFinite(amount)||!amount)continue;
+   if(kind==='S'&&(slots.includes('off')||slots.includes('main')))
+    add('armor_class','Classe armatura','Scudo','+'+amount+' CA','armor:'+String(item.id||''));
+   else if(['LA','MA','HA'].includes(kind)&&slots.includes('body'))
+    add('armor_class','Classe armatura','Armatura','CA base '+amount,'armor:'+String(item.id||''));
+  }
+ }
+ // Reuse the very sources used to resolve actual rolls, so active class
+ // privileges and data-defined roll modes share the same provenance.
+ const rollTargets=['ability_check:str','save:str','save:dex','initiative',
+  ...rows(calculated.attacks).map(attack=>'attack_hit:'+attack.id),
+  ...rows(calculated.casting_classes).map(c=>'casting_hit:'+c.ability)];
+ for(const target of [...new Set(rollTargets)]){
+  for(const source of classFeatureRollSources(record,calculated,target)){
+   if(!(source.origin_id&&ids.has(source.origin_id))&&
+    !(source.kind==='condition'&&trait.condition_id===source.condition_id))continue;
+   // A structured roll-mode benefit already describes this scope once.
+   // Avoid repeating it for every attack using the same mode.
+   const explicit=rows(calculated.features).find(feature=>feature.origin_id===source.origin_id);
+   if(rows(explicit?.roll_modes).some(rule=>rule.mode===source.mode&&
+     (rows(rule.targets).length?rule.targets:[rule.target]).some(scope=>
+      scope===target||
+      scope==='attack_roll'&&target.startsWith('attack_hit:')||
+      scope==='saving_throw'&&target.startsWith('save:')||
+      scope==='ability_check'&&(target.startsWith('ability_check:')||target==='initiative')||
+      scope==='spell_attack'&&target.startsWith('casting_hit:'))))continue;
+   add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(target),
+    source.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+source.origin_id+':'+source.mode+':'+target);
+  }
+ }
+ for(const feature of rows(calculated.features)){
+  if(feature.disabled||!ids.has(feature.origin_id))continue;
+  for(const rule of rows(feature.roll_modes)){
+   if(!['advantage','disadvantage'].includes(rule?.mode))continue;
+   for(const target of (rows(rule.targets).length?rule.targets:[rule.target])){
+    if(!target)continue;
+    add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(target),
+     rule.mode==='advantage'?'Vantaggio':'Svantaggio',
+     'roll_mode:'+feature.origin_id+':'+rule.mode+':'+target);
+   }
+  }
+ }
+
+ for(const featureName of rows(stateRule?.granted_features)){
+  add('granted_features','Privilegi concessi',featureName,
+   'Disponibile durante questo stato');
  }
  // One Competenze section: each filled row has the proficiency *type* at
  // left (where a numeric bonus has its target) and its value on the right.
