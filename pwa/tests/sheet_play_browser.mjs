@@ -202,11 +202,15 @@ try{
  assert.equal(typography[0],typography[2],'Applicable heading matches the formula heading size');
  assert.equal(typography[1],typography[3],'Applicable heading matches the formula heading color');
  const tileStyle=await rollDialog.evaluate(dialog=>{
-   const base=getComputedStyle(dialog.querySelector('[data-roll-formula] .sheet-roll-origin-term'));
+   const formula=dialog.querySelector('[data-roll-formula]');
+   const ordinary=formula.querySelector('.sheet-roll-origin-term:not(.is-base)')||
+     formula.querySelector('.sheet-roll-origin-term');
+   const base=getComputedStyle(ordinary);
    const applied=getComputedStyle(dialog.querySelector('.sheet-roll-bonus-term'));
-   return [base.backgroundColor,base.borderTopStyle,applied.backgroundColor,applied.borderTopStyle];
+   return [base.borderRadius,base.borderTopStyle,base.paddingTop,
+     applied.borderRadius,applied.borderTopStyle,applied.paddingTop];
  });
- assert.deepEqual(tileStyle.slice(0,2),tileStyle.slice(2),'Applicable tiles share the formula tile surface');
+ assert.deepEqual(tileStyle.slice(0,3),tileStyle.slice(3),'Applicable tiles share the formula tile surface');
  for(const width of [320,360,390,430]){
    await page.setViewportSize({width,height:844});
    const bounds=await rollDialog.evaluate(dialog=>{
