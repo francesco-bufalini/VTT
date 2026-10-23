@@ -57,10 +57,20 @@ try{
  assert.equal(await page.locator('.play-dock .btn:visible').count(),3);
  assert.equal(await page.locator('[data-act="import"]').isVisible(),false);
  await page.locator('[data-act="library-add"]').click();
- assert(await page.locator('[data-act="import"]').isVisible());
- await page.locator('[data-act="library-create-close"]').click();await shot('library');
+ assert.equal(await page.locator('[data-act="import"]').count(),0,'Creation no longer offers import');
+ assert.equal(await page.locator('#library-create-name').getAttribute('placeholder'),'Nuova creatura');
+ assert(await page.locator('.library-create-type[disabled]').isVisible(),'Bestiary path is visible but disabled');
+ assert(await page.locator('.library-miniature-option[aria-pressed="true"]').count()>=1,'A base miniature is always selected');
+ await page.locator('[data-act="library-create-close"]').first().click();await shot('library');
  await page.locator('[data-act="library-add"]').click();
- await page.locator('[data-act="create"]').click();await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
+ await page.locator('[data-act="create"]').click();
+ await page.locator('[data-sheet-context="identity"]').waitFor();
+ assert(await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   const c=(await listCreatures())[0].creature;
+   return !!c.default_miniature_id&&c.default_miniature_id===c.current_miniature_id;
+ }), 'New creature starts with a saved base miniature');
+ await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
@@ -166,20 +176,25 @@ try{
  assert.equal(await page.locator('#creature-name').textContent(),'VTT Mobile');
  assert.equal(await page.locator('#creature-classes').isVisible(),false);
  assert.equal(await page.locator('.library-index h1').count(),1,'The archive has one heading');
- assert.equal(await page.locator('.library-list-header .library-select-label').textContent(),'Seleziona tutte');
- assert(await page.locator('.library-home-hero').isVisible(),'Creature archive has a hero home');
- assert.equal(await page.locator('.library-home-shortcuts button').count(),2,'Create and import are home actions');
- assert(await page.locator('.library-rows').evaluate(node=>parseFloat(getComputedStyle(node).gap)>0),
-   'Creature cards have comfortable spacing');
+ assert.equal(await page.locator('#library-search').count(),0,'No search bar on the home');
+ assert(await page.locator('.library-home-hero .library-rows').isVisible(),'Roster belongs inside the hero');
+ assert.equal(await page.locator('.library-home-shortcuts button').count(),2,'Only create and import actions remain');
+ assert.equal(await page.locator('.library-list-header').isVisible(),false,'Selection controls are initially hidden');
  for(const width of [320,360,390,430,768]){
   await page.setViewportSize({width,height:820});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
-   'Creature home must not overflow viewport '+width);
+   'Creature home must not overflow '+width);
  }
  await page.setViewportSize({width:390,height:844});
- await page.locator('[data-library-select-all]').check();
- await page.locator('[data-act="library-export"]').waitFor();
- assert(await page.locator('[data-library-select-all]').isChecked(),'Header checkbox retains bulk selection');
+ const firstCard=page.locator('.library-creature-entry .creature-open').first();
+ await firstCard.dispatchEvent('pointerdown',{pointerId:1,button:0,clientX:10,clientY:10});
+ await page.waitForTimeout(610);
+ await firstCard.dispatchEvent('pointerup',{pointerId:1,button:0,clientX:10,clientY:10});
+ assert(await page.locator('.library-list-header').isVisible(),'Long press enters selection mode');
+ assert(await page.locator('[data-act="library-export"]').isVisible(),'Bulk actions appear on selection');
+ assert.equal(await page.locator('.library-creature-entry .library-batch-check:visible').count(),1);
+ await page.locator('[data-library-select-all]').uncheck();
+ assert.equal(await page.locator('.library-list-header').isVisible(),false,'Selection mode exits after deselect');
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
@@ -222,25 +237,15 @@ try{
  assert.match(await orcCard.locator('.creature-details').textContent(),/Orco/);
  assert.equal(await orcCard.locator('.creature-face').count(),0);
  assert.equal(await page.locator('.library-creature-emblem').count(),2,'Cards display existing VTT glyphs');
- await page.locator('[data-library-select-all]').uncheck();
- const search=page.locator('#library-search');
- await search.fill('orco');
- assert(await orcCard.isVisible(),'Search finds monsters by name');
- assert.equal(await elfCard.isVisible(),false,'Search hides unrelated characters');
- assert.equal(await page.locator('#library-visible-count').textContent(),'1 di 2 schede');
- await page.locator('[data-library-select-all]').check();
- assert.equal(await orcCard.locator('[data-library-select]').isChecked(),true);
- assert.equal(await elfCard.locator('[data-library-select]').isChecked(),false,
-   'Bulk selection applies only to visible results');
- await page.locator('[data-library-select-all]').uncheck();
- await page.locator('[data-act="library-filter"][data-kind="character"]').click();
- assert(await page.locator('#library-no-results').isVisible(),'Unmatched kind shows an empty result');
- await page.locator('[data-act="library-clear"]').click();
- assert(await elfCard.isVisible()&&await orcCard.isVisible(),'Clear restores all creatures');
+ assert.equal(await page.locator('.library-creature-entry .library-batch-check:visible').count(),0);
  await page.locator('[data-act="library-filter"][data-kind="monster"]').click();
- assert.equal(await elfCard.isVisible(),false,'Monster filter hides characters');
- assert(await orcCard.isVisible());
+ assert.equal(await elfCard.isVisible(),false);
+ assert(await orcCard.isVisible(),'Monster filter shows monster cards');
+ await page.locator('[data-act="library-filter"][data-kind="character"]').click();
+ assert(await elfCard.isVisible());
+ assert.equal(await orcCard.isVisible(),false);
  await page.locator('[data-act="library-filter"][data-kind="all"]').click();
+ assert(await orcCard.isVisible()&&await elfCard.isVisible());
  await orcCard.locator('[data-act="open"]').click();
  assert.equal(await page.locator('#creature-symbol').count(),0);
  await sheet('info');

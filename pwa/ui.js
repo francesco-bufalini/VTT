@@ -79,7 +79,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryQuery:'', libraryFilter:'all', sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -348,144 +348,160 @@ async function render() {
       btn("refresh","Riprova","primary");
   }
 }
-function librarySelectionActions(){
-  const count=state.librarySelectedIds.size;
-  return count?'<span class="library-selection-count">'+count+' selezionate</span>'+
-    btn("library-export","Esporta ("+count+")")+
-    btn("library-delete","Elimina ("+count+")","danger"):'';
+// Offline-safe presets are real IDs from token_catalog_offline.json.
+const LIBRARY_MINIATURE_PRESETS=[
+ {id:'sariel',name:'Sariel',size_name:'Medium',footprint:1},
+ {id:'gilliam',name:'Gilliam',size_name:'Medium',footprint:1},
+ {id:'hobgoblin',name:'Hobgoblin',size_name:'Medium',footprint:1}
+];
+const libraryMiniatureOptions=()=>state.libraryMiniatures.length?state.libraryMiniatures:LIBRARY_MINIATURE_PRESETS;
+function paintLibraryMiniatures(){
+ const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
+ const query=(dialog.querySelector('#library-miniature-search')?.value||'').toLocaleLowerCase('it').trim();
+ const profiles=libraryMiniatureOptions();
+ const filtered=profiles.filter(m=>(m.name+' '+m.id).toLocaleLowerCase('it').includes(query));
+ // The selected miniature must remain visible even in a large alphabetic
+ // catalog where the first page would otherwise push it out of view.
+ const selected=filtered.find(m=>m.id===state.libraryMiniatureId);
+ const matches=(selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered).slice(0,36);
+ const area=dialog.querySelector('.library-miniature-choices');
+ if(area)area.innerHTML=matches.length?matches.map(m=>
+  '<button type="button" data-act="library-miniature-select" data-miniature-id="'+esc(m.id)+
+  '" class="library-miniature-option" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
+  actionGlyph('proficiency')+'<span>'+esc(m.name)+'</span></button>').join(''):
+  '<p class="hint">Nessuna miniatura trovata.</p>';
+ const chosen=profiles.find(m=>m.id===state.libraryMiniatureId);
+ const label=dialog.querySelector('.library-miniature-current');
+ if(label)label.textContent=chosen?'Selezionata: '+chosen.name:'Seleziona una miniatura';
+ const confirm=dialog.querySelector('[data-act="create"]');
+ if(confirm)confirm.disabled=!chosen;
 }
-function librarySearchKey(value){
-  return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLocaleLowerCase('it').trim();
+async function loadLibraryMiniatures(){
+ try{
+  const response=await fetch('/catalog/miniatures.json');
+  if(!response.ok)throw Error('catalogue');
+  const data=await response.json();
+  const profiles=Array.isArray(data.tokens)?data.tokens.filter(m=>typeof m?.id==='string'&&m.id&&typeof m.name==='string'):[];
+  if(profiles.length){
+   state.libraryMiniatures=profiles;
+   if(!profiles.some(m=>m.id===state.libraryMiniatureId))
+    state.libraryMiniatureId=profiles.find(m=>/^(human|commoner|adventurer|sariel|gilliam)/i.test(m.id))?.id||profiles[0].id;
+  }
+ }catch{
+  state.libraryMiniatures=[];
+  if(!LIBRARY_MINIATURE_PRESETS.some(m=>m.id===state.libraryMiniatureId))
+   state.libraryMiniatureId=LIBRARY_MINIATURE_PRESETS[0].id;
+ }
+ paintLibraryMiniatures();
+}
+function librarySelectionActions(){
+ const count=state.librarySelectedIds.size;
+ return count?'<strong class="library-selection-count">'+count+' selezionate</strong>'+
+  btn('library-export','Esporta ('+count+')')+btn('library-delete','Elimina ('+count+')','danger'):'';
 }
 function syncLibrarySelectionUI(){
-  const boxes=[...app.querySelectorAll('input[data-library-select]')];
-  const visible=boxes.filter(box=>!box.closest('.creature-card')?.hidden);
-  const all=app.querySelector('[data-library-select-all]');
-  if(all){
-    const selected=visible.filter(box=>box.checked).length;
-    all.checked=visible.length>0&&selected===visible.length;
-    all.indeterminate=selected>0&&selected<visible.length;
-    all.disabled=!visible.length;
-  }
-  const label=app.querySelector('.library-select-label');
-  if(label)label.textContent=state.libraryQuery||state.libraryFilter!=='all'?'Seleziona i risultati':'Seleziona tutte';
-  const actions=app.querySelector('#library-selected-actions');
-  if(actions){actions.innerHTML=librarySelectionActions();actions.hidden=!state.librarySelectedIds.size;}
+ const entries=[...app.querySelectorAll('.library-creature-entry')];
+ const visible=entries.filter(e=>!e.hidden);
+ const selecting=state.librarySelectedIds.size>0;
+ // Once the final checkbox is unchecked, a new tap must open the creature
+ // immediately; no stale synthetic-click suppression may linger.
+ if(!selecting)libraryClickSuppression=null;
+ app.querySelector('.library-index')?.classList.toggle('is-selecting',selecting);
+ const all=app.querySelector('[data-library-select-all]');
+ if(all){
+  const selected=visible.filter(e=>state.librarySelectedIds.has(e.dataset.libraryId)).length;
+  all.checked=visible.length>0&&selected===visible.length;
+  all.indeterminate=selected>0&&selected<visible.length;
+  all.disabled=!visible.length;
+ }
+ for(const entry of entries){
+  const selected=state.librarySelectedIds.has(entry.dataset.libraryId);
+  entry.classList.toggle('is-selected',selected);
+  const checkbox=entry.querySelector('input[data-library-select]');
+  if(checkbox)checkbox.checked=selected;
+  const open=entry.querySelector('.creature-open');
+  if(open)open.setAttribute('aria-pressed',String(selecting&&selected));
+ }
+ const master=app.querySelector('.library-list-header');
+ if(master)master.hidden=!selecting;
+ const actions=app.querySelector('#library-selected-actions');
+ if(actions){actions.innerHTML=librarySelectionActions();actions.hidden=!selecting;}
 }
 function syncLibraryFilterUI(){
-  const query=librarySearchKey(state.libraryQuery);
-  const rows=[...app.querySelectorAll('.library-index .creature-card')];
-  let visible=0;
-  for(const row of rows){
-    const matched=(!query||row.dataset.librarySearch.includes(query))&&
-      (state.libraryFilter==='all'||row.dataset.libraryKind===state.libraryFilter);
-    row.hidden=!matched;
-    if(matched)visible++;
-  }
-  for(const button of app.querySelectorAll('[data-act="library-filter"]'))
-    button.setAttribute('aria-pressed',String(button.dataset.kind===state.libraryFilter));
-  const counter=app.querySelector('#library-visible-count');
-  if(counter)counter.textContent=visible===rows.length?rows.length+' schede':
-    visible+' di '+rows.length+' schede';
-  const none=app.querySelector('#library-no-results');
-  if(none)none.hidden=visible!==0||!rows.length;
-  syncLibrarySelectionUI();
+ const entries=[...app.querySelectorAll('.library-creature-entry')];
+ for(const entry of entries)entry.hidden=state.libraryFilter!=='all'&&entry.dataset.libraryKind!==state.libraryFilter;
+ for(const button of app.querySelectorAll('[data-act="library-filter"]'))
+  button.setAttribute('aria-pressed',String(button.dataset.kind===state.libraryFilter));
+ const empty=app.querySelector('#library-no-results');
+ if(empty)empty.hidden=!entries.length||entries.some(entry=>!entry.hidden);
+ syncLibrarySelectionUI();
 }
 async function libraryView(){
-  if(state.creatureId&&!state.libraryMode)return editorView();
-  const rows=await listCreatures();
-  const availableIds=new Set(rows.map(row=>row.creature.id));
-  for(const id of state.librarySelectedIds)if(!availableIds.has(id))state.librarySelectedIds.delete(id);
-  const allSelected=rows.length>0&&rows.every(row=>state.librarySelectedIds.has(row.creature.id));
-  const creatures=rows.map(({creature:c})=>{
-    const monster=String(c.kind||'').toLowerCase()==='monster';
-    const species=c.species||c.race||
-      (typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||
-      c.type||'Razza non specificata';
-    const classNames=localClasses(c).map(member=>String(member.name)+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-    const subline=classNames||(c.level?'Liv. '+c.level:'');
-    const search=librarySearchKey([c.name,species,classNames,monster?'mostro':'personaggio'].join(' '));
-    return '<article class="creature-card" data-library-kind="'+(monster?'monster':'character')+
-      '" data-library-search="'+esc(search)+'">'+
-      '<button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+
-      '" aria-label="Apri la scheda di '+esc(c.name)+'">'+
-      '<span class="library-creature-emblem">'+actionGlyph(monster?'shield':'proficiency')+'</span>'+
-      '<span class="creature-info"><span class="creature-category">'+(monster?'Mostro':'Personaggio')+'</span>'+
-      '<span class="creature-name">'+esc(c.name)+'</span>'+
-      '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
-      (subline?'<span class="creature-classes">'+esc(subline)+'</span>':'')+
-      '</span></span><span class="creature-open-chevron" aria-hidden="true">›</span></button>'+
-      '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
-      '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+
-      (state.librarySelectedIds.has(c.id)?'checked':'')+'></label></article>';
-  }).join('');
-  const empty='<div class="empty library-empty">'+
-    '<span class="library-empty-mark" aria-hidden="true">'+actionGlyph('book')+'</span>'+
-    '<strong>La tua storia comincia qui</strong>'+
-    '<p>Non ci sono ancora schede nel tuo archivio.</p>'+
-    '<button type="button" class="library-empty-create" data-act="library-empty-add">'+
-    '<span aria-hidden="true">+</span> Aggiungi la prima creatura</button></div>';
-  return '<section class="library-index" aria-label="Home delle creature">'+
-    '<header class="library-home-hero">'+
-      '<div class="library-home-hero-content">'+
-      '<span class="library-hero-kicker">VTT <span aria-hidden="true">·</span> Il tuo archivio</span>'+
-      '<h1>Le tue creature</h1>'+
-      '<p class="library-hero-description">Personaggi, alleati e avversari. Tutto il tuo mondo, in un unico posto.</p>'+
-      '<div class="library-hero-facts">'+
-      '<span class="library-hero-fact">'+actionGlyph('book')+'<strong>'+rows.length+'</strong> '+(rows.length===1?'scheda':'schede')+'</span>'+
-      '<span class="library-hero-fact library-hero-offline"><span class="library-offline-dot" aria-hidden="true"></span> Archivio locale</span>'+
-      '</div></div>'+
-      '<div class="library-hero-crest" aria-hidden="true"><div class="library-hero-crest-inner">'+actionGlyph('proficiency')+'</div></div>'+
-    '</header>'+
-    '<div class="library-home-shortcuts" aria-label="Azioni rapide">'+
-      '<button type="button" class="library-shortcut library-shortcut-main" data-act="library-add">'+
-       '<span class="library-shortcut-icon">'+actionGlyph('proficiency')+'</span>'+
-       '<span class="library-shortcut-copy"><strong>Nuova creatura</strong><small>Crea o aggiungi una scheda</small></span>'+
-       '<span class="library-shortcut-arrow" aria-hidden="true">+</span></button>'+
-      '<button type="button" class="library-shortcut" data-act="library-quick-import">'+
-       '<span class="library-shortcut-icon">'+actionGlyph('scroll')+'</span>'+
-       '<span class="library-shortcut-copy"><strong>Importa</strong><small>Da un file JSON</small></span>'+
-       '<span class="library-shortcut-arrow" aria-hidden="true">↗</span></button>'+
-    '</div>'+
-    '<section class="library-roster" aria-label="Schede salvate">'+
-      '<div class="library-roster-heading"><div><span class="library-section-kicker">LA TUA COLLEZIONE</span>'+
-       '<h2>Schede salvate</h2></div>'+
-       '<span id="library-visible-count" class="library-roster-count">'+rows.length+' schede</span></div>'+
-      (rows.length?
-       '<div class="library-explore"><label class="library-search" for="library-search">'+actionGlyph('search')+
-         '<input id="library-search" type="search" value="'+esc(state.libraryQuery)+
-         '" autocomplete="off" placeholder="Cerca nome, razza o classe…" aria-label="Cerca nell’archivio"></label>'+
-         '<div class="library-filters" role="group" aria-label="Filtra creature">'+
-          [['all','Tutte'],['character','Personaggi'],['monster','Mostri']].map(([kind,label])=>
-           '<button type="button" data-act="library-filter" data-kind="'+kind+'" aria-pressed="'+(state.libraryFilter===kind)+'">'+label+'</button>').join('')+
-         '</div></div>'+
-       '<div class="library-list-header"><label class="library-batch-check library-select-master">'+
-         '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'>'+
-         '<span class="library-select-label">Seleziona tutte</span></label></div>':'')+
-      '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
-        librarySelectionActions()+'</div>'+
-      '<div class="library-rows">'+(creatures||empty)+'</div>'+
-      (rows.length?'<div id="library-no-results" class="library-no-results" hidden>'+
-        '<span aria-hidden="true">'+actionGlyph('search')+'</span>'+
-        '<strong>Nessuna corrispondenza</strong><p>Prova un’altra ricerca o cambia filtro.</p>'+
-        '<button type="button" class="btn" data-act="library-clear">Azzera filtri</button></div>':'')+
-    '</section>'+
+ if(state.creatureId&&!state.libraryMode)return editorView();
+ const rows=await listCreatures();
+ const ids=new Set(rows.map(row=>row.creature.id));
+ for(const id of state.librarySelectedIds)if(!ids.has(id))state.librarySelectedIds.delete(id);
+ const list=rows.map(({creature:c})=>{
+  const monster=c.kind==='monster';
+  const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
+  const classes=localClasses(c).map(m=>String(m.name)+' '+Math.max(1,Number(m.level)||1)).join(' · ');
+  const subline=classes||(c.level?'Liv. '+c.level:'');
+  return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
+   '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
+   '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+(state.librarySelectedIds.has(c.id)?'checked':'')+'>'+
+   '<span class="library-check-graphic" aria-hidden="true">✓</span></label>'+
+   '<article class="creature-card"><button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+'" aria-label="Apri scheda di '+esc(c.name)+'">'+
+   '<span class="library-creature-emblem">'+actionGlyph(monster?'shield':'proficiency')+'</span>'+
+   '<span class="creature-info"><span class="creature-category">'+(monster?'Mostro':'Personaggio')+'</span>'+
+   '<span class="creature-name">'+esc(c.name)+'</span>'+
+   '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
+   (subline?'<span class="creature-classes">'+esc(subline)+'</span>':'')+
+   '</span></span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article></div>';
+ }).join('');
+ return '<section class="library-index" aria-label="Le tue creature">'+
+  '<section class="library-home-hero"><h1>Le tue creature</h1>'+
+  '<div class="library-filters" role="group" aria-label="Filtra creature">'+
+   [['all','Tutte'],['character','Personaggi'],['monster','Mostri']].map(([kind,label])=>
+    '<button type="button" data-act="library-filter" data-kind="'+kind+'" aria-pressed="'+(kind===state.libraryFilter)+'">'+label+'</button>').join('')+
+  '</div>'+
+  '<div class="library-list-header" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
+   '<label class="library-select-master"><input type="checkbox" data-library-select-all>'+
+   '<span class="library-check-graphic" aria-hidden="true">✓</span><span>Seleziona tutte</span></label></div>'+
+  '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+librarySelectionActions()+'</div>'+
+  '<div class="library-rows">'+(list||'<div class="library-empty">Nessuna creatura salvata.</div>')+'</div>'+
+  (rows.length?'<div id="library-no-results" class="library-no-results" hidden>Nessuna creatura in questa categoria.</div>':'')+
   '</section>'+
+  '<div class="library-home-shortcuts">'+
+   '<button type="button" class="library-shortcut library-shortcut-main" data-act="library-add">'+
+    '<span class="library-shortcut-icon">'+actionGlyph('proficiency')+'</span>'+
+    '<span class="library-shortcut-copy"><strong>Nuova creatura</strong><small>Crea una scheda</small></span>'+
+    '<span class="library-shortcut-arrow" aria-hidden="true">+</span></button>'+
+   '<button type="button" class="library-shortcut" data-act="library-quick-import">'+
+    '<span class="library-shortcut-icon">'+actionGlyph('scroll')+'</span>'+
+    '<span class="library-shortcut-copy"><strong>Importa JSON</strong></span>'+
+    '<span class="library-shortcut-arrow" aria-hidden="true">↗</span></button></div></section>'+
   '<details class="library-backup"><summary>'+
-    '<span class="library-backup-symbol" aria-hidden="true">'+actionGlyph('scroll')+'</span>'+
-    '<span class="library-backup-copy"><strong>Backup e ripristino</strong>'+
-    '<small>Esporta o recupera il tuo archivio</small></span>'+
-    '<span class="library-backup-chevron" aria-hidden="true">⌄</span></summary>'+
-    '<div class="library-backup-content"><p>Salva una copia dei dati locali o ripristina un backup precedente.</p>'+
-    '<div class="library-backup-actions">'+btn("backup","Esporta backup")+
-    btn("restore-backup","Ripristina backup")+'</div></div></details>'+
+   '<span class="library-backup-symbol">'+actionGlyph('scroll')+'</span>'+
+   '<span class="library-backup-copy"><strong>Backup e ripristino</strong></span>'+
+   '<span class="library-backup-chevron" aria-hidden="true">⌄</span></summary>'+
+   '<div class="library-backup-content"><div class="library-backup-actions">'+
+    btn('backup','Esporta backup')+btn('restore-backup','Ripristina backup')+'</div></div></details>'+
   '<dialog id="library-create-dialog" class="library-create-dialog" aria-labelledby="library-create-title">'+
-    '<div class="library-create-body"><button type="button" class="library-create-close" data-act="library-create-close" aria-label="Chiudi">×</button>'+
-    '<h2 id="library-create-title">Aggiungi una creatura</h2>'+
-    '<p>Scegli come aggiungere una scheda al tuo archivio.</p>'+
-    '<div class="library-create-options">'+btn("create","Crea personaggio","primary")+
-    btn("import","Importa personaggio")+'</div></div></dialog>';
+   '<div class="library-create-body"><button type="button" class="library-create-close" data-act="library-create-close" aria-label="Chiudi">×</button>'+
+    '<h2 id="library-create-title">Nuova creatura</h2>'+
+    '<div class="library-create-types" role="group" aria-label="Tipo di creatura">'+
+     '<button type="button" class="library-create-type is-active" aria-pressed="true">'+actionGlyph('proficiency')+'Personaggio</button>'+
+     '<button type="button" class="library-create-type" disabled>'+actionGlyph('book')+'Bestiario <small>Prossimamente</small></button></div>'+
+    '<label class="library-create-field" for="library-create-name">Nome'+
+     '<input id="library-create-name" type="text" maxlength="120" placeholder="Nuova creatura" autocomplete="off"></label>'+
+    '<div class="library-create-miniature-title"><strong>Miniatura di base</strong><small class="library-miniature-current" role="status">Selezionata: Sariel</small></div>'+
+    '<label class="library-miniature-search" for="library-miniature-search">'+actionGlyph('search')+
+     '<input id="library-miniature-search" type="search" placeholder="Cerca miniatura" autocomplete="off"></label>'+
+    '<div class="library-miniature-choices" role="group" aria-label="Scegli miniatura"></div>'+
+    '<div class="library-create-actions">'+
+     '<button type="button" class="btn" data-act="library-create-close">Annulla</button>'+
+     '<button type="button" class="btn primary" data-act="create">Crea creatura</button></div>'+
+   '</div></dialog>';
 }
 function renderCatalogRows() {
   const filter=state.catalogQuery.trim().toLocaleLowerCase();
@@ -4253,15 +4269,20 @@ async function handleAction(target){
     state.libraryFilter=target.dataset.kind;
     syncLibraryFilterUI();return;
   }
-  if(act==="library-clear"){
-    state.libraryQuery='';state.libraryFilter='all';
-    const search=app.querySelector('#library-search');
-    if(search)search.value='';
-    syncLibraryFilterUI();return;
-  }
-  if(act==="library-add"||act==="library-empty-add"){
+  if(act==="library-add"){
+    state.libraryMiniatureId='sariel';
     const dialog=app.querySelector('#library-create-dialog');
-    if(dialog){if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');}
+    if(dialog){
+      paintLibraryMiniatures();
+      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+      void loadLibraryMiniatures();
+    }
+    return;
+  }
+  if(act==="library-miniature-select"){
+    if(libraryMiniatureOptions().some(row=>row.id===target.dataset.miniatureId)){
+      state.libraryMiniatureId=target.dataset.miniatureId;paintLibraryMiniatures();
+    }
     return;
   }
   if(act==="library-create-close"){
@@ -4270,9 +4291,16 @@ async function handleAction(target){
     return;
   }
   if(act==="create"){
+    const dialog=app.querySelector('#library-create-dialog');
+    if(!dialog?.open)throw Error("Apri prima la creazione di una creatura.");
+    const name=String(dialog.querySelector('#library-create-name')?.value||'').trim()||'Nuova creatura';
+    const miniature=libraryMiniatureOptions().find(row=>row.id===state.libraryMiniatureId);
+    if(!miniature)throw Error("Seleziona una miniatura di base.");
     state.magicPopup="";
-    const row=await createCreature("character","Nuovo personaggio");
-    state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";await render();return;
+    const row=await createCreature("character",name,"default",miniature);
+    if(dialog.open&&dialog.close)dialog.close();
+    state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
+    await render();return;
   }
   if(act==="import"||act==="library-quick-import"){
     const dialog=app.querySelector('#library-create-dialog');
@@ -4285,7 +4313,15 @@ async function handleAction(target){
     message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){state.magicPopup="";state.creatureId=target.dataset.id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;}
+  if(act==="open"){
+    const id=target.dataset.id;
+    if(state.librarySelectedIds.size){
+      if(state.librarySelectedIds.has(id))state.librarySelectedIds.delete(id);
+      else state.librarySelectedIds.add(id);
+      syncLibrarySelectionUI();return;
+    }
+    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;
+  }
   if(act==="back"){
     await navigate("library");
     window.scrollTo(0,0);app.focus({preventScroll:true});
@@ -4819,7 +4855,63 @@ async function handleSubmit(form){
     await fetchChat();
   }
 }
+let libraryPressTimer=null;
+let libraryPressStart=null;
+let libraryClickSuppression=null;
+function clearLibraryPress(){
+ if(libraryPressTimer!==null)clearTimeout(libraryPressTimer);
+ libraryPressTimer=null;libraryPressStart=null;
+}
+function toggleLibraryHoldSelection(id){
+ if(!id||state.page!=='library'||!state.libraryMode)return;
+ const entry=[...app.querySelectorAll('.library-creature-entry')]
+  .find(row=>row.dataset.libraryId===id&&!row.hidden);
+ if(!entry)return;
+ if(state.librarySelectedIds.has(id))state.librarySelectedIds.delete(id);
+ else state.librarySelectedIds.add(id);
+ syncLibrarySelectionUI();
+}
 function listen(){
+  // The roster is an ordinary tap target until held for 520 ms. Cancel
+  // on movement so vertical scrolling never unexpectedly selects a card.
+  document.addEventListener('pointerdown',e=>{
+    clearLibraryPress();
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button||e.button!==0||state.page!=='library'||!state.libraryMode)return;
+    libraryPressStart={id:button.dataset.id,x:e.clientX,y:e.clientY,pointerId:e.pointerId};
+    libraryPressTimer=setTimeout(()=>{
+      const id=libraryPressStart?.id;
+      if(!id)return;
+      libraryClickSuppression={id,until:performance.now()+900};
+      toggleLibraryHoldSelection(id);
+      clearLibraryPress();
+    },520);
+  },{passive:true});
+  document.addEventListener('pointermove',e=>{
+    if(!libraryPressStart||e.pointerId!==libraryPressStart.pointerId)return;
+    if(Math.hypot(e.clientX-libraryPressStart.x,e.clientY-libraryPressStart.y)>11)
+      clearLibraryPress();
+  },{passive:true});
+  document.addEventListener('pointerup',clearLibraryPress,{passive:true});
+  document.addEventListener('pointercancel',clearLibraryPress,{passive:true});
+  document.addEventListener('scroll',clearLibraryPress,true);
+  document.addEventListener('contextmenu',e=>{
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button)return;
+    e.preventDefault();clearLibraryPress();
+    if(libraryClickSuppression?.id===button.dataset.id&&performance.now()<libraryClickSuppression.until)return;
+    libraryClickSuppression={id:button.dataset.id,until:performance.now()+900};
+    toggleLibraryHoldSelection(button.dataset.id);
+  });
+  document.addEventListener('click',e=>{
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button||!libraryClickSuppression||button.dataset.id!==libraryClickSuppression.id)return;
+    if(performance.now()<libraryClickSuppression.until){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+    libraryClickSuppression=null;
+  },true);
+
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
@@ -4906,9 +4998,8 @@ function listen(){
   const editable = "[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
-    if(target?.id==='library-search'){
-      state.libraryQuery=target.value;
-      syncLibraryFilterUI();return;
+    if(target?.id==='library-miniature-search'){
+      paintLibraryMiniatures();return;
     }
     if(target?.matches('[data-play-search]')){
       state.sheetSearch.set(state.creatureId+'|'+state.sheet,target.value);
@@ -4951,7 +5042,7 @@ function listen(){
     const target=e.target;
     if(target?.matches?.('[data-library-select-all]')){
       for(const box of app.querySelectorAll('input[data-library-select]')){
-        if(box.closest('.creature-card')?.hidden)continue;
+        if(box.closest('.library-creature-entry')?.hidden)continue;
         box.checked=target.checked;
         if(box.checked)state.librarySelectedIds.add(box.dataset.librarySelect);
         else state.librarySelectedIds.delete(box.dataset.librarySelect);

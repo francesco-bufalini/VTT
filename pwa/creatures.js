@@ -58,9 +58,20 @@ export async function saveCreature(creature, scope = "default", expectedRevision
     expectedRevision === null ? 0 : expectedRevision);
 }
 
-export async function createCreature(kind = "character", name = "Nuova creatura", scope = "default") {
+export async function createCreature(kind = "character", name = "Nuova creatura", scope = "default", miniature = null) {
   if (!["character", "monster"].includes(kind)) throw new TypeError("Invalid creature kind");
   const creature = initialCreature(kind, name, "creature_" + localId(), await ownerId());
+  // Assign the chosen miniature in the initial save, not in a second write:
+  // an interrupted creation must never leave an unconfigured new sheet.
+  if (miniature !== null) {
+    const id=typeof miniature?.id==="string"?miniature.id.trim():"";
+    if (!id || id.length>160) throw new Error("Seleziona una miniatura valida.");
+    const footprint=Number(miniature.footprint);
+    creature.default_miniature_id=id;
+    creature.current_miniature_id=id;
+    creature.size_name=typeof miniature.size_name==="string"&&miniature.size_name.trim()?miniature.size_name:"Medium";
+    creature.footprint=Number.isFinite(footprint)&&footprint>=0.5&&footprint<=100?footprint:1;
+  }
   const saved = await saveCreature(creature, scope, 0);
   return saved;
 }
