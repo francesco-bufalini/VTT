@@ -4316,6 +4316,11 @@ function listen(){
       if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
       return;
     }
+    if(closeAction==='close-score-formula'){
+      const dialog=document.querySelector('#sheet-score-formula-dialog');
+      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      return;
+    }
     if(closeAction==='close-sheet-roll'){
       const dialog=document.querySelector('#sheet-roll-dialog');
       if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
