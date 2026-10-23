@@ -3135,3 +3135,18 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .pending-choice-actions button:hover:not(:disabled){border-color:#e0b57b}
 .pending-choices-notice-list button:focus-visible,.pending-choices-manage:focus-visible,
 .pending-choice-dialog button:focus-visible,.pending-choice-option:focus-within{outline:2px solid #e0b57b;outline-offset:2px}
+
+/* Inventory equipment: unmistakable checkbox-style control, not a text field. */
+.inventory-col-equip .inventory-equip-toggle{
+  display:inline-grid!important;place-items:center!important;
+  width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;
+  padding:0!important;border:1.5px solid #b49b78!important;border-radius:7px!important;
+  background:rgba(20,18,16,.6)!important;box-shadow:inset 0 1px 3px #0006!important;
+  cursor:pointer;color:#f5e3bd!important;
+}
+.inventory-equip-mark{display:grid;place-items:center;width:19px;height:19px;font-size:17px;font-weight:800;line-height:1}
+.inventory-col-equip .inventory-equip-toggle.is-equipped{
+  border-color:#d9b879!important;background:#846239!important;
+  box-shadow:inset 0 1px 2px #0003,0 0 0 2px #d9b87924!important;
+}
+.inventory-col-equip .inventory-equip-toggle:focus-visible{outline:2px solid #f4d29b;outline-offset:3px}
