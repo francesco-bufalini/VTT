@@ -169,7 +169,7 @@ try{
  assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
    'Damage rolls must not offer an advantage/disadvantage mechanic');
  assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco']);
  assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
    ['1d6 + Modificatore',' + 2d4']);
