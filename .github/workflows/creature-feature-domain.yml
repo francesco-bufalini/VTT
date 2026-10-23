@@ -84,6 +84,7 @@ jobs:
             /*.tscn
             /vtt/
             /pwa/icons/
+            /pwa/catalog/trait_states.json
             /network/
             /homebrew/
             /encounter/encounter_events.gd
@@ -111,6 +112,8 @@ jobs:
             --check-only --script res://vtt/structured_resource_trackers.gd
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
             --check-only --script res://vtt/feature_timing_recovery_rules.gd
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --check-only --script res://vtt/class_feature_activation.gd
           for test in \
             test_benefit_requirements.gd \
             test_creature_features_standalone.gd \
