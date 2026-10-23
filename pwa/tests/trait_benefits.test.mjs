@@ -255,6 +255,6 @@ test('manifest ability previews are source scoped, disabled visibly, and preserv
  assert.deepEqual(group.items.map(i=>i.label),['Parry']);
  assert.equal(group.items[0].status,'Tratto disattivato');
  assert.equal(group.items[0].timing,'Reazione');
- assert.equal(group.items[0].cost,'1 utilizzi · Superiority Die');
+ assert.equal(group.items[0].cost,'1 utilizzo · Superiority Die');
  assert.equal(group.items[0].description,'Reduce damage.');
 });
