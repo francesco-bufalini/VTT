@@ -83,7 +83,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -248,6 +248,30 @@ function syncNav(){
   connection.classList.toggle('connected',state.paired&&state.online);
 }
 
+// Several inventory containers can be visible at once. Never let the
+// selection become empty, and migrate the former single "all" tab.
+function inventorySectionKeys(record){
+  return ['items',...inventoryContainers(record).slice(1).map(row=>'container:'+row.id),
+    'scrolls','documents'];
+}
+function inventoryVisibleSections(record,selection=state.inventorySelectedTabs){
+  const valid=inventorySectionKeys(record),chosen=Array.isArray(selection)?selection:[selection];
+  if(chosen.includes('all'))return valid;
+  const selected=valid.filter(key=>chosen.includes(key));
+  return selected.length?selected:['items'];
+}
+function setInventoryVisibleSections(record,selection){
+  const selected=inventoryVisibleSections(record,selection);
+  state.inventorySelectedTabs=selected;
+  if(!selected.includes(state.inventorySubtab))state.inventorySubtab=selected[0];
+  return selected;
+}
+function focusInventorySection(record,key){
+  if(!inventorySectionKeys(record).includes(key))key='items';
+  setInventoryVisibleSections(record,[...inventoryVisibleSections(record),key]);
+  state.inventorySubtab=key;
+}
+
 /* A phone's system Back button traverses browser history. Keep each visible
    screen in the same history stack, including the library and secondary tabs. */
 let browserHistoryReady=false;
@@ -257,7 +281,8 @@ function screenSnapshot(){
   return {
     page:state.page,libraryMode:state.libraryMode,creatureId:state.creatureId,
     sheet:state.sheet,detail:state.detail,sessionPane:state.sessionPane,
-    inventorySubtab:state.inventorySubtab,catalogSelected:state.catalogSelected
+    inventorySubtab:state.inventorySubtab,inventorySelectedTabs:[...state.inventorySelectedTabs],
+    catalogSelected:state.catalogSelected
   };
 }
 function syncBrowserHistory(){
@@ -292,6 +317,9 @@ async function restoreBrowserScreen(screen){
     state.detail=screen.detail||'overview';
     state.sessionPane=screen.sessionPane||'';
     state.inventorySubtab=screen.inventorySubtab||'items';
+    state.inventorySelectedTabs=Array.isArray(screen.inventorySelectedTabs)?
+      screen.inventorySelectedTabs.slice(0,100):
+      screen.inventorySubtab==='all'?['all']:[state.inventorySubtab];
     state.catalogSelected=Number.isInteger(screen.catalogSelected)?screen.catalogSelected:-1;
     if(oldCreatureId!==state.creatureId||state.page!=='library'||state.libraryMode)state.editor=null;
     state.sheetPopup='';state.magicPopup='';state.traitPopupKey='';
@@ -744,7 +772,7 @@ async function editorView() {
     })());
   }
   if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||
-      state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
+      state.sheet==="inventory"&&inventoryVisibleSections(c).includes("scrolls"))&&!state.spellCatalog){
     optionalTasks.push((async()=>{
       const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
       try{await sheetLoadingDeadline(request,2300,"degli incantesimi");state.spellCatalogError="";}
@@ -2879,7 +2907,7 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
@@ -4340,8 +4368,8 @@ async function handleAction(target){
       await editor.update({inventory});
       state.page="library";state.libraryMode=false;state.creatureId=owner;
       state.editor=editor;state.sheet="inventory";
-      state.inventorySubtab=state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?
-        'container:'+state.pendingItemContainer:'items';
+      focusInventorySection(editor.read(),state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?
+        'container:'+state.pendingItemContainer:'items');
       state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";state.pendingItemContainer="";
       await render();message("Oggetto homebrew aggiunto all'inventario.");return;
     }
@@ -4390,8 +4418,9 @@ async function handleAction(target){
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     if(state.pendingItemOwner&&category!=='feats'){
        state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
-       state.sheet='inventory';state.inventorySubtab=state.pendingItemContainer&&
-        state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?'container:'+state.pendingItemContainer:'items';
+       state.sheet='inventory';
+       focusInventorySection(editor.read(),state.pendingItemContainer&&
+        state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?'container:'+state.pendingItemContainer:'items');
        state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
        state.pendingItemOwner='';state.pendingItemContainer='';await render();
      }
@@ -4732,7 +4761,7 @@ async function handleAction(target){
       const name=window.prompt("Nome del nuovo contenitore:");if(name===null)return;
       const newId="container_"+crypto.randomUUID();
       await patch(createInventoryContainer(record,newId,name));
-      state.inventorySubtab='container:'+newId;
+      focusInventorySection(state.editor.read(),'container:'+newId);
     }else if(act==="inventory-container-rename"){
       const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Contenitore non rinominabile.");
       const name=window.prompt("Rinomina contenitore:",original.name);if(name===null)return;
@@ -4750,15 +4779,27 @@ async function handleAction(target){
         destination=other[index].id;
       }else if(!window.confirm("Eliminare il contenitore vuoto "+original.name+"?"))return;
       await patch(deleteInventoryContainer(record,id,destination));
-      state.inventorySubtab='items';
+      setInventoryVisibleSections(state.editor.read(),
+        state.inventorySelectedTabs.filter(key=>key!=='container:'+id));
+      state.inventorySubtab=state.inventorySelectedTabs[0]||'items';
     }
     state.inventoryMenuIndex=-1;await render();return;
   }
-  if(act==="inventory-subtab"){
-    const subtab=target.dataset.subtab;
-    if(!["items","all","scrolls","documents",...inventoryContainers(state.editor.read()).slice(1).map(row=>'container:'+row.id)].includes(subtab))
-      throw Error("Sottoscheda inventario non valida.");
-    state.inventorySubtab=subtab;state.sheetPopup="";state.inventoryMenuIndex=-1;
+  if(act==="inventory-subtab"||act==="inventory-toggle-all"){
+    const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
+    const keys=inventorySectionKeys(record),selected=inventoryVisibleSections(record);
+    if(act==="inventory-toggle-all"){
+      setInventoryVisibleSections(record,selected.length===keys.length?['items']:keys);
+      state.inventorySubtab='items';
+    }else{
+      const key=target.dataset.subtab;
+      if(!keys.includes(key))throw Error("Sezione inventario non valida.");
+      const next=selected.includes(key)?selected.filter(x=>x!==key):[...selected,key];
+      if(!next.length)return;
+      setInventoryVisibleSections(record,next);
+      state.inventorySubtab=next.includes(key)?key:next[0];
+    }
+    state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }
   if(act==="inventory-select"){
@@ -4805,7 +4846,8 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="scroll-spell-add"){
-    if(state.inventorySubtab!=="scrolls"||!state.editor)throw Error("Apri la sezione Pergamene della creatura.");
+    if(!state.editor||!inventoryVisibleSections(state.editor.read()).includes("scrolls"))
+      throw Error("Apri la sezione Pergamene della creatura.");
     const c=state.editor.read(),spellId=app.querySelector('#scroll-spell-select')?.value;
     const spell=spellsForEdition(state.spellCatalog||[],c.rules_version).find(s=>String(s.id)===spellId);
     const level=app.querySelector('#scroll-spell-level')?.value;
