@@ -4,6 +4,7 @@ extends RefCounted
 # Both the desktop traits view and tracker derivation use this one service.
 const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
+const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
@@ -275,6 +276,12 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 		if class_label.is_empty() or class_label.to_lower() == "mostro":
 			continue
 		var class_book: String = String(definition.get("source", record.get("class_source", "")))
+		if class_book.is_empty():
+			# Legacy sheets omit the source: resolve the same source-qualified
+			# edition used by class trackers, rather than generating features
+			# with a class|| identity or accidentally mixing 2014/2024 data.
+			var requested := "XPHB" if String(record.get("rules_version", "2014")) == "2024" else "PHB"
+			class_book = String(ClassMechanics.class_row(class_label, requested).get("source", requested))
 		var class_level: int = clampi(int(definition.get("level", 1)), 1, 20)
 		var class_origin: String = "Classe · " + class_label
 		var class_key: String = "class|" + class_book.to_lower() + "|" + class_label.to_lower()
