@@ -73,4 +73,4 @@ Battle; infusion learning and preparation remain in Magic.
 Validation includes the complete PWA unit suite and real Chrome tests for
 learning, preparation, object confirmation, attunement, active conditions,
 trait disabling, mobile/desktop layouts, inventory and contextual editing.
-The installed shell cache is v102; existing local character data is retained.
+The installed shell cache is v103; existing local character data is retained.
