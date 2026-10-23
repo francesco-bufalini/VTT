@@ -41,7 +41,13 @@ export function attackGrantOrigin(calculated,target){
  const id=String(target||'').replace(/^attack_hit:/,'');
  const attack=list(calculated?.attacks).find(row=>row.id===id);
  if(attack?.origin_id)return String(attack.origin_id);
- if(id.startsWith('item:')||id.startsWith('infusion:'))return id;
+ if(id.startsWith('infusion:'))return id;
+ if(id.startsWith('item:')){
+  // Offhand and thrown attacks still belong to the same equipped item trait.
+  const key=id.replace(/^item:(?:off:|throw:(?:main|off):)?/,'');
+  return 'item:'+key;
+ }
+ if(id.startsWith('shield:improvised:'))return 'item:'+id.split(':').slice(3).join(':');
  if(id.startsWith('class_feature:')){
   const normalized=id.slice('class_feature:'.length).replace(/_/g,' ').toLowerCase();
   return String(list(calculated?.features).find(row=>String(row.name||'').toLowerCase()===normalized)?.origin_id||'');
