@@ -78,8 +78,8 @@ function trainingOrigin(record,target,calculated){
  if(row)return {id:row.origin_id,name:row.origin_name||list(calculated?.origins).find(o=>o.id===row.origin_id)?.name||'Competenza'};
  // Weapon/spell attack proficiency follows general rules. In multiclass
  // characters, assigning it to a guessed class would fabricate provenance.
- return {id:'',name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
-   section:'proficiency_choices'};
+ return {id:'proficiency:unattributed',
+   name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria · origine non attribuita':'Competenze · origine non attribuita'};
 }
 // Returns symbolic and expanded numeric forms for each source. No random dice
 // are evaluated merely by opening the popup.
