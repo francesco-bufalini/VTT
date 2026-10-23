@@ -21,7 +21,14 @@ const instruments=['bagpipes','drum','dulcimer','flute','lute','lyre','horn','pa
 const commonLanguages=['common','dwarvish','elvish','giant','gnomish','goblin',
   'halfling','orc','abyssal','celestial','draconic','deep speech','infernal',
   'primordial','sylvan','undercommon','aquan','auran','ignan','terran'];
-const standardLanguages=new Set(commonLanguages.slice(0,8));
+const secretLanguages=new Set(['druidic','thieves\' cant']);
+const exoticLanguages=new Set(['abyssal','celestial','draconic','deep speech','infernal',
+  'primordial','sylvan','undercommon']);
+const rareLanguages=new Set(['aquan','auran','ignan','terran']);
+const martialWeapons=['battleaxe','flail','glaive','greataxe','greatsword','halberd',
+  'lance','longsword','maul','morningstar','pike','rapier','scimitar','shortsword',
+  'trident','war pick','warhammer','whip','blowgun','hand crossbow',
+  'heavy crossbow','longbow','net'];
 const strip=x=>norm(x).replace(/^\{@item\s+/,'').replace(/\}$/, '').split('|')[0].trim();
 const enabled=(record,id)=>record.origin_enabled?.[id]!==false&&
   !arr(record.proficiency_origins).some(row=>row?.id===id&&row.disabled);
@@ -38,7 +45,7 @@ function optionPool(kind,record,index){
      'thieves\' tools','disguise kit','forgery kit','herbalism kit',
      'navigator\'s tools','poisoner\'s kit']:
    kind==='armor'?['light','medium','heavy','shield']:
-   ['simple','martial','all'];
+   ['simple','martial','all',...martialWeapons];
  for(const source of selectedSources(record,index)){
   for(const raw of arr(grantedFields(source,kind))){
    if(typeof raw==='string'){
@@ -59,16 +66,20 @@ function allowedByRule(kind,data,key,record,index){
  if(choose&&typeof choose==='object'){
   const from=arr(choose.from).map(strip);
   if(from.length)return from.includes(key);
-  if(choose.fromFilter)return optionPool(kind,record,index).includes(key);
+  if(choose.fromFilter){
+   const filter=norm(choose.fromFilter);
+   return kind==='weapon'&&filter.includes('type=martial weapon')&&martialWeapons.includes(key);
+  }
+  if(choose.any!==undefined)return kind!=='weapon'||!['simple','martial','all'].includes(key);
  }
- if(data?.any!==undefined)return true;
+ if(data?.any!==undefined)return kind!=='weapon'||!['simple','martial','all'].includes(key);
  if(data?.anyProficientSkill!==undefined)return kind==='skill'||kind==='expertise'?
    fixedProficiencies(record,index).has('skill:'+key):false;
  if(data?.anyArtisansTool!==undefined)return artisanTools.includes(key);
  if(data?.anyGamingSet!==undefined)return gamingSets.includes(key);
  if(data?.anyMusicalInstrument!==undefined)return instruments.includes(key);
- if(data?.anyStandard!==undefined)return standardLanguages.has(key);
- if(data?.anyExotic!==undefined)return !standardLanguages.has(key)&&kind==='language';
+ if(data?.anyStandard!==undefined)return kind==='language'&&!secretLanguages.has(key);
+ if(data?.anyExotic!==undefined)return kind==='language'&&(exoticLanguages.has(key)||rareLanguages.has(key));
  return false;
 }
 function requirementEntries(source){
