@@ -783,10 +783,12 @@ async function traitsView(c){
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ const benefitProjection={...(state.calculated||{}),
+  activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{})};
  state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  const benefitCount=traitBenefitGroups(trait,c,state.calculated||{})
+  const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
   // The icon is a separate control, not a nested button inside <summary>.
@@ -850,7 +852,9 @@ function mountTraitBenefitDialog(){
   {...state.traitPopupTrait,inactive:!traitIsActive(record,state.traitPopupTrait)}:null);
  if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;return;}
  state.traitPopupTrait=trait;
- const groups=traitBenefitGroups(trait,record,state.calculated||{});
+ const benefitProjection={...(state.calculated||{}),
+  activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{})};
+ const groups=traitBenefitGroups(trait,record,benefitProjection);
  const hidden=traitRemovedIds(record,trait);
  const optionList=(options,selected='')=>options.map(([value,label])=>
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
@@ -883,7 +887,17 @@ function mountTraitBenefitDialog(){
  ];
  const benefits=groups.map(group=>'<section class="trait-benefit-group trait-benefit-group--'+esc(group.type)+'">'+
    '<span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-   group.items.map(item=>'<div class="trait-benefit-manage-row">'+
+   group.items.map(item=>group.type==='abilities'?
+    '<article class="trait-capability" data-trait-capability="'+esc(item.label)+'">'+
+      '<div class="trait-capability-head"><strong>'+esc(item.label)+'</strong>'+
+      '<span class="trait-capability-status" data-capability-status="'+esc(item.status||'')+'">'+esc(item.status||'Attivabile')+'</span></div>'+
+      '<div class="trait-capability-meta"><span>'+esc(item.timing||'Contestuale')+'</span>'+
+        '<span>'+esc(item.cost||'Nessun costo')+'</span></div>'+
+      (item.description?'<p class="trait-capability-description">'+esc(item.description)+'</p>':'')+
+      (item.requirements?'<p class="trait-capability-requirements"><strong>Requisiti</strong> · '+esc(item.requirements)+'</p>':'')+
+      (item.effects?.length?'<ul class="trait-capability-effects">'+item.effects.map(effect=>'<li>'+esc(effect)+'</li>').join('')+'</ul>':'')+
+    '</article>':
+    '<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
      (item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+

@@ -1,5 +1,6 @@
 // Read-only, source-bound summaries for the PWA's trait cards.
 // Use structured grants only; never extract mechanics from free-form descriptions.
+import {CLASS_FEATURE_RULES} from './feature_mechanics.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -15,6 +16,28 @@ const DAMAGE={
  acid:'Acido',bludgeoning:'Contundenti',cold:'Freddo',fire:'Fuoco',force:'Forza',
  lightning:'Fulmine',necrotic:'Necrotici',piercing:'Perforanti',poison:'Veleno',
  psychic:'Psichici',radiant:'Radianti',slashing:'Taglienti',thunder:'Tuono'
+};
+const ACTION_TIMES={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Azione gratuita',movement:'Movimento',contextual:'Contestuale'};
+const actionTime=value=>ACTION_TIMES[norm(typeof value==='object'?value?.unit||value?.type:value)]||String(value||'Contestuale');
+const describe=value=>typeof value==='string'?value:Array.isArray(value)?value.map(describe).filter(Boolean).join(' · '):
+ value&&typeof value==='object'?describe(value.entries??value.entry??value.description??value.text??''):'';
+const classOf=feature=>norm(feature?.requirements?.class_name||feature?.class_name||String(feature?.origin_key||'').split('|')[2]);
+const sourceOf=feature=>norm(feature?.requirements?.class_source||feature?.class_source||String(feature?.origin_key||'').split('|')[1]);
+const damageLabel=type=>DAMAGE[norm(type)]||({T:'Tuono',L:'Fulmine'}[type]||String(type||''));
+const abilityDetails=rule=>{
+ const items=[];
+ for(const attack of rows(rule.attacks)){
+  const reach=attack.melee?'Portata ':'Gittata ';
+  items.push('Attacco · '+attack.name+' · '+attack.damage+' '+damageLabel(attack.damage_type)+
+   ' · '+reach+attack.range_feet+(attack.long_range_feet?'/'+attack.long_range_feet:'')+' ft');
+  if(attack.bonus_die)items.push('Dado aggiuntivo · '+attack.bonus_die.dice+' '+
+   damageLabel(attack.bonus_die.damage_type)+
+   (attack.bonus_die.recharge==='turn'?' · Una volta per turno':''));
+ }
+ for(const grant of rows(rule.numeric_grants))
+  items.push('Bonus · '+traitBenefitTargetLabel(grant.target)+' '+signedTraitFormula(grant.amount));
+ for(const name of rows(rule.granted_features))items.push('Privilegio disponibile · '+name);
+ return items;
 };
 const RECOVERY={short_rest:'Riposo breve',long_rest:'Riposo lungo',turn:'Inizio turno',d6:'Ricarica d6'};
 const TARGETS={ability_check:'Tutte le prove di caratteristica (incl. iniziativa)',
@@ -81,13 +104,13 @@ const proficiencyOrder=['skill','expertise','save','weapon','armor','tool','lang
 export function traitBenefitGroups(trait={},record={},calculated={}){
  const ids=traitBenefitSources(trait,record),groups=new Map();
  const belongs=row=>row&&[row.origin_id,row.parent_origin].some(id=>id&&ids.has(id));
- const add=(type,title,label,value='',id='')=>{
+ const add=(type,title,label,value='',id='',extra={})=>{
   label=String(label??'').trim();value=String(value??'').trim();
   if(!label)return;
   if(!groups.has(type))groups.set(type,{type,title,items:[],seen:new Set()});
   const group=groups.get(type),key=label+'\u0000'+value;
   if(group.seen.has(key))return;
-  group.seen.add(key);group.items.push({label,value,id});
+  group.seen.add(key);group.items.push({label,value,id,...extra});
  };
  const bonusSeen=new Set();
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){
@@ -153,6 +176,72 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(action.disabled||!belongs(action))continue;
   add('actions','Azioni concesse',action.name||action.label||action.id,
    String(action.action_type||action.time||''),'action:'+String(action.id||[action.origin_id,action.name].join('|')));
+ }
+ // Always display declared activations on the granting trait, not only
+ // those currently projected as usable battle actions. Passive source traits
+ // remain separate and class-overview cards cannot claim child privileges.
+ const ownerFeatures=trait.rank===0?[]:rows(calculated.features).filter(feature=>
+  feature?.origin_id&&ids.has(feature.origin_id));
+ const abilityNames=new Set();
+ const addAbility=(label,details)=>{
+  const key=norm(label);
+  if(abilityNames.has(key))return;
+  abilityNames.add(key);
+  add('abilities','Capacità attivabili',label,'','',{
+   status:details.status,timing:details.timing,cost:details.cost,
+   description:details.description,requirements:details.requirements||'',
+   effects:details.effects||[]
+  });
+ };
+ for(const rule of rows(calculated.trait_state_catalog)){
+  const owner=ownerFeatures.find(feature=>norm(feature.name)===norm(rule.trait)&&
+   classOf(feature)===norm(rule.class_name)&&
+   (!rule.class_source||sourceOf(feature)===norm(rule.class_source)));
+  if(!owner)continue;
+  const action=rows(calculated.state_actions).find(row=>row.state_id===rule.id);
+  const blocked=trait.inactive||owner.disabled||owner.inactive;
+  const kinds=rows(rule.require_equipped?.kinds).map(kind=>({armor:'armatura',shield:'scudo'}[kind]||kind));
+  const condition=rule.require_equipped?
+   (kinds.join(' / ')||'Equipaggiamento')+' equipaggiata'+
+     (rule.require_equipped.slot==='body'?' sul corpo':' nello slot '+rule.require_equipped.slot):'';
+  const exclusive=rule.group?'Un solo modello attivo per gruppo':'';
+  addAbility(rule.name,{
+   status:action?.active?'Attiva':blocked?'Tratto disattivato':action?'Attivabile':'Requisiti mancanti',
+   timing:actionTime(action?.time||rule.time||'free'),cost:'Nessun costo',
+   description:rule.summary||'',
+   requirements:[condition,exclusive].filter(Boolean).join(' · '),
+   effects:abilityDetails(rule)
+  });
+ }
+ for(const [key,owner,featureName,label,resource,time,mode] of CLASS_FEATURE_RULES){
+  const source=ownerFeatures.find(feature=>norm(feature.name)===norm(featureName)&&
+    classOf(feature)===norm(owner)&&
+    (norm(owner)!=='artificer'||sourceOf(feature)==='tce'));
+  if(!source)continue;
+  const requirement=rows(calculated.trait_state_catalog).find(rule=>
+   rows(rule.granted_features).some(name=>norm(name)===norm(source.name))&&
+   norm(rule.class_name)===norm(owner));
+  const gated=!!requirement&&!rows(calculated.active_trait_state_ids).includes(requirement.id);
+  const active=mode==='toggle'&&!!record.active_class_features?.[key]&&!trait.inactive&&!source.disabled&&!gated;
+  addAbility(label,{
+   status:active?'Attiva':trait.inactive||source.disabled?'Tratto disattivato':
+    gated?'Modello richiesto':'Attivabile',
+   timing:actionTime(time),cost:resource?'1 utilizzo · '+resource:'Nessun costo',
+   description:describe(source.entries??source.description),
+   requirements:requirement?'Richiede '+requirement.name:'',
+   effects:[]
+  });
+ }
+ for(const effect of rows(calculated.activatable_abilities)){
+  if(!effect?.name||!ids.has(effect.origin_id))continue;
+  addAbility(effect.name,{
+   status:trait.inactive?'Tratto disattivato':
+    record.active_class_features?.[effect.id]?'Attiva':'Attivabile',
+   timing:actionTime(effect.action_type||effect.activation_mode),
+   cost:Number(effect.resource_cost)>0?effect.resource_cost+' utilizzi'+
+    (effect.resource_name?' · '+effect.resource_name:''):'Nessun costo',
+   description:describe(effect.description),requirements:'',effects:[]
+  });
  }
  for(const effect of rows(calculated.active_feature_effects)){
   if(!effect.effective||!belongs(effect))continue;
