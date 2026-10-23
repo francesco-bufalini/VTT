@@ -778,9 +778,10 @@ test("inventory sections wrap, support multiple panels and toggle all from the t
   assert.doesNotMatch(css,/\.inventory-subtabs\.inventory-container-tabs\{[^}]*overflow-x:auto/);
   const originalPrompt=window.prompt;
   window.prompt=()=> 'Borsa da campo';
-  try{click('#sheet-play-view [data-act="inventory-container-add"]');}
-  finally{window.prompt=originalPrompt;}
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab^="container:"][aria-pressed="true"]'));
+  try{
+    click('#sheet-play-view [data-act="inventory-container-add"]');
+    await until(()=>document.querySelector('#sheet-play-view [data-subtab^="container:"][aria-pressed="true"]'));
+  }finally{window.prompt=originalPrompt;}
   assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
   assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino','Borsa da campo']);
   click('#sheet-play-view [data-subtab="documents"]');
