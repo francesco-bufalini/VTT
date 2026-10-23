@@ -937,7 +937,9 @@ export function calculateSheet(record={},catalogs={}){
     if(!originSpellMap.has(key)){
       const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
       for(const field of ['payment_mode','tracker_id','spellcasting_ability','tracker_cost'])if(Object.hasOwn(config,field))resolved[field]=config[field];
-      if(!['tracker','slot','free'].includes(resolved.payment_mode))resolved.payment_mode=resolved.tracker_id?'tracker':'free';
+      if(!['tracker','slot','free'].includes(resolved.payment_mode))
+        resolved.payment_mode=resolved.tracker_id?'tracker':
+          ['known','prepared'].includes(resolved.mode)?'slot':'free';
       originSpellMap.set(key,resolved);
     }
   }
