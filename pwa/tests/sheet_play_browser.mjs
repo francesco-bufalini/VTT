@@ -68,8 +68,11 @@ try{
  const skills=page.locator('#sheet-play-view .play-skills-disclosure');
  await skills.locator(':scope > summary').click();
  await skills.locator('[data-target="skill:arcana"]').click();
- const training=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="proficiency:unattributed"]');
- assert(await training.count()>=1,'Unattributed Arcana training should get a dedicated provenance trait');
+ const training=page.locator('#sheet-roll-dialog .sheet-roll-origin-term')
+   .filter({has:page.locator('.sheet-roll-origin-symbol:text-is("+Mod.Competenza")')});
+ assert(await training.count()>=1,'Arcana proficiency must expose a navigable provenance');
+ const trainingSource=await training.first().getAttribute('data-origin-id');
+ assert(trainingSource&&trainingSource.length>0,'Proficiency cannot be a blank provenance');
  await training.first().click();
  assert.equal(await page.locator('#roll-trait-picker').count(),0,
    'Training provenance must not open the add-bonus picker');
