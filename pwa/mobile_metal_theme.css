@@ -3532,3 +3532,27 @@ dialog.sheet-context-dialog{border-bottom:0}
 }
 .trait-choice-row button:hover{background:#b88b5337;border-color:#e0b57b}
 .trait-choice-row button:focus-visible{outline:2px solid #e0b57b;outline-offset:2px}
+
+/* Inventory destinations use the same metal tabs as Zaino/Pergamene/Documenti,
+   with horizontal scrolling instead of stacking multiple long item lists. */
+.inventory-subtabs.inventory-container-tabs{
+  display:flex;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;
+  padding:2px 1px 7px;scrollbar-width:thin;scroll-snap-type:x proximity;
+}
+.inventory-subtabs.inventory-container-tabs>button{
+  flex:0 0 auto;min-width:100px;max-width:180px;padding:8px 12px;
+  scroll-snap-align:start;white-space:normal;overflow-wrap:anywhere;
+}
+.inventory-subtabs.inventory-container-tabs>.inventory-add-container-tab{
+  min-width:50px;font-size:24px;font-weight:500;padding-inline:11px;
+}
+.inventory-container-management{
+  display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:0 0 12px;
+}
+.trait-item-quantity{
+  display:inline-flex;align-items:center;justify-content:center;margin-inline-start:8px;
+  padding:2px 7px;border-radius:7px;border:1px solid rgba(208,166,103,.5);
+  background:rgba(208,166,103,.10);color:#ebc58d;font-size:.78em;font-weight:750;
+  white-space:nowrap;vertical-align:middle;
+}
+.trait-automatic-item{justify-content:flex-start}
