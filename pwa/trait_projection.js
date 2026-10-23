@@ -286,6 +286,40 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     key:'proficiency:'+id,inactive:record.origin_enabled?.[id]===false||
       arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled===true)});
  }
+ // Preserve an explicitly disabled proficiency trait even when its calculated
+ // grants disappear. Otherwise a user could disable it but never reopen the
+ // popup to reenable it after reloading the PWA.
+ for(const [key,enabled] of Object.entries(record.trait_enabled||{})){
+  if(enabled!==false||!key.startsWith('proficiency:')||rows.some(row=>row.key===key))continue;
+  const id=key.slice('proficiency:'.length),parts=id.split('|'),group=parts[0];
+  let category='',display='';
+  if(group==='class'){
+   const member=localClasses(record).find(row=>same(row.name,parts.slice(2).join('|'))&&
+     same(row.source,parts[1]));
+   if(!member)continue;
+   category='classi';display='Classe · '+member.name;
+  }else if(group==='race'&&same(record.species,parts.slice(2).join('|'))){
+   category='razza';display='Specie · '+record.species;
+  }else if(group==='subrace'&&same(record.subrace,parts.slice(2).join('|'))){
+   category='razza';display='Sottorazza · '+record.subrace;
+  }else if(group==='background'){
+   const owner=effectiveBackgrounds(record).find(row=>same(row.name,parts.slice(2).join('|')));
+   if(!owner)continue;
+   category='background';display='Background · '+owner.name;
+  }else if(group==='feat'){
+   const owner=arr(record.feats_catalog).find(row=>same(row.name,parts.slice(2).join('|')));
+   if(!owner)continue;
+   category='talenti';display='Talento · '+owner.name;
+  }else continue;
+  const anchor=rows.find(row=>row.category===category&&
+    (row.origin_key===id||category==='razza'&&
+      ((group==='race'&&row.origin_key.startsWith('species|'))||
+       (group==='subrace'&&row.origin_key.startsWith('subrace|')))))||
+    rows.find(row=>row.category===category&&row.origin===display);
+  rows.push({name:'Competenze',entries:'',category,origin:anchor?.origin||display,
+    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,rank:2,
+    inactive:true,feature_origin:'',proficiency_origin:id,key});
+ }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
   (a.category==='razza'&&b.category==='razza'?
