@@ -587,7 +587,7 @@ async function editorView() {
     }else{
       const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
       const ordinary=owned.filter(({item})=>!isSpellScroll(item));
-       const containers=inventoryContainers(c);
+      const containers=inventoryContainers(c);
       const scrolls=owned.filter(({item})=>isSpellScroll(item));
       const attunements=owned.filter(({item})=>requiresAttunement(item));
       const visibleRows=isScrolls?scrolls:ordinary;
@@ -3812,6 +3812,7 @@ async function handleAction(target){
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
     await navigate("catalog");
     state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;
+    await render();
     const creator=app.querySelector(".catalog-create");
     if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
