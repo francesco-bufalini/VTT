@@ -136,7 +136,7 @@ test("automatic HP uses native hit die table with constitution and first-level m
 });
 test("all derived output stays on device and UI marks unsupported features",()=>{
   const c=character({name:"<script>bad</script>",class:"Wizard",level:5});
-  const out=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+  const out=calculateSheet(c,catalogs);
   assert.equal(out.source,"local");
   assert.equal(out.complete,false);
   const stat=localSheetView("stats",out);
@@ -145,7 +145,9 @@ test("all derived output stays on device and UI marks unsupported features",()=>
   assert.match(stat,/Tiri salvezza/);
   assert.doesNotMatch(stat,/<script>/);
   assert.match(localSheetView("battle",out),/Classe armatura/);
-  assert.match(localSheetView("magic",out),/Slot livello/);
+  assert.match(localSheetView("magic",out),/Nessuno slot presente/);
+  const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+  assert.match(localSheetView("magic",withTraits),/Slot livello/);
   assert.equal(localSheetView("inventory",out),"");
 });
 
