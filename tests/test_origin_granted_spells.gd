@@ -61,6 +61,10 @@ func run() -> void:
 	}]
 	var external: Dictionary = _find(Granted.all_grants(custom), "cure_wounds")
 	assert(not external.is_empty(), "An origin can grant a standard catalog spell")
+	if Granted.remaining(custom, external) <= 0:
+		print("DEBUG tracker owner: ", String(inspiration.get("tracker_id", "")),
+			" rows=", Trackers.for_creature(custom),
+			" grant=", external)
 	assert(Granted.remaining(custom, external) > 0,
 		"An origin can spend a tracker awarded by another origin")
 	custom["origin_spell_configs"] = {"test-grant": {"payment_mode": "tracker", "tracker_cost": 2}}
