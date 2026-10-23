@@ -4,6 +4,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses,SKILLS} from './sheet_rules.js';
 import {activeInfusions} from './item_controls.js';
+import {traitIsActive} from './trait_benefit_editor.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -64,12 +65,13 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const projected=arr(calculated.features).find(row=>same(row.name,name)&&
    compatibleOrigins.has(norm(row.origin_key))&&levelOf(row.level)===at);
   const id=projected?.origin_id||entry.feature_origin||'';
-  rows.push({name,entries:entry.entries??entry.entry??entry.description??'',
+  const trait={name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
-   inactive:inactive||!!projected?.disabled||sourceDisabled(record,origin_key)||
-     (id&&sourceDisabled(record,id)),
-   // Only existing structured traits can be toggled; catalog text is read-only.
-   feature_origin:id, key:origin_key+'|'+(entry.id||at+'|'+norm(name))});
+   feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name))};
+  // A calculated disabled flag is not a user decision. Treat privileges as
+  // enabled by default; only an explicit owner/trait override can dim them.
+  rows.push({...trait,inactive:Boolean(inactive||!traitIsActive(record,trait)||
+    sourceDisabled(record,origin_key))});
  };
  const named=(entry,options,{includeUnnamed=false,requireGates=false}={})=>{
   arr(entry?.entries).forEach((part,index)=>{
@@ -243,7 +245,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const origin=rows.find(r=>r.origin_key===normalizedKey)?.origin||
    arr(calculated.origins).find(o=>o.id===originKey)?.name||originKey.replaceAll('|',' · ');
   add(feature,{category,origin,origin_key:normalizedKey,level:feature.level||0,
-   rank:2,inactive:!!feature.disabled});
+   rank:2});
  }
  // Ordinary class/species/background proficiencies have a stable origin ID,
  // but no concrete feature ID. Give them a read-only trait representing
@@ -280,8 +282,43 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   rows.push({name:'Competenze',entries:names.join(' · '),
     category,origin:anchor?.origin||String(source.name||id),
     origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,
-    rank:2,inactive:false,feature_origin:'',proficiency_origin:id,
-    key:'proficiency:'+id});
+    rank:2,feature_origin:'',proficiency_origin:id,
+    key:'proficiency:'+id,inactive:record.origin_enabled?.[id]===false||
+      arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled===true)});
+ }
+ // Preserve an explicitly disabled proficiency trait even when its calculated
+ // grants disappear. Otherwise a user could disable it but never reopen the
+ // popup to reenable it after reloading the PWA.
+ for(const [key,enabled] of Object.entries(record.trait_enabled||{})){
+  if(enabled!==false||!key.startsWith('proficiency:')||rows.some(row=>row.key===key))continue;
+  const id=key.slice('proficiency:'.length),parts=id.split('|'),group=parts[0];
+  let category='',display='';
+  if(group==='class'){
+   const member=localClasses(record).find(row=>same(row.name,parts.slice(2).join('|'))&&
+     same(row.source,parts[1]));
+   if(!member)continue;
+   category='classi';display='Classe · '+member.name;
+  }else if(group==='race'&&same(record.species,parts.slice(2).join('|'))){
+   category='razza';display='Specie · '+record.species;
+  }else if(group==='subrace'&&same(record.subrace,parts.slice(2).join('|'))){
+   category='razza';display='Sottorazza · '+record.subrace;
+  }else if(group==='background'){
+   const owner=effectiveBackgrounds(record).find(row=>same(row.name,parts.slice(2).join('|')));
+   if(!owner)continue;
+   category='background';display='Background · '+owner.name;
+  }else if(group==='feat'){
+   const owner=arr(record.feats_catalog).find(row=>same(row.name,parts.slice(2).join('|')));
+   if(!owner)continue;
+   category='talenti';display='Talento · '+owner.name;
+  }else continue;
+  const anchor=rows.find(row=>row.category===category&&
+    (row.origin_key===id||category==='razza'&&
+      ((group==='race'&&row.origin_key.startsWith('species|'))||
+       (group==='subrace'&&row.origin_key.startsWith('subrace|')))))||
+    rows.find(row=>row.category===category&&row.origin===display);
+  rows.push({name:'Competenze',entries:'',category,origin:anchor?.origin||display,
+    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,rank:2,
+    inactive:true,feature_origin:'',proficiency_origin:id,key});
  }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
