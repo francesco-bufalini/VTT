@@ -23,6 +23,7 @@ import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applica
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
+import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
@@ -440,6 +441,10 @@ function classAbilityActivationPatch(c,calculated,ability,options={}){
  return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
 async function activateClassAbility(c,calculated,ability){
+ if(ability.mode==='trait_state'){
+   await patch(traitStateActivationPatch(c,calculated.features,calculated.trait_state_catalog,ability.state_id));
+   await render();return;
+ }
  if(ability.mode==='metamagic'){
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
@@ -2807,6 +2812,11 @@ async function handleAction(target){
   if(act==='condition-remove-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const key=String(target.dataset.abilityKey||'');
+    if(key.startsWith('trait_state:')){
+      const calculated=await computeLocalData(c);
+      await patch(traitStateActivationPatch(c,calculated.features,calculated.trait_state_catalog,key.slice('trait_state:'.length)));
+      await render();return;
+    }
     if(!Object.hasOwn(c.active_class_features||{},key))throw Error('Capacità non attiva.');
     if(key==='wild_shape'){
       await applyFormPatch(c,endWildShapePatch(c));await render();return;
