@@ -468,6 +468,18 @@ try{
  await page.locator('#sheet-context-dialog [data-act="tracker-reset"][data-tracker-id="focus"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.resource_tracker_spent?.focus;});
  await dismiss();
+ // The numeric AC and speed scores must not open their equipment/movement editors.
+ const acScore=page.locator('#sheet-play-view .play-vitals [data-act="sheet-score-formula"][data-target="ac"]');
+ assert.equal(await acScore.count(),1);
+ await acScore.click();
+ assert.match(await page.locator('#sheet-score-formula-dialog h2').textContent(),/Classe armatura/);
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0);
+ await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
+ const speedScore=page.locator('#sheet-play-view .play-vitals [data-act="sheet-score-formula"][data-fastest-movement-value]');
+ assert.equal(await speedScore.count(),1);
+ await speedScore.click();
+ assert.match(await page.locator('#sheet-score-formula-dialog h2').textContent(),/Movimento e velocità/);
+ await page.locator('#sheet-score-formula-dialog [data-act="close-score-formula"]').click();
  const speedCard=page.locator('#sheet-play-view [data-sheet-context="movement"]');
  assert.equal(await speedCard.locator('.vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1,'Movement dash icon');
  assert.equal(await movementPanel.locator('summary.play-battle-summary .vtt-action-glyph--pack-1.vtt-action-glyph--slot-9').count(),1);
