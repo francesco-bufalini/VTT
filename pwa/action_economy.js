@@ -265,7 +265,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 }
 // Retain the public projection API; execution and eligibility share one rule set.
 export function nativeClassFeatureActions(record={},calculated={}){
- return classFeatureEntries(record,calculated).map(row=>({...row,description:details(row.description)}));
+ return [...classFeatureEntries(record,calculated),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
 }
 export function spellActionEntries(record={},calculated={},spells=[]){
  const output=[];
