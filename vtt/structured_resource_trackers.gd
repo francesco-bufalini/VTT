@@ -17,6 +17,10 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 		_append_monster_trackers(record, result)
 	_append_class_trackers(record, result)
 	_assign_automatic_origins(record, result)
+	# A class table cannot grant usable resources without its owning trait.
+	# Keep the saved spent-use keys stable when the feature becomes available.
+	result = result.filter(func(row: Dictionary) -> bool:
+		return not bool(row.get("disabled", false)))
 	_append_saved_trackers(record, result)
 	var seen: Dictionary = {}
 	for tracker: Dictionary in result:
@@ -107,7 +111,7 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 	var klass_name: String = String(row.get("origin_class", ""))
 	var source: String = String(row.get("origin_class_source", ""))
 	var subclass: String = String(row.get("origin_subclass", ""))
-	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower()
+	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower().replace("’", "'")
 	if wanted.is_empty():
 		return {}
 	var found: Dictionary = {}
@@ -123,7 +127,7 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 				continue
 			if is_subclass and ("|subclass|" + subclass.to_lower() + "|") not in origin_key:
 				continue
-		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower()
+		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower().replace("’", "'")
 		if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
 			continue
 		if not found.is_empty():
@@ -154,6 +158,12 @@ static func _assign_automatic_origins(record: Dictionary, output: Array[Dictiona
 					if saved is Dictionary and saved.get("id", "") == identity and bool(saved.get("disabled", false)):
 						row["disabled"] = true
 		if origin_id.is_empty():
+			if not String(row.get("origin_class", "")).is_empty():
+				row["disabled"] = true
+				row["origin_id"] = ""
+				row["origin_name"] = "Tratto di classe mancante · " + label
+				continue
+			# Monster/lair metadata can own non-class pools independently.
 			origin_id = "tracker:auto:" + String(row.get("id", ""))
 		row["origin_id"] = origin_id
 		row["origin_name"] = label
