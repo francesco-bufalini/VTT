@@ -202,7 +202,6 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
   const equipped=arr(item.equipped_slots).length>0||
     item.equipped===true||item.attuned===true;
-  if(!equipped)continue;
   const id=String(item.id);
   if(!equippedItems.has(id))equippedItems.set(id,item);
  }
@@ -211,8 +210,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(isDocument(info))continue;
   const name=item.name||info.name||id;
   const options={category:'oggetti',origin:'Oggetto · '+name,
-   origin_key:'item:'+id,level:0,inactive:item.disabled===true};
-  // One card per item type, showing the item's complete catalog description;
+   origin_key:'item:'+id,level:0,inactive:!equipped||item.disabled===true};
+  // Keep unequipped items visible but inactive so their trait can equip them.\n  // One card per item type, showing the item's complete catalog description;
   // don't turn individual descriptive paragraphs into separate traits.
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
    source:info.source||item.source}, {...options,rank:0});
