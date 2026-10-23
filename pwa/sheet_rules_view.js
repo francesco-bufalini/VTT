@@ -769,30 +769,27 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   });
  }
  if(sheet==='inventory'){
-  const containers=inventoryContainers(c),tab=view.inventorySubtab||'items';
-  const documentsTab=tab==='documents',scrollsTab=tab==='scrolls';
-  const activeContainer=tab.startsWith('container:')?containers.find(row=>row.id===tab.slice(10)):null;
-  const destination=activeContainer?.id||DEFAULT_INVENTORY_CONTAINER;
-  const tabs=[['items','Zaino','inventory'],['all','Tutti gli oggetti','inventory'],
+  const containers=inventoryContainers(c);
+  const keys=['items',...containers.slice(1).map(row=>'container:'+row.id),'scrolls','documents'];
+  const requested=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
+  const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
+  if(!selected.length)selected.push('items');
+  const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
+  const tabs=[['items','Zaino','inventory'],
     ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
     ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
-  html+='<nav class="inventory-subtabs inventory-container-tabs" role="tablist" aria-label="Sezioni inventario">'+
+  html+='<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
     tabs.map(([key,label,glyph])=>
-      '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+esc(key)+
-      '" aria-selected="'+(tab===key)+'" aria-label="'+esc(label)+'">'+icon(glyph)+
+      '<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
+      '" aria-pressed="'+selected.includes(key)+'" aria-label="'+esc(label)+'">'+icon(glyph)+
       '<span>'+esc(label)+'</span></button>').join('')+
-    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>'+
-    (activeContainer?'<div class="inventory-container-management">'+
-      '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'">Rinomina</button>'+
-      '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(activeContainer.id)+'">Elimina</button></div>':'');
-  if(!documentsTab&&!scrollsTab){
+    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>';
+  if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
-    // The coin editor is already generated from the saved creature model.
-    // Move its content into the shortcut row instead of hiding it behind a dialog.
     const coinPanel=bank.querySelector('.inventory-coins-panel');
     const coinFields=coinPanel?.querySelector('.inventory-coin-grid')?.outerHTML||'';
     const coinTotal=coinPanel?.querySelector('.inventory-coin-total')?.outerHTML||'';
-    coinPanel?.remove(); // Avoid duplicate hidden controls and stale total updates.
+    coinPanel?.remove();
     const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
     html+='<div class="inventory-shortcuts">'+
       go('equipment','Armi e armature','weapon',equipped||'Mani e armatura')+
@@ -804,60 +801,89 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       '</section></div>';
   }
   const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
-  const visible=readouts.map((info,i)=>({info,i})).filter(({info,i})=>
-    documentsTab?info.kind==='document':scrollsTab?isSpellScroll(c.inventory[i]):
-    info.kind!=='document'&&!isSpellScroll(c.inventory[i])&&
-      (tab==='all'||itemContainerId(c.inventory[i],containers)===destination));
-  if(!documentsTab&&!scrollsTab){
-    const owned=readouts.filter(item=>item.kind!=='document');
+  if(showingItems){
+    const owned=readouts.filter(info=>info.kind!=='document');
     const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
     const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
     if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
   }
-  const add=document.createElement('div');
-  if(scrollsTab)target('scroll-create','.inventory-scroll-create');
-  else{
-    for(const node of bank.querySelectorAll(documentsTab?
-      '[data-act="document-add"]':
-      '[data-act="item-catalog"],[data-act="new-homebrew-item"]'))add.append(node);
-    bind('inventory-add',add);
+  const renderItem=({info,i},section)=>{
+    const item=c.inventory[i],key='item:'+i,scroll=section==='scrolls';
+    const row=bank.querySelector('[data-inventory-row="'+i+'"]');
+    const documentRow=bank.querySelector('[data-document-card="'+i+'"]');
+    const node=document.createElement('section');node.className='play-item-editor';
+    if(row&&Number(view.inventorySelectedIndex)===i){
+      const form=document.createElement('div');form.className='play-item-fields';
+      const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
+      const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls');
+      const equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more');
+      const actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
+      field('Nome oggetto',name);field('Quantità',quantity);
+      if(['weapon','armor','shield'].includes(itemKind(item)))field('Slot equipaggiamento',equip);
+      const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';
+      if(more)toolbar.append(more);if(actions)toolbar.append(actions);
+      row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
+    }
+    if(row)node.append(row);
+    if(documentRow){documentRow.open=true;node.append(documentRow);}
+    if(row&&Number(view.inventorySelectedIndex)===i){
+      const description=bank.querySelector('.inventory-description-panel');
+      if(description)node.append(description);
+    }
+    bind(key,node);
+    const search=[item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
+    const level=spellScrollLevel(item),levelLabel=level==='0'?'Trucchetto':level==='—'?'—':level+'°';
+    if(scroll)return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
+      '<span class="inventory-item-mark" aria-hidden="true">'+icon('scroll')+'</span>'+
+      '<span class="inventory-item-content"><strong>'+esc(spellScrollName(item))+'</strong><small>'+esc(info.source||'Pergamena magica')+'</small></span>'+
+      '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(levelLabel)+'</span>'+
+      '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
+    return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
+      '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
+      '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
+      (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
+      (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
+      (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
+  };
+  for(const section of selected){
+    const isDocuments=section==='documents',isScrolls=section==='scrolls';
+    const activeContainer=section.startsWith('container:')?
+      containers.find(row=>row.id===section.slice('container:'.length)):null;
+    const destination=activeContainer?.id||DEFAULT_INVENTORY_CONTAINER;
+    const visible=readouts.map((info,i)=>({info,i})).filter(({info,i})=>
+      isDocuments?info.kind==='document':
+      isScrolls?isSpellScroll(c.inventory[i]):
+      info.kind!=='document'&&!isSpellScroll(c.inventory[i])&&
+        itemContainerId(c.inventory[i],containers)===destination);
+    const name=isDocuments?'Documenti':isScrolls?'Pergamene magiche':activeContainer?.name||'Zaino';
+    const add=document.createElement('div'),key='inventory-add:'+section;
+    if(isScrolls)target('scroll-create','.inventory-scroll-create');
+    else {
+      const holder=isDocuments?bank.querySelector('.inventory-documents-panel'):
+        bank.querySelector('[data-inventory-section="'+section+'"]');
+      const selector=isDocuments?'[data-act="document-add"]':
+        '[data-act="item-catalog"],[data-act="new-homebrew-item"]';
+      for(const node of holder?.querySelectorAll(selector)||[])add.append(node);
+      bind(key,add);
+    }
+    const controls=activeContainer?
+      '<div class="inventory-container-management">'+
+        btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
+        btn('Elimina '+name,'cross','data-act="inventory-container-delete" data-container-id="'+esc(activeContainer.id)+'"','<span>Elimina</span>')+
+      '</div>':'';
+    html+=card(name,
+      '<p class="inventory-list-count">'+visible.length+' voci · '+
+        visible.reduce((sum,{info})=>sum+info.quantity,0)+' unità</p>'+
+      '<label class="play-search">'+icon('search')+
+        '<input type="search" data-play-search value="'+esc(view.search||'')+
+        '" placeholder="Cerca in '+esc(name)+'" aria-label="Cerca in '+esc(name)+'"></label>'+
+      visible.map(row=>renderItem(row,section)).join('')+
+        (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
+      controls,
+      isScrolls?edit('scroll-create','Crea pergamena','increase'):
+        edit(key,isDocuments?'Aggiungi documento':'Aggiungi oggetto','increase'),
+      'play-inventory-section');
   }
-  html+=card(documentsTab?'Documenti':scrollsTab?'Pergamene magiche':tab==='all'?'Tutti gli oggetti':activeContainer?.name||'Nello zaino',
-    '<p class="inventory-list-count">'+visible.length+' voci · '+
-    visible.reduce((total,{info})=>total+info.quantity,0)+' unità</p>'+
-    '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca '+(documentsTab?'nei documenti':scrollsTab?'tra le pergamene':'nello zaino')+'" aria-label="Cerca nell’inventario"></label>'+
-    visible.map(({info,i})=>{
-      const item=c.inventory[i],key='item:'+i;
-      const row=bank.querySelector('[data-inventory-row="'+i+'"]'),documentRow=bank.querySelector('[data-document-card="'+i+'"]');
-      const node=document.createElement('section');node.className='play-item-editor';
-      if(row&&Number(view.inventorySelectedIndex)===i){
-        const form=document.createElement('div');form.className='play-item-fields';
-        const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
-        const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls'),equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more'),actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
-        field('Nome oggetto',name);field('Quantità',quantity);
-        if(['weapon','armor','shield'].includes(itemKind(item)))field('Slot equipaggiamento',equip);
-        const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';if(more)toolbar.append(more);if(actions)toolbar.append(actions);
-        row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
-      }
-      if(row)node.append(row);if(documentRow){documentRow.open=true;node.append(documentRow);}
-      if(row&&Number(view.inventorySelectedIndex)===i){const description=bank.querySelector('.inventory-description-panel');if(description)node.append(description);}
-      bind(key,node);
-      const search=[item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
-      const scrollLevel=spellScrollLevel(item),scrollLevelLabel=scrollLevel==='0'?'Trucchetto':scrollLevel==='—'?'—':scrollLevel+'°';
-      if(scrollsTab)return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
-        '<span class="inventory-item-mark" aria-hidden="true">'+icon('scroll')+'</span>'+
-        '<span class="inventory-item-content"><strong>'+esc(spellScrollName(item))+'</strong><small>'+esc(info.source||'Pergamena magica')+'</small></span>'+
-        '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(scrollLevelLabel)+'</span>'+
-        '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
-      return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
-        '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
-        '<span class="inventory-item-type">'+esc([info.type,info.source,...(tab==='all'?[containers.find(row=>row.id===itemContainerId(item,containers))?.name||'Zaino']:[])].filter(Boolean).join(' · '))+'</span>'+
-        (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
-        (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
-        (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
-    }).join('')||'<p class="play-empty">Nessuna voce disponibile.</p>',
-    scrollsTab?edit('scroll-create','Crea pergamena','increase'):
-      edit('inventory-add',documentsTab?'Aggiungi documento':'Aggiungi oggetto','increase'));
  }
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
@@ -902,6 +928,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    title.classList.add('play-actions-page-title');
    title.insertAdjacentHTML('beforeend',btn('Varianti alle regole','settings',
     'data-act="action-variants"','<span>Varianti alle regole</span>'));
+  }
+ }
+ if(sheet==='inventory'){
+  const title=app.querySelector(':scope > .page-head');
+  if(title){
+   const containers=inventoryContainers(c);
+   const keys=['items',...containers.slice(1).map(row=>'container:'+row.id),'scrolls','documents'];
+   const selected=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
+   const allVisible=keys.every(key=>selected.includes(key)||selected.includes('all'));
+   const label=allVisible?'Mostra solo zaino':'Mostra tutti gli oggetti';
+   title.classList.add('play-inventory-page-title');
+   title.insertAdjacentHTML('beforeend',btn(label,'inventory',
+    'data-act="inventory-toggle-all" aria-pressed="'+allVisible+'"',
+    '<span>'+label+'</span>'));
   }
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
