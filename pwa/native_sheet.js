@@ -514,7 +514,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
-   panel('Talenti',feats)+
+   panel('Talenti',feats+'<div class="actions"><button type="button" class="btn small" data-act="feat-catalog">＋ Aggiungi talento</button></div>')+
    statsIntro()+
    skillPanels();
  if(section==='battle'){

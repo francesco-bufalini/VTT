@@ -10,9 +10,9 @@ const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const same=(a,b)=>norm(a)===norm(b);
 const levelOf=value=>Math.max(0,Math.trunc(Number(value)||0));
-const CATEGORIES=['razza','background','classi','talenti','incantesimi','oggetti','mostro','altro'];
+const CATEGORIES=['stati','razza','background','classi','talenti','incantesimi','oggetti','mostro','altro'];
 export const TRAIT_CATEGORIES={
- razza:'RAZZA E SOTTORAZZA',background:'BACKGROUND',classi:'CLASSI E SOTTOCLASSI',
+ stati:'STATI ATTIVI',razza:'RAZZA E SOTTORAZZA',background:'BACKGROUND',classi:'CLASSI E SOTTOCLASSI',
  talenti:'TALENTI',incantesimi:'INCANTESIMI ATTIVI',oggetti:'OGGETTI',
  mostro:'TRATTI DEL MOSTRO',altro:'ALTRI TRATTI'
 };
@@ -35,7 +35,8 @@ function sourceDisabled(record,id){
 
 // Dependency injection keeps the rules testable without IndexedDB, HTTP or Godot.
 export async function collectTraitRows(record={},calculated={},providers={}){
- const {entries=async()=>[],detail=async(_category,row)=>row,isDocument=()=>false}=providers;
+ const {entries=async()=>[],detail=async(_category,row)=>row,isDocument=()=>false,
+  conditionLabel=id=>String(id).replaceAll('_',' ')}=providers;
  const rows=[],loaded=new Map(),used=new Set();
  const load=async category=>{
   if(!loaded.has(category))loaded.set(category,Promise.resolve().then(()=>entries(category)).catch(()=>[]));
@@ -224,6 +225,35 @@ export async function collectTraitRows(record={},calculated={},providers={}){
      source:'TCE',feature_origin:applied.id},
      {category:'oggetti',origin:'Oggetto · '+(applied.item.name||applied.item.id),
       origin_key:applied.id,level:0,rank:2});
+ }
+ // Persistent effects are actual state traits, not duplicated class
+ // features. They retain a stable source identity and disappear on removal.
+ const stateTrait=(id,name,description,extra={})=>{
+  if(!id||rows.some(row=>row.key==='state|'+id))return;
+  rows.push({name:String(name||id),entries:description||'',source:'',
+   category:'stati',origin:'Stato · '+String(name||id),
+   origin_key:'state|'+id,key:'state|'+id,level:0,rank:0,
+   feature_origin:String(extra.origin_id||''),state_id:extra.state_id||'',
+   state_key:extra.state_key||'',condition_id:extra.condition_id||'',
+   spell_id:extra.spell_id||'',inactive:false,readonly:true});
+ };
+ for(const effect of arr(calculated.active_feature_effects)){
+  if(!effect?.effective)continue;
+  const key=String(effect.key||effect.origin_id||'');
+  stateTrait(key,effect.name,effect.summary,{
+   origin_id:effect.origin_id,state_key:key,
+   state_id:key.startsWith('trait_state:')?key.slice('trait_state:'.length):''});
+ }
+ for(const spell of arr(record.proficiency_origins)){
+  if(spell?.group!=='spell'||!spell.applied||spell.disabled)continue;
+  const origin=String(spell.id||'');
+  stateTrait(origin,spell.name||origin,'Incantesimo attivo',{
+   origin_id:origin,spell_id:origin.startsWith('spell:')?origin.slice(6):'',state_key:origin});
+ }
+ for(const condition of arr(record.conditions)){
+  if(!condition)continue;
+  stateTrait('condition:'+condition,conditionLabel(condition),'Condizione attiva',{
+   condition_id:String(condition),state_key:'condition:'+condition});
  }
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
