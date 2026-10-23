@@ -355,7 +355,10 @@ async function navigate(page){
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
   state.traitPopupKey='';state.sheetPopup="";state.page=page;state.libraryMode=page==="library";state.editor=null;state.magicPopup="";
-  if(page==="library")state.creatureId=null;
+  if(page==="library"){
+    state.creatureId=null;
+    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
+  }
   state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
@@ -4491,6 +4494,7 @@ async function handleAction(target){
     const row=await createCreature("character",name,"default",miniature);
     if(dialog.open&&dialog.close)dialog.close();
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
+    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
     await render();return;
   }
   if(act==="import"||act==="library-quick-import"){
@@ -4511,7 +4515,9 @@ async function handleAction(target){
       else state.librarySelectedIds.add(id);
       syncLibrarySelectionUI();return;
     }
-    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;
+    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;
+    state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
+    await render();return;
   }
   if(act==="back"){
     await navigate("library");
