@@ -201,6 +201,26 @@ Own Luck, l'attacco specifico annullato da Illusory Self e la scelta fra le
 quattro modalità temporanee di The Third Eye. I nomi corretti non trasformano
 questi effetti contestuali in bonus passivi.
 
+Dopo la correzione, tutte le **54 definizioni di contatore** nel supplemento
+si collegano per classe, fonte, sottoclasse e nome d'origine a un `classFeature`
+o `subclassFeature` del catalogo 5etools locale. Questa verifica riguarda
+l'identità del tratto; non prova da sola ogni limite numerico o l'effetto
+dell'attivazione.
+
+### Altri privilegi Artificer TCE da trattare separatamente
+
+- **Magic Item Adept / Savant / Master (10/14/18):** il limite di sintonia
+  sale a 4/5/6. L'app ha ancora tre eccezioni di codice che selezionano il
+  beneficio più alto; tre bonus numerici indipendenti sommati nei dati
+  darebbero un valore sbagliato. Serve una progressione strutturata che
+  sostituisca il limite precedente e conservi l'origine del tratto attivo.
+- **Soul of Artifice (20):** il bonus ai salvataggi dipende dal numero di
+  oggetti *attualmente* in sintonia. Un numero fisso nel catalogo sarebbe
+  scorretto; l'effetto dinamico resta da modellare in modo generico.
+- **Spell-Storing Item (11) e Magical Tinkering (1):** oggetto concreto,
+  effetto scelto, portatore e capacità non sono un contatore di classe
+  consumabile; richiedono identità e stato dei singoli oggetti.
+
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
 tratto, scelta attiva, progressione, recupero e compatibilità Android/PWA.
