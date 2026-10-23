@@ -183,7 +183,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const info=await lookup('feats',feat.name,feat.source,feat.id)||feat;
   const options={category:'talenti',origin:'Talento · '+feat.name,
    origin_key:'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source)),level:1,inactive:!!feat.disabled};
-  add({name:feat.name,entries:info.entries??info.description??'',source:feat.source},{...options,rank:0});
+  add({name:feat.name,entries:info.entries??info.description??'',source:feat.source,
+   action_type:feat.action_type||info.action_type||info.activation||''},{...options,rank:0});
   const sections=arr(info.feature_sections).length?info.feature_sections:info.entries;
   arr(sections).forEach(section=>{
    if(!section?.name||(!section.entries&&!section.entry))return;
@@ -191,6 +192,20 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    if(available(record,section,at))
     add(section,{...options,level:at,rank:2});
   });
+ }
+ // Individually selected optional privileges (maneuvers, invocations,
+ // metamagic, etc.) are real traits, even when disabled. They need a benefits
+ // popup just like class, race or feat privileges.
+ for(const optional of arr(record.optional_features_catalog)){
+  if(!optional?.name)continue;
+  const ownId=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
+  const details=await lookup('optional_features',optional.name,optional.source)||optional;
+  add({name:optional.name,entries:details.entries??details.description??optional.entries??'',
+    source:optional.source||details.source||'',feature_origin:ownId,
+    action_type:optional.action_type||details.action_type||details.activation||'',
+    resource_name:optional.resource_name||details.resource_name||''},
+    {category:'altro',origin:'Privilegio opzionale · '+optional.name,
+     origin_key:ownId,level:0,rank:2,inactive:!!optional.disabled});
  }
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id||'').startsWith('spell:'))continue;
@@ -221,7 +236,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   // Keep unequipped items visible but inactive so their trait can equip them.\n  // One card per item type, showing the item's complete catalog description;
   // don't turn individual descriptive paragraphs into separate traits.
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
-   source:info.source||item.source}, {...options,rank:0});
+   source:info.source||item.source,
+   action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
  }
  // Only an equipped, eligible infusion produces a visible subordinate trait.
  for(const applied of activeInfusions(record,calculated.infusion_catalog||[],calculated.features||[])){
