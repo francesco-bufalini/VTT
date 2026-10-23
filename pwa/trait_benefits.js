@@ -151,6 +151,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   for(const source of classFeatureRollSources(record,calculated,target)){
    if(!(source.origin_id&&ids.has(source.origin_id))&&
     !(source.kind==='condition'&&trait.condition_id===source.condition_id))continue;
+   // A structured roll-mode benefit already describes this scope once.
+   // Avoid repeating it for every attack using the same mode.
+   const explicit=rows(calculated.features).find(feature=>feature.origin_id===source.origin_id);
+   if(rows(explicit?.roll_modes).some(rule=>rule.mode===source.mode&&
+     (rows(rule.targets).length?rule.targets:[rule.target]).some(scope=>
+      scope===target||
+      scope==='attack_roll'&&target.startsWith('attack_hit:')||
+      scope==='saving_throw'&&target.startsWith('save:')||
+      scope==='ability_check'&&(target.startsWith('ability_check:')||target==='initiative')||
+      scope==='spell_attack'&&target.startsWith('casting_hit:'))))continue;
    add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(target),
     source.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+source.origin_id+':'+source.mode+':'+target);
   }
