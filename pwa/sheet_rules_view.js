@@ -2,7 +2,7 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions,inventoryContainers,itemContainerId,DEFAULT_INVENTORY_CONTAINER} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
 // Lightweight inline portraits: share the same unmistakable character/monster
@@ -754,12 +754,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   });
  }
  if(sheet==='inventory'){
-  const documentsTab=view.inventorySubtab==='documents',scrollsTab=view.inventorySubtab==='scrolls';
-  html+='<nav class="inventory-subtabs" role="tablist" aria-label="Sezioni inventario">'+
-    [['items','Oggetti','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book']].map(([key,label,glyph])=>
-      '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+
-      '" aria-selected="'+(view.inventorySubtab===key)+'" aria-label="'+label+'">'+icon(glyph)+
-      '<span>'+label+'</span></button>').join('')+'</nav>';
+  const containers=inventoryContainers(c),tab=view.inventorySubtab||'items';
+  const documentsTab=tab==='documents',scrollsTab=tab==='scrolls';
+  const activeContainer=tab.startsWith('container:')?containers.find(row=>row.id===tab.slice(10)):null;
+  const destination=activeContainer?.id||DEFAULT_INVENTORY_CONTAINER;
+  const tabs=[['items','Zaino','inventory'],['all','Tutti gli oggetti','inventory'],
+    ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
+    ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
+  html+='<nav class="inventory-subtabs inventory-container-tabs" role="tablist" aria-label="Sezioni inventario">'+
+    tabs.map(([key,label,glyph])=>
+      '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+esc(key)+
+      '" aria-selected="'+(tab===key)+'" aria-label="'+esc(label)+'">'+icon(glyph)+
+      '<span>'+esc(label)+'</span></button>').join('')+
+    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>'+
+    (activeContainer?'<div class="inventory-container-management">'+
+      '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'">Rinomina</button>'+
+      '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(activeContainer.id)+'">Elimina</button></div>':'');
   if(!documentsTab&&!scrollsTab){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
     // The coin editor is already generated from the saved creature model.
@@ -781,7 +791,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
   const visible=readouts.map((info,i)=>({info,i})).filter(({info,i})=>
     documentsTab?info.kind==='document':scrollsTab?isSpellScroll(c.inventory[i]):
-    info.kind!=='document'&&!isSpellScroll(c.inventory[i]));
+    info.kind!=='document'&&!isSpellScroll(c.inventory[i])&&
+      (tab==='all'||itemContainerId(c.inventory[i],containers)===destination));
   if(!documentsTab&&!scrollsTab){
     const owned=readouts.filter(item=>item.kind!=='document');
     const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
@@ -796,7 +807,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       '[data-act="item-catalog"],[data-act="new-homebrew-item"]'))add.append(node);
     bind('inventory-add',add);
   }
-  html+=card(documentsTab?'Documenti':scrollsTab?'Pergamene magiche':'Nello zaino',
+  html+=card(documentsTab?'Documenti':scrollsTab?'Pergamene magiche':tab==='all'?'Tutti gli oggetti':activeContainer?.name||'Nello zaino',
     '<p class="inventory-list-count">'+visible.length+' voci · '+
     visible.reduce((total,{info})=>total+info.quantity,0)+' unità</p>'+
     '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca '+(documentsTab?'nei documenti':scrollsTab?'tra le pergamene':'nello zaino')+'" aria-label="Cerca nell’inventario"></label>'+
@@ -808,7 +819,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         const form=document.createElement('div');form.className='play-item-fields';
         const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
         const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls'),equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more'),actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
-        field('Nome oggetto',name);field('Quantità',quantity);field('Equipaggiamento',equip);
+        field('Nome oggetto',name);field('Quantità',quantity);
+        if(['weapon','armor','shield'].includes(itemKind(item)))field('Slot equipaggiamento',equip);
         const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';if(more)toolbar.append(more);if(actions)toolbar.append(actions);
         row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
       }
@@ -824,7 +836,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
       return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
         '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
-        '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
+        '<span class="inventory-item-type">'+esc([info.type,info.source,...(tab==='all'?[containers.find(row=>row.id===itemContainerId(item,containers))?.name||'Zaino']:[])].filter(Boolean).join(' · '))+'</span>'+
         (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
         (info.facts.length?'<span class="inventory-item-facts">'+info.facts.map(fact=>'<span aria-label="'+esc(fact.label+': '+fact.value)+'">'+icon(fact.glyph)+'<span>'+esc(fact.label)+' <b>'+esc(fact.value)+'</b></span></span>').join('')+'</span>':'')+
         (info.status.length?'<span class="inventory-item-status">'+info.status.map(label=>'<span>'+esc(label)+'</span>').join('')+'</span>':'')+'</span></button></div>';
