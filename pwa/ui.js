@@ -2013,30 +2013,49 @@ function renderSpellResults(){
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
   const target=(!member||member.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
+  const preparing=member?.mode==='Preparati'&&target==='prepared_spells';
   if(!member&&!query)return '<p class="hint">Cerca un incantesimo per aggiungerlo alle concessioni della scheda.</p>';
   const prepared=availableSpells(record);
+  const known=knownClassSpellIds(record,member,rows);
   const knownBook=new Set((record.spellbook_spells||[]).map(spellId));
   const selected=target==='spellbook_spells'?knownBook:
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
   const found=rows.filter(spell=>allowed.has(spell)&&
-    (!member||spellEligible(spell,member))&&
+    (preparing?(Number(spell.level)<=member.max_level&&
+      (state.spellKnownView!=='known'||known.has(spell.id))):
+      member?.mode==='Preparati'&&target==='spellbook_spells'?
+        Number(spell.level)<=member.max_level:
+        !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0)&&
-    (!member?.book||target!=='prepared_spells'||Number(spell.level)===0||knownBook.has(spell.id))&&
     (!query||(String(spell.name||'')+' '+String(spell.source||'')).toLocaleLowerCase('it').includes(query)))
     .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
       String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}))
-    .slice(0,40);
+    .slice(0,60);
   if(!found.length)return '<p class="hint">'+
-    (member?.book&&target==='prepared_spells'&&!knownBook.size?
-      'Aggiungi prima gli incantesimi al libro, poi torna alla preparazione.':'Nessun incantesimo corrispondente.')+
-    '</p>';
+    (preparing&&state.spellKnownView==='known'?
+      'Nessun incantesimo conosciuto corrispondente. Passa alla lista completa per aggiungerne altri.':
+      'Nessun incantesimo corrispondente.')+'</p>';
   return groupedMagicSpells(found.map(spell=>({spell,info:magicSpellInfo(spell)})),({spell,info})=>{
     const already=selected.has(spell.id);
     const pickedIndex=selectedRows.findIndex(row=>spellId(row)===spell.id);
+    const action=already?'remove-spell':'spell-pick';
+    const actionIndex=already?pickedIndex:rows.indexOf(spell);
+    const command='<button class="btn magic-catalog-primary" type="button" data-act="'+action+
+      '" data-index="'+actionIndex+'"'+(already?
+        ' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
+      '>'+ (already?'× Rimuovi preparazione':'+ Prepara')+'</button>';
+    if(preparing){
+      const isKnown=known.has(spell.id);
+      return '<div class="magic-catalog-row"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
+        (isKnown?command:'<span class="hint">Non conosciuto</span>')+
+        '<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
+        ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
+        (isKnown?'Dimentica':'+ Conosci')+'</button></div>';
+    }
     return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="'+
-      (already?'remove-spell':'spell-pick')+'" data-index="'+(already?pickedIndex:rows.indexOf(spell))+'"'+
+      action+'" data-index="'+actionIndex+'"'+
       (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       '><span>'+esc(info.name)+'</span>'+
       '<span class="magic-selection-status">'+(already?'× Rimuovi':'+ Aggiungi')+'</span></button>';
@@ -4934,6 +4953,29 @@ async function handleAction(target){
     state.inventorySelectedIndex=Math.max(0,index-1);
     state.inventoryMenuIndex=-1;state.sheetPopup="";
     await patch({inventory});await render();return;
+  }
+  if(act==='spell-known-toggle'){
+    const creature=state.editor.read(),classes=state.calculated?.casting_classes||[];
+    const member=classes.find(row=>row.id===target.dataset.classId);
+    if(!member||member.mode!=='Preparati')throw Error('Lista di classe non disponibile.');
+    const spell=state.spellCatalog?.[Number(target.dataset.spellIndex)];
+    if(!spell)throw Error('Incantesimo non trovato.');
+    const wasKnown=target.dataset.known==='true';
+    let change;
+    if(member.book){
+      const book=creature.spellbook_spells||[];
+      const index=book.findIndex(row=>spellId(row)===spell.id);
+      change=wasKnown?removeSelectedSpell(creature,'spellbook_spells',index):
+        addSelectedSpell(creature,spell,'spellbook_spells',{member,classes,catalog:state.spellCatalog||[]});
+    }else change=changeKnownClassSpell(creature,member,spell,!wasKnown,state.spellCatalog||[]);
+    if(wasKnown){
+      const index=availableSpells(creature).findIndex(row=>spellId(row)===spell.id);
+      const row=availableSpells(creature)[index];
+      if(index>=0&&castingSources(row,classes,state.spellCatalog||[]).includes(member.id))
+        Object.assign(change,removeSelectedSpell(creature,'prepared_spells',index,
+          {classId:member.id,classes,catalog:state.spellCatalog||[]}));
+    }
+    await patch(change);await render();return;
   }
   if(act==="spell-pick"){
     const index=Number(target.dataset.index);
