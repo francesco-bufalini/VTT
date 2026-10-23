@@ -138,9 +138,23 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 	# feature, then only an unambiguous scaled-name fallback.
 	if exact.size() == 1:
 		return exact[0]
-	if exact.size() > 1 or compatible.size() != 1:
+	if exact.size() > 1 or compatible.is_empty():
 		return {}
-	return compatible[0]
+	if compatible.size() == 1:
+		return compatible[0]
+	# Multiple tier labels for one advancing privilege (e.g. Indomitable
+	# (1 Use), (2 Uses), (3 Uses)) still belong to the earliest acquired
+	# trait. Only accept a unique earliest-level candidate; reject ties.
+	var earliest_level := 1000
+	var first: Array[Dictionary] = []
+	for feature: Dictionary in compatible:
+		var level := int(feature.get("level", 0))
+		if level < earliest_level:
+			earliest_level = level
+			first = [feature]
+		elif level == earliest_level:
+			first.append(feature)
+	return first[0] if first.size() == 1 else {}
 
 
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
