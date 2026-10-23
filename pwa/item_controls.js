@@ -505,3 +505,23 @@ export function equipSlot(inventory,slot,index){
     for(const row of rows)row.equipped_slots=row.equipped_slots.filter(v=>v!=="off");
   return rows;
 }
+
+/** One equipment state shared by the inventory and the corresponding item trait. */
+export function setItemEquipped(inventory,index,enabled){
+  const rows=structuredClone(Array.isArray(inventory)?inventory:[]);
+  const item=rows[index];
+  if(!item)throw Error("Oggetto non trovato.");
+  const kind=itemKind(item);
+  if(kind==="document")throw Error("Un documento non è equipaggiabile.");
+  if(!enabled){
+    item.equipped=false;
+    item.equipped_slots=[];
+    return rows;
+  }
+  if(["weapon","shield","armor"].includes(kind)){
+    const slot=kind==="armor"?"body":kind==="shield"?"off":"main";
+    return equipSlot(rows,slot,index);
+  }
+  item.equipped=true;
+  return rows;
+}
