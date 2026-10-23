@@ -140,6 +140,8 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  }
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
+  const feature=arr(calculated.features).find(row=>row.origin_id===choice.origin_id);
+  if(feature&&(feature.disabled||feature.inactive||!enabled(record,feature.origin_key)))continue;
   result.push({id:'spell:'+choice.id,kind:'spell',origin_id:choice.origin_id,
     name:choice.origin_name||choice.origin_id,label:'Incantesimi / capacità magiche',
     count:Math.max(1,Number(choice.count)||1),selected:arr(choice.selected)
