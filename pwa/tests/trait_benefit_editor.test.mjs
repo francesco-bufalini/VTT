@@ -132,3 +132,29 @@ test('catalog-only trait, parent species, and explicit proficiency toggles use s
  assert.equal(back.proficiency_origins[0].disabled,false);
  assert.equal(traitIsActive({...withSources,...back},prof),true);
 });
+
+test('flat and dice grants use one bonus kind while keeping native roll-dice storage',()=>{
+ const row=addBenefitPatch({},trait,'bonus',{target:'saving_throw',expression:'1d4'},'trait:roll1000').dice_bonuses[0];
+ assert.equal(row.dice,'1d4');
+ assert.equal(row.origin_id,'feature:trait:'+trait.key);
+ const groups=traitBenefitGroups(trait,{dice_bonuses:[row]},{}).filter(group=>group.type==='bonus');
+ assert.equal(groups.length,1);
+ assert.deepEqual(groups[0].items.map(item=>item.value),['+1d4']);
+ assert.equal(removeBenefitPatch({dice_bonuses:[row]},trait,{type:'bonus',id:'dice:'+row.id}).dice_bonuses.length,0);
+});
+test('static scores store a one-time roll result and preserve the original die notation',()=>{
+ const grant=addBenefitPatch({},trait,'bonus',{target:'hp',expression:'1d4',rolled_total:3},'trait:roll1001').formula_bonuses[0];
+ assert.equal(grant.expression,'3');
+ assert.equal(grant.dice_notation,'1d4');
+ assert.match(traitBenefitGroups(trait,{}, {bonuses:[grant]})[0].items[0].value,/1d4.*3/);
+ assert.throws(()=>addBenefitPatch({},trait,'bonus',{target:'ability:str',expression:'1d4'},'trait:roll1002'),/Tira il dado/);
+ assert.throws(()=>addBenefitPatch({},trait,'bonus',{target:'hp',expression:'1d7'},'trait:roll1003'),/Dadi non validi/);
+});
+test('roll-mode benefits are editable, target-scoped, origin-bound and removable',()=>{
+ const grant=addBenefitPatch({},trait,'roll_mode',{target:'save:dex',mode:'advantage'},'trait:roll1004').roll_mode_grants[0];
+ assert.equal(grant.trait_key,trait.key);
+ assert.equal(grant.origin_id,'feature:trait:'+trait.key);
+ assert.deepEqual(traitBenefitGroups(trait,{roll_mode_grants:[grant]},{}).find(group=>group.type==='roll_modes').items.map(item=>item.value),['Vantaggio']);
+ assert.deepEqual(removeBenefitPatch({roll_mode_grants:[grant]},trait,{type:'roll_modes',id:'roll_mode:'+grant.id}).roll_mode_grants,[]);
+ assert.throws(()=>addBenefitPatch({},trait,'roll_mode',{target:'hp',mode:'advantage'},'trait:roll1005'),/solo ai tiri d20/);
+});
