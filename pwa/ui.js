@@ -983,7 +983,7 @@ function resourceView(c,configure=false,compact=false){
    const compactActions='<div class="battle-resource-actions">'+
      '<button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(t.id)+'" aria-label="Ripristina un utilizzo di '+esc(t.name)+'" title="Ripristina 1">−</button>'+
      '<button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(t.id)+'" aria-label="Consuma un utilizzo di '+esc(t.name)+'" title="Consuma 1">＋</button>'+
-     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Magia" title="Vai a Magia">↗</button>'+
+     '<button type="button" class="btn small battle-resource-link" data-act="tracker-powers" data-tracker-id="'+esc(t.id)+'" aria-label="Apri '+esc(t.name)+' in Poteri" title="Vai a Poteri">↗</button>'+
      '<details class="battle-resource-details"><summary aria-label="Origine e recupero di '+esc(t.name)+'" title="Origine e recupero">ⓘ</summary>'+
        '<span>'+esc(t.origin_name||'Senza origine')+' · '+
        esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</span></details></div>';
@@ -998,7 +998,7 @@ function resourceView(c,configure=false,compact=false){
         optionalButton+'</div>':'')+
     '</article>';
   }
-  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Magia">↗ Magia</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
+  return '<article class="list-item"><div class="row between"><strong>'+esc(t.name)+'</strong><button type="button" class="btn small" data-act="tracker-powers" title="Apri in Poteri">↗ Poteri</button></div><p class="hint">'+esc(t.origin_name||'Senza origine')+' · '+esc(modes.find(([id])=>id===t.recharge)?.[1]||t.recharge||'Manuale')+'</p>'+(t.inactive?'<p class="hint">Non attivo: origine disattivata o requisito non soddisfatto. Utilizzi salvati: '+esc(used)+'</p>':'<div class="row">Disponibili: '+esc(Math.max(0,maximum-used))+' / '+formulaReadout(state.calculated,'tracker:'+t.id,'Massimo '+t.name)+'</div>')+actions+optionalButton+edit+'</article>';
  }).join('');
  if(compact)return panel('Risorse',
    (body||'<p class="hint">Nessuna risorsa disponibile.</p>')+
@@ -1886,7 +1886,7 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
  for(const grant of calculated.origin_spells||[]){
    const spell=(state.spellCatalog||[]).find(s=>s.id===grant.spell_id);
    const info=magicSpellInfo(spell||{id:grant.spell_id,name:grant.spell_id});
-   const mode=grant.payment_mode||(grant.tracker_id?'tracker':'free');
+   const mode=grant.payment_mode||(grant.tracker_id?'tracker':(['known','prepared'].includes(grant.mode)?'slot':'free'));
    const item={grant,spell,info};
    if(mode==='slot'){
      const id=grant.origin_id||'other';
@@ -3735,7 +3735,7 @@ async function handleAction(target){
     const options=[];
     if(entry&&level!==null){
       const assigned=calculated.origin_spells?.find(row=>row.id===entry.grant_id);
-      const mode=assigned?.payment_mode||(level===0?'free':'slot');
+      const mode=assigned?.payment_mode||(assigned?.tracker_id?'tracker':level===0?'free':(['known','prepared'].includes(assigned?.mode)||!assigned)?'slot':'free');
       if(level===0||mode==='free'||mode==='tracker'){
         options.push(['auto:0',mode==='tracker'?'Usa il tracker previsto':'Senza slot']);
       }else{
