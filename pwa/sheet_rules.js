@@ -566,6 +566,8 @@ export function calculateSheet(record={},catalogs={}){
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
   const grantingCastingTrait=member=>{
+    // Partial/offline catalog tables must not impersonate a real feature grant.
+    if(!catalogs.classFeatures)return null;
     const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
     const origin='class|'+String(source).toLowerCase()+'|'+String(member.name||'').toLowerCase();
     return features.find(feature=>feature.origin_key===origin&&
