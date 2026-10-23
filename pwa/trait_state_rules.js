@@ -69,42 +69,51 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   if(rule.legacy_field)changes[rule.legacy_field]=rule.legacy_value;
   return changes;
 }
-function origin(features,trait,parent){
- const feature=arr(features).find(f=>norm(f.name)===norm(trait)&&
-   String(f.origin_key||'')===String(parent.source_trait?.origin_key||'')&&enabled(parent.record||{},f));
- return feature?.origin_id||parent.source_trait.origin_id;
+// A state is not a substitute for a missing or disabled child trait.
+function source(record,features,rule,name){
+ if(!name||norm(name)===norm(rule.source_trait.name))return rule.source_trait;
+ return arr(features).find(feature=>norm(feature.name)===norm(name)&&
+   String(feature.origin_key||'')===String(rule.source_trait.origin_key||'')&&
+   enabled(record,feature))||null;
 }
 export function traitStateAttacks(record={},features=[],catalog=[]) {
-  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).map(attack=>({
-    id:attack.id,name:attack.name,origin_id:origin(features,attack.trait,{...rule,record}),
-    source:'trait_state',proficient:true,melee:!!attack.melee,
-    damage:attack.damage,damage_type:attack.damage_type,
-    ability:attack.intelligence_override&&record.attack_ability==='int'?'int':attack.ability,
-    range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0
-  })));
+ return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
+   const feature=source(record,features,rule,attack.trait);
+   return feature?[{
+     id:attack.id,name:attack.name,origin_id:feature.origin_id,
+     source:'trait_state',proficient:true,melee:!!attack.melee,
+     damage:attack.damage,damage_type:attack.damage_type,
+     ability:attack.intelligence_override&&record.attack_ability==='int'?'int':attack.ability,
+     range_feet:attack.range_feet,long_range_feet:attack.long_range_feet||0
+   }]:[];
+ }));
 }
 export function traitStateNumericGrants(record={},features=[],catalog=[]) {
-  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.numeric_grants).map(grant=>({
-    id:'trait_state:'+rule.id+':'+grant.id,target:grant.target,expression:String(grant.amount),
-    origin_id:origin(features,grant.trait,{...rule,record}),
-    origin_name:'Tratto · '+(grant.trait||rule.trait),automatic:true
-  })));
+ return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.numeric_grants).flatMap(grant=>{
+   const feature=source(record,features,rule,grant.trait);
+   return feature?[{
+     id:'trait_state:'+rule.id+':'+grant.id,target:grant.target,expression:String(grant.amount),
+     origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name,automatic:true
+   }]:[];
+ }));
 }
 export function traitStateTrackers(record={},features=[],catalog=[]) {
-  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>
-    attack.bonus_die?[{
-      id:attack.bonus_die.tracker_id,name:attack.bonus_die.name,
-      max:attack.bonus_die.max||1,recharge:attack.bonus_die.recharge||'turn',
-      automatic:true,origin_id:origin(features,attack.trait,{...rule,record}),
-      origin_name:'Tratto · '+(attack.trait||rule.trait)
-    }]:[]));
+ return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
+   const feature=source(record,features,rule,attack.trait),bonus=attack.bonus_die;
+   return feature&&bonus?[{
+     id:bonus.tracker_id,name:bonus.name,max:bonus.max||1,recharge:bonus.recharge||'turn',
+     automatic:true,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name
+   }]:[];
+ }));
 }
 export function traitStateOptionalDice(record={},features=[],catalog=[]) {
-  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>
-    attack.bonus_die?[{
-      ...attack.bonus_die,attack_id:attack.id,origin_id:origin(features,attack.trait,{...rule,record}),
-      origin_name:attack.trait||rule.name,tracker_cost:1
-    }]:[]));
+ return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
+   const feature=source(record,features,rule,attack.trait),bonus=attack.bonus_die;
+   return feature&&bonus?[{
+     ...bonus,attack_id:attack.id,origin_id:feature.origin_id,
+     origin_name:feature.name,tracker_cost:1
+   }]:[];
+ }));
 }
 export function traitStateEffects(record={},features=[],catalog=[]) {
   return activeTraitStates(record,features,catalog).map(rule=>({
