@@ -2362,7 +2362,9 @@ async function refreshMapOnce() {
 
 // Android and PWA use the same native targeting commands, not independent
 // spell/area calculations. Never send a private creature sheet to the host.
+let desktopHooks=null;
 async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken=''){
+  if(desktopHooks?.cast){await flushPendingFields();return desktopHooks.cast({casterId,selection,requestedLevel,payment});}
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
@@ -3045,7 +3047,7 @@ async function handleAction(target){
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
-    if(state.paired&&state.online){
+    if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
     }
@@ -4391,6 +4393,8 @@ window.addEventListener("message", event => {
 });
 // Desktop-only callers reuse the same editor and its pending-write barrier.
 export const desktopSheetSession={
+  configure(hooks){desktopHooks=hooks;},
+  currentId:()=>state.creatureId,
   flush:flushPendingFields,
   async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();}
 };

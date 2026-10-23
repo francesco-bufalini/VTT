@@ -6,13 +6,17 @@ html,body{min-width:640px;background:#191616}
 .desktop-controls>span{flex:1;color:#c4b9ab;font-size:13px}
 .desktop-controls .btn{min-height:36px}
 .connection-link{display:none!important}
-.play-dock{position:sticky;top:64px;inset-inline:auto;bottom:auto;width:100%;max-width:none;margin:0;box-shadow:0 4px 14px #0005;border-bottom:1px solid #9d7c5555;border-top:0;z-index:20}
+.play-dock{position:sticky;top:0;inset-inline:auto;bottom:auto;width:100%;max-width:none;margin:0;box-shadow:0 4px 14px #0005;border-bottom:1px solid #9d7c5555;border-top:0;z-index:20}
 .play-dock .btn{flex-direction:row;gap:10px;font-size:14px;min-height:52px;padding:10px 16px}
-.play-destinations{grid-template-columns:repeat(5,minmax(0,1fr))}
+.play-destinations{grid-template-columns:repeat(4,minmax(0,1fr))}
 .content{max-width:none;padding:24px 32px 48px}
 .sheet-play-view{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:20px}
 .sheet-play-view>.play-health,.sheet-play-view>.play-vitals,.sheet-play-view>.play-status-strip,.sheet-play-view>.play-sheet-tools{grid-column:1/-1}
-.sheet-context-dialog,.modal-dialog{width:min(1050px,92vw);max-width:1050px;max-height:88vh}
+.sheet-context-dialog,.modal-dialog{inset:0;width:min(1050px,92vw);max-width:1050px;max-height:88vh;margin:auto;border:1px solid #ad8354;border-radius:16px}
+.sheet-context-body .columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.sheet-play-view>.play-identity,.sheet-play-view>.play-passives,.sheet-play-view>.play-abilities,.sheet-play-view>.play-competences,.sheet-play-view>.play-info-traits{grid-column:1/-1}
+.play-abilities{grid-template-columns:repeat(6,minmax(0,1fr))}
+.desktop-error{padding:24px;color:#f6d59e}
 .creature-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 @media(min-width:1300px){.sheet-play-view{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:850px){.content{padding:18px}.sheet-play-view{grid-template-columns:minmax(0,1fr)}.desktop-controls{padding:8px 16px}.desktop-controls>span{display:none}}
+@media(max-width:850px){.content{padding:18px}.sheet-play-view{grid-template-columns:minmax(0,1fr)}.desktop-controls{padding:8px 16px}.desktop-controls>span{display:none}.play-abilities{grid-template-columns:repeat(3,minmax(0,1fr))}.sheet-context-body .columns{grid-template-columns:1fr}}

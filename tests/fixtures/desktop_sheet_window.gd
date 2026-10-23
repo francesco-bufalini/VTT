@@ -1,8 +1,17 @@
 extends SceneTree
 ## Interactive smoke fixture. Uses a disposable archive, never personal sheets.
 class Board extends Node3D:
-	func release_camera_control() -> void: pass
-	func capture_camera_control() -> void: pass
+	var ui_owns_mouse := false
+	func release_camera_control() -> void:
+		ui_owns_mouse = true
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	func capture_camera_control() -> void:
+		ui_owns_mouse = false
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	func _input(event: InputEvent) -> void:
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not ui_owns_mouse:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			print("PASS: Escape reached native board and released pointer")
 	func list_available_miniatures() -> Array[Dictionary]: return []
 var path: String
 var area: Node
@@ -19,6 +28,11 @@ func run() -> void:
 	var ui := CanvasLayer.new()
 	ui.name = "UI"
 	board.add_child(ui)
+	var back := Button.new()
+	back.text = "Tavolo di prova · Apri creature (Esc rilascia il puntatore)"
+	back.position = Vector2(20, 60)
+	ui.add_child(back)
+	back.pressed.connect(func() -> void: area.show_panel())
 	area = load("res://vtt/creature_area.gd").new()
 	area._selection_config_path = "user://desktop_web_test_selection.cfg"
 	board.add_child(area)
@@ -38,6 +52,6 @@ func run() -> void:
 	get_tree_timeout()
 
 func get_tree_timeout() -> void:
-	await create_timer(240).timeout
+	await create_timer(600).timeout
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	quit()

@@ -17,7 +17,9 @@ func open(sheet: Node) -> bool:
 	area = sheet
 	bridge.archive = area._archive
 	bridge.changed = func(record: Dictionary) -> void:
-		area._replace_current_record(record)
+		# The web library can edit a different creature from the old native form.
+		if String(record.get("id", "")) == area._selected_id:
+			area._replace_current_record(record)
 		area._sync_token_health(record)
 		area._apply_sheet_properties(record)
 	if host == null:
@@ -44,6 +46,7 @@ func open(sheet: Node) -> bool:
 	(area._panel.get_child(0) as Control).hide()
 	view.show()
 	active = true
+	view.call_deferred("focus")
 	return true
 
 func request_close() -> void:
@@ -52,19 +55,63 @@ func request_close() -> void:
 	else:
 		_finish(false)
 
-func _finish(native: bool) -> void:
+func _finish(native: bool, creature_id: String = "") -> void:
 	active = false
 	# Hiding a native child WebView does not return keyboard focus to Godot.
 	# Without this, Escape never reaches the board after leaving the sheet.
 	view.call("focus_parent")
 	view.hide()
 	(area._panel.get_child(0) as Control).show()
+	if not creature_id.is_empty():
+		for record: Dictionary in area._archive.list_owned():
+			if String(record.id) == creature_id:
+				area._selected_id = creature_id
+				area._selected_kind = String(record.kind)
+				break
 	area._reload()
 	if not native: area.hide_panel()
 	view.call_deferred("focus_parent")
 
+func _native_action(method: String, args: Dictionary) -> void:
+	_finish(true, String(args.get("creatureId", "")))
+	match method:
+		"import": area._show_creature_import_picker()
+		"backup":
+			area._batch_export_pending = area._archive.list_owned()
+			area._export_dialog.title = "Esporta archivio creature"
+			area._export_dialog.current_file = "archivio_creature.json"
+			preload("res://vtt/dialog_layout.gd").popup(area._export_dialog, Vector2i(820, 550))
+		"cast":
+			area._show_sheet_tab("Poteri")
+			var selection: Dictionary = args.get("selection", {})
+			area._on_action_cast_requested(String(selection.get("id", "")), String(selection.get("grant_id", "")), String(selection.get("casting_class", "manual")))
+
+func _download(args: Dictionary) -> Dictionary:
+	var text := String(args.get("text", ""))
+	if text.to_utf8_buffer().size() > 16 * 1024 * 1024 or not JSON.parse_string(text) is Dictionary:
+		return {"error": "Esportazione JSON non valida o troppo grande."}
+	var dialog := FileDialog.new()
+	dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.use_native_dialog = true
+	dialog.title = "Esporta creature VTT"
+	dialog.add_filter("*.json", "Archivio VTT")
+	dialog.current_file = String(args.get("filename", "creatura.json")).get_file()
+	add_child(dialog)
+	dialog.file_selected.connect(func(path: String) -> void:
+		var file := FileAccess.open(path, FileAccess.WRITE)
+		if file != null:
+			file.store_string(text)
+			file.close()
+		else:
+			area._set_status("Esportazione non riuscita: " + error_string(FileAccess.get_open_error()))
+		dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered_ratio(0.8)
+	return {"value": true}
+
 func _on_message(raw: String) -> void:
-	if not active or raw.length() > 2 * 1024 * 1024: return
+	if not active or raw.to_utf8_buffer().size() > 24 * 1024 * 1024: return
 	var value: Variant = JSON.parse_string(raw)
 	if not value is Dictionary: return
 	var message: Dictionary = value
@@ -76,8 +123,10 @@ func _on_message(raw: String) -> void:
 			_loaded = true
 			reply = {"value": true}
 		"selected": reply = {"value": area._selected_id}
-		"close", "native": reply = {"value": true}
+		"download": reply = _download(message.get("args", {}))
+		"close", "native", "import", "backup", "cast": reply = {"value": true}
 		_: reply = bridge.dispatch(method, message.get("args", {}))
 	reply["id"] = message.get("id")
 	view.call("eval", "globalThis.vttDesktopReceive(%s)" % JSON.stringify(reply))
-	if method in ["close", "native"]: _finish(method == "native")
+	if method in ["close", "native"]: _finish(method == "native", String(message.get("args", {}).get("creatureId", "")))
+	elif method in ["import", "backup", "cast"]: _native_action.call_deferred(method, message.get("args", {}))
