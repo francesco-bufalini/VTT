@@ -2443,268 +2443,199 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .trait-activation-toggle:focus-visible{outline:2px solid #f3cf9b;outline-offset:2px}
 
 
-/* Creature archive: a quieter, more legible hierarchy. All selectors are
-   confined to the library; character-sheet panels and navigation are untouched. */
-.library-index{
-  --library-gold:#e7bd83;
-  --library-border:#ae895c;
-  max-width:740px;
-  margin:0 auto 16px;
-}
+/* Creature archive: one clear heading and quieter, touch-first list styles.
+   Preserve the existing actions and limit visual changes to the library. */
+.library-index{max-width:720px;margin:0 auto 14px;min-width:0}
 .library-index .library-intro{
-  position:relative;
-  padding:9px 2px 18px;
-  margin-bottom:14px;
-  border-bottom:1px solid #b9925b55;
+  padding:8px 1px 2px;margin:0 0 3px;
+  border:0;background:none;
 }
-.library-index .library-intro::after{
-  content:"";
-  position:absolute;
-  bottom:-1px;
-  left:0;
-  width:78px;
-  height:2px;
-  background:linear-gradient(90deg,#e3b67d,#9e744c44);
-}
-.library-index .library-eyebrow{
-  display:block;
-  margin-bottom:5px;
-  color:#bb9f7c;
-  font:700 10px/1.3 system-ui,sans-serif;
-  text-transform:uppercase;
-  letter-spacing:.18em;
-}
+.library-index .library-intro::after{content:none}
 .library-index .library-intro h1{
-  margin:0;
-  color:#f5dfbf;
-  font:500 clamp(25px,6vw,32px)/1.15 Georgia,"Palatino Linotype",serif;
-  letter-spacing:-.025em;
-  text-shadow:0 2px 4px #0008;
+  margin:0;color:#f0d8b2;
+  font:500 clamp(24px,5.4vw,28px)/1.25 Georgia,"Palatino Linotype",serif;
+  letter-spacing:-.025em;text-shadow:0 1px 2px #0008;
 }
 .library-index .library-list-header{
-  min-width:0;
-  min-height:68px;
-  margin:0 0 15px;
-  padding:9px 12px;
-  gap:11px;
-  border:1px solid #9c79536e;
-  border-radius:13px;
-  background:linear-gradient(110deg,#42322a,#2b2522 80%);
-  box-shadow:inset 0 1px #f2d3a722,0 2px 9px #0003;
+  min-height:61px;min-width:0;gap:9px;
+  padding:6px 0 12px;margin:0 0 11px;
+  border:0;border-bottom:1px solid #b08a5c64;border-radius:0;
+  background:transparent;box-shadow:none;
 }
 .library-index .library-list-count{
-  display:flex;
-  align-items:baseline;
-  gap:9px;
-  min-width:0;
-  color:#c8b49a;
-  font:600 12px/1.4 system-ui,sans-serif;
-  letter-spacing:.015em;
+  display:flex;align-items:baseline;gap:8px;min-width:0;
+  color:#c0ab8d;font:600 11px/1.35 system-ui,sans-serif;
+  letter-spacing:.025em;
 }
 .library-index .library-count-number{
-  flex:none;
-  color:#f3d4a2;
-  font:500 29px/1 Georgia,serif;
-  font-variant-numeric:tabular-nums;
+  flex:none;color:#ebc995;font:500 25px/1 Georgia,serif;
+  font-variant-numeric:tabular-nums;letter-spacing:-.025em;
 }
 .library-index .library-select-master{
-  min-width:43px!important;
-  min-height:43px!important;
-  border:1px solid #ab8a604a;
-  border-radius:10px;
-  background:#1c191764;
+  min-width:42px!important;min-height:42px!important;
+  border:1px solid #8d704f5e;border-radius:9px;
+  background:#32282285;
 }
 .library-index .library-select-master:has(input:checked){
-  background:#7955355c;
-  border-color:#dab17a;
+  border-color:#d8ae73;background:#74523859;
 }
 .library-index .library-add-button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  flex:0 0 auto;
-  gap:7px;
-  width:auto;
-  min-width:48px;
-  height:47px;
-  padding:0 14px;
-  border-radius:11px;
-  color:#fff0d8;
-  background:linear-gradient(150deg,#90643f,#60412e);
-  box-shadow:inset 0 1px #ffe6b26b,0 3px 9px #0006;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  flex:0 0 auto;width:auto;min-width:46px;height:46px;
+  padding:0 14px;border:1px solid #c99b65;border-radius:10px;
+  background:linear-gradient(155deg,#79553a,#50372c);
+  box-shadow:inset 0 1px #f4d4a44a,0 2px 7px #0005;
+  color:#f7dfb8;
 }
 .library-index .library-add-button .library-add-glyph{
-  font:400 28px/1 system-ui,sans-serif;
-  transform:translateY(-1px);
+  font:400 26px/1 system-ui,sans-serif;transform:translateY(-1px);
 }
 .library-index .library-add-button .library-add-text{
-  font:700 12px/1.2 system-ui,sans-serif;
-  letter-spacing:.02em;
-  transform:none;
+  font:650 12px/1.2 system-ui,sans-serif;letter-spacing:.01em;transform:none;
 }
-.library-index .library-rows{gap:10px}
+.library-index .library-add-button:hover{border-color:#eac18c;background:linear-gradient(155deg,#936640,#62432f)}
+.library-index .library-rows{gap:8px}
 .library-index .library-rows .creature-card{
-  min-height:91px;
-  border:1px solid #957653a1;
-  border-top-color:#b79970a8;
-  border-radius:12px;
-  background:linear-gradient(110deg,#3c2e27,#302723 56%,#282220);
-  box-shadow:inset 0 1px #f5d9ac19,0 3px 11px #0004;
-  transition:border-color .16s,background .16s,box-shadow .16s;
+  position:relative;min-height:78px;margin:0;padding:0;min-width:0;
+  border:1px solid #896d517a;border-radius:11px;
+  background:linear-gradient(110deg,#362c27,#292321 80%);
+  box-shadow:inset 0 1px #ead3aa11,0 2px 7px #0003;
+  transition:border-color .15s,background .15s,box-shadow .15s;
 }
 .library-index .library-rows .creature-card::before{
-  top:0;
-  bottom:0;
-  left:0;
-  width:3px;
-  border-radius:0;
-  background:linear-gradient(#e3bd85,#9c7449);
-  opacity:.62;
+  content:"";position:absolute;inset:0 auto 0 0;
+  width:3px;border-radius:11px 0 0 11px;
+  background:#d9aa70;opacity:0;transition:opacity .15s;
 }
 .library-index .library-rows .creature-card:has(input[data-library-select]:checked){
-  border-color:#d9ad71;
-  background:linear-gradient(110deg,#58402e,#3a2e27 60%,#2b2421);
-  box-shadow:inset 0 0 0 1px #eac18c24,0 4px 14px #0005;
+  border-color:#d1a46d;
+  background:linear-gradient(110deg,#493629,#322823 80%);
+  box-shadow:inset 0 0 0 1px #e7b77a15,0 3px 9px #0004;
 }
 .library-index .library-rows .creature-card:has(input[data-library-select]:checked)::before{opacity:1}
-.library-index .library-rows .creature-card:hover{
-  border-color:#e3bb84;
-  box-shadow:inset 0 1px #ffdba53b,0 5px 15px #0006;
-}
+.library-index .library-rows .creature-card:hover,
+.library-index .library-rows .creature-card:focus-within{border-color:#d7b17d}
 .library-index .library-rows .creature-card .library-batch-check{
-  align-self:stretch;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex:0 0 49px;
-  min-width:49px;
-  min-height:90px;
-  margin:0;
-  border-right:1px solid #a27b504a;
-  background:#16141323;
+  display:flex;align-self:stretch;align-items:center;justify-content:center;
+  flex:0 0 46px;min-width:46px;min-height:78px;margin:0;
+  border-right:1px solid #99744a38;background:#1c191720;z-index:1;
 }
 .library-index .library-rows .creature-card:has(input:checked) .library-batch-check{
-  background:#a77e4840;
-  border-right-color:#c79b6c77;
+  border-right-color:#c69a5d55;background:#b0844830;
 }
 .library-index .library-rows .creature-card input[data-library-select],
-.library-index .library-select-master input{width:19px;height:19px;accent-color:#e2b27b}
-.library-index .library-rows .creature-card .creature-open{
-  min-height:90px;
-  padding:14px 13px 14px 14px;
-  gap:11px;
+.library-index .library-select-master input{
+  width:19px;height:19px;accent-color:#dcb077;cursor:pointer;
 }
-.library-index .library-rows .creature-card .creature-info{gap:5px}
+.library-index .library-rows .creature-card .creature-open{
+  min-height:78px;min-width:0;gap:10px;
+  padding:11px 12px;border:0;background:transparent;
+}
+.library-index .library-rows .creature-card .creature-info{min-width:0;gap:4px}
 .library-index .library-rows .creature-card .creature-name{
-  color:#f7dfba;
-  font:600 clamp(18px,4.6vw,20px)/1.23 Georgia,"Palatino Linotype",serif;
-  letter-spacing:-.013em;
-  overflow-wrap:break-word;
+  color:#f1ddbf;font:650 17px/1.27 system-ui,sans-serif;
+  letter-spacing:-.012em;text-shadow:none;overflow-wrap:anywhere;
 }
 .library-index .library-rows .creature-card .creature-details{
-  color:#c9b69c;
-  font:600 11px/1.4 system-ui,sans-serif;
-  letter-spacing:.035em;
-  overflow-wrap:anywhere;
+  color:#c4b39d;font:450 12px/1.35 system-ui,sans-serif;
+  letter-spacing:0;overflow-wrap:anywhere;
 }
 .library-index .library-rows .creature-card .creature-classes{
-  width:fit-content;
-  max-width:100%;
-  padding:1px 0 1px 9px;
-  border-left:2px solid #bf905d9e;
-  color:#dcb889;
-  font:500 12px/1.4 system-ui,sans-serif;
+  display:block;width:auto;max-width:100%;padding:0;border:0;
+  color:#dcba8b;font:500 11px/1.4 system-ui,sans-serif;
   overflow-wrap:anywhere;
 }
 .library-index .library-rows .creature-card .creature-open-chevron{
-  flex:0 0 34px;
-  width:34px;
-  height:34px;
-  border:1px solid #b18d6066;
-  border-radius:10px;
-  background:#bc8c5420;
-  color:#edc993;
-  font:400 26px/1 Georgia,serif;
-  transition:background .16s,transform .16s;
+  display:grid;place-items:center;flex:0 0 23px;width:23px;height:32px;
+  border:0;border-radius:6px;background:transparent;
+  color:#cda777;font:400 26px/1 Georgia,serif;
+  transition:color .15s,transform .15s;
 }
 .library-index .library-rows .creature-card .creature-open:hover .creature-open-chevron{
-  background:#bd905247;
-  transform:translateX(2px);
+  color:#ffe1ad;background:transparent;transform:translateX(2px);
 }
 .library-index .library-selection-actions{
-  gap:8px;
-  margin:0 0 13px;
-  padding:10px 12px;
-  border:1px solid #c69c68a1;
-  border-radius:11px;
-  background:linear-gradient(110deg,#54402f,#302722);
-  box-shadow:inset 0 1px #f1d3a323;
+  gap:8px;margin:0 0 12px;padding:10px;
+  border:1px solid #a9855d8c;border-radius:10px;
+  background:#392d27;box-shadow:none;
 }
-.library-index .library-selection-count{
-  color:#f4d7ad;
-  font:700 12px/1.3 system-ui,sans-serif;
-}
+.library-index .library-selection-count{color:#e8c79b;font:650 12px system-ui,sans-serif}
 .library-index .library-selection-actions .btn{
-  min-height:42px;
-  border:1px solid #ae8759;
-  border-radius:9px;
-  padding:8px 12px;
-  background:linear-gradient(#65503e,#42322c);
-  color:#f3dcb9;
-  font-size:12px;
+  min-height:42px;padding:8px 11px;
+  border:1px solid #9e7952;border-radius:8px;box-shadow:none;
+  background:#503b2e;color:#f2d9b6;font-size:12px;
 }
 .library-index .library-selection-actions .btn.danger{
-  color:#ffd5cc;
-  border-color:#b66d65;
-  background:linear-gradient(#734039,#4c2b29);
+  border-color:#ab6c63;background:#59322e;color:#ffccc2;
 }
 .library-index .library-empty{
-  margin:0;
-  padding:30px 18px;
-  border:1px dashed #ae895c85;
-  border-radius:13px;
-  background:linear-gradient(150deg,#372b25,#241e1d);
-  text-align:center;
+  margin:0;padding:28px 16px;
+  border:1px dashed #aa855b80;border-radius:11px;
+  background:#2f2723;text-align:center;
 }
-.library-index .library-empty strong{display:block;margin-bottom:6px;color:#efd4aa;font:500 22px/1.3 Georgia,serif}
-.library-index .library-empty p{max-width:32ch;margin:0 auto 18px;color:#bea992;font-size:13px;line-height:1.55}
+.library-index .library-empty strong{
+  display:block;margin-bottom:6px;color:#efd3a8;
+  font:500 21px/1.3 Georgia,serif;
+}
+.library-index .library-empty p{
+  max-width:32ch;margin:0 auto 16px;color:#bdaa93;
+  font-size:13px;line-height:1.55;
+}
 .library-index .library-empty .btn{max-width:100%;white-space:normal}
+
+/* Backup is secondary to the character list, not another large card. */
 .library-backup{
-  border-color:#8f725381;
-  background:linear-gradient(120deg,#302823,#231f1d);
-  box-shadow:inset 0 1px #f1d9b017,0 3px 13px #0003;
+  max-width:720px;margin:18px auto 22px;
+  border:0;border-top:1px solid #8e704e7d;border-radius:0;
+  background:transparent;box-shadow:none;
 }
-.library-backup>summary{min-height:76px}
-.library-backup>summary:focus-visible{outline:2px solid #f5c98f;outline-offset:-3px;border-radius:12px}
-.library-backup[open]{border-color:#af895e}
-.library-backup[open] .library-backup-symbol{color:#f5d39d;border-color:#c9a171}
-.library-create-dialog .library-create-body{padding:26px 22px 23px}
-.library-create-dialog .library-create-body::before{
-  content:"";
-  display:block;
-  width:52px;
-  height:2px;
-  margin-bottom:17px;
-  background:linear-gradient(90deg,#e9bd7f,#e9bd7f00);
+.library-backup>summary{min-height:68px;padding:10px 2px;gap:12px}
+.library-backup-symbol{
+  width:36px;height:36px;border:1px solid #9d784d65;border-radius:9px;
+  background:#49382b61;color:#d4ac77;font-size:20px;
 }
+.library-backup-copy strong{color:#ddbd8e;font-size:14px}
+.library-backup-copy small{font-size:11px;color:#ad9d87}
+.library-backup>summary:hover{background:#b48a5d0b}
+.library-backup>summary:focus-visible{outline:2px solid #f5c98f;outline-offset:-3px}
+.library-backup[open]{border-top-color:#c4a078}
+.library-backup[open] .library-backup-symbol{border-color:#bd945d;color:#e8c28f}
+.library-backup-content{padding:9px 1px 16px;border-top:1px solid #8e704e48}
+.library-backup-content p{margin:0 0 13px;color:#bead96;line-height:1.5}
+.library-backup-actions{gap:9px}
+.library-backup-actions .btn,.library-create-options .btn{
+  min-height:47px;border-radius:9px;border:1px solid #a8865b;
+  background:linear-gradient(#5b4737,#392d28);
+  box-shadow:inset 0 1px #f1d09e1a;color:#ead0aa;font-weight:650;
+}
+.library-create-dialog{border-radius:15px;border-color:#b99466;box-shadow:0 22px 65px #000d}
+.library-create-dialog .library-create-body{padding:25px 22px 22px}
 .library-create-dialog .library-create-close{border-radius:9px}
-.library-create-dialog .library-create-close:hover{background:#bb965628}
+.library-create-dialog .library-create-close:hover{background:#a7815026}
 .library-create-dialog .library-create-close:focus-visible{outline:2px solid #f1cd95;outline-offset:-3px}
+.library-create-options .btn.primary{background:linear-gradient(#84573d,#5d3e30)}
+
+/* Last button within the sheet grid is Zaino: give it the same vertical
+   divider as the other tabs before the separately rendered Partita button. */
+.play-dock.has-creature .play-destinations > .dock-destination:last-child{
+  border-right:1px solid #a17d5070;
+}
 @media(max-width:480px){
-  .library-index .library-intro{padding-top:5px;padding-bottom:15px;margin-bottom:12px}
-  .library-index .library-list-header{min-height:60px;padding:8px 9px;gap:8px}
+  .library-index .library-list-header{min-height:58px;gap:8px;padding-bottom:10px}
   .library-index .library-add-button{width:44px;min-width:44px;height:44px;padding:0}
   .library-index .library-add-button .library-add-text{display:none}
-  .library-index .library-rows .creature-card .creature-open{padding:12px 10px 12px 12px;gap:9px}
-  .library-index .library-rows .creature-card .creature-open-chevron{flex-basis:30px;width:30px;height:30px}
+  .library-index .library-rows .creature-card .creature-open{padding:11px 10px;gap:7px}
 }
 @media(max-width:360px){
-  .library-index .library-rows .creature-card .library-batch-check{flex-basis:43px;min-width:43px}
-  .library-index .library-rows .creature-card .creature-name{font-size:17px}
-  .library-index .library-selection-actions .btn{flex:1 1 110px}
+  .library-index .library-rows .creature-card .library-batch-check{
+    flex-basis:42px;min-width:42px;
+  }
+  .library-index .library-rows .creature-card .creature-name{font-size:16px}
+  .library-index .library-selection-actions .btn{flex:1 1 104px}
 }
 @media(prefers-reduced-motion:reduce){
   .library-index .creature-card,
+  .library-index .creature-card::before,
   .library-index .creature-open-chevron,
   .library-index .library-add-button{transition:none}
 }
