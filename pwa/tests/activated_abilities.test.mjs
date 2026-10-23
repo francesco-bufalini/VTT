@@ -103,3 +103,24 @@ test("typed active features and optional grants preserve their origins and costs
    definitions,projection);
  assert(!disabled.some(x=>x.name==="Ambush"));
 });
+
+
+test('read-only previews include disabled class, optional and granted powers while runtime stays gated',()=>{
+ const record={class:'Fighter',class_source:'PHB',level:3,
+  origin_enabled:{'feature:class|phb|fighter|typed':false},
+  optional_features_catalog:[{name:'Ambush',source:'TCE',disabled:true}],
+  origin_spell_grants:[{ability_id:'ability:maneuver:phb:parry',origin_id:'feat|phb|martial',
+    disabled:true,action_kind:'ability'}]};
+ const features=[{name:'Parry',key:'class|phb|fighter|typed',
+  origin_id:'feature:class|phb|fighter|typed',
+  origin_key:'class|phb|fighter',action_type:'reaction',disabled:true}];
+ const projection={features};
+ assert.deepEqual(abilitiesForCreature(record,definitions,projection),[]);
+ const previews=abilitiesForCreature(record,definitions,projection,{includeUnavailable:true});
+ assert.deepEqual(previews.map(x=>x.name),['Ambush','Parry','Parry']);
+ assert.equal(previews.length,3);
+ assert.ok(previews.every(x=>x.unavailable===true));
+ assert.ok(previews.some(x=>x.name==='Ambush'&&x.origin_id==='optional|tce|ambush'));
+ assert.ok(previews.some(x=>x.origin_id==='feat|phb|martial'));
+ assert.ok(previews.some(x=>x.origin_id===features[0].origin_id));
+});
