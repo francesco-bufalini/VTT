@@ -49,11 +49,54 @@ func run() -> void:
 	assert(area._archive.save(record) == OK)
 	area._reload()
 	area.show_panel()
-	if "--dialog-smoke" in OS.get_cmdline_user_args():
+	if "--window-smoke" in OS.get_cmdline_user_args():
+		await verify_window()
+		quit()
+	elif "--dialog-smoke" in OS.get_cmdline_user_args():
 		root.title = "VTT Desktop PWA - dialog verification"
 		verify_file_dialogs()
 	else:
 		get_tree_timeout()
+
+func wait_for_sheet() -> void:
+	var end := Time.get_ticks_msec() + 20000
+	while (area._desktop_web_sheet == null or not area._desktop_web_sheet._loaded) and Time.get_ticks_msec() < end:
+		await process_frame
+	assert(area._desktop_web_sheet != null and area._desktop_web_sheet._loaded)
+
+func check_native_bounds() -> void:
+	await process_frame
+	await process_frame
+	var shell: Node = area._desktop_web_sheet
+	var frame: Window = shell.window
+	assert(frame.is_embedded() and not shell.view.get("full_window_size"))
+	var rect := frame.get_screen_transform() * Rect2(Vector2.ZERO, Vector2(frame.size))
+	assert(shell.view.size.distance_to(rect.size) < 2.0, "Native surface must use physical pixels")
+	assert(shell.view.get_screen_position().distance_to(rect.position) < 2.0, "Native browser must follow the embedded frame")
+	assert(Rect2(Vector2.ZERO, root.get_visible_rect().size).encloses(Rect2(Vector2(frame.position), Vector2(frame.size))))
+
+func verify_window() -> void:
+	await wait_for_sheet()
+	var shell: Node = area._desktop_web_sheet
+	var frame: Window = shell.window
+	await check_native_bounds()
+	frame.position += Vector2i(-40, 20)
+	frame.size = Vector2i(960, 640)
+	await check_native_bounds()
+	root.size = Vector2i(1024, 720)
+	await check_native_bounds()
+	shell.request_close()
+	var end := Time.get_ticks_msec() + 10000
+	while shell.active and Time.get_ticks_msec() < end: await process_frame
+	assert(not shell.active and not frame.visible and not area._panel.visible)
+	assert(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
+	area.show_panel()
+	await wait_for_sheet()
+	await check_native_bounds()
+	print("PASS: real embedded WebView bounds, moving, resizing, scaled preview, close and reopen")
+
+func _finalize() -> void:
+	if not path.is_empty(): DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func verify_file_dialogs() -> void:
 	var end := Time.get_ticks_msec() + 30000

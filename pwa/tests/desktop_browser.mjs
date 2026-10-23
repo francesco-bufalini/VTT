@@ -33,7 +33,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Lyria desktop');
   assert.equal(await page.locator('#desktop-close').count(),0,'Partita is the sole board destination');
   assert.equal(await page.evaluate(async()=>(await indexedDB.databases()).length),0,'No second browser archive');
-  for(const width of [1440,1024,800]){
+  for(const width of [1440,1024,800,640,390]){
     await page.setViewportSize({width,height:1000});
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Desktop horizontal fit at '+width);
   }
@@ -118,7 +118,7 @@ try{
   });
   assert(conflict);
   assert.deepEqual(errors,[]);
-  console.log('PASS: desktop UI, 800/1024/1440px, file cancel/import/export/error without leaving WebView, native persistence, separate creatures, Partita flush and concurrent edits');
+  console.log('PASS: desktop UI, 390/640/800/1024/1440px, file cancel/import/export/error without leaving WebView, native persistence, separate creatures, Partita flush and concurrent edits');
 }finally{
   await browser?.close();
   await fetch(origin+'/__test/stop').catch(()=>{});

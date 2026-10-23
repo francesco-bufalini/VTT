@@ -3,6 +3,7 @@ const Archive = preload("res://vtt/creature_archive.gd")
 const Bridge = preload("res://vtt/desktop_sheet_archive.gd")
 const Host = preload("res://vtt/desktop_sheet_host.gd")
 const Shell = preload("res://vtt/desktop_creature_sheet.gd")
+const SheetWindow = preload("res://vtt/desktop_sheet_window.gd")
 class FakeView extends Control:
 	var parent_focus_calls := 0
 	func focus_parent() -> void: parent_focus_calls += 1
@@ -19,6 +20,29 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	# Native child bounds must follow the actual surface, including editor
+	# downscaling and Retina upscaling, rather than the logical UI resolution.
+	for scale: float in [0.75, 1.0, 1.5, 2.0]:
+		var transform := Transform2D(Vector2(scale, 0), Vector2(0, scale), Vector2(120, 80))
+		var bounds := SheetWindow.native_bounds(transform, Vector2(960, 640))
+		assert(bounds == Rect2(120, 80, 960 * scale, 640 * scale))
+	var frame := SheetWindow.new()
+	frame.hide()
+	root.add_child(frame)
+	frame.present()
+	assert(frame.is_embedded(), "Creature window must stay inside the game on every desktop platform")
+	var original_frame_size := frame.size
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	root.size = Vector2i(640, 400)
+	frame._fit()
+	assert(frame.size.x <= 576 and frame.size.y <= 320, "Clamp after shrinking the preview")
+	var detached_browser := FakeView.new()
+	frame.browser = detached_browser
+	frame._sync_browser() # Teardown can detach the native child before its frame.
+	detached_browser.free()
+	frame.dismiss()
+	frame.queue_free()
+	assert(original_frame_size.x > 0)
 	var archive := Archive.new()
 	archive.setup()
 	var path := "user://desktop_sheet_test_%d.json" % Time.get_ticks_usec()

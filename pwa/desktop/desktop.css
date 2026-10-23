@@ -1,5 +1,5 @@
 /* Only the desktop entry point loads this stylesheet. Mobile stays unchanged. */
-html,body{min-width:640px;background:#191616}
+html,body{min-width:0;background:#191616}
 .app-shell{width:100%;max-width:1600px;margin:0 auto;padding:0}
 .topbar{position:sticky;top:0;z-index:25;width:100%;max-width:none}
 .desktop-controls{display:flex;align-items:center;gap:12px;padding:10px 24px;border-bottom:1px solid #9d7c5555;background:#241e1d}
@@ -17,9 +17,10 @@ html,body{min-width:640px;background:#191616}
 .sheet-play-view>.play-identity,.sheet-play-view>.play-passives,.sheet-play-view>.play-abilities,.sheet-play-view>.play-competences,.sheet-play-view>.play-info-traits{grid-column:1/-1}
 .play-abilities{grid-template-columns:repeat(6,minmax(0,1fr))}
 .desktop-error{padding:24px;color:#f6d59e}
-.creature-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.creature-grid{grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
 .library-index{max-width:none}
-.library-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.library-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:16px}
 .library-backup{max-width:none}
 @media(min-width:1300px){.sheet-play-view{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:850px){.content{padding:18px}.sheet-play-view{grid-template-columns:minmax(0,1fr)}.desktop-controls{padding:8px 16px}.desktop-controls>span{display:none}.play-abilities{grid-template-columns:repeat(3,minmax(0,1fr))}.sheet-context-body .columns{grid-template-columns:1fr}}
+@media(max-width:640px){.play-dock .btn{flex-direction:column;gap:4px;font-size:11px;padding:8px 4px}.topbar{padding:12px}.content{padding:12px}}

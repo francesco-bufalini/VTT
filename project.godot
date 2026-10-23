@@ -26,9 +26,13 @@ PwaHost="*res://network/pwa_host.gd"
 
 [display]
 
+window/size/viewport_width=1600
+window/size/viewport_width.mobile=1152
+window/size/viewport_height=900
+window/size/viewport_height.mobile=648
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-#KeepeveryGodotpopup(confirmations,menusandfilepickers)inthegame#viewport.Nativedesktopsubwindowsuseabsolutescreencoordinatesandcan#appearoutsideVTTwhenthemainwindowismovedortheeditorembedsit.window/subwindows/embed_subwindows=true
+window/subwindows/embed_subwindows=true
 window/handheld/orientation.mobile=6
 
 [editor_plugins]

@@ -2,6 +2,7 @@ extends Node
 ## Owns only desktop presentation and the lifetime of its private IPC bridge.
 const Host = preload("res://vtt/desktop_sheet_host.gd")
 const Bridge = preload("res://vtt/desktop_sheet_archive.gd")
+const SheetWindow = preload("res://vtt/desktop_sheet_window.gd")
 var area: Node
 var view: Control
 var host: Node
@@ -10,9 +11,10 @@ var active := false
 var _loaded := false
 var _file_dialog: FileDialog
 var _file_request_id: Variant
+var window: SheetWindow
 
 static func supported() -> bool:
-	return OS.get_name() == "Windows" and DisplayServer.get_name() != "headless" and ClassDB.class_exists("WebView")
+	return OS.get_name() in ["Windows", "macOS"] and DisplayServer.get_name() != "headless" and ClassDB.class_exists("WebView")
 
 func open(sheet: Node) -> bool:
 	if not supported(): return false
@@ -32,20 +34,30 @@ func open(sheet: Node) -> bool:
 			host = null
 			return false
 	if view == null:
+		window = SheetWindow.new()
+		window.hide()
+		add_child(window)
+		window.close_requested.connect(request_close)
 		view = ClassDB.instantiate("WebView") as Control
-		# WRY must use the real window size, independent of Godot UI stretching.
-		view.set("full_window_size", true)
+		# The native browser handles its own input. Its compensated Control rect
+		# must not intercept Godot's embedded title bar or resize borders.
+		view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		view.set("full_window_size", false)
 		view.set("forward_input_events", false)
 		view.set("incognito", true)
 		view.set("devtools", OS.is_debug_build())
 		view.set("url", host.origin())
 		view.connect("ipc_message", _on_message)
-		area._panel.add_child(view)
-		view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		window.add_child(view)
+		window.browser = view
 	else:
 		_loaded = false
 		view.call("reload")
 	(area._panel.get_child(0) as Control).hide()
+	# Retain the native sheet's visibility/input contract, without its full-screen
+	# background obscuring the table around the embedded window.
+	area._panel.self_modulate.a = 0.0
+	window.present()
 	view.show()
 	active = true
 	view.call_deferred("focus")
@@ -64,6 +76,8 @@ func _finish(native: bool, creature_id: String = "") -> void:
 	# Without this, Escape never reaches the board after leaving the sheet.
 	view.call("focus_parent")
 	view.hide()
+	if is_instance_valid(window): window.dismiss()
+	area._panel.self_modulate.a = 1.0
 	(area._panel.get_child(0) as Control).show()
 	if not creature_id.is_empty():
 		for record: Dictionary in area._archive.list_owned():
