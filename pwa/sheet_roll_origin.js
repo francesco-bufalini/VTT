@@ -48,6 +48,7 @@ export function attackGrantOrigin(calculated,target){
   return 'item:'+key;
  }
  if(id.startsWith('shield:improvised:'))return 'item:'+id.split(':').slice(3).join(':');
+ if(id.startsWith('monster:'))return 'monster|'+id.split(':')[1];
  if(id.startsWith('class_feature:')){
   const normalized=id.slice('class_feature:'.length).replace(/_/g,' ').toLowerCase();
   return String(list(calculated?.features).find(row=>String(row.name||'').toLowerCase()===normalized)?.origin_id||'');
@@ -57,13 +58,15 @@ export function attackGrantOrigin(calculated,target){
 function trainingOrigin(record,target,calculated){
  const kind=target.startsWith('skill:')?'skill':target.startsWith('save:')?'save':'';
  const key=target.split(':')[1]||'';
+ const sourceItem=attackGrantOrigin(calculated,target);
+ const owned=list(record?.inventory).find(row=>'item:'+row.id===sourceItem);
+ const weaponKeys=new Set(['weapon:all']);
+ if(owned?.name)weaponKeys.add('weapon:'+String(owned.name).toLowerCase());
+ if(owned?.weapon_category)weaponKeys.add('weapon:'+String(owned.weapon_category).toLowerCase());
  const candidates=target.startsWith('attack_hit:')?
-   Object.entries(calculated?.proficiency_sources||{}).filter(([sourceKey])=>{
-     if(!sourceKey.startsWith('weapon:'))return false;
-     const weapon=String(list(calculated?.attacks).find(row=>'attack_hit:'+row.id===target)?.name||'').toLowerCase();
-     const proficiency=sourceKey.slice(7).toLowerCase();
-     return proficiency==='all'||(weapon&&proficiency===weapon);
-   }).flatMap(([,sources])=>list(sources)):
+   Object.entries(calculated?.proficiency_sources||{})
+    .filter(([sourceKey])=>weaponKeys.has(sourceKey))
+    .flatMap(([,sources])=>list(sources)):
    kind==='skill'&&trainingRank(calculated,target)===2?
      list(calculated?.proficiency_sources?.['expertise:'+key]):
      list(calculated?.proficiency_sources?.[kind+':'+key]);
