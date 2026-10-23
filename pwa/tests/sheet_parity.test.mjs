@@ -90,7 +90,9 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
  assert.match(markup,/class="native-abilities-header" role="row"/);
  for(const ability of ['str','dex','con','int','wis','cha']){
   assert.equal((markup.match(new RegExp('data-ability-row="'+ability+'"','g'))||[]).length,1);
-  assert.equal((markup.match(new RegExp('data-ability-key="'+ability+'"','g'))||[]).length,1);
+  assert.equal((markup.match(new RegExp('data-ability-key="'+ability+'"','g'))||[]).length,0,
+   'Characteristic scores must not have independent edit gears');
+  assert.match(markup,new RegExp('data-target="ability:'+ability+'"'));
   assert.doesNotMatch(markup,new RegExp('data-ability="'+ability+'"'));
   for(const target of ['ability:','ability_mod:','save:']){
    assert.match(markup,new RegExp('data-calculated="'+target+ability+'"'));
