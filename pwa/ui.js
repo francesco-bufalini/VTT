@@ -3838,10 +3838,11 @@ async function handleAction(target){
     const record=state.editor.read();
     if(trait.category==='oggetti'&&trait.rank===0&&String(trait.origin_key||'').startsWith('item:')){
       const id=String(trait.origin_key).slice(5);
-      const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id);
-      if(index<0)throw Error('Oggetto non presente nell’inventario.');
       const active=(record.inventory||[]).some(item=>String(item.id||'')===id&&
         (item.equipped===true||(item.equipped_slots||[]).length>0));
+      const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id&&
+        (active?(item.equipped===true||(item.equipped_slots||[]).length>0):true));
+      if(index<0)throw Error('Oggetto non presente nell’inventario.');
       const inventory=setItemEquipped(record.inventory,index,!active);
       // The equipment state is authoritative; clear stale manual overrides.
       const enabledPatch=traitActivationPatch(record,trait,true);
