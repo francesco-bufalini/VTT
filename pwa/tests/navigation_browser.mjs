@@ -178,6 +178,10 @@ try{
  assert.equal(await page.locator('.library-index h1').count(),1,'The archive has one heading');
  assert.equal(await page.locator('#library-search').count(),0,'No search bar on the home');
  assert(await page.locator('.library-home-hero .library-rows').isVisible(),'Roster belongs inside the hero');
+ assert.equal(await page.locator('.library-home-hero .library-hero-crest').count(),1,
+  'Original diamond emblem decorates the home background');
+ assert(await page.locator('.library-hero-crest-inner').evaluate(node=>
+  getComputedStyle(node).transform!=='none'),'Diamond is rotated above the hero gradient');
  assert.equal(await page.locator('.library-home-shortcuts button').count(),2,'Only create and import actions remain');
  assert.equal(await page.locator('.library-list-header').isVisible(),false,'Selection controls are initially hidden');
  for(const width of [320,360,390,430,768]){
@@ -192,6 +196,14 @@ try{
  await firstCard.dispatchEvent('pointerup',{pointerId:1,button:0,clientX:10,clientY:10});
  assert(await page.locator('.library-list-header').isVisible(),'Long press enters selection mode');
  assert(await page.locator('[data-act="library-export"]').isVisible(),'Bulk actions appear on selection');
+ assert(await page.locator('.library-list-header [data-library-select-all]').evaluate(input=>{
+  const indicator=input.nextElementSibling;
+  const r=indicator.getBoundingClientRect();
+  return input.type==='checkbox'&&r.width>=23&&r.height>=23&&
+   getComputedStyle(indicator).borderStyle==='solid';
+ }), 'Select-all has a properly sized custom control');
+ assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),2,
+  'Export and delete use styled controls in one selection toolbar');
  assert.equal(await page.locator('.library-creature-entry .library-batch-check:visible').count(),1);
  await page.locator('[data-library-select-all]').uncheck();
  assert.equal(await page.locator('.library-list-header').isVisible(),false,'Selection mode exits after deselect');
