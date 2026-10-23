@@ -74,3 +74,8 @@ test('a stalled catalog request has a bounded loading deadline',async()=>{
  assert.match(source,/sheetLoadingDeadline\(request,2500,"dei tratti"\)/);
  assert.match(source,/sheetLoadingDeadline\(request,3000,"delle regole"\)/);
 });
+
+test('live token updates do not restart the sheet while its main panel is loading',()=>{
+ assert.match(source,/if\(!state\.editor\|\|!app\.querySelector\('#sheet-play-view'\)\)\{\s*state\.sheetNeedsRefresh=true/);
+ assert.match(source,/if\(state\.page==='library'&&!state\.libraryMode&&state\.sheetNeedsRefresh\)/);
+});
