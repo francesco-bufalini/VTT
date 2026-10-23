@@ -4848,7 +4848,63 @@ async function handleSubmit(form){
     await fetchChat();
   }
 }
+let libraryPressTimer=null;
+let libraryPressStart=null;
+let libraryClickSuppression=null;
+function clearLibraryPress(){
+ if(libraryPressTimer!==null)clearTimeout(libraryPressTimer);
+ libraryPressTimer=null;libraryPressStart=null;
+}
+function toggleLibraryHoldSelection(id){
+ if(!id||state.page!=='library'||!state.libraryMode)return;
+ const entry=[...app.querySelectorAll('.library-creature-entry')]
+  .find(row=>row.dataset.libraryId===id&&!row.hidden);
+ if(!entry)return;
+ if(state.librarySelectedIds.has(id))state.librarySelectedIds.delete(id);
+ else state.librarySelectedIds.add(id);
+ syncLibrarySelectionUI();
+}
 function listen(){
+  // The roster is an ordinary tap target until held for 520 ms. Cancel
+  // on movement so vertical scrolling never unexpectedly selects a card.
+  document.addEventListener('pointerdown',e=>{
+    clearLibraryPress();
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button||e.button!==0||state.page!=='library'||!state.libraryMode)return;
+    libraryPressStart={id:button.dataset.id,x:e.clientX,y:e.clientY,pointerId:e.pointerId};
+    libraryPressTimer=setTimeout(()=>{
+      const id=libraryPressStart?.id;
+      if(!id)return;
+      libraryClickSuppression={id,until:performance.now()+900};
+      toggleLibraryHoldSelection(id);
+      clearLibraryPress();
+    },520);
+  },{passive:true});
+  document.addEventListener('pointermove',e=>{
+    if(!libraryPressStart||e.pointerId!==libraryPressStart.pointerId)return;
+    if(Math.hypot(e.clientX-libraryPressStart.x,e.clientY-libraryPressStart.y)>11)
+      clearLibraryPress();
+  },{passive:true});
+  document.addEventListener('pointerup',clearLibraryPress,{passive:true});
+  document.addEventListener('pointercancel',clearLibraryPress,{passive:true});
+  document.addEventListener('scroll',clearLibraryPress,true);
+  document.addEventListener('contextmenu',e=>{
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button)return;
+    e.preventDefault();clearLibraryPress();
+    if(libraryClickSuppression?.id===button.dataset.id&&performance.now()<libraryClickSuppression.until)return;
+    libraryClickSuppression={id:button.dataset.id,until:performance.now()+900};
+    toggleLibraryHoldSelection(button.dataset.id);
+  });
+  document.addEventListener('click',e=>{
+    const button=e.target?.closest?.('.library-index .creature-open');
+    if(!button||!libraryClickSuppression||button.dataset.id!==libraryClickSuppression.id)return;
+    if(performance.now()<libraryClickSuppression.until){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+    libraryClickSuppression=null;
+  },true);
+
   window.addEventListener('popstate',event=>{void restoreBrowserScreen(event.state?.__vttMobileScreen);});
   document.addEventListener("change",e=>{
     if(e.target?.id==="chat-author")state.chatAuthor=e.target.value||"";
