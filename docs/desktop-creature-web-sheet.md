@@ -67,7 +67,7 @@ that the import/save choosers open as separate windows and cancellation preserve
 the active web sheet. Both chooser cancellation checks passed on Windows.
 The fixture never writes personal creatures.
 
-Current evidence: 331 PWA unit tests pass; desktop browser scenarios additionally
+Current evidence after remote integration: 332 PWA unit tests pass; desktop browser scenarios additionally
 cover import/export, canceled choosers, write failures and partial imports without
 closing WebView. The mobile sheet browser scenarios
 pass at 320/360/390/430px and landscape; desktop browser and focused Godot tests
@@ -82,8 +82,16 @@ both CPU slices and includes its executable and Info.plist. Godot emits a generi
 framework/symlink notice on Windows; this bundled framework is flat and all three
 files were verified in the ZIP. This proves packaging, not execution on a Mac.
 An actual macOS runtime/Retina check remains outstanding.
+Both desktop export presets include `pwa/catalog/*.json`, including the trait-state
+catalog introduced by the remote merge, as well as the shared PWA modules.
+The enabled `addons/pwa_export` editor plugin adds original SVG/PNG files from
+`PwaHost.FILES` to desktop packages. Godot otherwise exports these imported images
+as textures and drops the source bytes required by the web server. This also
+preserves SVG sprites, which cannot be replaced by rasterized textures.
+The exported PCK was checked for all 76 required public/desktop assets, and the
+16 original SVG/PNG images were compared byte-for-byte with their sources.
 
-The latest earlier broad Godot fast suite passed its transport checks but timed out
+The current broad Godot fast suite passed its transport checks but timed out
 at `test_mobile_touch_layout.gd` after its 45-second bound.
 This is not evidence of a completed full-suite run. Linux web embedding remains
 disabled.

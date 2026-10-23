@@ -27,6 +27,7 @@ func dismiss() -> void:
 	hide()
 
 func _fit() -> void:
+	if not is_inside_tree(): return
 	var available := Vector2i(get_tree().root.get_visible_rect().size)
 	_available = available
 	var allowed := (available - MARGIN * 2).max(Vector2i.ONE)
