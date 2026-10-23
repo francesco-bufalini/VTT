@@ -84,3 +84,18 @@ test('manual bonuses are visible on their owning individual trait, not on siblin
  assert.deepEqual(traitBenefitGroups(card,{formula_bonuses:[row]},computed)[0].items.map(item=>item.value),['+2']);
  assert.deepEqual(traitBenefitGroups(sibling,{},computed),[]);
 });
+
+test('a trait-owned optional damage die persists its tracker and damage type',()=>{
+ const values={target:'attack_damage:item:blade',dice:'1d6',damage_type:'lightning',
+   tracker_id:'focus',tracker_cost:'2'};
+ const bonus=addBenefitPatch({},trait,'dice',values,'trait:abcd1000').dice_bonuses[0];
+ assert.equal(bonus.target,values.target);
+ assert.equal(bonus.origin_id,'feature:trait:'+trait.key);
+ assert.equal(bonus.damage_type,'lightning');
+ assert.equal(bonus.tracker_id,'focus');
+ assert.equal(bonus.tracker_cost,2);
+ assert.throws(()=>addBenefitPatch({},trait,'dice',{...values,tracker_cost:'0'},
+   'trait:abcd1001'),/Costo tracker/);
+ assert.throws(()=>addBenefitPatch({},trait,'dice',{...values,damage_type:'unknown'},
+   'trait:abcd1002'),/Tipo di danno/);
+});

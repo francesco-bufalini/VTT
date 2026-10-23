@@ -13,7 +13,7 @@ import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapVie
 import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
-import { traitBenefitGroups } from "./trait_benefits.js";
+import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
@@ -22,7 +22,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice} from "./sheet_roll_origin.js";
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 
@@ -38,7 +38,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -823,12 +823,20 @@ function mountTraitBenefitDialog(){
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
  const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
  const formInput=(label,name,placeholder='',type='text')=>'<label>'+esc(label)+'<input name="'+name+'" type="'+type+'" placeholder="'+esc(placeholder)+'" required></label>';
- const kinds=BENEFIT_TYPES;
+ const kinds=BENEFIT_TYPES,draftKind=state.traitPopupDraftKind||'bonus',draftTarget=state.traitPopupDraftTarget||'';
  const targets=[...BONUS_TARGETS,['attack_roll','Tiro per colpire'],['damage_roll','Tiri di danno'],['any_d20','Qualunque d20']];
  const diceTargets=[['ability_check','Prove di caratteristica'],['saving_throw','Tiri salvezza'],['attack_roll','Tiri per colpire'],['damage_roll','Tiri di danno'],['initiative','Iniziativa'],['any_d20','Qualunque d20']];
+ for(const choices of [targets,diceTargets])if(draftTarget&&!choices.some(([id])=>id===draftTarget))
+   choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
+ const trackerOptions=[['','Nessuno'],...(state.calculated?.trackers||[]).map(t=>[t.id,t.name])];
  const fields=[
-  ['bonus',formSelect('Tiro o valore','target',targets)+formInput('Formula','expression','Es. 1 oppure proficiency')],
-  ['dice',formSelect('Tipo di tiro','target',diceTargets)+formInput('Dadi','dice','Es. 1d4')],
+  ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
+     formInput('Formula','expression','Es. 1 oppure proficiency')],
+  ['dice',formSelect('Tipo di tiro','target',diceTargets).replace('name="target"','name="target" data-trait-target')+
+     formInput('Dadi','dice','Es. 1d4')+
+     formSelect('Tipo di danno (facoltativo)','damage_type',[['','Nessuno'],...DAMAGE_TYPES.map(id=>[id,rollDamageName(id)])])+
+     formSelect('Tracker associato','tracker_id',trackerOptions)+
+     formInput('Utilizzi consumati','tracker_cost','1','number')],
   ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
   ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
     [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
@@ -863,17 +871,20 @@ function mountTraitBenefitDialog(){
      '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
    (hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
    '<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
-   '<section class="trait-benefits-add-form" hidden data-trait-add-form>'+
+   '<section class="trait-benefits-add-form"'+(state.traitPopupDraftKind?'':' hidden')+' data-trait-add-form>'+
     '<h3>Nuovo beneficio</h3>'+
-    formSelect('Tipo di beneficio','benefit_type',kinds).replace('name="benefit_type"','name="benefit_type" data-trait-add-kind')+
-    fields.map(([kind,html])=>'<div class="trait-benefits-fields" data-trait-fields="'+kind+'"'+(kind==='bonus'?'':' hidden')+'>'+html+'</div>').join('')+
+    formSelect('Tipo di beneficio','benefit_type',kinds).replace('name="benefit_type"','name="benefit_type" data-trait-add-kind').replace('value="'+draftKind+'"','value="'+draftKind+'" selected')+
+    fields.map(([kind,html])=>'<div class="trait-benefits-fields" data-trait-fields="'+kind+'"'+(kind===draftKind?'':' hidden')+'>'+html+'</div>').join('')+
     '<div class="actions"><button type="button" class="btn primary" data-act="trait-benefits-save">Salva beneficio</button>'+
     '<button type="button" class="btn" data-act="trait-benefits-cancel-add">Annulla</button></div>'+
    '</section>'+
   '</div>';
  app.append(dialog);
- dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
- dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
+ const trackerCost=dialog.querySelector('[data-trait-fields="dice"] [name="tracker_cost"]');
+ if(trackerCost)trackerCost.value='1';
+ dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';dialog.close();});
+ dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';dialog.close();});
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 function documentRow(item,index,stored){
@@ -2548,8 +2559,7 @@ function rollDieResultMarkup(outcome){
      '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join('')+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
- return [...dialog.querySelectorAll('[data-roll-bonus]:checked')]
-  .map(input=>dialog.rollBonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+ return [...(dialog.usedRollBonuses||[])];
 }
 function rollBonusTerm(row){
  return {key:'roll-extra:'+String(row.selectionId||row.id),kind:'dice',
@@ -2557,12 +2567,45 @@ function rollBonusTerm(row){
   originId:row.origin_id||'',originName:row.origin_name||'Bonus',
   section:row.origin_id?'':'formula_bonuses'};
 }
+// Roll popups navigate only to concrete owned traits. The picker always uses
+// the current calculated trait projection (including equipped item traits).
+async function openRollTraitPicker(kind='bonus',target=''){
+ state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+ state.sheet='info';await render();
+ const traits=(state.traitRows||[]).filter(trait=>!trait.inactive);
+ if(!traits.length){message('Nessun tratto disponibile a cui associare il beneficio.',true);return;}
+ document.querySelector('#roll-trait-picker')?.remove();
+ const picker=document.createElement('dialog');picker.id='roll-trait-picker';picker.className='trait-benefits-dialog';
+ picker.dataset.benefitKind=kind;picker.dataset.benefitTarget=target;
+ picker.innerHTML='<header class="trait-benefits-dialog-head"><h2>Seleziona il tratto che concede il bonus</h2>'+
+  '<button type="button" class="trait-benefits-close" data-act="roll-trait-cancel" aria-label="Chiudi">×</button></header>'+
+  '<div class="trait-benefits-dialog-body"><label>Tratto<select data-roll-trait-key>'+
+  traits.map(row=>'<option value="'+esc(row.key)+'">'+esc(row.origin+' · '+row.name)+'</option>').join('')+
+  '</select></label><div class="actions"><button type="button" class="btn primary" data-act="roll-trait-pick">Continua</button></div></div>';
+ document.body.append(picker);picker.addEventListener('close',()=>picker.remove(),{once:true});
+ picker.showModal?.();
+}
+async function openRollTraitOrigin(originId){
+ state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+ state.sheet='info';await render();
+ const record=state.editor?.read()||{};
+ const candidates=(state.traitRows||[]).map(row=>({
+  row,score:row.feature_origin===originId||row.proficiency_origin===originId?5:
+    row.origin_key===originId?4:traitBenefitSources(row,record).has(originId)?3:0
+ })).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||b.row.rank-a.row.rank);
+ const trait=candidates[0]?.row;
+ if(!trait){
+   message('Origine non riconducibile a un tratto della creatura. Seleziona il tratto corretto.',true);
+   await openRollTraitPicker('bonus','');return;
+ }
+ state.traitPopupKey=trait.key;mountTraitBenefitDialog();
+}
 function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
  document.querySelector('#sheet-roll-dialog')?.remove();
  const dialog=document.createElement('dialog');
  dialog.id='sheet-roll-dialog';dialog.className='sheet-roll-dialog sheet-roll-preview';
  dialog.dataset.rollKind=kind;dialog.dataset.creatureId=creatureId;
- dialog.rollBonuses=bonuses;
+ dialog.rollBonuses=bonuses;dialog.usedRollBonuses=[];
  if(kind==='damage'){
    dialog.dataset.damageFormula=damageFormula;dialog.dataset.damageType=damageType;
    dialog.dataset.damageLabel=damageLabel;
@@ -2577,23 +2620,25 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
      '<option value="disadvantage">Aggiungi svantaggio</option>';
  const select='<label class="sheet-roll-mode-control">Modalità del tiro'+
    '<select data-roll-mode'+(kind==='damage'?' disabled aria-label="I danni non prevedono vantaggio o svantaggio"':'')+'>'+mode+'</select></label>';
- const bonusList=bonuses.length?
-   '<div class="sheet-roll-bonus-list" data-roll-extra role="group" aria-label="Bonus disponibili">'+
-   bonuses.map((row,i)=>'<label class="sheet-roll-bonus-choice"><input type="checkbox" data-roll-bonus="'+i+'">'+
-     '<span class="sheet-roll-bonus-detail"><strong>'+esc(row.dice)+'</strong>'+
-     '<small>'+esc(row.origin_name||'Bonus')+'</small>'+
-     (row.damage_type?'<small>'+esc(rollDamageName(row.damage_type))+'</small>':'')+'</span>'+
-     (row.remaining!=null?'<span class="sheet-roll-bonus-tracker">'+esc(row.remaining)+' / '+esc(
-       Number(row.remaining)+Number(row.spent||0))+
-       '<small>'+esc(row.tracker_name||'Utilizzi')+'</small></span>':'')+
-     '</label>').join('')+'</div>':'';
+ const bonusList='<div class="sheet-roll-bonuses-head"><strong>Bonus applicabili al tiro</strong>'+
+   '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-applicable" aria-label="Aggiungi tiro applicabile" title="Aggiungi tiro applicabile">+</button></div>'+
+   (bonuses.length?'<div class="sheet-roll-bonus-list" data-roll-extra role="group" aria-label="Bonus disponibili">'+
+     bonuses.map((row,i)=>'<div class="sheet-roll-origin-term sheet-roll-bonus-term">'+
+       '<button type="button" class="sheet-roll-bonus-source" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="Apri tratto">'+
+       '<span class="sheet-roll-origin-symbol">+'+esc(row.dice)+'</span>'+
+       (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
+       '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
+       '<div class="sheet-roll-bonus-controls"><small data-roll-tracker-count="'+i+'">'+
+       (row.remaining==null?'Senza tracker':esc(row.tracker_name||'Utilizzi')+' · '+esc(row.remaining)+' rim.')+
+       '</small><button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'">Usa</button></div></div>').join('')+
+    '</div>':'');
  dialog.innerHTML='<h2>'+esc(heading)+
    '<button type="button" class="sheet-roll-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
    '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
    '<div class="sheet-roll-math"><span>Tipo di tiro</span><strong>'+esc(rollType)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
      '<div class="sheet-roll-formula-line"><div data-roll-formula>'+formula+'</div>'+
-     (bonuses.length?'<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-bonus" aria-label="Mostra o nascondi bonus al tiro" title="Bonus al tiro">+</button>':'')+'</div></div>'+
+     '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-bonus" aria-label="Aggiungi bonus alla formula" title="Aggiungi bonus alla formula">+</button></div></div>'+
    bonusList+'<div class="sheet-roll-result" data-roll-result hidden aria-live="polite"></div>'+
    '<div class="actions sheet-roll-actions">'+select+
      btn('roll-sheet-confirm',kind==='damage'?'Tira danni':'Tira 1d20','primary')+'</div>';
@@ -3090,7 +3135,9 @@ async function handleAction(target){
     const attack=(calculated.attacks||[]).find(row=>
       String(row.id)===attackId&&
       String(row.damage||'').replace(/\s+/g,'')===formula.replace(/\s+/g,''));
-    const preview=damageRollTerms(formula,type,attack||null);
+    const attackOrigin=attackGrantOrigin(calculated,attackId);
+    const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
+    const preview=damageRollTerms(formula,type,sourceAttack);
     const bonuses=rollOptionalDice(creature,calculated,
       applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[]),
       {kind:'damage',attackId});
@@ -3098,19 +3145,66 @@ async function handleAction(target){
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
     dialog.dataset.damageAttackId=attackId;
-    dialog.rollAttack=attack||null;
-    dialog.addEventListener('change',event=>{
-      if(!event.target.matches('[data-roll-bonus]'))return;
-      dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
-        [...damageRollTerms(formula,type,dialog.rollAttack).segments,...chosenRollBonuses(dialog).map(rollBonusTerm)],esc);
-    });
+    dialog.rollAttack=sourceAttack;
+    dialog.renderRollFormula=()=>{dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
+        [...damageRollTerms(formula,type,dialog.rollAttack).segments,...chosenRollBonuses(dialog).map(rollBonusTerm)],esc);};
     return;
   }
-  if(act==='sheet-roll-add-bonus'){
+  if(act==='roll-trait-cancel'){
+    const picker=document.querySelector('#roll-trait-picker');
+    picker?.close?.();picker?.remove();return;
+  }
+  if(act==='roll-trait-pick'){
+    const picker=document.querySelector('#roll-trait-picker');
+    const key=picker?.querySelector('[data-roll-trait-key]')?.value;
+    if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
+    const kind=picker.dataset.benefitKind,targetKey=picker.dataset.benefitTarget;
+    picker.close?.();picker.remove();
+    state.traitPopupKey=key;state.traitPopupConfirm='';
+    state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
+    mountTraitBenefitDialog();return;
+  }
+  if(act==='sheet-roll-add-bonus'||act==='sheet-roll-add-applicable'){
     const dialog=document.querySelector('#sheet-roll-dialog');
-    const panel=dialog?.querySelector('[data-roll-extra]');
-    if(panel)panel.hidden=!panel.hidden;
+    if(!dialog)return;
+    const kind=act==='sheet-roll-add-bonus'?'bonus':'dice';
+    const target=dialog.dataset.rollKind==='damage'?
+      'attack_damage:'+String(dialog.dataset.damageAttackId||''):String(dialog.dataset.rollTarget||'');
+    dialog.close?.();dialog.remove();
+    await openRollTraitPicker(kind,target);return;
+  }
+  if(act==='sheet-roll-use-bonus'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    if(!dialog||dialog.dataset.rolling==='true')return;
+    const index=Number(target.dataset.rollUse),row=dialog.rollBonuses[index];
+    if(!row||chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
+    const creature=state.editor?.read();
+    if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(row.tracker_id){
+      const fresh=await computeLocalData(creature);
+      const tracker=(fresh.trackers||[]).find(t=>t.id===row.tracker_id&&!t.disabled);
+      if(!tracker)throw Error('Tracker non disponibile');
+      const remaining=Number(tracker.max||0)-Number(tracker.spent||0);
+      if(remaining<Math.max(1,Number(row.tracker_cost)||1))
+        message('Attenzione: '+(tracker.name||'risorsa')+' esaurito; il bonus viene usato comunque.',true);
+      const used={...(creature.resource_tracker_spent||{})};
+      used[row.tracker_id]=(Number(used[row.tracker_id])||0)+Math.max(1,Number(row.tracker_cost)||1);
+      await patch({resource_tracker_spent:used});
+      const count=dialog.querySelector('[data-roll-tracker-count="'+index+'"]');
+      if(count)count.textContent=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
+    }
+    dialog.usedRollBonuses.push(row);
+    target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
+    dialog.renderRollFormula?.();
     return;
+  }
+  if(act==='roll-origin-open'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    const originId=String(target.dataset.originId||''),section=String(target.dataset.originSection||'');
+    dialog?.close?.();dialog?.remove();
+    if(originId){await openRollTraitOrigin(originId);return;}
+    if(section==='conditions'){state.sheet='conditions';await render();return;}
+    await openRollTraitPicker('bonus',dialog?.dataset.rollTarget||'');return;
   }
   if(act==='sheet-roll'){
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
@@ -3134,23 +3228,13 @@ async function handleAction(target){
     const dialog=openUnifiedRollDialog({kind:'d20',heading:rollHeading(label,key),rollLabel:label,modifier,
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
-    dialog.addEventListener('change',event=>{
-      if(!event.target.matches('[data-roll-bonus],[data-roll-mode]'))return;
-      const selected=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>bonuses[Number(input.dataset.rollBonus)]).filter(Boolean);
+    dialog.renderRollFormula=()=>{
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
-      if(formula)formula.innerHTML=formulaMarkup(selected,choice);
-    });
-    dialog.addEventListener('click',event=>{
-      const button=event.target.closest('[data-act="roll-origin-open"]');
-      if(!button)return;
-      event.stopPropagation(); // The global delegated click listener must not handle this twice.
-      const originId=button.dataset.originId,section=button.dataset.originSection;
-      dialog.close?.();dialog.remove();
-      const actionTarget={dataset:originId?{act:'power-trait',originId}:
-        section==='conditions'?{act:'sheet',sheet:'conditions'}:
-          {act:'sheet-details',detail:section||'proficiency_choices'}};
-      void handleAction(actionTarget).catch(error=>message(errorMessage(error),true));
+      if(formula)formula.innerHTML=formulaMarkup(chosenRollBonuses(dialog),choice);
+    };
+    dialog.addEventListener('change',event=>{
+      if(event.target.matches('[data-roll-mode]'))dialog.renderRollFormula();
     });
     return;
   }
@@ -3165,12 +3249,7 @@ async function handleAction(target){
     try{
       const result=dialog.querySelector('[data-roll-result]');
       if(dialog.dataset.rollKind==='damage'){
-        const fresh=await computeLocalData(creature),attackId=dialog.dataset.damageAttackId;
-        const available=rollOptionalDice(creature,fresh,
-          applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[]),
-          {kind:'damage',attackId});
-        const chosen=chosenRollBonuses(dialog).map(row=>
-          available.find(item=>item.selectionId===row.selectionId)).filter(Boolean);
+        const chosen=chosenRollBonuses(dialog);
         const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>'+'+row.dice).join('');
         const outcome=rollBattleDamage(fullFormula,randomDie);
         state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
@@ -3178,34 +3257,14 @@ async function handleAction(target){
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
-        const spends=chosen.filter(row=>row.tracker_id&&row.tracker_cost);
-        if(spends.length){
-          const used={...creature.resource_tracker_spent};
-          for(const row of spends)used[row.tracker_id]=(Number(used[row.tracker_id])||0)+row.tracker_cost;
-          try{await patch({resource_tracker_spent:used});}
-          catch(error){message('Tiro registrato; consumo risorsa non salvato: '+errorMessage(error),true);}
-        }
-        const latest=state.editor.read(),again=await computeLocalData(latest);
-        const remaining=rollOptionalDice(latest,again,
-          applicableDiceBonuses(latest,'attack_damage:'+attackId,state.spellCatalog||[]),
-          {kind:'damage',attackId});
-        for(const input of dialog.querySelectorAll('[data-roll-bonus]')){
-          const original=dialog.rollBonuses[Number(input.dataset.rollBonus)];
-          if(!remaining.some(row=>row.selectionId===original?.selectionId)){
-            input.checked=false;input.disabled=true;
-          }
-        }
-        dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
-          [...damageRollTerms(dialog.dataset.damageFormula,dialog.dataset.damageType,
-             dialog.rollAttack).segments,...chosenRollBonuses(dialog).map(rollBonusTerm)],esc);
+        // Usage was spent by the explicit Usa action. Rerolling in this dialog
+        // must not silently consume the same tracker again.
+        dialog.renderRollFormula?.();
       }else{
         const key=dialog.dataset.rollTarget,label=dialog.dataset.rollLabel;
         const calculated=await computeLocalData(creature),modifier=calculated.values[key];
         if(!Number.isFinite(modifier))throw Error('Modificatore non disponibile.');
-        const bonuses=rollOptionalDice(creature,calculated,
-          applicableDiceBonuses(creature,key,state.spellCatalog||[]),{kind:'d20'});
-        const chosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
-          currentlyAvailableRollBonus(dialog.rollBonuses[Number(input.dataset.rollBonus)],bonuses)).filter(Boolean);
+        const chosen=chosenRollBonuses(dialog);
         const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
         const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
         const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
@@ -3213,20 +3272,15 @@ async function handleAction(target){
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
-        const tracked=chosen.filter(row=>row.tracker_id&&row.tracker_cost);
-        if(tracked.length){
-          const used={...creature.resource_tracker_spent};
-          for(const row of tracked)used[row.tracker_id]=(Number(used[row.tracker_id])||0)+row.tracker_cost;
-          try{await patch({resource_tracker_spent:used});}
-          catch(error){message('Tiro registrato; consumo risorsa non salvato: '+errorMessage(error),true);}
-        }
+        // Tracker uses were spent at selection time, never again on rerolls.
         const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
         if(consumed.size){
           // The next throw is independent. Previously consumed spell bonuses
           // must not be selectable or silently re-applied on a second click.
-          for(const input of dialog.querySelectorAll('[data-roll-bonus]:checked')){
-            const row=dialog.rollBonuses[Number(input.dataset.rollBonus)];
-            if(consumed.has(row?.consumes_spell)){input.checked=false;input.disabled=true;}
+          dialog.usedRollBonuses=dialog.usedRollBonuses.filter(row=>!consumed.has(row.consumes_spell));
+          for(const button of dialog.querySelectorAll('[data-roll-use]')){
+            const row=dialog.rollBonuses[Number(button.dataset.rollUse)];
+            if(consumed.has(row?.consumes_spell)){button.disabled=true;button.textContent='Esaurito';}
           }
           try{
             const live=state.editor.read(),contexts={...live.active_spell_context},enabled={...live.origin_enabled};
@@ -3238,25 +3292,8 @@ async function handleAction(target){
         }
         // Keep the next-roll formula in sync with the controls even after a
         // once-only bonus is consumed. Each click produces a new history entry.
-        const current=state.editor.read();
-        const fresh=await computeLocalData(current);
-        const freshBonuses=rollOptionalDice(current,fresh,
-          applicableDiceBonuses(current,key,state.spellCatalog||[]),{kind:'d20'});
-        // Consuming a spell shifts the current bonus array. The original
-        // checkbox index must never select an unrelated bonus.
-        for(const input of dialog.querySelectorAll('[data-roll-bonus]')){
-          const original=dialog.rollBonuses[Number(input.dataset.rollBonus)];
-          if(!currentlyAvailableRollBonus(original,freshBonuses)){
-            input.checked=false;input.disabled=true;
-          }
-        }
-        const stillChosen=[...dialog.querySelectorAll('[data-roll-bonus]:checked')].map(input=>
-          currentlyAvailableRollBonus(dialog.rollBonuses[Number(input.dataset.rollBonus)],freshBonuses)).filter(Boolean);
-        const effective=resolveClassRollMode(classFeatureRollSources(current,fresh,key),choice);
-        dialog.querySelector('[data-roll-formula]').innerHTML=sheetRollOriginHtml(
-          sheetRollOriginSegments(current,fresh,key,{mode:effective.mode,
-            modeSources:effective.sources,cancelled:effective.cancelled,
-            diceBonuses:stillChosen}),esc);
+        // Keep the per-dialog selection until the popup closes.
+        dialog.renderRollFormula?.();
       }
       if(state.paired&&state.online){
         try{await shareRoll({quiet:true});}
@@ -3403,6 +3440,7 @@ async function handleAction(target){
   }
   if(act==='trait-benefits-open'){
     if(state.sheet!=='info')return;
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     const key=target.dataset.traitKey;
     if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
     state.traitPopupKey=key;state.traitPopupConfirm='';
@@ -3410,6 +3448,7 @@ async function handleAction(target){
   }
   if(act==='trait-benefits-close'){
     state.traitPopupKey='';state.traitPopupConfirm='';
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     const dialog=app.querySelector('#trait-benefits-dialog');
     if(dialog?.close)dialog.close();else dialog?.remove();
     return;
@@ -3417,6 +3456,9 @@ async function handleAction(target){
   if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
     const editor=app.querySelector('#trait-benefits-dialog [data-trait-add-form]');
     if(editor)editor.hidden=act!=='trait-benefits-add';
+    if(act==='trait-benefits-cancel-add'){
+      state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+    }
     return;
   }
   if(act==='trait-benefits-save'){
@@ -3438,7 +3480,7 @@ async function handleAction(target){
     // form from lingering after Save, without discarding it on save failure.
     const form=dialog?.querySelector('[data-trait-add-form]');
     if(form)form.hidden=true;
-    state.traitPopupConfirm='';
+    state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     await render();return;
   }
   if(act==='trait-benefits-remove-request'){
@@ -4158,7 +4200,7 @@ function listen(){
       else await handleAction(button);
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
-    finally{if(button.isConnected)button.disabled=false;}
+    finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
   });
   document.addEventListener('keydown',e=>{
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');

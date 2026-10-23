@@ -36,12 +36,41 @@ function trainingRank(calculated,target){
    return list(calculated?.attacks).find(a=>'attack_hit:'+a.id===target)?.proficient?1:0;
  return 0;
 }
+// Return a concrete granting trait instead of routing proficiency to the retired editor.
+export function attackGrantOrigin(calculated,target){
+ const id=String(target||'').replace(/^attack_hit:/,'');
+ const attack=list(calculated?.attacks).find(row=>row.id===id);
+ if(attack?.origin_id)return String(attack.origin_id);
+ if(id.startsWith('infusion:'))return id;
+ if(id.startsWith('item:')){
+  // Offhand and thrown attacks still belong to the same equipped item trait.
+  const key=id.replace(/^item:(?:off:|throw:(?:main|off):)?/,'');
+  return 'item:'+key;
+ }
+ if(id.startsWith('shield:improvised:'))return 'item:'+id.split(':').slice(3).join(':');
+ if(id.startsWith('monster:'))return 'monster|'+id.split(':')[1];
+ if(id.startsWith('class_feature:')){
+  const normalized=id.slice('class_feature:'.length).replace(/_/g,' ').toLowerCase();
+  return String(list(calculated?.features).find(row=>String(row.name||'').toLowerCase()===normalized)?.origin_id||'');
+ }
+ return '';
+}
 function trainingOrigin(record,target,calculated){
  const kind=target.startsWith('skill:')?'skill':target.startsWith('save:')?'save':'';
  const key=target.split(':')[1]||'';
- const declared=kind==='skill'&&trainingRank(calculated,target)===2?
-   list(calculated?.proficiency_sources?.['expertise:'+key]):
-   list(calculated?.proficiency_sources?.[kind+':'+key]);
+ const sourceItem=attackGrantOrigin(calculated,target);
+ const owned=list(record?.inventory).find(row=>'item:'+row.id===sourceItem);
+ const weaponKeys=new Set(['weapon:all']);
+ if(owned?.name)weaponKeys.add('weapon:'+String(owned.name).toLowerCase());
+ if(owned?.weapon_category)weaponKeys.add('weapon:'+String(owned.weapon_category).toLowerCase());
+ const candidates=target.startsWith('attack_hit:')?
+   Object.entries(calculated?.proficiency_sources||{})
+    .filter(([sourceKey])=>weaponKeys.has(sourceKey))
+    .flatMap(([,sources])=>list(sources)):
+   kind==='skill'&&trainingRank(calculated,target)===2?
+     list(calculated?.proficiency_sources?.['expertise:'+key]):
+     list(calculated?.proficiency_sources?.[kind+':'+key]);
+ const declared=candidates;
  if(declared.length)return {id:declared[0].id,name:declared[0].name};
  const choices=list(record?.proficiency_choices);
  const row=choices.find(c=>!c?.disabled&&(c.kind===kind||
@@ -112,7 +141,7 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  const base={kind:'base',formula:'1d20'+(ability?' + Mod.'+abilityNames[ability]:
    monsterAttack?' + Attacco del bestiario':' + Base'),
    expanded:'1d20 '+signed(monsterAttack?total-consumed:core),value:monsterAttack?total-consumed:core,
-   originName:'Base · regole',originId:'',key:'base'};
+   originName:'Base · regole',originId:target.startsWith('attack_hit:')?attackGrantOrigin(calculated,target):'',key:'base'};
  if(!monsterAttack&&Math.abs(remainder)>0.000001)result.push({
    kind:'rules',formula:(remainder<0?'−':'+')+' Altri modificatori',
    expanded:signed(remainder),value:remainder,originName:'Contributo non attribuito',
@@ -220,7 +249,7 @@ export function damageRollSegments(roll,type='',attack=null){
    return {key:'damage:'+index,kind:base?'base':'formula',
      formula:(base?'':' + ')+formula+(base?damageModifierExpression(modifier,attack,notation):''),
      expanded:'',damageType:group.damageType,originName:base?'Danno base':'Danno aggiuntivo',
-     originId:'',value:base?modifier:0};
+     originId:base?String(attack?.origin_id||''):'',value:base?modifier:0};
  });
 }
 export const rollDamageName=type=>{
@@ -242,7 +271,7 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
   const tracker=row.tracker_id?trackerFor(row.tracker_id):null;
   if(row.tracker_id&&!tracker)continue;
   const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):null;
-  if(remaining!==null&&remaining<Math.max(1,Number(row.tracker_cost)||1))continue;
+  // Exhausted trackers remain usable by explicit choice; the caller warns before overspending.
   result.push({...row,selectionId:'bonus:'+i,remaining,
     spent:tracker?Number(tracker.spent||0):null,
     tracker_name:tracker?.name||'',tracker_cost:tracker?Math.max(1,Number(row.tracker_cost)||1):0});
@@ -250,7 +279,7 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
  if(kind==='damage'&&attackId==='class_feature:lightning_launcher'){
   const tracker=trackerFor('feature:lightning_launcher:extra_damage');
   const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
-  if(remaining>0)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
+  if(tracker)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
    dice:'1d6',damage_type:'lightning',origin_name:'Lightning Launcher',
    origin_id:tracker.origin_id,tracker_id:tracker.id,tracker_cost:1,
    tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
@@ -260,7 +289,7 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
-   const clickable=row.kind!=='base'&&(row.originId||row.section);
+   const clickable=Boolean(row.originId||row.section);
    const tag=clickable?'button':'div';
    return '<'+tag+(clickable?' type="button" data-act="roll-origin-open" data-origin-id="'+esc(row.originId)+'" data-origin-section="'+esc(row.section||'')+'"':'')+
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+

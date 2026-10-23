@@ -150,7 +150,7 @@ try{
    'The weapon name alone identifies this damage roll');
  assert.match(await rollDialog.locator('.sheet-roll-origin-symbol').first().textContent(),
    /Mod.FOR/,'Original weapon damage must name its actual attack characteristic');
- assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),1);
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-term').count(),1);
  await rollDialog.locator('.sheet-roll-close').click();
  // A second synthetic fire damage component gets its own damage-type row.
  await damageButton.evaluate(node=>{
@@ -169,11 +169,11 @@ try{
  assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
    'Damage rolls must not offer an advantage/disadvantage mechanic');
  assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco']);
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').allTextContents(),
    ['1d6 + Modificatore',' + 2d4']);
- assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),2,
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-term').count(),2,
    'Base dice and their modifier must stay in the same compact tile');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
  assert(await rollDialog.locator('.sheet-roll-origin-term').first().evaluate(node=>{
@@ -183,19 +183,24 @@ try{
  }),'Damage formula tiles must remain compact and fit within the dialog');
  assert.equal(await rollDialog.locator('[data-roll-add-status]').count(),0);
  assert.equal(await rollDialog.locator('[data-roll-chat-status]').count(),0);
- assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
- assert.match(await rollDialog.locator('.sheet-roll-bonus-choice').textContent(),/Carica fulmine/);
- assert.match(await rollDialog.locator('.sheet-roll-bonus-tracker').textContent(),/5 \/ 7/);
- await rollDialog.locator('[data-roll-bonus]').check();
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+ assert.match(await rollDialog.locator('.sheet-roll-bonuses-head').textContent(),/Bonus applicabili al tiro/);
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-applicable"]').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-term').count(),1);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-term').textContent(),/Carica fulmine/);
+ assert.match(await rollDialog.locator('[data-roll-tracker-count]').textContent(),/5 rim/);
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').count(),2);
+ await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').click();
+ await page.waitForFunction(()=>document.querySelector('#sheet-roll-dialog [data-act="sheet-roll-use-bonus"]')?.textContent==='Usato');
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').isDisabled(),true);
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco','Fulmine']);
- assert.equal(await rollDialog.locator('.sheet-roll-origin-symbol').last().textContent(),'+1d6');
- assert(await rollDialog.locator('.sheet-roll-origin-damage-type').last().evaluate(node=>
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').last().textContent(),'+1d6');
+ assert(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').last().evaluate(node=>
    getComputedStyle(node).whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1));
- await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
- assert.equal(await rollDialog.locator('[data-roll-extra]').isVisible(),false);
- assert.equal(await rollDialog.locator('[data-roll-bonus]').isChecked(),true);
- await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
+ });
  const layout=async()=>rollDialog.evaluate(dialog=>{
    const mode=dialog.querySelector('[data-roll-mode]').getBoundingClientRect();
    const button=dialog.querySelector('[data-act="roll-sheet-confirm"]').getBoundingClientRect();
@@ -223,7 +228,7 @@ try{
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
  await page.waitForFunction(async()=>{
    const {listCreatures}=await import('/creatures.js');
-   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===4;
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
  });
  await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
@@ -235,7 +240,7 @@ try{
    'Tiro per colpire · Mischia');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
- assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-term').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
  // The fixture is Poisoned: its attack disadvantage cancels manually selected advantage.
  await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
@@ -300,8 +305,8 @@ try{
  const focusResource=resourcesPanel.locator('[data-resource-tracker="focus"] .play-resource-info');
  assert.equal(await focusResource.locator('.play-resource-name').textContent(),'Focus arcano');
  assert.equal(await focusResource.locator('.play-resource-recovery').textContent(),'Recupero: riposo breve');
- assert.match(await focusResource.locator('.play-resource-count').textContent(),/3\s*\/\s*7/,
-   'The two optional bonus rolls already consumed two Focus uses');
+ assert.match(await focusResource.locator('.play-resource-count').textContent(),/4\s*\/\s*7/,
+   'The explicit Use action consumed one Focus use across two damage rolls');
  const resourceWeight=await focusResource.locator('.play-resource-name').evaluate(node=>Number(getComputedStyle(node).fontWeight));
  const abilityWeight=await resourcesPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
  assert(resourceWeight>abilityWeight,'Resource name has stronger emphasis than its abilities');
@@ -345,9 +350,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
- // Restore two previously spent Focus uses using the normal controls;
- // subsequent spell/action tests keep their original available budget.
- for(const spent of [3,2]){
+ // Restore the one use spent through the optional-die Use button.
+ for(const spent of [2]){
    await page.locator('#sheet-context-dialog [data-act="tracker-less"][data-tracker-id="focus"]').click();
    await page.waitForFunction(async expected=>{
      const {listCreatures}=await import('/creatures.js');
@@ -440,9 +444,27 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
  const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
  assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
- assert.equal(await granted.getAttribute('open'),'');
- assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
- assert.match(await granted.textContent(),/Intelligenza/);
+ assert.equal(await page.locator('#trait-benefits-dialog').count(),1,
+   'Clicking a proficiency term opens its actual trait benefits dialog');
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ // Formula + and applicable + both choose a concrete trait and initialize
+ // the correct benefit type and target, without saving a draft.
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-bonus"]').click();
+ assert.equal(await page.locator('#roll-trait-picker').count(),1);
+ await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-form]').isVisible(),true);
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'bonus');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]').inputValue(),'save:int');
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-applicable"]').click();
+ await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'dice');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="target"]').inputValue(),'save:int');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="tracker_id"]').count(),1);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
