@@ -3076,3 +3076,62 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .stats-abilities-panel .native-ability-score .score-editor-trigger{
  font-size:18px;
 }
+
+/* Native-parity structured choices: compact warnings and origin pickers. */
+.sheet-play-view .pending-choices-notice{
+ margin:0 0 14px;padding:10px 13px 8px;
+ border:1px solid #b68a4c65;border-radius:11px;
+ background:linear-gradient(112deg,#71533226,#261f1d20);
+ color:#f0d2aa;
+}
+.pending-choices-notice-head{
+ display:flex;gap:9px;align-items:center;padding:0 1px 7px;
+ font:600 12px/1.4 system-ui,sans-serif;letter-spacing:.025em;
+}
+.pending-choices-notice-head>span{color:#d8a868;font-size:20px;line-height:1}
+.pending-choices-notice-list{display:grid;gap:0}
+.pending-choices-notice-list button{
+ appearance:none;background:transparent;border:0;border-top:1px solid #b68a4c25;
+ color:inherit;padding:9px 2px;width:100%;min-height:39px;text-align:left;
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ font:500 12px/1.4 system-ui,sans-serif;cursor:pointer;
+}
+.pending-choices-notice-list button>span:last-child{flex-shrink:0;color:#d2a46c;font-variant-numeric:tabular-nums}
+.pending-choices-notice-list button small{color:#bca891;font-size:11px}
+.pending-choices-notice-list button:hover{color:#ffe7c4;background:#d5a56c0b}
+.pending-choices-manage{
+ appearance:none;background:transparent;border:1px solid #b68a4c56;
+ border-radius:7px;color:#d7ba95;padding:5px 9px;min-height:30px;
+ cursor:pointer;font:500 11px/1.3 system-ui,sans-serif;
+}
+.pending-choices-manage:hover{border-color:#d5aa73;background:#d5aa7313}
+.pending-choice-dialog.sheet-context-dialog{
+ width:min(490px,calc(100vw - 28px));max-height:min(85dvh,800px);
+ border-radius:13px;border:1px solid #a782537a;background:#211b19;
+ color:#ebdbc6;padding:0;overflow:auto;
+}
+.pending-choice-dialog .sheet-context-head{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid #b68a4c35}
+.pending-choice-dialog .sheet-context-head small{color:#b79c7a;font-size:11px}
+.pending-choice-dialog .sheet-context-head h2{font-size:17px;margin:3px 0 0}
+.pending-choice-dialog-body{padding:13px 18px 10px}
+.pending-choice-instruction{margin:0 0 8px;color:#c3b19c;font-size:12px;line-height:1.5}
+.pending-choice-progress{margin:0 0 9px;color:#d7af76;font-size:11px;font-variant-numeric:tabular-nums}
+.pending-choice-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:5px;max-height:45dvh;overflow-y:auto}
+.pending-choice-option{
+ display:flex;align-items:center;gap:9px;min-height:37px;
+ border:1px solid #b68a4c29;border-radius:7px;padding:7px 10px;
+ color:#dfd0bc;background:#ffffff06;cursor:pointer;font-size:12px;
+}
+.pending-choice-option:has(input:checked){background:#b68a4c21;border-color:#b68a4c7d;color:#ffe4bc}
+.pending-choice-option input{accent-color:#d5aa72;width:16px;height:16px;margin:0;flex:none}
+.pending-choice-option:has(input:disabled:not(:checked)){opacity:.48;cursor:default}
+.pending-choice-actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px 16px;border-top:1px solid #b68a4c30}
+.pending-choice-actions button{
+ background:transparent;color:#cfbaa0;border:1px solid #b68a4c56;border-radius:7px;
+ font:600 12px/1.4 system-ui,sans-serif;padding:7px 13px;min-height:34px;cursor:pointer;
+}
+.pending-choice-actions button:last-child{color:#ffe0b1;border-color:#c99e65a0;background:#79583975}
+.pending-choice-actions button:disabled{opacity:.42;cursor:default}
+.pending-choice-actions button:hover:not(:disabled){border-color:#e0b57b}
+.pending-choices-notice-list button:focus-visible,.pending-choices-manage:focus-visible,
+.pending-choice-dialog button:focus-visible,.pending-choice-option:focus-within{outline:2px solid #e0b57b;outline-offset:2px}

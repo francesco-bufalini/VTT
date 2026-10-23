@@ -26,7 +26,7 @@ export function effectiveBackgrounds(record={}){
   seen.add(key);return true;
  });
 }
-function selectedSources(record,index={}){
+export function selectedSources(record,index={}){
   const selected=[];
   const push=(group,source,origin,mode="starting")=>{
     if(!source?.name)return;
@@ -62,7 +62,7 @@ function selectedSources(record,index={}){
   }
   return selected;
 }
-function grantedFields(source,kind){
+export function grantedFields(source,kind){
   if(source.group==="class"){
     if(kind==="save")return source.mode==="starting"?source.source.savingThrows:[];
     const data=source.mode==="starting"?source.source.startingProficiencies:

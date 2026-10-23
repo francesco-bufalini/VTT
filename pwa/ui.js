@@ -26,6 +26,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
+import {pendingCharacterChoices,savePendingChoice} from "./pending_choices.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -43,7 +44,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -430,7 +431,9 @@ async function computeLocalData(record){
   let catalogs={},loadError="";
   try{catalogs=await loadRuleCatalogs();}
   catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
-  return {...calculateSheet(record,catalogs),loadError,
+  const calculated=calculateSheet(record,catalogs);
+  return {...calculated,loadError,
+    pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:catalogs.classMechanics||{}};
 }
@@ -1558,13 +1561,15 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
  return (forBattle?'':slotPanels)+resourcePanels;
 }
 function originChoicesView(calculated){
- const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
+ const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0)
+   .sort((a,b)=>Number(b.id===state.pendingSpellChoiceId)-Number(a.id===state.pendingSpellChoiceId));
  if(!choices.length)return '';
  return panel('Scelte da origini',choices.map(choice=>{
   const eligible=choice.spell_options?.length?state.spellCatalog||[]:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
   const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
-  return '<article class="native-entry"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
+  return '<article class="native-entry pending-spell-choice'+(choice.id===state.pendingSpellChoiceId?' is-target':'')+
+   '" data-pending-spell-choice="'+esc(choice.id)+'"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
    (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
@@ -2524,6 +2529,35 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  if(state.sheet==='info'){
+    const root=app.querySelector('#sheet-play-view');
+    const choices=state.calculated.pending_choices||[];
+    const missing=choices.filter(choice=>choice.remaining>0);
+    if(root&&missing.length){
+      const total=missing.reduce((n,choice)=>n+choice.remaining,0);
+      const notice=document.createElement('section');
+      notice.className='pending-choices-notice';
+      notice.setAttribute('aria-label','Scelte del personaggio da completare');
+      notice.innerHTML='<div class="pending-choices-notice-head"><span aria-hidden="true">◇</span>'+
+        '<strong>'+total+' '+(total===1?'scelta da completare':'scelte da completare')+'</strong></div>'+
+        '<div class="pending-choices-notice-list">'+missing.map(choice=>
+          '<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
+          '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
+          '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
+        '</div>';
+      root.prepend(notice);
+    }
+    // Completed choices remain editable; the warning itself is only for
+    // missing decisions. Reuse one editor for every structured origin.
+    const competence=root?.querySelector('.play-competence-tools');
+    if(competence&&choices.length){
+      const manage=document.createElement('button');
+      manage.type='button';manage.className='pending-choices-manage';
+      manage.dataset.act='pending-choice-manage';
+      manage.textContent='Scelte dei privilegi';
+      competence.append(manage);
+    }
+  }
   // Preserve expanded combat cards across sheet rerenders. Opening a parent
   // from its heading reveals the index first, without auto-opening its children.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
@@ -2807,8 +2841,100 @@ function openSheetScoreFormula(record,calculated,target,label){
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+function openPendingChoicesIndex(){
+ const choices=state.calculated?.pending_choices||[];
+ if(!choices.length)return;
+ app.querySelector('#pending-choice-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='pending-choice-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog pending-choice-index';
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Scelte dei privilegi</h2>'+
+   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   '<div class="pending-choice-dialog-body pending-choices-notice-list">'+
+   choices.map(choice=>'<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
+     '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
+     '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
+   '</div>';
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
+function openPendingChoiceDialog(choice){
+ app.querySelector('#pending-choice-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='pending-choice-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog';
+ dialog.dataset.choiceId=choice.id;
+ const multiple=choice.kind==='proficiency'&&choice.count>1;
+ const inputType=multiple?'checkbox':'radio';
+ const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
+ Object.assign(labels,abilities);
+ const rows=choice.options.map(key=>'<label class="pending-choice-option"><input type="'+inputType+
+   '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
+   '><span>'+esc(labels[key]||key)+'</span></label>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
+   '<h2>'+esc(choice.label)+'</h2></div>'+
+   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   '<div class="pending-choice-dialog-body"><p class="pending-choice-instruction">'+
+   'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
+   ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
+   '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
+   (rows?'<div class="pending-choice-options">'+rows+'</div>':
+    '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
+   '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
+   '<button type="button" data-act="pending-choice-save"'+(rows?'':' disabled')+'>Applica</button></footer>';
+ const update=()=>{
+   const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
+   const progress=dialog.querySelector('.pending-choice-progress');
+   if(progress)progress.textContent=checked.length+' / '+choice.count+' selezionate';
+   for(const input of dialog.querySelectorAll('[name="pending-options"]')){
+     input.disabled=!input.checked&&checked.length>=choice.count;
+   }
+ };
+ dialog.addEventListener('change',update);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);
+ update();
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='pending-choice-manage'){
+    openPendingChoicesIndex();return;
+  }
+  if(act==='pending-choice-open'){
+    const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
+    if(!choice)throw Error('Scelta non disponibile nella scheda.');
+    if(choice.kind==='spell'){
+      app.querySelector('#pending-choice-dialog')?.remove();
+      state.pendingSpellChoiceId=choice.source_choice_id;
+      state.sheet='magic';state.magicPopup='choices';await render();
+      const row=[...app.querySelectorAll('[data-pending-spell-choice]')]
+        .find(node=>node.dataset.pendingSpellChoice===choice.source_choice_id);
+      row?.scrollIntoView?.({block:'nearest'});
+      row?.querySelector('select')?.focus?.({preventScroll:true});
+      return;
+    }
+    openPendingChoiceDialog(choice);return;
+  }
+  if(act==='pending-choice-close'){
+    const dialog=app.querySelector('#pending-choice-dialog');
+    if(dialog?.close)dialog.close();else dialog?.remove();
+    return;
+  }
+  if(act==='pending-choice-save'){
+    const dialog=app.querySelector('#pending-choice-dialog');
+    const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===dialog?.dataset.choiceId);
+    if(!choice)throw Error('La scelta è cambiata: riapri il selettore.');
+    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].map(row=>row.value);
+    const current=state.editor.read();
+    // Validate once again against freshly derived grants before persisting.
+    const fresh=await computeLocalData(current);
+    const live=fresh.pending_choices.find(row=>row.id===choice.id);
+    if(!live)throw Error('Il privilegio non concede più questa scelta.');
+    await patch(savePendingChoice(current,live,selected));
+    dialog.remove();await render();return;
+  }
   if(act==='battle-toggle-class-only'){
     state.battleOnlyClass=!state.battleOnlyClass;await render();return;
   }
