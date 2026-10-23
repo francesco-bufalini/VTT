@@ -3136,6 +3136,17 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 .pending-choices-notice-list button:focus-visible,.pending-choices-manage:focus-visible,
 .pending-choice-dialog button:focus-visible,.pending-choice-option:focus-within{outline:2px solid #e0b57b;outline-offset:2px}
 
+/* Character-specific inventory containers, preserving existing metal theme. */
+.inventory-container-list{display:grid;gap:1rem}
+.inventory-container{padding:.75rem;border:1px solid var(--border-color,rgba(170,145,90,.32));border-radius:12px;min-width:0}
+.inventory-container-head{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.65rem}
+.inventory-container-head h3{margin:0;font-size:1.05rem;font-weight:700}
+.inventory-container-head>.actions{margin-left:auto;display:flex;gap:.35rem}
+.inventory-container>.actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+.inventory-context-actions label{display:flex;align-items:center;gap:.4rem}
+.inventory-context-actions select{max-width:12rem}
+@media(max-width:550px){.inventory-container{padding:.5rem}.inventory-container-head>.actions{margin-left:0}}
+
 /* Inventory equipment: unmistakable checkbox-style control, not a text field. */
 .inventory-col-equip .inventory-equip-toggle{
   display:inline-grid!important;place-items:center!important;
