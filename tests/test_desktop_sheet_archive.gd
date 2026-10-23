@@ -65,6 +65,7 @@ func run() -> void:
 	assert(reopened.dispatch("setting", {"key": "desktop-test"}).value == 7)
 	var fake_area := FakeArea.new()
 	fake_area._archive = archive
+	fake_area._selected_kind = "monster"
 	fake_area._panel.add_child(Control.new())
 	root.add_child(fake_area)
 	fake_area.add_child(fake_area._panel)
@@ -78,6 +79,7 @@ func run() -> void:
 	shell._finish(false, original.id)
 	assert(fake_view.parent_focus_calls == 1 and fake_area.closed and not shell.active)
 	assert(fake_area._selected_id == original.id)
+	assert(fake_area._selected_kind == "character", "Restore kind as well as ID when switching from a monster")
 	await process_frame
 	assert(fake_view.parent_focus_calls == 2, "Restore Godot keyboard focus after hiding the native child window")
 	shell.queue_free()

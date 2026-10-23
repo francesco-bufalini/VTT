@@ -34,6 +34,14 @@ document.addEventListener('click',event=>{
   }
 },true);
 function showError(error){document.querySelector('#toast').textContent=error.message;document.querySelector('#toast').hidden=false;}
+// Desktop archives use the native portable format, not a phone browser backup.
+function archiveLabels(){
+  for(const [action,label] of [['backup','Esporta archivio'],['restore-backup','Importa archivio']]){
+    const button=document.querySelector('[data-act="'+action+'"]');
+    if(button&&button.textContent!==label)button.textContent=label;
+  }
+}
+new MutationObserver(archiveLabels).observe(document.querySelector('#app'),{childList:true,subtree:true});
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&!document.querySelector('dialog[open]')){event.preventDefault();void close();}
 });

@@ -52,6 +52,17 @@ try{
     await page.waitForFunction(key=>document.querySelector('#app').dataset.renderedSheet===key,sheet);
     await page.screenshot({path:fileURLToPath(new URL('desktop-'+sheet+'.png',artifacts))});
   }
+  await page.evaluate(async()=>{
+    const {loadCreature,saveCreature}=await import('/creatures.js');
+    const row=await loadCreature('desktop_browser_fixture');
+    await saveCreature({...row.data,prepared_spells:[{id:'phb2014_light',name:'Light',source:'PHB',level:0}]},'default',row.revision);
+    const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.open(row.id);
+    const button=document.createElement('button');button.type='button';button.dataset.act='cast-sheet-spell';button.dataset.spellId='phb2014_light';
+    document.querySelector('#app').append(button);button.click();button.remove();
+  });
+  await page.waitForFunction(async()=>{const {calls}=await fetch('/__test/calls').then(r=>r.json());return calls.some(c=>c.method==='cast');});
+  const cast=await page.evaluate(async()=>fetch('/__test/calls').then(r=>r.json()));
+  assert.equal(cast.calls.find(c=>c.method==='cast').args.selection.id,'phb2014_light');
   // A web edit of another creature must not change the previous native selection.
   const second=await page.evaluate(async()=>{
     const {createCreature}=await import('/creatures.js');const row=await createCreature('monster','Seconda creatura');

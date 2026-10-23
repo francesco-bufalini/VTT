@@ -2952,7 +2952,7 @@ async function handleAction(target){
     const plan=spellCastPlan(creature,selection,0,calculated,'auto');
     target.disabled=true;
     try{
-      if(state.paired&&state.online){
+      if(desktopHooks?.cast||(state.paired&&state.online)){
         await startTargetedCast(creature.id,structuredClone(selection),0,'auto');
       }else{
         if(Object.keys(plan.patch).length)await patch(plan.patch);
