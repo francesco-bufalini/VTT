@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureActivationPatch,classFeatureEntries} from '../feature_mechanics.js';
+import {traitStateActivationPatch} from '../trait_state_rules.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
- abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants')};
+ abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
+ traitStates:read('trait_states').states};
 const sheet=(name,level=5,source='PHB',subclass='')=>({kind:'character',rules_version:source==='XPHB'?'2024':'2014',level,
  classes:[{name,level,source,subclass,subclass_source:source}],abilities:{str:10,dex:14,con:18,int:18,wis:18,cha:18},
  inventory:[],armor_natural_formula:'10 + dex_mod'});
@@ -42,4 +44,26 @@ test('Defensive Field requires guardian armor and keeps the larger temporary HP 
  const c=calculateSheet(r,catalogs),patch=classFeatureActivationPatch(r,c,'defensive_field');
  assert.equal(patch.temporary_hp,8);
  assert.equal(classFeatureActivationPatch({...r,temporary_hp:12},c,'defensive_field').temporary_hp,12);
+});
+
+test('Armor Model is a source-bound, reversible and exclusive state privilege',()=>{
+ const r=sheet('Artificer',8,'TCE','Armorer');
+ r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
+ const catalog=catalogs.traitStates;
+ let calculated=calculateSheet(r,catalogs);
+ assert.ok(calculated.state_actions.some(row=>row.state_id==='armor_model:guardian'));
+ let next={...r,...traitStateActivationPatch(r,calculated.features,catalog,'armor_model:infiltrator')};
+ calculated=calculateSheet(next,catalogs);
+ assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
+ assert.equal(calculated.values.speed,35);
+ assert.equal(calculated.trait_state_optional_dice[0].dice,'1d6');
+ assert.equal(calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage')?.max,1);
+ assert.equal(calculated.active_feature_effects.filter(row=>row.category==='stato').length,1);
+ next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian')};
+ calculated=calculateSheet(next,catalogs);
+ assert.equal(calculated.attacks[0].id,'class_feature:thunder_gauntlets');
+ assert.equal(calculated.trait_state_optional_dice.length,0);
+ assert.equal(calculated.active_trait_state_ids.length,1);
+ const disabled={...next,inventory:[]};
+ assert.equal(calculateSheet(disabled,catalogs).attacks.some(row=>row.id==='class_feature:thunder_gauntlets'),false);
 });
