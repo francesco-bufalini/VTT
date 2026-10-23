@@ -58,6 +58,8 @@ export function traitBenefitTargetLabel(value=''){
  if(TARGETS[key])return TARGETS[key];
  const [type,...rest]=key.split(':'),name=rest.join(':');
  if(type==='skill')return 'Abilità · '+(SKILLS[name]||name);
+ if(type==='ability_check')return 'Prova · '+(ABILITIES[name]||name);
+ if(type==='casting_hit')return 'Attacco magico · '+(ABILITIES[name]||name);
  if(type==='save')return 'TS · '+(ABILITIES[name]||name);
  if(type==='ability')return 'Punteggio · '+(ABILITIES[name]||name);
  if(type==='ability_mod')return 'Modificatore · '+(ABILITIES[name]||name);
@@ -142,12 +144,13 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  }
  // Reuse the very sources used to resolve actual rolls, so active class
  // privileges and data-defined roll modes share the same provenance.
- const rollTargets=['ability_check:str','save:str','save:dex',
+ const rollTargets=['ability_check:str','save:str','save:dex','initiative',
   ...rows(calculated.attacks).map(attack=>'attack_hit:'+attack.id),
   ...rows(calculated.casting_classes).map(c=>'casting_hit:'+c.ability)];
  for(const target of [...new Set(rollTargets)]){
   for(const source of classFeatureRollSources(record,calculated,target)){
-   if(!source.origin_id||!ids.has(source.origin_id))continue;
+   if(!(source.origin_id&&ids.has(source.origin_id))&&
+    !(source.kind==='condition'&&trait.condition_id===source.condition_id))continue;
    add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(target),
     source.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+source.origin_id+':'+source.mode+':'+target);
   }
