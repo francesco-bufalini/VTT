@@ -479,8 +479,10 @@ export function activeInfusions(record={},definitions=[],features=[]){
  const source=infusionGrantingTrait(record,features);
  return array(record.inventory).flatMap((owned,index)=>{
    const inf=owned?.infusion;
-   if(!inf?.id||Number(owned.quantity??1)<=0||owned.disabled||owned.active===false||
-     !(owned.equipped===true||owned.attuned===true||array(owned.equipped_slots).length))return [];
+   if(!inf?.id||Number(owned.quantity??1)<=0||owned.disabled||owned.active===false)return [];
+   // Carried items without a slot are automatically in use.
+   if(["weapon","shield","armor"].includes(itemKind(owned))&&
+      !array(owned.equipped_slots).length)return [];
    if(requiresAttunement(resolveOwnedItem(owned))&&!owned.attuned)return [];
    if(inf.creator_id===record.id&&!source)return [];
    const definition=array(definitions).find(row=>row.id===inf.id);
