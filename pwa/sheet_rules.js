@@ -121,7 +121,8 @@ export function applicableDiceBonuses(record,target,spells=[]){
  const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
  if(!scope)return [];
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
- const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll';
+ const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll'||
+   row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
  const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&enabled(row.origin_id)&&fits(row));
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id).startsWith('spell:')||!enabled(origin.id))continue;
@@ -779,7 +780,8 @@ export function calculateSheet(record={},catalogs={}){
         components[target].set(row.id||row,(row.origin_name||'Bonus')+': '+row.expression+' = '+value);
         if(!rollComponents[target])rollComponents[target]=new Map();
         rollComponents[target].set(row.id||row,{id:row.id||'',origin_id:row.origin_id||'',
-          origin_name:row.origin_name||'Bonus',expression:String(row.expression??'0'),value});
+          origin_name:row.origin_name||'Bonus',expression:String(row.expression??'0'),
+          ...(row.dice_notation?{dice_notation:String(row.dice_notation)}:{}),value});
       }catch(error){warnings.add("Bonus ignorato per "+target+": "+error.message);}
     }
     return total;
