@@ -157,7 +157,7 @@ jobs:
               node tests/sheet_play_browser.mjs
               node tests/action_dashboard_browser.mjs
               node tests/infusions_browser.mjs
-    node tests/artificer_armor_browser.mjs
+              node tests/artificer_armor_browser.mjs
               ;;
             *)
               echo "Unknown Chromium suite" >&2
