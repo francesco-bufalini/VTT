@@ -784,6 +784,18 @@ test("inventory sections wrap, support multiple panels and toggle all from the t
   }finally{window.prompt=originalPrompt;}
   assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
   assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino','Borsa da campo']);
+  const bagTab=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
+  const bagId=bagTab.dataset.subtab.slice('container:'.length);
+  const bagPanel=[...document.querySelectorAll('#sheet-play-view .play-inventory-section')]
+    .find(panel=>panel.querySelector('h2')?.textContent==='Borsa da campo');
+  assert.ok(bagPanel.querySelector('[data-act="inventory-container-rename"][data-container-id="'+bagId+'"]'));
+  assert.ok(bagPanel.querySelector('[data-act="inventory-container-delete"][data-container-id="'+bagId+'"]'));
+  const addButton=bagPanel.querySelector('[data-act="sheet-context"][data-sheet-context^="inventory-add:"]');
+  assert.ok(addButton,'Each custom container needs its own add-item action');
+  addButton.click();
+  await until(()=>document.querySelector('#sheet-context-dialog [data-act="item-catalog"][data-container-id="'+bagId+'"]'));
+  click('#sheet-context-dialog [data-act="sheet-context-close"]');
+  await until(()=>!document.querySelector('#sheet-context-dialog'));
   click('#sheet-play-view [data-subtab="documents"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
   click('#sheet-play-view [data-subtab="scrolls"]');
