@@ -57,9 +57,12 @@ export function castingSources(entry,classes,catalog=[]){
 export function knownClassSpellIds(creature={},member,catalog=[]){
  if(!member)return new Set();
  if(member.book){
+   const entry=creature.known_spell_overrides?.[member.id]||{};
+   const removed=new Set(arr(entry.removed));
    const cantrips=spellsForEdition(catalog,creature.rules_version||'2014')
-     .filter(spell=>Number(spell.level)===0&&spellEligible(spell,member)).map(spellId);
-   return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips]);
+     .filter(spell=>Number(spell.level)===0&&spellEligible(spell,member)&&!removed.has(spell.id))
+     .map(spellId);
+   return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips,...arr(entry.added)]);
  }
  if(member.mode!=='Preparati')return new Set(availableSpells(creature)
    .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
@@ -70,7 +73,7 @@ export function knownClassSpellIds(creature={},member,catalog=[]){
    .map(spellId),...arr(overrides.added)]);
 }
 export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
- if(!member||member.mode!=='Preparati'||member.book)
+ if(!member||member.mode!=='Preparati'||member.book&&Number(spell?.level)>0)
    throw Error('Questa lista di incantesimi conosciuti non è modificabile qui.');
  const id=spellId(spell);
  if(!id||spell.internal_grant||!catalog.some(row=>spellId(row)===id)||Number(spell.level)>member.max_level)
