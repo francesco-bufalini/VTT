@@ -487,7 +487,7 @@ func _inspect_request(client: Dictionary) -> void:
 	if bytes.size() < header_end + 4 + content_length:
 		return
 	client.processing = true
-	_handle_http.call_deferred(client, request[0], request[1], headers,
+	_handle_http.call_deferred(client, request[0], request[1].get_slice("?", 0), headers,
 		bytes.slice(header_end + 4, header_end + 4 + content_length))
 
 
