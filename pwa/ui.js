@@ -6,7 +6,7 @@ import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilit
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
-import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature,
+import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -3654,15 +3654,7 @@ async function handleAction(target){
     if(!rows.length)throw new Error("Seleziona almeno una creatura.");
     if(act==="library-export"){
       if(rows.length>200)throw new Error("Puoi esportare fino a 200 creature in un file.");
-      const entries=[];
-      for(const row of rows){
-        const blob=await exportCreature(row.creature.id);
-        entries.push(JSON.parse(await blob.text()));
-      }
-      const data=JSON.stringify({format:"vtt_creature_batch_export_v1",version:1,entries},null,2);
-      if(new TextEncoder().encode(data).length>16*1024*1024)
-        throw new Error("Esportazione troppo grande per il formato portatile.");
-      download(new Blob([data],{type:"application/json"}),"vtt-creature-selezionate.json");
+      download(await exportCreatureBatch(rows.map(row=>row.creature.id)),"vtt-creature-selezionate.json");
       message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");return;
     }
     if(!window.confirm("Eliminare definitivamente "+rows.length+
@@ -4421,6 +4413,9 @@ export const desktopSheetSession={
   configure(hooks){desktopHooks=hooks;},
   currentId:()=>state.creatureId,
   flush:flushPendingFields,
+  notify:message,
+  showLibrary:()=>navigate('library'),
+  async exportArchive(){await flushPendingFields();return exportCreatureBatch((await listCreatures()).map(row=>row.creature.id));},
   async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();}
 };
 export async function mount(){

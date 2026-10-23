@@ -47,6 +47,34 @@ try{
   });
   assert.equal(native.data.name,'Lyria modificata nel desktop');
   assert.equal(native.data.additional_traits,'Nota campagna da conservare');
+  await page.locator('#creature-back').click();
+  await page.locator('.library-backup > summary').click();
+  await page.locator('[data-act="backup"]').waitFor();
+  const fileMode=mode=>page.evaluate(async mode=>{const {request}=await import('/desktop/bridge.js');await request('_test_file_mode',{mode});},mode);
+  await fileMode('cancel');
+  await page.locator('[data-act="restore-backup"]').click();
+  await page.waitForFunction(async()=>{const {calls}=await fetch('/__test/calls').then(r=>r.json());return calls.some(c=>c.method==='import');});
+  assert.equal(await page.locator('[data-act="open"]').count(),1,'Cancel keeps the current web library');
+  await fileMode('success');
+  await page.locator('[data-act="backup"]').click();
+  await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Esportazione completata:'));
+  const exported=await page.evaluate(async()=>{const {calls}=await fetch('/__test/calls').then(r=>r.json());return JSON.parse(calls.filter(c=>c.method==='download').at(-1).args.text);});
+  assert.equal(exported.format,'vtt_creature_batch_export_v1');
+  assert.equal(exported.entries[0].creature.name,'Lyria modificata nel desktop');
+  await fileMode('error');
+  await page.locator('[data-act="backup"]').click();
+  await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Esportazione non riuscita:'));
+  await fileMode('success');
+  await page.locator('[data-act="restore-backup"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-act="open"]').length===2);
+  await page.locator('.library-backup > summary').click();
+  await fileMode('partial');
+  await page.locator('[data-act="restore-backup"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-act="open"]').length===3);
+  await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('Non importati:'));
+  const fileCalls=await page.evaluate(async()=>fetch('/__test/calls').then(r=>r.json()));
+  assert(!fileCalls.calls.some(c=>['close','native'].includes(c.method)),'File operations keep WebView active');
+  await page.evaluate(async()=>{const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.open('desktop_browser_fixture');});
   for(const sheet of ['battle','magic','inventory','info']){
     await page.locator('#sheet-navigation [data-sheet="'+sheet+'"]').click();
     await page.waitForFunction(key=>document.querySelector('#app').dataset.renderedSheet===key,sheet);
@@ -90,7 +118,7 @@ try{
   });
   assert(conflict);
   assert.deepEqual(errors,[]);
-  console.log('PASS: embedded desktop UI, 800/1024/1440px, all sections, native persistence, separate creatures, Partita flush and concurrent edit protection');
+  console.log('PASS: desktop UI, 800/1024/1440px, file cancel/import/export/error without leaving WebView, native persistence, separate creatures, Partita flush and concurrent edits');
 }finally{
   await browser?.close();
   await fetch(origin+'/__test/stop').catch(()=>{});

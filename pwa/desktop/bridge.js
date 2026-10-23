@@ -11,15 +11,17 @@ export function receive(message) {
   else request.resolve(reply.value);
 }
 globalThis.vttDesktopReceive = receive;
-export function request(method, args = {}) {
+export function request(method, args = {}, {timeoutMs = 15000} = {}) {
   return new Promise((resolve, reject) => {
     if (!globalThis.ipc?.postMessage) return reject(new Error('Collegamento con VTT non disponibile.'));
     const id = ++sequence;
-    const timer = setTimeout(() => {
+    // Native file choosers finish on selection/cancel, not on an arbitrary timer.
+    const timer = timeoutMs > 0 ? setTimeout(() => {
       pending.delete(id);
       reject(new Error('VTT non risponde. La modifica non è confermata: riapri la scheda prima di riprovare.'));
-    }, 15000);
+    }, timeoutMs) : null;
     pending.set(id, {resolve, reject, timer});
-    ipc.postMessage(JSON.stringify({id, method, args}));
+    try{ipc.postMessage(JSON.stringify({id, method, args}));}
+    catch(error){pending.delete(id);clearTimeout(timer);reject(error);}
   });
 }

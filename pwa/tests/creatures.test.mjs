@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCreatureExport, makeOwnedCopy, referencedDefinitions, makeCreatureExport } from "../creature_format.js";
 import { importCreatureExport, importCreatureFile, loadCreature, listCreatures,
-  ownerId, openCreatureEditor, exportCreature, removeCreature, createCreature } from "../creatures.js";
+  ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature } from "../creatures.js";
 import { exportBackup, importBackup, putAttachment, getAttachment, listRecords } from "../storage.js";
 
 const feat = { id: "homebrew:personal:feats:brave", name: "Coraggioso",
@@ -20,6 +20,20 @@ const creature = { id: "character_old", kind: "character", name: "Paladino",
   arbitrary_future_field: { nested: [1,2,3] } };
 const exported = { format: "vtt_creature_export_v1", version: 1,
   creature, homebrew_content: [feat, item] };
+
+test('batch export preserves portable dependencies and does not mutate source creatures',async()=>{
+  const scope='batch_export_'+Date.now();
+  const copy=await importCreatureExport(exported,scope);
+  const before=await loadCreature(copy.creature.id,scope);
+  const blob=await exportCreatureBatch([copy.creature.id],scope);
+  const payload=JSON.parse(await blob.text());
+  assert.equal(payload.format,'vtt_creature_batch_export_v1');
+  assert.deepEqual(payload.entries[0],JSON.parse(await (await exportCreature(copy.creature.id,scope)).text()));
+  assert.deepEqual(await loadCreature(copy.creature.id,scope),before);
+  await assert.rejects(exportCreatureBatch([],scope),/1 a 200/);
+  await assert.rejects(exportCreatureBatch(Array(201).fill(copy.creature.id),scope),/1 a 200/);
+  await assert.rejects(exportCreatureBatch([copy.creature.id,'missing'],scope),/not found/);
+});
 
 test("portable VTT format retains unknown fields and nested homebrew", () => {
   const parsed = parseCreatureExport(JSON.stringify(exported));

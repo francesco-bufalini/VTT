@@ -146,6 +146,17 @@ export async function exportCreature(id, scope = "default") {
   return new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
 }
 
+export async function exportCreatureBatch(ids, scope = "default") {
+  if (!Array.isArray(ids) || !ids.length || ids.length > 200)
+    throw new Error("Seleziona da 1 a 200 creature per l'esportazione.");
+  const entries=[];
+  for(const id of ids) entries.push(JSON.parse(await (await exportCreature(id,scope)).text()));
+  const data=JSON.stringify({format:"vtt_creature_batch_export_v1",version:1,entries},null,2);
+  if(new TextEncoder().encode(data).length>MAX_CREATURE_BYTES)
+    throw new Error("Esportazione troppo grande per il formato portatile.");
+  return new Blob([data],{type:"application/json"});
+}
+
 export async function saveHomebrewDefinition(definition) {
   if (!validDefinition(definition)) throw new Error("Invalid portable definition");
   const old = await getRecord(HOMEBREW_SCOPE, HOMEBREW_TYPE, definition.id);

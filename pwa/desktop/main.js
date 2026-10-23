@@ -5,8 +5,9 @@ controls.className='desktop-controls';
 controls.innerHTML='<span>Archivio VTT · salvataggio sul computer</span><button type="button" id="desktop-native" class="btn">Strumenti nativi</button>';
 document.querySelector('.topbar').after(controls);
 let closing=false;
+let fileBusy=false;
 async function close(mode='close',extra={}){
-  if(closing)return; closing=true;
+  if(closing||fileBusy)return; closing=true;
   try { await desktopSheetSession.flush(); await request(mode,{creatureId:desktopSheetSession.currentId(),...extra}); }
   catch(error){ document.querySelector('#toast').textContent=error.message;document.querySelector('#toast').hidden=false; }
   finally{closing=false;}
@@ -14,6 +15,27 @@ async function close(mode='close',extra={}){
 document.querySelector('#desktop-native').onclick=()=>close('native');
 desktopSheetSession.configure({cast:({casterId,selection})=>close('cast',{creatureId:casterId,selection})});
 globalThis.vttDesktopClose=close;
+async function fileOperation(mode,options={}){
+  if(fileBusy||closing)return;
+  fileBusy=true;
+  try{
+    await desktopSheetSession.flush();
+    let result;
+    if(mode==='import')result=await request('import',{}, {timeoutMs:0});
+    else{
+      const blob=mode==='backup'?await desktopSheetSession.exportArchive():await fetch(options.url).then(r=>r.blob());
+      result=await request('download',{text:await blob.text(),filename:options.filename||'archivio_creature.json'},{timeoutMs:0});
+    }
+    if(result?.canceled)return;
+    if(mode==='import'){
+      if(result.imported>0)await desktopSheetSession.showLibrary();
+      const failures=result.failures||[];
+      desktopSheetSession.notify('Creature importate come copie locali: '+result.imported+'.'+
+        (failures.length?' Non importati: '+failures.join('; '):''),failures.length>0);
+    }else if(result?.saved)desktopSheetSession.notify('Esportazione completata: '+result.filename);
+  }catch(error){showError(error);}
+  finally{fileBusy=false;}
+}
 // External references must never replace the privileged embedded document.
 document.addEventListener('click',event=>{
   if(event.target.closest('[data-nav="session"]')){
@@ -22,12 +44,12 @@ document.addEventListener('click',event=>{
   const nativeAction=event.target.closest('[data-act]')?.dataset.act;
   if(['import','backup','restore-backup'].includes(nativeAction)){
     event.preventDefault();event.stopImmediatePropagation();
-    void close(nativeAction==='backup'?'backup':'import');return;
+    void fileOperation(nativeAction==='backup'?'backup':'import');return;
   }
   const link=event.target.closest('a[href]');
   if(link?.download&&link.href.startsWith('blob:')){
     event.preventDefault();event.stopImmediatePropagation();
-    void fetch(link.href).then(r=>r.text()).then(text=>request('download',{text,filename:link.download})).catch(showError);return;
+    void fileOperation('download',{url:link.href,filename:link.download});return;
   }
   if(link&&new URL(link.href,location.href).origin!==location.origin){
     event.preventDefault(); event.stopImmediatePropagation();
