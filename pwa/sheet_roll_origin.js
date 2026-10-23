@@ -341,7 +341,7 @@ export function sheetScoreOriginSegments(record,calculated,target){
  // intentionally includes its skill-derived terms AND direct passive grants.
  for(const row of list(all[target])){
    const value=num(row.value),id=String(row.origin_id||'');
-   const formula=bonusText(row.expression);
+   const formula=bonusText(row.dice_notation||row.expression);
    const existing=id&&sourceRows.find(item=>item.originId===id);
    if(existing){
      existing.formula+=' '+formula;existing.expanded+=' '+signed(value);
