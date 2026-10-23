@@ -67,10 +67,10 @@ export function traitRemovedIds(record={},trait={}){
 }
 export function removeBenefitPatch(record,trait,item){
  if(!trait?.key||!item?.id)throw Error('Beneficio non identificato');
+ const id=String(item.id);
  const collection={bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',defenses:'damage_defense_entries',
   resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants'}[item.type];
- const id=String(item.id);
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
   if(item.type==='bonus'&&id.startsWith('dice:'))return 'dice:'+String(row.id||'')===id;
@@ -114,7 +114,7 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   const diceMatch=expression.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(diceMatch&&Number(diceMatch[1])<=100){
    const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(target)||
-     /^(ability_check:|ability_mod:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(target);
+     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(target);
    if(rollable){
     field='dice_bonuses';row={...common,target,dice:expression};
     const tracker=String(values.tracker_id||'').trim(),cost=Number(values.tracker_cost||1);
