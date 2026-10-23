@@ -624,7 +624,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const identity=panelNamed('Identità');bind('identity',identity);
   const classMembers=localClasses(c),totalClassLevel=classMembers.reduce((sum,member)=>sum+Math.max(1,Number(member.level)||1),0);
   const classNames=classMembers.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-  html='<section class="play-identity"><div class="play-identity-mark">'+icon(c.kind==='monster'?'wild_shape':'proficiency')+'</div><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
+  html='<section class="play-identity"><h2 data-read-field="name">'+esc(c.name)+'</h2>'+
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
    edit('identity','Modifica identità','settings')+'</section>';
@@ -851,12 +851,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '</div>').join(''),'','play-effect-card');
   html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
- }
- if(sheet==='origins'){
-  const select=bank.querySelector('#native-details');
-  const options=[...(select?.options||[])];
-  html+=card('Configurazione del personaggio',options.map(option=>'<button type="button" class="play-list-row" data-act="sheet-origin-editor" data-detail="'+esc(option.value)+'">'+icon(option.value==='resources'?'reset':'settings')+'<span class="play-row-copy"><strong>'+esc(option.textContent)+'</strong></span><span class="play-chevron">›</span></button>').join(''));
-  bind('origin-editor',panels[0]);
  }
  // The action variants shortcut belongs to the page title, not to an action group.
  // Preserve the 2014-only availability and the existing delegated popup action.

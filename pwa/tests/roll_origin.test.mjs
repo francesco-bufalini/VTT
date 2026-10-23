@@ -2,9 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
-import {rollSheetDice} from '../sheet_rules_view.js';
+import {rollSheetDice,rollBattleDamage} from '../sheet_rules_view.js';
+import {collectTraitRows} from '../trait_projection.js';
 
 function character(){
  const c=initialCreature('character','Guerriero','origin-test','local');
@@ -57,16 +58,25 @@ test('initiative draws ability check item once, manual disadvantage and a dice g
  assert.equal(terms.at(-1).formula,'+1d4');
  assert.equal(terms.at(-1).originId,'feature:bless');
 });
-test('changes to ability scores and ability modifiers remain independently attributable',()=>{
+test('changes to scores stay inside Mod.Characteristic while modifier-only grants remain distinct',()=>{
  const c={...character(),formula_bonuses:[
    {id:'score',target:'ability:str',expression:'2',origin_id:'feature:score',origin_name:'Punteggio'},
    {id:'mod',target:'ability_mod:str',expression:'1',origin_id:'feature:mod',origin_name:'Modificatore'}
  ]};
  const calculated=calculateSheet(c);
  const terms=sheetRollOriginSegments(c,calculated,'skill:athletics');
- assert.equal(terms.find(t=>t.originId==='feature:score')?.expanded,'+1');
+ assert.equal(terms.find(t=>t.originId==='feature:score'),undefined);
+ assert.equal(terms.find(t=>t.kind==='base')?.formula,'1d20 + Mod.FOR');
+ assert.equal(terms.find(t=>t.kind==='base')?.expanded,'1d20 +5');
  assert.equal(terms.find(t=>t.originId==='feature:mod')?.expanded,'+1');
  assert.equal(terms.reduce((sum,t)=>sum+(t.value||0),0),calculated.values['skill:athletics']);
+ const toHit={...calculated,attacks:[{id:'main',ability:'str',proficient:true}],
+   values:{...calculated.values,'attack_hit:main':calculated.values['ability_mod:str']+2}};
+ const attackTerms=sheetRollOriginSegments(c,toHit,'attack_hit:main');
+ assert.equal(attackTerms.find(row=>row.kind==='base')?.expanded,'1d20 +5');
+ assert(!attackTerms.some(row=>row.originId==='feature:score'),
+   'Score increases must never create an extra attack bonus segment');
+ assert.equal(attackTerms.reduce((sum,row)=>sum+(row.value||0),0),toHit.values['attack_hit:main']);
 });
 
 test('spell attacks show casting modifier, proficiency and spell attack grants separately',()=>{
@@ -183,4 +193,99 @@ test('short provenance labels remove generic prefixes without changing navigatio
  assert.match(html,/>Stone of Good Luck<\/span>/);
  assert.match(html,/title="Oggetto - Stone of Good Luck"/);
  assert.match(html,/data-origin-id="item:stone-of-good-luck"/);
+});
+
+test('damage base dice and modifier share a section; only different types create more sections',()=>{
+ const roll=rollBattleDamage('1d6+3+2d4',()=>1);
+ const rows=damageRollSegments(roll,'slashing; fire');
+ assert.deepEqual(rows.map(row=>row.formula),['1d6 + Modificatore',' + 2d4']);
+ assert.deepEqual(rows.map(row=>row.damageType),['slashing','fire']);
+ assert.equal(rows[0].value,3);
+ const html=sheetRollOriginHtml(rows,x=>x);
+ assert.equal((html.match(/class="sheet-roll-origin-damage-type"/g)||[]).length,2);
+ assert(html.indexOf('sheet-roll-origin-symbol')<html.indexOf('sheet-roll-origin-damage-type'));
+ assert(html.indexOf('sheet-roll-origin-damage-type')<html.indexOf('sheet-roll-origin-name'));
+ const oneType=damageRollSegments(roll,'slashing');
+ assert.deepEqual(oneType.map(row=>row.formula),['1d6 + 2d4 + Modificatore']);
+ assert.equal(oneType[0].damageType,'slashing');
+ const ambiguous=damageRollSegments(roll,'slashing; fire; cold');
+ assert(ambiguous.every(row=>row.damageType===''),'An ambiguous mixture must not invent damage types');
+});
+test('a genuine weapon attack uses Mod.FOR in the base damage section',()=>{
+ const c={...character(),inventory:[{id:'test-sword',name:'Test sword',
+   custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d8',quantity:1,
+   equipped_slots:['main']}]};
+ const calculated=calculateSheet(c);
+ const attack=calculated.attacks.find(row=>row.id==='item:test-sword');
+ assert(attack,'Weapon must be available from the real attack calculation');
+ assert.equal(attack.damage_ability_modifier,4);
+ const roll=rollBattleDamage(attack.damage,()=>1);
+ const rows=damageRollSegments(roll,'slashing',attack);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].formula,'1d8 + Mod.FOR');
+ assert.equal(rows[0].damageType,'slashing');
+ assert.equal(rows[0].value,roll.modifier);
+});
+test('mixed typed damages show only verifiable source-derived characteristic and extra modifiers',()=>{
+ const roll=rollBattleDamage('1d6+2+2d4+4',()=>1);
+ const attack={ability:'str',damage:'1d6+2+2d4+4',
+   damage_base_formula:'1d6+2+2d4',damage_ability_modifier:4,damage_extra_modifier:0};
+ const grouped=damageRollSegments(roll,'slashing;fire',attack);
+ assert.equal(grouped[0].formula,'1d6 + Mod.FOR + 2');
+ assert.equal(grouped[1].formula,' + 2d4');
+ assert.deepEqual(grouped.map(row=>row.damageType),['slashing','fire']);
+ const incorrect={...attack,damage_base_formula:'1d6+2d4',
+   damage_extra_modifier:2};
+ assert.equal(damageRollSegments(roll,'slashing;fire',incorrect)[0].formula,
+   '1d6 + Modificatore','Inconsistent sources must not claim an ability modifier');
+});
+test('fixed proficiency provenance has its own navigable class trait when no feature owns it',async()=>{
+ const record=character(),calculated=calculateSheet(record);
+ const source='class|phb|barbarian';
+ const training=sheetRollOriginSegments(record,calculated,'skill:athletics')
+   .find(row=>row.kind==='training');
+ assert.equal(training?.originId,source);
+ const rows=await collectTraitRows(record,calculated,{entries:async()=>[]});
+ const trait=rows.find(row=>row.proficiency_origin===source);
+ assert.equal(trait?.category,'classi');
+ assert.equal(trait?.name,'Competenze');
+ assert.match(String(trait?.entries),/Atletica/);
+ assert.equal(trait?.origin_key,source);
+ assert.equal(rows.filter(row=>row.proficiency_origin===source).length,1);
+});
+
+test('Lightning Launcher abbreviation renders as full Lightning damage and optional bonus links its tracker',()=>{
+ assert.equal(rollDamageName('L'),'Fulmine');
+ assert.equal(rollDamageName('T'),'Tuono');
+ const html=sheetRollOriginHtml([{kind:'base',formula:'1d6',damageType:'L',
+   originName:'Lightning Launcher'}],x=>x);
+ assert.match(html,/>Fulmine<\/span>/);
+ assert.doesNotMatch(html,/>L<\/span>/);
+ const record=character(),calculated={trackers:[{
+   id:'feature:lightning_launcher:extra_damage',name:'Lightning Launcher · danno aggiuntivo',
+   max:1,spent:0,origin_id:'feature:class|tce|artificer|lightning_launcher'
+ }]};
+ const options=rollOptionalDice(record,calculated,[],{
+   kind:'damage',attackId:'class_feature:lightning_launcher'});
+ assert.equal(options.length,1);
+ assert.equal(options[0].dice,'1d6');
+ assert.equal(rollDamageName(options[0].damage_type),'Fulmine');
+ assert.equal(options[0].tracker_cost,1);
+ assert.equal(options[0].remaining,1);
+ assert.equal(rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
+   kind:'damage',attackId:'class_feature:lightning_launcher'}).length,0);
+ assert.equal(rollOptionalDice(record,calculated,[],{
+   kind:'damage',attackId:'item:normal_weapon'}).length,0);
+});
+test('generic one-time bonus requires unspent tracker and can target specific weapon damage',()=>{
+ const bonus={id:'extra',target:'attack_damage:item:sword',dice:'1d6',
+  damage_type:'lightning',tracker_id:'focus',tracker_cost:1,origin_name:'Fonte'};
+ const calculated={trackers:[{id:'focus',name:'Focus',max:2,spent:1}]};
+ const available=rollOptionalDice(character(),calculated,[bonus],{
+   kind:'damage',attackId:'item:sword'});
+ assert.equal(available.length,1);
+ assert.equal(available[0].remaining,1);
+ assert.equal(available[0].spent,1);
+ assert.equal(rollOptionalDice(character(),{trackers:[{...calculated.trackers[0],spent:2}]},[bonus],{
+   kind:'damage',attackId:'item:sword'}).length,0);
 });

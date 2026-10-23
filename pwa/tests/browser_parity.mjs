@@ -34,7 +34,7 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  page.on('request',req=>{if(req.url().startsWith(origin+'/api/')&&req.method()!=='GET')apiWrites.push(req.url());});
  await page.goto(origin);
- await page.locator('[data-act="create"]').waitFor();
+ await page.locator('[data-act="library-add"]').waitFor();
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Scheda di prova');

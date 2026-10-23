@@ -410,12 +410,13 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   const tracker=trackerFor(featureMember(record,rule),rule,trackers);
   const source='class|'+low(rule.class_source)+'|'+low(rule.class_name);
   const feature=rows(features).find(f=>low(f.name)===low(rule.feature)&&
-    (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&!f.disabled);
+    (String(f.origin_key||'')===source||String(f.origin_key||'').startsWith(source+'|'))&&featureEnabled(record,f));
+  if(!feature?.origin_id)return null;
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
-   cost:tracker?1:0,origin:'personal',origin_id:feature?.origin_id||source,
+   cost:tracker?1:0,origin:'personal',origin_id:feature.origin_id,
    action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature};
- });
+ }).filter(Boolean);
 }
 export function modifyFeatureTrackers(record,trackers,catalog={}){
  for(const rule of rows(catalog.recoveries)){

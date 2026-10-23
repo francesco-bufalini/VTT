@@ -108,11 +108,11 @@ try {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(origin);
-  await page.locator('[data-act="create"]').waitFor({ timeout: 15000 });
-  assert.match(await page.locator("#app").innerText(), /Le tue creature/);
+  await page.locator('[data-act="library-add"]').waitFor({ timeout: 15000 });
+  assert(await page.locator(".library-index").isVisible());
   assert.equal(errors.length, 0, "Unexpected browser error: " + errors.join("; "));
   await page.reload();
-  await page.locator('[data-act="create"]').waitFor({ timeout: 15000 });
+  await page.locator('[data-act="library-add"]').waitFor({ timeout: 15000 });
   assert.doesNotMatch(await page.locator("#app").innerText(), /Apertura archivio locale/);
   await context.close();
   console.log("PASS: clean Chrome profile opens and reloads the local archive");
@@ -125,7 +125,7 @@ try {
     sessionStorage.setItem("vtt-mobile-serial-modules", "1");
   });
   await compatPage.goto(origin);
-  await compatPage.locator('[data-act="create"]').waitFor({ timeout: 30000 });
+  await compatPage.locator('[data-act="library-add"]').waitFor({ timeout: 30000 });
   assert.equal(await compatPage.locator("#startup-error").count(), 0);
   await compatContext.close();
   console.log("PASS: serial compatibility startup initializes the full local archive");
@@ -142,7 +142,7 @@ try {
     if (req.url().endsWith(".js")) requested.push(new URL(req.url()).pathname);
   });
   await iosPage.goto(origin);
-  await iosPage.locator('[data-act="create"]').waitFor({timeout:30000});
+  await iosPage.locator('[data-act="library-add"]').waitFor({timeout:30000});
   assert.ok(requested.indexOf("/spell_metadata.js") >= 0);
   assert.ok(requested.indexOf("/ui.js") > requested.indexOf("/spell_metadata.js"),
     "iPhone must preload independent modules before the large UI graph");
@@ -162,7 +162,7 @@ try {
   });
   const manualPage = await manualContext.newPage();
   await manualPage.goto(origin);
-  await manualPage.locator('[data-act="create"]').waitFor({timeout:30000});
+  await manualPage.locator('[data-act="library-add"]').waitFor({timeout:30000});
   await manualPage.locator('button.connection-link[data-nav="session"]').click();
   await manualPage.locator("#pair-form").waitFor({timeout:15000});
   await manualPage.waitForFunction(() =>
@@ -240,7 +240,7 @@ try {
     });
   });
   await slowPage.goto(origin);
-  await slowPage.locator('[data-act="create"]').waitFor({ timeout: 5000 });
+  await slowPage.locator('[data-act="library-add"]').waitFor({ timeout: 5000 });
   await slowPage.waitForFunction(() => window.__swStartedBeforeUi !== undefined);
   assert.equal(await slowPage.evaluate(() => window.__swStartedBeforeUi), false,
     "Offline preloading must start after the archive is usable");
@@ -255,7 +255,7 @@ try {
   const transientContext = await browser.newContext();
   const transientPage = await transientContext.newPage();
   await transientPage.goto(origin);
-  await transientPage.locator('[data-act="create"]').waitFor({ timeout: 20000 });
+  await transientPage.locator('[data-act="library-add"]').waitFor({ timeout: 20000 });
   assert.equal(transientUiFailures, 1, "Expected one transient /ui.js failure");
   assert.equal(await transientPage.locator("#startup-error").count(), 0);
   await transientContext.close();
@@ -272,7 +272,7 @@ try {
     if (frame === nestedPage.mainFrame()) ++nestedNavigations;
   });
   await nestedPage.goto(origin);
-  await nestedPage.locator('[data-act="create"]').waitFor({ timeout: 25000 });
+  await nestedPage.locator('[data-act="library-add"]').waitFor({ timeout: 25000 });
   assert.equal(transientNestedFailures, 1);
   assert.ok(nestedNavigations >= 2, "A failed transitive dependency requires a full navigation");
   assert.equal(await nestedPage.locator("#startup-error").count(), 0);

@@ -422,7 +422,7 @@ function battleEffectMarkup(item,attack){
   '<span class="play-battle-effect-kind">'+esc(label)+'</span>'+
   '<span class="play-battle-effect-value">'+glyph+'<strong>'+esc(detail)+'</strong></span>'+
   (canRoll?'<button type="button" class="play-battle-effect-roll" data-act="battle-damage-roll" data-damage-formula="'+
-    esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-label="'+esc(item.name)+
+    esc(resolved.label)+'" data-damage-type="'+esc(resolved.type||'')+'" data-damage-attack-id="'+esc(attack?.id||'')+'" data-damage-label="'+esc(item.name)+
     '" aria-label="Tira danni: '+esc(item.name)+'">'+diceGlyph()+'</button>':'')+'</div>';
 }
 function battleAttackRow(item,calculated,attacksById,descriptions){

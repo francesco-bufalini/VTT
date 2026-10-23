@@ -32,30 +32,46 @@ try{
  const shot=async name=>page.screenshot({path:fileURLToPath(new URL('navigation-'+name+'.png',artifacts))});
  const sheet=async key=>{
   if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
-  const target=page.locator('button[data-sheet="'+key+'"]').first();
-  if(!await target.isVisible())await page.locator('#more-navigation').click();
-  await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
-  assert.equal(await page.locator('#navigation-dialog').evaluate(n=>n.open),false);
+  if(key==='conditions'){
+    // Exercise the existing conditions panel without creating new sheet controls.
+    await page.evaluate(tab=>{
+      const button=document.createElement('button');
+      button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
+      document.body.append(button);button.click();button.remove();
+    },key);
+  }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
+  await page.waitForFunction(k=>document.querySelector('#app').dataset.renderedSheet===k,key);
  };
  const globalPage=async key=>{
-  const target=page.locator('#nav [data-nav="'+key+'"]');
-  if(!await target.isVisible())await page.locator('#more-navigation').click();
-  await target.click();await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
+  const back=page.locator('#creature-back');
+  if(key==='library'&&await back.isVisible())await back.click();
+  else {
+    const fromCreature=await page.locator('#mobile-tabs').evaluate(n=>n.classList.contains('has-creature'));
+    if(fromCreature&&key==='catalog')await back.click();
+    const target=fromCreature&&key==='session'?page.locator('#dock-session'):page.locator('#nav [data-nav="'+key+'"]');
+    await target.click();
+  }
+  await page.waitForFunction(k=>document.querySelector('#app').dataset.page===k,key);
  };
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  assert.equal(await page.locator('.play-dock .btn:visible').count(),3);
  assert.equal(await page.locator('[data-act="import"]').isVisible(),false);
- await page.locator('.library-management > summary').click();
+ await page.locator('[data-act="library-add"]').click();
  assert(await page.locator('[data-act="import"]').isVisible());
- await page.locator('.library-management > summary').click();await shot('library');
+ await page.locator('[data-act="library-create-close"]').click();await shot('library');
+ await page.locator('[data-act="library-add"]').click();
  await page.locator('[data-act="create"]').click();await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
  assert.deepEqual(await page.locator('#sheet-navigation [data-sheet]').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheet)),['info','battle','magic','inventory']);
  assert(await page.locator('#dock-session').isVisible(),'Partita stays in the creature dock');
+ assert.equal(await page.locator('#dock-catalog').count(),0,'Catalogo belongs to the archive');
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
- assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ assert.equal(await page.locator('#more-navigation').count(),0);
+ assert(await page.locator('#creature-back').isVisible(),'Back replaces the portrait');
+ assert.equal(await page.locator('#creature-symbol').count(),0);
  assert.equal(await page.locator('[data-sheet="actions"]').count(),0);
  await sheet('magic');
  await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');
@@ -72,31 +88,27 @@ try{
  assert.equal(await checks.locator('[data-action-ability]').count(),6);
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['battle','magic','inventory','conditions','info','origins']){
+  for(const key of ['battle','magic','inventory','conditions','info']){
    await sheet(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflows '+viewport.width);
    const dock=await page.locator('.play-dock .btn:visible').evaluateAll(nodes=>nodes.map(n=>({h:n.getBoundingClientRect().height,w:n.getBoundingClientRect().width,label:n.textContent.trim(),bottom:n.getBoundingClientRect().bottom})));
-   assert.equal(dock.length,6);
+   assert.equal(dock.length,5);
    assert(dock.every(n=>n.h>=48&&n.w>=48&&n.label&&n.bottom<=viewport.height),'Labeled touch targets remain reachable at '+viewport.width);
    assert.equal(await page.locator('#app h1').count(),1);
   }
  }
  await page.setViewportSize({width:390,height:844});await sheet('conditions');
- assert(await page.locator('#more-navigation').evaluate(n=>n.classList.contains('is-current')));
- await page.locator('#more-navigation').click();
- assert.equal(await page.locator('#navigation-dialog button:visible').count(),6);
- assert(await page.locator('#navigation-dialog').evaluate(n=>n.contains(document.activeElement)));
- assert(await page.locator('.navigation-row > .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width===24&&n.getBoundingClientRect().height===24)),'Menu glyphs keep their sprite dimensions');
- await shot('menu');await page.keyboard.press('Escape');
- await page.waitForFunction(()=>document.querySelector('#more-navigation')?.getAttribute('aria-expanded')==='false');
+ assert.equal(await page.locator('.sheet-quick-links').count(),0,'No new controls above sheets');
+ assert.equal(await page.locator('#navigation-dialog').count(),0);
+ await shot('tools');
+ await sheet('conditions');
  await sheet('info');
  assert.equal(await page.locator('#sheet-navigation [data-sheet="stats"],#secondary-sheet-navigation [data-sheet="stats"]').count(),0);
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
  assert.equal(await page.locator('#sheet-play-view .play-skills [data-play-filter]').count(),18);
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1,'Info keeps its former portrait symbol');
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
  assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),null,'Tratti begins collapsed');
  await page.locator('#sheet-play-view .play-traits-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'');
@@ -142,13 +154,19 @@ try{
  await page.locator('[data-session-pane="table"]').click();await page.locator('[data-session-content="table"]:visible').waitFor();assert(await page.locator('.session-map-panel').isVisible());
  assert.equal(await page.locator('#pair-form').isVisible(),false);
  await globalPage('library');
- await page.locator('.library-management > summary').click();await page.locator('[data-act="library-select-all"]').click();
+ assert.equal(await page.locator('#creature-back').isVisible(),false,'Archive hides character back');
+ assert(await page.locator('#nav [data-nav="library"]').isVisible(),'Archive dock is restored');
+ assert.equal(await page.locator('#sheet-navigation').isVisible(),false,'Character dock is hidden');
+ assert.equal(await page.locator('#creature-name').textContent(),'VTT Mobile');
+ assert.equal(await page.locator('#creature-classes').isVisible(),false);
+ await page.locator('[data-library-select-all]').check();
  await page.locator('[data-act="library-export"]').waitFor();
- assert(await page.locator('.library-management').evaluate(n=>n.open),'Batch operations do not hide themselves after rerender');
+ assert(await page.locator('[data-library-select-all]').isChecked(),'Header checkbox retains bulk selection');
  await page.locator('[data-act="open"]').click();await sheet('battle');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
- assert.equal(await page.locator('.play-dock .btn:visible').count(),6);
+ assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
+ assert(await page.locator('#creature-back').isVisible());
  // Opening a multiclass character shows every class both in the persistent
  // header and directly below the name on the Info tab.
  await globalPage('library');
@@ -165,7 +183,7 @@ try{
  assert.match(await page.locator('.play-identity-classes').textContent(),/Guerriero 3 · Mago 2 · Liv\. totale 5/);
  assert(await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).count());
  assert.equal(await page.locator('#sheet-navigation [data-sheet]').count(),4);
- // Gallery and persistent header must distinguish elven characters from monsters.
+ // Archive cards preserve species and class details without creature portraits.
  await globalPage('library');
  await page.evaluate(async()=>{
   const {listCreatures,openCreatureEditor,createCreature}=await import('/creatures.js');
@@ -180,16 +198,16 @@ try{
  const elfCard=page.locator('.creature-card').filter({hasText:'Lyria · Sentinella delle stelle'});
  assert.match(await elfCard.locator('.creature-details').textContent(),/Elfo/);
  assert.doesNotMatch(await elfCard.locator('.creature-details').textContent(),/Personaggio|Mostro/);
- assert.equal(await elfCard.locator('.creature-face').count(),1);
+ assert.equal(await elfCard.locator('.creature-face').count(),0);
+ assert.match(await elfCard.locator('.creature-classes').textContent(),/Guerriero 3 · Mago 2/);
  const orcCard=page.locator('.creature-card').filter({hasText:'Orco del crepuscolo'});
  assert.match(await orcCard.locator('.creature-details').textContent(),/Orco/);
- assert.equal(await orcCard.locator('.creature-face').count(),1);
+ assert.equal(await orcCard.locator('.creature-face').count(),0);
  await orcCard.locator('[data-act="open"]').click();
- assert.equal(await page.locator('#creature-symbol .creature-face').count(),1);
+ assert.equal(await page.locator('#creature-symbol').count(),0);
  await sheet('info');
- assert.equal(await page.locator('.play-identity-mark .vtt-action-glyph').count(),1);
- assert.equal(await page.locator('.play-identity-mark .creature-face').count(),0,'Only Info reverts to the original symbol');
+ assert.equal(await page.locator('.play-identity-mark').count(),0,'No portrait icon appears on Info');
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: all 7 destinations at 320/360/390/430px and landscape, 48px labeled navigation, modal focus/Escape, pending saves, disclosure memory, catalog creation, session panes, offline dice and offline reopening.');
+ console.log('PASS: six direct creature destinations at 320/360/390/430px and landscape, header back restores archive bars, quick condition/origin links, pending saves, catalog, session, offline and disclosure regressions.');
  console.log('Screenshots: '+fileURLToPath(artifacts));
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

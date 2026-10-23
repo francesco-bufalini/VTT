@@ -2,7 +2,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Read-only portable counterpart of CreatureFeatures.collect_features in the desktop.
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
-import {localClasses} from './sheet_rules.js';
+import {localClasses,SKILLS} from './sheet_rules.js';
 import {activeInfusions} from './item_controls.js';
 
 const arr=value=>Array.isArray(value)?value:[];
@@ -24,7 +24,7 @@ function available(record,entry,level=1,classMember=null){
    levelOf(localClasses(record).find(c=>same(c.name,gate.class_name)&&
      (!gate.class_source||same(c.source,gate.class_source)))?.level):
    classMember?levelOf(classMember.level):
-   localClasses(record).reduce((total,c)=>total+levelOf(c.level),0)||levelOf(record.level);
+   localClasses(record).reduce((total,c)=>total+levelOf(c.level),0)||levelOf(record.level)||1;
  return current>=threshold&&current<=maximum;
 }
 function sourceDisabled(record,id){
@@ -56,8 +56,13 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const at=levelOf(level),key=[origin_key,norm(name),at].join('|');
   if(used.has(key))return;
   used.add(key);
+  const compatibleOrigins=new Set([norm(origin_key)]);
+  if(category==='razza'&&origin_key.startsWith('species|')&&record.species)
+   compatibleOrigins.add('race|'+norm(record.species_source)+'|'+norm(record.species));
+  if(category==='razza'&&origin_key.startsWith('subrace|')&&record.subrace)
+   compatibleOrigins.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
   const projected=arr(calculated.features).find(row=>same(row.name,name)&&
-   same(row.origin_key,origin_key)&&levelOf(row.level)===at);
+   compatibleOrigins.has(norm(row.origin_key))&&levelOf(row.level)===at);
   const id=projected?.origin_id||entry.feature_origin||'';
   rows.push({name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
@@ -91,18 +96,29 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const selected=record.subrace?
    await lookup('races',record.species+' ('+record.subrace+')',record.subrace_source):null;
   const baseRace=await lookup('races',record.species,record.species_source,record.species_id);
-  const race=selected||baseRace;
+  const race=baseRace||selected;
   if(race){
    const key='species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source);
    const options={category:'razza',origin:'Specie · '+record.species,origin_key:key,level:1};
-   // The subrace may have its own traits but no narrative: fall back to the
-   // base species' fluff, never mistake PHB/source metadata for its description.
-   const story=(arr(race.fluff).length?race.fluff:null)??
-    (arr(baseRace?.fluff).length?baseRace.fluff:null)??
-    race.description??baseRace?.description??race.entries??'';
-   add({name:'Descrizione · '+record.species,entries:story,source:race.source},
+   // Species and subrace own distinct feature lists and grant origins.
+   // Never place subrace-only features into the base species tier.
+   const story=(arr(baseRace?.fluff).length?baseRace.fluff:null)??
+    (arr(selected?.fluff).length?selected.fluff:null)??
+    baseRace?.description??selected?.description??baseRace?.entries??'';
+   add({name:'Descrizione · '+record.species,entries:story,source:baseRace?.source||race.source},
     {...options,rank:0});
-   named(race,options,{includeUnnamed:true});
+   if(baseRace)named(baseRace,options,{includeUnnamed:true,requireGates:true});
+   if(record.subrace){
+    const subopts={...options,origin:'Sottorazza · '+record.subrace,
+     origin_key:'subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace)};
+    // The base lore is already displayed above; the subrace overview
+    // contains only its own lore and its own structured benefits.
+    const substory=(arr(selected?.fluff).length?selected.fluff:null)??
+     selected?.description??'';
+    add({name:'Descrizione · '+record.subrace,entries:substory,
+     source:selected?.source||record.subrace_source||''},{...subopts,rank:0});
+    if(selected)named(selected,subopts,{includeUnnamed:true,requireGates:true});
+   }
   }
  }
  for(const selection of effectiveBackgrounds(record)){
@@ -215,17 +231,62 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   // and do not replace the full item description with partial effect text.
   if(originKey.startsWith('item:'))continue;
   const category=originKey.startsWith('class|')?'classi':
-   originKey.startsWith('species|')||originKey.startsWith('race|')?'razza':
+   originKey.startsWith('species|')||originKey.startsWith('race|')||
+   originKey.startsWith('subrace|')?'razza':
    originKey.startsWith('background|')?'background':
    originKey.startsWith('feat|')?'talenti':
    originKey.startsWith('monster|')?'mostro':'altro';
-  const origin=rows.find(r=>r.origin_key===originKey)?.origin||
+  const normalizedKey=category==='razza'&&
+    originKey==='race|'+norm(record.species_source)+'|'+norm(record.species)?
+     'species|'+(record.species_id||norm(record.species))+'|'+norm(record.species_source):
+     originKey;
+  const origin=rows.find(r=>r.origin_key===normalizedKey)?.origin||
    arr(calculated.origins).find(o=>o.id===originKey)?.name||originKey.replaceAll('|',' · ');
-  add(feature,{category,origin,origin_key:originKey,level:feature.level||0,
+  add(feature,{category,origin,origin_key:normalizedKey,level:feature.level||0,
    rank:2,inactive:!!feature.disabled});
+ }
+ // Ordinary class/species/background proficiencies have a stable origin ID,
+ // but no concrete feature ID. Give them a read-only trait representing
+ // the granted competences instead of opening an unrelated class trait.
+ const proficiencySources=new Map();
+ for(const [key,sources] of Object.entries(calculated.proficiency_sources||{})){
+  const kind=key.split(':')[0];
+  if(!['skill','expertise','save'].includes(kind))continue;
+  for(const source of arr(sources)){
+   const id=String(source?.id||'');
+   if(!/^(class|race|subrace|background|feat)[|]/.test(id))continue;
+   if(!proficiencySources.has(id))proficiencySources.set(id,{name:source.name,grants:new Set()});
+   proficiencySources.get(id).grants.add(key);
+  }
+ }
+ for(const [id,source] of proficiencySources){
+  const normId=id.toLowerCase();
+  const anchor=rows.find(row=>norm(row.origin_key)===normId)||
+    rows.find(row=>normId.startsWith('race|')&&row.category==='razza'&&
+      norm(row.origin).endsWith(norm(id.split('|').slice(2).join('|'))))||
+    rows.find(row=>normId.startsWith('subrace|')&&row.category==='razza'&&
+      norm(row.origin).includes(norm(record.species)));
+  const idGroup=id.split('|')[0];
+  const category=anchor?.category||({class:'classi',race:'razza',subrace:'razza',
+    background:'background',feat:'talenti'}[idGroup]||'altro');
+  const names=[...source.grants].map(key=>{
+   const [kind,...parts]=key.split(':');
+   const name=parts.join(':');
+   const localized=SKILLS.find(([key])=>key===name)?.[1]||name;
+   const label=kind==='save'?'Tiro salvezza':kind==='expertise'?'Maestria':'Abilità';
+   return label+' · '+(kind==='save'?({str:'Forza',dex:'Destrezza',con:'Costituzione',
+     int:'Intelligenza',wis:'Saggezza',cha:'Carisma'}[name]||name):localized);
+  });
+  rows.push({name:'Competenze',entries:names.join(' · '),
+    category,origin:anchor?.origin||String(source.name||id),
+    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,
+    rank:2,inactive:false,feature_origin:'',proficiency_origin:id,
+    key:'proficiency:'+id});
  }
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
+  (a.category==='razza'&&b.category==='razza'?
+   Number(a.origin_key.startsWith('subrace|'))-Number(b.origin_key.startsWith('subrace|')):0)||
   a.origin.localeCompare(b.origin,'it',{sensitivity:'base',numeric:true})||
   a.level-b.level||a.rank-b.rank||
   a.name.localeCompare(b.name,'it',{sensitivity:'base',numeric:true}));
@@ -247,7 +308,7 @@ export function groupTraitRows(rows){
    origin={key:row.origin_key,title:row.origin,levels:[]};
    category.origins.push(origin);
   }
-  const level=row.category==='classi'?row.level:-1;
+  const level=['classi','razza'].includes(row.category)?row.level:-1;
   let tier=origin.levels.find(group=>group.level===level);
   if(!tier){tier={level,rows:[]};origin.levels.push(tier);}
   tier.rows.push(row);
@@ -272,7 +333,8 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
    const ownedId=String(row.origin_key||'');
    const display=norm(String(row.origin||'').split(' · ').pop());
    return (originId&&
-       (String(row.feature_origin||'')===originId||ownedId===originId))||
+       (String(row.feature_origin||'')===originId||ownedId===originId||
+         originId==='feature:trait:'+row.key))||
      (originName&&display===originName);
   });
   if(!candidates.length)continue;
@@ -286,7 +348,7 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
   const id=String(grant.spell_id);
   if(selected.row.granted_spells.some(item=>item.id===id))continue;
   const rawLevel=spell?.level,level=rawLevel==null?null:Number(rawLevel);
-  selected.row.granted_spells.push({id,name:String(spell?.name||grant.spell_name||id),
+  selected.row.granted_spells.push({id,origin_id:originId,name:String(spell?.name||grant.spell_name||id),
     level:Number.isInteger(level)&&level>=0&&level<=9?level:null});
  }
  for(const row of result)row.granted_spells.sort((a,b)=>(a.level??10)-(b.level??10)||

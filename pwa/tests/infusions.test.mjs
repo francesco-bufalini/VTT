@@ -172,3 +172,18 @@ test("only a worn/attuned infused item adds its source-bound descriptive trait",
  const hidden=await collectTraitRows(unequipped,calc,providers);
  assert.equal(hidden.some(row=>row.name==="Infusione · Enhanced Arcane Focus"),false);
 });
+
+
+test("infusion bonus provenance remains valid and withdraws with the granting trait",()=>{
+ const entry=byName("Enhanced Arcane Focus");
+ const item={id:"local_wand",instance_id:"wand_1",name:"Arcane Wand",quantity:1,
+   custom_item_type:"other",active:true,equipped:true,attuned:true,rarity:"none",
+   infusion:{id:entry.id,name:entry.name,creator_id:"artificer_test",level:10,requires_attunement:true}};
+ const record={...make(10),inventory:[item]};
+ const result=calculateSheet(record,sheetCatalogs);
+ const grant=result.bonuses.find(g=>g.target==='spell_attack'&&String(g.source_id||g.origin_id||'').startsWith('infusion:'));
+ assert.ok(grant,'The active infusion must have its own verifiable source');
+ assert.equal(result.values.spell_attack,2);
+ const disabled={...record,origin_enabled:{[result.features.find(f=>f.name==='Infuse Item').origin_id]:false}};
+ assert.equal(calculateSheet(disabled,sheetCatalogs).values.spell_attack,0);
+});

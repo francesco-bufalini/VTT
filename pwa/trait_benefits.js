@@ -29,12 +29,18 @@ export function signedTraitFormula(expression){
  return raw&&!/^[+\-−]/.test(raw)?'+'+raw:raw;
 }
 export function traitBenefitSources(trait={},record={}){
- const ids=new Set([trait.feature_origin,...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean));
+ const ids=new Set([trait.feature_origin,
+  ...(trait.key?['feature:trait:'+trait.key]:[]),
+  ...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean));
  // Catalog summary cards and rule grants sometimes use different IDs for
  // the same *owned* species or feat. Only the summary card gets these aliases.
  if(trait.rank===0&&trait.category==='razza'){
-  if(record.species)ids.add('race|'+norm(record.species_source)+'|'+norm(record.species));
-  if(record.subrace)ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
+  // Parent species and subrace are independent sources. Never attribute a
+  // subrace grant to the parent species' summary (or vice versa).
+  if(String(trait.origin_key||'').startsWith('species|')&&record.species)
+   ids.add('race|'+norm(record.species_source)+'|'+norm(record.species));
+  if(String(trait.origin_key||'').startsWith('subrace|')&&record.subrace)
+   ids.add('subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace));
  }
  if(trait.rank===0&&trait.category==='talenti'){
   for(const feat of rows(record.feats_catalog)){
@@ -64,11 +70,11 @@ export function traitBenefitTargetLabel(value=''){
 function proficiencyLabel(key){
  const [kind,...parts]=String(key).split(':'),name=parts.join(':');
  return {skill:SKILLS[name]||name,expertise:SKILLS[name]||name,
-  save:ABILITIES[name]||name,weapon:name,armor:name,tool:name,language:name}[kind]||name;
+  save:ABILITIES[name]||name,weapon:({'firearms':'Armi da fuoco','firearm':'Armi da fuoco'}[norm(name)]||name),armor:name,tool:name,language:name}[kind]||name;
 }
-const proficiencyKinds={skill:'Competenze nelle abilità',expertise:'Maestrie',
- save:'Competenze nei tiri salvezza',weapon:'Competenze nelle armi',
- armor:'Competenze nelle armature',tool:'Competenze negli strumenti',language:'Lingue'};
+const proficiencyKinds={skill:'Abilità',expertise:'Maestria',
+ save:'Tiri salvezza',weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
+const proficiencyOrder=['skill','expertise','save','weapon','armor','tool','language'];
 /** Returns ordered groups with {type,title,items:[{label,value}]}.
  * No grouping by guessed trait names: every grant must match an origin ID.
  */
@@ -90,24 +96,43 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(id&&bonusSeen.has(id))continue;
   if(id)bonusSeen.add(id);
   add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),
-   signedTraitFormula(row.expression)+(row.disabled?' · Disattivato':''),row.id||'');
+   signedTraitFormula(row.expression)+(row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;
-  add('dice','Dadi bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice));
+  add('dice','Dadi bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
- for(const [key,sources] of Object.entries(calculated.proficiency_sources||{})){
-  if(!rows(sources).some(source=>source?.id&&ids.has(source.id)))continue;
-  const kind=key.split(':')[0];
-  add('proficiency:'+kind,proficiencyKinds[kind]||'Competenze',proficiencyLabel(key));
- }
- for(const row of rows(record.damage_defense_entries)){
-  if(row.disabled||!belongs(row))continue;
-  const rank=Number(row.rank);
-  const group={[-1]:['vulnerability','Vulnerabilità'],1:['resistance','Resistenze'],
-   2:['damage_immunity','Immunità ai danni'],3:['condition_immunity','Immunità alle condizioni']}[rank];
-  if(group)add(group[0],group[1],DAMAGE[norm(row.key)]||String(row.key||''));
- }
+ // One Competenze section: each filled row has the proficiency *type* at
+ // left (where a numeric bonus has its target) and its value on the right.
+ // Stable kind/name sorting keeps expertise and language rows easy to scan.
+ const proficiencies=Object.entries(calculated.proficiency_sources||{})
+  .filter(([,sources])=>rows(sources).some(source=>source?.id&&ids.has(source.id)))
+  .flatMap(([key,sources])=>rows(sources).filter(source=>source?.id&&ids.has(source.id)).map(source=>({
+   kind:key.split(':')[0],name:proficiencyLabel(key),originId:source.id,key
+  })))
+  .sort((a,b)=>{
+   const ai=proficiencyOrder.indexOf(a.kind),bi=proficiencyOrder.indexOf(b.kind);
+   return (ai<0?100:ai)-(bi<0?100:bi)||
+    a.name.localeCompare(b.name,'it',{sensitivity:'base',numeric:true});
+  });
+ for(const item of proficiencies)
+  add('proficiency','Competenze',proficiencyKinds[item.kind]||'Altre competenze',item.name,'proficiency:'+item.originId+':'+item.kind+':'+norm(item.key.split(':').slice(1).join(':')));
+ // One section for all defenses and vulnerabilities, with the kind in the
+ // left-hand column and the protected/affected damage or condition on the right.
+ const defenseKinds={
+  1:['Resistenza',0],2:['Immunità ai danni',1],
+  3:['Immunità alle condizioni',2],[-1]:['Vulnerabilità',3]
+ };
+ const defenses=rows(record.damage_defense_entries)
+  .filter(row=>!row.disabled&&belongs(row)&&defenseKinds[Number(row.rank)])
+  .map(row=>({
+   label:defenseKinds[Number(row.rank)][0],
+   order:defenseKinds[Number(row.rank)][1],
+   value:DAMAGE[norm(row.key)]||String(row.key||''),id:'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)
+  }))
+  .sort((a,b)=>a.order-b.order||a.value.localeCompare(b.value,'it',{sensitivity:'base'}));
+ for(const row of defenses)
+  add('defenses','Resistenze, immunità e vulnerabilità',row.label,row.value,row.id);
  for(const row of rows(calculated.trackers)){
   if(!belongs(row)){
    // Unattributed automatic class pools are shown only in the class overview,
@@ -119,19 +144,20 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const maximum=Number(row.max);
   const suffix=Number.isFinite(maximum)?String(maximum):'';
   const reset=RECOVERY[row.recharge]||'';
-  add('resources','Risorse e tracker',row.name,(suffix?('Max '+suffix):'')+(reset?((suffix?' · ':'')+reset):''));
+  add('resources','Risorse e tracker',row.name,(suffix?('Max '+suffix):'')+(reset?((suffix?' · ':'')+reset):''),'tracker:'+String(row.id||''));
  }
  for(const spell of rows(trait.granted_spells))
   add('spells','Incantesimi concessi',spell.name,spell.level===0?'Trucchetto':
-    Number.isInteger(spell.level)?'Livello '+spell.level:'');
+    Number.isInteger(spell.level)?'Livello '+spell.level:'','spell:'+String(spell.origin_id||'')+':'+String(spell.id||''));
  for(const action of rows(record.action_grants)){
   if(action.disabled||!belongs(action))continue;
   add('actions','Azioni concesse',action.name||action.label||action.id,
-   String(action.action_type||action.time||''));
+   String(action.action_type||action.time||''),'action:'+String(action.id||[action.origin_id,action.name].join('|')));
  }
  for(const effect of rows(calculated.active_feature_effects)){
   if(!effect.effective||!belongs(effect))continue;
-  add('effects','Effetti attivi',effect.name||'Capacità',effect.summary||'Attivo');
+  add('effects','Effetti attivi',effect.name||'Capacità',effect.summary||'Attivo','effect:'+String(effect.id||[effect.origin_id,effect.name].join('|')));
  }
- return [...groups.values()].map(({type,title,items})=>({type,title,items}));
+ const removed=new Set(rows(record.trait_benefit_removed?.[trait.key]));
+ return [...groups.values()].map(({type,title,items})=>({type,title,items:items.filter(item=>!removed.has(item.id))})).filter(group=>group.items.length);
 }

@@ -64,7 +64,10 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  const ability=monsterAttack?'':abilityFor(target,calculated);
  const rank=monsterAttack?0:trainingRank(calculated,target);
  const score=num(record?.abilities?.[ability]??10);
- const abilityBase=ability?Math.floor((score-10)/2):0;
+ // Score grants change Mod.FOR / Mod.DES itself; they aren't additional
+ // bonuses to an attack formula. Display the effective modifier in Base.
+ const adjustedScore=score+list(all['ability:'+ability]).reduce((sum,row)=>sum+num(row.value),0);
+ const abilityBase=ability?Math.floor((adjustedScore-10)/2):0;
  const profTotal=num(calculated?.values?.proficiency);
  const proficiencyExtras=list(all.proficiency).reduce((sum,row)=>sum+num(row.value),0);
  const proficiencyBase=profTotal-proficiencyExtras;
@@ -82,13 +85,7 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
      section:row.origin_id?'':'formula_bonuses',key:id});
  };
  if(ability){
-   let running=score;
-   for(const row of list(all['ability:'+ability])){
-     const next=running+num(row.value);
-     const difference=Math.floor((next-10)/2)-Math.floor((running-10)/2);
-     running=next;
-     if(difference)add({...row,value:difference,expression:'Mod.'+abilityNames[ability]+' ('+row.expression+')'},1,'score');
-   }
+   // Only bonuses applied directly to the modifier deserve separate terms.
    for(const row of list(all['ability_mod:'+ability]))add(row);
  }
  if(rank){
@@ -172,6 +169,94 @@ export function sheetRollOriginLabel(name){
  const short=full.replace(/^(?:(?:oggetto|tratto|privilegio|item)\s*[-–—:·]\s*)+/gi,'').trim();
  return short||full;
 }
+// The damage formula and the damage types are independent data: one type
+// covers every die group, or an ordered list maps to the respective groups.
+// Never invent a type when an ambiguous list does not match the die groups.
+const damageSign=value=>Number(value)<0?' − '+Math.abs(Number(value)):' + '+Number(value);
+const normalizeDamage=value=>String(value||'').replace(/\s+/g,'').replace(/−/g,'-');
+const damageDie=term=>/^\+?[1-9]\d*d(?:2|3|4|6|8|10|12|20|100)$/i.test(term);
+const damageInteger=term=>/^[+-]?\d+$/.test(term);
+function damageModifierExpression(value,attack,notation){
+ if(!value)return '';
+ const ability=String(attack?.ability||'').toLowerCase();
+ const source=normalizeDamage(attack?.damage_base_formula);
+ const rawModifier=Number(attack?.damage_ability_modifier)+Number(attack?.damage_extra_modifier);
+ const expected=source+(rawModifier>0?'+'+rawModifier:rawModifier<0?String(rawModifier):'');
+ const matches=source&&normalizeDamage(attack?.damage)===normalizeDamage(notation)&&
+   expected===normalizeDamage(notation);
+ const sourceTerms=source.match(/[+-]?[^+-]+/g)||[];
+ const staticBase=sourceTerms.filter(damageInteger).reduce((sum,term)=>sum+Number(term),0);
+ const abilityAmount=Number(attack?.damage_ability_modifier);
+ const extra=Number(attack?.damage_extra_modifier);
+ if(matches&&Object.hasOwn(abilityNames,ability)&&Number.isFinite(abilityAmount)&&
+   Number.isFinite(extra)&&staticBase+abilityAmount+extra===value&&abilityAmount!==0){
+   const remaining=staticBase+extra;
+   return ' + Mod.'+abilityNames[ability]+(remaining?damageSign(remaining):'');
+ }
+ // An unknown source must not be falsely identified as a Strength modifier.
+ return ' + Modificatore';
+}
+// One section for base damage dice and their modifier. Different damage
+// types get separate sections. Keep the numeric roll untouched.
+export function damageRollSegments(roll,type='',attack=null){
+ const notation=normalizeDamage(roll?.notation);
+ const terms=notation.match(/[+-]?[^+-]+/g)||[];
+ const dice=terms.filter(damageDie);
+ const labels=(Array.isArray(type)?type.map(String):String(type||'').split(/[,;]/))
+   .map(value=>value.trim()).filter(Boolean);
+ const typed=labels.length===1||labels.length===dice.length;
+ const groups=[];
+ for(let i=0;i<dice.length;i++){
+   const kind=typed?(labels.length===1?labels[0]:labels[i]):'';
+   const term=dice[i].replace(/^\+/,'');
+   const previous=groups.at(-1);
+   if(previous&&previous.damageType===kind)previous.dice.push(term);
+   else groups.push({damageType:kind,dice:[term]});
+ }
+ const modifier=Number(roll?.modifier)||0;
+ return groups.map((group,index)=>{
+   const base=index===0;
+   const formula=group.dice.join(' + ');
+   return {key:'damage:'+index,kind:base?'base':'formula',
+     formula:(base?'':' + ')+formula+(base?damageModifierExpression(modifier,attack,notation):''),
+     expanded:'',damageType:group.damageType,originName:base?'Danno base':'Danno aggiuntivo',
+     originId:'',value:base?modifier:0};
+ });
+}
+export const rollDamageName=type=>{
+ const labels={L:'Fulmine',T:'Tuono',A:'Acido',C:'Freddo',F:'Fuoco',
+  N:'Necrotico',P:'Veleno',R:'Radioso',Y:'Psichico',B:'Contundente',
+  S:'Tagliente',I:'Perforante',lightning:'Fulmine',thunder:'Tuono',
+  bludgeoning:'Contundente',piercing:'Perforante',slashing:'Tagliente',
+  acid:'Acido',cold:'Freddo',fire:'Fuoco',force:'Forza',
+  necrotic:'Necrotico',poison:'Veleno',psychic:'Psichico',radiant:'Radiante'};
+ const raw=String(type||'').trim();
+ return labels[raw]||labels[raw.toLowerCase()]||raw||'Non specificato';
+};
+// These optional sources are never added automatically. They remain a
+// selection belonging to the roll dialog and are validated before rolling.
+export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attackId=''}={}){
+ const result=[];
+ const trackerFor=id=>(calculated?.trackers||[]).find(t=>t.id===id&&!t.disabled);
+ for(const [i,row] of (Array.isArray(bonuses)?bonuses:[]).entries()){
+  const tracker=row.tracker_id?trackerFor(row.tracker_id):null;
+  if(row.tracker_id&&!tracker)continue;
+  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):null;
+  if(remaining!==null&&remaining<Math.max(1,Number(row.tracker_cost)||1))continue;
+  result.push({...row,selectionId:'bonus:'+i,remaining,
+    spent:tracker?Number(tracker.spent||0):null,
+    tracker_name:tracker?.name||'',tracker_cost:tracker?Math.max(1,Number(row.tracker_cost)||1):0});
+ }
+ if(kind==='damage'&&attackId==='class_feature:lightning_launcher'){
+  const tracker=trackerFor('feature:lightning_launcher:extra_damage');
+  const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
+  if(remaining>0)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
+   dice:'1d6',damage_type:'lightning',origin_name:'Lightning Launcher',
+   origin_id:tracker.origin_id,tracker_id:tracker.id,tracker_cost:1,
+   tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
+ }
+ return result;
+}
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
@@ -181,6 +266,7 @@ export function sheetRollOriginHtml(segments,escapeHtml){
      ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
      (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
+     (row.damageType!==undefined?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damageType))+'</span>':'')+
      '<span class="sheet-roll-origin-name">'+esc(sheetRollOriginLabel(row.originName))+'</span></'+tag+'>';
  }).join('')+'</div>';
 }

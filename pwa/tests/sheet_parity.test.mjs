@@ -99,7 +99,7 @@ test('statistics layout keeps six aligned, individually editable ability rows',(
  assert.match(markup,/stats-abilities-panel/);
  assert.match(markup,/stats-skills-panel/);
  assert.match(markup,/Altre competenze/);
- assert.match(markup,/data-detail="proficiency_choices"/);
+ assert.doesNotMatch(markup,/data-detail="proficiency_choices"/,'The removed origin editor has no shortcut');
  assert.doesNotMatch(markup,/<summary>Base<\/summary>/);
  assert.doesNotMatch(markup,/Modifica i valori di base o usa ±/);
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
@@ -239,7 +239,7 @@ test('slot counters distinguish class/pact, keep manual totals and recover witho
 });
 test('resources use native IDs, formulas, subclass gating and explicit rest recovery',()=>{
  const c={class:'Bard',class_source:'PHB',level:5,abilities:{cha:16},resource_trackers:[{id:'custom',name:'Personal',max:1,max_formula:'proficiency + 1',recharge:'manual'}],resource_tracker_spent:{'class:bard:phb:bardic_inspiration':2,custom:1,unknown:4}};
- const out=calculateSheet(c,catalogs);
+ const out=calculateSheet(c,{...catalogs,classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'))});
  const inspiration=out.trackers.find(t=>t.id==='class:bard:phb:bardic_inspiration');
  assert.ok(inspiration);
  assert.equal(inspiration.max,3);
@@ -385,7 +385,7 @@ test('battle context separates movement from identity and displays the equipped 
  assert.doesNotMatch(battle,/data-field="armor_natural_formula"/);
  assert.doesNotMatch(battle,/<summary>Armatura e CA naturale<\/summary>/);
  assert.doesNotMatch(battle,/data-calculated="initiative"/);
- assert.match(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
+ assert.doesNotMatch(battle,/data-act="sheet-details" data-detail="formula_bonuses"/);
  assert.doesNotMatch(view(creature,'info'),/<h3>Velocità<\/h3>/);
  const natural=view({...creature,inventory:[]},'battle');
  assert.match(natural,/Formula CA naturale/);

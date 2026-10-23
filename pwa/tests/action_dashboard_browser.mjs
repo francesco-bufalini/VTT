@@ -25,7 +25,7 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  page.on('response',res=>{if(res.status()===404)missing.push(res.url());});
  page.on('request',req=>{if(req.method()!=='GET'&&req.url().includes('/api/'))writes.push(req.url());});
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  await page.evaluate(async()=>{
   const {createCreature,saveCreature}=await import('/creatures.js');
   const saved=await createCreature('character','Esploratrice di prova');
@@ -36,10 +36,21 @@ try{
    resource_trackers:[{id:'charge',name:'Cariche',max:3,recharge:'long_rest'}],resource_tracker_spent:{charge:1}},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();
- const section=async key=>{if(await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();const target=page.locator('#sheet-navigation [data-sheet="'+key+'"],#secondary-sheet-navigation [data-sheet="'+key+'"]').first();if(!await target.isVisible())await page.locator('#more-navigation').click();await target.click();await page.waitForFunction(tab=>document.querySelector('[data-sheet="'+tab+'"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('#app').dataset.renderedSheet===tab,key);};
+ const section=async key=>{
+  if(await page.locator('#sheet-context-dialog[open]').count())
+   await page.locator('#sheet-context-dialog [data-act="sheet-context-close"]').first().click();
+  if(key==='conditions'){
+   await page.evaluate(tab=>{
+    const button=document.createElement('button');
+    button.type='button';button.dataset.act='sheet';button.dataset.sheet=tab;
+    document.body.append(button);button.click();button.remove();
+   },key);
+  }else await page.locator('#sheet-navigation [data-sheet="'+key+'"]').click();
+  await page.waitForFunction(tab=>document.querySelector('#app').dataset.renderedSheet===tab,key);
+ };
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:900});
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){

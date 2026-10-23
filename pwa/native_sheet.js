@@ -7,7 +7,7 @@ import {itemKind,resolveOwnedItem} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 export const SHEET_SECTIONS = [["info","Info"],
  ["battle","Azioni"],["magic","Magia"],["inventory","Inventario"],
- ["conditions","Condizioni"],["origins","Modifica personaggio"]];
+ ["conditions","Condizioni"]];
 export const ALIGNMENTS = [["Legale buono","Legale buono"],["Neutrale buono","Neutrale buono"],["Caotico buono","Caotico buono"],["Legale neutrale","Legale neutrale"],["Completamente neutrale","Completamente neutrale"],["Caotico neutrale","Caotico neutrale"],["Legale malvagio","Legale malvagio"],["Neutrale malvagio","Neutrale malvagio"],["Caotico malvagio","Caotico malvagio"]];
 // Mirrors CreatureArea._confirm_miniature for the portable fields only.
 export function miniaturePatch(creature,profile,kind){
@@ -116,6 +116,7 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   spent[meta.tracker.id]=Number(spent[meta.tracker.id]||0)+meta.cost;patch.resource_tracker_spent=spent;
  }
  return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,
+  ...(selection.item_target?{item_target:structuredClone(selection.item_target)}:{}),
   spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
   ...(meta.selection.names?.length?{metamagic:meta.selection,rules_version:c.rules_version||'2014'}:{}),source_level:c.level||1},spell:meta.spell};
 }
@@ -467,7 +468,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const nativeNote='';
  const skillPanels=()=>panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
   panel('Altre competenze',summary(['tool','language','weapon','armor'].map((kind,i)=>[['Strumenti','Linguaggi','Armi','Armature'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
-  '<button class="btn full" data-act="sheet-details" data-detail="proficiency_choices">Modifica competenze</button>';
+  '';
  const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+
    '<div class="native-abilities-header" role="row">'+
@@ -513,7 +514,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
        '<h3>Classi secondarie</h3>'+(secondaryClasses.length?'':'<p class="hint">Nessuna classe secondaria.</p>')+
        nativeRows(c,'classes',catalogs,1)),'classes-progression-panel')+
-   panel('Talenti',feats+'<button class="btn" data-act="sheet-details" data-detail="feats_catalog">＋ Aggiungi talento</button>')+
+   panel('Talenti',feats)+
    statsIntro()+
    skillPanels();
  if(section==='battle'){
@@ -539,7 +540,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '<div class="battle-defense-settings">'+armor+
       '<div class="battle-ac-formula"><strong>'+(wornArmor?'Formula armatura indossata':'Formula CA naturale')+'</strong>'+
       '<output>'+esc(acFormula)+'</output></div>'+
-      '<button type="button" class="btn small battle-ac-manage" data-act="sheet-details" data-detail="formula_bonuses">Gestisci privilegi e bonus della CA</button>'+
+
     '</div>';
   return '<div class="battle-root">'+
    panel('Punti ferita',
@@ -583,12 +584,6 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    resources+
    panel('Attacchi disponibili',attacks,'battle-attacks-panel')+
    '</div>';
- }
- if(section==='origins'){
-  let content=details==='overview'?summary([['Razza / Specie',c.species],['Classe',c.class],['Sottoclasse',c.subclass],['Background',c.background]])+nativeNote:details==='resources'?resourcesEditor:nativeRows(c,details,catalogs);
-  if(details==='overview')content+='<h3>Origini dei benefici</h3>'+list(calculated.origins).map(o=>'<label class="check"><input type="checkbox" data-origin-enabled="'+esc(o.id)+'" '+(!o.disabled?'checked':'')+'>'+esc(o.name)+'</label>').join('');
-  if(details==='formula_bonuses')content='<details><summary>Bonus automatici dalle origini</summary>'+list(calculated.automatic_bonuses).map(row=>'<label class="check"><input type="checkbox" data-auto-bonus="'+esc(row.id)+'" '+(!row.disabled?'checked':'')+'>'+esc(row.origin_name)+' · '+esc(row.target)+' · '+esc(row.expression)+'</label>').join('')+'</details>'+content+'<h3>Bonus ai tiri con dadi</h3>'+nativeRows(c,'dice_bonuses',catalogs);
-  return '<label>Visualizza e modifica<select id="native-details">'+DETAILS.map(([key,label])=>'<option value="'+key+'" '+(key===details?'selected':'')+'>'+label+'</option>').join('')+'</select></label>'+panel(DETAILS.find(([key])=>key===details)?.[1]||'Panoramica',content);
  }
  return null;
 }

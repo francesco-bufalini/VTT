@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {signedTraitFormula,traitBenefitGroups} from '../trait_benefits.js';
+import {fixedProficiencies,proficiencyGrantOrigins} from '../structured_effects.js';
 
 test('signed formulas preserve negative signs and show a single positive prefix',()=>{
  assert.equal(signedTraitFormula('1 + proficiency'),'+1 + proficiency');
@@ -25,14 +26,15 @@ test('benefits are grouped and attached only to their own trait',()=>{
  };
  const groups=traitBenefitGroups(trait,record,calculated);
  assert.deepEqual(groups.map(group=>group.type),[
-  'bonus','dice','proficiency:skill','proficiency:language','resistance','resources','spells','actions']);
+  'bonus','dice','proficiency','defenses','resources','spells','actions']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
- assert.equal(groups[0].items[0].id,'b1','bonus rows keep their editor target');
+ assert.equal(groups[0].items[0].id,'bonus:b1','bonus rows keep their stable editor identity');
  assert.equal(groups[1].items[0].value,'+1d4');
- assert.equal(groups[3].items[0].label,'elvish');
- assert.equal(groups[4].items[0].label,'Fuoco');
- assert.equal(groups[5].items[0].value,'Max 3 · Riposo lungo');
+ assert.deepEqual(groups[2].items.map(item=>[item.label,item.value]),[
+  ['Abilità','Percezione'],['Lingue','elvish']]);
+ assert.deepEqual([groups[3].items[0].label,groups[3].items[0].value],['Resistenza','Fuoco']);
+ assert.equal(groups[4].items[0].value,'Max 3 · Riposo lungo');
  assert.ok(!JSON.stringify(groups).includes('Arcano'));
 });
 test('feature-granted numeric and active effects stay on exact feature; unrelated trait stays empty',()=>{
@@ -42,4 +44,91 @@ test('feature-granted numeric and active effects stay on exact feature; unrelate
  const groups=traitBenefitGroups({feature_origin:'feature:rage'}, {},c);
  assert.equal(groups[0].items[0].value,'-2');
  assert.equal(groups[1].type,'effects');
+});
+
+test('all proficiencies share one group ordered by kind then name',()=>{
+ const trait={feature_origin:'feature:training'};
+ const calculated={proficiency_sources:{
+  'language:draconic':[{id:'feature:training'}],
+  'weapon:longsword':[{id:'feature:training'}],
+  'skill:stealth':[{id:'feature:training'}],
+  'save:dex':[{id:'feature:training'}],
+  'skill:arcana':[{id:'feature:training'}],
+  'tool:thieves tools':[{id:'feature:training'}],
+  'expertise:perception':[{id:'feature:training'}],
+  'armor:light':[{id:'feature:training'}]
+ }};
+ const group=traitBenefitGroups(trait,{},calculated);
+ assert.equal(group.length,1);
+ assert.equal(group[0].type,'proficiency');
+ assert.deepEqual(group[0].items.map(row=>[row.label,row.value]),[
+  ['Abilità','Arcano'],['Abilità','Furtività'],['Maestria','Percezione'],
+  ['Tiri salvezza','Destrezza'],['Armi','longsword'],['Armature','light'],
+  ['Strumenti','thieves tools'],['Lingue','draconic']
+ ]);
+});
+
+test('species overview never includes subrace grants, and vice versa',()=>{
+ const record={species:'Elf',species_source:'PHB',subrace:'High Elf',subrace_source:'PHB'};
+ const calculated={
+  bonuses:[{id:'base',origin_id:'race|phb|elf',target:'speed',expression:'5'},
+   {id:'sub',origin_id:'subrace|phb|high elf',target:'ability:int',expression:'1'}],
+  proficiency_sources:{
+   'skill:perception':[{id:'race|phb|elf'}],
+   'language:elvish':[{id:'subrace|phb|high elf'}]
+  }
+ };
+ const species=traitBenefitGroups({category:'razza',rank:0,
+  origin_key:'species|some-id|phb'},record,calculated);
+ const subrace=traitBenefitGroups({category:'razza',rank:0,
+  origin_key:'subrace|phb|high elf'},record,calculated);
+ assert.equal(species.some(group=>group.items.some(item=>item.id==='sub'||item.value==='elvish')),false);
+ assert.equal(subrace.some(group=>group.items.some(item=>item.id==='base'||item.value==='Percezione')),false);
+ assert.equal(species.find(group=>group.type==='bonus').items[0].id,'bonus:base');
+ assert.equal(subrace.find(group=>group.type==='bonus').items[0].id,'bonus:sub');
+});
+
+test('resistances, immunities and vulnerabilities share one ordered section',()=>{
+ const trait={feature_origin:'feature:wards'};
+ const record={damage_defense_entries:[
+  {origin_id:'feature:wards',key:'cold',rank:2},
+  {origin_id:'feature:other',key:'acid',rank:1},
+  {origin_id:'feature:wards',key:'fire',rank:-1},
+  {origin_id:'feature:wards',key:'poisoned',rank:3},
+  {origin_id:'feature:wards',key:'acid',rank:1},
+  {origin_id:'feature:wards',key:'fire',rank:1},
+  {origin_id:'feature:wards',key:'cold',rank:2},
+  {origin_id:'feature:wards',key:'poison',rank:1,disabled:true}
+ ]};
+ const groups=traitBenefitGroups(trait,record,{});
+ assert.equal(groups.length,1);
+ assert.equal(groups[0].type,'defenses');
+ assert.equal(groups[0].title,'Resistenze, immunità e vulnerabilità');
+ assert.deepEqual(groups[0].items.map(row=>[row.label,row.value]),[
+  ['Resistenza','Acido'],['Resistenza','Fuoco'],
+  ['Immunità ai danni','Freddo'],['Immunità alle condizioni','poisoned'],
+  ['Vulnerabilità','Fuoco']
+ ]);
+});
+
+test('optional firearms proficiency uses structured item value, never metadata name',()=>{
+ const record={classes:[{name:'Artificer',source:'TCE',level:3}]};
+ const index={class:[{name:'Artificer',source:'TCE',startingProficiencies:{
+  weapons:['simple',{proficiency:'firearms',optional:true}]
+ }}]};
+ const trained=fixedProficiencies(record,index);
+ assert.ok(trained.has('weapon:firearms'));
+ assert.ok(trained.has('weapon:simple'));
+ assert.ok(!trained.has('weapon:optional'));
+ assert.ok(!trained.has('weapon:proficiency'));
+ const source=proficiencyGrantOrigins(record,index,'weapon','firearms');
+ assert.deepEqual(source.map(row=>row.id),['class|tce|artificer']);
+ const groups=traitBenefitGroups({category:'classi',rank:0,
+  origin_key:'class|tce|artificer'},record,{proficiency_sources:{
+   'weapon:firearms':source
+  }});
+ assert.equal(groups.length,1);
+ assert.deepEqual(groups[0].items.map(row=>[row.label,row.value]),[
+  ['Armi','Armi da fuoco']
+ ]);
 });

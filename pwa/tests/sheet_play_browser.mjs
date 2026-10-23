@@ -13,6 +13,11 @@ try{
      {kind:'skill',key:'arcana'}, {kind:'expertise',key:'stealth'}],
    resource_trackers:[...(creature.resource_trackers||[]),
      {id:'superiority',name:'Superiority Die',max:4,recharge:'short_rest'}],
+   dice_bonuses:[...(creature.dice_bonuses||[]),
+     {id:'charge-damage',target:'attack_damage:item:local_sword',dice:'1d6',
+      damage_type:'L',origin_name:'Carica fulmine',tracker_id:'focus',tracker_cost:1},
+     {id:'charge-hit',target:'attack_roll',dice:'1d4',
+      origin_name:'Precisione arcana',tracker_id:'focus',tracker_cost:1}],
    optional_features_catalog:[...(creature.optional_features_catalog||[]),
      {name:"Commander's Strike",source:'PHB',origin_name:'Manovra'}],
    action_grants:[...(creature.action_grants||[]),
@@ -29,7 +34,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
  for(const viewport of [{width:320,height:740},{width:360,height:800},{width:390,height:844},{width:430,height:932},{width:844,height:390}]){
   await page.setViewportSize(viewport);
-  for(const key of ['info','battle','magic','inventory','conditions','origins']){
+  for(const key of ['info','battle','magic','inventory','conditions']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]):visible,#sheet-play-view select:visible,#sheet-play-view textarea:visible');
    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
@@ -136,24 +141,61 @@ try{
  assert.equal(await mainAttack.locator('.play-battle-effect').count(),1);
  const damageButton=mainAttack.locator('[data-act="battle-damage-roll"]');
  assert.equal(await damageButton.count(),1);
- // Exercise damage-type localization without changing saved creature data.
- await damageButton.evaluate(node=>{node.dataset.damageType='slashing';});
- await damageButton.click();
  const rollDialog=page.locator('#sheet-roll-dialog');
+ // An actual calculated weapon attack must use the characteristic's keyword
+ // instead of showing only the numerical modifier.
+ assert.equal(await damageButton.getAttribute('data-damage-attack-id'),'item:local_sword');
+ await damageButton.click();
+ assert.doesNotMatch(await rollDialog.locator('h2').textContent(),/Danni/i,
+   'The weapon name alone identifies this damage roll');
+ assert.match(await rollDialog.locator('.sheet-roll-origin-symbol').first().textContent(),
+   /Mod.FOR/,'Original weapon damage must name its actual attack characteristic');
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),1);
+ await rollDialog.locator('.sheet-roll-close').click();
+ // A second synthetic fire damage component gets its own damage-type row.
+ await damageButton.evaluate(node=>{
+   node.dataset.damageFormula='1d6+3+2d4';
+   node.dataset.damageType='slashing;fire';
+ });
+ await damageButton.click();
  assert.equal(await rollDialog.getAttribute('data-roll-kind'),'damage');
  assert.match(await rollDialog.textContent(),/Lama lunare/);
  assert.equal((await rollDialog.locator('h2').textContent()).includes('Lyria'),false,
    'The popup title must never contain the character name');
- assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),
-   'Tipo di danno · Tagliente');
+
  assert.equal(await rollDialog.locator('.sheet-roll-close').count(),1);
  assert.equal(await rollDialog.locator('[data-act="battle-damage-close"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isDisabled(),true,
    'Damage rolls must not offer an advantage/disadvantage mechanic');
+ assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+   ['Tagliente','Fuoco']);
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
+   ['1d6 + Modificatore',' + 2d4']);
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),2,
+   'Base dice and their modifier must stay in the same compact tile');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
+ assert(await rollDialog.locator('.sheet-roll-origin-term').first().evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   const dialog=node.closest('#sheet-roll-dialog').getBoundingClientRect();
+   return bounds.width<dialog.width-25&&bounds.height<220;
+ }),'Damage formula tiles must remain compact and fit within the dialog');
+ assert.equal(await rollDialog.locator('[data-roll-add-status]').count(),0);
+ assert.equal(await rollDialog.locator('[data-roll-chat-status]').count(),0);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-choice').textContent(),/Carica fulmine/);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-tracker').textContent(),/5 \/ 7/);
+ await rollDialog.locator('[data-roll-bonus]').check();
+ assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+   ['Tagliente','Fuoco','Fulmine']);
+ assert.equal(await rollDialog.locator('.sheet-roll-origin-symbol').last().textContent(),'+1d6');
+ assert(await rollDialog.locator('.sheet-roll-origin-damage-type').last().evaluate(node=>
+   getComputedStyle(node).whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1));
  await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
- assert.match(await rollDialog.locator('[data-roll-add-status]').textContent(),/prossimo aggiornamento/);
+ assert.equal(await rollDialog.locator('[data-roll-extra]').isVisible(),false);
+ assert.equal(await rollDialog.locator('[data-roll-bonus]').isChecked(),true);
+ await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
  const layout=async()=>rollDialog.evaluate(dialog=>{
    const mode=dialog.querySelector('[data-roll-mode]').getBoundingClientRect();
    const button=dialog.querySelector('[data-act="roll-sheet-confirm"]').getBoundingClientRect();
@@ -163,7 +205,13 @@ try{
  assert(Math.abs(damageLayout.modeY-damageLayout.buttonY)<=25,'Mode and roll action belong on the same row');
  assert(damageLayout.buttonWidth>damageLayout.modeWidth,'Roll action must take most of the width');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
- assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/Formula/);
+ assert.equal(await rollDialog.locator('[data-roll-result] p').count(),0);
+ assert.equal(await rollDialog.locator('.sheet-roll-die-value').count(),4,
+   '1d6 base + 2d4 damage + 1d6 bonus show four individual die results');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
+ });
  assert.equal(await rollDialog.locator('[data-act="roll-sheet-confirm"]').isVisible(),true,
    'Roll action stays visible after damage roll');
  assert(await rollDialog.evaluate(dialog=>{
@@ -173,6 +221,10 @@ try{
  }),'Roll controls stay below damage results');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===4;
+ });
  await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null,'Dice trigger must not expand description');
@@ -183,6 +235,7 @@ try{
    'Tiro per colpire · Mischia');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
  // The fixture is Poisoned: its attack disadvantage cancels manually selected advantage.
  await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
@@ -201,8 +254,8 @@ try{
  }),'Mode and roll button move below the d20 result');
  await rollDialog.locator('[data-roll-mode]').selectOption('disadvantage');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
- assert.match(await rollDialog.locator('[data-roll-result]').textContent(),/d20 · svantaggio/,
-   'An existing disadvantage and another selected disadvantage still roll just two d20');
+ assert.equal(await rollDialog.locator('.sheet-roll-die-value').count(),2,
+   'Disadvantage must show exactly two individual d20 results');
  await rollDialog.locator('[data-roll-mode]').selectOption('normal');
  await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true);
@@ -247,7 +300,8 @@ try{
  const focusResource=resourcesPanel.locator('[data-resource-tracker="focus"] .play-resource-info');
  assert.equal(await focusResource.locator('.play-resource-name').textContent(),'Focus arcano');
  assert.equal(await focusResource.locator('.play-resource-recovery').textContent(),'Recupero: riposo breve');
- assert.match(await focusResource.locator('.play-resource-count').textContent(),/5\s*\/\s*7/);
+ assert.match(await focusResource.locator('.play-resource-count').textContent(),/3\s*\/\s*7/,
+   'The two optional bonus rolls already consumed two Focus uses');
  const resourceWeight=await focusResource.locator('.play-resource-name').evaluate(node=>Number(getComputedStyle(node).fontWeight));
  const abilityWeight=await resourcesPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
  assert(resourceWeight>abilityWeight,'Resource name has stronger emphasis than its abilities');
@@ -291,6 +345,15 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
+ // Restore two previously spent Focus uses using the normal controls;
+ // subsequent spell/action tests keep their original available budget.
+ for(const spent of [3,2]){
+   await page.locator('#sheet-context-dialog [data-act="tracker-less"][data-tracker-id="focus"]').click();
+   await page.waitForFunction(async expected=>{
+     const {listCreatures}=await import('/creatures.js');
+     return (await listCreatures())[0].creature.resource_tracker_spent?.focus===expected;
+   },spent);
+ }
  await page.locator('#sheet-context-dialog [data-act="tracker-more"][data-tracker-id="focus"]').click();
  await dismiss();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.resource_tracker_spent.focus===3;});
@@ -322,7 +385,7 @@ try{
  assert.equal(await weaponsGroup.locator('[data-field="attack_ability"] option').count(),6);
  assert.equal(await weaponsGroup.locator('[data-field="two_weapon_fighting"]').count(),0,
    'The two-weapon fighting style is not toggled manually');
- assert.equal(await armorGroup.locator('.battle-ac-manage').count(),1);
+ assert.equal(await armorGroup.locator('.battle-ac-manage').count(),0,'No shortcuts into the obsolete character modification editor');
  assert.equal(await shared.locator('[data-field="hand_grip_two_handed"]').count(),1,
    'Versatile grip is offered for an equipped main-hand versatile weapon');
  assert.equal(await shared.locator('[data-field="attack_ability_finesse_only"]').count(),1);
@@ -344,7 +407,7 @@ try{
  await page.setViewportSize({width:390,height:844});
  assert.doesNotMatch(await shared.textContent(),/Iniziativa/);
  assert.equal(await page.locator('#sheet-context-dialog footer,#sheet-context-dialog .formula-bonus,#sheet-context-dialog .hint').count(),0);
- assert.equal(await shared.locator('.battle-ac-manage').count(),1);
+ assert.equal(await shared.locator('.battle-ac-manage').count(),0,'Retired bonus editor is absent from the shared defense modal');
  await dismiss();
  await popup('equipment');
  assert.equal(await page.locator('#sheet-context-dialog .equipment-unified-panel [data-equip-slot]').count(),3);
@@ -367,7 +430,20 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog .sheet-roll-provenance').count(),0);
  assert.equal(await page.locator('#sheet-roll-dialog [data-roll-chat-status]:visible').count(),0);
  await page.locator('#sheet-roll-dialog [data-act="close-sheet-roll"]').click();
- await popup('rests');
+ // A class saving-throw proficiency must navigate to the exact granted
+ // proficiency trait, never a random feature or the generic bonus editor.
+ await sheet('info');
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ const proficiencyLink=page.locator('#sheet-roll-dialog .sheet-roll-origin-term[data-origin-id="class|phb|wizard"]');
+ assert.equal(await proficiencyLink.count(),1,'Class save training retains its source');
+ await proficiencyLink.click();
+ assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
+ const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
+ assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
+ assert.equal(await granted.getAttribute('open'),'');
+ assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
+ assert.match(await granted.textContent(),/Intelligenza/);
+ await sheet('battle');await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
@@ -420,8 +496,7 @@ try{
  assert(afterLong.current_hp>=afterShort.current_hp,'Long rest restores maximum HP');
  await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-abilities .play-ability').count(),6);
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .creature-face').count(),0);
- assert.equal(await page.locator('#sheet-play-view .play-identity-mark .vtt-action-glyph').count(),1);
+ assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0);
  await popup('tools');
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armi/);
  assert.match(await page.locator('#sheet-context-dialog').textContent(),/Armature/);
@@ -491,10 +566,53 @@ try{
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
  const traitDisclosure=page.locator('.play-info-traits .play-traits-disclosure');
  assert.equal(await traitDisclosure.count(),1);
- assert.equal(await traitDisclosure.getAttribute('open'),null,'Tratti starts folded');
- await traitDisclosure.locator(':scope > summary').click();
+ // A link from a proficiency roll can leave Tratti expanded.
+ // Keep the disclosure state when returning to Info and open it if necessary.
+ if((await traitDisclosure.getAttribute('open'))===null)
+  await traitDisclosure.locator(':scope > summary').click();
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
+ // Benefits and description must be independent controls.
+ const firstTrait=page.locator('.play-info-traits .trait-row').first();
+ const traitDescription=firstTrait.locator('details.trait-card');
+ assert.equal(await traitDescription.getAttribute('open'),null);
+ const trigger=firstTrait.locator('[data-act="trait-benefits-open"]');
+ assert.equal(await trigger.count(),1);
+ await trigger.click();
+ const benefitDialog=page.locator('#trait-benefits-dialog[open]');
+ await benefitDialog.waitFor();
+ assert.equal(await traitDescription.getAttribute('open'),null,'Benefit icon must not expand trait lore');
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false);
+ await benefitDialog.locator('[data-act="trait-benefits-add"]').click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),true);
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="target"]').selectOption('initiative');
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="expression"]').fill('2');
+ assert.equal((await record()).formula_bonuses?.filter(x=>x.id?.startsWith('trait:')).length||0,0,
+  'Typing a benefit must not autosave');
+ await benefitDialog.locator('[data-act="trait-benefits-save"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:')&&x.expression==='2');
+ });
+ await benefitDialog.locator('[data-trait-add-form]').waitFor({state:'hidden'});
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Saved form must close once persistence and refresh complete');
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ await trigger.click();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'Reopening the popup must never reopen its add form');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-request"][data-benefit-id^="bonus:trait:"]').click();
+ assert.equal((await record()).formula_bonuses.filter(x=>x.id?.startsWith('trait:')).length,1,
+  'First removal click only asks for confirmation');
+ await benefitDialog.locator('[data-act="trait-benefits-remove-confirm"]').click();
+ await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');
+  return !(await listCreatures())[0].creature.formula_bonuses?.some(x=>x.id?.startsWith('trait:'));
+ });
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ assert.equal(await benefitDialog.count(),0);
+ await traitDescription.locator(':scope > summary').click();
+ assert.equal(await traitDescription.getAttribute('open'),'');
+ assert.equal(await traitDescription.locator('.trait-benefits').count(),0,
+  'Expanded trait contains only description, never benefits');
  // All primary context links must resolve on populated and empty sections.
  for(const key of ['info','battle','inventory','conditions']){
   await sheet(key);const keys=await page.locator('#sheet-play-view [data-sheet-context]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.sheetContext));
@@ -551,5 +669,5 @@ try{
  await ragePanel.locator('[data-act="battle-use-ability"][aria-label^="Attiva Ira"]').waitFor({state:'visible'});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');await page.locator('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]').click();await page.waitForFunction(()=>document.querySelector('#sheet-play-view')?.textContent.includes('Lettera della Luna'));assert.match(await page.locator('#sheet-play-view').textContent(),/Lettera della Luna/);
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 7 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
+ console.log('PASS: 5 play sheets at 320/360/390/430px and landscape, contextual editing, HP, tracker recovery, skills, inventory descriptions/quantity, documents, conditions, spell tools, every context link and offline persistence.');
 }finally{await f.close();}

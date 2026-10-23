@@ -1,3 +1,4 @@
+import {removedBenefitIds} from './trait_benefit_editor.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
@@ -412,7 +413,8 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    if(row.origin_class&&(!same(f.class_name,row.origin_class)||!same(f.class_source,row.origin_class_source)||f.origin_key.includes('|subclass|')!==!!row.origin_subclass||row.origin_subclass&&!f.origin_key.includes('|subclass|'+row.origin_subclass.toLowerCase()+'|')))return false;
    const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
   });
-  const feature=matches.length===1?matches[0]:null;
+  const exact=matches.filter(f=>f.name.trim().toLowerCase()===wanted);
+  const feature=exact.length===1?exact[0]:matches.length===1?matches[0]:null;
   // A class table only supplies capacity. Without its granting class trait,
   // the class does not independently produce an actionable resource.
   if(row.origin_class&&!feature){
@@ -461,11 +463,15 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
   let damageMod=baseHit!==null?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
+  const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
-  damageMod+=bonus('attack_damage:'+attack.id)+featureDamage;
+  const damageExtraModifier=bonus('attack_damage:'+attack.id)+featureDamage;
+  damageMod+=damageExtraModifier;
   const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
   const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
-  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',range_feet:range,long_range_feet:longRange,
+  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',
+    damage_base_formula:damage||'',damage_ability_modifier:damageAbilityModifier,
+    damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'&&!!offAllowed});
@@ -537,6 +543,17 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
+  const suppressed=removedBenefitIds(record);
+  // Suppress legacy/manual grants in the calculation as well as in the popup.
+  // The original catalog grants remain untouched and recoverable.
+  record={...record,
+   formula_bonuses:arr(record.formula_bonuses).filter(r=>!suppressed.has('bonus:'+r.id)),
+   dice_bonuses:arr(record.dice_bonuses).filter(r=>!suppressed.has('dice:'+String(r.id||[r.origin_id,r.target,r.dice].join('|')))),
+   damage_defense_entries:arr(record.damage_defense_entries).filter(r=>!suppressed.has('defense:'+String(r.origin_id||'')+':'+r.rank+':'+String(r.key||'').toLowerCase())),
+   resource_trackers:arr(record.resource_trackers).filter(r=>!suppressed.has('tracker:'+r.id)),
+   origin_spell_grants:arr(record.origin_spell_grants).filter(r=>!suppressed.has('spell:'+r.origin_id+':'+r.spell_id)),
+   action_grants:arr(record.action_grants).filter(r=>!suppressed.has('action:'+r.id))
+  };
   const warnings=new Set(),index=catalogs.abilityGrants,classesCatalog=catalogs.classMechanics;
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
@@ -563,7 +580,7 @@ export function calculateSheet(record={},catalogs={}){
     ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
-  const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id))];
+  const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
   if(arr(record.feats_catalog).length&&!index)warnings.add("Talenti strutturati non calcolati");
   if(classes.length&&!catalogs.classFeatures)warnings.add("Indice dei privilegi di classe non disponibile");
   if(record.additional_traits||arr(record.stat_block?.trait).length)
@@ -701,8 +718,8 @@ export function calculateSheet(record={},catalogs={}){
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
     // A generated infusion is a separate, verifiable equipment origin, not
     // an unknown manual bonus or an unconditional class privilege.
-    if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,index)=>
-      infusionInstanceOrigin(owned,index)===sid&&
+    if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,itemIndex)=>
+      infusionInstanceOrigin(owned,itemIndex)===sid&&
       itemActive(resolveOwnedItem(owned),record)&&
       Object.keys(infusionNumericBonuses(record,resolveOwnedItem(owned),
         index?.artificer_infusions||[],features)).length>0&&
@@ -835,7 +852,16 @@ export function calculateSheet(record={},catalogs={}){
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
   for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
-    if(!trackerMap.has(row.id)&&sourceEnabled(row))trackerMap.set(row.id,row);
+    if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
+  // Once per turn, the Lightning Launcher can add 1d6 lightning damage.
+  // Expose its actual trait origin and a regular turn-reset tracker.
+  const lightning=armorerWeapons(record,features).find(row=>row.id==='class_feature:lightning_launcher');
+  if(lightning){
+    const id='feature:lightning_launcher:extra_damage';
+    trackerMap.set(id,{id,name:'Lightning Launcher · danno aggiuntivo',max:1,
+      recharge:'turn',automatic:true,origin_id:lightning.origin_id,
+      origin_name:'Tratto · Lightning Launcher'});
+  }
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
@@ -855,7 +881,7 @@ export function calculateSheet(record={},catalogs={}){
   for(const tracker of trackers)addOrigin(tracker.origin_id,tracker.origin_name||tracker.name);
   for(const feature of features)addOrigin(feature.origin_id,"Tratto · "+feature.name);
   const originSpellMap=new Map();
-  for(const row of [...arr(record.origin_spell_grants),...additional.grants])if(row?.origin_id&&row.spell_id&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
+  for(const row of [...arr(record.origin_spell_grants),...additional.grants])if(row?.origin_id&&row.spell_id&&!suppressed.has('spell:'+row.origin_id+':'+row.spell_id)&&!row.disabled&&requirementsAllow(record,row)&&sourceEnabled(row)){
     const key=row.origin_id+'|'+row.spell_id;
     if(!originSpellMap.has(key)){
       const id=row.id||key,config=record.origin_spell_configs?.[id]||{},resolved={...row,id};
@@ -893,7 +919,7 @@ export function calculateSheet(record={},catalogs={}){
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
-    automatic_bonuses:automatic.filter(row=>requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
+    automatic_bonuses:automatic.filter(row=>!suppressed.has('bonus:'+row.id)&&requirementsAllow(record,row)&&sourceEnabled(row)).map(row=>({...row,disabled:disabled.has(row.id)})),
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),

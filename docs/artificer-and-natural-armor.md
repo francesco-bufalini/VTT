@@ -54,3 +54,22 @@ Run `python scripts/export_ore_fightclub.py <backup> outputs/characters/ORE.vtt.
 The output contains all 67 noncurrency item rows, including items from all five containers; container names remain in each item's description. The 98 gold and 599 electrum pieces are stored as coins. The separate Fight Club `money=130` field is preserved in notes, without adding it a second time to coin denominations. Raw base abilities, ASIs, species bonuses and Skill Expert are kept separate: effective STR 18 / DEX 14 / CON 14 / INT 19 / WIS 12 / CHA 10. Flash of Genius has one spent use, second-level slots have one spent slot. Infiltrator is selected according to the equipped backup entry. Custom item wording and descriptions are retained; the original XML backup is untouched. A separate batch contains Garbal (Homunculus Servant) and the Velociraptor.
 
 `res://scripts/verify_ore_export.gd` verifies these personal output files and imports companions into a disposable isolated archive. The regular regression tests have no dependency on personal exports.
+
+
+### Integration verification (2026-10-23)
+
+The PWA preparation collection `prepared_features` is independent of learned
+optional features. Typed inventory selectors are reused for infusion targeting
+and object-targeted spell selection; the selected object identity is retained
+in the casting context. This does not infer effects from spell descriptions.
+
+The integration preserves main's trait benefit editor and Info presentation.
+Automatic resource origins select the exact granting trait before considering
+its named upgrades, so Bardic Inspiration retains its level-one origin at level
+five. Infusion numeric origin validation reads the ability catalog rather than
+the inventory position. Magic receives the same eligible abilities as Battle.
+
+Validation includes the complete PWA unit suite and real Chrome tests for
+learning, preparation, object confirmation, attunement, active conditions,
+trait disabling, mobile/desktop layouts, inventory and privilege navigation.
+The installed shell cache is v102; existing local character data is retained.

@@ -1,3 +1,4 @@
+import {removedBenefitIds} from './trait_benefit_editor.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
 // No mechanics are inferred from descriptions or HTML/prose.
@@ -92,7 +93,15 @@ function fixedGrants(source){
         const key=grantLiteral(kind,row);
         if(key)result.push({kind,key});
       }else if(row&&typeof row==="object"&&!Array.isArray(row)){
+        // Some 5etools class sources describe optional firearms proficiency as
+        // {proficiency:"firearms",optional:true}. These are metadata fields,
+        // not proficiency names ("weapon:optional" was previously leaked).
+        if(typeof row.proficiency==="string"){
+          const key=grantLiteral(kind,row.proficiency);
+          if(key)result.push({kind,key});
+        }
         for(const [name,value] of Object.entries(row)){
+          if(["proficiency","optional"].includes(name))continue;
           if(value===true&&!("choose any anyArtisansTool anyGamingSet anyMusicalInstrument anyStandard anyExotic anyProficientSkill".split(" ")).includes(name))
             result.push({kind,key:norm(name.split("|")[0])});
         }
@@ -123,11 +132,14 @@ function liveSource(record,id){
   return true; // Saved custom origins are not automatically invalidated by changing class.
 }
 export function fixedProficiencies(record,index={}){
+  const suppressed=removedBenefitIds(record);
+  const excluded=(source,kind,key)=>suppressed.has("proficiency:"+source+":"+kind+":"+norm(key));
   const stored=array(record.proficiency_choices).filter(x=>x&&!x.disabled&&
     !muted(record,String(x.origin_id||""))&&liveSource(record,String(x.origin_id||"")));
   const result=new Map();
   const add=(kind,key)=>result.set(kind+":"+norm(key),true);
-  for(const row of stored)if(kinds.includes(row.kind)&&row.key)add(row.kind,row.key);
+  for(const row of stored)if(kinds.includes(row.kind)&&row.key&&
+    !excluded(row.origin_id||'',row.kind,row.key))add(row.kind,row.key);
   const migrate=!Object.hasOwn(record,"proficiency_choices")||
     (!stored.length&&!array(record.proficiency_choices).length&&
       !Object.hasOwn(record,"proficiency_origins"));
@@ -136,6 +148,7 @@ export function fixedProficiencies(record,index={}){
   for(const source of selectedSources(record,index)){
     if(muted(record,source.id))continue;
     for(const grant of fixedGrants(source)){
+      if(excluded(source.id,grant.kind,grant.key))continue;
       const saved=array(record.proficiency_choices).find(x=>x.kind===grant.kind&&
         norm(x.key)===grant.key&&x.origin_id===source.id);
       if(saved?.disabled)continue;
@@ -146,6 +159,8 @@ export function fixedProficiencies(record,index={}){
 }
 // Expose the actual grant sources, not a guessed name from the skill.
 export function proficiencyGrantOrigins(record={},index={},kind,key){
+ const suppressed=removedBenefitIds(record);
+ const excluded=id=>suppressed.has('proficiency:'+id+':'+kind+':'+norm(key));
  const wanted=String(key||'').toLowerCase(),sources=[],seen=new Set();
  const add=(id,name)=>{
    if(!id||seen.has(id))return;
@@ -153,10 +168,10 @@ export function proficiencyGrantOrigins(record={},index={},kind,key){
  };
  for(const row of array(record.proficiency_choices))
    if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
-     !muted(record,row.origin_id)&&liveSource(record,row.origin_id))
+     !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id))
      add(row.origin_id,row.origin_name||row.origin_id);
  for(const source of selectedSources(record,index)){
-   if(muted(record,source.id))continue;
+   if(muted(record,source.id)||excluded(source.id))continue;
    if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
    const override=array(record.proficiency_choices).find(row=>row.kind===kind&&
      norm(row.key)===wanted&&row.origin_id===source.id);

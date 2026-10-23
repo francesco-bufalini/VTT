@@ -10,7 +10,7 @@ const resources=async()=>{
  if(!await panel.evaluate(n=>n.open))await panel.locator('summary.play-battle-summary').click();
 };
 const seed=async(name,extra={})=>{
- await page.goto(origin);await page.locator('[data-act="create"]').waitFor();
+ await page.goto(origin);await page.locator('[data-act="library-add"]').waitFor();
  await page.evaluate(async({name,extra})=>{
   const {listCreatures,createCreature,saveCreature,removeCreature}=await import('/creatures.js');
   for(const row of await listCreatures())await removeCreature(row.creature.id,'default',row.revision);

@@ -36,6 +36,11 @@ on:
       - ".github/workflows/pwa-infrastructure.yml"
   workflow_dispatch:
 
+# A newer commit supersedes older CI on the same PR or branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   browser-assets:
     runs-on: ubuntu-latest
@@ -66,34 +71,6 @@ jobs:
           cd pwa
           npm install --no-audit --no-fund --no-package-lock
           npm test
-      - name: Verify first-run local archive in real Chromium
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd pwa
-          node ./node_modules/playwright/cli.js install chromium
-          node tests/startup_browser.mjs
-          node tests/offline_browser.mjs
-      - name: Check clean startup and diagnostics in Playwright WebKit
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd pwa
-          node ./node_modules/playwright/cli.js install --with-deps webkit
-          PWA_BROWSER=webkit node tests/startup_browser.mjs
-      - name: Verify smartphone Back navigation and multiclass Info in Chromium
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd pwa
-          node tests/navigation_browser.mjs
-      - name: Exercise mobile play sheets and effects in Chromium
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd pwa
-          node tests/sheet_play_browser.mjs
-          node tests/action_dashboard_browser.mjs
       - name: Verify install manifest, precache and PNG files
         shell: python
         run: |
@@ -109,7 +86,7 @@ jobs:
               assert name in served, f"{name} missing from app shell"
           assert '/api/' in served and "indexedDB" not in served
           for icon in manifest["icons"]:
-              path = root / icon["src"].lstrip("/")
+              path = root / icon["src"].split("?", 1)[0].split("#", 1)[0].lstrip("/")
               data = path.read_bytes()
               assert data.startswith(b"\x89PNG\r\n\x1a\n")
               off = 8
@@ -128,6 +105,98 @@ jobs:
                   off += size + 12
               assert zlib.decompress(compressed), f"invalid PNG: {path}"
           print("PASS: PWA shell, ES modules, manifest and PNG integrity")
+
+  # Each Chromium group runs on a separate runner. Keep the same assertions,
+  # but stop serializing navigation and play-sheet regressions behind startup.
+  chromium-browser:
+    name: Chromium / ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [startup, navigation, sheets]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /pwa/
+            /network/pwa_host.gd
+            /network/board_sync.gd
+            /vtt/content_catalog.gd
+            /vtt/data/
+            /vtt/icons/
+            /assets/creature_info/
+      - name: Restore Chromium headless-shell cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.64.1-chromium-shell-v1
+      - name: Install dependencies and Chromium headless shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          npm install --no-audit --no-fund --no-package-lock
+          node ./node_modules/playwright/cli.js install --only-shell chromium
+      - name: Run Chromium ${{ matrix.suite }} regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          case "${{ matrix.suite }}" in
+            startup)
+              node tests/startup_browser.mjs
+              node tests/offline_browser.mjs
+              ;;
+            navigation)
+              node tests/navigation_browser.mjs
+              ;;
+            sheets)
+              node tests/sheet_play_browser.mjs
+              node tests/action_dashboard_browser.mjs
+              ;;
+            *)
+              echo "Unknown Chromium suite" >&2
+              exit 1
+              ;;
+          esac
+
+  # Run the iPhone/Safari-compatible startup regression independently so that
+  # installing WebKit system packages does not block Chromium and unit tests.
+  webkit-startup:
+    name: WebKit startup (iPhone compatibility)
+    runs-on: ubuntu-latest
+    # The version-matched official image has WebKit + OS libraries preinstalled.
+    # Avoids the apt-get and browser downloads on every ephemeral runner.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /pwa/
+            /network/pwa_host.gd
+            /network/board_sync.gd
+            /vtt/content_catalog.gd
+            /vtt/data/
+            /vtt/icons/
+            /assets/creature_info/
+      - name: Install WebKit test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          npm install --no-audit --no-fund --no-package-lock
+      - name: Check clean startup and diagnostics in Playwright WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd pwa
+          PWA_BROWSER=webkit node tests/startup_browser.mjs
 
   native-loopback:
     runs-on: ubuntu-latest

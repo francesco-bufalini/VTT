@@ -45,6 +45,11 @@ function click(selector){
   assert.ok(elem,"Missing clickable "+selector);
   elem.click();
 }
+function openLegacyPanel(sheet){
+  const button=document.createElement("button");
+  button.dataset.act="sheet";button.dataset.sheet=sheet;button.type="button";
+  document.body.append(button);button.click();button.remove();
+}
 function change(selector,value){
   const elem=document.querySelector(selector);assert.ok(elem,"Missing field "+selector);
   elem.value=value;
@@ -74,7 +79,7 @@ async function changeScore(ability,value){
 }
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
-  assert.match(document.querySelector("#app").textContent,/Le tue creature/);
+  assert.ok(document.querySelector(".library-index"));
   assert.equal(document.querySelector("#section-menu"),null);
   assert.equal(document.querySelectorAll('#nav [data-nav]').length,3);
   assert.ok([...document.querySelectorAll('#sheet-navigation button')].every(button=>button.disabled));
@@ -113,33 +118,8 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-sheet="battle"][aria-pressed="true"]'));
   assert.equal(document.querySelector('#tracker-name'),null);
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','resources');
-  await until(()=>document.querySelector("#tracker-name"));
-  change("#tracker-name","Impulsi");
-  change("#tracker-max","3");
-  change("#tracker-recharge","short_rest");
-  click('[data-act="tracker-add"]');
-  await until(()=>document.querySelector('[data-act="tracker-more"]'));
-  click('[data-act="tracker-more"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
-      r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
-  });
-  click('[data-act="tracker-less"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_trackers?.[0]?.name==="Impulsi" &&
-      !Object.hasOwn(r.creature.resource_tracker_spent||{},r.creature.resource_trackers[0].id));
-  });
-  click('[data-act="tracker-more"]');
-  await until(async()=>{
-    const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===1);
-  });
-  click('[data-sheet="battle"]');
+  // Legacy resource-creation panel was removed with Modifica personaggio.
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
   await until(()=>document.querySelector('#sheet-play-view .play-health-tools [data-sheet-context="rests"]'));
   click('#sheet-play-view .play-health-tools [data-sheet-context="rests"]');
   await until(()=>document.querySelector('#sheet-context-dialog [data-act="tracker-long"]'));
@@ -148,7 +128,7 @@ test("mobile navigation and local creature editing persist through tabs",async()
   click('#sheet-context-dialog [data-act="tracker-rest-confirm"]');
   await until(async()=>{
     const rows=await listCreatures();
-    return rows.some(r=>r.creature.resource_tracker_spent?.[r.creature.resource_trackers[0].id]===undefined);
+    return rows.some(r=>r.creature.spell_slots_spent?.[1]===0);
   });
   click('#sheet-context-dialog [data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
@@ -367,12 +347,15 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   assert.match(event.notation,/^1d20/);
   assert.match(event.detail,/d20 \[\d+\] =/);
   assert.ok(Number.isInteger(event.total)&&event.total>=1);
-  assert.equal(document.querySelector('[data-roll-chat-status]')?.hidden,true,
-    'Successful chat delivery does not add explanatory text');
+  assert.equal(document.querySelector('[data-roll-chat-status]'),null,
+    'Roll popup has no redundant warning stripe');
+  assert.equal(document.querySelectorAll('.sheet-roll-die-value').length,1,
+    'Single-die outcome is rendered as one concise value');
   await until(()=>document.querySelector('[data-act="roll-sheet-confirm"]').disabled===false);
   assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,false,
     'After a result the player can roll again without reopening the popup');
-  assert.ok(document.querySelector('[data-act="sheet-roll-add-bonus"]'));
+  assert.equal(document.querySelector('[data-act="sheet-roll-add-bonus"]'),null,
+    'Bonus control appears only when selectable dice are available');
   assert.equal(document.querySelector('[data-act="sheet-roll-edit-bonus"]'),null);
   assert.match(document.querySelector('#sheet-roll-dialog').textContent,/Tiro salvezza/);
   click('[data-act="roll-sheet-confirm"]');
@@ -410,7 +393,11 @@ test("importing multiple creatures stays in library and exposes only selected bu
   checkbox.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   assert.ok(document.querySelector('[data-act="library-delete"]'));
   assert.match(document.querySelector('[data-act="library-export"]').textContent,/1/);
-  click('[data-act="library-select-none"]');
+  const selectAll=document.querySelector('[data-library-select-all]');
+  selectAll.checked=true;selectAll.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  assert.equal(document.querySelectorAll('[data-library-select]:checked').length,
+    document.querySelectorAll('[data-library-select]').length);
+  selectAll.checked=false;selectAll.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
   await until(()=>!document.querySelector('[data-act="library-delete"]'));
 });
 
@@ -464,8 +451,12 @@ test("successful one-time pairing survives an initial transient map error",async
 test("grouped smartphone navigation retains every editable sheet section",async()=>{
   click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
-  const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet], #secondary-sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Azioni","Magia","Inventario","Condizioni","Modifica personaggio"]);
+  const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
+  assert.deepEqual(sections,["Info","Azioni","Magia","Zaino"]);
+  assert.equal(document.querySelector('#more-navigation'),null);
+  assert.equal(document.querySelector('#dock-catalog'),null);
+  assert.ok(document.querySelector('#dock-session'));
+  assert.equal(document.querySelector('.sheet-quick-links'),null);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
   assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
@@ -480,7 +471,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
   await changeScore('str',14);
-  click('[data-sheet="conditions"]');
+  openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
   assert.equal(sheetChoices.length,20);
@@ -504,17 +495,8 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.ok(document.querySelector('#sheet-context-dialog .condition-description-source'));
   click('[data-act="sheet-context-close"]');
   await until(()=>!document.querySelector('#sheet-context-dialog'));
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','proficiency_choices');
-  await until(()=>document.querySelector('[data-act="native-add"][data-list="proficiency_choices"]'));
-  click('[data-act="native-add"][data-list="proficiency_choices"]');
-  await until(()=>document.querySelector('[data-native-list="proficiency_choices"]'));
-  change('[data-native-list="proficiency_choices"][data-key="key"]',"athletics");
-  await until(async()=>{
-    const c=(await listCreatures()).map(x=>x.creature).find(x=>x.alignment==="Caotico buono");
-    return c?.proficiency_choices?.some(row=>row.key==="athletics");
-  });
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
+  // Trait benefits have their own modal instead of a general character editor.
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -658,12 +640,10 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
   await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='2');
   assert.equal((await loadCreature(id)).data.resource_tracker_spent['shared-power-uses'],1);
-  click('[data-sheet="origins"]');
-  await until(()=>document.querySelector('#native-details'));
-  change('#native-details','resources');
-  await until(()=>document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]'));
-  const resourceRow=document.querySelector('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]').closest('article');
-  assert.match(resourceRow.textContent,/2\s*\/\s*3/,'origins sees the same tracker availability');
+  // The retired Modifica personaggio panel is gone. The existing resource
+  // controls in Magia remain the canonical way to spend/recover its tracker.
+  assert.equal(document.querySelector('[data-sheet="origins"]'),null);
+  assert.equal(document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent,'2');
   click('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]');
   await until(async()=>!(await loadCreature(id)).data.resource_tracker_spent?.['shared-power-uses']);
   click('[data-sheet="magic"]');
@@ -954,7 +934,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
  clearLocalRuleCatalogCache();
  globalThis.fetch=async(url,options)=>{
-  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants'})[url];
+  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes'})[url];
   if(file)return new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200});
   return oldFetch(url,options);
  };
@@ -1100,11 +1080,18 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
  assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
  click('[data-sheet="info"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- click('[data-act="edit-bonus"][data-target="skill:stealth"]');
- await until(()=>document.querySelector('[data-native-list="formula_bonuses"][data-key="expression"]'));
- change('[data-native-list="formula_bonuses"][data-key="expression"]','2');
- click('[data-sheet="info"]');
+ // A manual bonus is now saved explicitly in the popup owned by a trait.
+ const traits=document.querySelector('.play-traits-disclosure');
+ if(traits)traits.open=true;
+ await until(()=>document.querySelector('[data-act="trait-benefits-open"]'));
+ click('[data-act="trait-benefits-open"]');
+ await until(()=>document.querySelector('#trait-benefits-dialog[open]'));
+ click('[data-act="trait-benefits-add"]');
+ change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]','skill:stealth');
+ change('#trait-benefits-dialog [data-trait-fields="bonus"] [name="expression"]','2');
+ click('[data-act="trait-benefits-save"]');
  await until(()=>document.querySelector('[data-calculated="skill:stealth"]')?.textContent==='+6');
+ assert.ok((await loadCreature(saved.data.id)).data.formula_bonuses?.some(row=>row.id?.startsWith('trait:')&&row.target==='skill:stealth'));
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
@@ -1129,7 +1116,7 @@ test("Info contains scores, skills, tools, languages, weapons and armor without 
  assert.match(info,/light/);
  assert.ok(info.indexOf('Strumenti</dt>')<info.indexOf('Armi</dt>'));
  assert.ok(info.indexOf('Armi</dt>')<info.indexOf('Armature</dt>'));
- assert.match(info,/data-detail="proficiency_choices"/);
+ assert.doesNotMatch(info,/data-detail="proficiency_choices"/,'Obsolete origin editor is removed');
 });
 
 test('rapid changes to distinct resource counters preserve both commands',async()=>{
@@ -1198,7 +1185,7 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
+for(const action of ['tracker-reset','tracker-recharge']){
  test('rapid resource use survives '+action,async()=>{
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Recupero concorrente '+action);
@@ -1210,11 +1197,7 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
   await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]'));
-  if(action==='tracker-delete'){
-   click('[data-sheet="origins"]');
-   await until(()=>document.querySelector('#native-details'));
-   change('#native-details','resources');
-  }else click('[data-sheet="battle"]');
+  click('[data-sheet="battle"]');
   await until(()=>document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]'));
   const use=document.querySelector('[data-act="tracker-more"][data-tracker-id="keep"]');
   const recover=document.querySelector('[data-act="'+action+'"][data-tracker-id="recover"]');
@@ -1223,7 +1206,6 @@ for(const action of ['tracker-reset','tracker-recharge','tracker-delete']){
   const actual=(await loadCreature(saved.data.id)).data;
   assert.deepEqual(actual.resource_tracker_spent,{keep:1},
    'Recovery/deletion must preserve the simultaneous consumption of another resource');
-  if(action==='tracker-delete')assert.deepEqual(actual.resource_trackers.map(row=>row.id),['keep']);
   click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
  });
 }
