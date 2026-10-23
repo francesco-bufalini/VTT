@@ -51,6 +51,16 @@ test('wizard spellbook stays the source of known spells and known-only preparati
  assert.equal(record.prepared_spells.length,1);
 });
 
+test('wizard cantrips can be learned and forgotten without changing the spellbook',()=>{
+ let c={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
+ c={...c,...changeKnownClassSpell(c,wizard,catalog[2],false,catalog)};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),false);
+ c={...c,...changeKnownClassSpell(c,wizard,catalog[2],true,catalog)};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
+ assert.deepEqual(c.spellbook_spells,[]);
+});
+
 test('known-spell overrides never alter spontaneous casters',()=>{
  const record={prepared_spells:[{...catalog[0],casting_classes:[bard.id]}]};
  assert.equal(knownClassSpellIds(record,bard,catalog).has('cure'),true);
