@@ -585,8 +585,13 @@ async function catalogView() {
 
 async function computeLocalData(record){
   let catalogs={},loadError="";
-  try{catalogs=await loadRuleCatalogs();}
-  catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
+  const request=loadRuleCatalogs();
+  try{catalogs=await sheetLoadingDeadline(request,4500,"delle regole");}
+  catch(error){
+    loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);
+    if(error.code==='SHEET_LOADING_TIMEOUT')
+      refreshSheetAfterLateLoad(request,record.id,state.sheet);
+  }
   const calculated=calculateSheet(record,catalogs);
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
@@ -667,15 +672,29 @@ function promptEndWildShape(creatureId){
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 async function editorView() {
-  if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
+  const creatureId=state.creatureId;
+  if(!state.editor){
+    const editor=await sheetLoadingDeadline(openCreatureEditor(creatureId),7000,"dell'archivio locale");
+    if(state.creatureId!==creatureId||state.libraryMode)return '';
+    state.editor=editor;
+  }
   if(state.sheet==='origins')state.sheet='info';
   const c = state.editor.read();
   // The persistent header owns creature identity and tab navigation.
   let body = "";
   if(state.sheet==='info'){
-    await Promise.all(["races","classes","subclasses","backgrounds",...['feats']].map(async key=>{
-      if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
-      catch{ /* References stay editable offline. */ }
+    // Descriptive references are optional. Complete rendering with the data
+    // already available, then refresh the sheet if a slow catalog arrives.
+    await Promise.all(["races","classes","subclasses","backgrounds","feats"].map(async key=>{
+      if(state.referenceCatalogs[key])return;
+      const request=catalogEntries(key).then(rows=>{
+        state.referenceCatalogs[key]=rows;return rows;
+      });
+      try{await sheetLoadingDeadline(request,2500,"del catalogo "+key);}
+      catch(error){
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'info');
+      }
     }));
   }
   if(state.sheet==="battle"){
@@ -686,14 +705,20 @@ async function editorView() {
       'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
   }
   if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
-    try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
-    catch(error){state.spellCatalogError=errorMessage(error);}
+    const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
+    try{await sheetLoadingDeadline(request,3000,"degli incantesimi");state.spellCatalogError="";}
+    catch(error){
+      state.spellCatalogError=errorMessage(error);
+      if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,state.sheet);
+    }
   }
   if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
     try{state.abilityCatalog=await loadActivatedAbilities();}
     catch{state.abilityCatalog=[];}
   }
   const calculated=await computeLocalData(c);
+  if(state.creatureId!==creatureId||state.libraryMode)return '';
   state.calculated=calculated;
   const featDetails=state.sheet==='info'?await Promise.all((Array.isArray(c.feats_catalog)?c.feats_catalog:[]).map(async feat=>{
     const name=typeof feat==='string'?feat:feat?.name||'',source=typeof feat==='string'?'':feat?.source||'';
