@@ -12,7 +12,18 @@ try{
    current_hp:62,max_hp_base:62,inventory:[{id:'test:armor',name:'Celebrum Armor',type:'MA',ac:14,quantity:1,equipped_slots:['body']}]
   },'default',saved.revision);
  });
- await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('info');
+ // The Armor Model trait must list both activatable modes, including the inactive one.
+ const armorTrait=page.locator('.trait-row').filter({has:page.locator('.trait-title', {hasText:'Armor Model'})});
+ await armorTrait.locator('[data-act="trait-benefits-open"]').first().click();
+ const capabilities=page.locator('#trait-benefits-dialog .trait-capability');
+ await capabilities.first().waitFor();
+ assert.equal(await capabilities.count(),2,'both armor models remain inspectable in the granting trait');
+ assert.equal(await capabilities.filter({hasText:'Modello armatura · Guardiano'}).count(),1);
+ assert.match(await capabilities.filter({hasText:'Modello armatura · Infiltratore'}).innerText(),/Lightning Launcher/);
+ assert.match(await capabilities.filter({hasText:'Modello armatura · Infiltratore'}).innerText(),/Azione gratuita|Nessun costo/);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ await sheet('battle');
  // A selected model must expose its actual attack in the Actions list.
  await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').waitFor({state:"attached"});
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').count(),0);

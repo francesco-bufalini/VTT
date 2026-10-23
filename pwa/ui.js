@@ -339,24 +339,23 @@ async function libraryView() {
       '<button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+
       '" aria-label="Visualizza scheda di '+esc(c.name)+'">'+
       '<span class="creature-info"><span class="creature-name">'+esc(c.name)+'</span>'+
-      '<span class="creature-details">'+esc(species)+'</span>'+
+      '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
       (classNames?'<span class="creature-classes">'+classNames+'</span>':
         c.level?'<span class="creature-classes">Liv. '+esc(c.level)+'</span>':'')+
-      '</span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article>';
+      '</span></span><span class="creature-open-chevron" aria-hidden="true">›</span></button></article>';
   }).join('');
   if(!list)list='<div class="empty library-empty"><strong>Nessuna creatura salvata</strong>'+
     '<p>Aggiungi un personaggio oppure importa una scheda esistente.</p>'+
     btn("demo","Prova personaggio demo","primary")+'</div>';
   return '<section class="library-index" aria-label="Archivio delle creature">'+
-    '<div class="library-intro"><h1>Le tue creature</h1></div>'+
-    '<div class="library-list-header">'+
-    (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
-      '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
-      '<span class="library-header-spacer" aria-hidden="true"></span>')+
-    '<span class="library-list-count"><span class="library-count-number">'+rows.length+'</span> '+(rows.length===1?'scheda':'schede')+'</span>'+
+    '<div class="library-intro"><div class="library-title-block"><h1>Le tue creature</h1>'+
+    '<span class="library-list-count"><span class="library-count-number">'+rows.length+'</span> '+(rows.length===1?'scheda':'schede')+'</span></div>'+
     '<button type="button" class="library-add-button" data-act="library-add" aria-label="Aggiungi personaggio" title="Aggiungi personaggio">'+
-    '<span class="library-add-glyph" aria-hidden="true">+</span><span class="library-add-text" aria-hidden="true">Aggiungi</span></button>'+
-    '</div><div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
+    '<span class="library-add-glyph" aria-hidden="true">+</span><span class="library-add-text" aria-hidden="true">Aggiungi</span></button></div>'+
+    (rows.length?'<div class="library-list-header"><label class="library-batch-check library-select-master">'+
+      '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'>'+
+      '<span class="library-select-label">Seleziona tutte</span></label></div>':'')+
+    '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
       librarySelectionActions()+'</div>'+
     '<div class="library-rows">'+list+'</div></section>'+
     '<details class="library-backup"><summary>'+
@@ -783,10 +782,12 @@ async function traitsView(c){
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
   {entries,detail:detailedEntry,isDocument,conditionLabel}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
+ const benefitProjection={...(state.calculated||{}),
+  activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{})};
  state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
-  const benefitCount=traitBenefitGroups(trait,c,state.calculated||{})
+  const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
     .reduce((total,group)=>total+group.items.length,0);
   const active=!trait.inactive;
   // The icon is a separate control, not a nested button inside <summary>.
@@ -850,7 +851,9 @@ function mountTraitBenefitDialog(){
   {...state.traitPopupTrait,inactive:!traitIsActive(record,state.traitPopupTrait)}:null);
  if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;return;}
  state.traitPopupTrait=trait;
- const groups=traitBenefitGroups(trait,record,state.calculated||{});
+ const benefitProjection={...(state.calculated||{}),
+  activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{})};
+ const groups=traitBenefitGroups(trait,record,benefitProjection);
  const hidden=traitRemovedIds(record,trait);
  const optionList=(options,selected='')=>options.map(([value,label])=>
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
@@ -883,10 +886,20 @@ function mountTraitBenefitDialog(){
  ];
  const benefits=groups.map(group=>'<section class="trait-benefit-group trait-benefit-group--'+esc(group.type)+'">'+
    '<span class="trait-benefit-kind">'+esc(group.title)+'</span>'+
-   group.items.map(item=>'<div class="trait-benefit-manage-row">'+
+   group.items.map(item=>group.type==='abilities'?
+    '<article class="trait-capability" data-trait-capability="'+esc(item.label)+'">'+
+      '<div class="trait-capability-head"><strong>'+esc(item.label)+'</strong>'+
+      '<span class="trait-capability-status" data-capability-status="'+esc(item.status||'')+'">'+esc(item.status||'Attivabile')+'</span></div>'+
+      '<div class="trait-capability-meta"><span>'+esc(item.timing||'Contestuale')+'</span>'+
+        '<span>'+esc(item.cost||'Nessun costo')+'</span></div>'+
+      (item.description?'<p class="trait-capability-description">'+esc(item.description)+'</p>':'')+
+      (item.requirements?'<p class="trait-capability-requirements"><strong>Requisiti</strong> · '+esc(item.requirements)+'</p>':'')+
+      (item.effects?.length?'<ul class="trait-capability-effects">'+item.effects.map(effect=>'<li>'+esc(effect)+'</li>').join('')+'</ul>':'')+
+    '</article>':
+    '<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
-     (!trait.readonly&&!['attacks','armor_class','roll_modes','effects'].includes(group.type)&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+     (!trait.readonly&&!['attacks','armor_class','roll_modes','effects','granted_features'].includes(group.type)&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
  const confirmId=state.traitPopupConfirm;
@@ -2722,6 +2735,52 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+const editableScoreBaseTarget=target=>
+  target==='hp'||target==='second_max'||
+  /^ability:(?:str|dex|con|int|wis|cha)$/.test(target);
+
+// A single restrained editor serves owned base scores, not derived figures.
+// Keep the formula behind it as the navigation context, then refresh it after
+// saving/cancelling to avoid presenting a stale computed total.
+function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
+ if(!editableScoreBaseTarget(target))throw Error('Questo valore è calcolato e non modificabile direttamente.');
+ const ability=target.startsWith('ability:')?target.split(':')[1]:'';
+ const isHp=target==='hp',isSecond=target==='second_max';
+ const title=isHp?'PF massimi':isSecond?'PF seconda forma':abilities[ability];
+ const value=isHp?(record.max_hp_base??record.max_hp??1):
+   isSecond?(record.second_form_max_hp??0):(record.abilities?.[ability]??10);
+ const minimum=isSecond?0:1,maximum=ability?30:99999;
+ const auto=calculated?.stats?.automatic_hp;
+ document.querySelector('#sheet-score-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='sheet-score-dialog';
+ dialog.className='sheet-roll-dialog sheet-roll-preview sheet-score-dialog sheet-base-editor';
+ dialog.dataset.scoreTarget=target;
+ dialog.dataset.returnFormulaTitle=returnTitle;
+ dialog.innerHTML='<h2>Modifica valore base'+
+   '<button type="button" class="sheet-roll-close" data-act="close-score" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   '<div class="sheet-base-editor-body">'+
+     '<p class="sheet-base-editor-eyebrow">'+esc(title)+'</p>'+
+     '<label class="sheet-base-editor-field" for="sheet-score-input">Valore base'+
+       '<input id="sheet-score-input" type="number" inputmode="numeric" step="1" min="'+minimum+
+       '" max="'+maximum+'" value="'+esc(value)+'" aria-label="Valore base '+esc(title)+'"></label>'+
+     (isHp?'<div class="sheet-base-editor-auto">'+
+       '<button type="button" class="sheet-base-editor-auto-button" data-act="sheet-base-auto-hp"'+
+         (auto?.available?'':' disabled')+'>Calcola automaticamente</button>'+
+       '<small>'+(auto?.available?'Progressione di classe · '+esc(auto.value)+' PF':
+         'Calcolo automatico non disponibile per questa creatura')+'</small>'+
+       '</div>':'')+
+     '<div class="sheet-base-editor-actions">'+
+       '<button type="button" data-act="close-score" class="sheet-base-editor-cancel">Annulla</button>'+
+       '<button type="button" data-act="save-score" class="sheet-base-editor-save">Salva</button>'+
+     '</div></div>';
+ document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ dialog.querySelector('input')?.focus();
+ dialog.querySelector('input')?.select();
+ return dialog;
+}
 function openSheetScoreFormula(record,calculated,target,label){
  const value=Number(calculated?.values?.[target]);
  if(!Number.isFinite(value))throw Error('Valore calcolato non disponibile');
@@ -2733,7 +2792,8 @@ function openSheetScoreFormula(record,calculated,target,label){
  const title=label||({hp:'PF massimi',second_max:'PF seconda forma',
    passive_perception:'Percezione passiva',proficiency:'Bonus competenza',
    ac:'Classe armatura'})[target]||target;
- const terms=sheetScoreOriginSegments(record,calculated,target);
+ const terms=sheetScoreOriginSegments(record,calculated,target).map(row=>
+   row.kind==='base'&&editableScoreBaseTarget(target)?{...row,editBaseTarget:target}:row);
  dialog.innerHTML='<h2>'+esc(title)+
    '<button type="button" class="sheet-roll-close" data-act="close-score-formula" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
    '<div class="sheet-roll-math"><span>Valore calcolato</span><strong>'+esc(value)+'</strong></div>'+
@@ -3201,35 +3261,61 @@ async function handleAction(target){
     tacticalViewer.setBasicAction({mode,rule});
     return;
   }
-  if(act==='edit-score'){
-    const ability=target.dataset.abilityKey;
-    if(!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
+  if(act==='edit-score'||act==='sheet-score-edit-base'){
+    const scoreTarget=act==='edit-score'?
+      'ability:'+String(target.dataset.abilityKey||''):
+      String(target.dataset.scoreBaseTarget||'');
+    if(!editableScoreBaseTarget(scoreTarget))throw Error('Valore base non modificabile');
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
-    document.querySelector('#sheet-score-dialog')?.remove();
-    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-score-dialog';
-    dialog.id='sheet-score-dialog';dialog.dataset.abilityKey=ability;
-    dialog.innerHTML='<h2>Punteggio base · '+esc(abilities[ability])+'</h2>'+
-      ''+
-      '<label>Valore base<input id="sheet-score-input" type="number" min="1" max="30" step="1" value="'+
-      esc(creature.abilities?.[ability]??10)+'" aria-label="Punteggio base '+esc(abilities[ability])+'"></label>'+
-      '<div class="actions">'+btn('save-score','Salva','primary')+btn('close-score','Annulla')+'</div>';
-    document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
-    dialog.querySelector('input')?.focus();return;
+    const formula=document.querySelector('#sheet-score-formula-dialog');
+    const returnTitle=formula?.querySelector('h2')?.firstChild?.textContent||'';
+    if(formula){formula.close?.();formula.remove();}
+    openSheetBaseEditor(creature,await computeLocalData(creature),scoreTarget,{returnTitle});
+    return;
+  }
+  if(act==='sheet-base-auto-hp'){
+    const dialog=document.querySelector('#sheet-score-dialog');
+    if(dialog?.dataset.scoreTarget!=='hp')throw Error('Calcolo non applicabile');
+    const creature=state.editor?.read(),calculated=await computeLocalData(creature);
+    const automatic=calculated?.stats?.automatic_hp;
+    if(!automatic?.available||!Number.isFinite(Number(automatic.value)))
+      throw Error('PF automatici non disponibili');
+    const input=dialog.querySelector('#sheet-score-input');
+    input.value=String(Math.max(1,Math.trunc(automatic.value)));
+    input.focus();return;
   }
   if(act==='save-score'){
-    const dialog=document.querySelector('#sheet-score-dialog'),ability=dialog?.dataset.abilityKey;
-    if(!ability||!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
-    const input=dialog.querySelector('#sheet-score-input');
-    const score=Number(input?.value);
-    if(!input?.value||!Number.isInteger(score)||score<1||score>30)throw Error('Punteggio da 1 a 30');
-    const creature=state.editor.read();
-    await patch({abilities:{...creature.abilities,[ability]:score}});
-    dialog.close?.();dialog.remove();return;
+    const dialog=document.querySelector('#sheet-score-dialog');
+    const scoreTarget=String(dialog?.dataset.scoreTarget||'');
+    if(!editableScoreBaseTarget(scoreTarget))throw Error('Valore base non modificabile');
+    const input=dialog.querySelector('#sheet-score-input'),raw=input?.value?.trim();
+    const value=Number(raw),ability=scoreTarget.startsWith('ability:')?scoreTarget.split(':')[1]:'';
+    const min=scoreTarget==='second_max'?0:1,max=ability?30:99999;
+    if(!raw||!Number.isInteger(value)||value<min||value>max)
+      throw Error('Inserisci un valore intero tra '+min+' e '+max);
+    const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
+    const change=ability?{abilities:{...creature.abilities,[ability]:value}}:
+      scoreTarget==='hp'?{max_hp_base:value}:{second_form_max_hp:value};
+    const returnTitle=String(dialog.dataset.returnFormulaTitle||'');
+    await patch(change);
+    dialog.close?.();dialog.remove();
+    await render();
+    if(returnTitle){
+      const current=state.editor?.read();
+      if(current)openSheetScoreFormula(current,await computeLocalData(current),scoreTarget,returnTitle);
+    }
+    return;
   }
   if(act==='close-score'){
     const dialog=document.querySelector('#sheet-score-dialog');
-    dialog?.close?.();dialog?.remove();return;
+    const scoreTarget=dialog?.dataset.scoreTarget||'';
+    const returnTitle=dialog?.dataset.returnFormulaTitle||'';
+    dialog?.close?.();dialog?.remove();
+    if(returnTitle&&state.editor){
+      const creature=state.editor.read();
+      openSheetScoreFormula(creature,await computeLocalData(creature),scoreTarget,returnTitle);
+    }
+    return;
   }
   if(act==='battle-damage-roll'){
     const formula=String(target.dataset.damageFormula||'');
@@ -3600,7 +3686,9 @@ async function handleAction(target){
     if(!trait?.readonly||!trait.state_key)throw Error('Stato non disponibile');
     const c=state.editor.read();
     if(trait.condition_id){
-      await patch({conditions:(c.conditions||[]).filter(id=>id!==trait.condition_id)});
+      const changes={conditions:(c.conditions||[]).filter(id=>id!==trait.condition_id)};
+      if(trait.condition_id==='concentrating')changes.concentrating_spell_id='';
+      await patch(changes);
       dismissTraitBenefitDialog();await render();return;
     }
     dismissTraitBenefitDialog();

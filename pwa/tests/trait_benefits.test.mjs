@@ -132,3 +132,60 @@ test('optional firearms proficiency uses structured item value, never metadata n
   ['Armi','Armi da fuoco']
  ]);
 });
+
+
+test('declared model activations stay visible with costs, prerequisites and attack data before activation',()=>{
+ const id='feature:class|tce|artificer|subclass|armorer|tce|armor-model';
+ const feature={origin_id:id,origin_key:'class|tce|artificer|subclass|armorer|tce',
+  name:'Armor Model',requirements:{class_name:'Artificer',class_source:'TCE'}};
+ const guardian={id:'armor_model:guardian',group:'armor_model',name:'Modello armatura · Guardiano',
+  class_name:'Artificer',class_source:'TCE',trait:'Armor Model',summary:'Modalità difensiva',
+  require_equipped:{slot:'body',kinds:['armor']},
+  attacks:[{name:'Thunder Gauntlets',damage:'1d8',damage_type:'T',melee:true,range_feet:5}],
+  granted_features:['Defensive Field']};
+ const infiltrator={...guardian,id:'armor_model:infiltrator',name:'Modello armatura · Infiltratore',
+  attacks:[{name:'Lightning Launcher',damage:'1d6',damage_type:'L',range_feet:90,
+   long_range_feet:300,bonus_die:{dice:'1d6',damage_type:'lightning',recharge:'turn'}}],
+  granted_features:[],numeric_grants:[{target:'speed',amount:5}]};
+ const trait={name:'Armor Model',key:'trait-armor-model',rank:2,feature_origin:id};
+ const calculated={features:[feature],trait_state_catalog:[guardian,infiltrator],
+  state_actions:[],active_trait_state_ids:[]};
+ let group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
+ assert.equal(group.items.length,2);
+ assert.equal(group.items[0].status,'Requisiti mancanti');
+ assert.equal(group.items[0].timing,'Azione gratuita');
+ assert.equal(group.items[0].cost,'Nessun costo');
+ assert.match(group.items[0].requirements,/armatura equipaggiata/);
+ assert.match(group.items[0].effects.join(' '),/Thunder Gauntlets.*1d8 Tuono/);
+ assert.match(group.items[1].effects.join(' '),/Lightning Launcher.*1d6 Fulmine/);
+ assert.match(group.items[1].effects.join(' '),/Una volta per turno/);
+ assert.match(group.items[1].effects.join(' '),/Camminata \+5/);
+ assert.equal(group.items[0].id,'','read-only catalog benefits cannot be deleted as custom grants');
+ calculated.state_actions=[{state_id:'armor_model:guardian',time:'free',active:true},
+  {state_id:'armor_model:infiltrator',time:'free',active:false}];
+ calculated.active_trait_state_ids=['armor_model:guardian'];
+ group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
+ assert.deepEqual(group.items.map(row=>row.status),['Attiva','Attivabile']);
+ const disabled=traitBenefitGroups({...trait,inactive:true},{},calculated)
+  .find(row=>row.type==='abilities');
+ assert.equal(disabled.items[1].status,'Tratto disattivato');
+ assert.deepEqual(traitBenefitGroups({feature_origin:'feature:unrelated',rank:2},{},calculated),[]);
+});
+
+test('class feature activations list timing and cost even when disabled, without leaking to parent traits',()=>{
+ const origin='feature:class|phb|barbarian|rage';
+ const feature={origin_id:origin,origin_key:'class|phb|barbarian',
+  name:'Rage',requirements:{class_name:'Barbarian',class_source:'PHB'},disabled:true,
+  entries:['Concede resistenza ai danni.']};
+ const calculated={features:[feature],state_actions:[]};
+ const trait={name:'Rage',key:'rage',rank:2,feature_origin:origin};
+ const group=traitBenefitGroups(trait,{},calculated).find(row=>row.type==='abilities');
+ assert.ok(group);
+ const rage=group.items.find(row=>row.label==='Ira');
+ assert.equal(rage.status,'Tratto disattivato');
+ assert.equal(rage.timing,'Azione bonus');
+ assert.match(rage.cost,/Rages/);
+ assert.match(rage.description,/resistenza ai danni/);
+ assert.equal(traitBenefitGroups({rank:0,origin_key:'class|phb|barbarian',category:'classi'}, {},calculated)
+  .some(g=>g.type==='abilities'),false);
+});

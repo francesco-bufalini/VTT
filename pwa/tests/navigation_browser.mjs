@@ -69,6 +69,8 @@ try{
  assert.equal(await page.locator('#dock-catalog').count(),0,'Catalogo belongs to the archive');
  assert.equal(await page.locator('.play-dock .btn:visible').count(),5);
  assert.equal(await page.locator('#dock-session .destination-label').textContent(),'Partita');
+ assert(await page.locator('#sheet-navigation [data-sheet="inventory"]').evaluate(node=>
+   parseFloat(getComputedStyle(node).borderRightWidth)>0),'Zaino and Partita remain visually separated');
  assert.equal(await page.locator('#more-navigation').count(),0);
  assert(await page.locator('#creature-back').isVisible(),'Back replaces the portrait');
  assert.equal(await page.locator('#creature-symbol').count(),0);
@@ -163,6 +165,10 @@ try{
  assert.equal(await page.locator('#sheet-navigation').isVisible(),false,'Character dock is hidden');
  assert.equal(await page.locator('#creature-name').textContent(),'VTT Mobile');
  assert.equal(await page.locator('#creature-classes').isVisible(),false);
+ assert.equal(await page.locator('.library-index h1').count(),1,'The archive has one heading');
+ assert.equal(await page.locator('.library-list-header .library-select-label').textContent(),'Seleziona tutte');
+ assert.equal(await page.locator('.library-rows').evaluate(node=>getComputedStyle(node).gap),'0px',
+   'Creature rows form one continuous list');
  await page.locator('[data-library-select-all]').check();
  await page.locator('[data-act="library-export"]').waitFor();
  assert(await page.locator('[data-library-select-all]').isChecked(),'Header checkbox retains bulk selection');
