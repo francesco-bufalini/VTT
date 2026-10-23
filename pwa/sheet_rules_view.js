@@ -385,7 +385,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   if(repeated)continue;
   const cost=Math.max(0,Number(action.cost??0)||0);
   const identity=powerIdentity(action);
-  const same=rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
+  const same=action.mode==='trait_state'?null:rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
    (identity==='wild_shape'&&powerIdentity(row.power)==='wild_shape')||
    (action.origin_id&&row.power.feature_id===action.origin_id)||
    (identity&&identity===powerIdentity(row.power)&&
