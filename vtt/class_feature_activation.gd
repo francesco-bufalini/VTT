@@ -87,7 +87,8 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	for option: Dictionary in metamagic_options(record):
 		result.append({"id": "metamagic:" + String(option.name), "key": "metamagic", "name": option.name,
 			"class_name": "Sorcerer", "feature_name": "Metamagic", "detail": "Scegli questa opzione durante il lancio di un incantesimo. " + String(option.get("description", "")),
-			"mode": "metamagic_roll" if String(option.name) in ["Empowered Spell", "Seeking Spell"] else "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost})
+			"mode": "metamagic_roll" if String(option.name) in ["Empowered Spell", "Seeking Spell"] else "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost,
+			"origin_id": String(option.get("origin_id", "")), "origin_name": String(option.get("origin_name", ""))})
 	return result
 
 static func _text(raw: Variant) -> String:
@@ -276,14 +277,45 @@ const METAMAGIC_COSTS := {"Careful Spell": 1, "Distant Spell": 1, "Empowered Spe
 static func metamagic_options(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var revised := String(record.get("rules_version", "2014")) == "2024"
+	var features: Array[Dictionary] = Features.collect_features(record)
+	var enabled: Dictionary = Profs.origin_enabled_map(record)
+	var metamagic_owner := false
+	for feature: Dictionary in features:
+		if String(feature.get("name", "")) == "Metamagic" and String(feature.get("class_name", "")) == "Sorcerer":
+			var origin: String = "feature:" + String(feature.get("key", ""))
+			metamagic_owner = not bool(feature.get("inactive", false)) and bool(enabled.get(origin, true)) and bool(enabled.get(String(feature.get("origin_key", "")), true))
+			if metamagic_owner:
+				break
 	for raw: Variant in record.get("optional_features_catalog", []):
-		if not raw is Dictionary or bool(raw.get("disabled", false)): continue
+		if not raw is Dictionary or bool(raw.get("disabled", false)):
+			continue
 		var name := String(raw.get("name", ""))
-		if not METAMAGIC_COSTS.has(name): continue
+		if not METAMAGIC_COSTS.has(name):
+			continue
+		# A Sorcerer class option requires its granting Metamagic feature.
+		# Metamagic Adept is independently gated by the feat when present.
+		if class_level(record, "Sorcerer") > 0 and not metamagic_owner:
+			continue
+		var book := String(raw.get("source", "")).to_lower()
+		var key := "optional|" + book + "|" + name.to_lower()
+		var source: Dictionary = {}
+		for feature: Dictionary in features:
+			if String(feature.get("origin_key", "")) == key and String(feature.get("name", "")) == name:
+				source = feature
+				break
+		if source.is_empty():
+			continue
+		var origin_id := "feature:" + String(source.get("key", ""))
+		if bool(source.get("inactive", false)) or not bool(enabled.get(origin_id, true)) or not bool(enabled.get(key, true)):
+			continue
+		var saved_origin := String(raw.get("origin_id", ""))
+		if not saved_origin.is_empty() and not bool(enabled.get(saved_origin, true)):
+			continue
 		var description := _text(raw.get("entries", ""))
 		if description.is_empty():
 			description = PlayerCatalog.description_text("optional_features", PlayerCatalog.detailed_entry("optional_features", raw))
-		result.append({"name": name, "cost": 2 if revised and name == "Heightened Spell" else 1 if revised and name == "Seeking Spell" else int(METAMAGIC_COSTS[name]), "description": description})
+		result.append({"name": name, "origin_id": origin_id, "origin_name": "Tratto · " + name,
+			"cost": 2 if revised and name == "Heightened Spell" else 1 if revised and name == "Seeking Spell" else int(METAMAGIC_COSTS[name]), "description": description})
 	return result
 
 static func convert_slots(record: Dictionary, level: int, create_slot: bool) -> Dictionary:
