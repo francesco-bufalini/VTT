@@ -609,9 +609,9 @@ try{
  await page.locator('#sheet-play-view [data-target="save:int"]').click();
  await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-applicable"]').click();
  await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
- assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'dice');
- assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="target"]').inputValue(),'save:int');
- assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="tracker_id"]').count(),1);
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'bonus');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]').inputValue(),'save:int');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="bonus"] [name="tracker_id"]').count(),1);
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');
  // Crosshair opens the existing context popup with real tracker controls.
