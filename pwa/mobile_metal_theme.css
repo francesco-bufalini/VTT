@@ -2196,3 +2196,75 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  font-variant-numeric:tabular-nums;font-size:13px;font-weight:650;
 }
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-result .dice-result{margin:0}
+
+
+/* Native-feeling trait controls: a wide, rounded chevron and a restrained
+   inactive surface. Inactive traits remain operable through their benefit icon. */
+.play-info-traits .trait-row--inactive{
+ background:linear-gradient(90deg,#292726d9,#22201e9c);
+ border-bottom-color:#756d634d;
+}
+.play-info-traits .trait-row--inactive>.trait-card,
+.play-info-traits .trait-row--inactive>.trait-benefits-trigger{
+ opacity:.52;
+ filter:saturate(.35);
+}
+.play-info-traits .trait-row--inactive:focus-within>.trait-card,
+.play-info-traits .trait-row--inactive:focus-within>.trait-benefits-trigger{opacity:.85}
+.play-info-traits .trait-row--inactive .trait-title{color:#aa9d8f}
+.play-info-traits .trait-card>summary::after{content:none!important;display:none!important}
+.play-info-traits .trait-chevron{
+ display:grid;place-items:center;flex:none;width:24px;height:24px;
+ color:#c6a474;transition:transform .15s ease;
+}
+.play-info-traits .trait-chevron svg{display:block;width:22px;height:15px;overflow:visible}
+.play-info-traits .trait-card[open]>summary .trait-chevron{transform:rotate(180deg)}
+.play-info-traits .trait-category-title{display:none}
+.play-info-traits .trait-origin-title{
+ display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px;
+ margin:6px 0 8px;padding:0;
+ font:normal 19px/1.26 Georgia,'Palatino Linotype',serif;
+ color:#f3d6a5;letter-spacing:.002em;
+}
+.play-info-traits .trait-origin-kind{
+ display:inline;font:650 10px/1.35 system-ui,sans-serif;
+ text-transform:uppercase;letter-spacing:.105em;
+ color:#bfa17e;white-space:nowrap;
+}
+.play-info-traits .trait-origin-name{font:inherit;min-width:0;overflow-wrap:anywhere}
+.play-info-traits .trait-level{
+ margin:13px 0 6px;font:600 10px/1.3 system-ui,sans-serif;
+ letter-spacing:.095em;color:#a99275;
+}
+.play-info-traits .trait-origin-group+.trait-origin-group{margin-top:16px;padding-top:14px}
+.trait-activation-control{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:12px;margin:3px 0 16px;padding:10px 0 13px;
+ border-bottom:1px solid #9b784849;
+}
+.trait-activation-copy{display:grid;gap:4px;min-width:0}
+.trait-activation-heading{font:600 12px/1.3 system-ui,sans-serif;color:#e6ceaf}
+.trait-activation-description{font:400 11px/1.4 system-ui,sans-serif;color:#b3a28f}
+.trait-activation-toggle{
+ display:flex;align-items:center;gap:9px;min-width:114px;min-height:39px;
+ padding:7px 10px;border:1px solid #94765b;border-radius:9px;
+ background:#473a30;color:#edd4ac;font:600 12px/1.2 system-ui,sans-serif;
+ cursor:pointer;
+}
+.trait-activation-toggle[aria-checked="false"]{
+ background:#292625;border-color:#73645b;color:#b9aa9a;
+}
+.trait-activation-thumb{
+ display:block;width:25px;height:14px;flex:none;position:relative;
+ border-radius:14px;background:#bb9a68;box-shadow:inset 0 1px 3px #0008;
+}
+.trait-activation-thumb::after{
+ content:"";position:absolute;left:13px;top:2px;width:10px;height:10px;
+ border-radius:50%;background:#f5dfbc;transition:left .15s ease;
+}
+.trait-activation-toggle[aria-checked="false"] .trait-activation-thumb{background:#71665f}
+.trait-activation-toggle[aria-checked="false"] .trait-activation-thumb::after{
+ left:2px;background:#c4b7a5;
+}
+.trait-activation-toggle:hover{border-color:#d0a979}
+.trait-activation-toggle:focus-visible{outline:2px solid #f3cf9b;outline-offset:2px}
