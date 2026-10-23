@@ -958,40 +958,64 @@ function infusionPanel(c,calculated){
  if(!caps.level)return "";
  const trait=infusionGrantingTrait(c,calculated.features||[]);
  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
- const available=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2));
- const active=(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length;
- const options=(id,rows)=>'<select id="'+id+'">'+rows.map(([key,label])=>
+ const prepared=known.filter(row=>isInfusionPrepared(c,row,definitions));
+ const active=(c.inventory||[]).map((item,index)=>({item,index}))
+   .filter(({item})=>Number(item.quantity??1)>0&&item.infusion?.creator_id===c.id);
+ const available=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2)&&
+   (row.application_kind==='replicate'||!known.some(entry=>entry.id===row.id)))
+   .sort((a,b)=>Number(a.min_level||2)-Number(b.min_level||2)||
+     String(a.name).localeCompare(String(b.name),'it'));
+ const choices=(id,entries)=>'<select id="'+id+'">'+entries.map(([key,label])=>
    '<option value="'+esc(key)+'">'+esc(label)+'</option>').join('')+'</select>';
- const summary='<p class="hint">Tratto: '+esc(trait?.name||"Infuse Item non disponibile")+
-   ' · Conosciute '+known.length+'/'+caps.known+
-   ' · Preparate '+known.filter(row=>isInfusionPrepared(c,row,definitions)).length+'/'+caps.active+
-   ' · Oggetti infusi '+active+'/'+caps.active+'</p>';
- const learned=known.map((entry,index)=>{
-   const prepared=isInfusionPrepared(c,entry,definitions);
-   return '<div class="magic-spell-row"><span class="magic-spell-open">'+esc(entry.name)+
-     (entry.plan_item_name?' · '+esc(entry.plan_item_name):'')+'</span>'+
-     '<button type="button" class="btn small" data-act="infusion-prepare" data-index="'+index+'">'+
-     (prepared?'Rimuovi preparazione':'Prepara')+'</button>'+
-     (prepared?'<button type="button" class="btn small" data-act="infusion-start" data-index="'+index+'">Attiva</button>':'')+
-     '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+'" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>';
- }).join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
+ const optionsByLevel=[...new Set(available.map(row=>Math.max(2,Number(row.min_level)||2)))].map(level=>
+   '<optgroup label="Livello '+level+'">'+available.filter(row=>Math.max(2,Number(row.min_level)||2)===level)
+     .map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('')+'</optgroup>').join('');
+ const summary='<div class="infusion-overview"><strong>Conosciute '+known.length+' / '+caps.known+
+   '</strong><span>Preparate '+prepared.length+' / '+caps.active+'</span>'+
+   '<span>Applicate '+active.length+' / '+caps.active+'</span></div>';
+ const levels=[...new Set(known.map(row=>Math.max(2,Number(row.min_level)||2)))].sort((a,b)=>a-b);
+ const learned=levels.map(level=>'<section class="infusion-level"><div class="magic-level-heading"><h4>Livello '+level+'</h4></div>'+
+   known.map((entry,index)=>({entry,index})).filter(({entry})=>Math.max(2,Number(entry.min_level)||2)===level)
+   .map(({entry,index})=>{
+     const ready=isInfusionPrepared(c,entry,definitions);
+     const applied=active.filter(({item})=>item.infusion?.id===entry.id&&
+       (entry.plan_item_id?item.infusion?.plan_item_id===entry.plan_item_id:true));
+     return '<div class="magic-spell-row infusion-entry"><span class="magic-spell-open">'+esc(entry.name)+
+       (entry.plan_item_name?'<small>'+esc(entry.plan_item_name)+'</small>':'')+
+       '<small class="infusion-status">'+(applied.length?'Applicata a '+esc(applied.map(({item})=>item.name||item.id).join(', ')):
+         ready?'Preparata':'Conosciuta · non preparata')+'</small></span>'+
+       '<button type="button" class="btn small" data-act="infusion-prepare" data-index="'+index+
+         '" aria-label="'+(ready?'Rimuovi preparazione':'Prepara')+' '+esc(entry.name)+'">'+
+         (ready?'Non preparare':'Prepara')+'</button>'+
+       (ready?'<button type="button" class="btn small" data-act="infusion-start" data-index="'+index+
+         '" aria-label="Applica '+esc(entry.name)+' a un oggetto">Applica</button>':'')+
+       '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+
+         '" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>'+
+       applied.map(({item,index:itemIndex})=>'<div class="infusion-equipped"><span>'+esc(item.name||item.id)+
+         ' · '+(item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
+         '<button type="button" class="btn small" data-act="infusion-clear" data-index="'+itemIndex+'">Rimuovi infusione</button></div>').join('');
+   }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta. Imparane una dal catalogo.</p>';
  const selected=known[state.infusionPending];
  const targets=selected?compatibleInfusionTargets(c,selected,definitions,calculated.features||[]):[];
- const targetPicker=selected?'<div class="magic-selection-current"><h3>Applica '+esc(selected.name)+'</h3>'+
-   '<p class="hint">Scegli un oggetto compatibile: il beneficio diventa attivo quando è equipaggiato e, se necessario, in sintonia.</p>'+
-   (targets.length?'<label>Oggetto bersaglio'+options('infusion-item',targets.map(({item,index})=>[index,item.name||item.id]))+
-     '</label><div class="actions">'+btn('infusion-confirm','Conferma infusione','primary')+
-     btn('infusion-cancel','Annulla')+'</div>':
-     '<p class="warning">Nessun oggetto compatibile nell’inventario.</p>'+btn('infusion-cancel','Chiudi'))+'</div>':'';
- return panel('Infusioni · Artefice (TCE)',summary+
-   (!trait?'<p class="warning">Il privilegio non è attivo: i benefici devono provenire dal tratto Infuse Item, non dalla classe.</p>':
-     '<p class="hint">Le infusioni si apprendono e si preparano separatamente, come gli incantesimi del Mago. La preparazione non applica effetti a un oggetto.</p>'+
-     '<div class="columns"><label>Impara infusione'+options('infusion-available',available.map(row=>[row.id,row.name]))+'</label>'+
-     '<label>Oggetto da replicare (solo per Replicate Magic Item)'+options('infusion-plan',(c.inventory||[])
-       .map((item,index)=>[index,item.name||item.id]))+'</label></div>'+
-     '<div class="actions">'+btn('infusion-learn','Impara')+'</div>'+learned+targetPicker)+
-   (known.filter(row=>isInfusionPrepared(c,row,definitions)).length>caps.active?
-     '<p class="warning">Hai preparato più infusioni degli oggetti infondibili: la selezione è consentita, ma il limite degli oggetti infusi resta valido.</p>':'')+
+ const targetPicker=selected?'<section class="infusion-target-picker"><h3>Applica '+esc(selected.name)+'</h3>'+
+   '<p class="hint">Scegli un oggetto compatibile. I benefici funzionano quando è equipaggiato e, se necessario, in sintonia.</p>'+
+   (targets.length?'<label>Oggetto bersaglio'+choices('infusion-item',targets.map(({item,index})=>[index,item.name||item.id]))+
+      '</label><div class="actions">'+btn('infusion-confirm','Conferma','primary')+
+      btn('infusion-cancel','Annulla')+'</div>':
+      '<p class="warning">Nessun oggetto compatibile. Controlla tipo, rarità, equipaggiamento ed eventuali infusioni già applicate.</p>'+btn('infusion-cancel','Chiudi'))+'</section>':'';
+ const learnForm=available.length?'<div class="infusion-learning"><h3>Impara un’infusione</h3>'+
+   '<label>Infusioni disponibili<select id="infusion-available">'+optionsByLevel+'</select></label>'+
+   '<details class="infusion-replication"><summary>Oggetto per Replicate Magic Item</summary>'+
+      '<p class="hint">Scegli un oggetto magico replicabile dall’inventario solo se impari Replicate Magic Item.</p>'+
+      '<label>Oggetto'+choices('infusion-plan',(c.inventory||[]).map((item,index)=>[index,item.name||item.id]))+
+      '</label></details>'+btn('infusion-learn','Impara','primary')+'</div>':
+   '<p class="hint">Non ci sono nuove infusioni disponibili per questo livello.</p>';
+ return panel('Infusioni',summary+
+   (!trait?'<p class="warning">Il tratto Infuse Item non è disponibile o è disattivato.</p>':
+     '<p class="hint">Impara → Prepara → Applica a un oggetto. L’effetto è legato al tratto e all’oggetto infuso, non alla classe.</p>'+
+      learned+learnForm+targetPicker)+
+   (known.length>caps.known?'<p class="warning">Infusioni conosciute oltre il massimo consigliato: '+known.length+' / '+caps.known+'.</p>':'')+
+   (prepared.length>caps.active?'<p class="warning">Infusioni preparate oltre il massimo di oggetti infondibili: '+prepared.length+' / '+caps.active+'.</p>':'')+
    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
 }
 
