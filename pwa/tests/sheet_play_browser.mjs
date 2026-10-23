@@ -173,7 +173,7 @@ try{
    ['Tagliente','Fuoco']);
  assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
    ['1d6 + Modificatore',' + 2d4']);
- assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),2,
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-term').count(),2,
    'Base dice and their modifier must stay in the same compact tile');
  assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/d6/);
  assert(await rollDialog.locator('.sheet-roll-origin-term').first().evaluate(node=>{
@@ -183,19 +183,23 @@ try{
  }),'Damage formula tiles must remain compact and fit within the dialog');
  assert.equal(await rollDialog.locator('[data-roll-add-status]').count(),0);
  assert.equal(await rollDialog.locator('[data-roll-chat-status]').count(),0);
- assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
- assert.match(await rollDialog.locator('.sheet-roll-bonus-choice').textContent(),/Carica fulmine/);
- assert.match(await rollDialog.locator('.sheet-roll-bonus-tracker').textContent(),/5 \/ 7/);
- await rollDialog.locator('[data-roll-bonus]').check();
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-damage-type').allTextContents(),
+ assert.match(await rollDialog.locator('.sheet-roll-bonuses-head').textContent(),/Bonus applicabili al tiro/);
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-applicable"]').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-term').count(),1);
+ assert.match(await rollDialog.locator('.sheet-roll-bonus-term').textContent(),/Carica fulmine/);
+ assert.match(await rollDialog.locator('[data-roll-tracker-count]').textContent(),/5 rim/);
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').count(),2);
+ await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').click();
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').textContent(),'Usato');
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco','Fulmine']);
- assert.equal(await rollDialog.locator('.sheet-roll-origin-symbol').last().textContent(),'+1d6');
- assert(await rollDialog.locator('.sheet-roll-origin-damage-type').last().evaluate(node=>
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').last().textContent(),'+1d6');
+ assert(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').last().evaluate(node=>
    getComputedStyle(node).whiteSpace==='nowrap'&&node.scrollWidth<=node.clientWidth+1));
- await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
- assert.equal(await rollDialog.locator('[data-roll-extra]').isVisible(),false);
- assert.equal(await rollDialog.locator('[data-roll-bonus]').isChecked(),true);
- await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').click();
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
+ });
  const layout=async()=>rollDialog.evaluate(dialog=>{
    const mode=dialog.querySelector('[data-roll-mode]').getBoundingClientRect();
    const button=dialog.querySelector('[data-act="roll-sheet-confirm"]').getBoundingClientRect();
@@ -223,7 +227,7 @@ try{
  assert.equal(await rollDialog.locator('[data-roll-result]').isVisible(),true,'Reroll stays possible');
  await page.waitForFunction(async()=>{
    const {listCreatures}=await import('/creatures.js');
-   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===4;
+   return (await listCreatures())[0].creature.resource_tracker_spent?.focus===3;
  });
  await rollDialog.locator('.sheet-roll-close').click();
  await mainAttack.locator('[data-target="attack_hit:item:local_sword"]').click();
@@ -235,7 +239,7 @@ try{
    'Tiro per colpire · Mischia');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-edit-bonus"]').count(),0);
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-bonus"]').count(),1);
- assert.equal(await rollDialog.locator('.sheet-roll-bonus-choice').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-term').count(),1);
  assert.equal(await rollDialog.locator('[data-roll-mode]').isEnabled(),true);
  // The fixture is Poisoned: its attack disadvantage cancels manually selected advantage.
  await rollDialog.locator('[data-roll-mode]').selectOption('advantage');
@@ -300,8 +304,8 @@ try{
  const focusResource=resourcesPanel.locator('[data-resource-tracker="focus"] .play-resource-info');
  assert.equal(await focusResource.locator('.play-resource-name').textContent(),'Focus arcano');
  assert.equal(await focusResource.locator('.play-resource-recovery').textContent(),'Recupero: riposo breve');
- assert.match(await focusResource.locator('.play-resource-count').textContent(),/3\s*\/\s*7/,
-   'The two optional bonus rolls already consumed two Focus uses');
+ assert.match(await focusResource.locator('.play-resource-count').textContent(),/4\s*\/\s*7/,
+   'The explicit Use action consumed one Focus use across two damage rolls');
  const resourceWeight=await focusResource.locator('.play-resource-name').evaluate(node=>Number(getComputedStyle(node).fontWeight));
  const abilityWeight=await resourcesPanel.locator('.play-resource-power-open strong').first().evaluate(node=>Number(getComputedStyle(node).fontWeight));
  assert(resourceWeight>abilityWeight,'Resource name has stronger emphasis than its abilities');
@@ -345,9 +349,8 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Commander.s Strike|Costo/);
  await dismiss();
  await focusButton.click();
- // Restore two previously spent Focus uses using the normal controls;
- // subsequent spell/action tests keep their original available budget.
- for(const spent of [3,2]){
+ // Restore the one use spent through the optional-die Use button.
+ for(const spent of [2]){
    await page.locator('#sheet-context-dialog [data-act="tracker-less"][data-tracker-id="focus"]').click();
    await page.waitForFunction(async expected=>{
      const {listCreatures}=await import('/creatures.js');
