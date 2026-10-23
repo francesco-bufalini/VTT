@@ -461,14 +461,14 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   const sections=[...document.querySelectorAll('#sheet-navigation [data-sheet]')].map(x=>x.getAttribute("aria-label"));
-  assert.deepEqual(sections,["Info","Azioni","Magia","Zaino"]);
+  assert.deepEqual(sections,["Info","Azioni","Poteri","Zaino"]);
   assert.equal(document.querySelector('#more-navigation'),null);
   assert.equal(document.querySelector('#dock-catalog'),null);
   assert.ok(document.querySelector('#dock-session'));
   assert.equal(document.querySelector('.sheet-quick-links'),null);
   click('[data-sheet="magic"]');
   await until(()=>document.querySelector(".magic-panel h2"));
-  assert.equal(document.querySelector(".page-head h1")?.textContent,"Magia");
+  assert.equal(document.querySelector(".page-head h1")?.textContent,"Poteri");
   assert.equal(document.querySelector(".magic-panel h2")?.textContent,"Incantesimi disponibili");
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-field="alignment"]'));
@@ -614,7 +614,7 @@ test("inline spell catalog adds available and spellbook choices without divergin
   await until(()=>document.querySelector('[data-act="create"]'));
 });
 
-test("PWA non-slot spells share tracker panels across different origins",async()=>{
+test("PWA granted spells group by origin while keeping shared tracker controls",async()=>{
   click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Poteri tracker condivisi");
@@ -637,20 +637,20 @@ test("PWA non-slot spells share tracker panels across different origins",async()
   click('[data-act="open"][data-id="'+id+'"]');
   await until(()=>document.querySelector('[data-sheet="magic"]'));
   click('[data-sheet="magic"]');
-  try{await until(()=>document.querySelector('.magic-tracker-panel'));}
-  catch(error){throw new Error("Powers panel missing: "+document.querySelector('#app')?.textContent?.slice(0,1400)+" | "+document.querySelector('#toast')?.textContent, {cause:error});}
-  const groups=[...document.querySelectorAll('.magic-tracker-panel')].filter(el=>el.querySelector('h2')?.textContent==="Cariche condivise");
-  assert.equal(groups.length,1,"one box for one shared tracker");
-  const group=groups[0];
-  assert.deepEqual([...group.querySelectorAll('.magic-level h4')].map(n=>n.textContent),["Trucchetti","Livello 1"]);
-  assert.equal(group.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length,2);
-  assert.equal(group.querySelectorAll('[data-casting-section]').length,2,"each source keeps its spellcasting ability");
-  assert.equal(group.querySelector('[data-tracker-remaining="shared-power-uses"]').textContent,'3');
+  try{await until(()=>document.querySelectorAll('.magic-origin-panel').length===2);}
+  catch(error){throw new Error("Origin powers missing: "+document.querySelector('#app')?.textContent?.slice(0,1400),{cause:error});}
+  const groups=[...document.querySelectorAll('.magic-origin-panel')];
+  assert.deepEqual(groups.map(g=>g.querySelector('h2')?.textContent).sort(),['Prima origine','Seconda origine']);
+  assert.ok(groups.every(g=>g.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length===1));
+  assert.ok(groups.every(g=>g.querySelectorAll('[data-casting-section]').length===1),
+    "each granting origin preserves its own casting statistic");
+  assert.ok(groups.every(g=>g.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='3'),
+    "the shared tracker is usable from both origin boxes");
   click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
   await until(()=>document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='2');
   assert.equal((await loadCreature(id)).data.resource_tracker_spent['shared-power-uses'],1);
   // The retired Modifica personaggio panel is gone. The existing resource
-  // controls in Magia remain the canonical way to spend/recover its tracker.
+  // controls in Poteri remain the canonical way to spend/recover its tracker.
   assert.equal(document.querySelector('[data-sheet="origins"]'),null);
   assert.equal(document.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent,'2');
   click('[data-act="tracker-less"][data-tracker-id="shared-power-uses"]');
