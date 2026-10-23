@@ -78,6 +78,7 @@ try{
    'Training provenance must not open the add-bonus picker');
  assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
  const maxHp=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="hp"]');
  assert.equal(await maxHp.count(),1);
