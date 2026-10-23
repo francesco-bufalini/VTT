@@ -14,7 +14,8 @@ const catalog=[
 test('preparing casters initially know their class list without changing saved sheets',()=>{
  const record={rules_version:'2014',prepared_spells:[],spells:[]};
  assert.deepEqual([...knownClassSpellIds(record,cleric,catalog)].sort(),['cure','light']);
- assert.deepEqual(knownClassSpellIds(record,wizard,catalog),new Set());
+ assert.deepEqual(knownClassSpellIds(record,wizard,catalog),new Set(['light']),
+   'wizard cantrips remain selectable without requiring a spellbook entry');
  assert.equal(record.known_spell_overrides,undefined);
 });
 
