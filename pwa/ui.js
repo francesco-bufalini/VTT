@@ -4029,7 +4029,7 @@ async function handleAction(target){
     if(type==='bonus'&&validBonusDice(values.expression)){
       const targetKey=String(values.target||'');
       const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(targetKey)||
-        /^(ability_check:|ability_mod:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(targetKey);
+        /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(targetKey);
       if(!rollable){
         values.rolled_total=rollBattleDamage(String(values.expression).replaceAll(' ',''),
           sides=>1+Math.floor(Math.random()*sides)).total;
