@@ -34,13 +34,8 @@ func run() -> void:
 		[greatsword, shield, ring, amulet, rope], "attunement_max_base": 1})
 	var desktop = tab._desktop_ui
 	assert(desktop != null and desktop.visible)
-	assert(desktop._owned_tree.columns == 8)
+	assert(desktop._owned_tree.columns == 7, "Owned inventory has seven compact columns")
 	assert(desktop._scroll_tree.columns == 3)
-	if desktop._maximum.value != 1:
-		print("DEBUG inventory attunement max: ui=", desktop._maximum.value,
-			" base=", tab.get("_attunement_max_base"),
-			" record=", desktop.get("_record").get("attunement_max_base", -1),
-			" bonus=", tab.get("_attunement_limit_bonus"))
 	assert(desktop._maximum.value == 1)
 	assert(desktop._value_total(rope, 2) == "2 mo")
 	assert(desktop._weight_total(rope, 2) == "20 lb")
