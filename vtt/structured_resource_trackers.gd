@@ -112,6 +112,20 @@ static func _unique_earliest_feature(candidates: Array[Dictionary]) -> Dictionar
 	return first[0] if first.size() == 1 else {}
 
 
+# Source catalogs may name a subclass "School of Divination" while the
+# character stores "Divination". Resolve equivalent catalog labels, not
+# arbitrary similarly named features from other subclasses.
+static func _subclass_identity(value: String) -> String:
+	var name := value.strip_edges().to_lower()
+	for prefix: String in ["school of ", "circle of ", "oath of ", "college of ", "domain of ", "way of the ", "way of ", "the "]:
+		if name.begins_with(prefix):
+			name = name.substr(prefix.length())
+	for suffix: String in [" domain", " school"]:
+		if name.ends_with(suffix):
+			name = name.trim_suffix(suffix)
+	return name
+
+
 static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) -> Dictionary:
 	var reference: String = String(row.get("origin_feature_key", ""))
 	if reference.begins_with("feature:"):
@@ -139,8 +153,10 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 			var is_subclass: bool = "|subclass|" in origin_key
 			if is_subclass != (not subclass.is_empty()):
 				continue
-			if is_subclass and ("|subclass|" + subclass.to_lower() + "|") not in origin_key:
-				continue
+			if is_subclass:
+				var class_subclass := origin_key.split("|subclass|")[1].split("|")[0]
+				if _subclass_identity(class_subclass) != _subclass_identity(subclass):
+					continue
 		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower().replace("’", "'")
 		if feature_name == wanted:
 			exact.append(feature)
