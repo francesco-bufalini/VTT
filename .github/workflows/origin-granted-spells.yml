@@ -48,6 +48,7 @@ jobs:
           sparse-checkout: |
             /vtt/
             /pwa/icons/
+            /pwa/catalog/trait_states.json
             /network/
             /tests/test_mobile_chat_sync.gd
             /tests/test_share_recipients.gd
@@ -84,6 +85,8 @@ jobs:
           cp -R vtt /tmp/vtt-origin-test/
           mkdir -p /tmp/vtt-origin-test/pwa
           cp -R pwa/icons /tmp/vtt-origin-test/pwa/
+          mkdir -p /tmp/vtt-origin-test/pwa/catalog
+          cp pwa/catalog/trait_states.json /tmp/vtt-origin-test/pwa/catalog/
           cp -R network /tmp/vtt-origin-test/
           cp tests/test_mobile_chat_sync.gd /tmp/vtt-origin-test/tests/
           cp tests/test_share_recipients.gd /tmp/vtt-origin-test/tests/
