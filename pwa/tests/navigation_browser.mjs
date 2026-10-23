@@ -113,8 +113,8 @@ try{
   'Tratti uses the same permanent heading as Competenze');
  assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').count(),0,
   'Tratti must not be an expandable section');
- assert(await page.locator('#sheet-play-view .play-info-traits .trait-origin-group:visible').count()>0,
-  'The trait groups are immediately visible');
+ assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
+  'The Tratti section is immediately visible even if this creature has no traits');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
@@ -128,7 +128,7 @@ try{
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'','Expanded skills survive a return to Info');
- assert(await page.locator('#sheet-play-view .play-info-traits .trait-origin-group:visible').count()>0,
+ assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
   'Tratti stays visible on return to Info');
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
