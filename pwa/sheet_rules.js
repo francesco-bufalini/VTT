@@ -444,7 +444,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     row.origin_id='';
     continue;
   }
-  row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id;
+  row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id; // non-class (monster) counters only
   row.origin_name=feature?'Tratto · '+feature.name:row.origin_name||row.name;
   if(feature?.parent_origin)row.parent_origin=feature.parent_origin;
   if(feature)row.disabled=feature.inactive||feature.disabled||record.origin_enabled?.[row.origin_id]===false||
@@ -610,6 +610,8 @@ export function calculateSheet(record={},catalogs={}){
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
   const grantingCastingTrait=member=>{
+    // Partial/offline catalog tables must not impersonate a real feature grant.
+    if(!catalogs.classFeatures)return null;
     const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
     const origin='class|'+String(source).toLowerCase()+'|'+String(member.name||'').toLowerCase();
     return features.find(feature=>feature.origin_key===origin&&
@@ -854,8 +856,13 @@ export function calculateSheet(record={},catalogs={}){
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
   // Actual spell capacity also comes from an enabled Spellcasting/Pact Magic
   // trait. Class levels only determine its progression once granted.
-  const progression=spellProgression(record,
-    catalogs.classFeatures?classes.filter(member=>grantingCastingTrait(member)):classes);
+  // A class table defines progression, never the entitlement to cast.
+  // If class-feature metadata is missing offline, fail closed instead of
+  // granting class slots from class and level alone.
+  const spellcastingMembers=classes.filter(member=>grantingCastingTrait(member));
+  if(classes.length&&!catalogs.classFeatures)
+    warnings.add('Catalogo tratti di classe non disponibile: slot di classe sospesi');
+  const progression=spellProgression(record,spellcastingMembers);
   progression.warnings.forEach(w=>warnings.add(w));
   const saved=arr(record.spell_slots_total);
   const hasLegacy=saved.some(x=>int(x)>0);
@@ -894,7 +901,7 @@ export function calculateSheet(record={},catalogs={}){
       const trait=grantingCastingTrait(member);
       return {...member,granting_trait_id:trait?.origin_id||'',
         granting_trait_name:trait?.name||''};
-    }).filter(member=>!catalogs.classFeatures||member.granting_trait_id);
+    }).filter(member=>!!member.granting_trait_id);
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));

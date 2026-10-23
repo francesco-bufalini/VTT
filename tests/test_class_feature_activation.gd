@@ -85,6 +85,63 @@ func run() -> void:
 	assert(not Meta.plan(sorcerer, spell, 1, {"names": ["Empowered Spell"]}).ok)
 	assert(Meta.reroll_plan(sorcerer, "Empowered Spell", 4, 6).ok)
 	assert(not Meta.reroll_plan(sorcerer, "Empowered Spell", 5, 6).ok)
+	# Every selected Metamagic option is its own source-owned trait;
+	# disabling either the choice or the granting class trait removes it.
+	var meta_actions: Array[Dictionary] = Runtime.entries(sorcerer)
+	var distant: Dictionary = {}
+	for action: Dictionary in meta_actions:
+		if String(action.get("name", "")) == "Distant Spell":
+			distant = action
+	assert(not distant.is_empty() and String(distant.get("origin_id", "")).begins_with("feature:optional|"))
+	var muted_metamagic := sorcerer.duplicate(true)
+	muted_metamagic["origin_enabled"] = {String(distant.origin_id): false}
+	assert(not Runtime.metamagic_options(muted_metamagic).any(func(option: Dictionary) -> bool:
+		return String(option.get("name", "")) == "Distant Spell"))
+	var other_options := Runtime.metamagic_options(muted_metamagic)
+	assert(other_options.any(func(option: Dictionary) -> bool:
+		return String(option.get("name", "")) == "Quickened Spell"))
+	var muted_owner := sorcerer.duplicate(true)
+	for feature: Dictionary in preload("res://vtt/creature_features.gd").collect_features(sorcerer):
+		if String(feature.get("name", "")) == "Metamagic" and String(feature.get("class_name", "")) == "Sorcerer":
+			muted_owner["origin_enabled"] = {"feature:" + String(feature.get("key", "")): false}
+			break
+	assert(Runtime.metamagic_options(muted_owner).is_empty())
+	# Models, attacks and Guardian powers derive from the same state catalog
+	# and must disappear when their armor or granting trait is unavailable.
+	var armorer := make_record("Artificer", 10, "TCE")
+	armorer["classes"][0]["subclass"] = "Armorer"
+	armorer["classes"][0]["subclass_source"] = "TCE"
+	armorer["inventory"] = [{"id": "armor_test", "name": "Scale Mail", "type": "MA",
+		"ac": 14, "quantity": 1, "equipped_slots": ["body"]}]
+	var model_actions := Runtime.entries(armorer)
+	assert(model_actions.any(func(action: Dictionary) -> bool:
+		return String(action.get("key", "")) == "armor_guardian"), "Missing eligible Guardian model")
+	assert(model_actions.any(func(action: Dictionary) -> bool:
+		return String(action.get("key", "")) == "armor_infiltrator"), "Missing eligible Infiltrator model")
+	assert(Runtime.armorer_weapons(armorer).any(func(attack: Dictionary) -> bool:
+		return String(attack.get("name", "")) == "Thunder Gauntlets"))
+	var switched := Runtime.activate(armorer, "class_feature:armor_infiltrator")
+	assert(switched.ok, str(switched))
+	assert(switched.record.trait_state_selection.get("armor_model") == "armor_model:infiltrator")
+	assert(switched.record.artificer_armor_model == "infiltrator")
+	assert(switched.record.active_class_features.has("trait_state:armor_model:infiltrator"))
+	assert(Runtime.armorer_weapons(switched.record).any(func(attack: Dictionary) -> bool:
+		return String(attack.get("name", "")) == "Lightning Launcher"))
+	assert(not Runtime.armorer_weapons(switched.record).any(func(attack: Dictionary) -> bool:
+		return String(attack.get("name", "")) == "Thunder Gauntlets"))
+	var unequipped: Dictionary = switched.record.duplicate(true)
+	unequipped["inventory"][0]["equipped_slots"] = []
+	assert(Runtime.armorer_weapons(unequipped).is_empty())
+	assert(not Runtime.entries(unequipped).any(func(action: Dictionary) -> bool:
+		return String(action.get("mode", "")) == "armor_model"))
+	var disabled_model: Dictionary = switched.record.duplicate(true)
+	for feature: Dictionary in preload("res://vtt/creature_features.gd").collect_features(disabled_model):
+		if String(feature.get("name", "")) == "Armor Model":
+			disabled_model["origin_enabled"] = {"feature:" + String(feature.get("key", "")): false}
+			break
+	assert(Runtime.armorer_weapons(disabled_model).is_empty())
+	assert(not Runtime.entries(disabled_model).any(func(action: Dictionary) -> bool:
+		return String(action.get("mode", "")) == "armor_model"))
 	var wizard := make_record("Wizard", 5)
 	wizard["spell_slots_spent"] = [0, 2, 1, 0, 0, 0, 0, 0, 0, 0]
 	assert(Runtime.recover_slots(wizard, [1, 2]).ok)

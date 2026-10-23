@@ -7,6 +7,10 @@ const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
+# One shared data source for PWA and desktop Armor Model states.
+const ARMOR_STATE_CATALOG := "res://pwa/catalog/trait_states.json"
+static var _armor_states_cache: Array[Dictionary] = []
+static var _armor_states_loaded := false
 const RULES := [
 	["armor_guardian", "Artificer", "Armor Model", "Modello armatura · Guardiano", "", "armor_model", "free"],
 	["armor_infiltrator", "Artificer", "Armor Model", "Modello armatura · Infiltratore", "", "armor_model", "free"],
@@ -44,6 +48,113 @@ const RULES := [
 	["deflect_attacks", "Monk", "Deflect Attacks", "Deviare attacchi", "", "context", "reaction"]
 ]
 
+# Read the same declarative state catalog as the PWA. Only the actual
+# Armor Model trait authorizes a model; class/level or equipped armor alone
+# never grants either mode or its attacks.
+static func _armor_state_rules() -> Array[Dictionary]:
+	if _armor_states_loaded:
+		return _armor_states_cache
+	var rules: Array[Dictionary] = []
+	var file := FileAccess.open(ARMOR_STATE_CATALOG, FileAccess.READ)
+	if file == null:
+		return rules
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not parsed is Dictionary:
+		return rules
+	var states: Variant = (parsed as Dictionary).get("states", [])
+	if not states is Array:
+		return rules
+	for raw: Variant in states:
+		if raw is Dictionary and String((raw as Dictionary).get("group", "")) == "armor_model":
+			rules.append(raw)
+	_armor_states_cache = rules
+	_armor_states_loaded = true
+	return rules
+
+
+static func _source_enabled(record: Dictionary, feature: Dictionary, flags: Dictionary) -> bool:
+	if bool(feature.get("inactive", false)):
+		return false
+	var origin := "feature:" + String(feature.get("key", ""))
+	var parent := String(feature.get("origin_key", ""))
+	var base := "|".join(parent.split("|").slice(0, 3))
+	for identity: String in [origin, parent, base]:
+		if not bool(flags.get(identity, true)) or record.get("origin_enabled", {}).get(identity, true) == false:
+			return false
+	return true
+
+
+static func _model_trait(record: Dictionary, rule: Dictionary, features: Array[Dictionary]) -> Dictionary:
+	var classes: Array = record.get("classes", [])
+	if classes.is_empty() and not String(record.get("class", "")).is_empty():
+		classes = [{"name": record.get("class", ""), "source": record.get("class_source", ""),
+			"subclass": record.get("subclass", ""), "level": record.get("level", 0)}]
+	var owner_found := false
+	for raw: Variant in classes:
+		if not raw is Dictionary:
+			continue
+		var member: Dictionary = raw
+		if String(member.get("name", "")).nocasecmp_to(String(rule.get("class_name", ""))) != 0:
+			continue
+		if String(member.get("source", "")).nocasecmp_to(String(rule.get("class_source", ""))) != 0:
+			continue
+		var subclass := String(member.get("subclass", ""))
+		if subclass.is_empty() and String(record.get("class", "")).nocasecmp_to(String(member.get("name", ""))) == 0:
+			subclass = String(record.get("subclass", ""))
+		if subclass.nocasecmp_to(String(rule.get("subclass", ""))) == 0:
+			owner_found = true
+			break
+	if not owner_found:
+		return {}
+	var needed: Dictionary = rule.get("require_equipped", {})
+	if not needed.is_empty():
+		if String(needed.get("slot", "")) != "body" or Items.equipped_armor(record.get("inventory", [])).is_empty():
+			return {}
+	var flags := Profs.origin_enabled_map(record)
+	for feature: Dictionary in features:
+		if String(feature.get("name", "")).nocasecmp_to(String(rule.get("trait", ""))) != 0:
+			continue
+		if String(feature.get("class_name", "")).nocasecmp_to(String(rule.get("class_name", ""))) != 0:
+			continue
+		if String(feature.get("class_source", "")).nocasecmp_to(String(rule.get("class_source", ""))) != 0:
+			continue
+		if "|subclass|" not in String(feature.get("origin_key", "")):
+			continue
+		if _source_enabled(record, feature, flags):
+			return feature
+	return {}
+
+
+static func _selected_armor_state(record: Dictionary) -> String:
+	var selected: Dictionary = record.get("trait_state_selection", {})
+	if selected.has("armor_model"):
+		return String(selected.get("armor_model", ""))
+	var legacy := String(record.get("artificer_armor_model", ""))
+	for rule: Dictionary in _armor_state_rules():
+		if String(rule.get("legacy_value", "")) == legacy and not legacy.is_empty():
+			return String(rule.get("id", ""))
+		if legacy.is_empty() and bool(rule.get("legacy_default", false)):
+			return String(rule.get("id", ""))
+	return ""
+
+
+static func _armor_model_actions(record: Dictionary, features: Array[Dictionary]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for rule: Dictionary in _armor_state_rules():
+		var model_feature: Dictionary = _model_trait(record, rule, features)
+		if model_feature.is_empty():
+			continue
+		var id := String(rule.get("id", ""))
+		var mode := String(rule.get("legacy_value", ""))
+		result.append({"id": "class_feature:armor_" + mode, "key": "armor_" + mode,
+			"name": String(rule.get("name", "")), "class_name": String(rule.get("class_name", "")),
+			"origin_id": "feature:" + String(model_feature.get("key", "")),
+			"feature_name": String(model_feature.get("name", "")), "mode": "armor_model",
+			"state_id": id, "activation": "free", "resource_name": "", "cost": 0,
+			"detail": String(rule.get("summary", "")), "active": _selected_armor_state(record) == id})
+	return result
+
+
 static func class_level(record: Dictionary, name: String) -> int:
 	for raw: Variant in record.get("classes", []):
 		if raw is Dictionary and String(raw.get("name", "")).nocasecmp_to(name) == 0:
@@ -56,6 +167,10 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 	var enabled := Profs.origin_enabled_map(record)
 	var revised := String(record.get("rules_version", "2014")) == "2024"
 	for rule: Array in RULES:
+		# The models are resolved from the shared catalog, not these
+		# historical action IDs. Keep the IDs only for save compatibility.
+		if String(rule[5]) == "armor_model":
+			continue
 		for feature: Dictionary in collected:
 			var parent: String = String(rule[2])
 			if revised and parent == "Ki": parent = "Monk’s Focus"
@@ -64,10 +179,18 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 				continue
 			if String(rule[1]) == "Artificer" and String(feature.get("class_source", "")) != "TCE":
 				continue
-			if rule[0] == "defensive_field" and (Items.equipped_armor(record.get("inventory", [])).is_empty() or String(record.get("artificer_armor_model", "guardian")) != "guardian"):
+			if rule[0] in ["defensive_field", "perfected_guardian"] and _selected_armor_state(record) != "armor_model:guardian":
 				continue
+			if rule[0] in ["defensive_field", "perfected_guardian"]:
+				var guardian_trait_valid := false
+				for state: Dictionary in _armor_state_rules():
+					if String(state.get("id", "")) == "armor_model:guardian":
+						guardian_trait_valid = not _model_trait(record, state, collected).is_empty()
+						break
+				if not guardian_trait_valid:
+					continue
 			var origin := "feature:" + String(feature.get("key", ""))
-			if bool(feature.get("inactive", false)) or not bool(enabled.get(origin, true)):
+			if not _source_enabled(record, feature, enabled):
 				continue
 			var resource: String = String(rule[4])
 			if revised and resource == "Ki Points": resource = "Focus Points"
@@ -83,11 +206,13 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 			row["active"] = row.mode == "toggle" and is_active(record, String(rule[0]), false)
 			result.append(row)
 			break
+	result.append_array(_armor_model_actions(record, collected))
 	# The selected metamagic options retain their own source identities.
 	for option: Dictionary in metamagic_options(record):
 		result.append({"id": "metamagic:" + String(option.name), "key": "metamagic", "name": option.name,
 			"class_name": "Sorcerer", "feature_name": "Metamagic", "detail": "Scegli questa opzione durante il lancio di un incantesimo. " + String(option.get("description", "")),
-			"mode": "metamagic_roll" if String(option.name) in ["Empowered Spell", "Seeking Spell"] else "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost})
+			"mode": "metamagic_roll" if String(option.name) in ["Empowered Spell", "Seeking Spell"] else "metamagic", "activation": "free", "resource_name": "Sorcery Points", "cost": option.cost,
+			"origin_id": String(option.get("origin_id", "")), "origin_name": String(option.get("origin_name", ""))})
 	return result
 
 static func _text(raw: Variant) -> String:
@@ -149,8 +274,22 @@ static func activate(record: Dictionary, id: String, options: Dictionary = {}) -
 		next["active_class_features"] = active
 		return {"ok": true, "record": next, "message": String(action.name) + " terminato."}
 	if action.mode == "armor_model":
+		var state_id := String(action.get("state_id", ""))
+		if state_id.is_empty():
+			return {"ok": false, "message": "Modello di armatura senza tratto."}
+		var currently_selected := _selected_armor_state(next) == state_id
+		var chosen := "" if currently_selected else state_id
+		var selected: Dictionary = next.get("trait_state_selection", {}).duplicate(true)
+		selected["armor_model"] = chosen
+		next["trait_state_selection"] = selected
+		for rule: Dictionary in _armor_state_rules():
+			active.erase("trait_state:" + String(rule.get("id", "")))
+		if not chosen.is_empty():
+			active["trait_state:" + state_id] = {"name": String(action.name),
+				"origin_id": String(action.origin_id), "category": "stato"}
+		next["active_class_features"] = active
 		next["artificer_armor_model"] = "guardian" if key == "armor_guardian" else "infiltrator"
-		return {"ok": true, "record": next, "message": "Modello selezionato. Cambialo al termine di un riposo breve o lungo, con gli strumenti da fabbro."}
+		return {"ok": true, "record": next, "message": "Modello armatura aggiornato."}
 	if action.mode in ["metamagic", "conversion", "recovery"]:
 		return {"ok": false, "message": "Completa le scelte del privilegio."}
 	if key == "rage" and (heavy_armor(next) or "unconscious" in next.get("conditions", []) or (String(next.get("rules_version", "2014")) == "2024" and "incapacitated" in next.get("conditions", []))):
@@ -195,6 +334,8 @@ static func active_effects(record: Dictionary) -> Array[Dictionary]:
 		definitions[String(action.get("key", ""))] = action
 	for raw_key: Variant in saved.keys():
 		var key := String(raw_key)
+		if key.begins_with("trait_state:"):
+			continue  # Rendered through the same state-trait layer as the PWA.
 		var state: Dictionary = saved[key] if saved[key] is Dictionary else {}
 		var definition: Dictionary = definitions.get(key, {})
 		var name := String(definition.get("name", state.get("name", key.capitalize())))
@@ -276,14 +417,45 @@ const METAMAGIC_COSTS := {"Careful Spell": 1, "Distant Spell": 1, "Empowered Spe
 static func metamagic_options(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var revised := String(record.get("rules_version", "2014")) == "2024"
+	var features: Array[Dictionary] = Features.collect_features(record)
+	var enabled: Dictionary = Profs.origin_enabled_map(record)
+	var metamagic_owner := false
+	for feature: Dictionary in features:
+		if String(feature.get("name", "")) == "Metamagic" and String(feature.get("class_name", "")) == "Sorcerer":
+			var origin: String = "feature:" + String(feature.get("key", ""))
+			metamagic_owner = _source_enabled(record, feature, enabled)
+			if metamagic_owner:
+				break
 	for raw: Variant in record.get("optional_features_catalog", []):
-		if not raw is Dictionary or bool(raw.get("disabled", false)): continue
+		if not raw is Dictionary or bool(raw.get("disabled", false)):
+			continue
 		var name := String(raw.get("name", ""))
-		if not METAMAGIC_COSTS.has(name): continue
+		if not METAMAGIC_COSTS.has(name):
+			continue
+		# A Sorcerer class option requires its granting Metamagic feature.
+		# Metamagic Adept is independently gated by the feat when present.
+		if class_level(record, "Sorcerer") > 0 and not metamagic_owner:
+			continue
+		var book := String(raw.get("source", "")).to_lower()
+		var key := "optional|" + book + "|" + name.to_lower()
+		var source: Dictionary = {}
+		for feature: Dictionary in features:
+			if String(feature.get("origin_key", "")) == key and String(feature.get("name", "")) == name:
+				source = feature
+				break
+		if source.is_empty():
+			continue
+		var origin_id := "feature:" + String(source.get("key", ""))
+		if not _source_enabled(record, source, enabled):
+			continue
+		var saved_origin := String(raw.get("origin_id", ""))
+		if not saved_origin.is_empty() and (not bool(enabled.get(saved_origin, true)) or record.get("origin_enabled", {}).get(saved_origin, true) == false):
+			continue
 		var description := _text(raw.get("entries", ""))
 		if description.is_empty():
 			description = PlayerCatalog.description_text("optional_features", PlayerCatalog.detailed_entry("optional_features", raw))
-		result.append({"name": name, "cost": 2 if revised and name == "Heightened Spell" else 1 if revised and name == "Seeking Spell" else int(METAMAGIC_COSTS[name]), "description": description})
+		result.append({"name": name, "origin_id": origin_id, "origin_name": "Tratto · " + name,
+			"cost": 2 if revised and name == "Heightened Spell" else 1 if revised and name == "Seeking Spell" else int(METAMAGIC_COSTS[name]), "description": description})
 	return result
 
 static func convert_slots(record: Dictionary, level: int, create_slot: bool) -> Dictionary:
@@ -348,16 +520,33 @@ static func attack_advantage(record: Dictionary, attack: Dictionary, ability: St
 
 static func armorer_weapons(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	if Items.equipped_armor(record.get("inventory", [])).is_empty(): return result
-	var enabled := Profs.origin_enabled_map(record)
-	var guardian := String(record.get("artificer_armor_model", "guardian")) == "guardian"
-	var name := "Thunder Gauntlets" if guardian else "Lightning Launcher"
-	for feature: Dictionary in Features.collect_features(record):
-		var sid := "feature:" + String(feature.get("key", ""))
-		if feature.name != name or feature.class_name != "Artificer" or feature.class_source != "TCE" or not bool(enabled.get(sid, true)) or bool(feature.get("inactive", false)): continue
-		result.append({"id": "class_feature:" + ("thunder_gauntlets" if guardian else "lightning_launcher"),
-			"name": name, "source": "class_feature", "origin_id": sid,
-			"proficient": true, "melee": guardian, "damage": "1d8" if guardian else "1d6",
-			"damage_type": "T" if guardian else "L", "ability": "int" if record.get("attack_ability", "str") == "int" else "str" if guardian else "dex",
-			"range_feet": 5 if guardian else 90, "long_range_feet": 0 if guardian else 300})
+	var features := Features.collect_features(record)
+	var flags := Profs.origin_enabled_map(record)
+	var selected := _selected_armor_state(record)
+	for rule: Dictionary in _armor_state_rules():
+		if String(rule.get("id", "")) != selected or _model_trait(record, rule, features).is_empty():
+			continue
+		var owner := _model_trait(record, rule, features)
+		var required_origin := String(owner.get("origin_key", ""))
+		for raw: Variant in rule.get("attacks", []):
+			if not raw is Dictionary:
+				continue
+			var attack: Dictionary = raw
+			var required_trait := String(attack.get("trait", ""))
+			var child: Dictionary = {}
+			for feature: Dictionary in features:
+				if String(feature.get("name", "")).nocasecmp_to(required_trait) == 0 and String(feature.get("origin_key", "")) == required_origin and _source_enabled(record, feature, flags):
+					child = feature
+					break
+			if child.is_empty():
+				continue
+			var ability := String(attack.get("ability", "str"))
+			if bool(attack.get("intelligence_override", false)) and String(record.get("attack_ability", "")) == "int":
+				ability = "int"
+			result.append({"id": String(attack.get("id", "")), "name": String(attack.get("name", "")),
+				"source": "class_feature", "origin_id": "feature:" + String(child.get("key", "")),
+				"proficient": true, "melee": bool(attack.get("melee", false)),
+				"damage": String(attack.get("damage", "")), "damage_type": String(attack.get("damage_type", "")),
+				"ability": ability, "range_feet": int(attack.get("range_feet", 5)),
+				"long_range_feet": int(attack.get("long_range_feet", 0))})
 	return result

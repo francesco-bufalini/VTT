@@ -87,8 +87,15 @@ test("2014/2024 full, half, pact and multiclass slot progressions match Godot ta
   assert.equal(warlock.pact_level,5);
   assert.equal(warlock.caster_level,0);
   const c=character({class:"Wizard",level:5,spell_slots_automatic:true,spell_slots_total:[0,4,3,2]});
-  const value=calculateSheet(c,catalogs);
-  assert.deepEqual(value.spell_slots.slice(0,3).map(x=>x.total),[4,3,2]);
+  const withoutTraits=calculateSheet(c,catalogs);
+  assert.deepEqual(withoutTraits.spell_slots.slice(0,3).map(x=>x.total),[0,0,0],
+    "Missing class-feature catalog cannot grant class slots from levels");
+  assert.equal(withoutTraits.casting_classes.length,0);
+  const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+  assert.deepEqual(withTraits.spell_slots.slice(0,3).map(x=>x.total),[4,3,2]);
+  assert.equal(withTraits.casting_classes[0].granting_trait_name,"Spellcasting");
+  const muted={...c,origin_enabled:{[withTraits.casting_classes[0].granting_trait_id]:false}};
+  assert.equal(calculateSheet(muted,{...catalogs,classFeatures:load("classes")}).spell_slots[0].total,0);
 });
 test("5etools structured racial and feat ability increases apply without Godot",()=>{
   const c=character({species:"Aarakocra",species_source:"EEPC",feats_catalog:[{name:"Actor",source:"PHB"}]});
@@ -138,7 +145,9 @@ test("all derived output stays on device and UI marks unsupported features",()=>
   assert.match(stat,/Tiri salvezza/);
   assert.doesNotMatch(stat,/<script>/);
   assert.match(localSheetView("battle",out),/Classe armatura/);
-  assert.match(localSheetView("magic",out),/Slot livello/);
+  assert.match(localSheetView("magic",out),/Nessuno slot presente/);
+  const withTraits=calculateSheet(c,{...catalogs,classFeatures:load("classes")});
+  assert.match(localSheetView("magic",withTraits),/Slot livello/);
   assert.equal(localSheetView("inventory",out),"");
 });
 

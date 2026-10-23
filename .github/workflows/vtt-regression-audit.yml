@@ -15,6 +15,7 @@ jobs:
             /*.gd
             /*.tscn
             /vtt/
+            /pwa/catalog/trait_states.json
             /network/
             /interaction/
             /encounter/*.gd

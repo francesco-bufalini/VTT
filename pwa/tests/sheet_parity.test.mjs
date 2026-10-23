@@ -228,14 +228,18 @@ test('native casting tables preserve editions, class ownership, cantrip limits a
 });
 test('slot counters distinguish class/pact, keep manual totals and recover without changing spell selections',()=>{
  const c={class:'Wizard',level:5,classes:[{name:'Wizard',level:5},{name:'Warlock',level:3}],spell_slots_spent:[0,1],pact_slots_spent:1,prepared_spells:[{id:'keep'}]};
- const out=calculateSheet(c,catalogs);
+ const withTraits={...catalogs,classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'))};
+ const missing=calculateSheet(c,catalogs);
+ assert.equal(missing.spell_slots[0].total,0,'missing trait catalog grants no class slots');
+ assert.equal(missing.pact_slots.total,0,'missing Pact Magic trait grants no pact slots');
+ const out=calculateSheet(c,withTraits);
  assert.equal(out.spell_slots[0].total,4);
  assert.equal(out.pact_slots.total,2);
  assert.equal(slotUsePatch(c,1,1,out).spell_slots_spent[1],2);
  assert.deepEqual(slotUsePatch(c,0,-1,out),{pact_slots_spent:0});
  assert.throws(()=>slotUsePatch({...c,pact_slots_spent:2},0,1,out),/Nessuno/);
  assert.deepEqual(c.prepared_spells,[{id:'keep'}]);
- const manual=calculateSheet({...c,spell_slots_manual:true,spell_slots_total:[0,7],pact_slots_total:4,formula_bonuses:[{target:'slot:1',expression:'2'}]},catalogs);
+ const manual=calculateSheet({...c,spell_slots_manual:true,spell_slots_total:[0,7],pact_slots_total:4,formula_bonuses:[{target:'slot:1',expression:'2'}]},withTraits);
  assert.equal(manual.spell_slots[0].base,7);
  assert.equal(manual.spell_slots[0].total,9);
  assert.equal(manual.pact_slots.total,4);

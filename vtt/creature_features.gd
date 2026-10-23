@@ -4,6 +4,7 @@ extends RefCounted
 # Both the desktop traits view and tracker derivation use this one service.
 const BenefitRequirements = preload("res://vtt/benefit_requirements.gd")
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
+const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
@@ -174,6 +175,31 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 					"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
 					bool(owned.get("disabled", false)))
 
+	# Every selected optional ability is a first-class trait with its own
+	# stable identity. This includes Metamagic, maneuvers and invocations:
+	# activation must not be granted merely by a class-level option list.
+	var seen_optional: Dictionary = {}
+	for raw_optional: Variant in record.get("optional_features_catalog", []):
+		if not raw_optional is Dictionary:
+			continue
+		var selected: Dictionary = raw_optional
+		var option_name: String = String(selected.get("name", "")).strip_edges()
+		if option_name.is_empty():
+			continue
+		var book: String = String(selected.get("source", "")).strip_edges()
+		var identity: String = "optional|" + book.to_lower() + "|" + option_name.to_lower()
+		if seen_optional.has(identity):
+			continue
+		seen_optional[identity] = true
+		var detail: Dictionary = PlayerCatalog.detailed_entry("optional_features", selected)
+		_append(result, {
+			"id": String(selected.get("id", option_name.to_lower())),
+			"name": option_name, "source": book,
+			"inactive": bool(selected.get("disabled", false)),
+			"entries": selected.get("entries", PlayerCatalog.description_text("optional_features", detail)),
+			"action_type": selected.get("action_type", detail.get("action_type", ""))
+		}, 0, "Privilegio opzionale · " + option_name, identity, "", "", 2)
+
 	# Known artificer infusions are already optional class features; display
 	# their existing 5etools descriptions among ordinary class traits.
 	for known: Dictionary in Infusions.known(record):
@@ -250,6 +276,12 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 		if class_label.is_empty() or class_label.to_lower() == "mostro":
 			continue
 		var class_book: String = String(definition.get("source", record.get("class_source", "")))
+		if class_book.is_empty():
+			# Legacy sheets omit the source: resolve the same source-qualified
+			# edition used by class trackers, rather than generating features
+			# with a class|| identity or accidentally mixing 2014/2024 data.
+			var requested := "XPHB" if String(record.get("rules_version", "2014")) == "2024" else "PHB"
+			class_book = String(ClassMechanics.class_row(class_label, requested).get("source", requested))
 		var class_level: int = clampi(int(definition.get("level", 1)), 1, 20)
 		var class_origin: String = "Classe · " + class_label
 		var class_key: String = "class|" + class_book.to_lower() + "|" + class_label.to_lower()

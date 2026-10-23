@@ -17,6 +17,10 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 		_append_monster_trackers(record, result)
 	_append_class_trackers(record, result)
 	_assign_automatic_origins(record, result)
+	# A class table cannot grant usable resources without its owning trait.
+	# Keep the saved spent-use keys stable when the feature becomes available.
+	result = result.filter(func(row: Dictionary) -> bool:
+		return not bool(row.get("unbound_class_feature", false)))
 	_append_saved_trackers(record, result)
 	var seen: Dictionary = {}
 	for tracker: Dictionary in result:
@@ -95,6 +99,33 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 # Prefer an explicit structured feature reference. A name is only an
 # unambiguous fallback within the same class, edition and subclass.
 # Never attach a counter to an unrelated equally named trait.
+static func _unique_earliest_feature(candidates: Array[Dictionary]) -> Dictionary:
+	var earliest_level := 1000
+	var first: Array[Dictionary] = []
+	for feature: Dictionary in candidates:
+		var level := int(feature.get("level", 0))
+		if level < earliest_level:
+			earliest_level = level
+			first = [feature]
+		elif level == earliest_level:
+			first.append(feature)
+	return first[0] if first.size() == 1 else {}
+
+
+# Source catalogs may name a subclass "School of Divination" while the
+# character stores "Divination". Resolve equivalent catalog labels, not
+# arbitrary similarly named features from other subclasses.
+static func _subclass_identity(value: String) -> String:
+	var name := value.strip_edges().to_lower()
+	for prefix: String in ["school of ", "circle of ", "oath of ", "college of ", "domain of ", "way of the ", "way of ", "the "]:
+		if name.begins_with(prefix):
+			name = name.substr(prefix.length())
+	for suffix: String in [" domain", " school"]:
+		if name.ends_with(suffix):
+			name = name.trim_suffix(suffix)
+	return name
+
+
 static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) -> Dictionary:
 	var reference: String = String(row.get("origin_feature_key", ""))
 	if reference.begins_with("feature:"):
@@ -107,10 +138,11 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 	var klass_name: String = String(row.get("origin_class", ""))
 	var source: String = String(row.get("origin_class_source", ""))
 	var subclass: String = String(row.get("origin_subclass", ""))
-	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower()
+	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower().replace("’", "'")
 	if wanted.is_empty():
 		return {}
-	var found: Dictionary = {}
+	var exact: Array[Dictionary] = []
+	var compatible: Array[Dictionary] = []
 	for feature: Dictionary in features:
 		if not klass_name.is_empty():
 			if String(feature.get("class_name", "")).nocasecmp_to(klass_name) != 0:
@@ -121,15 +153,25 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 			var is_subclass: bool = "|subclass|" in origin_key
 			if is_subclass != (not subclass.is_empty()):
 				continue
-			if is_subclass and ("|subclass|" + subclass.to_lower() + "|") not in origin_key:
-				continue
-		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower()
-		if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
-			continue
-		if not found.is_empty():
-			return {} # Ambiguous, do not arbitrarily borrow the first feature.
-		found = feature
-	return found
+			if is_subclass:
+				var class_subclass := origin_key.split("|subclass|")[1].split("|")[0]
+				if _subclass_identity(class_subclass) != _subclass_identity(subclass):
+					continue
+		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower().replace("’", "'")
+		if feature_name == wanted:
+			exact.append(feature)
+		elif feature_name.begins_with(wanted + " {") or feature_name.begins_with(wanted + " ("):
+			compatible.append(feature)
+	# A scaling variant (Bardic Inspiration (d8)) must never make the
+	# original Bardic Inspiration source ambiguous. Prefer a single exact
+	# feature, then only an unambiguous scaled-name fallback.
+	# The same feature can be reintroduced at higher levels, e.g.
+	# XPHB Indomitable at 9/13/17. These are progressions of the first
+	# granting trait, not three unrelated sources. Preserve its stable ID.
+	# If two distinct features share the earliest level, fail closed.
+	if not exact.is_empty():
+		return _unique_earliest_feature(exact)
+	return _unique_earliest_feature(compatible)
 
 
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
@@ -154,6 +196,13 @@ static func _assign_automatic_origins(record: Dictionary, output: Array[Dictiona
 					if saved is Dictionary and saved.get("id", "") == identity and bool(saved.get("disabled", false)):
 						row["disabled"] = true
 		if origin_id.is_empty():
+			if not String(row.get("origin_class", "")).is_empty():
+				row["disabled"] = true
+				row["unbound_class_feature"] = true
+				row["origin_id"] = ""
+				row["origin_name"] = "Tratto di classe mancante · " + label
+				continue
+			# Monster/lair metadata can own non-class pools independently.
 			origin_id = "tracker:auto:" + String(row.get("id", ""))
 		row["origin_id"] = origin_id
 		row["origin_name"] = label

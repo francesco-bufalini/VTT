@@ -25,6 +25,15 @@ func run() -> void:
 	})
 	var rage: Dictionary = _find_resource(barbarian, "Rages")
 	assert(int(rage.get("max", 0)) == 3 and String(rage.get("origin", "")) == "Rage")
+	assert(String(rage.get("origin_id", "")).begins_with("feature:"),
+		"Every class tracker must reference its granting trait")
+	var suppressed := {"kind": "character",
+		"classes": [{"name": "Barbarian", "source": "PHB", "level": 3}],
+		"origin_enabled": {String(rage.get("origin_id", "")): false}}
+	var suppressed_rage := _find_resource(Trackers.for_creature(suppressed), "Rages")
+	assert(bool(suppressed_rage.get("disabled", false)) and
+		String(suppressed_rage.get("origin_id", "")) == String(rage.get("origin_id", "")),
+		"Disabled class trait must keep the source-bound counter inspectable but unusable")
 	assert(String(rage.get("id", "")) == "class:barbarian:phb:rages",
 		"Stored resource use keys must survive table regeneration")
 	assert(Locale.text_for("Rages", "it") == "Rages"

@@ -34,10 +34,10 @@ func run() -> void:
 		[greatsword, shield, ring, amulet, rope], "attunement_max_base": 1})
 	var desktop = tab._desktop_ui
 	assert(desktop != null and desktop.visible)
-	assert(desktop._owned_tree.columns == 8)
+	assert(desktop._owned_tree.columns == 7, "Owned inventory has seven compact columns")
 	assert(desktop._scroll_tree.columns == 3)
 	assert(desktop._maximum.value == 1)
-	assert(desktop._value_total(rope, 2) == "2 mo")
+	assert(desktop._value_total(rope, 2) == "2", "Owned table shows numeric gold values without repeated units")
 	assert(desktop._weight_total(rope, 2) == "20 lb")
 
 	_select(tab, 0)
