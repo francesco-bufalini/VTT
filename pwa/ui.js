@@ -781,7 +781,7 @@ async function traitsView(c){
   return state.referenceCatalogs[category];
  };
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
-  {entries,detail:detailedEntry,isDocument}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
+  {entries,detail:detailedEntry,isDocument,conditionLabel}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
  state.traitRows=rows;
  const renderCard=trait=>{
@@ -811,16 +811,16 @@ async function traitsView(c){
   return 'Origine';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'" aria-label="'+esc(group.title)+'">'+
-  (group.id==='talenti'||group.id==='oggetti'?
+  (['stati','talenti','oggetti'].includes(group.id)?
    '<h3 class="trait-origin-title trait-category-heading"><span class="trait-origin-name">'+
-    (group.id==='talenti'?'Talenti':'Oggetti')+'</span></h3>':'')+
+    (group.id==='stati'?'Stati attivi':group.id==='talenti'?'Talenti':'Oggetti')+'</span></h3>':'')+
   group.origins.map(origin=>
    '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
-   (['talenti','oggetti'].includes(group.id)?'':
+   (['stati','talenti','oggetti'].includes(group.id)?'':
     '<h3 class="trait-origin-title"><span class="trait-origin-kind">'+esc(originKind(group.id,origin))+'</span>'+
      '<span class="trait-origin-name">'+esc(originTitle(origin.title))+'</span></h3>')+
    origin.levels.map(tier=>
-    (tier.level>=0&&!['talenti','oggetti'].includes(group.id)?
+    (tier.level>=0&&!['stati','talenti','oggetti'].includes(group.id)?
      '<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
@@ -886,7 +886,7 @@ function mountTraitBenefitDialog(){
    group.items.map(item=>'<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
-     (item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+     (!trait.readonly&&!['attacks','armor_class','roll_modes','effects'].includes(group.type)&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
  const confirmId=state.traitPopupConfirm;
@@ -899,24 +899,24 @@ function mountTraitBenefitDialog(){
   '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
   '<div class="trait-benefits-dialog-body">'+
    '<div class="trait-activation-control" data-trait-activation>'+
-    '<div class="trait-activation-copy"><span class="trait-activation-heading">Stato del privilegio</span>'+
+    '<div class="trait-activation-copy"><span class="trait-activation-heading">'+(trait.readonly?'Stato attivo':'Stato del privilegio')+'</span>'+
      '<span class="trait-activation-description">'+(trait.inactive?'Benefici disattivati':'Benefici attivi')+'</span></div>'+
-    '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="trait-benefits-toggle" aria-label="'+(trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
-     '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
+    '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="'+(trait.readonly?'trait-state-end':'trait-benefits-toggle')+'" aria-label="'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
+     '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
    '</div>'+
    '<div class="trait-benefits">'+(benefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
    (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
      '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
      '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
-   (hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
-   '<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
+   (!trait.readonly&&hidden.length?'<button type="button" class="trait-benefits-restore" data-act="trait-benefits-restore">Ripristina benefici originali ('+hidden.length+')</button>':'')+
+   (trait.readonly?'':'<div class="trait-benefits-dialog-actions"><button type="button" class="trait-benefits-add-toggle" data-act="trait-benefits-add" aria-label="Aggiungi beneficio" title="Aggiungi beneficio">＋</button></div>'+
    '<section class="trait-benefits-add-form"'+(state.traitPopupDraftKind?'':' hidden')+' data-trait-add-form>'+
     '<h3>Nuovo beneficio</h3>'+
     formSelect('Tipo di beneficio','benefit_type',kinds).replace('name="benefit_type"','name="benefit_type" data-trait-add-kind').replace('value="'+draftKind+'"','value="'+draftKind+'" selected')+
     fields.map(([kind,html])=>'<div class="trait-benefits-fields" data-trait-fields="'+kind+'"'+(kind===draftKind?'':' hidden')+'>'+html+'</div>').join('')+
     '<div class="actions"><button type="button" class="btn primary" data-act="trait-benefits-save">Salva beneficio</button>'+
     '<button type="button" class="btn" data-act="trait-benefits-cancel-add">Annulla</button></div>'+
-   '</section>'+
+   '</section>')+
   '</div>';
  app.append(dialog);
  if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
@@ -3590,6 +3590,24 @@ async function handleAction(target){
     name?.focus();
     return;
   }
+  if(act==='feat-catalog'){
+    state.featAssignReturnId=state.creatureId;
+    state.catalogCategory='feats';state.catalogSelected=-1;state.catalogQuery='';
+    await navigate('catalog');return;
+  }
+  if(act==='trait-state-end'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!trait?.readonly||!trait.state_key)throw Error('Stato non disponibile');
+    const c=state.editor.read();
+    if(trait.condition_id){
+      await patch({conditions:(c.conditions||[]).filter(id=>id!==trait.condition_id)});
+      dismissTraitBenefitDialog();await render();return;
+    }
+    dismissTraitBenefitDialog();
+    if(trait.spell_id)await handleAction({dataset:{act:'condition-remove-spell',spellId:trait.spell_id}});
+    else await handleAction({dataset:{act:'condition-remove-ability',abilityKey:trait.state_key}});
+    return;
+  }
   if(act==='trait-benefits-open'){
     if(state.sheet!=='info')return;
     state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
@@ -3769,6 +3787,11 @@ async function handleAction(target){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    if(category==='feats'&&state.featAssignReturnId===cId){
+      state.featAssignReturnId='';state.creatureId=cId;state.editor=editor;
+      state.page='library';state.libraryMode=false;state.sheet='info';
+      state.sheetPopup='';await render();
+    }
     message("Contenuto aggiunto; i benefici strutturati sono calcolati localmente.");
     return;
   }
