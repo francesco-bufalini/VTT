@@ -29,7 +29,7 @@ test('active conditions, spells and persistent class effects have independent so
  assert.equal(active.length,4);
  assert.ok(active.every(row=>row.readonly&&!row.inactive));
  assert.equal(active.find(row=>row.name==='Infiltratore')?.state_id,'armor_model:infiltrator');
- assert.equal(active.find(row=>row.name==='Bless')?.spell_id,undefined);
+ assert.equal(active.find(row=>row.name==='Incantesimo · Bless')?.spell_id,'bless');
  assert.equal(active.find(row=>row.condition_id==='poisoned')?.name,'Avvelenato');
  assert.equal(groupTraitRows(rows)[0].id,'stati');
 });
