@@ -347,8 +347,7 @@ async function libraryView() {
     '<p>Aggiungi un personaggio oppure importa una scheda esistente.</p>'+
     btn("demo","Prova personaggio demo","primary")+'</div>';
   return '<section class="library-index" aria-label="Archivio delle creature">'+
-    '<div class="library-intro"><span class="library-eyebrow">Archivio locale</span>'+
-      '<h1>Le tue creature</h1></div>'+
+    '<div class="library-intro"><h1>Le tue creature</h1></div>'+
     '<div class="library-list-header">'+
     (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
       '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
