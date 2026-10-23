@@ -58,6 +58,10 @@ test('casting choices preserve class and origin identity; counters and effective
  assert.equal(origin.context.spell_attack_bonus,8);assert.equal(origin.context.spell_save_dc,15);assert.equal(origin.context.caster_name,'Caster');
  assert.deepEqual(record.resource_tracker_spent,{daily:1},'preparing a cast must not consume resources');
  assert.throws(()=>spellCastPlan({...record,resource_tracker_spent:{daily:2}},entries[1],0,calculated),/insufficiente/);
+ const targeted={...entries[0],item_target:{inventory_index:0,item_id:'wand',instance_id:'wand-1'}};
+ const targetedPlan=spellCastPlan(record,targeted,0,calculated);
+ assert.deepEqual(targetedPlan.context.item_target,targeted.item_target);
+ assert.notEqual(targetedPlan.context.item_target,targeted.item_target);
  const regular=spellCastPlan(record,entries[0],0,calculated);assert.equal(regular.patch.spell_slots_spent[1],1);
  assert.throws(()=>spellCastPlan({...record,spell_slots_spent:[0,4]},entries[0],1,calculated),/Nessuno slot/);
 });

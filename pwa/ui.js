@@ -1,6 +1,6 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, learnedInfusions, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -39,7 +39,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'',
@@ -609,7 +609,7 @@ async function editorView() {
           '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
           btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
           "inventory-native-panel"))+
-        description+(isScrolls?'':infusionPanel(c,calculated));
+        description;
     }
     break;
   }
@@ -645,6 +645,7 @@ async function editorView() {
           spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>':''),
         'magic-panel')+
       originPowersView(c,calculated)+
+      infusionPanel(c,calculated)+
       magicToolsDialog(c,calculated);
     break;
   case "conditions":
@@ -897,29 +898,45 @@ function documentRow(item,index,stored){
     '</div></details>';
 }
 function infusionPanel(c,calculated){
-  const caps=infusionLimits(c,calculated.infusion_mechanics);
-  if(!caps.level)return "";
-  const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
-  const options=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2));
-  const select=(id,rows)=>'<select id="'+id+'">'+rows.map(([value,label])=>
-    '<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select>';
-  const itemRows=(c.inventory||[]).map((item,index)=>[index,(item.name||item.id||"Oggetto")+
-    (item.infusion?.id?' · ✦ '+(item.infusion.name||'Infuso'):'')]);
-  const learned=known.map((entry,index)=>[index,entry.name+
-    (entry.plan_item_name?' · '+entry.plan_item_name:'')]);
-  const active=(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length;
-  return panel('Infusioni · Artefice (TCE)',
-    '<p class="hint">Conosciute '+known.length+'/'+caps.known+
-    ' · Oggetti infusi '+active+'/'+caps.active+' · Livello Artefice '+caps.level+
-    '. Gli effetti numerici sono calcolati in locale, i poteri descrittivi restano consultabili.</p>'+
-    '<div class="columns"><label>Nuova infusione'+select('infusion-available',options.map(row=>[row.id,row.name]))+'</label>'+
-    '<label>Oggetto dell’inventario'+select('infusion-item',itemRows)+'</label>'+
-    '<label>Infusione conosciuta'+select('infusion-known',learned)+'</label></div>'+
-    '<div class="actions">'+btn('infusion-learn','Impara')+
-    btn('infusion-apply','Infondi oggetto')+
-    btn('infusion-forget','Dimentica')+
-    btn('infusion-clear','Termina infusione')+'</div>'+
-    (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
+ const caps=infusionLimits(c,calculated.infusion_mechanics,calculated.features||[]);
+ if(!caps.level)return "";
+ const trait=infusionGrantingTrait(c,calculated.features||[]);
+ const definitions=calculated.infusion_catalog||[],known=learnedInfusions(c,definitions);
+ const available=definitions.filter(row=>caps.level>=Math.max(2,Number(row.min_level)||2));
+ const active=(c.inventory||[]).filter(item=>item.infusion?.creator_id===c.id).length;
+ const options=(id,rows)=>'<select id="'+id+'">'+rows.map(([key,label])=>
+   '<option value="'+esc(key)+'">'+esc(label)+'</option>').join('')+'</select>';
+ const summary='<p class="hint">Tratto: '+esc(trait?.name||"Infuse Item non disponibile")+
+   ' · Conosciute '+known.length+'/'+caps.known+
+   ' · Preparate '+known.filter(row=>isInfusionPrepared(c,row,definitions)).length+'/'+caps.active+
+   ' · Oggetti infusi '+active+'/'+caps.active+'</p>';
+ const learned=known.map((entry,index)=>{
+   const prepared=isInfusionPrepared(c,entry,definitions);
+   return '<div class="magic-spell-row"><span class="magic-spell-open">'+esc(entry.name)+
+     (entry.plan_item_name?' · '+esc(entry.plan_item_name):'')+'</span>'+
+     '<button type="button" class="btn small" data-act="infusion-prepare" data-index="'+index+'">'+
+     (prepared?'Rimuovi preparazione':'Prepara')+'</button>'+
+     (prepared?'<button type="button" class="btn small" data-act="infusion-start" data-index="'+index+'">Attiva</button>':'')+
+     '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+'" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>';
+ }).join('')||'<p class="hint">Nessuna infusione conosciuta.</p>';
+ const selected=known[state.infusionPending];
+ const targets=selected?compatibleInfusionTargets(c,selected,definitions,calculated.features||[]):[];
+ const targetPicker=selected?'<div class="magic-selection-current"><h3>Applica '+esc(selected.name)+'</h3>'+
+   '<p class="hint">Scegli un oggetto compatibile: il beneficio diventa attivo quando è equipaggiato e, se necessario, in sintonia.</p>'+
+   (targets.length?'<label>Oggetto bersaglio'+options('infusion-item',targets.map(({item,index})=>[index,item.name||item.id]))+
+     '</label><div class="actions">'+btn('infusion-confirm','Conferma infusione','primary')+
+     btn('infusion-cancel','Annulla')+'</div>':
+     '<p class="warning">Nessun oggetto compatibile nell’inventario.</p>'+btn('infusion-cancel','Chiudi'))+'</div>':'';
+ return panel('Infusioni · Artefice (TCE)',summary+
+   (!trait?'<p class="warning">Il privilegio non è attivo: i benefici devono provenire dal tratto Infuse Item, non dalla classe.</p>':
+     '<p class="hint">Le infusioni si apprendono e si preparano separatamente, come gli incantesimi del Mago. La preparazione non applica effetti a un oggetto.</p>'+
+     '<div class="columns"><label>Impara infusione'+options('infusion-available',available.map(row=>[row.id,row.name]))+'</label>'+
+     '<label>Oggetto da replicare (solo per Replicate Magic Item)'+options('infusion-plan',(c.inventory||[])
+       .map((item,index)=>[index,item.name||item.id]))+'</label></div>'+
+     '<div class="actions">'+btn('infusion-learn','Impara')+'</div>'+learned+targetPicker)+
+   (known.filter(row=>isInfusionPrepared(c,row,definitions)).length>caps.active?
+     '<p class="warning">Hai preparato più infusioni degli oggetti infondibili: la selezione è consentita, ma il limite degli oggetti infusi resta valido.</p>':'')+
+   (definitions.length?'':'<p class="warning">Indice delle infusioni non caricato.</p>'));
 }
 
 const INVENTORY_PROPERTY_LABELS={
@@ -2906,6 +2923,11 @@ async function handleAction(target){
     const spell=entry||catalogSpell||stored;
     const detailed=await detailedEntry('spells',{...catalogSpell,...spell,_category:'spells'});
     const description=flattenDescription(detailed)||'Descrizione non disponibile nel catalogo locale.';
+    // Object-targeted spells and infusions reuse typed eligibility, never prose
+    // guessing. Catalogue/homebrew spells can declare item_target_selector.
+    const targetSelector=detailed.item_target_selector||spell.item_target_selector||
+      detailed.target_item_selector||spell.target_item_selector||null;
+    const targetItems=targetSelector?targetableInventoryItems(record,targetSelector):[];
     const level=magicSpellInfo({...spell,id}).level;
     const options=[];
     if(entry&&level!==null){
@@ -2935,9 +2957,13 @@ async function handleAction(target){
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('')+'</select></label>':
         '<p class="hint">'+(entry?'Nessuna risorsa di lancio disponibile.':'Incantesimo non preparato: puoi consultarlo dal libro, ma non lanciarlo.')+'</p>')+
+      (entry&&targetSelector?
+        (targetItems.length?'<label>Oggetto bersaglio<select id="action-cast-item-target">'+
+          targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
+         '<p class="warning">Nessun oggetto compatibile in inventario per questo incantesimo.</p>'):'')+
       (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
       '<div class="actions magic-dialog-actions">'+
-      (entry&&options.length?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
+      (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
@@ -2955,6 +2981,18 @@ async function handleAction(target){
       .find(row=>row.id===target.dataset.spellId&&String(row.grant_id||'')===String(target.dataset.grantId||'')&&
          String(row.casting_class||'')===String(target.dataset.castingClass||''));
     if(!selection)throw Error('Incantesimo non più disponibile.');
+    const detail=await detailedEntry('spells',{...selection,_category:'spells'});
+    const selector=detail.item_target_selector||selection.item_target_selector||
+      detail.target_item_selector||selection.target_item_selector||null;
+    if(selector){
+      const index=Number(app.querySelector('#action-cast-item-target')?.value);
+      const matches=targetableInventoryItems(record,selector);
+      const choice=matches.find(row=>row.index===index);
+      if(!choice)throw Error('Scegli un oggetto bersaglio compatibile.');
+      // Identity is preserved for the online targeting pipeline and local casts.
+      selection.item_target={inventory_index:index,
+        item_id:String(choice.item.id||''),instance_id:String(choice.item.instance_id||'')};
+    }
     const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
     if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
       eligible_damage:!!app.querySelector('[data-metamagic-damage]')?.checked,damage_type:app.querySelector('[data-metamagic-element]')?.value||''};
@@ -3806,18 +3844,32 @@ async function handleAction(target){
     }
     return;
   }
-  if(['infusion-learn','infusion-apply','infusion-forget','infusion-clear'].includes(act)){
+  if(['infusion-learn','infusion-prepare','infusion-start','infusion-confirm',
+      'infusion-cancel','infusion-forget','infusion-clear'].includes(act)){
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
     const definitions=calculated.infusion_catalog,mechanics=calculated.infusion_mechanics;
-    const index=Number(app.querySelector('#infusion-item')?.value);
-    const known=learnedInfusions(creature,definitions);
-    const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
-    const learned=known[Number(app.querySelector('#infusion-known')?.value)];
+    const features=calculated.features||[],known=learnedInfusions(creature,definitions);
+    const selected=known[Number(target.dataset.index??state.infusionPending)];
+    if(act==='infusion-start'){
+      if(!selected||!isInfusionPrepared(creature,selected,definitions))throw Error('Prepara prima l’infusione.');
+      state.infusionPending=Number(target.dataset.index);state.sheetPopup='infusions';state.sheetPopupTitle='Applica infusione';await render();return;
+    }
+    if(act==='infusion-cancel'){state.infusionPending=-1;state.sheetPopup='';await render();return;}
     let changes;
-    if(act==='infusion-learn')changes=learnInfusionPatch(creature,option,definitions,mechanics,index);
-    else if(act==='infusion-apply')changes=applyInfusionPatch(creature,learned,definitions,mechanics,index);
-    else if(act==='infusion-forget')changes=forgetInfusionPatch(creature,learned);
-    else changes=clearInfusionPatch(creature,index);
+    if(act==='infusion-learn'){
+      const option=definitions.find(row=>row.id===app.querySelector('#infusion-available')?.value);
+      changes=learnInfusionPatch(creature,option,definitions,mechanics,Number(app.querySelector('#infusion-plan')?.value??-1),features);
+    }else if(act==='infusion-prepare'){
+      changes=prepareInfusionPatch(creature,selected,definitions,features,!isInfusionPrepared(creature,selected,definitions));
+    }else if(act==='infusion-confirm'){
+      if(!selected)throw Error('Infusione non selezionata.');
+      const index=Number(app.querySelector('#infusion-item')?.value);
+      changes=applyInfusionPatch(creature,selected,definitions,mechanics,index,features);
+      state.infusionPending=-1;state.sheetPopup='';
+    }else if(act==='infusion-forget'){
+      changes=forgetInfusionPatch(creature,selected);
+      state.infusionPending=-1;state.sheetPopup='';
+    }else changes=clearInfusionPatch(creature,Number(target.dataset.index));
     await patch(changes);await render();return;
   }
   if(act==="inventory-subtab"){

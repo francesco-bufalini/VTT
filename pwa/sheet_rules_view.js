@@ -2,7 +2,7 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
 // Lightweight inline portraits: share the same unmistakable character/monster
@@ -454,6 +454,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const panels=[...bank.querySelectorAll(':scope > .panel')];
  panels.forEach((node,i)=>bind('panel:'+i,node));
  const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
+ const infused=activeInfusions(c,d.infusion_catalog||[],d.features||[]);
  const activeConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[])
    .filter(row=>(c.conditions||[]).includes(row.id));
  for(const row of activeConditions){
@@ -473,7 +474,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
-  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+'</div>';
+  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+infused.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(row.name)+'</button>').join('')+'</div>';
   const rest=document.createElement('div');
   rest.innerHTML='<div class="play-rest-choices">'+
     [['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+
@@ -700,6 +701,19 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
+   if(heading(node).startsWith('Infusioni')){
+     bind('infusions',node);
+     const known=[...node.querySelectorAll('.magic-spell-row')];
+     html+=card('Infusioni','<p class="play-casting-facts">'+esc(node.querySelector('.hint')?.textContent||'')+'</p>'+
+       known.map(row=>'<div class="play-spell">'+
+         '<span>'+esc(row.querySelector('.magic-spell-open')?.textContent||'Infusione')+'</span>'+
+         [...row.querySelectorAll('button')].map(button=>
+           proxy(button,button.getAttribute('aria-label')||button.textContent.trim(),'',
+             '<span>'+esc(button.textContent.trim())+'</span>')).join('')+
+         '</div>').join('')+
+       go('infusions','Gestisci infusioni','infusion','Impara, prepara o applica a un oggetto'));
+     return;
+   }
    const key='power:'+i;
    bind(key,node);
    const count=node.querySelectorAll('.magic-spell-row,.magic-ability-entry').length;
@@ -802,10 +816,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     }).join('')||'<p class="play-empty">Nessuna voce disponibile.</p>',
     scrollsTab?edit('scroll-create','Crea pergamena','increase'):
       edit('inventory-add',documentsTab?'Aggiungi documento':'Aggiungi oggetto','increase'));
-  if(!documentsTab&&!scrollsTab){
-    const infusion=panelNamed('Infusioni');
-    if(infusion){bind('infusions',infusion);html+=go('infusions','Infusioni','infusion','Conosciute, applicate e disponibili');}
-  }
  }
  if(sheet==='traits'){
   const groups=[...bank.querySelectorAll('.trait-card')];
@@ -833,6 +843,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
   html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+go('apply-ability','Applica una capacità','buff','Attiva un privilegio persistente disponibile');
+  if(infused.length)html+=card('Capacità magiche attive',infused.map(row=>
+    '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>'+esc(row.name)+
+    '</strong><small class="feature-effect-summary">'+esc(row.item.name||row.item.id)+
+    ' · Infusione equipaggiata</small></span></span>'+
+    btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.index+'"','<span class="sr-only">Termina</span>')+
+    '</div>').join(''),'','play-effect-card');
   html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
   if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
  }

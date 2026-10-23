@@ -239,7 +239,7 @@ test('slot counters distinguish class/pact, keep manual totals and recover witho
 });
 test('resources use native IDs, formulas, subclass gating and explicit rest recovery',()=>{
  const c={class:'Bard',class_source:'PHB',level:5,abilities:{cha:16},resource_trackers:[{id:'custom',name:'Personal',max:1,max_formula:'proficiency + 1',recharge:'manual'}],resource_tracker_spent:{'class:bard:phb:bardic_inspiration':2,custom:1,unknown:4}};
- const out=calculateSheet(c,catalogs);
+ const out=calculateSheet(c,{...catalogs,classFeatures:JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'))});
  const inspiration=out.trackers.find(t=>t.id==='class:bard:phb:bardic_inspiration');
  assert.ok(inspiration);
  assert.equal(inspiration.max,3);

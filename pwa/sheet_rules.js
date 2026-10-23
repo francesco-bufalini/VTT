@@ -2,7 +2,7 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses} from "./item_controls.js";
+import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
@@ -202,15 +202,13 @@ function itemActive(item,record={}){
   return item.equipped===true||(requiresAttunement(item)&&item.attuned===true);
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
-function itemRows(record,warnings,infusionCatalog=[]){
+function itemRows(record,warnings,infusionCatalog=[],features=[]){
   const rows=[],seen=new Set(),seenAttacks=new Set();
-  for(const saved of arr(record.inventory)){
+  for(const [index,saved] of arr(record.inventory).entries()){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
-    if(item.infusion&&Object.keys(item.infusion).length)
-      warnings.add("Bonus delle infusioni: la definizione strutturata deve essere ancora risolta");
     const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
-    const infusion=infusionNumericBonuses(record,item,infusionCatalog);
+    const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
       const raw=item?.[snake]??item?.[camel];
@@ -234,7 +232,7 @@ function itemRows(record,warnings,infusionCatalog=[]){
         ])add(target,field,snake,camel);
         if(Number.isFinite(infusion.bonus_weapon)){
           for(const type of ["attack_hit:","attack_damage:"]){
-            const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
+            const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,type+attack,infusion.bonus_weapon);
             if(grant)rows.push(grant);
           }
         }
@@ -243,11 +241,11 @@ function itemRows(record,warnings,infusionCatalog=[]){
     // General infusion grants are per active item, while weapon grants
     // above follow the actual equipped hand and thrown-attack identities.
     if(infusion.bonus_ac!==undefined&&["armor","shield"].includes(kind)){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
+      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"ac",infusion.bonus_ac);
       if(grant)rows.push(grant);
     }
     if(infusion.bonus_spell_attack!==undefined){
-      const grant=numericGrant(sid,infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
+      const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
       if(grant)rows.push(grant);
     }
     if(seen.has(sid))continue;
@@ -415,7 +413,15 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    if(row.origin_class&&(!same(f.class_name,row.origin_class)||!same(f.class_source,row.origin_class_source)||f.origin_key.includes('|subclass|')!==!!row.origin_subclass||row.origin_subclass&&!f.origin_key.includes('|subclass|'+row.origin_subclass.toLowerCase()+'|')))return false;
    const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
   });
-  const feature=matches.length===1?matches[0]:null;
+  const exact=matches.filter(f=>f.name.trim().toLowerCase()===wanted);
+  const feature=exact.length===1?exact[0]:matches.length===1?matches[0]:null;
+  // A class table only supplies capacity. Without its granting class trait,
+  // the class does not independently produce an actionable resource.
+  if(row.origin_class&&!feature){
+    row.disabled=true;
+    row.origin_id='';
+    continue;
+  }
   row.origin_id=feature?'feature:'+feature.key:'tracker:auto:'+row.id;
   row.origin_name=feature?'Tratto · '+feature.name:row.origin_name||row.name;
   if(feature?.parent_origin)row.parent_origin=feature.parent_origin;
@@ -563,8 +569,15 @@ export function calculateSheet(record={},catalogs={}){
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
+  const grantingCastingTrait=member=>{
+    const source=member.source||(record.rules_version==='2024'?'XPHB':'PHB');
+    const origin='class|'+String(source).toLowerCase()+'|'+String(member.name||'').toLowerCase();
+    return features.find(feature=>feature.origin_key===origin&&
+      ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
+      featureEnabled(record,feature));
+  };
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[]),...structuredFeatureGrants(record,catalogs,features)];
+    ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features)];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -703,6 +716,15 @@ export function calculateSheet(record={},catalogs={}){
       }
     }
     if(sid.startsWith("feature:")||sid.startsWith('tracker:auto:'))return true;
+    // A generated infusion is a separate, verifiable equipment origin, not
+    // an unknown manual bonus or an unconditional class privilege.
+    if(sid.startsWith("infusion:"))return arr(record.inventory).some((owned,itemIndex)=>
+      infusionInstanceOrigin(owned,itemIndex)===sid&&
+      itemActive(resolveOwnedItem(owned),record)&&
+      Object.keys(infusionNumericBonuses(record,resolveOwnedItem(owned),
+        index?.artificer_infusions||[],features)).length>0&&
+      (owned.infusion?.creator_id!==record.id||
+        features.some(f=>f.name==='Infuse Item'&&featureEnabled(record,f))));
     if(sid.startsWith("item:"))
       return inventory.some(it=>"item:"+it.id===sid&&itemActive(it,record));
     const fragments=sid.split("|"),group=fragments[0],
@@ -779,7 +801,10 @@ export function calculateSheet(record={},catalogs={}){
   for(const ability of ABILITIES)safe("ability_check:"+ability);
   const saves=Object.fromEntries(ABILITIES.map(a=>[a,safe("save:"+a)]));
   const skills=Object.fromEntries(SKILLS.map(([id])=>[id,safe("skill:"+id)]));
-  const progression=spellProgression(record,classes);
+  // Actual spell capacity also comes from an enabled Spellcasting/Pact Magic
+  // trait. Class levels only determine its progression once granted.
+  const progression=spellProgression(record,
+    catalogs.classFeatures?classes.filter(member=>grantingCastingTrait(member)):classes);
   progression.warnings.forEach(w=>warnings.add(w));
   const saved=arr(record.spell_slots_total);
   const hasLegacy=saved.some(x=>int(x)>0);
@@ -812,7 +837,13 @@ export function calculateSheet(record={},catalogs={}){
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
   for(const target of ['level','ac','initiative','hp','second_max','passive_perception'])safe(target);
-  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
+  // Class spell entries retain the owning structured trait, not the class.
+  const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
+    .map(member=>{
+      const trait=grantingCastingTrait(member);
+      return {...member,granting_trait_id:trait?.origin_id||'',
+        granting_trait_name:trait?.name||''};
+    }).filter(member=>!catalogs.classFeatures||member.granting_trait_id);
   for(const a of ABILITIES){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));

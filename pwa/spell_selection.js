@@ -18,7 +18,11 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
   const stored=typeof raw==='string'?{id:raw,name:raw}:raw,definition=catalog.find(s=>s.id===stored.id)||stored;
   const sources=castingSources(stored,calculated.casting_classes,catalog);
   const members=calculated.casting_classes.filter(c=>sources.includes(c.id));
-  for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
+  // Never revive a saved class spell as a manually castable spell if its
+  // granting Spellcasting/Pact Magic trait is currently unavailable.
+  if(arr(stored.casting_classes).length&&!members.length)continue;
+  for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',
+    granting_trait_id:member?.granting_trait_id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
  }
  for(const grant of calculated.origin_spells){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;

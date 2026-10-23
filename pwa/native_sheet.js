@@ -116,6 +116,7 @@ export function spellCastPlan(c,selection,requestedLevel,calculated,payment='aut
   spent[meta.tracker.id]=Number(spent[meta.tracker.id]||0)+meta.cost;patch.resource_tracker_spent=spent;
  }
  return {patch,slotLevel,context:{caster_name:c.name||'',spellcasting_ability:ability,spell_attack_bonus:hit,
+  ...(selection.item_target?{item_target:structuredClone(selection.item_target)}:{}),
   spell_save_dc:dc+(innate?1:0),...(innate?{spell_attack_advantage:true}:{}),
   ...(meta.selection.names?.length?{metamagic:meta.selection,rules_version:c.rules_version||'2014'}:{}),source_level:c.level||1},spell:meta.spell};
 }

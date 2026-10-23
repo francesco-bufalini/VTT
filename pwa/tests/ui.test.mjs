@@ -934,7 +934,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
  clearLocalRuleCatalogCache();
  globalThis.fetch=async(url,options)=>{
-  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants'})[url];
+  const file=({'/catalog/ability_grants.json':'ability_grants','/catalog/class_mechanics.json':'class_mechanics','/catalog/proficiency_grants.json':'proficiency_grants','/catalog/classes.json':'classes'})[url];
   if(file)return new Response(readFileSync(new URL('../catalog/'+file+'.json',import.meta.url),'utf8'),{status:200});
   return oldFetch(url,options);
  };
