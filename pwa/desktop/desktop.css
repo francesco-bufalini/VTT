@@ -18,5 +18,8 @@ html,body{min-width:640px;background:#191616}
 .play-abilities{grid-template-columns:repeat(6,minmax(0,1fr))}
 .desktop-error{padding:24px;color:#f6d59e}
 .creature-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.library-index{max-width:none}
+.library-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.library-backup{max-width:none}
 @media(min-width:1300px){.sheet-play-view{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:850px){.content{padding:18px}.sheet-play-view{grid-template-columns:minmax(0,1fr)}.desktop-controls{padding:8px 16px}.desktop-controls>span{display:none}.play-abilities{grid-template-columns:repeat(3,minmax(0,1fr))}.sheet-context-body .columns{grid-template-columns:1fr}}

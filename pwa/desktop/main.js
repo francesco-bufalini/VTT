@@ -58,6 +58,12 @@ document.addEventListener('click',event=>{
 function showError(error){document.querySelector('#toast').textContent=error.message;document.querySelector('#toast').hidden=false;}
 // Desktop archives use the native portable format, not a phone browser backup.
 function archiveLabels(){
+  const brand=document.querySelector('#creature-name');
+  if(brand?.textContent==='VTT Mobile')brand.textContent='VTT Desktop';
+  for(const [selector,label] of [['.library-backup-copy strong','Importazione ed esportazione'],['.library-backup-content > p','Esporta una copia portatile delle creature e dei contenuti collegati, oppure importa schede VTT come nuove copie locali.']]){
+    const node=document.querySelector(selector);
+    if(node&&node.textContent!==label)node.textContent=label;
+  }
   for(const [action,label] of [['backup','Esporta archivio'],['restore-backup','Importa archivio']]){
     const button=document.querySelector('[data-act="'+action+'"]');
     if(button&&button.textContent!==label)button.textContent=label;

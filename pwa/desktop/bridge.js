@@ -15,13 +15,16 @@ export function request(method, args = {}, {timeoutMs = 15000} = {}) {
   return new Promise((resolve, reject) => {
     if (!globalThis.ipc?.postMessage) return reject(new Error('Collegamento con VTT non disponibile.'));
     const id = ++sequence;
+    const raw=JSON.stringify({id,method,args});
+    if(new TextEncoder().encode(raw).length>24*1024*1024)
+      return reject(new Error('Richiesta troppo grande: esporta un numero minore di creature.'));
     // Native file choosers finish on selection/cancel, not on an arbitrary timer.
     const timer = timeoutMs > 0 ? setTimeout(() => {
       pending.delete(id);
       reject(new Error('VTT non risponde. La modifica non è confermata: riapri la scheda prima di riprovare.'));
     }, timeoutMs) : null;
     pending.set(id, {resolve, reject, timer});
-    try{ipc.postMessage(JSON.stringify({id, method, args}));}
+    try{ipc.postMessage(raw);}
     catch(error){pending.delete(id);clearTimeout(timer);reject(error);}
   });
 }
