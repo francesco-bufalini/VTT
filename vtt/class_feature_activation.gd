@@ -79,7 +79,7 @@ static func _source_enabled(record: Dictionary, feature: Dictionary, flags: Dict
 	var parent := String(feature.get("origin_key", ""))
 	var base := "|".join(parent.split("|").slice(0, 3))
 	for identity: String in [origin, parent, base]:
-		if not bool(flags.get(identity, true)):
+		if not bool(flags.get(identity, true)) or record.get("origin_enabled", {}).get(identity, true) == false:
 			return false
 	return true
 
@@ -190,7 +190,7 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 				if not guardian_trait_valid:
 					continue
 			var origin := "feature:" + String(feature.get("key", ""))
-			if bool(feature.get("inactive", false)) or not bool(enabled.get(origin, true)):
+			if not _source_enabled(record, feature, enabled):
 				continue
 			var resource: String = String(rule[4])
 			if revised and resource == "Ki Points": resource = "Focus Points"
@@ -423,7 +423,7 @@ static func metamagic_options(record: Dictionary) -> Array[Dictionary]:
 	for feature: Dictionary in features:
 		if String(feature.get("name", "")) == "Metamagic" and String(feature.get("class_name", "")) == "Sorcerer":
 			var origin: String = "feature:" + String(feature.get("key", ""))
-			metamagic_owner = not bool(feature.get("inactive", false)) and bool(enabled.get(origin, true)) and bool(enabled.get(String(feature.get("origin_key", "")), true))
+			metamagic_owner = _source_enabled(record, feature, enabled)
 			if metamagic_owner:
 				break
 	for raw: Variant in record.get("optional_features_catalog", []):
@@ -446,10 +446,10 @@ static func metamagic_options(record: Dictionary) -> Array[Dictionary]:
 		if source.is_empty():
 			continue
 		var origin_id := "feature:" + String(source.get("key", ""))
-		if bool(source.get("inactive", false)) or not bool(enabled.get(origin_id, true)) or not bool(enabled.get(key, true)):
+		if not _source_enabled(record, source, enabled):
 			continue
 		var saved_origin := String(raw.get("origin_id", ""))
-		if not saved_origin.is_empty() and not bool(enabled.get(saved_origin, true)):
+		if not saved_origin.is_empty() and (not bool(enabled.get(saved_origin, true)) or record.get("origin_enabled", {}).get(saved_origin, true) == false):
 			continue
 		var description := _text(raw.get("entries", ""))
 		if description.is_empty():
