@@ -64,6 +64,7 @@ try{
  await page.locator('[data-act="library-create-close"]').first().click();await shot('library');
  await page.locator('[data-act="library-add"]').click();
  await page.locator('[data-act="create"]').click();
+ await page.locator('[data-sheet-context="identity"]').waitFor();
  assert(await page.evaluate(async()=>{
    const {listCreatures}=await import('/creatures.js');
    const c=(await listCreatures())[0].creature;
