@@ -361,10 +361,13 @@ export function sheetScoreOriginSegments(record,calculated,target){
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;
  return '<div class="sheet-roll-origin-terms" role="group" aria-label="Formula del tiro per origine">'+segments.map(row=>{
-   const clickable=Boolean(row.originId||row.section);
+   const baseEdit=Boolean(row.kind==='base'&&row.editBaseTarget);
+   const clickable=baseEdit||Boolean(row.originId||row.section);
    const tag=clickable?'button':'div';
-   return '<'+tag+(clickable?' type="button" data-act="roll-origin-open" data-origin-id="'+esc(row.originId)+'" data-origin-section="'+esc(row.section||'')+'"':'')+
-     ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+'" title="'+esc(row.originName)+'">'+
+   const action=baseEdit?' type="button" data-act="sheet-score-edit-base" data-score-base-target="'+esc(row.editBaseTarget)+'"':
+     clickable?' type="button" data-act="roll-origin-open" data-origin-id="'+esc(row.originId)+'" data-origin-section="'+esc(row.section||'')+'"':'';
+   return '<'+tag+action+
+     ' class="sheet-roll-origin-term'+(clickable?' is-link':'')+(row.kind==='base'?' is-base':'')+(baseEdit?' is-base-editable':'')+'" title="'+esc(baseEdit?'Modifica '+row.originName:row.originName)+'">'+
      '<span class="sheet-roll-origin-symbol">'+esc(row.formula)+'</span>'+
      (row.expanded?'<span class="sheet-roll-origin-value">'+esc(row.expanded)+'</span>':'')+
      (row.damageType!==undefined?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damageType))+'</span>':'')+
