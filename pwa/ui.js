@@ -384,7 +384,7 @@ async function libraryView(){
     '<span class="library-empty-mark" aria-hidden="true">'+actionGlyph('book')+'</span>'+
     '<strong>La tua storia comincia qui</strong>'+
     '<p>Non ci sono ancora schede nel tuo archivio.</p>'+
-    '<button type="button" class="library-empty-create" data-act="library-add">'+
+    '<button type="button" class="library-empty-create" data-act="library-empty-add">'+
     '<span aria-hidden="true">+</span> Aggiungi la prima creatura</button></div>';
   return '<section class="library-index" aria-label="Home delle creature">'+
     '<header class="library-home-hero">'+
@@ -4153,7 +4153,7 @@ async function handleAction(target){
     if(search)search.value='';
     syncLibraryFilterUI();return;
   }
-  if(act==="library-add"){
+  if(act==="library-add"||act==="library-empty-add"){
     const dialog=app.querySelector('#library-create-dialog');
     if(dialog){if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');}
     return;
