@@ -1090,7 +1090,9 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('.magic-level-slot')?.textContent?.includes('/ 4'));
  click('[data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
- click('[data-act="slot-use"][data-level="1"]');
+ click('.magic-level-slot[data-level="1"][data-pact="false"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="1"]'));
+ click('#magic-tools-dialog [data-act="slot-use"][data-level="1"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===2);
  click('[data-act="magic-tool-open"][data-magic-tool="slots"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open]'));
@@ -1198,10 +1200,15 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
  await until(()=>document.querySelector('[data-field="name"]'));
  click('[data-sheet="magic"]');
- await until(()=>document.querySelector('[data-act="slot-use"][data-level="1"]'));
- const one=document.querySelector('[data-act="slot-use"][data-level="1"]');
- const two=document.querySelector('[data-act="slot-use"][data-level="2"]');
- assert.ok(two);one.click();two.click();
+ await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
+ // Each chip opens a confirmation dialog rather than spending at first tap.
+ click('.magic-level-slot[data-level="1"][data-pact="false"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"]'));
+ click('#magic-tools-dialog [data-act="slot-use"][data-level="1"]');
+ await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent?.[1]===1);
+ click('.magic-level-slot[data-level="2"][data-pact="false"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="2"]'));
+ click('#magic-tools-dialog [data-act="slot-use"][data-level="2"]');
  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+2);
  assert.deepEqual((await loadCreature(saved.data.id)).data.spell_slots_spent.slice(1,3),[1,1]);
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
