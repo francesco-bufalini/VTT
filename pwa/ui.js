@@ -860,23 +860,68 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
-    const containers=inventoryContainers(c);
-    const validTabs=new Set(['items','all','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)]);
-    if(!validTabs.has(state.inventorySubtab))state.inventorySubtab='items';
-    const isDocuments=state.inventorySubtab==="documents",isScrolls=state.inventorySubtab==="scrolls";
-    const inventoryTabs=[['items','Zaino','inventory'],['all','Tutti gli oggetti','inventory'],
+    const containers=inventoryContainers(c),selectedTabs=setInventoryVisibleSections(c,state.inventorySelectedTabs);
+    const inventoryTabs=[['items','Zaino','inventory'],
       ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
       ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
-    const nav='<nav class="inventory-subtabs inventory-container-tabs" role="tablist" aria-label="Sezioni inventario">'+
+    const nav='<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
       inventoryTabs.map(([key,label,glyph])=>
-        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+esc(key)+'" '+
-        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+esc(label)+'">'+
+        '<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+'" '+
+        'aria-pressed="'+selectedTabs.includes(key)+'" aria-label="'+esc(label)+'">'+
         actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>').join('')+
       '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
-    if(isDocuments){
+    const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
+    const ordinary=owned.filter(({item})=>!isSpellScroll(item));
+    const scrolls=owned.filter(({item})=>isSpellScroll(item));
+    const attunements=owned.filter(({item})=>requiresAttunement(item));
+    const selectedOrdinary=ordinary.filter(({item})=>
+      selectedTabs.includes('container:'+itemContainerId(item,containers))||
+      itemContainerId(item,containers)===DEFAULT_INVENTORY_CONTAINER&&selectedTabs.includes('items'));
+    const visibleRows=[...selectedOrdinary,...(selectedTabs.includes('scrolls')?scrolls:[])];
+    let selected=visibleRows.find(({index})=>index===state.inventorySelectedIndex);
+    if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
+    let resolvedDetail=selected?.item||{};
+    if(selected&&isCatalogItem(selected.item)){
+      if(!state.referenceCatalogs.items){
+        const request=catalogEntries("items").then(rows=>{state.referenceCatalogs.items=rows;return rows;});
+        try{await sheetLoadingDeadline(request,2500,"degli oggetti");}
+        catch(error){
+          if(error.code==='SHEET_LOADING_TIMEOUT')
+            refreshSheetAfterLateLoad(request,creatureId,'inventory');
+        }
+      }
+      const source=(state.referenceCatalogs.items||[]).find(row=>
+        String(row.id||"")===String(selected.item.id||""));
+      if(source){
+        const request=detailedEntry("items",source);
+        let detail;
+        try{detail=await sheetLoadingDeadline(request,2000,"dei dettagli dell'oggetto");}
+        catch(error){
+          if(error.code==='SHEET_LOADING_TIMEOUT')
+            refreshSheetAfterLateLoad(request,creatureId,'inventory');
+        }
+        if(detail)resolvedDetail={...detail,...selected.item,
+          entries:detail.entries??selected.item.entries,
+          description:detail.description??selected.item.description};
+      }
+    }
+    const description=selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
+      inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
+    const showingItems=selectedTabs.some(key=>key==='items'||key.startsWith('container:'));
+    body=nav+
+      (showingItems?inventoryEquipmentView(c,calculated)+
+        inventoryAttunementView(c,attunements)+
+        inventoryCoinsView(c)+
+        selectedTabs.filter(key=>key==='items'||key.startsWith('container:')).map(key=>
+          inventoryContainerSections(c,ordinary,containers,state.inventorySelectedIndex,state.inventoryMenuIndex,key)).join(''):'')+
+      (selectedTabs.includes('scrolls')?
+        panel("Pergamene possedute",
+          inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
+          "inventory-native-panel inventory-scroll-panel")+
+        panel("Nuova pergamena",scrollSpellCreatorView(),"inventory-native-panel inventory-scroll-create"):'');
+    if(selectedTabs.includes('documents')){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
-      const request=Promise.all(documents.map(({item})=>
-        getRecord("global","homebrew",String(item.id||""))));
+      const request=Promise.all(documents.map(({item})=>getRecord("global","homebrew",String(item.id||""))));
       let definitions;
       try{definitions=await sheetLoadingDeadline(request,3500,"dei documenti");}
       catch(error){
@@ -884,58 +929,13 @@ async function editorView() {
         if(error.code==='SHEET_LOADING_TIMEOUT')
           refreshSheetAfterLateLoad(request,creatureId,'inventory');
       }
-      body=nav+panel("Documenti",
+      body+=panel("Documenti",
         (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
           '<p class="hint">Nessun documento.</p>')+
         '<div class="actions">'+btn("document-add","＋ Nuovo documento","primary")+'</div>',
         "inventory-native-panel inventory-documents-panel");
-    }else{
-      const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
-      const ordinary=owned.filter(({item})=>!isSpellScroll(item));
-      const scrolls=owned.filter(({item})=>isSpellScroll(item));
-      const attunements=owned.filter(({item})=>requiresAttunement(item));
-      const visibleRows=isScrolls?scrolls:ordinary.filter(({item})=>state.inventorySubtab==='all'||
-        itemContainerId(item,containers)===(state.inventorySubtab.startsWith('container:')?state.inventorySubtab.slice(10):DEFAULT_INVENTORY_CONTAINER));
-      let selected=visibleRows.find(({index})=>index===state.inventorySelectedIndex);
-      if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
-      let resolvedDetail=selected?.item||{};
-      if(selected&&isCatalogItem(selected.item)){
-        if(!state.referenceCatalogs.items){
-          const request=catalogEntries("items").then(rows=>{state.referenceCatalogs.items=rows;return rows;});
-          try{await sheetLoadingDeadline(request,2500,"degli oggetti");}
-          catch(error){
-            if(error.code==='SHEET_LOADING_TIMEOUT')
-              refreshSheetAfterLateLoad(request,creatureId,'inventory');
-          }
-        }
-        const source=(state.referenceCatalogs.items||[]).find(row=>
-          String(row.id||"")===String(selected.item.id||""));
-        if(source){
-          const request=detailedEntry("items",source);
-          let detail;
-          try{detail=await sheetLoadingDeadline(request,2000,"dei dettagli dell'oggetto");}
-          catch(error){
-            if(error.code==='SHEET_LOADING_TIMEOUT')
-              refreshSheetAfterLateLoad(request,creatureId,'inventory');
-          }
-          if(detail)resolvedDetail={...detail,...selected.item,
-            entries:detail.entries??selected.item.entries,
-            description:detail.description??selected.item.description};
-        }
-      }
-      const description=selected?panel("Descrizione · "+(selected.item.name||"Oggetto"),
-        inventoryItemDescription(resolvedDetail,selected.index),"inventory-native-panel inventory-description-panel"):"";
-      body=nav+(isScrolls?
-        panel("Pergamene possedute",
-          inventoryTable(scrolls,true,state.inventorySelectedIndex,state.inventoryMenuIndex),
-          "inventory-native-panel inventory-scroll-panel")+
-        panel("Nuova pergamena",scrollSpellCreatorView(),"inventory-native-panel inventory-scroll-create"):
-        inventoryEquipmentView(c,calculated)+
-        inventoryAttunementView(c,attunements)+
-        inventoryCoinsView(c)+
-        inventoryContainerSections(c,ordinary,containers,state.inventorySelectedIndex,state.inventoryMenuIndex))+
-        description;
     }
+    body+=description;
     break;
   }
   case "battle":
@@ -1626,19 +1626,19 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
 }
-function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex){
-  const key=state.inventorySubtab;
+function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex,key){
   const active=key.startsWith('container:')?containers.find(row=>row.id===key.slice(10)):null;
   const destination=active?.id||DEFAULT_INVENTORY_CONTAINER;
-  const rows=entries.filter(({item})=>key==='all'||itemContainerId(item,containers)===destination);
+  const rows=entries.filter(({item})=>itemContainerId(item,containers)===destination);
   const controls=active?'<div class="inventory-container-management">'+
     '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button>'+
     '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(active.id)+'">Elimina sezione</button></div>':'';
-  return panel(key==='all'?'Tutti gli oggetti':active?.name||'Zaino',
-    controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
-    '<div class="actions"><button type="button" class="btn small" data-act="item-catalog" data-container-id="'+esc(destination)+'">＋ Dal catalogo</button>'+
-    '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
-    "inventory-native-panel inventory-items-panel");
+  return '<div data-inventory-section="'+esc(key)+'">'+
+    panel(active?.name||'Zaino',
+      controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
+      '<div class="actions"><button type="button" class="btn small" data-act="item-catalog" data-container-id="'+esc(destination)+'">＋ Dal catalogo</button>'+
+      '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
+      "inventory-native-panel inventory-items-panel")+'</div>';
 }
 function inventoryItemDescription(obj,index){
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
