@@ -403,7 +403,7 @@ async function libraryView(){
        '<span class="library-shortcut-icon">'+actionGlyph('proficiency')+'</span>'+
        '<span class="library-shortcut-copy"><strong>Nuova creatura</strong><small>Crea o aggiungi una scheda</small></span>'+
        '<span class="library-shortcut-arrow" aria-hidden="true">+</span></button>'+
-      '<button type="button" class="library-shortcut" data-act="import">'+
+      '<button type="button" class="library-shortcut" data-act="library-quick-import">'+
        '<span class="library-shortcut-icon">'+actionGlyph('scroll')+'</span>'+
        '<span class="library-shortcut-copy"><strong>Importa</strong><small>Da un file JSON</small></span>'+
        '<span class="library-shortcut-arrow" aria-hidden="true">↗</span></button>'+
@@ -4168,7 +4168,7 @@ async function handleAction(target){
     const row=await createCreature("character","Nuovo personaggio");
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";await render();return;
   }
-  if(act==="import"){
+  if(act==="import"||act==="library-quick-import"){
     const dialog=app.querySelector('#library-create-dialog');
     if(dialog?.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
     creatureInput.click();return;
