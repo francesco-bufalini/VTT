@@ -261,7 +261,11 @@ test('Lightning Launcher abbreviation renders as full Lightning damage and optio
    originName:'Lightning Launcher'}],x=>x);
  assert.match(html,/>Fulmine<\/span>/);
  assert.doesNotMatch(html,/>L<\/span>/);
- const record=character(),calculated={trackers:[{
+ const record=character(),calculated={trait_state_optional_dice:[{
+   id:'lightning-launcher:extra',attack_id:'class_feature:lightning_launcher',
+   tracker_id:'feature:lightning_launcher:extra_damage',dice:'1d6',damage_type:'lightning',
+   origin_name:'Lightning Launcher',tracker_cost:1
+ }],trackers:[{
    id:'feature:lightning_launcher:extra_damage',name:'Lightning Launcher · danno aggiuntivo',
    max:1,spent:0,origin_id:'feature:class|tce|artificer|lightning_launcher'
  }]};
