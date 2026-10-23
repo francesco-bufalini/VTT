@@ -2331,15 +2331,144 @@
           ]
         }
       ]
+    },
+    {
+      "class": "Artificer",
+      "source": "TCE",
+      "resources": [
+        {
+          "name": "Flash of Genius",
+          "derived_from": "5etools classFeature Flash of Genius (Artificer TCE, level 7)",
+          "minimum": 1,
+          "steps": [
+            {
+              "level": 7,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Defensive Field",
+          "subclass": "Armorer",
+          "derived_from": "5etools subclassFeature Defensive Field (Armorer TCE, level 3)",
+          "steps": [
+            {
+              "level": 3,
+              "value": "proficiency",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Experimental Elixir",
+          "subclass": "Alchemist",
+          "derived_from": "5etools subclassFeature Experimental Elixir (Alchemist TCE, levels 3, 6, 15); free elixirs only",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Restorative Reagents",
+          "subclass": "Alchemist",
+          "derived_from": "5etools subclassFeature Restorative Reagents (Alchemist TCE, level 9); free Lesser Restoration uses",
+          "minimum": 1,
+          "steps": [
+            {
+              "level": 9,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Chemical Mastery (Heal)",
+          "origin_feature": "Chemical Mastery",
+          "subclass": "Alchemist",
+          "derived_from": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Heal use",
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Chemical Mastery (Greater Restoration)",
+          "origin_feature": "Chemical Mastery",
+          "subclass": "Alchemist",
+          "derived_from": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Greater Restoration use",
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Eldritch Cannon",
+          "subclass": "Artillerist",
+          "derived_from": "5etools subclassFeature Eldritch Cannon (Artillerist TCE, level 3); one free creation",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Arcane Jolt",
+          "subclass": "Battle Smith",
+          "derived_from": "5etools subclassFeature Arcane Jolt (Battle Smith TCE, level 9)",
+          "minimum": 1,
+          "steps": [
+            {
+              "level": 9,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Perfected Armor",
+          "origin_feature": "Guardian",
+          "subclass": "Armorer",
+          "derived_from": "5etools subclassFeature Guardian under Perfected Armor (Armorer TCE, level 15)",
+          "steps": [
+            {
+              "level": 15,
+              "value": "proficiency",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
     }
   ],
   "resource_overrides_meta": {
     "format": 1,
-    "source": "FightClub5eXML",
+    "source": "FightClub5eXML + 5etools",
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Sorcerer and Wizard definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Sorcerer and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "monster_resources": [
     {

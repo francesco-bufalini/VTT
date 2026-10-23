@@ -5,7 +5,7 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
-import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources} from './feature_mechanics.js';
+import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects} from './trait_state_rules.js';
 
@@ -367,13 +367,6 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
    const max=column.levels?.[level-1];
    if(column.kind==='resource'&&typeof max==='number'&&max>0)
     add({id:makeId(column.name),name:column.name,max:int(max),origin_name:column.origin_feature||column.name,origin_feature_key:column.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,recharge:'manual',automatic:true});
-  }
-  if(same(member.name,'Artificer')&&base.source==='TCE'){
-   for(const resource of artificerResources(level,resolve('int_mod'),resolve('proficiency'),member.subclass||record.subclass)){
-    add({id:makeId(resource.name),name:resource.name,max:resource.max,origin_name:resource.origin,
-      origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass,
-      recharge:'long_rest',automatic:true});
-   }
   }
   for(const group of arr(catalog?.resource_overrides).filter(r=>same(r.class,member.name)&&same(r.source,base.source))){
    for(const resource of arr(group.resources)){

@@ -31,7 +31,7 @@ Le fonti PHB e XPHB non sono intercambiabili.
 | XPHB | Ability Score Improvement 4, 6, 8, 12, 14, 16 | Scelta del personaggio. |
 | XPHB | Action Surge 2, 17 | **Ora in `class_resource_overrides.json`**: 1/2 usi, recupero breve, stesso ID salvato. |
 | XPHB | Indomitable 9, 13, 17 | **Ora in `class_resource_overrides.json`**: 1/2/3 usi, recupero lungo, stesso ID salvato. |
-| XPHB | Second Wind 1 | Massimo dalla colonna 5etools; recupero parziale ancora in lista sotto. |
+| XPHB | Second Wind 1 | Massimo dalla colonna 5etools; recupero di un uso al breve e di tutti al lungo nel dato `feature_timing_recovery_rules.json`. |
 | XPHB | Extra Attack 5; Two Extra Attacks 11; Three Extra Attacks 20 | Progressione degli attacchi, non contatore. |
 | XPHB | Fighting Style 1; Weapon Mastery 1 | Capacità/possibilità di scelta; solo le opzioni selezionate possono produrre effetti. |
 | XPHB | Fighter Subclass 3; Subclass Feature 7, 10, 15, 18 | Segnaposto di selezione. |
@@ -56,10 +56,6 @@ Le fonti PHB e XPHB non sono intercambiabili.
 
 ### Privilegi ancora fuori dal modello automatico
 
-- **Second Wind XPHB:** recupera un solo uso al riposo breve e tutti al lungo.
-  Il tracker attuale ha un solo tipo di recupero; attribuirgli `short_rest`
-  restituirebbe erroneamente tutti gli usi. La progressione massima resta
-  quella della tabella 5etools.
 - **Tactical Mind, Tactical Shift, Tactical Master, Studied Attacks XPHB:**
   dipendono da esiti di tiri, consumo contestuale, movimento o proprietà di
   arma. Nessun bonus o pagamento automatico viene dedotto dal testo.
@@ -91,6 +87,10 @@ il contatore non tenta di applicare la loro azione o scegliere bersagli.
 | Sorcerer XPHB, Innate Sorcery 1 | Due usi, riposo lungo, con origine nel privilegio stesso. Il bonus alla CD e il vantaggio valgono soltanto durante l'attivazione, quindi non sono bonus permanenti. |
 | Wizard XPHB, Arcane Recovery 1 | Un uso dopo un riposo breve, nuovamente disponibile dopo il lungo. Il contatore traccia l'uso, non decide quali slot recuperare. La versione PHB resta separata. |
 
+Il recupero opzionale di Sorcerous Restoration XPHB (metà del livello di
+Sorcerer, una volta per riposo lungo) è già nel dato separato
+`feature_timing_recovery_rules.json`; non è un reset completo del contatore.
+
 ### Privilegi collegati ancora fuori dal modello automatico
 
 - **Lay on Hands / Restoring Touch XPHB:** spendere un numero scelto di punti
@@ -100,16 +100,38 @@ il contatore non tenta di applicare la loro azione o scegliere bersagli.
 - **Innate Sorcery / Sorcery Incarnate / Arcane Apotheosis XPHB:** durata,
   attivazione, incantesimi del Sorcerer, Metamagia e pagamento alternativo in
   Sorcery Points sono condizioni d'uso, non bonus sempre attivi.
-- **Sorcerous Restoration XPHB:** restituisce fino a metà del livello di
-  Sorcerer in Sorcery Points a un riposo breve, una volta per riposo lungo.
-  Il recupero parziale e il suo limite separato non sono esprimibili dal
-  tracker a recupero totale.
 - **Arcane Recovery / Memorize Spell / Signature Spells XPHB:** recuperare slot
   scelti con un tetto cumulativo, cambiare un preparato o scegliere due
   incantesimi distinti richiede selezioni non rappresentate da un singolo
   contatore di classe.
 - **Divine Sense / Abjure Foes XPHB:** sensi contestuali, bersagli, salvezze e
   condizioni non derivano in automatico dal contatore Channel Divinity.
+
+## Lotto 2026-10-23: contatori Artificer TCE
+
+Fonti: `creature_references_5etools.json` per Flash of Genius e
+`subclass_features_5etools.json` per i tratti delle quattro specializzazioni.
+Le nove definizioni erano duplicate in Godot e in due proiezioni PWA. Ora i
+limiti provengono da `class_resource_overrides.json`, senza nuove eccezioni
+per nomi di privilegio nel codice. Ogni voce conserva ID, sottoclasse e
+recupero preesistenti; i valori `int_mod` usano il minimo di un uso.
+
+| Privilegio e livello | Numero strutturato | Parte ancora esplicita |
+| --- | --- | --- |
+| Flash of Genius 7 | Modificatore INT, minimo 1; riposo lungo. | Reazione a prova/TS di creatura visibile entro 30 piedi. |
+| Armorer: Defensive Field 3 | Competenza; riposo lungo. | Armatura Guardian, PF temporanei e rimozione quando si toglie l'armatura. |
+| Alchemist: Experimental Elixir 3, 6, 15 | 1/2/3 elisir gratuiti per riposo lungo. | Elisir distinti, effetto casuale, durata e creazione extra con slot. |
+| Alchemist: Restorative Reagents 9 | Usi gratuiti di Lesser Restoration pari a INT, minimo 1; riposo lungo. | PF temporanei quando si beve un elisir. |
+| Alchemist: Chemical Mastery 15 | Un Heal e un Greater Restoration, ciascuno con il proprio contatore; riposo lungo. | Lancio concreto e bersaglio; resistenze/immunità sono effetti separati. |
+| Artillerist: Eldritch Cannon 3 | Una creazione gratuita per riposo lungo. | Oggetto cannone, tipi, durata, comandi e creazione ulteriore con slot. |
+| Battle Smith: Arcane Jolt 9 | Modificatore INT, minimo 1; riposo lungo. | Attacco idoneo, scelta danno/cura e massimo una volta per turno. |
+| Armorer: Perfected Armor → Guardian 15 | Competenza; riposo lungo. | Tiro salvezza, movimento del bersaglio e attacco contestuale. Il modello Infiltrator è distinto. |
+
+La tabella rappresenta solo **limiti numerici verificati**. Gli oggetti,
+effetti, bersagli e pagamenti alternativi nella terza colonna restano nella
+lista dei lavori fuori dal modello automatico; non vengono ricavati dal
+contatore. In particolare Experimental Elixir non equivale a un inventario
+di fiasche già create.
 
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del

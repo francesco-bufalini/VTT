@@ -455,17 +455,3 @@ export function optionalRecoveryPatch(record,ruleId,trackers){
  }
  return null;
 }
-
-// Curated TCE consumables; the two browser projections share these definitions.
-export function artificerResources(level,intelligence,proficiency,selectedSubclass){
- const extra=[['Flash of Genius',7,Math.max(1,intelligence),''],['Defensive Field',3,proficiency,'Armorer'],
-  ['Experimental Elixir',3,level>=15?3:level>=6?2:1,'Alchemist'],
-  ['Restorative Reagents',9,Math.max(1,intelligence),'Alchemist'],
-  ['Chemical Mastery (Heal)',15,1,'Alchemist','Chemical Mastery'],
-  ['Chemical Mastery (Greater Restoration)',15,1,'Alchemist','Chemical Mastery'],
-  ['Eldritch Cannon',3,1,'Artillerist'],['Arcane Jolt',9,Math.max(1,intelligence),'Battle Smith'],
-  ['Perfected Armor',15,proficiency,'Armorer','Guardian']];
- return extra.filter(([,gate,,sub])=>level>=gate&&(!sub||low(sub)===low(selectedSubclass)))
-  .map(([name,,max,sub,origin])=>({name,max,subclass:sub,origin:origin||name}));
-}
-

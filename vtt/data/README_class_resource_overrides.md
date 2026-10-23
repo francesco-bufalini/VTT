@@ -5,7 +5,7 @@ progressions and complements it with `vtt/data/class_resource_overrides.json`.
 The latter is a curated snapshot of *counter metadata* taken from the public
 FightClub5eXML compendium files, plus separately identified 2024 Bard,
 Fighter, Paladin, Sorcerer and Wizard entries from the source-qualified
-5etools class features.
+5etools class features, and Artificer TCE class/subclass counter limits.
 The game never fetches Fight Club or other websites.
 
 - `classes[].resources[].steps`: when a counter becomes available or changes
@@ -17,8 +17,9 @@ The game never fetches Fight Club or other websites.
   `minimum` can enforce rules such as Bardic Inspiration's one-use minimum.
   Fight Club placeholders are **not accepted at runtime**.
 - `reset`: `manual`, `turn`, `short_rest`, or `long_rest`. The recovery
-  helper restores resources at short/long rest and ignores manual ones; partial
-  short-rest recovery (some 2024 features) needs richer metadata in the future.
+  helper restores resources at short/long rest and ignores manual ones.
+  Partial or optional recovery for some 2024 features lives in the separate
+  source-qualified `feature_timing_recovery_rules.json` data.
 - `column`: optional alias for a 5etools class-table label (e.g. Rage -> Rages).
   Native 5etools limits take precedence; supplement rest type fills the gap.
   Unlimited source progressions are never replaced by a finite fallback.
@@ -45,6 +46,10 @@ Sorcerer Innate Sorcery and Wizard Arcane Recovery are reviewed against
 `creature_references_5etools.json` and stay in this allowlist when the 2014
 Fight Club generator runs. Lay on Hands has explicit class-level steps to
 preserve its five-points-per-Paladin-level pool for multiclass characters.
+The TCE Artificer resource limits are checked against source-qualified
+`creature_references_5etools.json` and `subclass_features_5etools.json`.
+Their free-use counters do not model chosen elixirs, a cannon object, spell
+slot alternatives or targets; those mechanics need separate structured data.
 The 2024 Second Wind class-table progression is already supplied by
 `class_mechanics_5etools.json` and is not duplicated here.
 Fight Club values (e.g. its `%6` token for CHA modifier) are translated to

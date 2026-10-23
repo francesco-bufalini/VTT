@@ -100,6 +100,32 @@ test("2024 Paladin, Sorcerer and Wizard counters use shared source-qualified dat
  assert.equal(innate?.max,2);
  assert.equal(innate?.recharge,"long_rest");
 });
+test("Artificer TCE counters retain subclass gates, limits and feature origins",()=>{
+ const expected={
+  Armorer:{"Defensive Field":5,"Perfected Armor":5},
+  Alchemist:{"Experimental Elixir":3,"Restorative Reagents":4,
+   "Chemical Mastery (Heal)":1,"Chemical Mastery (Greater Restoration)":1},
+  Artillerist:{"Eldritch Cannon":1},
+  "Battle Smith":{"Arcane Jolt":4}
+ };
+ for(const [subclass,own] of Object.entries(expected)){
+  const record={kind:"character",level:15,abilities:{int:18},
+   classes:[{name:"Artificer",source:"TCE",level:15,subclass}]};
+  const rows=classResourceTrackers(record,index,{classes:index.resource_overrides});
+  const actual=Object.fromEntries(rows.map(row=>[row.name,row.max]));
+  assert.deepEqual(actual,{"Flash of Genius":4,...own});
+  assert(rows.every(row=>row.recharge==="long_rest"&&row.id.startsWith("class:artificer:tce:")));
+  if(subclass==="Armorer")assert.equal(rows.find(row=>row.name==="Perfected Armor")?.origin,"Guardian");
+  if(subclass==="Alchemist")assert.equal(rows.find(row=>row.name==="Chemical Mastery (Heal)")?.origin,"Chemical Mastery");
+ }
+ for(const [level,max] of [[3,1],[6,2],[15,3]]){
+  const record={kind:"character",level,abilities:{int:8},
+   classes:[{name:"Artificer",source:"TCE",level,subclass:"Alchemist"}]};
+  const rows=classResourceTrackers(record,index,{classes:index.resource_overrides});
+  assert.equal(rows.find(row=>row.name==="Experimental Elixir")?.max,max);
+  if(level>=7)assert.equal(rows.find(row=>row.name==="Flash of Genius")?.max,1);
+ }
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],
