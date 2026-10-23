@@ -917,6 +917,8 @@ async function traitsView(c){
       (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
     '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
+      (trait.category==='oggetti'&&trait.rank===0&&trait.item_quantity>1?
+        '<span class="trait-item-quantity" aria-label="Quantità '+trait.item_quantity+'">×'+trait.item_quantity+'</span>':'')+
       '<span class="trait-chevron" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15" fill="none"><path d="M3 6 L12 11 L21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>'+
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
@@ -976,6 +978,14 @@ function mountTraitBenefitDialog(){
   activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
  const groups=traitBenefitGroups(trait,record,benefitProjection);
+ const isOwnedItem=trait.category==='oggetti'&&trait.rank===0&&
+   String(trait.origin_key||'').startsWith('item:');
+ const ownedCopies=isOwnedItem?(record.inventory||[]).filter(item=>
+   String(item.id||'')===String(trait.origin_key).slice(5)):[];
+ const passiveItem=isOwnedItem&&ownedCopies.length>0&&ownedCopies.every(item=>
+   !['weapon','shield','armor'].includes(itemKind(item)));
+ const itemQuantity=isOwnedItem?Math.max(1,ownedCopies.reduce((total,item)=>
+   total+Math.max(0,Number(item.quantity??1)||0),0)):1;
  const hidden=traitRemovedIds(record,trait);
  const ownedChoices=choicesForTrait(trait,record,state.calculated?.pending_choices||[]);
  const optionList=(options,selected='')=>options.map(([value,label])=>
@@ -1053,15 +1063,20 @@ function mountTraitBenefitDialog(){
  dialog.id='trait-benefits-dialog';dialog.className='trait-benefits-dialog';
  dialog.setAttribute('aria-labelledby','trait-benefits-title');
  dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
-  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+'</h2>'+
+  '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+
+   (itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
   '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
   '<div class="trait-benefits-dialog-body">'+
+   (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
+     '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
+      '<span class="trait-activation-description">Attivi per ogni copia posseduta'+(itemQuantity>1?' · ×'+itemQuantity:'')+
+       (ownedCopies.some(item=>requiresAttunement(item))?' · Richiede sintonia':'')+'</span></div></div>':
    '<div class="trait-activation-control" data-trait-activation>'+
     '<div class="trait-activation-copy"><span class="trait-activation-heading">'+(trait.readonly?'Stato attivo':'Stato del privilegio')+'</span>'+
      '<span class="trait-activation-description">'+(trait.inactive?'Benefici disattivati':'Benefici attivi')+'</span></div>'+
     '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="'+(trait.readonly?'trait-state-end':'trait-benefits-toggle')+'" aria-label="'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
      '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
-   '</div>'+
+   '</div>')+
    '<div class="trait-benefits">'+(benefits+choiceBenefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
    (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
      '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
@@ -4002,6 +4017,9 @@ async function handleAction(target){
     const record=state.editor.read();
     if(trait.category==='oggetti'&&trait.rank===0&&String(trait.origin_key||'').startsWith('item:')){
       const id=String(trait.origin_key).slice(5);
+      if((record.inventory||[]).filter(item=>String(item.id||'')===id)
+        .every(item=>!['weapon','shield','armor'].includes(itemKind(item))))
+        throw Error('I benefici degli oggetti comuni sono automatici.');
       const active=(record.inventory||[]).some(item=>String(item.id||'')===id&&
         (item.equipped===true||(item.equipped_slots||[]).length>0));
       const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id&&
