@@ -3949,9 +3949,11 @@ async function handleAction(target){
   if(act==="new-homebrew-item"){
     const owner=state.creatureId||"";
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
-    await navigate("catalog");
+    // Open on the very first catalog render: async UI tests and mobile taps
+    // must not encounter a still-collapsed editor during a second render.
     state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;
-    await render();
+    state.disclosureState.set('catalog|'+state.sheet+'|Crea contenuto personalizzato',true);
+    await navigate("catalog");
     const creator=app.querySelector(".catalog-create");
     if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
