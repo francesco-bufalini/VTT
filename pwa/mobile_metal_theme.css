@@ -3630,19 +3630,62 @@ dialog.sheet-context-dialog{border-bottom:0}
 }
 .trait-choice-row button:hover{background:#b88b5337;border-color:#e0b57b}
 .trait-choice-row button:focus-visible{outline:2px solid #e0b57b;outline-offset:2px}
-/* Inventory destinations use the same metal tabs as Zaino/Pergamene/Documenti,
-   with horizontal scrolling instead of stacking multiple long item lists. */
+/* Multi-select section controls wrap rather than hiding sections beyond a
+   horizontal swipe. Pressed buttons share the warm metallic tab treatment. */
 .inventory-subtabs.inventory-container-tabs{
-  display:flex;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;
-  padding:2px 1px 7px;scrollbar-width:thin;scroll-snap-type:x proximity;
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:7px;
+  width:100%;max-width:100%;overflow:visible;padding:2px 0 10px;
+  scrollbar-width:auto;scroll-snap-type:none;
 }
 .inventory-subtabs.inventory-container-tabs>button{
-  flex:0 0 auto;min-width:100px;max-width:180px;padding:8px 12px;
-  scroll-snap-align:start;white-space:normal;overflow-wrap:anywhere;
+  flex:1 1 112px;min-width:min(112px,100%);max-width:none;min-height:43px;
+  padding:8px 11px;scroll-snap-align:none;white-space:normal;
+  overflow-wrap:anywhere;border:1px solid rgba(191,151,99,.35);
+  border-radius:11px;background:rgba(106,82,53,.13);color:inherit;
+  font-family:inherit;font-size:12px;font-weight:600;line-height:1.35;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+}
+.inventory-subtabs.inventory-container-tabs>button[aria-pressed="true"]{
+  background:linear-gradient(155deg,rgba(178,134,78,.35),rgba(112,76,42,.24));
+  border-color:rgba(224,181,119,.72);color:#f3d5a7;
+  box-shadow:inset 0 1px 0 rgba(255,234,194,.13);
+}
+.inventory-subtabs.inventory-container-tabs>button:hover{
+  border-color:rgba(224,181,119,.78);
+}
+.inventory-subtabs.inventory-container-tabs>button:focus-visible{
+  outline:2px solid #e8c28e;outline-offset:2px;
 }
 .inventory-subtabs.inventory-container-tabs>.inventory-add-container-tab{
-  min-width:50px;font-size:24px;font-weight:500;padding-inline:11px;
+  flex:0 0 49px;min-width:49px;font-size:23px;font-weight:500;padding:4px;
 }
+.page-head.play-inventory-page-title{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  column-gap:9px;align-items:center;
+}
+.page-head.play-inventory-page-title>.eyebrow{grid-column:1/-1}
+.page-head.play-inventory-page-title>h1{grid-column:1;min-width:0}
+.page-head.play-inventory-page-title>.page-description{grid-column:1/-1}
+.page-head.play-inventory-page-title>[data-act="inventory-toggle-all"]{
+  grid-column:2;grid-row:2;justify-self:end;
+  display:inline-flex;gap:7px;align-items:center;
+  width:auto;max-width:180px;min-height:38px;padding:7px 10px;
+  white-space:normal;text-align:center;font-size:11px;line-height:1.3;
+  border:1px solid rgba(207,166,106,.44);
+  border-radius:10px;background:rgba(156,112,62,.13);color:#eed1a3;
+}
+.page-head.play-inventory-page-title>[data-act="inventory-toggle-all"]:focus-visible{
+  outline:2px solid #e8c28e;outline-offset:2px;
+}
+@media(max-width:380px){
+  .inventory-subtabs.inventory-container-tabs>button{
+    flex-basis:98px;min-height:40px;padding:7px 8px;font-size:11px;
+  }
+  .page-head.play-inventory-page-title>[data-act="inventory-toggle-all"]{
+    max-width:145px;font-size:10px;
+  }
+}
+
 .inventory-container-management{
   display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:0 0 12px;
 }
