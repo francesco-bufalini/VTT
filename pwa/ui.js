@@ -2050,9 +2050,9 @@ function renderSpellResults(){
       const isKnown=known.has(spell.id);
       return '<div class="magic-catalog-row"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
         (isKnown?command:'<span class="hint">Non conosciuto</span>')+
-        '<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
+        (member.book&&Number(spell.level)===0?'':'<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
         ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
-        (isKnown?'Dimentica':'+ Conosci')+'</button></div>';
+        (isKnown?'Dimentica':'+ Conosci')+'</button>')+'</div>';
     }
     return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="'+
       action+'" data-index="'+actionIndex+'"'+
@@ -4182,6 +4182,7 @@ async function handleAction(target){
       const calculated=await computeLocalData(c);
       await patch(current=>slotUsePatch(current,Number(target.dataset.level),act==='slot-use'?1:-1,calculated));
     }
+    if((act==='slot-use'||act==='slot-recover')&&state.magicPopup==='slot-menu')state.magicPopup='';
     await render();return;
   }
   if(act==='hp-damage'||act==='hp-heal'){
