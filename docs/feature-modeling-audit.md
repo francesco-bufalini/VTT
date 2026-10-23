@@ -77,6 +77,40 @@ Le fonti PHB e XPHB non sono intercambiabili.
 - **Darkvision PHB/XPHB:** la scheda mostra il testo, ma la VTT non applica
   ancora la visibilità secondo portata e illuminazione del tratto.
 
+## Lotto 2026-10-23: contatori Paladin, Sorcerer e Wizard XPHB
+
+Fonti: `creature_references_5etools.json` (voci `class_features` con identità
+classe, fonte e livello), `class_mechanics_5etools.json` per i limiti tabellari,
+e il supplemento FightClub5eXML PHB come confronto della vecchia edizione.
+I tre privilegi qui sotto hanno testo 5etools che fissa limite e recupero;
+il contatore non tenta di applicare la loro azione o scegliere bersagli.
+
+| Classe e privilegio | Esito dei dati |
+| --- | --- |
+| Paladin XPHB, Lay on Hands 1 | Pool di 5 punti per **livello di Paladino**, riposo lungo. Venti passi numerici nel dato condiviso conservano l'ID `class:paladin:xphb:lay_on_hands` anche nel multiclasse. La versione PHB resta separata. |
+| Sorcerer XPHB, Innate Sorcery 1 | Due usi, riposo lungo, con origine nel privilegio stesso. Il bonus alla CD e il vantaggio valgono soltanto durante l'attivazione, quindi non sono bonus permanenti. |
+| Wizard XPHB, Arcane Recovery 1 | Un uso dopo un riposo breve, nuovamente disponibile dopo il lungo. Il contatore traccia l'uso, non decide quali slot recuperare. La versione PHB resta separata. |
+
+### Privilegi collegati ancora fuori dal modello automatico
+
+- **Lay on Hands / Restoring Touch XPHB:** spendere un numero scelto di punti
+  per curare o rimuovere Poisoned o altre condizioni richiede un bersaglio e
+  una spesa contestuale. Il pool è tracciato, ma non viene scalato da una
+  generica guarigione né da una condizione rimossa manualmente.
+- **Innate Sorcery / Sorcery Incarnate / Arcane Apotheosis XPHB:** durata,
+  attivazione, incantesimi del Sorcerer, Metamagia e pagamento alternativo in
+  Sorcery Points sono condizioni d'uso, non bonus sempre attivi.
+- **Sorcerous Restoration XPHB:** restituisce fino a metà del livello di
+  Sorcerer in Sorcery Points a un riposo breve, una volta per riposo lungo.
+  Il recupero parziale e il suo limite separato non sono esprimibili dal
+  tracker a recupero totale.
+- **Arcane Recovery / Memorize Spell / Signature Spells XPHB:** recuperare slot
+  scelti con un tetto cumulativo, cambiare un preparato o scegliere due
+  incantesimi distinti richiede selezioni non rappresentate da un singolo
+  contatore di classe.
+- **Divine Sense / Abjure Foes XPHB:** sensi contestuali, bersagli, salvezze e
+  condizioni non derivano in automatico dal contatore Channel Divinity.
+
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
 tratto, scelta attiva, progressione, recupero e compatibilità Android/PWA.

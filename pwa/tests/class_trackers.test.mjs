@@ -79,6 +79,27 @@ test("2024 Fighter uses the source-qualified Action Surge and Indomitable steps"
   }
  }
 });
+test("2024 Paladin, Sorcerer and Wizard counters use shared source-qualified data",()=>{
+ const mixed={kind:"character",level:10,classes:[
+  {name:"Paladin",source:"XPHB",level:3},
+  {name:"Wizard",source:"XPHB",level:7}]};
+ const rows=classResourceTrackers(mixed,index,{classes:index.resource_overrides});
+ const lay=rows.find(row=>row.name==="Lay on Hands");
+ assert.equal(lay?.id,"class:paladin:xphb:lay_on_hands");
+ assert.equal(lay?.max,15);
+ assert.equal(lay?.origin,"Lay on Hands");
+ assert.equal(lay?.recharge,"long_rest");
+ const arcane=rows.find(row=>row.name==="Arcane Recovery");
+ assert.equal(arcane?.id,"class:wizard:xphb:arcane_recovery");
+ assert.equal(arcane?.max,1);
+ assert.equal(arcane?.recharge,"long_rest");
+ const sorcerer={kind:"character",level:1,classes:[{name:"Sorcerer",source:"XPHB",level:1}]};
+ const innate=classResourceTrackers(sorcerer,index,{classes:index.resource_overrides})
+  .find(row=>row.name==="Innate Sorcery");
+ assert.equal(innate?.id,"class:sorcerer:xphb:innate_sorcery");
+ assert.equal(innate?.max,2);
+ assert.equal(innate?.recharge,"long_rest");
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],

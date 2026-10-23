@@ -5,7 +5,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard and Fighter definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Sorcerer and Wizard definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "classes": [
     {
@@ -926,6 +926,67 @@
               "value": "cha_mod",
               "reset": "short_rest"
             }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Lay on Hands",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Lay on Hands (Paladin XPHB, level 1); five times Paladin class level",
+          "steps": [
+            {"level": 1, "value": "5", "reset": "long_rest"},
+            {"level": 2, "value": "10", "reset": "long_rest"},
+            {"level": 3, "value": "15", "reset": "long_rest"},
+            {"level": 4, "value": "20", "reset": "long_rest"},
+            {"level": 5, "value": "25", "reset": "long_rest"},
+            {"level": 6, "value": "30", "reset": "long_rest"},
+            {"level": 7, "value": "35", "reset": "long_rest"},
+            {"level": 8, "value": "40", "reset": "long_rest"},
+            {"level": 9, "value": "45", "reset": "long_rest"},
+            {"level": 10, "value": "50", "reset": "long_rest"},
+            {"level": 11, "value": "55", "reset": "long_rest"},
+            {"level": 12, "value": "60", "reset": "long_rest"},
+            {"level": 13, "value": "65", "reset": "long_rest"},
+            {"level": 14, "value": "70", "reset": "long_rest"},
+            {"level": 15, "value": "75", "reset": "long_rest"},
+            {"level": 16, "value": "80", "reset": "long_rest"},
+            {"level": 17, "value": "85", "reset": "long_rest"},
+            {"level": 18, "value": "90", "reset": "long_rest"},
+            {"level": 19, "value": "95", "reset": "long_rest"},
+            {"level": 20, "value": "100", "reset": "long_rest"}
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Sorcerer",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Innate Sorcery",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Innate Sorcery (Sorcerer XPHB, level 1)",
+          "steps": [
+            {"level": 1, "value": "2", "reset": "long_rest"}
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Wizard",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Arcane Recovery",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Arcane Recovery (Wizard XPHB, level 1); use after a short rest, one use per long rest",
+          "steps": [
+            {"level": 1, "value": "1", "reset": "long_rest"}
           ]
         }
       ]

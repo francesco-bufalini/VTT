@@ -2184,29 +2184,13 @@
       ]
     },
     {
-      "class": "Sorcerer",
-      "source": "XPHB",
-      "resources": [
-        {
-          "name": "Innate Sorcery",
-          "origin_feature": "Innate Sorcery",
-          "steps": [
-            {
-              "level": 1,
-              "value": "2",
-              "reset": "long_rest"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "class": "Paladin",
       "source": "XPHB",
       "resources": [
         {
           "name": "Lay on Hands",
-          "origin_feature": "Lay on Hands",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Lay on Hands (Paladin XPHB, level 1); five times Paladin class level",
           "steps": [
             {
               "level": 1,
@@ -2313,12 +2297,31 @@
       ]
     },
     {
+      "class": "Sorcerer",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Innate Sorcery",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Innate Sorcery (Sorcerer XPHB, level 1)",
+          "steps": [
+            {
+              "level": 1,
+              "value": "2",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "class": "Wizard",
       "source": "XPHB",
       "resources": [
         {
           "name": "Arcane Recovery",
-          "origin_feature": "Arcane Recovery",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Arcane Recovery (Wizard XPHB, level 1); use after a short rest, one use per long rest",
           "steps": [
             {
               "level": 1,
@@ -2336,7 +2339,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard and Fighter definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Sorcerer and Wizard definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "monster_resources": [
     {

@@ -85,6 +85,27 @@ func run() -> void:
 	assert(mixed.size() == 3 and int(_find_resource(mixed, "Innate Sorcery").get("max", 0)) == 2, "Each resource is tied to its class level; 2024 innate sorcery has its own uses")
 	assert(String(_find_resource(mixed, "Sorcery Points").get("origin", "")) == "Font of Magic",
 		"Structured class feature association for sorcery points must be preserved")
+	var revised_multiclass: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "level": 10,
+		"classes": [
+			{"name": "Paladin", "source": "XPHB", "level": 3},
+			{"name": "Wizard", "source": "XPHB", "level": 7}
+		]
+	})
+	var lay_on_hands: Dictionary = _find_resource(revised_multiclass, "Lay on Hands")
+	assert(int(lay_on_hands.get("max", 0)) == 15
+		and String(lay_on_hands.get("id", "")) == "class:paladin:xphb:lay_on_hands"
+		and String(lay_on_hands.get("origin", "")) == "Lay on Hands"
+		and String(lay_on_hands.get("recharge", "")) == "long_rest",
+		"Lay on Hands must use Paladin level, retain its spent-use ID and recover on long rest")
+	var arcane_recovery: Dictionary = _find_resource(revised_multiclass, "Arcane Recovery")
+	assert(int(arcane_recovery.get("max", 0)) == 1
+		and String(arcane_recovery.get("id", "")) == "class:wizard:xphb:arcane_recovery"
+		and String(arcane_recovery.get("recharge", "")) == "long_rest",
+		"2024 Arcane Recovery must remain a once-per-long-rest use")
+	assert(String(_find_resource(mixed, "Innate Sorcery").get("id", "")) == "class:sorcerer:xphb:innate_sorcery"
+		and String(_find_resource(mixed, "Innate Sorcery").get("recharge", "")) == "long_rest",
+		"2024 Innate Sorcery retains its stored use ID and recovery")
 	# Legacy sheets lacking an explicit edition must use the resolved
 	# class edition in resource IDs and labels, not an empty source.
 	var legacy_barbarian: Dictionary = _find_resource(Trackers.for_creature({

@@ -182,19 +182,6 @@ const mechanics=await read('../../vtt/data/class_mechanics_5etools.json');
 const resources=await read('../../vtt/data/class_resource_overrides.json');
 mechanics.resource_overrides=resources.classes;
 mechanics.resource_overrides_meta=resources.meta;
-// Only resources still awaiting migration into the source-qualified data
-// supplement need normalization here. Keep class-level steps for multiclassing.
-const revisedResources=[
- ['Sorcerer','Innate Sorcery',[[1,2]],'long_rest'],
- ['Paladin','Lay on Hands',Array.from({length:20},(_,i)=>[i+1,5*(i+1)]),'long_rest'],
- ['Wizard','Arcane Recovery',[[1,1]],'long_rest']
-];
-for(const [owner,name,steps,recharge] of revisedResources){
- let group=mechanics.resource_overrides.find(g=>g.class===owner&&g.source==='XPHB');
- if(!group){group={class:owner,source:'XPHB',resources:[]};mechanics.resource_overrides.push(group);}
- if(!group.resources.some(r=>r.name===name))group.resources.push({name,origin_feature:name,
-  steps:steps.map(([level,value])=>({level,value:String(value),reset:recharge}))});
-}
 mechanics.monster_resources=[];
 for(const part of ['a','b','c','mm']){
  const document=await read('../../vtt/data/fightclub_monster_resources_2014_'+part+'.json');
