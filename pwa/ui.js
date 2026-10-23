@@ -26,6 +26,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
+import {pendingCharacterChoices,savePendingChoice} from "./pending_choices.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -431,7 +432,9 @@ async function computeLocalData(record){
   let catalogs={},loadError="";
   try{catalogs=await loadRuleCatalogs();}
   catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
-  return {...calculateSheet(record,catalogs),loadError,
+  const calculated=calculateSheet(record,catalogs);
+  return {...calculated,loadError,
+    pending_choices:pendingCharacterChoices(record,calculated,catalogs),
     infusion_catalog:catalogs.abilityGrants?.artificer_infusions||[],
     infusion_mechanics:catalogs.classMechanics||{}};
 }
@@ -2525,6 +2528,35 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  if(state.sheet==='info'){
+    const root=app.querySelector('#sheet-play-view');
+    const choices=state.calculated.pending_choices||[];
+    const missing=choices.filter(choice=>choice.remaining>0);
+    if(root&&missing.length){
+      const total=missing.reduce((n,choice)=>n+choice.remaining,0);
+      const notice=document.createElement('section');
+      notice.className='pending-choices-notice';
+      notice.setAttribute('aria-label','Scelte del personaggio da completare');
+      notice.innerHTML='<div class="pending-choices-notice-head"><span aria-hidden="true">◇</span>'+
+        '<strong>'+total+' '+(total===1?'scelta da completare':'scelte da completare')+'</strong></div>'+
+        '<div class="pending-choices-notice-list">'+missing.map(choice=>
+          '<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
+          '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
+          '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
+        '</div>';
+      root.prepend(notice);
+    }
+    // Completed choices remain editable; the warning itself is only for
+    // missing decisions. Reuse one editor for every structured origin.
+    const competence=root?.querySelector('.play-competence-tools');
+    if(competence&&choices.length){
+      const manage=document.createElement('button');
+      manage.type='button';manage.className='pending-choices-manage';
+      manage.dataset.act='pending-choice-manage';
+      manage.textContent='Scelte dei privilegi';
+      competence.append(manage);
+    }
+  }
   // Preserve expanded combat cards across sheet rerenders. Opening a parent
   // from its heading reveals the index first, without auto-opening its children.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
@@ -2808,8 +2840,82 @@ function openSheetScoreFormula(record,calculated,target,label){
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+function openPendingChoiceDialog(choice){
+ app.querySelector('#pending-choice-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='pending-choice-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog';
+ dialog.dataset.choiceId=choice.id;
+ const multiple=choice.kind==='proficiency'&&choice.count>1;
+ const inputType=multiple?'checkbox':'radio';
+ const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
+ Object.assign(labels,abilities);
+ const rows=choice.options.map(key=>'<label class="pending-choice-option"><input type="'+inputType+
+   '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
+   '><span>'+esc(labels[key]||key)+'</span></label>').join('');
+ dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
+   '<h2>'+esc(choice.label)+'</h2></div>'+
+   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   '<div class="pending-choice-dialog-body"><p class="pending-choice-instruction">'+
+   'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
+   ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
+   '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
+   (rows?'<div class="pending-choice-options">'+rows+'</div>':
+    '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
+   '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
+   '<button type="button" data-act="pending-choice-save"'+(rows?'':' disabled')+'>Applica</button></footer>';
+ const update=()=>{
+   const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
+   const progress=dialog.querySelector('.pending-choice-progress');
+   if(progress)progress.textContent=checked.length+' / '+choice.count+' selezionate';
+   for(const input of dialog.querySelectorAll('[name="pending-options"]')){
+     input.disabled=!input.checked&&checked.length>=choice.count;
+   }
+ };
+ dialog.addEventListener('change',update);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);
+ update();
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='pending-choice-manage'){
+    const all=state.calculated?.pending_choices||[];
+    const choice=all.find(row=>row.remaining>0&&row.kind!=='spell')||
+      all.find(row=>row.kind!=='spell')||all[0];
+    if(!choice)return;
+    if(choice.kind==='spell'){
+      state.sheet='magic';state.magicPopup='choices';await render();return;
+    }
+    openPendingChoiceDialog(choice);return;
+  }
+  if(act==='pending-choice-open'){
+    const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
+    if(!choice)throw Error('Scelta non disponibile nella scheda.');
+    if(choice.kind==='spell'){
+      state.sheet='magic';state.magicPopup='choices';await render();return;
+    }
+    openPendingChoiceDialog(choice);return;
+  }
+  if(act==='pending-choice-close'){
+    const dialog=app.querySelector('#pending-choice-dialog');
+    if(dialog?.close)dialog.close();else dialog?.remove();
+    return;
+  }
+  if(act==='pending-choice-save'){
+    const dialog=app.querySelector('#pending-choice-dialog');
+    const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===dialog?.dataset.choiceId);
+    if(!choice)throw Error('La scelta è cambiata: riapri il selettore.');
+    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].map(row=>row.value);
+    const current=state.editor.read();
+    // Validate once again against freshly derived grants before persisting.
+    const fresh=await computeLocalData(current);
+    const live=fresh.pending_choices.find(row=>row.id===choice.id);
+    if(!live)throw Error('Il privilegio non concede più questa scelta.');
+    await patch(savePendingChoice(current,live,selected));
+    dialog.remove();await render();return;
+  }
   if(act==='battle-toggle-class-only'){
     state.battleOnlyClass=!state.battleOnlyClass;await render();return;
   }
