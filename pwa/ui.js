@@ -1,6 +1,6 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, DEFAULT_INVENTORY_CONTAINER, inventoryContainers, itemContainerId, moveInventoryItem, createInventoryContainer, deleteInventoryContainer } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -44,7 +44,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -250,7 +250,7 @@ function stopSubscriptions() {
 }
 async function navigate(page){
   if(!sections.has(page))return;
-  if(page!=='catalog')state.pendingItemOwner='';
+  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';}
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
@@ -399,9 +399,9 @@ async function catalogView() {
       esc(description||"Descrizione non disponibile nell'archivio locale.")+'</p>'+
       (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
       (assignable && (state.cachedCreatures||[]).length?
-      '<div class="separator"></div><label>Aggiungi alla scheda<select id="catalog-creature">'+
-      state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+(state.featAssignReturnId===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join("")+
-      '</select></label><div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
+      '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
+      state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.featAssignReturnId)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join("")+
+      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
       '':"")+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
         '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
@@ -587,6 +587,7 @@ async function editorView() {
     }else{
       const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
       const ordinary=owned.filter(({item})=>!isSpellScroll(item));
+       const containers=inventoryContainers(c);
       const scrolls=owned.filter(({item})=>isSpellScroll(item));
       const attunements=owned.filter(({item})=>requiresAttunement(item));
       const visibleRows=isScrolls?scrolls:ordinary;
@@ -613,11 +614,7 @@ async function editorView() {
         inventoryEquipmentView(c,calculated)+
         inventoryAttunementView(c,attunements)+
         inventoryCoinsView(c)+
-        panel("Oggetti posseduti",
-          inventoryTable(ordinary,false,state.inventorySelectedIndex,state.inventoryMenuIndex)+
-          '<div class="actions">'+btn("item-catalog","Cerca nel catalogo","primary")+
-          btn("new-homebrew-item","＋ Oggetto homebrew")+'</div>',
-          "inventory-native-panel"))+
+        inventoryContainerSections(c,ordinary,containers,state.inventorySelectedIndex,state.inventoryMenuIndex))+
         description;
     }
     break;
@@ -1217,7 +1214,7 @@ function inventoryAttunementView(c,entries){
     (lines||'<p class="hint">Nessun oggetto richiede sintonia.</p>'),
     "inventory-native-panel inventory-attunement");
 }
-function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
+function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
   if(!entries.length)return '<p class="hint">Nessun '+(scrolls?'incantesimo su pergamena.':'oggetto.')+'</p>';
   const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Eq.","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
   return '<div class="inventory-table" role="table" aria-label="'+(scrolls?'Pergamene':'Oggetti')+'">'+
@@ -1250,7 +1247,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
           '" aria-label="Opzioni '+esc(item.name)+'" aria-expanded="'+(menuIndex===index)+'">⋯</button>'+
           (menuIndex===index?'<span class="inventory-context-actions">'+
              '<button type="button" class="btn small danger" data-act="remove-item" data-index="'+index+'">Rimuovi</button>'+
-             '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button></span>':'')+'</span>',
+             '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button>'+(!scrolls?'<label>Sposta in<select data-item-container="'+index+'">'+containers.map(c=>'<option value="'+esc(c.id)+'"'+(itemContainerId(item,containers)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></label>':'')+'</span>':'')+'</span>',
         equip='<span class="inventory-col-equip">'+(scrolls?'':canEquip?
           '<button type="button" class="inventory-equip-toggle" data-act="inventory-equip" data-index="'+index+
           '" aria-label="'+(item.equipped?"Riponi":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
@@ -1267,6 +1264,22 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
       return '<div class="inventory-table-row'+(index===selectedIndex?' selected':'')+
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
+}
+function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex){
+  const sections=containers.map(container=>{
+    const rows=entries.filter(({item})=>itemContainerId(item,containers)===container.id);
+    const controls=container.id===DEFAULT_INVENTORY_CONTAINER?'': 
+      '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(container.id)+'">Rinomina</button>'+
+      '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(container.id)+'">Elimina</button>';
+    return '<section class="inventory-container"><header class="inventory-container-head"><h3>'+esc(container.name)+
+      '</h3><span class="hint">'+rows.length+' oggetti</span><div class="actions">'+controls+'</div></header>'+
+      inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
+      '<div class="actions"><button class="btn small" data-act="item-catalog" data-container-id="'+esc(container.id)+'">＋ Dal catalogo</button>'+
+      '<button class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(container.id)+'">＋ Homebrew</button></div></section>';
+  }).join('');
+  return panel("Oggetti posseduti",'<div class="inventory-container-list">'+sections+'</div>'+
+    '<div class="actions"><button type="button" class="btn" data-act="inventory-container-add">＋ Contenitore</button></div>',
+    "inventory-native-panel");
 }
 function inventoryItemDescription(obj,index){
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
@@ -2197,6 +2210,10 @@ async function handleField(target) {
     if(!state.calculated?.features?.some(row=>row.origin_id===id))throw Error('Privilegio non disponibile');
     await patch({origin_enabled:{...creature.origin_enabled,[id]:target.checked}});
     await render();return;
+  }
+  if(target.dataset.itemContainer!==undefined){
+    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),target.value));
+    state.inventoryMenuIndex=-1;await render();return;
   }
   if(target.dataset.itemOverride){
     await patch({inventory:changeItemOverride(creature.inventory||[],Number(target.dataset.itemIndex),target.dataset.itemOverride,target.value)});
@@ -3794,7 +3811,7 @@ async function handleAction(target){
     const owner=state.creatureId||"";
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
     await navigate("catalog");
-    state.pendingItemOwner=owner;
+    state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;
     const creator=app.querySelector(".catalog-create");
     if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
@@ -3952,11 +3969,12 @@ async function handleAction(target){
       const record=editor.read();
       const item=createOwnedItem({...created.data,id:created.id,name:created.name,
         source:created.source}, "pwa_"+crypto.randomUUID());
+      if(state.pendingItemContainer&&inventoryContainers(record).some(row=>row.id===state.pendingItemContainer)&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER)item.container_id=state.pendingItemContainer;
       const inventory=[...(record.inventory||[]),item];
       await editor.update({inventory});
       state.page="library";state.libraryMode=false;state.creatureId=owner;
       state.editor=editor;state.sheet="inventory";state.inventorySubtab="items";
-      state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";
+      state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";state.pendingItemContainer="";
       await render();message("Oggetto homebrew aggiunto all'inventario.");return;
     }
     state.catalogSelected=-1;state.catalogQuery=created.name;
@@ -3972,7 +3990,7 @@ async function handleAction(target){
     await render();window.scrollTo(0,0);app.focus({preventScroll:true});return;
   }
   if(act==="catalog-assign"){
-    const cId=document.querySelector("#catalog-creature")?.value;
+    const cId=state.pendingItemOwner&&state.catalogCategory==="items"?state.pendingItemOwner:document.querySelector("#catalog-creature")?.value;
     const entry=state.catalogRows[state.catalogSelected];
     const stored=await loadCreature(cId);
     if(!stored||!entry)throw new Error("Seleziona contenuto e creatura.");
@@ -3982,6 +4000,7 @@ async function handleAction(target){
       await editor.update(addSelectedSpell(sheet,entry,"prepared_spells"));
     }else if(["weapons","armor","tools","mundane_items","magic_items","items"].includes(category)){
       const item=createOwnedItem(entry,"pwa_"+crypto.randomUUID());
+      if(state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER&&inventoryContainers(sheet).some(row=>row.id===state.pendingItemContainer))item.container_id=state.pendingItemContainer;
       await editor.update({inventory:[...(sheet.inventory||[]),item]});
     }else if(category==="feats"){
       const feat={id:entry.id||"",name:entry.name,source:entry.source||""};
@@ -4001,7 +4020,12 @@ async function handleAction(target){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
-    if(category==='feats'&&state.featAssignReturnId===cId){
+    if(state.pendingItemOwner&&category!=='feats'){
+       state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
+       state.sheet='inventory';state.inventorySubtab='items';state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
+       state.pendingItemOwner='';state.pendingItemContainer='';await render();
+     }
+     if(category==='feats'&&state.featAssignReturnId===cId){
       state.featAssignReturnId='';state.creatureId=cId;state.editor=editor;
       state.page='library';state.libraryMode=false;state.sheet='info';
       state.sheetPopup='';await render();
@@ -4300,6 +4324,32 @@ async function handleAction(target){
     }else changes=clearInfusionPatch(creature,Number(target.dataset.index));
     await patch(changes);await render();return;
   }
+  if(["inventory-container-add","inventory-container-rename","inventory-container-delete"].includes(act)){
+    const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
+    const containers=inventoryContainers(record),id=target.dataset.containerId;
+    if(act==="inventory-container-add"){
+      const name=window.prompt("Nome del nuovo contenitore:");if(name===null)return;
+      await patch(createInventoryContainer(record,"container_"+crypto.randomUUID(),name));
+    }else if(act==="inventory-container-rename"){
+      const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Contenitore non rinominabile.");
+      const name=window.prompt("Rinomina contenitore:",original.name);if(name===null)return;
+      const trimmed=name.trim();if(!trimmed||trimmed.length>80||containers.some(row=>row.id!==id&&row.name.toLowerCase()===trimmed.toLowerCase()))throw Error("Nome non valido o già utilizzato.");
+      await patch({inventory_containers:containers.slice(1).map(row=>row.id===id?{...row,name:trimmed}:row)});
+    }else{
+      const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Zaino non eliminabile.");
+      const other=containers.filter(row=>row.id!==id);
+      const remaining=(record.inventory||[]).filter(item=>itemContainerId(item,containers)===id).length;
+      let destination=DEFAULT_INVENTORY_CONTAINER;
+      if(remaining){
+        const choice=window.prompt("Sposta i "+remaining+" oggetti di "+original.name+" in quale contenitore?\\n"+other.map((row,i)=>(i+1)+". "+row.name).join("\\n"),"1");
+        if(choice===null)return;
+        const index=Number(choice)-1;if(!Number.isInteger(index)||!other[index])throw Error("Destinazione non valida.");
+        destination=other[index].id;
+      }else if(!window.confirm("Eliminare il contenitore vuoto "+original.name+"?"))return;
+      await patch(deleteInventoryContainer(record,id,destination));
+    }
+    state.inventoryMenuIndex=-1;await render();return;
+  }
   if(act==="inventory-subtab"){
     const subtab=target.dataset.subtab;
     if(!["items","scrolls","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
@@ -4353,7 +4403,7 @@ async function handleAction(target){
     state.inventorySelectedIndex=created.index;state.sheetPopup='';state.scrollSpellQuery='';
     await patch({inventory:created.inventory});await render();message("Pergamena aggiunta all'inventario.");return;
   }
-  if(act==="item-catalog"){state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");return;}
+  if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;return;}
   if(act==="document-add"){
     if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
     const localId="doc_"+crypto.randomUUID().replace(/-/g,"");
