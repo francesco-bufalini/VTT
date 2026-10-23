@@ -794,7 +794,7 @@ async function traitsView(c){
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     '</div></details></div>';
  };
- const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\\s*·\\s*/i,'');
+ const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const originKind=(category,origin)=>{
   if(category==='razza')return String(origin.key).startsWith('subrace|')?'Sottorazza':'Specie';
   if(category==='classi')return String(origin.key).includes('|subclass|')?'Sottoclasse':'Classe';
