@@ -403,6 +403,9 @@ function syncLibrarySelectionUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
  const visible=entries.filter(e=>!e.hidden);
  const selecting=state.librarySelectedIds.size>0;
+ // Once the final checkbox is unchecked, a new tap must open the creature
+ // immediately; no stale synthetic-click suppression may linger.
+ if(!selecting)libraryClickSuppression=null;
  app.querySelector('.library-index')?.classList.toggle('is-selecting',selecting);
  const all=app.querySelector('[data-library-select-all]');
  if(all){
