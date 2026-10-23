@@ -26,7 +26,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from "./pending_choices.js";
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -857,6 +857,7 @@ function mountTraitBenefitDialog(){
    {includeUnavailable:true})};
  const groups=traitBenefitGroups(trait,record,benefitProjection);
  const hidden=traitRemovedIds(record,trait);
+ const ownedChoices=choicesForTrait(trait,record,state.calculated?.pending_choices||[]);
  const optionList=(options,selected='')=>options.map(([value,label])=>
   '<option value="'+esc(value)+'"'+(String(value)===String(selected)?' selected':'')+'>'+esc(label)+'</option>').join('');
  const formSelect=(label,name,options)=>'<label>'+esc(label)+'<select name="'+name+'">'+optionList(options)+'</select></label>';
@@ -904,6 +905,22 @@ function mountTraitBenefitDialog(){
      (!trait.readonly&&!['attacks','armor_class','roll_modes','effects','granted_features'].includes(group.type)&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
+ // Expose each structured choice only inside the popup of its granting trait.
+ const skillNames=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
+ const chosenNames=key=>abilities[key]||skillNames[key]||
+   (state.spellCatalog||[]).find(row=>row.id===key)?.name||key;
+ const choiceBenefits=ownedChoices.length?
+   '<section class="trait-benefit-group trait-benefit-group--choices">'+
+   '<span class="trait-benefit-kind">Scelte dei benefici</span>'+
+   ownedChoices.map(choice=>
+     '<div class="trait-choice-row"><div class="trait-choice-copy"><strong>'+esc(choice.label)+'</strong>'+
+     '<small>'+esc(choice.selected.length?choice.selected.map(chosenNames).join(' · '):
+       'Nessuna opzione selezionata')+'</small>'+
+     '<span class="trait-choice-count'+(choice.remaining?' trait-choice-count--pending':'')+'">'+
+     esc(choice.selected.length)+' / '+esc(choice.count)+(choice.remaining?' · Da completare':' · Completa')+
+     '</span></div><button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'"'+
+     ' aria-label="'+esc((choice.remaining?'Scegli ':'Modifica ')+choice.label)+'">'+
+     (choice.remaining?'Scegli':'Modifica')+'</button></div>').join('')+'</section>':'';
  const confirmId=state.traitPopupConfirm;
  const match=groups.flatMap(group=>group.items.map(item=>({...item,type:group.type}))).find(item=>item.id===confirmId);
  const dialog=document.createElement('dialog');
@@ -919,7 +936,7 @@ function mountTraitBenefitDialog(){
     '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="'+(trait.readonly?'trait-state-end':'trait-benefits-toggle')+'" aria-label="'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
      '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.readonly?'Termina':trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
    '</div>'+
-   '<div class="trait-benefits">'+(benefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
+   '<div class="trait-benefits">'+(benefits+choiceBenefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
    (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
      '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
      '<button type="button" class="btn" data-act="trait-benefits-remove-cancel">Annulla</button></div></section>':'')+
@@ -2566,15 +2583,15 @@ function organizeSheetPanels(){
         '</div>';
       root.prepend(notice);
     }
-    // Completed choices remain editable; the warning itself is only for
-    // missing decisions. Reuse one editor for every structured origin.
-    const competence=root?.querySelector('.play-competence-tools');
-    if(competence&&choices.length){
+    // Keep this command next to the Info heading, not in Competenze.
+    const heading=app.querySelector('.page-head h1');
+    if(heading&&choices.length){
+      heading.classList.add('pending-choices-heading');
       const manage=document.createElement('button');
       manage.type='button';manage.className='pending-choices-manage';
       manage.dataset.act='pending-choice-manage';
       manage.textContent='Scelte dei privilegi';
-      competence.append(manage);
+      heading.append(manage);
     }
   }
   // Preserve expanded combat cards across sheet rerenders. Opening a parent
@@ -2884,8 +2901,8 @@ function openPendingChoiceDialog(choice){
  dialog.id='pending-choice-dialog';
  dialog.className='sheet-context-dialog pending-choice-dialog';
  dialog.dataset.choiceId=choice.id;
- const multiple=choice.kind==='proficiency'&&choice.count>1;
- const inputType=multiple?'checkbox':'radio';
+ // Checkboxes can be unchecked before save, including for a single choice.
+ const inputType='checkbox';
  const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
  Object.assign(labels,abilities);
  const rows=choice.options.map(key=>'<label class="pending-choice-option"><input type="'+inputType+
@@ -2924,6 +2941,7 @@ async function handleAction(target){
   if(act==='pending-choice-open'){
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
     if(!choice)throw Error('Scelta non disponibile nella scheda.');
+    if(app.querySelector('#trait-benefits-dialog'))dismissTraitBenefitDialog();
     if(choice.kind==='spell'){
       app.querySelector('#pending-choice-dialog')?.remove();
       state.pendingSpellChoiceId=choice.source_choice_id;

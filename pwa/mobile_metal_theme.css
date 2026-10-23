@@ -3235,3 +3235,28 @@ dialog.sheet-context-dialog{border-bottom:0}
 :where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
        dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
   :where(hr,fieldset){border-color:#ad855033}
+
+/* The privilege-choice manager belongs to the Info title, not Competenze. */
+.page-head h1.pending-choices-heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.pending-choices-heading .pending-choices-manage{
+  flex:none;align-self:center;font:550 11px/1.35 system-ui,sans-serif;
+  letter-spacing:0;text-shadow:none
+}
+.trait-benefit-group--choices{gap:7px}
+.trait-choice-row{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:9px 10px;background:#342a26;border:1px solid #a9855c40;border-radius:8px
+}
+.trait-choice-copy{display:grid;gap:3px;min-width:0;flex:1}
+.trait-choice-copy strong{color:#eed3ad;font-size:12px;font-weight:600}
+.trait-choice-copy small{color:#c0b09b;font-size:11px;overflow-wrap:anywhere}
+.trait-choice-count{color:#bfa98b;font-size:10px;font-variant-numeric:tabular-nums}
+.trait-choice-count--pending{color:#efbd75}
+.trait-choice-row button{
+  appearance:none;flex-shrink:0;cursor:pointer;
+  background:#80604130;border:1px solid #c29a667d;border-radius:7px;
+  color:#efd3a5;min-height:32px;padding:5px 10px;
+  font:600 11px/1.35 system-ui,sans-serif
+}
+.trait-choice-row button:hover{background:#b88b5337;border-color:#e0b57b}
+.trait-choice-row button:focus-visible{outline:2px solid #e0b57b;outline-offset:2px}
