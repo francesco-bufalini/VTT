@@ -202,3 +202,16 @@ test('future racial traits are hidden until their requested level',async()=>{
  assert.ok(found.some(t=>t.name==='First Gift'));
  assert.ok(!found.some(t=>t.name==='Fifth Gift'));
 });
+
+test('projected calculated disabled flag never marks unmodified traits off by default',async()=>{
+ const computed={features:[{name:'Arcane Recovery',level:1,
+   origin_key:'class|phb|wizard',origin_id:'feature:recovery',disabled:true}]};
+ const rows=await collectTraitRows(creature,computed,provider);
+ assert.equal(rows.find(r=>r.name==='Arcane Recovery').inactive,false,
+   'Legacy/computed disabled is not the user explicit privilege choice');
+ const saved={...creature,origin_enabled:{'feature:recovery':false}};
+ const off=await collectTraitRows(saved,computed,provider);
+ assert.equal(off.find(r=>r.name==='Arcane Recovery').inactive,true);
+ const on=await collectTraitRows({...saved,origin_enabled:{'feature:recovery':true}},computed,provider);
+ assert.equal(on.find(r=>r.name==='Arcane Recovery').inactive,false);
+});
