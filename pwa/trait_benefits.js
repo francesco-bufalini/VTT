@@ -382,7 +382,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const activation=trait.action_type||trait.activation_type||trait.activation;
   if(activation&&!['passive','permanent','none'].includes(norm(activation))){
    addAbility(trait.name,{status:trait.inactive?'Tratto disattivato':'Attivabile',
-    timing:actionTime(activation),cost:'Nessun costo',
+    timing:actionTime(activation),cost:resourceCost(trait.resource_name,trait.resource_name?1:0),
     description:describe(trait.entries),effects:[]});
   }
  }
@@ -412,8 +412,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
     statusFor(source,effect.resource_name||effect.tracker_name,
       !!record.active_class_features?.[effect.id]),
    timing:actionTime(effect.action_type||effect.activation_mode),
-   cost:Number(effect.resource_cost)>0?effect.resource_cost+' utilizzi'+
-    (effect.resource_name?' · '+effect.resource_name:''):'Nessun costo',
+   cost:resourceCost(effect.resource_name||effect.tracker_name||'',effect.resource_cost??0),
    description:describe(effect.description),requirements:describe(effect.requirements?.note||effect.requirements?.description||''),
    effects:[]
   });
