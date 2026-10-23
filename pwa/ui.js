@@ -766,10 +766,17 @@ async function editorView() {
   // compendium source used by the trait and feature viewers.
   let battleOptionalTraits=[];
   if(state.sheet==='battle'&&(c.optional_features_catalog||[]).length){
-    if(!state.referenceCatalogs.optional_features)
-      try{state.referenceCatalogs.optional_features=await catalogEntries('optional_features');}
-      catch{state.referenceCatalogs.optional_features=[];}
-    battleOptionalTraits=await Promise.all((c.optional_features_catalog||[]).map(async feature=>{
+    if(!state.referenceCatalogs.optional_features){
+      const request=catalogEntries('optional_features').then(rows=>{
+        state.referenceCatalogs.optional_features=rows;return rows;
+      });
+      try{await sheetLoadingDeadline(request,1800,"dei privilegi opzionali");}
+      catch(error){
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'battle');
+      }
+    }
+    const request=Promise.all((c.optional_features_catalog||[]).map(async feature=>{
       const name=String(feature?.name||feature||''),source=String(feature?.source||'');
       const reference=(state.referenceCatalogs.optional_features||[]).find(row=>
         String(row.name||'').toLowerCase()===name.toLowerCase()&&
@@ -779,6 +786,11 @@ async function editorView() {
       return {name,origin_id:feature?.origin_id||'',origin_key:feature?.origin_name||source,
         feature_key:'',description:flattenDescription(detail)||flattenDescription(feature)};
     }));
+    try{battleOptionalTraits=await sheetLoadingDeadline(request,1800,"delle capacità opzionali");}
+    catch(error){
+      if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'battle');
+    }
   }
   state.battleOptionalTraits=battleOptionalTraits;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
@@ -809,8 +821,15 @@ async function editorView() {
       '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
     if(isDocuments){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
-      const definitions=await Promise.all(documents.map(({item})=>
+      const request=Promise.all(documents.map(({item})=>
         getRecord("global","homebrew",String(item.id||""))));
+      let definitions;
+      try{definitions=await sheetLoadingDeadline(request,3500,"dei documenti");}
+      catch(error){
+        definitions=documents.map(()=>null);
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'inventory');
+      }
       body=nav+panel("Documenti",
         (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
           '<p class="hint">Nessun documento.</p>')+
