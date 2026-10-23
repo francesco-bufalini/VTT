@@ -99,6 +99,19 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 # Prefer an explicit structured feature reference. A name is only an
 # unambiguous fallback within the same class, edition and subclass.
 # Never attach a counter to an unrelated equally named trait.
+static func _unique_earliest_feature(candidates: Array[Dictionary]) -> Dictionary:
+	var earliest_level := 1000
+	var first: Array[Dictionary] = []
+	for feature: Dictionary in candidates:
+		var level := int(feature.get("level", 0))
+		if level < earliest_level:
+			earliest_level = level
+			first = [feature]
+		elif level == earliest_level:
+			first.append(feature)
+	return first[0] if first.size() == 1 else {}
+
+
 static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) -> Dictionary:
 	var reference: String = String(row.get("origin_feature_key", ""))
 	if reference.begins_with("feature:"):
@@ -136,25 +149,13 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 	# A scaling variant (Bardic Inspiration (d8)) must never make the
 	# original Bardic Inspiration source ambiguous. Prefer a single exact
 	# feature, then only an unambiguous scaled-name fallback.
-	if exact.size() == 1:
-		return exact[0]
-	if exact.size() > 1 or compatible.is_empty():
-		return {}
-	if compatible.size() == 1:
-		return compatible[0]
-	# Multiple tier labels for one advancing privilege (e.g. Indomitable
-	# (1 Use), (2 Uses), (3 Uses)) still belong to the earliest acquired
-	# trait. Only accept a unique earliest-level candidate; reject ties.
-	var earliest_level := 1000
-	var first: Array[Dictionary] = []
-	for feature: Dictionary in compatible:
-		var level := int(feature.get("level", 0))
-		if level < earliest_level:
-			earliest_level = level
-			first = [feature]
-		elif level == earliest_level:
-			first.append(feature)
-	return first[0] if first.size() == 1 else {}
+	# The same feature can be reintroduced at higher levels, e.g.
+	# XPHB Indomitable at 9/13/17. These are progressions of the first
+	# granting trait, not three unrelated sources. Preserve its stable ID.
+	# If two distinct features share the earliest level, fail closed.
+	if not exact.is_empty():
+		return _unique_earliest_feature(exact)
+	return _unique_earliest_feature(compatible)
 
 
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
