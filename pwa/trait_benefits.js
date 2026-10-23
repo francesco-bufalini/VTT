@@ -259,8 +259,29 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // Always display declared activations on the granting trait, not only
  // those currently projected as usable battle actions. Passive source traits
  // remain separate and class-overview cards cannot claim child privileges.
- const ownerFeatures=trait.rank===0?[]:rows(calculated.features).filter(feature=>
-  feature?.origin_id&&ids.has(feature.origin_id));
+ // Class/species overview cards must not claim their child features.
+ // A concrete trait can be rank zero (e.g. a feat or item), though.
+ const ownFeatureIds=new Set([trait.feature_origin,'feature:trait:'+String(trait.key||'')].filter(Boolean));
+ const ownerFeatures=rows(calculated.features).filter(feature=>
+  feature?.origin_id&&ownFeatureIds.has(feature.origin_id));
+ const previewOwned=trait.rank!==0||!['classi','razza','background'].includes(trait.category);
+ const noLongerAvailable=id=>id&&(record.origin_enabled?.[id]===false||
+   rows(record.proficiency_origins).some(row=>row.id===id&&row.disabled));
+ const inactiveSource=feature=>trait.inactive||feature?.inactive||feature?.disabled||
+   noLongerAvailable(feature?.origin_id)||noLongerAvailable(feature?.origin_key);
+ const abilitySourceIds=new Set();
+ const actionResource=name=>rows(calculated.trackers).find(t=>norm(t.name)===norm(name));
+ const resourceCost=(name,count=1)=>{
+  if(!name||!Number(count))return 'Nessun costo';
+  return Number(count)+' '+(Number(count)===1?'utilizzo':'utilizzi')+' · '+name;
+ };
+ const statusFor=(feature,resourceName='',active=false)=>{
+  if(inactiveSource(feature))return 'Tratto disattivato';
+  if(active)return 'Attiva';
+  const tracker=actionResource(resourceName);
+  if(tracker&&Number(tracker.max)-Number(tracker.spent||0)<=0)return 'Risorsa esaurita';
+  return 'Attivabile';
+ };
  const abilityNames=new Set();
  const addAbility=(label,details)=>{
   const key=norm(label);
@@ -271,6 +292,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    description:details.description,requirements:details.requirements||'',
    effects:details.effects||[]
   });
+  if(details.origin_id)abilitySourceIds.add(String(details.origin_id));
  };
  for(const rule of rows(calculated.trait_state_catalog)){
   const owner=ownerFeatures.find(feature=>norm(feature.name)===norm(rule.trait)&&
@@ -292,6 +314,28 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    effects:abilityDetails(rule)
   });
  }
+ // Data-driven feature actions, including unavailable choices. Read from the
+ // same structured timing catalog as the native action economy; these entries
+ // remain tied to an exact class feature rather than the whole class.
+ for(const rule of rows(calculated.feature_rules?.actions)){
+  if(!rule.feature||!rule.name)continue;
+  const memberKey='class|'+norm(rule.class_source)+'|'+norm(rule.class_name);
+  const feature=ownerFeatures.find(f=>norm(f.name)===norm(rule.feature)&&
+   (norm(f.origin_key)===memberKey||norm(f.origin_key).startsWith(memberKey+'|'))&&
+   (!rule.subclass||norm(f.origin_key).includes('|subclass|')&&
+    norm(f.origin_key).split('|').slice(4,5).some(sub=>
+      norm(sub).replace(/^(circle of |the )/,'')===norm(rule.subclass).replace(/^(circle of |the )/,''))));
+  if(!feature)continue;
+  const tracker=actionResource(rule.tracker_name);
+  const resource=tracker?.name||rule.tracker_name||'';
+  addAbility(rule.name,{
+   origin_id:feature.origin_id,status:statusFor(feature,resource),
+   timing:actionTime(rule.activation),cost:resourceCost(resource,resource?1:0),
+   description:describe(rule.detail||feature.entries||feature.description),
+   requirements:rule.subclass?'Sottoclasse · '+rule.subclass:'',
+   effects:[]
+  });
+ }
  for(const [key,owner,featureName,label,resource,time,mode] of CLASS_FEATURE_RULES){
   const source=ownerFeatures.find(feature=>norm(feature.name)===norm(featureName)&&
     classOf(feature)===norm(owner)&&
@@ -303,7 +347,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const gated=!!requirement&&!rows(calculated.active_trait_state_ids).includes(requirement.id);
   const active=mode==='toggle'&&!!record.active_class_features?.[key]&&!trait.inactive&&!source.disabled&&!gated;
   addAbility(label,{
-   status:active?'Attiva':trait.inactive||source.disabled?'Tratto disattivato':
+   origin_id:source.origin_id,status:active?'Attiva':trait.inactive||source.disabled?'Tratto disattivato':
     gated?'Modello richiesto':'Attivabile',
    timing:actionTime(time),cost:resource?'1 utilizzo · '+resource:'Nessun costo',
    description:describe(source.entries??source.description),
@@ -311,15 +355,66 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
    effects:[]
   });
  }
+ // Features with explicit activation metadata work across classes, feats,
+ // species, backgrounds, monster traits and other structured origins. Only
+ // actual activation fields qualify: a descriptive/passive trait is not a power.
+ if(previewOwned)for(const source of ownerFeatures){
+  const activation=source.action_type||source.activation_type||source.activation||source.time;
+  const kind=String(source.action_kind||'').toLowerCase();
+  if(!activation||['passive','permanent','none'].includes(norm(activation))||
+    kind==='passive')continue;
+  if(abilitySourceIds.has(String(source.origin_id)))continue;
+  const tracker=rows(calculated.trackers).find(row=>
+   row.origin_id===source.origin_id||norm(row.name)===norm(source.resource_name||source.tracker_name));
+  const resource=tracker?.name||source.resource_name||source.tracker_name||'';
+  addAbility(source.name,{
+   origin_id:source.origin_id,status:statusFor(source,resource,
+    !!record.active_class_features?.[source.id||source.key]),
+   timing:actionTime(activation),cost:resourceCost(resource,resource?1:0),
+   description:describe(source.entries||source.description),
+   requirements:describe(source.activation_requirements||source.prerequisite||''),
+   effects:[]
+  });
+ }
+ // A trait may have a catalog activation but no structured effect record
+ // (e.g. an item or the top-level feat itself). Preserve its own action data.
+ if(previewOwned&&!ownerFeatures.length){
+  const activation=trait.action_type||trait.activation_type||trait.activation;
+  if(activation&&!['passive','permanent','none'].includes(norm(activation))){
+   addAbility(trait.name,{status:trait.inactive?'Tratto disattivato':'Attivabile',
+    timing:actionTime(activation),cost:resourceCost(trait.resource_name,trait.resource_name?1:0),
+    description:describe(trait.entries),effects:[]});
+  }
+ }
+ // Manually granted actions remain readable even when explicitly disabled.
+ // They retain their separate editable "Azioni concesse" list above.
+ for(const action of rows(record.action_grants)){
+  if(!previewOwned||!belongs(action))continue;
+  const resource=action.resource_name||action.tracker_name||
+   rows(calculated.trackers).find(t=>t.id===action.tracker_id)?.name||'';
+  addAbility(action.name||action.label||action.id,{
+   status:trait.inactive||action.disabled?'Tratto disattivato':statusFor(null,resource),
+   timing:actionTime(action.action_type||action.time),
+   cost:resourceCost(resource,action.tracker_cost??(resource?1:0)),
+   description:describe(action.description||action.detail),
+   requirements:describe(action.requirements),
+   effects:[]
+  });
+ }
  for(const effect of rows(calculated.activatable_abilities)){
-  if(!effect?.name||!ids.has(effect.origin_id))continue;
+  if(!effect?.name||!previewOwned||!ids.has(effect.origin_id))continue;
+  const source=ownerFeatures.find(f=>f.origin_id===effect.origin_id);
+  // The manifest can represent the same activation as a native rule under
+  // another label (e.g. Rage / Ira). Keep the richer native row only.
+  if(abilitySourceIds.has(String(effect.origin_id))&&source)continue;
   addAbility(effect.name,{
-   status:trait.inactive?'Tratto disattivato':
-    record.active_class_features?.[effect.id]?'Attiva':'Attivabile',
+   status:effect.unavailable||inactiveSource(source)?'Tratto disattivato':
+    statusFor(source,effect.resource_name||effect.tracker_name,
+      !!record.active_class_features?.[effect.id]),
    timing:actionTime(effect.action_type||effect.activation_mode),
-   cost:Number(effect.resource_cost)>0?effect.resource_cost+' utilizzi'+
-    (effect.resource_name?' · '+effect.resource_name:''):'Nessun costo',
-   description:describe(effect.description),requirements:'',effects:[]
+   cost:resourceCost(effect.resource_name||effect.tracker_name||'',effect.resource_cost??0),
+   description:describe(effect.description),requirements:describe(effect.requirements?.note||effect.requirements?.description||''),
+   effects:[]
   });
  }
  for(const effect of rows(calculated.active_feature_effects)){

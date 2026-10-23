@@ -783,7 +783,8 @@ async function traitsView(c){
   {entries,detail:detailedEntry,isDocument,conditionLabel}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
  const benefitProjection={...(state.calculated||{}),
-  activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{})};
+  activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{},
+   {includeUnavailable:true})};
  state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
@@ -852,7 +853,8 @@ function mountTraitBenefitDialog(){
  if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;return;}
  state.traitPopupTrait=trait;
  const benefitProjection={...(state.calculated||{}),
-  activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{})};
+  activatable_abilities:abilitiesForCreature(record,state.abilityCatalog||[],state.calculated||{},
+   {includeUnavailable:true})};
  const groups=traitBenefitGroups(trait,record,benefitProjection);
  const hidden=traitRemovedIds(record,trait);
  const optionList=(options,selected='')=>options.map(([value,label])=>
