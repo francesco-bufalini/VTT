@@ -114,7 +114,8 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 	var wanted: String = String(row.get("origin", row.get("name", ""))).strip_edges().to_lower().replace("’", "'")
 	if wanted.is_empty():
 		return {}
-	var found: Dictionary = {}
+	var exact: Array[Dictionary] = []
+	var compatible: Array[Dictionary] = []
 	for feature: Dictionary in features:
 		if not klass_name.is_empty():
 			if String(feature.get("class_name", "")).nocasecmp_to(klass_name) != 0:
@@ -128,12 +129,18 @@ static func _find_tracker_feature(row: Dictionary, features: Array[Dictionary]) 
 			if is_subclass and ("|subclass|" + subclass.to_lower() + "|") not in origin_key:
 				continue
 		var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower().replace("’", "'")
-		if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
-			continue
-		if not found.is_empty():
-			return {} # Ambiguous, do not arbitrarily borrow the first feature.
-		found = feature
-	return found
+		if feature_name == wanted:
+			exact.append(feature)
+		elif feature_name.begins_with(wanted + " {") or feature_name.begins_with(wanted + " ("):
+			compatible.append(feature)
+	# A scaling variant (Bardic Inspiration (d8)) must never make the
+	# original Bardic Inspiration source ambiguous. Prefer a single exact
+	# feature, then only an unambiguous scaled-name fallback.
+	if exact.size() == 1:
+		return exact[0]
+	if exact.size() > 1 or compatible.size() != 1:
+		return {}
+	return compatible[0]
 
 
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
