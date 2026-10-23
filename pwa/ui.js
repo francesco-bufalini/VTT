@@ -3769,7 +3769,7 @@ async function handleAction(target){
           if(Number(slot.level)>=level&&Number(slot.total)-Number(slot.spent)>0)
             options.push(['slot:'+slot.level,'Slot '+slot.level+'° · '+(slot.total-slot.spent)+' disponibili']);
         }
-        if(!assigned&&calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
+        if(calculated.pact_slots?.level>=level&&calculated.pact_slots?.total>calculated.pact_slots?.spent)
           options.push(['pact:'+calculated.pact_slots.level,'Patto · '+calculated.pact_slots.level+'° livello']);
       }
     }
