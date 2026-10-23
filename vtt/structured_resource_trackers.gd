@@ -20,7 +20,7 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	# A class table cannot grant usable resources without its owning trait.
 	# Keep the saved spent-use keys stable when the feature becomes available.
 	result = result.filter(func(row: Dictionary) -> bool:
-		return not bool(row.get("disabled", false)))
+		return not bool(row.get("unbound_class_feature", false)))
 	_append_saved_trackers(record, result)
 	var seen: Dictionary = {}
 	for tracker: Dictionary in result:
@@ -160,6 +160,7 @@ static func _assign_automatic_origins(record: Dictionary, output: Array[Dictiona
 		if origin_id.is_empty():
 			if not String(row.get("origin_class", "")).is_empty():
 				row["disabled"] = true
+				row["unbound_class_feature"] = true
 				row["origin_id"] = ""
 				row["origin_name"] = "Tratto di classe mancante · " + label
 				continue
