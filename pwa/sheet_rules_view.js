@@ -193,15 +193,18 @@ export function calculatedValue(data,target,{signed:sign=false,suffix=""}={}){
 export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bonusTarget=target,scoreAbility='',showBonus=true}={}){
   const rollable=/^(?:ability_check:|ability_mod:|save:|skill:|attack_hit:|casting_hit:)/.test(target)||target==='initiative';
   const rollTarget=target.startsWith('ability_mod:')?'ability_check:'+target.slice('ability_mod:'.length):target;
-  const tag=rollable||scoreAbility?'button':'output';
-  const click=scoreAbility?' type="button" class="sheet-result score-editor-trigger" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'"':
-   rollable?' type="button" class="sheet-result" data-act="sheet-roll" data-target="'+esc(rollTarget)+'" data-label="'+esc(label)+'"':'';
-  return '<span class="sheet-formula"><'+tag+click+' data-calculated="'+esc(target)+
-    '" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" title="'+
-    esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
-    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</'+tag+'>'+
-    (showBonus?'<button type="button" class="btn small formula-bonus" data-act="edit-bonus" data-target="'+
-    esc(bonusTarget)+'" aria-label="Modifica bonus: '+esc(label)+'">±</button>':'')+'</span>';
+  const act=scoreAbility||!rollable?'sheet-score-formula':'sheet-roll';
+  const actualTarget=scoreAbility?'ability:'+scoreAbility:rollable?rollTarget:target;
+  // The retired ± control used to jump into a general creature editor. Every
+  // calculated number now opens its own origin-aware formula popup instead.
+  return '<span class="sheet-formula"><button type="button" class="sheet-result'+
+    (scoreAbility?' score-editor-trigger':'')+'" data-act="'+act+
+    '" data-target="'+esc(actualTarget)+'" data-label="'+esc(label)+
+    '" data-calculated="'+esc(target)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+
+    '" title="'+esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
+    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</button>'+
+    (scoreAbility?'<button type="button" class="score-edit-action" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'" aria-label="Modifica punteggio base '+esc(scoreAbility.toUpperCase())+'" title="Modifica punteggio base">⚙</button>':'')+
+    '</span>';
 }
 export function calculationNote(data,loadError=""){
   const warnings=[...new Set([...(data?.warnings||[]),...(loadError?[loadError]:[])])];
@@ -448,6 +451,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  };
  const card=(title,body,tools='',extra='')=>'<section class="play-card '+extra+'"><header class="play-card-head"><h2>'+esc(title)+'</h2>'+tools+'</header>'+body+'</section>';
  const output=(key,sign=false,suffix='')=>'<output data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</output>';
+ const scoreOutput=(key,label,sign=false,suffix='')=>'<button type="button" class="play-score-value" data-act="sheet-score-formula" data-target="'+esc(key)+'" data-label="'+esc(label)+'" data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" aria-label="Formula: '+esc(label)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</button>';
  const val=(key)=>'<span data-read-field="'+key+'">'+esc(c[key]??0)+'</span>';
  const roll=(key,label,body,glyph='')=>btn(label,glyph,'data-act="sheet-roll" data-target="'+esc(key)+'" data-label="'+esc(label)+'"',body||output(key,true));
  const heading=(node)=>node?.querySelector(':scope > h2')?.textContent.trim()||'';
@@ -469,7 +473,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Both battle entry points display the exact same editor and computed AC.
   bind('equipment',bank.querySelector('.battle-defense-panel'));
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
-  html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+output('hp')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+output('second_max')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
+  html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+scoreOutput('hp','PF massimi')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+scoreOutput('second_max','PF massimi seconda forma')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
   html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
@@ -644,8 +648,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
    html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
   }
-  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_check:'+key,true))+'<small>Punteggio '+output('ability:'+key)+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
-  html+='<div class="play-passives"><span>Competenza <b>'+output('proficiency',true)+'</b></span><span>Percezione passiva <b>'+output('passive_perception')+'</b></span></div>';
+  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_check:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-passives"><span>Competenza <b>'+scoreOutput('proficiency','Bonus competenza',true)+'</b></span><span>Percezione passiva <b>'+scoreOutput('passive_perception','Percezione passiva')+'</b></span></div>';
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
   // existing full editor, including the button for changing selections.

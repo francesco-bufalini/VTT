@@ -48,7 +48,44 @@ try{
  await sheet('info');await popup('identity');await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria, guardiana della Luna');
  await page.keyboard.press('Escape');await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
  assert.equal((await record()).name,'Lyria, guardiana della Luna');assert.match(await page.locator('.play-identity h2').textContent(),/guardiana/);
+ await sheet('info');
+ assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
+   'No legacy ± navigation remains anywhere in the rendered sheet');
+ const passive=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="passive_perception"]');
+ assert.equal(await passive.count(),1);
+ await passive.click();
+ const scoreFormula=page.locator('#sheet-score-formula-dialog');
+ assert(await scoreFormula.isVisible());
+ assert.equal(await scoreFormula.locator('[data-score-formula] .sheet-roll-origin-symbol').first().textContent()
+   .then(x=>x.startsWith('10')),true);
+ assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0,
+   'Computed scores have no dice controls');
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ await page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:str"]').click();
+ assert.match(await scoreFormula.locator('h2').textContent(),/Punteggio/);
+ assert.equal(await scoreFormula.locator('[data-score-formula]').count(),1);
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ const skills=page.locator('#sheet-play-view .play-skills-disclosure');
+ await skills.locator(':scope > summary').click();
+ await skills.locator('[data-target="skill:arcana"]').click();
+ const training=page.locator('#sheet-roll-dialog .sheet-roll-origin-term')
+   .filter({has:page.locator('.sheet-roll-origin-symbol:text-is("+Mod.Competenza")')});
+ assert(await training.count()>=1,'Arcana proficiency must expose a navigable provenance');
+ const trainingSource=await training.first().getAttribute('data-origin-id');
+ assert(trainingSource&&trainingSource.length>0,'Proficiency cannot be a blank provenance');
+ await training.first().click();
+ assert.equal(await page.locator('#roll-trait-picker').count(),0,
+   'Training provenance must not open the add-bonus picker');
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ if((await skills.getAttribute('open'))!==null)await skills.locator(':scope > summary').click();
  await sheet('battle');
+ const maxHp=page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="hp"]');
+ assert.equal(await maxHp.count(),1);
+ await maxHp.click();
+ assert.match(await scoreFormula.locator('h2').textContent(),/PF massimi/);
+ assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0);
+ await scoreFormula.locator('[data-act="close-score-formula"]').click();
  const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
  assert.equal(await classFilter.getAttribute('aria-pressed'),'true','Only character privileges are shown initially');
 

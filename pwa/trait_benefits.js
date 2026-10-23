@@ -29,7 +29,7 @@ export function signedTraitFormula(expression){
  return raw&&!/^[+\-−]/.test(raw)?'+'+raw:raw;
 }
 export function traitBenefitSources(trait={},record={}){
- const ids=new Set([trait.feature_origin,
+ const ids=new Set([trait.feature_origin,trait.proficiency_origin,
   ...(trait.key?['feature:trait:'+trait.key]:[]),
   ...(trait.rank===0?[trait.origin_key]:[])].filter(Boolean));
  // Catalog summary cards and rule grants sometimes use different IDs for

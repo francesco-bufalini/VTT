@@ -78,8 +78,8 @@ function trainingOrigin(record,target,calculated){
  if(row)return {id:row.origin_id,name:row.origin_name||list(calculated?.origins).find(o=>o.id===row.origin_id)?.name||'Competenza'};
  // Weapon/spell attack proficiency follows general rules. In multiclass
  // characters, assigning it to a guessed class would fabricate provenance.
- return {id:'',name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria':'Competenza',
-   section:'proficiency_choices'};
+ return {id:'proficiency:unattributed',
+   name:kind==='skill'&&trainingRank(calculated,target)===2?'Maestria · origine non attribuita':'Competenze · origine non attribuita'};
 }
 // Returns symbolic and expanded numeric forms for each source. No random dice
 // are evaluated merely by opening the popup.
@@ -285,6 +285,78 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
    tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
  }
  return result;
+}
+// Scores are deterministic values, not rolls: reuse the provenance tiles but
+// never introduce a d20, dice result, or a roll action.
+export function sheetScoreOriginSegments(record,calculated,target){
+ const total=Number(calculated?.values?.[target]);
+ if(!Number.isFinite(total))return [];
+ const all=calculated?.roll_components||{};
+ let sourceRows=[];
+ let base=total;
+ let formula='Valore di base';
+ let baseName='Regole e dati della creatura';
+ if(target==='passive_perception'){
+   // Passive perception inherits *exactly* the resolved Perception
+   // proficiency, expertise, item and category bonuses, plus its own grants.
+   sourceRows=sheetRollOriginSegments(record,calculated,'skill:perception')
+     .filter(row=>row.kind!=='mode'&&row.kind!=='dice')
+     .map(row=>row.kind==='base'?{
+       ...row,formula:row.formula.replace(/^1d20/,'10'),
+       expanded:row.expanded.replace(/^1d20/,'10'),
+       value:row.value+10,
+       originName:'Percezione passiva · base'}:row);
+ }else{
+   const baseValues={
+     hp:()=>Number(record?.max_hp_base??record?.max_hp??1),
+     second_max:()=>Number(record?.second_form_max_hp??0),
+     proficiency:()=>2+Math.floor((Math.max(1,Number(calculated?.stats?.level)||1)-1)/4)
+   };
+   if(target.startsWith('ability:')){
+     base=Number(record?.abilities?.[target.split(':')[1]]??10);
+     formula='Punteggio di base';
+     baseName='Caratteristica';
+   }else if(target.startsWith('ability_mod:')){
+     const ability=target.split(':')[1];
+     const effective=Number(calculated?.values?.['ability:'+ability]??record?.abilities?.[ability]??10);
+     base=Math.floor((effective-10)/2);
+     formula='⌊(Punt.'+(abilityNames[ability]||ability.toUpperCase())+' − 10) / 2⌋';
+     baseName='Modificatore della caratteristica';
+   }else if(baseValues[target]){
+     base=baseValues[target]();
+     formula=target==='hp'?'PF di base':target==='proficiency'?'Competenza per livello':'PF seconda forma di base';
+     baseName=target==='hp'?'Creatura':target==='proficiency'?'Progressione':'Seconda forma';
+   }else{
+     base=total-list(all[target]).reduce((sum,row)=>sum+num(row.value),0);
+     formula=target==='ac'?'Armatura, scudo e regole':target.startsWith('speed')?'Velocità di base':'Valore di base';
+   }
+   sourceRows=[{kind:'base',formula,expanded:String(base),value:base,
+     originId:'',originName:baseName,key:'base'}];
+ }
+ const applied=new Set();
+ for(const row of list(sourceRows)){
+   if(row.originId)applied.add(row.originId);
+ }
+ // Direct grants remain separate and navigable. A derived passive score
+ // intentionally includes its skill-derived terms AND direct passive grants.
+ for(const row of list(all[target])){
+   const value=num(row.value),id=String(row.origin_id||'');
+   const formula=bonusText(row.expression);
+   const existing=id&&sourceRows.find(item=>item.originId===id);
+   if(existing){
+     existing.formula+=' '+formula;existing.expanded+=' '+signed(value);
+     existing.value+=value;
+   }else sourceRows.push({kind:'formula',formula,expanded:signed(value),value,
+     originId:id,originName:row.origin_name||'Bonus',key:String(row.id||'')});
+ }
+ const remaining=total-sourceRows.reduce((sum,row)=>sum+num(row.value),0);
+ if(Math.abs(remaining)>0.000001){
+   const first=sourceRows.find(row=>row.kind==='base');
+   if(first){first.value+=remaining;first.expanded=String(first.value);}
+   else sourceRows.push({kind:'base',formula:'Altri valori di base',
+     expanded:signed(remaining),value:remaining,originId:'',originName:'Regole della creatura'});
+ }
+ return sourceRows;
 }
 export function sheetRollOriginHtml(segments,escapeHtml){
  const esc=escapeHtml;

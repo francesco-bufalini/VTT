@@ -2636,3 +2636,31 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
   .library-index .creature-open-chevron,
   .library-index .library-add-button{transition:none}
 }
+
+/* A single divider separates applicable bonuses from roll mode/actions. */
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-applicable{
+ border-bottom:1px solid #af875541;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-actions{
+ border-top:0;
+}
+/* Read-only formula detail shares the ordinary roll popup vocabulary. */
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-formula{
+ padding-bottom:18px;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog [data-score-formula]{
+ min-width:0;max-width:100%;flex:1 1 auto;overflow:hidden;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-formula-line{
+ min-width:0;max-width:100%;width:100%;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-origin-terms{
+ min-width:0;max-width:100%;
+}
+.play-score-value{
+ appearance:none;border:0;background:transparent;padding:0;
+ color:inherit;font:inherit;line-height:inherit;text-align:inherit;
+ min-width:0;cursor:pointer;font-variant-numeric:tabular-nums;
+}
+.play-score-value:hover{color:#f4cc93}
+.play-score-value:focus-visible{outline:2px solid #edbd77;outline-offset:3px;border-radius:3px}
