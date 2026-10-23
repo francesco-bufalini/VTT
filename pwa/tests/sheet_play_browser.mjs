@@ -56,14 +56,38 @@ try{
  await passive.click();
  const scoreFormula=page.locator('#sheet-score-formula-dialog');
  assert(await scoreFormula.isVisible());
+ assert.equal(await scoreFormula.locator('[data-act="sheet-score-edit-base"]').count(),0,
+   'Derived passive perception must never expose a base-value editor');
  assert.equal(await scoreFormula.locator('[data-score-formula] .sheet-roll-origin-symbol').first().textContent()
    .then(x=>x.startsWith('10')),true);
  assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0,
    'Computed scores have no dice controls');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
+ assert.equal(await page.locator('#sheet-play-view .play-ability header [data-act="sheet-proxy"]').count(),0,
+   'The six ability edit gears are removed from the info cards');
  await page.locator('#sheet-play-view [data-act="sheet-score-formula"][data-target="ability:str"]').click();
  assert.match(await scoreFormula.locator('h2').textContent(),/Punteggio/);
  assert.equal(await scoreFormula.locator('[data-score-formula]').count(),1);
+ assert.equal(await scoreFormula.locator('[data-act="sheet-score-edit-base"]').count(),1,
+   'Only the base ability tile opens the new editor');
+ await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
+ const editor=page.locator('#sheet-score-dialog');
+ assert.equal(await editor.getAttribute('data-score-target'),'ability:str');
+ assert.match(await editor.locator('h2').textContent(),/Modifica valore base/);
+ assert.equal(await editor.locator('[data-act="sheet-base-auto-hp"]').count(),0);
+ assert.equal(await editor.locator('#sheet-score-input').inputValue(),'12');
+ assert.equal(await editor.locator('.sheet-base-editor-save').count(),1);
+ assert.equal(await editor.locator('.sheet-base-editor-cancel').count(),1);
+ await editor.locator('#sheet-score-input').fill('13');
+ await editor.locator('[data-act="save-score"]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert.equal((await record()).abilities.str,13);
+ assert.match(await scoreFormula.locator('[data-score-formula] .sheet-roll-origin-value').first().textContent(),/13/);
+ await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
+ await editor.locator('#sheet-score-input').fill('12');
+ await editor.locator('[data-act="save-score"]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert.equal((await record()).abilities.str,12);
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
  const skills=page.locator('#sheet-play-view .play-skills-disclosure');
  await skills.locator(':scope > summary').click();
@@ -85,6 +109,21 @@ try{
  await maxHp.click();
  assert.match(await scoreFormula.locator('h2').textContent(),/PF massimi/);
  assert.equal(await scoreFormula.locator('[data-roll-mode], [data-act="roll-sheet-confirm"]').count(),0);
+ await scoreFormula.locator('[data-act="sheet-score-edit-base"]').click();
+ assert.equal(await editor.getAttribute('data-score-target'),'hp');
+ assert.equal(await editor.locator('#sheet-score-input').inputValue(),'40');
+ const autoHp=editor.locator('[data-act="sheet-base-auto-hp"]');
+ assert.equal(await autoHp.count(),1);
+ assert(await autoHp.isEnabled(),'Wizard hit dice should be available for automatic HP');
+ await autoHp.click();
+ const automaticHp=Number(await editor.locator('#sheet-score-input').inputValue());
+ assert(Number.isInteger(automaticHp)&&automaticHp>0,'Automatic hit dice prefill the base HP field');
+ assert.equal((await record()).max_hp_base,40,
+   'Calculating is a preview; only Save changes the creature');
+ await editor.locator('[data-act="close-score"]').click();
+ await scoreFormula.waitFor({state:'visible'});
+ assert.equal((await record()).max_hp_base,40,
+   'Cancel leaves the original maximum HP untouched');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
  const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
  assert.equal(await classFilter.getAttribute('aria-pressed'),'true','Only character privileges are shown initially');
