@@ -720,12 +720,24 @@ async function editorView() {
   const calculated=await computeLocalData(c);
   if(state.creatureId!==creatureId||state.libraryMode)return '';
   state.calculated=calculated;
-  const featDetails=state.sheet==='info'?await Promise.all((Array.isArray(c.feats_catalog)?c.feats_catalog:[]).map(async feat=>{
-    const name=typeof feat==='string'?feat:feat?.name||'',source=typeof feat==='string'?'':feat?.source||'';
-    const match=(state.referenceCatalogs.feats||[]).find(row=>row.name?.toLowerCase()===name.toLowerCase()&&(!source||row.source?.toLowerCase()===source.toLowerCase()));
-    try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
-    catch{return {description:''};}
-  })):undefined;
+  let featDetails;
+  if(state.sheet==='info'){
+    const feats=Array.isArray(c.feats_catalog)?c.feats_catalog:[];
+    const request=Promise.all(feats.map(async feat=>{
+      const name=typeof feat==='string'?feat:feat?.name||'';
+      const source=typeof feat==='string'?'':feat?.source||'';
+      const match=(state.referenceCatalogs.feats||[]).find(row=>row.name?.toLowerCase()===name.toLowerCase()&&
+        (!source||row.source?.toLowerCase()===source.toLowerCase()));
+      try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
+      catch{return {description:''};}
+    }));
+    try{featDetails=await sheetLoadingDeadline(request,2500,"delle descrizioni dei talenti");}
+    catch(error){
+      featDetails=[];
+      if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'info');
+    }
+  }
   // Resolve selected optional powers through the very same detailed
   // compendium source used by the trait and feature viewers.
   let battleOptionalTraits=[];
@@ -791,11 +803,25 @@ async function editorView() {
       if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
       let resolvedDetail=selected?.item||{};
       if(selected&&isCatalogItem(selected.item)){
-        if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
-        const source=state.referenceCatalogs.items.find(row=>String(row.id||"")===String(selected.item.id||""));
+        if(!state.referenceCatalogs.items){
+          const request=catalogEntries("items").then(rows=>{state.referenceCatalogs.items=rows;return rows;});
+          try{await sheetLoadingDeadline(request,2500,"degli oggetti");}
+          catch(error){
+            if(error.code==='SHEET_LOADING_TIMEOUT')
+              refreshSheetAfterLateLoad(request,creatureId,'inventory');
+          }
+        }
+        const source=(state.referenceCatalogs.items||[]).find(row=>
+          String(row.id||"")===String(selected.item.id||""));
         if(source){
-          const detail=await detailedEntry("items",source);
-          resolvedDetail={...detail,...selected.item,
+          const request=detailedEntry("items",source);
+          let detail;
+          try{detail=await sheetLoadingDeadline(request,2000,"dei dettagli dell'oggetto");}
+          catch(error){
+            if(error.code==='SHEET_LOADING_TIMEOUT')
+              refreshSheetAfterLateLoad(request,creatureId,'inventory');
+          }
+          if(detail)resolvedDetail={...detail,...selected.item,
             entries:detail.entries??selected.item.entries,
             description:detail.description??selected.item.description};
         }
