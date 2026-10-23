@@ -3,6 +3,7 @@
 // Never infer a choice from prose or assign a privilege automatically.
 import {selectedSources,grantedFields,fixedProficiencies} from './structured_effects.js';
 import {SKILLS} from './sheet_rules.js';
+import {traitBenefitSources} from './trait_benefits.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -150,18 +151,23 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  }
  return result;
 }
+// Link pickers to the exact trait that granted them; never match by display name.
+export function choicesForTrait(trait,record,choices=[]){
+ const origins=traitBenefitSources(trait,record);
+ return arr(choices).filter(choice=>origins.has(choice.origin_id));
+}
 export function savePendingChoice(record,choice,values=[]){
  if(!choice||!['ability','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
  const selected=unique(arr(values).map(strip));
  if(selected.length>choice.count||selected.some(key=>!choice.options.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
  if(choice.kind==='ability'){
-  if(selected.length!==1)throw Error('Scegli una caratteristica.');
+  if(selected.length>1)throw Error('Puoi scegliere una sola caratteristica.');
   let updated=false;
   const feats=arr(record.feats_catalog).map(feat=>{
    const sid='feat|'+norm(feat?.source)+'|'+norm(feat?.name);
    if(sid!==choice.origin_id)return feat;
-   updated=true;return {...feat,ability_choice:selected[0]};
+   updated=true;return {...feat,ability_choice:selected[0]||''};
   });
   if(!updated)throw Error('Talento non più disponibile.');
   return {feats_catalog:feats};

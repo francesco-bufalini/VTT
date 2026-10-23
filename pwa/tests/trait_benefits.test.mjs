@@ -26,7 +26,7 @@ test('benefits are grouped and attached only to their own trait',()=>{
  };
  const groups=traitBenefitGroups(trait,record,calculated);
  assert.deepEqual(groups.map(group=>group.type),[
-  'bonus','dice','proficiency','defenses','resources','spells','actions']);
+  'bonus','dice','proficiency','defenses','resources','spells','actions','abilities']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
  assert.equal(groups[0].items[0].id,'bonus:b1','bonus rows keep their stable editor identity');
@@ -188,4 +188,73 @@ test('class feature activations list timing and cost even when disabled, without
  assert.match(rage.description,/resistenza ai danni/);
  assert.equal(traitBenefitGroups({rank:0,origin_key:'class|phb|barbarian',category:'classi'}, {},calculated)
   .some(g=>g.type==='abilities'),false);
+});
+
+
+test('all action-catalog privileges appear before activation, with exact trait provenance',()=>{
+ const rule=(id,feature,name,activation,extra={})=>({
+  id,class_name:'Rogue',class_source:'PHB',feature,name,activation,action_id:id,...extra
+ });
+ const features=[
+  {origin_id:'feature:class|phb|rogue|cunning',origin_key:'class|phb|rogue',
+   name:'Cunning Action',class_name:'Rogue',class_source:'PHB',disabled:true},
+  {origin_id:'feature:class|phb|rogue|thief|fast',origin_key:'class|phb|rogue|subclass|thief|phb',
+   name:'Fast Hands',class_name:'Rogue',class_source:'PHB'},
+  {origin_id:'feature:class|phb|rogue|sneak',origin_key:'class|phb|rogue',
+   name:'Sneak Attack',class_name:'Rogue',class_source:'PHB'}
+ ];
+ const calculated={features,feature_rules:{actions:[
+  rule('dash','Cunning Action','Scattare (azione scaltra)','bonus'),
+  rule('disengage','Cunning Action','Disimpegnarsi (azione scaltra)','bonus'),
+  rule('hide','Cunning Action','Nascondersi (azione scaltra)','bonus'),
+  rule('fast_hands','Fast Hands','Usare un oggetto (Mani veloci)','bonus',{subclass:'Thief'})
+ ]}};
+ const cunning=traitBenefitGroups({rank:2,feature_origin:features[0].origin_id,key:'cunning'},{},calculated)
+  .find(g=>g.type==='abilities');
+ assert.deepEqual(cunning.items.map(i=>i.label),[
+  'Scattare (azione scaltra)','Disimpegnarsi (azione scaltra)','Nascondersi (azione scaltra)'
+ ]);
+ assert.ok(cunning.items.every(i=>i.timing==='Azione bonus'&&i.status==='Tratto disattivato'));
+ assert.deepEqual(traitBenefitGroups({rank:2,feature_origin:features[1].origin_id,key:'fast'},{},calculated)
+   .find(g=>g.type==='abilities').items.map(i=>i.label),['Usare un oggetto (Mani veloci)']);
+ assert.equal(traitBenefitGroups({rank:2,feature_origin:features[2].origin_id,key:'sneak'},{},calculated)
+  .some(g=>g.type==='abilities'),false,'passive features must not fabricate activations');
+ assert.equal(traitBenefitGroups({rank:0,category:'classi',origin_key:'class|phb|rogue'}, {},calculated)
+  .some(g=>g.type==='abilities'),false,'class overview cannot own child abilities');
+});
+
+test('feat, item, monster and generic typed actions remain listed while inactive',()=>{
+ const entries=[
+  {name:'Talento reattivo',rank:0,category:'talenti',key:'feat-1',origin_key:'feat|reactive',
+   action_type:{type:'reaction'},inactive:true},
+  {name:'Bacchetta attivabile',rank:0,category:'oggetti',key:'item-1',origin_key:'item:wand',
+   activation:'action'},
+  {name:'Urlo del mostro',rank:2,category:'mostro',key:'monster-1',
+   feature_origin:'feature:monster|action|roar'},
+ ];
+ const calculated={features:[{name:'Urlo del mostro',origin_id:'feature:monster|action|roar',
+  origin_key:'monster|action',action_type:'action'}]};
+ for(const [index,entry] of entries.entries()){
+  const abilities=traitBenefitGroups(entry,{},calculated).find(g=>g.type==='abilities');
+  assert.equal(abilities?.items.length,1,entry.name);
+  assert.equal(abilities.items[0].timing,index===0?'Reazione':'Azione');
+  if(index===0)assert.equal(abilities.items[0].status,'Tratto disattivato');
+ }
+});
+
+test('manifest ability previews are source scoped, disabled visibly, and preserve cost',()=>{
+ const trait={rank:2,key:'feat-parry',feature_origin:'optional|phb|parry'};
+ const calculated={features:[],activatable_abilities:[
+  {id:'ability:parry',name:'Parry',origin_id:'optional|phb|parry',
+   activation_mode:'reaction',resource_name:'Superiority Die',resource_cost:1,
+   description:'Reduce damage.',unavailable:true},
+  {id:'ability:other',name:'Ambush',origin_id:'optional|tce|ambush',
+   activation_mode:'contextual',resource_cost:1}
+ ]};
+ const group=traitBenefitGroups(trait,{},calculated).find(g=>g.type==='abilities');
+ assert.deepEqual(group.items.map(i=>i.label),['Parry']);
+ assert.equal(group.items[0].status,'Tratto disattivato');
+ assert.equal(group.items[0].timing,'Reazione');
+ assert.equal(group.items[0].cost,'1 utilizzo · Superiority Die');
+ assert.equal(group.items[0].description,'Reduce damage.');
 });

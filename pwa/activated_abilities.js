@@ -36,18 +36,28 @@ export async function loadActivatedAbilities(){
   return value.abilities;
 }
 
-export function abilitiesForCreature(creature={},manifest=[],projection={}){
+// includeUnavailable is only for read-only previews. Never use these entries
+// to authorize an activation or bypass the normal eligibility checks.
+export function abilitiesForCreature(creature={},manifest=[],projection={},options={}){
+  const includeUnavailable=options.includeUnavailable===true;
   const result=[],seen=new Set();
   const add=(definition,origin,originId="",owner="")=>{
-    if(!definition?.id||seen.has(definition.id)||inactive(creature,originId))return;
-    seen.add(definition.id);
+    if(!definition?.id||(!includeUnavailable&&inactive(creature,originId)))return;
+    const identity=includeUnavailable?definition.id+'|'+originId:definition.id;
+    if(seen.has(identity))return;
+    seen.add(identity);
     // Ability entries retain requirements, feature identity, effect and payment
     // metadata; only spell-specific fields are intentionally excluded.
     const {school,components,level,...rest}=definition;
-    result.push(attachTracker({...rest,action_kind:"ability",origin,origin_id:originId},projection,owner));
+    result.push(attachTracker({...rest,action_kind:"ability",origin,origin_id:originId,
+      ...(includeUnavailable?{unavailable:!!definition.unavailable||
+        inactive(creature,originId)||!!originId&&rows(projection.features)
+          .some(f=>f.origin_id===originId&&(f.inactive||f.disabled))}: {})
+    },projection,owner));
   };
-  const features=rows(projection.features).filter(f=>f&&!f.disabled&&!f.inactive&&
-    !inactive(creature,f.origin_id)&&!inactive(creature,f.origin_key));
+  const features=rows(projection.features).filter(f=>f&&
+    (includeUnavailable||!f.disabled&&!f.inactive&&
+      !inactive(creature,f.origin_id)&&!inactive(creature,f.origin_key)));
   const timed=featureActionEntries(creature,rows(projection.trackers),
     projection.feature_rules||{},features);
 
@@ -85,7 +95,7 @@ export function abilitiesForCreature(creature={},manifest=[],projection={}){
   const defs=new Map(rows(manifest).map(a=>[norm(a.name)+"|"+norm(a.source),a]));
   const ids=new Map(rows(manifest).map(a=>[a.id,a]));
   for(const feature of rows(creature.optional_features_catalog)){
-    if(!feature||feature.disabled||inactive(creature,feature.origin_id))continue;
+    if(!feature||(!includeUnavailable&&(feature.disabled||inactive(creature,feature.origin_id))))continue;
     const key=norm(feature.name)+"|"+norm(feature.source);
     let ability=defs.get(key);
     if(!ability&&!feature.source){
@@ -93,19 +103,23 @@ export function abilitiesForCreature(creature={},manifest=[],projection={}){
       ability=defs.get(norm(feature.name)+"|"+source)||
         defs.get(norm(feature.name)+"|tce");
     }
-    if(ability)add({...ability,description:ability.description||text(feature.entries??feature.description)},
-      feature.origin_name||"Privilegio opzionale · "+feature.name,feature.origin_id);
+    if(ability)add({...ability,unavailable:!!feature.disabled,
+      description:ability.description||text(feature.entries??feature.description)},
+      feature.origin_name||"Privilegio opzionale · "+feature.name,
+      feature.origin_id||'optional|'+norm(feature.source)+'|'+norm(feature.name));
   }
   for(const grant of rows(creature.origin_spell_grants)){
-    if(!grant||grant.disabled||inactive(creature,grant.origin_id))continue;
+    if(!grant||(!includeUnavailable&&(grant.disabled||inactive(creature,grant.origin_id))))continue;
     const id=String(grant.ability_id||grant.spell_id||"");
     const definition=ids.get(id);
-    if(definition)add({...definition,tracker_id:grant.tracker_id||definition.tracker_id,
+    if(definition)add({...definition,unavailable:!!grant.disabled,
+      tracker_id:grant.tracker_id||definition.tracker_id,
       resource_cost:grant.tracker_cost??definition.resource_cost},
       grant.origin_name||"Origine",grant.origin_id);
     else if(id==="vtt_bardic_inspiration"||id==="vtt_wild_shape")continue;
     else if(grant.action_kind==="ability"&&id){
       add({id,name:grant.name||id,description:grant.description||"",
+        unavailable:!!grant.disabled,
         tracker_id:grant.tracker_id,resource_cost:grant.tracker_cost,
         action_kind:"ability",activation_mode:grant.activation_mode||"contextual"},
       grant.origin_name||"Origine",grant.origin_id);

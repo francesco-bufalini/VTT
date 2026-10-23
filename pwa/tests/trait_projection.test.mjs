@@ -129,8 +129,10 @@ test('unequipped items never leak traits from calculated numeric effects',async(
   {name:'Known class feature',origin_key:'class|phb|wizard',level:2}]};
  const inventory=[{id:'wand',name:'Wand',quantity:12,equipped:false,attuned:false,equipped_slots:[]}];
  const rows=await collectTraitRows({...creature,inventory},computed,provider);
- assert.ok(!rows.some(row=>row.category==='oggetti'));
- assert.ok(!rows.some(row=>row.name==='Hidden bonus'));
+ assert.ok(rows.some(row=>row.category==='oggetti'&&row.name==='Wand'&&row.inactive),
+  'Unequipped inventory remains a disabled trait so equipment can be changed');
+ assert.ok(!rows.some(row=>row.name==='Hidden bonus'),
+  'Unequipped items must not leak calculated effects');
  assert.ok(rows.some(row=>row.name==='Known class feature'));
 });
 test('origin groups are contiguous and their levels ordered independently',()=>{
