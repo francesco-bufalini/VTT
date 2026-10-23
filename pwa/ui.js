@@ -746,7 +746,15 @@ async function editorView() {
   }
   state.battleOptionalTraits=battleOptionalTraits;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
-  if(state.sheet==="info")body+=await traitsView(c);
+  if(state.sheet==="info"){
+    const request=traitsView(c);
+    try{body+=await sheetLoadingDeadline(request,4500,"dei tratti");}
+    catch(error){
+      if(error.code!=='SHEET_LOADING_TIMEOUT')throw error;
+      body+=panel('Tratti','<p class="hint">I riferimenti stanno ancora caricando. Puoi usare la scheda nel frattempo.</p>');
+      refreshSheetAfterLateLoad(request,creatureId,'info');
+    }
+  }
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -973,7 +981,8 @@ async function traitsView(c){
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
- state.traitRows=rows;
+ if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info')
+   state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
   const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
