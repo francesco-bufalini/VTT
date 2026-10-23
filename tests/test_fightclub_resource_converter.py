@@ -48,6 +48,36 @@ class FightClubResourceFormulaTests(unittest.TestCase):
                     count += 1
         self.assertGreater(count, 0)
 
+    def test_every_counter_names_a_source_qualified_5etools_trait(self) -> None:
+        data = json.loads((ROOT / "vtt/data/class_resource_overrides.json").read_text(encoding="utf-8"))
+        classes = json.loads((ROOT / "vtt/data/creature_references_5etools.json").read_text(encoding="utf-8"))["class_features"]
+        subclasses = json.loads((ROOT / "vtt/data/subclass_features_5etools.json").read_text(encoding="utf-8"))["subclass_features"]
+
+        def subclass_key(name: str) -> str:
+            value = name.casefold()
+            for prefix in ("school of ", "circle of ", "oath of ", "college of ", "the "):
+                if value.startswith(prefix):
+                    value = value[len(prefix):]
+            for suffix in (" domain", " school"):
+                if value.endswith(suffix):
+                    value = value[:-len(suffix)]
+            return value
+
+        count = 0
+        for group in data["classes"]:
+            for resource in group["resources"]:
+                origin = resource.get("origin_feature", resource["name"])
+                subclass = resource.get("subclass", "")
+                rows = subclasses if subclass else classes
+                matches = [row for row in rows
+                           if row.get("class_name") == group["class"]
+                           and row.get("class_source", row.get("source")) == group["source"]
+                           and row.get("name", "").casefold() == origin.casefold()
+                           and (not subclass or subclass_key(row.get("subclass_name", "")) == subclass_key(subclass))]
+                self.assertTrue(matches, (group["class"], group["source"], subclass, origin))
+                count += 1
+        self.assertGreaterEqual(count, 57)
+
 
 if __name__ == "__main__":
     unittest.main()
