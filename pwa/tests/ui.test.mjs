@@ -1206,6 +1206,8 @@ test('rapid use of two spell slot levels preserves both spent counters',async()=
  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"]'));
  click('#magic-tools-dialog [data-act="slot-use"][data-level="1"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent?.[1]===1);
+ // Wait for the original modal to unmount after persistence; next click must target the live sheet.
+ await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  click('.magic-level-slot[data-level="2"][data-pact="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-use"][data-level="2"]'));
  click('#magic-tools-dialog [data-act="slot-use"][data-level="2"]');
