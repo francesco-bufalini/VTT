@@ -940,12 +940,7 @@ async function editorView() {
             castingStatistics(c,member.id,member.ability)+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
         }).join('')+
-        (!calculated.casting_classes.length||availableSpells(c).some(spell=>
-          !castingSources(spell,calculated.casting_classes,state.spellCatalog||[]).some(id=>
-            calculated.casting_classes.some(member=>member.id===id)))?
-          '<section class="magic-source"><h3>Incantesimi personali</h3>'+
-          castingStatistics(c,'manual',c.spellcasting_ability||calculated.casting_classes[0]?.ability||'int')+
-          spellList(c,'prepared_spells','manual',calculated.casting_classes)+'</section>':''),
+        manualMagicSources(c,calculated),
         'magic-panel')+
       originPowersView(c,calculated)+
       infusionPanel(c,calculated)+
@@ -1996,13 +1991,36 @@ function originChoicesView(calculated){
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
 }
-function spellList(c,key,classId=null,classes=[],{includeSlots=true}={}) {
+function manualMagicSources(c,calculated){
+  const groups=new Map(),classes=calculated.casting_classes||[];
+  for(const spell of availableSpells(c)){
+    if(castingSources(spell,classes,state.spellCatalog||[]).some(id=>
+      classes.some(member=>member.id===id)))continue;
+    const origin=String(spell?.origin_id||spell?.origin_name||'manual');
+    if((calculated.origin_spells||[]).some(grant=>grant.spell_id===spellId(spell)&&
+      String(grant.origin_id||'manual')===origin))continue;
+    if(!groups.has(origin)){
+      const known=calculated.origins?.find(row=>row.id===origin);
+      groups.set(origin,{name:spell?.origin_name||known?.name||
+        (origin==='manual'?'Aggiunti manualmente':origin),ability:spell?.spellcasting_ability||
+        c.spellcasting_ability||classes[0]?.ability||'int'});
+    }
+  }
+  return [...groups.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
+    .map(([id,meta])=>'<section class="magic-source"><h3>'+esc(meta.name)+'</h3>'+
+      castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
+      spellList(c,'prepared_spells','manual',classes,{originId:id})+'</section>').join('');
+}
+function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null}={}) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
   const visible=rows.map((spell,i)=>({spell,i,info:magicSpellInfo(spell)}))
-    .filter(({spell})=>!classId||
+    .filter(({spell})=>(!classId||
       (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):
-        castingSources(spell,classes,state.spellCatalog||[]).includes(classId)));
+        castingSources(spell,classes,state.spellCatalog||[]).includes(classId)))&&
+      (originId===null||String(spell?.origin_id||spell?.origin_name||'manual')===originId)&&
+      !(classId==='manual'&&(state.calculated?.origin_spells||[]).some(grant=>grant.spell_id===spellId(spell)&&
+        String(grant.origin_id||'manual')===String(spell?.origin_id||spell?.origin_name||'manual'))));
   return groupedMagicSpells(visible,({i,info})=>
     '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="'+esc(key)+'" data-spell-index="'+i+'" data-casting-class="'+esc(classId||'')+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name||'Incantesimo senza nome')+'</button>'+
     '<button type="button" class="btn small magic-remove-spell" data-act="remove-spell" data-key="'+esc(key)+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'" title="Rimuovi" aria-label="Rimuovi '+esc(info.name)+'">×</button></div>',
