@@ -940,7 +940,10 @@ async function editorView() {
             castingStatistics(c,member.id,member.ability)+
             spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
         }).join('')+
-        manualMagicSources(c,calculated),
+        manualMagicSources(c,calculated)+
+        (!calculated.casting_classes.length && !manualMagicSources(c,calculated) && magicSlotSummary(calculated).size?
+          '<section class="magic-source magic-slot-only"><h3>Slot incantesimo</h3>'+
+          groupedMagicSpells([],()=>'',{slotSummary:magicSlotSummary(calculated)})+'</section>':''),
         'magic-panel')+
       originPowersView(c,calculated)+
       infusionPanel(c,calculated)+
