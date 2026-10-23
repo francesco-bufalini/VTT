@@ -354,8 +354,10 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   await until(()=>document.querySelector('[data-act="roll-sheet-confirm"]').disabled===false);
   assert.equal(document.querySelector('[data-act="roll-sheet-confirm"]').hidden,false,
     'After a result the player can roll again without reopening the popup');
-  assert.equal(document.querySelector('[data-act="sheet-roll-add-bonus"]'),null,
-    'Bonus control appears only when selectable dice are available');
+  assert.ok(document.querySelector('[data-act="sheet-roll-add-bonus"]'),
+    'The formula + must always allow adding a benefit from a trait');
+  assert.ok(document.querySelector('[data-act="sheet-roll-add-applicable"]'),
+    'The applicable-bonus + must always remain visible beside its heading');
   assert.equal(document.querySelector('[data-act="sheet-roll-edit-bonus"]'),null);
   assert.match(document.querySelector('#sheet-roll-dialog').textContent,/Tiro salvezza/);
   click('[data-act="roll-sheet-confirm"]');
