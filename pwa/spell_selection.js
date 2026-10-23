@@ -56,7 +56,11 @@ export function castingSources(entry,classes,catalog=[]){
 // Wizards instead know exactly the spells recorded in their spellbook.
 export function knownClassSpellIds(creature={},member,catalog=[]){
  if(!member)return new Set();
- if(member.book)return new Set(arr(creature.spellbook_spells).map(spellId));
+ if(member.book){
+   const cantrips=spellsForEdition(catalog,creature.rules_version||'2014')
+     .filter(spell=>Number(spell.level)===0&&spellEligible(spell,member)).map(spellId);
+   return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips]);
+ }
  if(member.mode!=='Preparati')return new Set(availableSpells(creature)
    .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
  const options=spellsForEdition(catalog,creature.rules_version||'2014');
