@@ -2022,7 +2022,7 @@ function renderSpellResults(){
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
-  const found=rows.filter(spell=>allowed.has(spell)&&
+  const found=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
     (preparing?(Number(spell.level)<=member.max_level&&
       (state.spellKnownView!=='known'||known.has(spell.id))):
       member?.mode==='Preparati'&&target==='spellbook_spells'?
