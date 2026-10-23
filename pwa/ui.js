@@ -14,7 +14,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups } from "./trait_benefits.js";
-import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch} from "./trait_benefit_editor.js";
+import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
@@ -784,26 +784,33 @@ async function traitsView(c){
   const active=!trait.inactive;
   // The icon is a separate control, not a nested button inside <summary>.
   // A chevron belongs exclusively to expanding the description.
-  return '<div class="trait-row"><button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
+  return '<div class="trait-row'+(active?'':' trait-row--inactive')+'" data-trait-enabled="'+String(active)+'"><button type="button" class="trait-benefits-trigger" data-act="trait-benefits-open" data-trait-key="'+esc(trait.key)+'" aria-label="Gestisci benefici di '+esc(trait.name)+'" title="Gestisci benefici">'+
       (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
-    '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+(active?' · disattivato':'')+'</span></summary>'+
+    '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
+      '<span class="trait-chevron" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15" fill="none"><path d="M3 6 L12 11 L21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>'+
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     '</div></details></div>';
  };
- const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
- const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'">'+
-  '<h3 class="trait-category-title">'+esc(group.title)+'</h3>'+
+ const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\\s*·\\s*/i,'');
+ const originKind=(category,origin)=>{
+  if(category==='razza')return String(origin.key).startsWith('subrace|')?'Sottorazza':'Specie';
+  if(category==='classi')return String(origin.key).includes('|subclass|')?'Sottoclasse':'Classe';
+  if(category==='background')return 'Background';
+  if(category==='mostro')return 'Mostro';
+  if(category==='incantesimi')return 'Incantesimo';
+  return 'Origine';
+ };
+ const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'" aria-label="'+esc(group.title)+'">'+
   group.origins.map(origin=>
    '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
    (['talenti','oggetti'].includes(group.id)?'':
-    '<h4 class="trait-origin-title">'+esc(originTitle(origin.title))+
-      (origin.key.startsWith('subrace|')?'<span class="trait-origin-kind">Sottorazza</span>':
-       origin.key.includes('|subclass|')?'<span class="trait-origin-kind">Sottoclasse</span>':'')+'</h4>')+
+    '<h3 class="trait-origin-title"><span class="trait-origin-kind">'+esc(originKind(group.id,origin))+'</span>'+
+     '<span class="trait-origin-name">'+esc(originTitle(origin.title))+'</span></h3>')+
    origin.levels.map(tier=>
-    (tier.level>=0?'<h5 class="trait-level">LIVELLO '+tier.level+'</h5>':'')+
+    (tier.level>=0?'<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
@@ -857,6 +864,12 @@ function mountTraitBenefitDialog(){
   '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+'</h2>'+
   '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
   '<div class="trait-benefits-dialog-body">'+
+   '<div class="trait-activation-control" data-trait-activation>'+
+    '<div class="trait-activation-copy"><span class="trait-activation-heading">Stato del privilegio</span>'+
+     '<span class="trait-activation-description">'+(trait.inactive?'Benefici disattivati':'Benefici attivi')+'</span></div>'+
+    '<button type="button" class="trait-activation-toggle" role="switch" aria-checked="'+String(!trait.inactive)+'" data-act="trait-benefits-toggle" aria-label="'+(trait.inactive?'Attiva':'Disattiva')+' '+esc(trait.name)+'">'+
+     '<span class="trait-activation-thumb" aria-hidden="true"></span><span class="trait-activation-label">'+(trait.inactive?'Attiva':'Disattiva')+'</span></button>'+
+   '</div>'+
    '<div class="trait-benefits">'+(benefits||'<p class="hint">Nessun beneficio concesso da questo tratto.</p>')+'</div>'+
    (match?'<section class="trait-benefit-confirm" role="alert"><p>Eliminare '+esc(match.label)+(match.value?' · '+esc(match.value):'')+'?</p>'+
      '<div class="actions"><button type="button" class="btn danger" data-act="trait-benefits-remove-confirm" data-benefit-id="'+esc(match.id)+'" data-benefit-type="'+esc(match.type)+'">Conferma eliminazione</button>'+
@@ -3407,6 +3420,13 @@ async function handleAction(target){
     if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
     state.traitPopupKey=key;state.traitPopupConfirm='';
     mountTraitBenefitDialog();return;
+  }
+  if(act==='trait-benefits-toggle'){
+    const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
+    if(!trait)throw Error('Tratto non disponibile');
+    await patch(traitActivationPatch(state.editor.read(),trait,Boolean(trait.inactive)));
+    await state.editor.flush();
+    await render();return;
   }
   if(act==='trait-benefits-close'){
     state.traitPopupKey='';state.traitPopupConfirm='';
