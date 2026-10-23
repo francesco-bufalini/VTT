@@ -15,7 +15,7 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
- await page.getByRole('button',{name:'Usa Modello armatura · Guardiano',exact:true}).click();
+ await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
  await page.locator('[data-feature-confirm]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
