@@ -136,7 +136,8 @@ test('roll preview never rolls automatically; explicit roll returns full dice br
  assert.deepEqual([sheetRollChatFields(standalone).die,sheetRollChatFields(standalone).total],['d20',14]);
  assert.throws(()=>rollSheetDice(2,[{dice:'1d3'}],()=>1),/Dadi bonus/);
  const score=formulaReadout({values:{'ability:dex':16}},'ability:dex','Destrezza',{scoreAbility:'dex'});
- assert.match(score,/data-act="edit-score"/);
+ assert.match(score,/data-act="sheet-score-formula"/);
+ assert.doesNotMatch(score,/data-act="edit-score"/);
  assert.doesNotMatch(score,/data-act="sheet-roll"/);
  const save=formulaReadout({values:{'save:dex':4}},'save:dex','TS Destrezza',{signed:true});
  assert.match(save,/data-act="sheet-roll"/);
