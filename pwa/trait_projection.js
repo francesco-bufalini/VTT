@@ -245,7 +245,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const origin=rows.find(r=>r.origin_key===normalizedKey)?.origin||
    arr(calculated.origins).find(o=>o.id===originKey)?.name||originKey.replaceAll('|',' · ');
   add(feature,{category,origin,origin_key:normalizedKey,level:feature.level||0,
-   rank:2,inactive:!!feature.disabled});
+   rank:2});
  }
  // Ordinary class/species/background proficiencies have a stable origin ID,
  // but no concrete feature ID. Give them a read-only trait representing
