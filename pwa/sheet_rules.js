@@ -5,7 +5,9 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
-import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources,armorerWeapons} from './feature_mechanics.js';
+import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled,artificerResources} from './feature_mechanics.js';
+
+import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects} from './trait_state_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -476,7 +478,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
     offhand_bonus:attack.slot==='off'&&!!offAllowed});
  };
- for(const weapon of armorerWeapons(record,featureContext.features))append(weapon,weapon.ability,true,weapon.damage);
+ for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))append(weapon,weapon.ability,true,weapon.damage);
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
   if(!action?.name)return;
   const text=JSON.stringify(action.entries||[]),hit=text.match(/\{@hit\s*([+-]?\d+)\}/)||text.match(/([+-]\d+)\s+to\s+hit/i);
@@ -577,7 +579,7 @@ export function calculateSheet(record={},catalogs={}){
       featureEnabled(record,feature));
   };
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features)];
+    ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -853,22 +855,15 @@ export function calculateSheet(record={},catalogs={}){
   const trackerMap=new Map();
   for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
-  // Once per turn, the Lightning Launcher can add 1d6 lightning damage.
-  // Expose its actual trait origin and a regular turn-reset tracker.
-  const lightning=armorerWeapons(record,features).find(row=>row.id==='class_feature:lightning_launcher');
-  if(lightning){
-    const id='feature:lightning_launcher:extra_damage';
-    trackerMap.set(id,{id,name:'Lightning Launcher · danno aggiuntivo',max:1,
-      recharge:'turn',automatic:true,origin_id:lightning.origin_id,
-      origin_name:'Tratto · Lightning Launcher'});
-  }
+  for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
+    trackerMap.set(stateTracker.id,stateTracker);
   const trackers=[...trackerMap.values()].map(row=>{
     if(row.formula_error)warnings.add('Formula tracker '+row.name+': '+row.formula_error+' · mantenuto il massimo base');
     const maximum=Math.max(0,row.max+(safe('tracker:'+row.id)??0));
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
-  const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})}))};
+  const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[]};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
@@ -915,7 +910,11 @@ export function calculateSheet(record={},catalogs={}){
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'))];})),
     casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},
-    active_feature_effects:classFeatureEffects(record,featureContext),
+    active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
+    active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id),
+    state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
+    trait_state_optional_dice:traitStateOptionalDice(record,features,catalogs.traitStates||[]),
+    trait_state_catalog:catalogs.traitStates||[],
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
@@ -937,14 +936,16 @@ export function loadRuleCatalogs(){
     fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
     fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[]),
     fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
+    fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.states)?data.states:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},classFeatures,originDetails,
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,classFeatures,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,classFeatures,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
