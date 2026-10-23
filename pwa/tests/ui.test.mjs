@@ -1037,6 +1037,19 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('#sheet-context-dialog [data-act="sheet-context-close"]');
  await until(()=>!document.querySelector('#sheet-context-dialog'));
  click('[data-sheet="magic"]');
+ await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
+ const spentBefore=(await loadCreature(saved.data.id)).data.spell_slots_spent[1];
+ click('.magic-level-slot[data-level="1"][data-pact="false"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-spells"]'));
+ assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent[1],spentBefore,
+   'Opening the spell slot menu must not spend a slot');
+ click('#magic-tools-dialog [data-act="slot-spells"]');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-castable')||
+   document.querySelector('#magic-tools-dialog[open] .magic-slot-popup-count')===null);
+ assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent[1],spentBefore,
+   'Browsing castable spells must not spend a slot');
+ click('#magic-tools-dialog [data-act="magic-tool-close"]');
+ await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
  assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara/i,
    'Class spell selection is directly accessible in the mobile play card');
