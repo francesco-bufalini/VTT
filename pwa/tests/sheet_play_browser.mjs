@@ -573,8 +573,17 @@ try{
  assert.equal(await traitDisclosure.getAttribute('open'),'');
  assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
  // Benefits and description must be independent controls.
+ assert.equal(await page.locator('.play-info-traits .trait-category-title').count(),0,
+  'Origin category labels are inline before each stronger origin name, not separate headings');
+ assert(await page.locator('.play-info-traits .trait-origin-title .trait-origin-kind').count()>0);
+ assert(await page.locator('.play-info-traits .trait-origin-title .trait-origin-name').count()>0);
  const firstTrait=page.locator('.play-info-traits .trait-row').first();
  const traitDescription=firstTrait.locator('details.trait-card');
+ assert.equal(await firstTrait.getAttribute('data-trait-enabled'),'true',
+  'Every non-explicitly-disabled privilege is enabled by default');
+ assert.doesNotMatch(await traitDescription.locator('summary').innerText(),/disattivato/i);
+ assert.equal(await traitDescription.locator('.trait-chevron svg path').count(),1,
+  'A shallow rounded SVG chevron indicates expansion');
  assert.equal(await traitDescription.getAttribute('open'),null);
  const trigger=firstTrait.locator('[data-act="trait-benefits-open"]');
  assert.equal(await trigger.count(),1);
@@ -582,6 +591,16 @@ try{
  const benefitDialog=page.locator('#trait-benefits-dialog[open]');
  await benefitDialog.waitFor();
  assert.equal(await traitDescription.getAttribute('open'),null,'Benefit icon must not expand trait lore');
+ const activeSwitch=benefitDialog.locator('[data-act="trait-benefits-toggle"]');
+ assert.equal(await activeSwitch.getAttribute('aria-checked'),'true');
+ await activeSwitch.click();
+ await page.waitForFunction(()=>document.querySelector('.play-info-traits .trait-row')?.dataset.traitEnabled==='false');
+ assert.equal(await benefitDialog.locator('[data-act="trait-benefits-toggle"]').getAttribute('aria-checked'),'false');
+ assert.doesNotMatch(await firstTrait.locator('summary').innerText(),/disattivato/i,
+  'Inactive state must be conveyed by the row surface, never appended to the name');
+ await benefitDialog.locator('[data-act="trait-benefits-toggle"]').click();
+ await page.waitForFunction(()=>document.querySelector('.play-info-traits .trait-row')?.dataset.traitEnabled==='true');
+ assert.equal(await benefitDialog.locator('[data-act="trait-benefits-toggle"]').getAttribute('aria-checked'),'true');
  assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false);
  await benefitDialog.locator('[data-act="trait-benefits-add"]').click();
  assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),true);
