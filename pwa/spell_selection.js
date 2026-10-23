@@ -51,6 +51,40 @@ export function castingSources(entry,classes,catalog=[]){
  const matches=classes.filter(member=>spellEligible(definition||{},member));
  return matches.length===1?[matches[0].id]:[];
 }
+// Preparing casters normally know their class list. A per-class override records
+// only deliberate additions/removals, so existing characters need no migration.
+// Wizards instead know exactly the spells recorded in their spellbook.
+export function knownClassSpellIds(creature={},member,catalog=[]){
+ if(!member)return new Set();
+ if(member.book){
+   const entry=creature.known_spell_overrides?.[member.id]||{};
+   const removed=new Set(arr(entry.removed));
+   const cantrips=spellsForEdition(catalog,creature.rules_version||'2014')
+     .filter(spell=>Number(spell.level)===0&&spellEligible(spell,member)&&!removed.has(spell.id))
+     .map(spellId);
+   return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips,...arr(entry.added)]);
+ }
+ if(member.mode!=='Preparati')return new Set(availableSpells(creature)
+   .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
+ const options=spellsForEdition(catalog,creature.rules_version||'2014');
+ const overrides=creature.known_spell_overrides?.[member.id]||{};
+ const removed=new Set(arr(overrides.removed));
+ return new Set([...options.filter(spell=>spellEligible(spell,member)&&!removed.has(spell.id))
+   .map(spellId),...arr(overrides.added)]);
+}
+export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
+ if(!member||member.mode!=='Preparati'||member.book&&Number(spell?.level)>0)
+   throw Error('Questa lista di incantesimi conosciuti non è modificabile qui.');
+ const id=spellId(spell);
+ if(!id||spell.internal_grant||!catalog.some(row=>spellId(row)===id)||Number(spell.level)>member.max_level)
+   throw Error('Incantesimo non disponibile per questo livello.');
+ const map=structuredClone(creature.known_spell_overrides||{});
+ const entry=map[member.id]||{},added=new Set(arr(entry.added)),removed=new Set(arr(entry.removed));
+ if(known){removed.delete(id);if(!spellEligible(spell,member))added.add(id);}
+ else {added.delete(id);if(spellEligible(spell,member))removed.add(id);}
+ map[member.id]={added:[...added],removed:[...removed]};
+ return {known_spell_overrides:map};
+}
 export function classSelectionCount(creature,member,classes,catalog=[]){
  const selected=availableSpells(creature).filter(row=>castingSources(row,classes,catalog).includes(member.id));
  const level=row=>Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0);
@@ -72,7 +106,9 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
   if(member){
-    if(!spellEligible(entry,member))throw Error('Incantesimo non disponibile per questa classe e livello.');
+    if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&!entry.internal_grant&&spell.level<=member.max_level&&
+      (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id))))
+      throw Error('Incantesimo non conosciuto o non disponibile per questo livello.');
     if(target==='spellbook_spells'&&!member.book)throw Error('Questa classe non usa il libro degli incantesimi.');
     if(target==='prepared_spells'){
       if(member.book&&spell.level>0&&!arr(creature.spellbook_spells).some(row=>spellId(row)===spell.id))throw Error('Aggiungi prima l’incantesimo al libro.');

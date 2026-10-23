@@ -1,0 +1,68 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {knownClassSpellIds,changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
+
+const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,book:false};
+const wizard={id:'class|phb|wizard',name:'Wizard',mode:'Preparati',max_level:3,book:true};
+const bard={id:'class|phb|bard',name:'Bard',mode:'Conosciuti',max_level:3,book:false};
+const catalog=[
+ {id:'cure',name:'Cure Wounds',source:'PHB',level:1,classes:['Cleric']},
+ {id:'shield',name:'Shield',source:'PHB',level:1,classes:['Wizard']},
+ {id:'light',name:'Light',source:'PHB',level:0,classes:['Cleric','Wizard']}
+];
+
+test('preparing casters initially know their class list without changing saved sheets',()=>{
+ const record={rules_version:'2014',prepared_spells:[],spells:[]};
+ assert.deepEqual([...knownClassSpellIds(record,cleric,catalog)].sort(),['cure','light']);
+ assert.deepEqual(knownClassSpellIds(record,wizard,catalog),new Set(['light']),
+   'wizard cantrips remain selectable without requiring a spellbook entry');
+ assert.equal(record.known_spell_overrides,undefined);
+});
+
+test('known-spell overrides can remove class spells and add non-class spells',()=>{
+ let record={rules_version:'2014',prepared_spells:[],spells:[]};
+ record={...record,...changeKnownClassSpell(record,cleric,catalog[0],false,catalog)};
+ assert.equal(knownClassSpellIds(record,cleric,catalog).has('cure'),false);
+ record={...record,...changeKnownClassSpell(record,cleric,catalog[1],true,catalog)};
+ assert.equal(knownClassSpellIds(record,cleric,catalog).has('shield'),true);
+ record={...record,...addSelectedSpell(record,catalog[1],'prepared_spells',
+   {member:cleric,classes:[cleric],catalog})};
+ assert.equal(record.prepared_spells[0].id,'shield');
+ assert.deepEqual(record.spells,record.prepared_spells,'legacy desktop spells remain synchronized');
+ record={...record,...removeSelectedSpell(record,'prepared_spells',0,
+   {classId:cleric.id,classes:[cleric],catalog})};
+ assert.equal(record.prepared_spells.length,0);
+ assert.equal(knownClassSpellIds(record,cleric,catalog).has('shield'),true,
+   'unpreparing does not delete the known-spell choice');
+ record={...record,...changeKnownClassSpell(record,cleric,catalog[1],false,catalog)};
+ assert.equal(knownClassSpellIds(record,cleric,catalog).has('shield'),false);
+});
+
+test('wizard spellbook stays the source of known spells and known-only preparation',()=>{
+ const base={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
+ assert.throws(()=>addSelectedSpell(base,catalog[1],'prepared_spells',
+   {member:wizard,classes:[wizard],catalog}),/libro/);
+ const book=addSelectedSpell(base,catalog[1],'spellbook_spells',
+   {member:wizard,classes:[wizard],catalog});
+ let record={...base,...book};
+ assert.equal(knownClassSpellIds(record,wizard,catalog).has('shield'),true);
+ record={...record,...addSelectedSpell(record,catalog[1],'prepared_spells',
+   {member:wizard,classes:[wizard],catalog})};
+ assert.equal(record.prepared_spells.length,1);
+});
+
+test('wizard cantrips can be learned and forgotten without changing the spellbook',()=>{
+ let c={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
+ c={...c,...changeKnownClassSpell(c,wizard,catalog[2],false,catalog)};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),false);
+ c={...c,...changeKnownClassSpell(c,wizard,catalog[2],true,catalog)};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
+ assert.deepEqual(c.spellbook_spells,[]);
+});
+
+test('known-spell overrides never alter spontaneous casters',()=>{
+ const record={prepared_spells:[{...catalog[0],casting_classes:[bard.id]}]};
+ assert.equal(knownClassSpellIds(record,bard,catalog).has('cure'),true);
+ assert.throws(()=>changeKnownClassSpell(record,bard,catalog[0],false,catalog),/non è modificabile/);
+});
