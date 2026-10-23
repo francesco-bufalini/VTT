@@ -4160,7 +4160,9 @@ async function handleAction(target){
       const inventory=[...(record.inventory||[]),item];
       await editor.update({inventory});
       state.page="library";state.libraryMode=false;state.creatureId=owner;
-      state.editor=editor;state.sheet="inventory";state.inventorySubtab="items";
+      state.editor=editor;state.sheet="inventory";
+      state.inventorySubtab=state.pendingItemContainer&&state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?
+        'container:'+state.pendingItemContainer:'items';
       state.inventorySelectedIndex=inventory.length-1;state.pendingItemOwner="";state.pendingItemContainer="";
       await render();message("Oggetto homebrew aggiunto all'inventario.");return;
     }
@@ -4209,7 +4211,9 @@ async function handleAction(target){
     state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
     if(state.pendingItemOwner&&category!=='feats'){
        state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
-       state.sheet='inventory';state.inventorySubtab='items';state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
+       state.sheet='inventory';state.inventorySubtab=state.pendingItemContainer&&
+        state.pendingItemContainer!==DEFAULT_INVENTORY_CONTAINER?'container:'+state.pendingItemContainer:'items';
+       state.inventorySelectedIndex=(editor.read().inventory||[]).length-1;
        state.pendingItemOwner='';state.pendingItemContainer='';await render();
      }
      if(category==='feats'&&state.featAssignReturnId===cId){
