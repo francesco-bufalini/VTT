@@ -2026,7 +2026,7 @@ function renderSpellResults(){
     (preparing?(Number(spell.level)<=member.max_level&&
       (state.spellKnownView!=='known'||known.has(spell.id))):
       member?.mode==='Preparati'&&target==='spellbook_spells'?
-        Number(spell.level)<=member.max_level:
+        spellEligible(spell,member):
         !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0)&&
     (!query||(String(spell.name||'')+' '+String(spell.source||'')).toLocaleLowerCase('it').includes(query)))
