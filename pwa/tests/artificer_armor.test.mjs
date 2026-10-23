@@ -57,6 +57,12 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
  assert.equal(calculated.values.speed,35);
  assert.equal(calculated.trait_state_optional_dice[0].dice,'1d6');
+ const launcher=calculated.features.find(row=>row.name==='Lightning Launcher');
+ assert.ok(launcher?.origin_id,'The launcher must be granted by its own trait');
+ const suppressed=calculateSheet({...next,origin_enabled:{[launcher.origin_id]:false}},catalogs);
+ assert.equal(suppressed.attacks.some(row=>row.id==='class_feature:lightning_launcher'),false);
+ assert.equal(suppressed.trait_state_optional_dice.length,0);
+ assert.equal(suppressed.trackers.some(row=>row.id==='feature:lightning_launcher:extra_damage'),false);
  assert.equal(calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage')?.max,1);
  assert.equal(calculated.active_feature_effects.filter(row=>row.category==='stato').length,1);
  next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian')};
