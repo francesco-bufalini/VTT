@@ -570,13 +570,14 @@ export function calculateSheet(record={},catalogs={}){
     if(speed!==undefined)record={...record,species_speed:speed};
   }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
-  const activeItemCopies=new Map();
+  const activeItemCopies=new Map(),alwaysCarriedSources=new Set();
   for(const saved of arr(record.inventory)){
     const item=resolveOwnedItem(saved);
     if(!item?.id||!itemActive(item,record))continue;
     const kind=itemKind(item),amount=["weapon","armor","shield"].includes(kind)?1:Math.max(1,int(item.quantity,1));
     const key="item:"+item.id;
     activeItemCopies.set(key,(activeItemCopies.get(key)||0)+amount);
+    if(!["weapon","armor","shield"].includes(kind))alwaysCarriedSources.add(key);
   }
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
@@ -706,7 +707,12 @@ export function calculateSheet(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
-    if(sid.startsWith("item:")&&!activeItemCopies.has(sid))return false;
+    if(sid.startsWith("item:")){
+      if(!activeItemCopies.has(sid))return false;
+      // Old manual equipment toggles may have left an origin_disabled override.
+      // Carried items cannot be switched off through equipment state anymore.
+      if(alwaysCarriedSources.has(sid))return true;
+    }
     if(!sid)return true;
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
     if(saved?.disabled)return false;
