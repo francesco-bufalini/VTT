@@ -3214,7 +3214,7 @@ dialog.sheet-context-dialog{border-bottom:0}
   padding:8px 11px;scroll-snap-align:none;white-space:normal;
   overflow-wrap:anywhere;border:1px solid rgba(191,151,99,.35);
   border-radius:11px;background:rgba(106,82,53,.13);color:inherit;
-  font:600 12px/1.35 inherit;cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:600;line-height:1.35;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
 }
 .inventory-subtabs.inventory-container-tabs>button[aria-pressed="true"]{
