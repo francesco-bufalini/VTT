@@ -2655,7 +2655,7 @@ function rollBonusTerm(row){
 async function openRollTraitPicker(kind='bonus',target=''){
  state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
  state.sheet='info';await render();
- const traits=(state.traitRows||[]).filter(trait=>!trait.inactive);
+ const traits=(state.traitRows||[]).filter(trait=>!trait.inactive&&!trait.readonly);
  if(!traits.length){message('Nessun tratto disponibile a cui associare il beneficio.',true);return;}
  document.querySelector('#roll-trait-picker')?.remove();
  const picker=document.createElement('dialog');picker.id='roll-trait-picker';picker.className='trait-benefits-dialog';
