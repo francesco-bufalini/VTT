@@ -3,6 +3,7 @@ extends RefCounted
 # Creature-sheet-only display translations. Never mutate persisted records or the global locale.
 const CONFIG_PATH := "user://creature_gui_locale.cfg"
 const EN: Dictionary = {
+	"Scelta non prevista da questa origine o numero massimo di scelte già raggiunto.": "Choice not granted by this origin, or maximum selections already reached.",
 	"Scegli un talento del compendio nella sezione Modifica personaggio → Talenti": "Choose a feat from the compendium in Edit character → Feats",
 	"Usa gli slot di classe o del Patto": "Use class or Pact slots",
 	"Nessuna risorsa consumata": "No resource consumed",
