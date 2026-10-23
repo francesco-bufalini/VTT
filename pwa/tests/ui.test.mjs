@@ -70,12 +70,19 @@ async function addHomebrewToInventory(name){
     document.querySelector('.inventory-table-row')?.textContent.includes(name),5000);
 }
 async function changeScore(ability,value){
-  click('[data-act="edit-score"][data-ability-key="'+ability+'"]');
+  assert.equal(document.querySelector('[data-act="edit-score"][data-ability-key="'+ability+'"]'),null,
+    'The ability editor gear must be absent');
+  click('[data-act="sheet-score-formula"][data-target="ability:'+ability+'"]');
+  await until(()=>document.querySelector('#sheet-score-formula-dialog [data-act="sheet-score-edit-base"]'));
+  click('#sheet-score-formula-dialog [data-act="sheet-score-edit-base"]');
   await until(()=>document.querySelector('#sheet-score-input'));
   const input=document.querySelector('#sheet-score-input');
   input.value=String(value);
   click('[data-act="save-score"]');
   await until(()=>!document.querySelector('#sheet-score-dialog'));
+  await until(()=>document.querySelector('#sheet-score-formula-dialog'));
+  click('#sheet-score-formula-dialog [data-act="close-score-formula"]');
+  await until(()=>!document.querySelector('#sheet-score-formula-dialog'));
 }
 test("mobile navigation and local creature editing persist through tabs",async()=>{
   await mount();
