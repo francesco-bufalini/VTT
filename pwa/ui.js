@@ -80,7 +80,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryQuery:'', libraryFilter:'all', sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -372,6 +372,16 @@ async function render() {
     app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
     organizeSheetPanels();
+    // Live token synchronization can finish while the first character load
+    // is pending. Apply at most one queued refresh after its main panel exists,
+    // rather than canceling every in-flight render before the sheet can paint.
+    if(state.page==='library'&&!state.libraryMode&&state.sheetNeedsRefresh){
+      state.sheetNeedsRefresh=false;
+      setTimeout(()=>{
+        if(state.page==='library'&&!state.libraryMode&&ticket===state.renderTicket)
+          void render();
+      },0);
+    }
     rememberUtilityDisclosures();
     mountTraitBenefitDialog();
     syncBrowserHistory();
@@ -2303,14 +2313,20 @@ function startMap() {
           if(state.page==='session'){
             state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
             state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
-          }else if(state.editor&&changed.includes(state.creatureId)){
-            if(!app.contains(document.activeElement)||document.activeElement.tagName==='BUTTON')
+          }else if(state.page==='library'&&!state.libraryMode&&
+            changed.includes(state.creatureId)){
+            if(!state.editor||!app.querySelector('#sheet-play-view')){
+              state.sheetNeedsRefresh=true;
+            }else if(!app.contains(document.activeElement)||
+                     document.activeElement.tagName==='BUTTON'){
               await render();
-            else{
+            }else{
               state.calculated=await computeLocalData(state.editor.read());
               refreshCalculatedValues(app,state.calculated);
             }
-          }else if(state.page==='library')await render();
+          }else if(state.page==='library'&&state.libraryMode){
+            await render();
+          }
         }
       }).catch(error=>{message("Sincronizzazione effetti: "+errorMessage(error),true);});
     }
