@@ -120,7 +120,7 @@ try{
  assert(Number.isInteger(automaticHp)&&automaticHp>0,'Automatic hit dice prefill the base HP field');
  assert.equal((await record()).max_hp_base,40,
    'Calculating is a preview; only Save changes the creature');
- await editor.locator('[data-act="close-score"]').click();
+ await editor.locator('.sheet-base-editor-cancel').click();
  await scoreFormula.waitFor({state:'visible'});
  assert.equal((await record()).max_hp_base,40,
    'Cancel leaves the original maximum HP untouched');
