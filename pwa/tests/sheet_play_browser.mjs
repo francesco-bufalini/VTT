@@ -599,6 +599,17 @@ try{
   'Origin category labels are inline before each stronger origin name, not separate headings');
  assert(await page.locator('.play-info-traits .trait-origin-title .trait-origin-kind').count()>0);
  assert(await page.locator('.play-info-traits .trait-origin-title .trait-origin-name').count()>0);
+ for(const type of ['talenti','oggetti']){
+  const section=page.locator('.play-info-traits [data-trait-category="'+type+'"]');
+  if(await section.count()){
+   assert.equal(await section.locator(':scope > .trait-category-heading').count(),1,
+    'One prominent title per '+type+' category');
+   assert.equal((await section.locator(':scope > .trait-category-heading').innerText()).trim(),
+    type==='talenti'?'Talenti':'Oggetti');
+   assert.equal(await section.locator('.trait-origin-group > .trait-origin-title').count(),0,
+    'No duplicate headings for individual feats or items');
+  }
+ }
  const firstTrait=page.locator('.play-info-traits .trait-row').first();
  const traitDescription=firstTrait.locator('details.trait-card');
  assert.equal(await firstTrait.getAttribute('data-trait-enabled'),'true',
@@ -613,6 +624,19 @@ try{
  const benefitDialog=page.locator('#trait-benefits-dialog[open]');
  await benefitDialog.waitFor();
  assert.equal(await traitDescription.getAttribute('open'),null,'Benefit icon must not expand trait lore');
+ // Closing cannot await a pending form save or carry an unsaved draft into the
+ // next popup. Exercise X and native Escape in an actual browser.
+ await benefitDialog.locator('[data-act="trait-benefits-add"]').click();
+ await benefitDialog.locator('[data-trait-fields="bonus"] [name="expression"]').fill('99');
+ await benefitDialog.locator('[data-act="trait-benefits-close"]').click();
+ await benefitDialog.waitFor({state:'detached'});
+ await trigger.click();await benefitDialog.waitFor();
+ assert.equal(await benefitDialog.locator('[data-trait-add-form]').isVisible(),false,
+  'A dismissed unsaved benefit draft must stay closed on reopening');
+ assert.equal((await record()).formula_bonuses?.filter(x=>x.id?.startsWith('trait:')).length||0,0);
+ await page.keyboard.press('Escape');
+ await benefitDialog.waitFor({state:'detached'});
+ await trigger.click();await benefitDialog.waitFor();
  const activeSwitch=benefitDialog.locator('[data-act="trait-benefits-toggle"]');
  assert.equal(await activeSwitch.getAttribute('aria-checked'),'true');
  await activeSwitch.click();
