@@ -69,7 +69,7 @@ export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
  if(!member||member.mode!=='Preparati'||member.book)
    throw Error('Questa lista di incantesimi conosciuti non è modificabile qui.');
  const id=spellId(spell);
- if(!id||!catalog.some(row=>spellId(row)===id)||Number(spell.level)>member.max_level)
+ if(!id||spell.internal_grant||!catalog.some(row=>spellId(row)===id)||Number(spell.level)>member.max_level)
    throw Error('Incantesimo non disponibile per questo livello.');
  const map=structuredClone(creature.known_spell_overrides||{});
  const entry=map[member.id]||{},added=new Set(arr(entry.added)),removed=new Set(arr(entry.removed));
@@ -99,7 +99,7 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
   if(member){
-    if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&spell.level<=member.max_level&&
+    if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&!entry.internal_grant&&spell.level<=member.max_level&&
       (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id))))
       throw Error('Incantesimo non conosciuto o non disponibile per questo livello.');
     if(target==='spellbook_spells'&&!member.book)throw Error('Questa classe non usa il libro degli incantesimi.');
