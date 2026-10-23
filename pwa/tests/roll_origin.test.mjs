@@ -317,7 +317,7 @@ test('passive perception is a source-backed deterministic score with no d20',()=
  const calc=calculateSheet(c),rows=sheetScoreOriginSegments(c,calc,'passive_perception');
  assert(!rows.some(row=>/d20/.test(row.formula)), 'A passive score cannot generate a roll');
  assert(rows.some(row=>row.formula.startsWith('10 + Mod.SAG')));
- assert.equal(rows.find(row=>row.kind==='training')?.originId,'','no training from untrained Perception');
+ assert.equal(rows.filter(row=>row.kind==='training').length,0,'no training from untrained Perception');
  assert.equal(rows.find(row=>row.originId==='feature:passive')?.expanded,'+2');
  assert.equal(rows.reduce((sum,row)=>sum+(row.value||0),0),calc.values.passive_perception);
 });
