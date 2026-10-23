@@ -14,7 +14,7 @@ import { createDemoCreature } from "./demo.js";
 import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups } from "./trait_benefits.js";
-import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch} from "./trait_benefit_editor.js";
+import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
 import { spellFacts } from "./spell_metadata.js";
 import { exportBackup, importBackup, getRecord } from "./storage.js";
 import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
@@ -821,9 +821,15 @@ async function traitsView(c){
 // entering values does not persist anything until the explicit Salva action.
 function mountTraitBenefitDialog(){
  if(!state.traitPopupKey||state.sheet!=='info'||!state.editor)return;
- const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
- if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';return;}
  const record=state.editor.read();
+ // Retain the open trait while the calculator refreshes its grant list.
+ // A disabled proficiency may lose all calculated grants, but its toggle
+ // must stay reachable rather than silently closing the editor.
+ const current=state.traitRows.find(row=>row.key===state.traitPopupKey);
+ const trait=current||(state.traitPopupTrait?.key===state.traitPopupKey?
+  {...state.traitPopupTrait,inactive:!traitIsActive(record,state.traitPopupTrait)}:null);
+ if(!trait){state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;return;}
+ state.traitPopupTrait=trait;
  const groups=traitBenefitGroups(trait,record,state.calculated||{});
  const hidden=traitRemovedIds(record,trait);
  const optionList=(options,selected='')=>options.map(([value,label])=>
@@ -885,7 +891,7 @@ function mountTraitBenefitDialog(){
    '</section>'+
   '</div>';
  app.append(dialog);
- dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;dialog.close();});
  dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
@@ -3419,6 +3425,7 @@ async function handleAction(target){
     const key=target.dataset.traitKey;
     if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
     state.traitPopupKey=key;state.traitPopupConfirm='';
+    state.traitPopupTrait=state.traitRows.find(row=>row.key===key);
     mountTraitBenefitDialog();return;
   }
   if(act==='trait-benefits-toggle'){
@@ -3429,7 +3436,7 @@ async function handleAction(target){
     await render();return;
   }
   if(act==='trait-benefits-close'){
-    state.traitPopupKey='';state.traitPopupConfirm='';
+    state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupTrait=null;
     const dialog=app.querySelector('#trait-benefits-dialog');
     if(dialog?.close)dialog.close();else dialog?.remove();
     return;
