@@ -201,7 +201,7 @@ Own Luck, l'attacco specifico annullato da Illusory Self e la scelta fra le
 quattro modalità temporanee di The Third Eye. I nomi corretti non trasformano
 questi effetti contestuali in bonus passivi.
 
-Dopo la correzione e il lotto Rogue, tutte le **55 definizioni di contatore** nel supplemento
+Dopo la correzione e i lotti Rogue/Ranger, tutte le **57 definizioni di contatore** nel supplemento
 si collegano per classe, fonte, sottoclasse e nome d'origine a un `classFeature`
 o `subclassFeature` del catalogo 5etools locale. Questa verifica riguarda
 l'identità del tratto; non prova da sola ogni limite numerico o l'effetto
@@ -263,6 +263,41 @@ I costi di Cunning Strike sono dadi di danno rinunciati durante un singolo
 attacco, non una risorsa accumulata. Le opzioni con salvezza, condizione,
 durata o bersaglio restano nella lista dei privilegi non automatizzati; non
 vengono trasformate in contatori generici.
+
+## Lotto 2026-10-23: Ranger XPHB
+
+Controllate le **23 voci** del catalogo `class_features` Ranger XPHB
+(18 nomi distinti). Il testo 5etools distingue gli usi limitati di
+**Tireless: Temporary Hit Points** dal suo secondo effetto, la riduzione
+di Exhaustion al riposo breve. Il dato aggiunge soltanto il primo contatore,
+con origine `Tireless`; Nature's Veil ha il proprio contatore. Entrambi
+usano il modificatore WIS con minimo un uso e recupero lungo.
+
+| Privilegio XPHB | Esito della verifica |
+| --- | --- |
+| Favored Enemy 1 | Lanci gratuiti di Hunter's Mark con capacità nella tabella 5etools; scelta/lancio di incantesimo, non un nuovo contatore generico. |
+| Spellcasting 1 | Slot e preparazione restano nel modello degli incantesimi. |
+| Weapon Mastery 1 | Due tipi di arma scelti e sostituibili al riposo lungo. |
+| Deft Explorer 2 | Scelta di Expertise e di due lingue. |
+| Fighting Style 2 | Scelta di talento. |
+| Ranger Subclass 3 | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement 4, 8, 12, 16 | Scelta del talento/incremento. |
+| Extra Attack 5 | Capacità di attaccare due volte, non usi consumabili. |
+| Roving 6 | Velocità condizionata all'armatura e modi di movimento. |
+| Subclass Feature 7, 11, 15 | Segnaposto: gli effetti sono dei tratti della sottoclasse reale. |
+| Expertise 9 | Due abilità scelte fra quelle già competenti. |
+| Tireless 10 | **Ora nel dato:** usi dell'azione per PF temporanei pari a WIS, minimo 1; il decremento di Exhaustion al riposo breve è separato. |
+| Relentless Hunter 13 | Concentrazione su Hunter's Mark non interrotta dal danno; effetto condizionato. |
+| Nature's Veil 14 | **Ora nel dato:** usi pari a WIS, minimo 1; Invisible fino alla fine del turno successivo resta un effetto da applicare all'attivazione. |
+| Precise Hunter 17 | Vantaggio contro il bersaglio attualmente marcato da Hunter's Mark. |
+| Feral Senses 18 | Blindsight 30 piedi; modello sensoriale della mappa ancora distinto. |
+| Epic Boon 19 | Scelta del talento. |
+| Foe Slayer 20 | Dado di Hunter's Mark che passa a d10; non bonus generale ai danni. |
+
+Restano fuori dal contatore: effetto e durata di Nature's Veil, tiro e
+applicazione dei PF temporanei di Tireless, riduzione di Exhaustion al
+riposo breve, scelte di competenza/arma e condizioni legate a Hunter's Mark.
+Nessuna di queste viene dedotta dal numero di usi salvati.
 
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del

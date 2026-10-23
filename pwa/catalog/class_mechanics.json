@@ -2487,6 +2487,39 @@
           ]
         }
       ]
+    },
+    {
+      "class": "Ranger",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Tireless (Temporary Hit Points)",
+          "origin_feature": "Tireless",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Tireless (Ranger XPHB, level 10); temporary-hit-point action uses only",
+          "minimum": 1,
+          "steps": [
+            {
+              "level": 10,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Nature's Veil",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Nature's Veil (Ranger XPHB, level 14)",
+          "minimum": 1,
+          "steps": [
+            {
+              "level": 14,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
     }
   ],
   "resource_overrides_meta": {
@@ -2495,7 +2528,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Rogue, Sorcerer and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Ranger, Rogue, Sorcerer and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "monster_resources": [
     {

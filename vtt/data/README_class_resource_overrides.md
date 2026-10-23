@@ -46,7 +46,8 @@ python scripts/generate_fightclub_resources.py /path/to/fightclub5exml
 The checked-in JSON is the allowlist. Inspect the output before committing.
 The script does not fetch content or infer a resource from descriptive prose.
 The 2024 Fighter entries (Action Surge and Indomitable), Paladin Lay on Hands,
-Rogue Stroke of Luck, Sorcerer Innate Sorcery and Wizard Arcane Recovery are reviewed against
+Ranger Tireless/Nature's Veil uses, Rogue Stroke of Luck, Sorcerer Innate
+Sorcery and Wizard Arcane Recovery are reviewed against
 `creature_references_5etools.json` and stay in this allowlist when the 2014
 Fight Club generator runs. Lay on Hands has explicit class-level steps to
 preserve its five-points-per-Paladin-level pool for multiclass characters.

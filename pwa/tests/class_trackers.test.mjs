@@ -149,6 +149,20 @@ test("2024 Rogue Stroke of Luck is unlocked only at level 20 with its own editio
  assert.equal(stroke?.max,1);
  assert.equal(stroke?.recharge,"short_rest");
 });
+test("2024 Ranger tracks only the limited Tireless action and Nature's Veil uses",()=>{
+ const rowsAt=(level,wis)=>classResourceTrackers({kind:"character",level,abilities:{wis},
+  classes:[{name:"Ranger",source:"XPHB",level}]},index,{classes:index.resource_overrides});
+ assert.equal(rowsAt(9,18).some(row=>row.name.startsWith("Tireless")),false);
+ const tireless=rowsAt(10,18).find(row=>row.name==="Tireless (Temporary Hit Points)");
+ assert.equal(tireless?.max,4);
+ assert.equal(tireless?.origin,"Tireless");
+ assert.equal(tireless?.recharge,"long_rest");
+ assert.equal(rowsAt(13,18).some(row=>row.name==="Nature's Veil"),false);
+ const veil=rowsAt(14,8).find(row=>row.name==="Nature's Veil");
+ assert.equal(veil?.id,"class:ranger:xphb:nature's_veil");
+ assert.equal(veil?.max,1);
+ assert.equal(veil?.recharge,"long_rest");
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],

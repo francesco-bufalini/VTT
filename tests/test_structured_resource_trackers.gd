@@ -188,6 +188,19 @@ func run() -> void:
 		and int(rogue_stroke.get("max", 0)) == 1
 		and String(rogue_stroke.get("recharge", "")) == "short_rest",
 		"2024 Rogue must use its own source-qualified Stroke of Luck counter")
+	var ranger_resources: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "abilities": {"wis": 18},
+		"classes": [{"name": "Ranger", "source": "XPHB", "level": 14}]
+	})
+	var tireless: Dictionary = _find_resource(ranger_resources, "Tireless (Temporary Hit Points)")
+	var veil: Dictionary = _find_resource(ranger_resources, "Nature's Veil")
+	assert(int(tireless.get("max", 0)) == 4 and String(tireless.get("origin", "")) == "Tireless"
+		and String(tireless.get("origin_id", "")).begins_with("feature:")
+		and String(tireless.get("recharge", "")) == "long_rest",
+		"Tireless counter must cover only the limited temporary-HP action")
+	assert(int(veil.get("max", 0)) == 4 and String(veil.get("origin", "")) == "Nature's Veil"
+		and String(veil.get("recharge", "")) == "long_rest",
+		"Nature's Veil uses must follow Wisdom modifier")
 
 	# The runtime accepts only the existing VTT formula symbols, never the
 	# Fight Club placeholders consumed by the offline asset generator.
