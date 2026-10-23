@@ -77,6 +77,17 @@ export function addBenefitPatch(record,trait,kind,values={},id){
  }else if(kind==='dice'){
   field='dice_bonuses';row={...common,target:required('target'),dice:required('dice')};
   if(!/^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$/i.test(row.dice.replaceAll(' ','')))throw Error('Dadi non validi');
+  const tracker=String(values.tracker_id||'').trim(),cost=Number(values.tracker_cost||1);
+  if(tracker){
+   if(!/^[\w:|.-]{1,160}$/.test(tracker))throw Error('Tracker non valido');
+   if(!Number.isInteger(cost)||cost<1||cost>100)throw Error('Costo tracker non valido');
+   row.tracker_id=tracker;row.tracker_cost=cost;
+  }
+  const damageType=norm(values.damage_type);
+  if(damageType){
+   if(!DAMAGE_TYPES.includes(damageType))throw Error('Tipo di danno non valido');
+   row.damage_type=damageType;
+  }
  }else if(kind==='proficiency'){
   field='proficiency_choices';row={...common,kind:required('proficiency_kind'),key:norm(required('key'))};
   if(!PROFICIENCY_KINDS.some(([x])=>x===row.kind))throw Error('Tipo competenza non valido');
