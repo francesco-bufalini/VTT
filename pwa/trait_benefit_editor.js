@@ -22,6 +22,43 @@ export function traitOriginId(trait={}){
  if(!key)throw Error('Tratto senza identificativo stabile');
  return 'feature:trait:'+key;
 }
+// An individual trait is enabled unless its user-controlled source was
+// explicitly disabled. Keep a per-trait override for descriptive traits that
+// do not have a structured effect ID.
+export function traitActivationSource(trait={},record={}){
+ if(trait.feature_origin)return String(trait.feature_origin);
+ if(trait.proficiency_origin)return String(trait.proficiency_origin);
+ if(trait.rank!==0)return '';
+ const origin=String(trait.origin_key||'');
+ if(trait.category==='razza'){
+  if(origin.startsWith('species|'))return 'race|'+norm(record.species_source)+'|'+norm(record.species);
+  if(origin.startsWith('subrace|'))return 'subrace|'+norm(record.subrace_source)+'|'+norm(record.subrace);
+ }
+ if(trait.category==='talenti'){
+  const feat=rows(record.feats_catalog).find(row=>row&&origin==='feat|'+(row.id||norm(row.name)+'|'+norm(row.source)));
+  return feat?'feat|'+norm(feat.source)+'|'+norm(feat.name):origin;
+ }
+ return origin;
+}
+export function traitIsActive(record={},trait={}){
+ if(record.trait_enabled?.[trait.key]===false)return false;
+ const source=traitActivationSource(trait,record);
+ return !source||record.origin_enabled?.[source]!==false&&
+  !rows(record.proficiency_origins).some(row=>row?.id===source&&row.disabled===true);
+}
+export function traitActivationPatch(record={},trait={},active=true){
+ if(!trait.key)throw Error('Tratto senza identificativo');
+ const trait_enabled={...(record.trait_enabled||{}),[trait.key]:Boolean(active)};
+ const source=traitActivationSource(trait,record);
+ const patch={trait_enabled};
+ if(source){
+  patch.origin_enabled={...(record.origin_enabled||{}),[source]:Boolean(active)};
+  if(rows(record.proficiency_origins).some(row=>row?.id===source))
+   patch.proficiency_origins=rows(record.proficiency_origins).map(row=>
+    row?.id===source?{...row,disabled:!active}:row);
+ }
+ return patch;
+}
 export function removedBenefitIds(record={}){
  return new Set(Object.values(record.trait_benefit_removed||{}).flatMap(rows));
 }
