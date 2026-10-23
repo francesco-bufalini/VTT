@@ -1,5 +1,7 @@
 extends Node
 
+var _desktop_web_sheet: Node
+
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PortableContent = preload("res://vtt/portable_creature_content.gd")
@@ -627,9 +629,19 @@ func show_panel() -> void:
 		flanking.call("refresh_now")
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
+	if not _touch_layout and not OS.has_feature("mobile") and not OS.has_feature("vtt_mobile") and not get_tree().root.has_meta("vtt_touch_layout"):
+		var desktop_script = load("res://vtt/desktop_creature_sheet.gd")
+		if desktop_script.supported():
+			if _desktop_web_sheet == null:
+				_desktop_web_sheet = desktop_script.new()
+				add_child(_desktop_web_sheet)
+			_desktop_web_sheet.open(self)
 
 
 func hide_panel() -> void:
+	if _desktop_web_sheet != null and _desktop_web_sheet.active:
+		_desktop_web_sheet.request_close()
+		return
 	_save()
 	_panel.hide()
 	var tactical_overlay: Control = board_root.get_node_or_null(

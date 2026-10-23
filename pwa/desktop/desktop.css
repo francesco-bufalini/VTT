@@ -1,0 +1,18 @@
+/* Only the desktop entry point loads this stylesheet. Mobile stays unchanged. */
+html,body{min-width:640px;background:#191616}
+.app-shell{width:100%;max-width:1600px;margin:0 auto;padding:0}
+.topbar{position:sticky;top:0;z-index:25;width:100%;max-width:none}
+.desktop-controls{display:flex;align-items:center;gap:12px;padding:10px 24px;border-bottom:1px solid #9d7c5555;background:#241e1d}
+.desktop-controls>span{flex:1;color:#c4b9ab;font-size:13px}
+.desktop-controls .btn{min-height:36px}
+.connection-link{display:none!important}
+.play-dock{position:sticky;top:64px;inset-inline:auto;bottom:auto;width:100%;max-width:none;margin:0;box-shadow:0 4px 14px #0005;border-bottom:1px solid #9d7c5555;border-top:0;z-index:20}
+.play-dock .btn{flex-direction:row;gap:10px;font-size:14px;min-height:52px;padding:10px 16px}
+.play-destinations{grid-template-columns:repeat(5,minmax(0,1fr))}
+.content{max-width:none;padding:24px 32px 48px}
+.sheet-play-view{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:20px}
+.sheet-play-view>.play-health,.sheet-play-view>.play-vitals,.sheet-play-view>.play-status-strip,.sheet-play-view>.play-sheet-tools{grid-column:1/-1}
+.sheet-context-dialog,.modal-dialog{width:min(1050px,92vw);max-width:1050px;max-height:88vh}
+.creature-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+@media(min-width:1300px){.sheet-play-view{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.content{padding:18px}.sheet-play-view{grid-template-columns:minmax(0,1fr)}.desktop-controls{padding:8px 16px}.desktop-controls>span{display:none}}

@@ -4389,6 +4389,11 @@ function openChatFromNotification(){
 window.addEventListener("message", event => {
   if(event.origin===location.origin && event.data?.type==="OPEN_CHAT") openChatFromNotification();
 });
+// Desktop-only callers reuse the same editor and its pending-write barrier.
+export const desktopSheetSession={
+  flush:flushPendingFields,
+  async open(id){await flushPendingFields();state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();}
+};
 export async function mount(){
   realtimeStopped=false;
   if(new URLSearchParams(location.search).get("open")==="chat") {
