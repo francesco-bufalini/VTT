@@ -124,12 +124,12 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   const id=String(row.id||'');
   if(id&&bonusSeen.has(id))continue;
   if(id)bonusSeen.add(id);
-  add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),
+  add('bonus','Bonus',traitBenefitTargetLabel(row.target),
    signedTraitFormula(row.dice_notation||row.expression)+(row.dice_notation?' → '+signedTraitFormula(row.expression):'')+(row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;
-  add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
+  add('bonus','Bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
  // An attack is a benefit in its own right; bonuses to an attack are
  // separate numeric benefits and must not be confused with the granted attack.
@@ -171,6 +171,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   ...rows(calculated.casting_classes).map(c=>'casting_hit:'+c.ability)];
  for(const target of [...new Set(rollTargets)]){
   for(const source of classFeatureRollSources(record,calculated,target)){
+   if(String(source.origin_id||'').startsWith('feature:trait:'))continue;
    if(!(source.origin_id&&ids.has(source.origin_id))&&
     !(source.kind==='condition'&&trait.condition_id===source.condition_id))continue;
    // A structured roll-mode benefit already describes this scope once.
