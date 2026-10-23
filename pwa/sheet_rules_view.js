@@ -2,7 +2,22 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions,inventoryContainers,itemContainerId,DEFAULT_INVENTORY_CONTAINER} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
+import * as inventoryModule from "./item_controls.js";
+const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
+const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
+ const rows=Array.isArray(record.inventory_containers)?record.inventory_containers:[];
+ const seen=new Set([DEFAULT_INVENTORY_CONTAINER]);
+ return [{id:DEFAULT_INVENTORY_CONTAINER,name:'Zaino'},...rows.flatMap(row=>{
+  const id=String(row?.id||'').trim(),name=String(row?.name||'').trim();
+  if(!id||!name||seen.has(id))return [];
+  seen.add(id);return [{id,name}];
+ })];
+});
+const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=>{
+ const id=String(item?.container_id||DEFAULT_INVENTORY_CONTAINER);
+ return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
+});
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
 // Lightweight inline portraits: share the same unmistakable character/monster
