@@ -96,16 +96,27 @@ func _complete_file_request(result: Dictionary) -> void:
 	_send_reply(_file_request_id, result)
 	_file_request_id = null
 	dialog.queue_free()
-	if active: view.call_deferred("focus")
+	if active:
+		view.show()
+		view.call_deferred("focus")
 
 func _open_file_dialog(dialog: FileDialog, request_id: Variant) -> void:
 	_file_dialog = dialog
 	_file_request_id = request_id
 	dialog.access = FileDialog.ACCESS_FILESYSTEM
-	dialog.use_native_dialog = true
+	# A separate desktop window keeps the picker above the native WebView2 child.
+	dialog.use_native_dialog = false
+	dialog.force_native = true
+	dialog.transient = true
+	dialog.exclusive = true
 	dialog.add_filter("*.json", "Creature VTT · JSON")
+	dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
 	add_child(dialog)
 	dialog.canceled.connect(func() -> void: _complete_file_request({"value": {"canceled": true}}))
+	# WebView2 is a native child window and can cover Godot's modal surface.
+	# Retain the loaded page, but return native focus for the chooser's lifetime.
+	view.call("focus_parent")
+	view.hide()
 	dialog.popup_centered_ratio(0.8)
 
 func _import_paths(paths: PackedStringArray) -> Dictionary:

@@ -49,7 +49,29 @@ func run() -> void:
 	assert(area._archive.save(record) == OK)
 	area._reload()
 	area.show_panel()
-	get_tree_timeout()
+	if "--dialog-smoke" in OS.get_cmdline_user_args():
+		root.title = "VTT Desktop PWA - dialog verification"
+		verify_file_dialogs()
+	else:
+		get_tree_timeout()
+
+func verify_file_dialogs() -> void:
+	var end := Time.get_ticks_msec() + 30000
+	while (area._desktop_web_sheet == null or not area._desktop_web_sheet._loaded) and Time.get_ticks_msec() < end:
+		await process_frame
+	var shell: Node = area._desktop_web_sheet
+	assert(shell != null and shell._loaded)
+	shell._begin_import(999001)
+	assert(shell._file_dialog.force_native and not shell._file_dialog.is_embedded())
+	while is_instance_valid(shell._file_dialog): await process_frame
+	assert(shell.active and area._panel.visible)
+	print("PASS: native import chooser canceled without leaving WebView")
+	shell._begin_download({"text": "{\"format\":\"vtt_creature_batch_export_v1\",\"version\":1,\"entries\":[]}", "filename": "desktop-dialog-test.json"}, 999002)
+	while is_instance_valid(shell._file_dialog): await process_frame
+	assert(shell.active and area._panel.visible)
+	print("PASS: native save chooser canceled without leaving WebView")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	quit()
 
 func get_tree_timeout() -> void:
 	await create_timer(600).timeout
