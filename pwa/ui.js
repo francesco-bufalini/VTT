@@ -586,7 +586,7 @@ async function catalogView() {
 async function computeLocalData(record){
   let catalogs={},loadError="";
   const request=loadRuleCatalogs();
-  try{catalogs=await sheetLoadingDeadline(request,4500,"delle regole");}
+  try{catalogs=await sheetLoadingDeadline(request,3000,"delle regole");}
   catch(error){
     loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);
     if(error.code==='SHEET_LOADING_TIMEOUT')
@@ -682,42 +682,66 @@ async function editorView() {
   const c = state.editor.read();
   // The persistent header owns creature identity and tab navigation.
   let body = "";
+  // Start local calculation, descriptive references and spell lists together.
+  // A slow optional request must not keep the main screen on the old archive.
+  const pendingCalculation=computeLocalData(c),optionalTasks=[];
   if(state.sheet==='info'){
-    // Descriptive references are optional. Complete rendering with the data
-    // already available, then refresh the sheet if a slow catalog arrives.
-    await Promise.all(["races","classes","subclasses","backgrounds","feats"].map(async key=>{
-      if(state.referenceCatalogs[key])return;
-      const request=catalogEntries(key).then(rows=>{
-        state.referenceCatalogs[key]=rows;return rows;
-      });
-      try{await sheetLoadingDeadline(request,2500,"del catalogo "+key);}
-      catch(error){
-        if(error.code==='SHEET_LOADING_TIMEOUT')
-          refreshSheetAfterLateLoad(request,creatureId,'info');
-      }
-    }));
+    optionalTasks.push(Promise.all(
+      ["races","classes","subclasses","backgrounds","feats"].map(async key=>{
+        if(state.referenceCatalogs[key])return;
+        const request=catalogEntries(key).then(rows=>{
+          state.referenceCatalogs[key]=rows;return rows;
+        });
+        try{await sheetLoadingDeadline(request,1600,"del catalogo "+key);}
+        catch(error){
+          if(error.code==='SHEET_LOADING_TIMEOUT')
+            refreshSheetAfterLateLoad(request,creatureId,'info');
+        }
+      })
+    ));
   }
   if(state.sheet==="battle"){
-    const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
-    state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
-    state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
-    state.actionCatalogError=generalRules.status==='rejected'?
-      'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
+    optionalTasks.push((async()=>{
+      const request=Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
+      let results;
+      try{results=await sheetLoadingDeadline(request,2200,"delle azioni di battaglia");}
+      catch(error){
+        results=[{status:'rejected',reason:error},{status:'rejected',reason:error}];
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'battle');
+      }
+      const [featureRules,generalRules]=results;
+      state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
+      state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
+      state.actionCatalogError=generalRules.status==='rejected'?
+        'Le azioni opzionali non sono state caricate: '+errorMessage(generalRules.reason):'';
+    })());
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
-    const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
-    try{await sheetLoadingDeadline(request,3000,"degli incantesimi");state.spellCatalogError="";}
-    catch(error){
-      state.spellCatalogError=errorMessage(error);
-      if(error.code==='SHEET_LOADING_TIMEOUT')
-        refreshSheetAfterLateLoad(request,creatureId,state.sheet);
-    }
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||
+      state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
+    optionalTasks.push((async()=>{
+      const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
+      try{await sheetLoadingDeadline(request,2300,"degli incantesimi");state.spellCatalogError="";}
+      catch(error){
+        state.spellCatalogError=errorMessage(error);
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,state.sheet);
+      }
+    })());
   }
   if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
-    try{state.abilityCatalog=await loadActivatedAbilities();}
-    catch{state.abilityCatalog=[];}
+    optionalTasks.push((async()=>{
+      const request=loadActivatedAbilities().then(rows=>{state.abilityCatalog=rows;return rows;});
+      try{await sheetLoadingDeadline(request,2200,"delle capacità");}
+      catch(error){
+        state.abilityCatalog=[];
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,state.sheet);
+      }
+    })());
   }
-  const calculated=await computeLocalData(c);
+  await Promise.all(optionalTasks);
+  const calculated=await pendingCalculation;
   if(state.creatureId!==creatureId||state.libraryMode)return '';
   state.calculated=calculated;
   let featDetails;
@@ -731,7 +755,7 @@ async function editorView() {
       try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
       catch{return {description:''};}
     }));
-    try{featDetails=await sheetLoadingDeadline(request,2500,"delle descrizioni dei talenti");}
+    try{featDetails=await sheetLoadingDeadline(request,1600,"delle descrizioni dei talenti");}
     catch(error){
       featDetails=[];
       if(error.code==='SHEET_LOADING_TIMEOUT')
@@ -760,7 +784,7 @@ async function editorView() {
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
   if(state.sheet==="info"){
     const request=traitsView(c);
-    try{body+=await sheetLoadingDeadline(request,4500,"dei tratti");}
+    try{body+=await sheetLoadingDeadline(request,2500,"dei tratti");}
     catch(error){
       if(error.code!=='SHEET_LOADING_TIMEOUT')throw error;
       body+=panel('Tratti','<p class="hint">I riferimenti stanno ancora caricando. Puoi usare la scheda nel frattempo.</p>');
