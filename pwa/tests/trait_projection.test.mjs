@@ -215,3 +215,16 @@ test('projected calculated disabled flag never marks unmodified traits off by de
  const on=await collectTraitRows({...saved,origin_enabled:{'feature:recovery':true}},computed,provider);
  assert.equal(on.find(r=>r.name==='Arcane Recovery').inactive,false);
 });
+
+test('a disabled proficiency trait stays visible after its calculated grants vanish',async()=>{
+ const key='proficiency:class|phb|wizard';
+ const record={kind:'character',classes:[{name:'Wizard',source:'PHB',level:3}],
+  trait_enabled:{[key]:false},origin_enabled:{'class|phb|wizard':false}};
+ const rows=await collectTraitRows(record,{proficiency_sources:{}},{
+  entries:async()=>[],detail:async(_category,row)=>row});
+ const trait=rows.find(row=>row.key===key);
+ assert.ok(trait,'A user must be able to recover a disabled proficiency after reload');
+ assert.equal(trait.inactive,true);
+ assert.equal(trait.proficiency_origin,'class|phb|wizard');
+ assert.equal(trait.category,'classi');
+});
