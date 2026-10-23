@@ -397,7 +397,7 @@ test("importing multiple creatures stays in library and exposes only selected bu
     "Destructive bulk actions must be hidden without selection");
   const row=[...document.querySelectorAll(".creature-card")].find(x=>
     x.textContent.includes("Batch Hero A"));
-  const checkbox=row.querySelector("[data-library-select]");
+  const checkbox=row.closest('.library-creature-entry').querySelector("[data-library-select]");
   checkbox.checked=true;
   checkbox.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   assert.ok(document.querySelector('[data-act="library-delete"]'));
