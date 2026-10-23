@@ -133,6 +133,53 @@ lista dei lavori fuori dal modello automatico; non vengono ricavati dal
 contatore. In particolare Experimental Elixir non equivale a un inventario
 di fiasche già create.
 
+## Lotto 2026-10-23: Elf PHB e XPHB
+
+Diciannove identità di tratto controllate nel catalogo
+`player_5etools_catalog.json`, con testo da
+`creature_references_5etools.json`. L'Elf PHB e le tre sottorazze sono stati
+confrontati con FightClub5eXML `races-phb.xml`
+(`3b311d741bca2af58eadbc8068431ef28eb5b05b`). Il dato
+`additional_spells_5etools.json` contiene le opzioni magiche delle stirpi
+XPHB; la sua presenza non dimostra da sola che una scelta del personaggio
+sia stata effettuata.
+
+| Fonte e tratto | Esito dei dati |
+| --- | --- |
+| Elf PHB: Darkvision | Testo e portata di 60 piedi presenti; applicazione visiva alla mappa ancora fuori modello. |
+| Elf PHB: Keen Senses | Perception fissa nel dato `proficiency_grants_5etools.json`; attribuzione al tratto da perfezionare. |
+| Elf PHB: Fey Ancestry | Vantaggio limitato ai TS contro Charmed e immunità al sonno magico; non sono effetti generali contro tutti gli incantesimi. |
+| Elf PHB: Trance | Riposo lungo in quattro ore nel testo; il tempo di riposo non è una competenza né un bonus passivo. |
+| Drow PHB: Superior Darkvision | Portata 120 piedi; non va sommata ai 60 piedi del tratto base. |
+| Drow PHB: Sunlight Sensitivity | Svantaggio dipendente da luce solare, bersaglio e percezione visiva; non permanente. |
+| Drow PHB: Drow Magic | Dancing Lights; Faerie Fire dal livello 3 e Darkness dal 5, una volta al giorno. Blocchi per la sottorazza presenti in `additional_spells_5etools.json`. |
+| Drow PHB: Drow Weapon Training | Rapier, shortsword, hand crossbow nel testo; competenze non presenti come concessione della sottorazza nell'indice strutturato. |
+| High Elf PHB: Elf Weapon Training | Longsword, shortsword, shortbow, longbow nel testo; manca la concessione strutturata con origine nel tratto. |
+| High Elf PHB: Cantrip | Scelta dalla lista Wizard con INT; blocco di scelta in `additional_spells_5etools.json`. |
+| High Elf PHB: Extra Language | Scelta di una lingua nel testo; non va fissata automaticamente senza conoscere la lingua scelta. |
+| Wood Elf PHB: Elf Weapon Training | Stesse quattro armi di High Elf, ma tratto della propria sottorazza; origine distinta. |
+| Wood Elf PHB: Fleet of Foot | Velocità 35 piedi già nel dato della sottorazza 5etools. |
+| Wood Elf PHB: Mask of the Wild | Nascondersi solo con specifico oscuramento naturale; non vantaggio universale a Stealth. |
+| Elf XPHB: Darkvision | Portata base 60 piedi; la stirpe Drow la porta a 120 solo se scelta. |
+| Elf XPHB: Elven Lineage | Scelta Drow/High/Wood, benefici ai livelli del **personaggio** 1/3/5 e capacità magica INT/WIS/CHA scelta. Blocchi di incantesimi presenti; selezione, velocità e sostituzione del cantrip richiedono stato esplicito. |
+| Elf XPHB: Fey Ancestry | Vantaggio solo ai TS per evitare o terminare Charmed; diversa dalla versione PHB. |
+| Elf XPHB: Keen Senses | Scelta di **una** fra Insight, Perception e Survival. Il generatore 5etools non trova un campo strutturato e l'indice delle competenze non ha una voce Elf XPHB. |
+| Elf XPHB: Trance | Riposo lungo in quattro ore, coscienza mantenuta e impossibilità di dormire per magia. |
+
+### Tratti Elf ancora fuori dal modello automatico
+
+- **Keen Senses XPHB e addestramenti PHB:** esistono scelta e armi certe nel
+  testo, ma l'indice delle competenze usa attualmente un'origine di razza o
+  sottorazza. Occorre collegare una concessione strutturata al *tratto esatto*
+  prima di automatizzarla; una nuova voce generica `Elf` perderebbe tale
+  provenienza e potrebbe applicare tutte e tre le abilità della scelta.
+- **Elven Lineage XPHB:** la scelta attiva, la capacità magica e le sostituzioni
+  dopo riposo non possono essere dedotte dai soli blocchi di incantesimi.
+  Darkvision migliorata e velocità Wood dipendono dalla stirpe scelta.
+- **Sensi, Trance, Fey Ancestry, Sunlight Sensitivity e Mask of the Wild:**
+  richiedono durata del riposo, condizioni, illuminazione o geometria della
+  scena. Il testo visibile resta disponibile senza assegnare bonus universali.
+
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
 tratto, scelta attiva, progressione, recupero e compatibilità Android/PWA.
