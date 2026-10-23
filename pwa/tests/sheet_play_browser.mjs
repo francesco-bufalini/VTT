@@ -150,7 +150,7 @@ try{
    'The weapon name alone identifies this damage roll');
  assert.match(await rollDialog.locator('.sheet-roll-origin-symbol').first().textContent(),
    /Mod.FOR/,'Original weapon damage must name its actual attack characteristic');
- assert.equal(await rollDialog.locator('.sheet-roll-origin-term').count(),1);
+ assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-term').count(),1);
  await rollDialog.locator('.sheet-roll-close').click();
  // A second synthetic fire damage component gets its own damage-type row.
  await damageButton.evaluate(node=>{
@@ -443,9 +443,27 @@ try{
  assert.equal(await page.locator('#sheet-roll-dialog').count(),0);
  const granted=page.locator('.play-info-traits .trait-card[data-trait-proficiency="class|phb|wizard"]');
  assert.equal(await granted.count(),1,'The granting class proficiency has a dedicated trait');
- assert.equal(await granted.getAttribute('open'),'');
- assert.equal(await page.locator('.play-info-traits .play-traits-disclosure').getAttribute('open'),'');
- assert.match(await granted.textContent(),/Intelligenza/);
+ assert.equal(await page.locator('#trait-benefits-dialog').count(),1,
+   'Clicking a proficiency term opens its actual trait benefits dialog');
+ assert.match(await page.locator('#trait-benefits-dialog h2').textContent(),/Competenze/);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ // Formula + and applicable + both choose a concrete trait and initialize
+ // the correct benefit type and target, without saving a draft.
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-bonus"]').click();
+ assert.equal(await page.locator('#roll-trait-picker').count(),1);
+ await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-form]').isVisible(),true);
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'bonus');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="bonus"] [name="target"]').inputValue(),'save:int');
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
+ await page.locator('#sheet-play-view [data-target="save:int"]').click();
+ await page.locator('#sheet-roll-dialog [data-act="sheet-roll-add-applicable"]').click();
+ await page.locator('#roll-trait-picker [data-act="roll-trait-pick"]').click();
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-add-kind]').inputValue(),'dice');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="target"]').inputValue(),'save:int');
+ assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="tracker_id"]').count(),1);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('battle');await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
