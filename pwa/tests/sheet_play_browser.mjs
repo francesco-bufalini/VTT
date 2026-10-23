@@ -190,7 +190,8 @@ try{
  assert.match(await rollDialog.locator('[data-roll-tracker-count]').textContent(),/5 rim/);
  assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').count(),2);
  await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').click();
- assert.equal(await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').textContent(),'Usato');
+ await page.waitForFunction(()=>document.querySelector('#sheet-roll-dialog [data-act="sheet-roll-use-bonus"]')?.textContent==='Usato');
+ assert.equal(await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').isDisabled(),true);
  assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco','Fulmine']);
  assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').last().textContent(),'+1d6');
