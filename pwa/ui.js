@@ -359,7 +359,11 @@ function paintLibraryMiniatures(){
  const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
  const query=(dialog.querySelector('#library-miniature-search')?.value||'').toLocaleLowerCase('it').trim();
  const profiles=libraryMiniatureOptions();
- const matches=profiles.filter(m=>(m.name+' '+m.id).toLocaleLowerCase('it').includes(query)).slice(0,36);
+ const filtered=profiles.filter(m=>(m.name+' '+m.id).toLocaleLowerCase('it').includes(query));
+ // The selected miniature must remain visible even in a large alphabetic
+ // catalog where the first page would otherwise push it out of view.
+ const selected=filtered.find(m=>m.id===state.libraryMiniatureId);
+ const matches=(selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered).slice(0,36);
  const area=dialog.querySelector('.library-miniature-choices');
  if(area)area.innerHTML=matches.length?matches.map(m=>
   '<button type="button" data-act="library-miniature-select" data-miniature-id="'+esc(m.id)+
