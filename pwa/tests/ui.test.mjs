@@ -741,8 +741,11 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   await until(()=>document.querySelector('.inventory-coin-total')?.textContent.includes("47,6"));
   click('[data-act="inventory-subtab"][data-subtab="documents"]');
   await until(()=>document.querySelector('[data-act="document-add"]'));
-  assert.equal(document.querySelector('[data-coin-code]'),null);
-  click('[data-act="inventory-subtab"][data-subtab="items"]');
+  assert.ok(document.querySelector('[data-coin-code="gp"]'),
+    "Zaino stays visible while Documenti is additionally selected");
+  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
+  click('[data-act="inventory-subtab"][data-subtab="documents"]');
+  await until(()=>document.querySelector('[data-subtab="documents"][aria-pressed="false"]'));
   await until(()=>document.querySelector('[data-coin-code="gp"]'));
   assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
   assert.equal(document.querySelector('[data-coin-code="sp"]').value,"6");
@@ -754,6 +757,50 @@ test("PWA coins persist across inventory subtabs and reopening a creature",async
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('[data-coin-code="gp"]'));
   assert.equal(document.querySelector('[data-coin-code="gp"]').value,"47");
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("inventory sections wrap, support multiple panels and toggle all from the title",async()=>{
+  click('[data-act="library-add"]');
+  await until(()=>document.querySelector('#library-create-dialog[open]'));
+  click('[data-act="create"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  click('[data-sheet="inventory"]');
+  await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
+  const titleToggle=()=>document.querySelector('.page-head.play-inventory-page-title [data-act="inventory-toggle-all"]');
+  assert.ok(titleToggle(),'The show-all button must be beside the Inventory heading');
+  assert.match(titleToggle().textContent,/Mostra tutti gli oggetti/);
+  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,1);
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
+  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+  assert.match(css,/\.inventory-subtabs\.inventory-container-tabs\{[\s\S]*?flex-wrap:wrap/);
+  assert.doesNotMatch(css,/\.inventory-subtabs\.inventory-container-tabs\{[^}]*overflow-x:auto/);
+  const originalPrompt=window.prompt;
+  window.prompt=()=> 'Borsa da campo';
+  try{
+    click('#sheet-play-view [data-act="inventory-container-add"]');
+    await until(()=>document.querySelector('#sheet-play-view [data-subtab^="container:"][aria-pressed="true"]'));
+  }finally{window.prompt=originalPrompt;}
+  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
+  assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino','Borsa da campo']);
+  click('#sheet-play-view [data-subtab="documents"]');
+  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
+  click('#sheet-play-view [data-subtab="scrolls"]');
+  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
+  assert.match(titleToggle().textContent,/Mostra solo zaino/);
+  const custom=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
+  custom.click();
+  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
+  assert.match(titleToggle().textContent,/Mostra tutti gli oggetti/);
+  titleToggle().click();
+  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
+  assert.match(titleToggle().textContent,/Mostra solo zaino/);
+  titleToggle().click();
+  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===1);
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute('aria-pressed'),'false');
+  assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino']);
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -775,15 +822,16 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
   await until(()=>document.querySelector('[data-sheet="inventory"]'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
-  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-subtabs [role="tab"]').length,3);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-subtabs [data-act="inventory-subtab"]').length,3);
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===2);
   assert.match(document.querySelector('#sheet-play-view').textContent,/Incantesimo non specificato/);
   assert.match(document.querySelector('#sheet-play-view').textContent,/Scudo/);
   assert.equal(document.querySelector('#sheet-play-view .inventory-play-scroll .inventory-scroll-level').textContent,"3°");
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute("aria-selected"),"true");
-  assert.equal(document.querySelector('#sheet-play-view .inventory-play-coins'),null);
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute("aria-pressed"),"true");
+  assert.ok(document.querySelector('#sheet-play-view .inventory-play-coins'),
+    "Zaino is still selected alongside Pergamene");
   click('#sheet-play-view [data-sheet-context="item:1"]');
   await until(()=>document.querySelector('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]'));
   change('#sheet-context-dialog [data-item-index="1"][data-item-key="quantity"]',"4");
@@ -796,11 +844,15 @@ test("magic scrolls use a dedicated inventory tab and keep quantities across sec
     await until(()=>!document.querySelector('#sheet-context-dialog'));
   }
   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
-  await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-selected="true"]'));
-  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,0);
+  await until(()=>document.querySelector('#sheet-play-view [data-subtab="documents"][aria-pressed="true"]'));
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length,2,
+    "Pergamene stays visible when Documenti is selected too");
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
+  await until(()=>document.querySelectorAll('#sheet-play-view .inventory-play-scroll').length===0);
   click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="item:1"] .play-badge')?.textContent.includes('4'));
-  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="items"]');
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="documents"]');
+  click('#sheet-play-view [data-act="inventory-subtab"][data-subtab="scrolls"]');
   await until(()=>document.querySelector('#sheet-play-view .inventory-play-coins'));
   assert.equal(document.querySelectorAll('#sheet-play-view .inventory-play-item').length,1);
   click('[data-nav="library"]');
@@ -858,8 +910,8 @@ test("PWA document editor autosaves homebrew text and retains per-copy style",as
   await until(()=>document.querySelector('[data-act="inventory-subtab"][data-subtab="documents"]'));
   click('[data-act="inventory-subtab"][data-subtab="documents"]');
   await until(()=>document.querySelector('[data-act="document-add"]'));
-  assert.equal(document.querySelector('[data-act="new-homebrew-item"]'),null,
-    "The documents subtab must not render item actions");
+  assert.ok(document.querySelector('[data-act="new-homebrew-item"]'),
+    "Zaino's item actions remain available when Documenti is selected too");
   click('[data-act="document-add"]');
   await until(()=>document.querySelector('[data-document-part="title"]'));
   change('[data-document-part="title"]',"Messaggio segreto");
