@@ -596,6 +596,15 @@ export function calculateSheet(record={},catalogs={}){
     activeItemCopies.set(key,(activeItemCopies.get(key)||0)+amount);
     if(!["weapon","armor","shield"].includes(kind))alwaysCarriedSources.add(key);
   }
+  // The benefit editor stores custom item grants under feature:trait:item:<id>|...
+  // while catalog grants use item:<id>. Both must inherit the same copy count.
+  const itemSourceOf=origin=>{
+    const sid=String(origin||'');
+    if(sid.startsWith('item:'))return sid;
+    if(sid.startsWith('feature:trait:item:'))
+      return [...activeItemCopies.keys()].find(id=>sid.startsWith('feature:trait:'+id+'|'))||'';
+    return '';
+  };
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
@@ -724,11 +733,10 @@ export function calculateSheet(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
-    if(sid.startsWith("item:")){
-      if(!activeItemCopies.has(sid))return false;
-      // Old manual equipment toggles may have left an origin_disabled override.
-      // Carried items cannot be switched off through equipment state anymore.
-      if(alwaysCarriedSources.has(sid))return true;
+    if(sid.startsWith('item:')||sid.startsWith('feature:trait:item:')){
+      const owner=itemSourceOf(sid);
+      if(!owner)return false;
+      if(alwaysCarriedSources.has(owner))return true;
     }
     if(!sid)return true;
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
@@ -808,8 +816,9 @@ export function calculateSheet(record={},catalogs={}){
         if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
         if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
         const value=parseArithmetic(row.expression??"0",name=>resolveSymbol(name,resolve,stack));
+        const owner=itemSourceOf(row.origin_id);
         const repeats=row.automatic?Math.max(1,Number(row.multiplier)||1):
-          String(row.origin_id||'').startsWith('item:')?(activeItemCopies.get(row.origin_id)||0):1;
+          owner?(activeItemCopies.get(owner)||0):1;
         const effective=value*repeats;
         total+=effective;
         if(!components[target])components[target]=new Map();
