@@ -26,7 +26,7 @@ test('benefits are grouped and attached only to their own trait',()=>{
  };
  const groups=traitBenefitGroups(trait,record,calculated);
  assert.deepEqual(groups.map(group=>group.type),[
-  'bonus','dice','proficiency','defenses','resources','spells','actions']);
+  'bonus','dice','proficiency','defenses','resources','spells','actions','abilities']);
  assert.equal(groups[0].items.length,1);
  assert.equal(groups[0].items[0].value,'+1');
  assert.equal(groups[0].items[0].id,'bonus:b1','bonus rows keep their stable editor identity');
