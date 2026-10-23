@@ -286,6 +286,23 @@ export async function collectTraitRows(record={},calculated={},providers={}){
     key:'proficiency:'+id,inactive:record.origin_enabled?.[id]===false||
       arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled===true)});
  }
+ // Older and manually entered proficiencies can lack an origin ID. Represent
+ // them with one explicit, non-fabricated Competenze trait so clicking the
+ // provenance never opens an unrelated "Add bonus" form.
+ const unassigned=Object.entries(calculated.proficiency_sources||{})
+   .filter(([key,sources])=>['skill','expertise','save','weapon'].includes(key.split(':')[0])&&
+     !arr(sources).length && arr(calculated.proficiencies).includes(key))
+   .map(([key])=>key);
+ if(unassigned.length){
+   rows.push({name:'Competenze',category:'altro',origin:'Competenze senza origine',
+     entries:unassigned.map(key=>{
+       const [kind,...parts]=key.split(':');
+       const label=SKILLS.find(([id])=>id===parts.join(':'))?.[1]||parts.join(':');
+       return (kind==='expertise'?'Maestria':kind==='save'?'Tiro salvezza':kind==='weapon'?'Armi':'Abilità')+' · '+label;
+     }).join(' · '),origin_key:'proficiency:unattributed',level:0,rank:2,
+     feature_origin:'',proficiency_origin:'proficiency:unattributed',
+     key:'proficiency:unattributed',inactive:false});
+ }
  // Preserve an explicitly disabled proficiency trait even when its calculated
  // grants disappear. Otherwise a user could disable it but never reopen the
  // popup to reenable it after reloading the PWA.
