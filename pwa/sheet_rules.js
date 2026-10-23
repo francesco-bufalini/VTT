@@ -123,7 +123,25 @@ export function applicableDiceBonuses(record,target,spells=[]){
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
  const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll'||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
- const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&enabled(row.origin_id)&&fits(row));
+ const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
+   .flatMap(row=>{
+    const id=String(row.origin_id||'');
+    const fromItem=id.startsWith('item:')||id.startsWith('feature:trait:item:');
+    if(!fromItem)return enabled(id)?[row]:[];
+    const copies=arr(record.inventory).reduce((sum,saved)=>{
+     const item=resolveOwnedItem(saved),itemKey='item:'+String(item.id||'');
+     return (id===itemKey||id.startsWith('feature:trait:'+itemKey+'|'))&&itemActive(item,record)?
+       sum+(['weapon','armor','shield'].includes(itemKind(item))?1:Math.max(1,int(item.quantity,1))):sum;
+    },0);
+    if(!copies)return [];
+    if(copies===1)return [row];
+    // A duplicate magic item grants its optional dice as many times as owned.
+    const match=/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i.exec(String(row.dice).replace(/\s+/g,''));
+    if(!match)return [row];
+    const dice=Number(match[1])*copies,constant=Number(match[3]||0)*copies;
+    if(dice>100)return [row]; // More than 100 dice cannot fit in one roll.
+    return [{...row,dice:dice+'d'+match[2]+(constant?(constant>0?'+':'')+constant:''),multiplier:copies}];
+   });
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id).startsWith('spell:')||!enabled(origin.id))continue;
   const id=origin.id.slice(6),spell=spells.find(s=>s.id===id),context=record.active_spell_context?.[id];
@@ -202,7 +220,9 @@ function itemActive(item,record={}){
   const slots=arr(item.equipped_slots),kind=itemKind(item);
   if(kind==="armor")return slots.includes("body");
   if(["weapon","shield"].includes(kind))return slots.includes("main")||slots.includes("off");
-  return item.equipped===true||(requiresAttunement(item)&&item.attuned===true);
+  // Non-slotted inventory is always carried and grants its benefits without
+  // a legacy "equipped" checkbox; attunement and explicit suspension remain gates.
+  return true;
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
 function itemRows(record,warnings,infusionCatalog=[],features=[]){
@@ -211,12 +231,18 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
     const item=resolveOwnedItem(saved);
     if(!item||!item.id||!itemActive(item,record))continue;
     const sid="item:"+item.id,kind=itemKind(item),slots=arr(item.equipped_slots);
+    const ordinary=!["weapon","armor","shield"].includes(kind);
+    // Stacks represent independent item instances, not one shared bonus.
+    // Preserve the original automatic ID for the first stack, and give later
+    // stacks their own IDs so removals and explanations stay stable.
+    const suffix=ordinary&&seen.has(sid)?"|stack:"+index:"";
+    const copies=ordinary?Math.max(1,int(item.quantity,1)):1;
     const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
       const raw=item?.[snake]??item?.[camel];
-      const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw);
-      if(grant)rows.push(grant);
+      const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw,suffix);
+      if(grant){grant.multiplier=copies;rows.push(grant);}
     };
     if(["armor","shield"].includes(kind)&&!seen.has(sid))
       add("ac","bonus_ac","bonus_ac","bonusAc");
@@ -251,7 +277,7 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
       const grant=numericGrant(infusionInstanceOrigin(saved,index),infusionName,"infusion:"+item.infusion.id,"spell_attack",infusion.bonus_spell_attack);
       if(grant)rows.push(grant);
     }
-    if(seen.has(sid))continue;
+    if(seen.has(sid)&&!ordinary)continue;
     seen.add(sid);
     add("saving_throw","bonus_saving_throw","bonus_saving_throw","bonusSavingThrow");
     add("ability_check","bonus_ability_check","bonus_ability_check","bonusAbilityCheck");
@@ -268,8 +294,8 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
       for(const [stat,value] of Object.entries(abilities))
         if(ABILITIES.includes(stat)){
           const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),
-            "ability","ability:"+stat,value);
-          if(grant)rows.push(grant);
+            "ability","ability:"+stat,value,suffix);
+          if(grant){grant.multiplier=copies;rows.push(grant);}
         }
   }
   return rows;
@@ -562,6 +588,24 @@ export function calculateSheet(record={},catalogs={}){
     if(speed!==undefined)record={...record,species_speed:speed};
   }
   const level=classes.reduce((sum,c)=>sum+Math.max(0,int(c.level)),0);
+  const activeItemCopies=new Map(),alwaysCarriedSources=new Set();
+  for(const saved of arr(record.inventory)){
+    const item=resolveOwnedItem(saved);
+    if(!item?.id||!itemActive(item,record))continue;
+    const kind=itemKind(item),amount=["weapon","armor","shield"].includes(kind)?1:Math.max(1,int(item.quantity,1));
+    const key="item:"+item.id;
+    activeItemCopies.set(key,(activeItemCopies.get(key)||0)+amount);
+    if(!["weapon","armor","shield"].includes(kind))alwaysCarriedSources.add(key);
+  }
+  // The benefit editor stores custom item grants under feature:trait:item:<id>|...
+  // while catalog grants use item:<id>. Both must inherit the same copy count.
+  const itemSourceOf=origin=>{
+    const sid=String(origin||'');
+    if(sid.startsWith('item:'))return sid;
+    if(sid.startsWith('feature:trait:item:'))
+      return [...activeItemCopies.keys()].find(id=>sid.startsWith('feature:trait:'+id+'|'))||'';
+    return '';
+  };
   const manual=arr(record.formula_bonuses).filter(r=>r&&!r.automatic&&!String(r.id||"").startsWith("auto|"))
     .map(r=>r.target==='max_hp'?{...r,target:'hp'}:r.target==='spell_hit'?{...r,target:'spell_attack'}:r);
   const features=collectStructuredFeatures(record,catalogs);
@@ -690,6 +734,11 @@ export function calculateSheet(record={},catalogs={}){
   }
   function sourceEnabled(row){
     const sid=String(row?.origin_id||"");
+    if(sid.startsWith('item:')||sid.startsWith('feature:trait:item:')){
+      const owner=itemSourceOf(sid);
+      if(!owner)return false;
+      if(alwaysCarriedSources.has(owner))return true;
+    }
     if(!sid)return true;
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
     if(saved?.disabled)return false;
@@ -768,13 +817,18 @@ export function calculateSheet(record={},catalogs={}){
         if(!cycleCache.has(row))cycleCache.set(row,dependencies(row.expression).some(ref=>reaches(ref,target)));
         if(cycleCache.get(row))throw Error('Dipendenza circolare: '+target);
         const value=parseArithmetic(row.expression??"0",name=>resolveSymbol(name,resolve,stack));
-        total+=value;
+        const owner=itemSourceOf(row.origin_id);
+        const repeats=row.automatic?Math.max(1,Number(row.multiplier)||1):
+          owner?(activeItemCopies.get(owner)||0):1;
+        const effective=value*repeats;
+        total+=effective;
         if(!components[target])components[target]=new Map();
-        components[target].set(row.id||row,(row.origin_name||'Bonus')+': '+row.expression+' = '+value);
+        components[target].set(row.id||row,(row.origin_name||'Bonus')+': '+row.expression+
+          (repeats>1?' ×'+repeats:'')+' = '+effective);
         if(!rollComponents[target])rollComponents[target]=new Map();
         rollComponents[target].set(row.id||row,{id:row.id||'',origin_id:row.origin_id||'',
           origin_name:row.origin_name||'Bonus',expression:String(row.expression??'0'),
-          ...(row.dice_notation?{dice_notation:String(row.dice_notation)}:{}),value});
+          ...(row.dice_notation?{dice_notation:String(row.dice_notation)}:{}),value:effective,multiplier:repeats});
       }catch(error){warnings.add("Bonus ignorato per "+target+": "+error.message);}
     }
     return total;

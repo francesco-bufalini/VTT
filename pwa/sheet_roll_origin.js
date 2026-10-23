@@ -108,7 +108,7 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
    const value=num(row.value)*scale, id=String(row.id||row.origin_id||'')+'|'+kind+'|'+scale;
    if(appended.has(id))return;
    appended.add(id);consumed+=value;
-   result.push({kind,formula:bonusText(scale===1?row.expression:scale+' × ('+row.expression+')'),
+   result.push({kind,formula:bonusText((Number(row.multiplier)||1)*scale===1?row.expression:((Number(row.multiplier)||1)*scale)+' × ('+row.expression+')'),
      expanded:signed(value),value,originId:String(row.origin_id||''),
      originName:row.origin_name||'Bonus',
      section:row.origin_id?'':'formula_bonuses',key:id});

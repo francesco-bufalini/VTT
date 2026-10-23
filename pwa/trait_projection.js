@@ -3,7 +3,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses,SKILLS} from './sheet_rules.js';
-import {activeInfusions} from './item_controls.js';
+import {activeInfusions,itemKind,requiresAttunement} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 
 const arr=value=>Array.isArray(value)?value:[];
@@ -68,6 +68,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const id=projected?.origin_id||entry.feature_origin||'';
   const trait={name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
+   item_quantity:Math.max(1,Number(entry.item_quantity)||1),
+   item_active_quantity:Math.max(0,Number(entry.item_active_quantity)||0),
    feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
    // Keep explicit activation metadata even for a standalone feat, item or
    // monster trait that has no separate calculated feature record.
@@ -215,29 +217,45 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(spell)add(spell,{category:'incantesimi',origin:'Incantesimo · '+spell.name,
    origin_key:origin.id,level:1,inactive:!!origin.disabled});
  }
- // An item grants visible traits only while at least one owned instance is
- // actively worn, held, normally equipped or attuned. Quantity is irrelevant.
- const equippedItems=new Map();
+ // Group every owned instance of the same catalog item into one trait.
+ // Common carried items do not need an equip flag. Armor and weapons retain
+ // their physical slots; items requiring attunement still need that condition.
+ const groupedItems=new Map();
  for(const item of arr(record.inventory)){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
-  const equipped=arr(item.equipped_slots).length>0||item.equipped===true;
-  const id=String(item.id);
-  const previous=equippedItems.get(id);
-  if(!previous||(!(arr(previous.equipped_slots).length||previous.equipped===true)&&equipped))
-    equippedItems.set(id,item);
+  const kind=itemKind(item),slotted=['weapon','armor','shield'].includes(kind);
+  const slots=arr(item.equipped_slots);
+  const eligible=item.active!==false&&item.disabled!==true&&
+    (!requiresAttunement(item)||item.attuned===true);
+  const inSlot=kind==='armor'?slots.includes('body'):
+    slots.includes('main')||slots.includes('off');
+  const active=eligible&&(!slotted||inSlot);
+  const qty=Math.max(1,Math.floor(Number(item.quantity)||1)),id=String(item.id);
+  const group=groupedItems.get(id)||{item,quantity:0,activeQuantity:0,slotted};
+  group.quantity+=qty;
+  if(active){
+   group.activeQuantity+=slotted?Math.min(qty,Math.max(1,slots.length)):qty;
+   group.item=item;
+  }
+  groupedItems.set(id,group);
  }
- for(const [id,item] of equippedItems){
+ for(const [id,group] of groupedItems){
+  const item=group.item;
   const info=await lookup('items',item.name||id,item.source||'',id)||item;
   if(isDocument(info))continue;
   const name=item.name||info.name||id;
-  const equipped=arr(item.equipped_slots).length>0||item.equipped===true;
-  const options={category:'oggetti',origin:'Oggetto · '+name,
-   origin_key:'item:'+id,level:0,inactive:!equipped||item.disabled===true};
-  // Keep unequipped items visible but inactive so their trait can equip them.\n  // One card per item type, showing the item's complete catalog description;
-  // don't turn individual descriptive paragraphs into separate traits.
+  const options={category:'oggetti',origin:'Oggetto · '+name,origin_key:'item:'+id,
+    level:0,inactive:group.activeQuantity===0};
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
    source:info.source||item.source,
+   item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
+  // Legacy activation toggles targeted the obsolete equipped flag.
+  // Common owned items now activate their trait automatically.
+  if(!group.slotted){
+   const trait=rows.find(row=>row.category==='oggetti'&&row.origin_key==='item:'+id&&row.rank===0);
+   if(trait)trait.inactive=group.activeQuantity===0;
+  }
  }
  // Only an equipped, eligible infusion produces a visible subordinate trait.
  for(const applied of activeInfusions(record,calculated.infusion_catalog||[],calculated.features||[])){
