@@ -1,6 +1,7 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, setItemEquipped, DEFAULT_INVENTORY_CONTAINER, inventoryContainers, itemContainerId, moveInventoryItem, createInventoryContainer, deleteInventoryContainer } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import * as inventoryModule from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -27,6 +28,44 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice} from "./pending_choices.js";
+
+// A service worker can briefly serve an older item_controls.js alongside a
+// newer ui.js on a slow connection. A named import added in a later release
+// would reject the entire ESM graph and leave character sheets unmounted.
+// Namespace access keeps the archive and character sheets usable during the
+// transition; a completed offline-shell update restores all container actions.
+const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
+const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
+  const rows=Array.isArray(record.inventory_containers)?record.inventory_containers:[];
+  const seen=new Set([DEFAULT_INVENTORY_CONTAINER]);
+  return [{id:DEFAULT_INVENTORY_CONTAINER,name:"Zaino"},...rows.flatMap(row=>{
+    const id=String(row?.id||"").trim(),name=String(row?.name||"").trim();
+    if(!id||!name||seen.has(id))return [];
+    seen.add(id);return [{id,name}];
+  })];
+});
+const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=>{
+  const id=String(item?.container_id||DEFAULT_INVENTORY_CONTAINER);
+  return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
+});
+const requiresUpdatedInventoryModule=()=>{
+  throw Error("Modulo inventario non aggiornato. Riapri la PWA quando la connessione è disponibile.");
+};
+const moveInventoryItem=inventoryModule.moveInventoryItem||requiresUpdatedInventoryModule;
+const createInventoryContainer=inventoryModule.createInventoryContainer||requiresUpdatedInventoryModule;
+const deleteInventoryContainer=inventoryModule.deleteInventoryContainer||requiresUpdatedInventoryModule;
+const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled)=>{
+  const rows=structuredClone(Array.isArray(inventory)?inventory:[]);
+  const item=rows[index];
+  if(!item)throw Error("Oggetto non trovato.");
+  if(itemKind(item)==="document")throw Error("Un documento non è equipaggiabile.");
+  if(!enabled){item.equipped=false;item.equipped_slots=[];return rows;}
+  const kind=itemKind(item);
+  if(["weapon","shield","armor"].includes(kind))
+    return equipSlot(rows,kind==="armor"?"body":kind==="shield"?"off":"main",index);
+  item.equipped=true;
+  return rows;
+});
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -303,6 +342,7 @@ async function render() {
     if(state.paired && state.online && !realtimeStopped && !state.pollChat) startChat();
   } catch(error) {
     if(ticket !== state.renderTicket) return;
+    console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
       btn("refresh","Riprova","primary");
   }
