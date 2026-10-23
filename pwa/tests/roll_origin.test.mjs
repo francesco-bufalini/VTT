@@ -276,7 +276,7 @@ test('Lightning Launcher abbreviation renders as full Lightning damage and optio
  assert.equal(rollDamageName(options[0].damage_type),'Fulmine');
  assert.equal(options[0].tracker_cost,1);
  assert.equal(options[0].remaining,1);
- const exhausted=rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
+ const exhausted=rollOptionalDice(record,{...calculated,trackers:[{...calculated.trackers[0],spent:1}]},[],{
    kind:'damage',attackId:'class_feature:lightning_launcher'});
  assert.equal(exhausted.length,1,'An exhausted tracker must remain explicitly usable');
  assert.equal(exhausted[0].remaining,0);
