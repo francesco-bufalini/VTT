@@ -3194,7 +3194,7 @@ async function handleAction(target){
       if(count)count.textContent=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
     }
     dialog.usedRollBonuses.push(row);
-    target.textContent='Usato';target.disabled=true;
+    target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
     dialog.renderRollFormula?.();
     return;
   }
@@ -4200,7 +4200,7 @@ function listen(){
       else await handleAction(button);
       if(isDestination){window.scrollTo(0,0);app.focus({preventScroll:true});}
     }catch(error){message(errorMessage(error),true);}
-    finally{if(button.isConnected)button.disabled=false;}
+    finally{if(button.isConnected&&!button.hasAttribute('data-roll-used'))button.disabled=false;}
   });
   document.addEventListener('keydown',e=>{
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
