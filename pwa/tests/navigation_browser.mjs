@@ -68,7 +68,8 @@ try{
    const {listCreatures}=await import('/creatures.js');
    const c=(await listCreatures())[0].creature;
    return !!c.default_miniature_id&&c.default_miniature_id===c.current_miniature_id;
- }), 'New creature starts with a saved base miniature';await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
+ }), 'New creature starts with a saved base miniature');
+ await page.locator('[data-sheet-context="identity"]').click();await page.locator('[data-field="name"]').fill('Lyria · Sentinella delle stelle');
  // Changing destination immediately must flush the focused name field.
  await sheet('battle');
  assert.equal(await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.name;}),'Lyria · Sentinella delle stelle');
