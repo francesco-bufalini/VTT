@@ -32,6 +32,9 @@
           "intelligence_override": true,
           "range_feet": 5
         }
+      ],
+      "granted_features": [
+        "Defensive Field"
       ]
     },
     {
