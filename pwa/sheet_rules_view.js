@@ -306,7 +306,7 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  if(value!==null)facts.push({label:quantity>1?'Valore totale':'Valore',value:format(value*quantity)+' mo',glyph:'coins'});
  const slots={main:'Mano principale',off:'Mano secondaria',body:'Indossato'};
  const status=(Array.isArray(item.equipped_slots)?item.equipped_slots:[]).map(slot=>slots[slot]||slot);
- if(item.equipped&&!status.length)status.push('Equipaggiato');
+ if(item.equipped&&!status.length&&['weapon','armor','shield'].includes(kind))status.push('Equipaggiato');
  if(item.attuned)status.push('In sintonia');else if(requiresAttunement(effective))status.push('Richiede sintonia');
  if(item.active===false)status.push('Disattivato');
  if(item.infusion)status.push('Infuso');
@@ -795,7 +795,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     coinPanel?.remove(); // Avoid duplicate hidden controls and stale total updates.
     const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
     html+='<div class="inventory-shortcuts">'+
-      go('equipment','Equipaggiamento','weapon',equipped||'Mani e armatura')+
+      go('equipment','Armi e armature','weapon',equipped||'Mani e armatura')+
       go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+
         ' / '+(c.attunement_max_base??3)+' oggetti')+
       '<section class="inventory-play-coins" aria-label="Monete possedute">'+
