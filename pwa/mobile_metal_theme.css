@@ -2142,7 +2142,7 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  overflow-wrap:anywhere;word-break:normal;
 }
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-term:has(.sheet-roll-origin-damage-type)
- .sheet-roll-origin-name{border-top:0;padding-top:3px}
+ .sheet-roll-origin-name{border-top:1px solid #8e7356a6;padding-top:5px}
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-origin-damage-type{
  border-bottom:0;min-width:max-content;overflow-wrap:normal;
 }
@@ -2196,3 +2196,49 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  font-variant-numeric:tabular-nums;font-size:13px;font-weight:650;
 }
 .sheet-roll-dialog.sheet-roll-preview .sheet-roll-result .dice-result{margin:0}
+
+/* Applicable dice reuse the source/formula tile vocabulary; the last row
+   alone is interactive and spends its associated resource. */
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonuses-head{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ margin:12px 0 6px;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonuses-head strong{
+ color:#e6c18d;font-size:13px;font-weight:650;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonuses-head .sheet-roll-add{
+ flex:0 0 35px;min-width:35px;width:35px;min-height:31px;height:31px;
+ font-size:22px;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-list{
+ display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:0;
+ padding:1px 0 7px;border:0;background:transparent;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-term{
+ display:flex;flex-direction:column;flex:0 0 auto;align-items:center;
+ min-width:max-content;width:max-content;max-width:none;
+ padding:8px 7px 7px;gap:4px;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-term .sheet-roll-origin-name{
+ width:100%;min-width:100%;max-width:100%;white-space:normal;
+ overflow-wrap:anywhere;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-term .sheet-roll-origin-damage-type{
+ border-bottom:0;white-space:nowrap;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-controls{
+ width:100%;display:flex;align-items:center;justify-content:space-between;
+ gap:7px;margin-top:5px;padding-top:6px;
+ border-top:1px solid #8e7356a6;white-space:nowrap;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-bonus-controls small{
+ color:#d7c0a1;font-size:11px;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-use{
+ padding:5px 8px;min-height:30px;border:1px solid #ca9c5f;
+ border-radius:6px;background:#684a32;color:#ffe4b6;
+ font-size:12px;font-weight:650;cursor:pointer;
+}
+.sheet-roll-dialog.sheet-roll-preview .sheet-roll-use:disabled{
+ cursor:default;opacity:.65;
+}
