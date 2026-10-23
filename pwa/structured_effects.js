@@ -289,7 +289,7 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
     const classSource=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
     const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
     if(owner==='artificer'&&classSource==='TCE'){
-      if(feature.name==='Powered Steps'&&(record.artificer_armor_model||'guardian')==='infiltrator'&&array(record.inventory).some(i=>Number(i.quantity??1)>0&&array(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0])))result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'powered_steps','speed',5));
+      // State-dependent speed grants live in the trait-state catalog.
       const level=Number(classMembers(record).find(c=>match(c.name,'Artificer')&&c.source==='TCE')?.level||0);
       let amount=0;
       if(feature.name==='Magic Item Adept'&&level<14)amount=1;

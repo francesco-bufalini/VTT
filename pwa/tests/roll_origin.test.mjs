@@ -262,7 +262,11 @@ test('Lightning Launcher abbreviation renders as full Lightning damage and optio
    originName:'Lightning Launcher'}],x=>x);
  assert.match(html,/>Fulmine<\/span>/);
  assert.doesNotMatch(html,/>L<\/span>/);
- const record=character(),calculated={trackers:[{
+ const record=character(),calculated={trait_state_optional_dice:[{
+   id:'lightning-launcher:extra',attack_id:'class_feature:lightning_launcher',
+   tracker_id:'feature:lightning_launcher:extra_damage',dice:'1d6',damage_type:'lightning',
+   origin_name:'Lightning Launcher',tracker_cost:1
+ }],trackers:[{
    id:'feature:lightning_launcher:extra_damage',name:'Lightning Launcher · danno aggiuntivo',
    max:1,spent:0,origin_id:'feature:class|tce|artificer|lightning_launcher'
  }]};
@@ -273,7 +277,7 @@ test('Lightning Launcher abbreviation renders as full Lightning damage and optio
  assert.equal(rollDamageName(options[0].damage_type),'Fulmine');
  assert.equal(options[0].tracker_cost,1);
  assert.equal(options[0].remaining,1);
- const exhausted=rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
+ const exhausted=rollOptionalDice(record,{...calculated,trackers:[{...calculated.trackers[0],spent:1}]},[],{
    kind:'damage',attackId:'class_feature:lightning_launcher'});
  assert.equal(exhausted.length,1,'An exhausted tracker must remain explicitly usable');
  assert.equal(exhausted[0].remaining,0);

@@ -13,11 +13,17 @@ try{
   },'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
+ // A selected model must expose its actual attack in the Actions list.
+ await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').count(),0);
+
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
- await page.getByRole('button',{name:'Usa Modello armatura · Guardiano',exact:true}).click();
- await page.locator('[data-feature-confirm]').click();
+ await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
+ await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
+ assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
+
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  await page.getByRole('button',{name:'Usa Campo difensivo',exact:true}).click();
  await page.locator('[data-feature-confirm]').click();

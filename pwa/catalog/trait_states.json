@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "states": [
+    {
+      "id": "armor_model:guardian",
+      "group": "armor_model",
+      "category": "stato",
+      "name": "Modello armatura · Guardiano",
+      "trait": "Armor Model",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Armorer",
+      "require_equipped": {
+        "slot": "body",
+        "kinds": [
+          "armor"
+        ]
+      },
+      "legacy_field": "artificer_armor_model",
+      "legacy_value": "guardian",
+      "legacy_default": true,
+      "summary": "Armatura Arcana · Guardiano; guanti del tuono e Campo difensivo.",
+      "attacks": [
+        {
+          "id": "class_feature:thunder_gauntlets",
+          "trait": "Thunder Gauntlets",
+          "name": "Thunder Gauntlets",
+          "damage": "1d8",
+          "damage_type": "T",
+          "melee": true,
+          "ability": "str",
+          "intelligence_override": true,
+          "range_feet": 5
+        }
+      ],
+      "granted_features": [
+        "Defensive Field"
+      ]
+    },
+    {
+      "id": "armor_model:infiltrator",
+      "group": "armor_model",
+      "category": "stato",
+      "name": "Modello armatura · Infiltratore",
+      "trait": "Armor Model",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "subclass": "Armorer",
+      "require_equipped": {
+        "slot": "body",
+        "kinds": [
+          "armor"
+        ]
+      },
+      "legacy_field": "artificer_armor_model",
+      "legacy_value": "infiltrator",
+      "summary": "Armatura Arcana · Infiltratore; Lanciatore di Fulmini e Passi Potenziati.",
+      "attacks": [
+        {
+          "id": "class_feature:lightning_launcher",
+          "trait": "Lightning Launcher",
+          "name": "Lightning Launcher",
+          "damage": "1d6",
+          "damage_type": "L",
+          "melee": false,
+          "ability": "dex",
+          "intelligence_override": true,
+          "range_feet": 90,
+          "long_range_feet": 300,
+          "bonus_die": {
+            "id": "lightning-launcher:extra",
+            "dice": "1d6",
+            "damage_type": "lightning",
+            "name": "Lightning Launcher · danno aggiuntivo",
+            "tracker_id": "feature:lightning_launcher:extra_damage",
+            "recharge": "turn",
+            "max": 1
+          }
+        }
+      ],
+      "numeric_grants": [
+        {
+          "id": "powered_steps",
+          "trait": "Powered Steps",
+          "target": "speed",
+          "amount": 5
+        }
+      ]
+    }
+  ]
+}
