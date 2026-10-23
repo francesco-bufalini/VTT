@@ -1563,23 +1563,9 @@ input:disabled{opacity:.75;cursor:default}
 .trait-card summary .trait-spell-label{color:#d7b67f;font-weight:650}
 .trait-card summary .trait-granted-spell{padding:1px 7px;border:1px solid #b8915c72;border-radius:6px;background:#9d774526;color:#ece2d3}
 
-/* Info -> Tratti: exactly the same light disclosure geometry as Abilità.
-   Source groups and individual traits use separators, never nested cards. */
-.play-info-traits{margin-top:15px;min-width:0}
-.play-info-traits .play-traits-disclosure{
- border:0;border-bottom:1px solid #a37b4766;background:transparent;min-width:0;
-}
-.play-info-traits .play-traits-disclosure>.play-competence-heading{
- display:flex;align-items:center;gap:10px;min-height:54px;padding:8px;
- cursor:pointer;list-style:none;color:#ecd4a9;
-}
-.play-info-traits .play-traits-disclosure>.play-competence-heading::-webkit-details-marker{display:none}
-.play-info-traits .play-traits-disclosure>.play-competence-heading strong{flex:1;font-size:14px;font-weight:600}
-.play-info-traits .play-traits-disclosure>.play-competence-heading::after{
- content:"＋";font:20px/1 system-ui;color:#d7b078;
-}
-.play-info-traits .play-traits-disclosure[open]>.play-competence-heading::after{content:"−"}
-.play-info-traits .play-traits-disclosure>.play-competence-heading:hover{background:#a981511a}
+/* Tratti stays expanded, using the same permanent divider as Competenze.
+   Only individual privilege descriptions remain disclosures. */
+.play-info-traits{margin:15px 0 5px;min-width:0}
 .play-info-traits-content{display:grid;gap:14px;padding:2px 8px 14px;min-width:0}
 .play-info-traits .trait-category{margin:0}
 .play-info-traits .trait-category+.trait-category{border-top:1px solid #a5794870;padding-top:14px}
@@ -1590,6 +1576,17 @@ input:disabled{opacity:.75;cursor:default}
 }
 .play-info-traits .trait-origin-group+.trait-origin-group{
  border-top:1px solid #a579484a;margin-top:14px;padding-top:12px;
+}
+/* Feats and items have no origin headings: their row borders already separate
+   adjacent entries, so another origin border would draw a double rule. */
+.play-info-traits .trait-category:is([data-trait-category="talenti"],[data-trait-category="oggetti"]) .trait-origin-group+.trait-origin-group{
+ border-top:0;margin-top:0;padding-top:0;
+}
+/* At a genuine origin/category boundary, prefer its top rule to the final
+   item's bottom rule. Leave exactly one visible separator at each boundary. */
+.play-info-traits .trait-category:not(:last-child)>.trait-origin-group:last-child>.trait-origin-cards:last-child>.trait-row:last-child,
+.play-info-traits .trait-category:not([data-trait-category="talenti"]):not([data-trait-category="oggetti"]) .trait-origin-group:not(:last-child)>.trait-origin-cards:last-child>.trait-row:last-child{
+ border-bottom:0;
 }
 .play-info-traits .trait-origin-title{
  margin:0 0 5px;padding:0;font-size:13px;font-weight:650;
