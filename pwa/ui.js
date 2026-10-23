@@ -2638,18 +2638,23 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
      '<option value="disadvantage">Aggiungi svantaggio</option>';
  const select='<label class="sheet-roll-mode-control">Modalità del tiro'+
    '<select data-roll-mode'+(kind==='damage'?' disabled aria-label="I danni non prevedono vantaggio o svantaggio"':'')+'>'+mode+'</select></label>';
- const bonusList='<div class="sheet-roll-bonuses-head"><strong>Bonus applicabili al tiro</strong>'+
+ const bonusList='<section class="sheet-roll-math sheet-roll-formula sheet-roll-applicable">'+
+   '<div class="sheet-roll-bonuses-head"><span>Bonus applicabili al tiro</span>'+
    '<button type="button" class="sheet-roll-add" data-act="sheet-roll-add-applicable" aria-label="Aggiungi tiro applicabile" title="Aggiungi tiro applicabile">+</button></div>'+
    (bonuses.length?'<div class="sheet-roll-bonus-list" data-roll-extra role="group" aria-label="Bonus disponibili">'+
-     bonuses.map((row,i)=>'<div class="sheet-roll-origin-term sheet-roll-bonus-term">'+
-       '<button type="button" class="sheet-roll-bonus-source" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="Apri tratto">'+
-       '<span class="sheet-roll-origin-symbol">+'+esc(row.dice)+'</span>'+
-       (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
-       '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
-       '<div class="sheet-roll-bonus-controls"><small data-roll-tracker-count="'+i+'">'+
-       (row.remaining==null?'Senza tracker':esc(row.tracker_name||'Utilizzi')+' · '+esc(row.remaining)+' rim.')+
-       '</small><button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'">Usa</button></div></div>').join('')+
-    '</div>':'');
+     bonuses.map((row,i)=>{
+       const trackerLabel=row.tracker_id?(row.tracker_name||'Tracker')+' · '+(row.remaining??0)+' rim.':'Nessun tracker associato';
+       return '<div class="sheet-roll-bonus-item">'+
+         '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="Apri tratto">'+
+           '<span class="sheet-roll-origin-symbol">+'+esc(row.dice)+'</span>'+
+           (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
+           '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
+         '<div class="sheet-roll-bonus-controls">'+
+           '<button type="button" class="sheet-roll-use" data-act="sheet-roll-use-bonus" data-roll-use="'+i+'">Usa</button>'+
+           '<button type="button" class="sheet-roll-tracker-open" data-act="sheet-roll-open-tracker" data-roll-tracker-button="'+i+'" aria-label="Apri tracker '+esc(trackerLabel)+'" title="'+esc(trackerLabel)+'"'+(row.tracker_id?'':' disabled')+'>'+
+             actionGlyph('target')+'</button>'+
+         '</div></div>';
+     }).join('')+'</div>':'')+'</section>';
  dialog.innerHTML='<h2>'+esc(heading)+
    '<button type="button" class="sheet-roll-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
    '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
@@ -3191,6 +3196,23 @@ async function handleAction(target){
     dialog.close?.();dialog.remove();
     await openRollTraitPicker(kind,target);return;
   }
+  if(act==='sheet-roll-open-tracker'){
+    const dialog=document.querySelector('#sheet-roll-dialog');
+    const row=dialog?.rollBonuses[Number(target.dataset.rollTrackerButton)];
+    const trackerId=String(row?.tracker_id||'');
+    if(!trackerId)throw Error('Il bonus non ha un tracker associato.');
+    const creature=state.editor?.read();
+    if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    dialog.close?.();dialog.remove();
+    // Reuse the existing resource-detail popup instead of creating a second
+    // tracker editor, keeping its counter, source and recovery controls.
+    state.sheet='battle';state.sheetPopup='';await render();
+    const button=[...app.querySelectorAll('#sheet-play-view [data-resource-tracker] .play-resource-info')]
+      .find(node=>node.closest('[data-resource-tracker]')?.dataset.resourceTracker===trackerId);
+    if(!button)throw Error('Tracker non disponibile nella scheda Battaglia');
+    await handleAction(button);
+    return;
+  }
   if(act==='sheet-roll-use-bonus'){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog||dialog.dataset.rolling==='true')return;
@@ -3208,8 +3230,11 @@ async function handleAction(target){
       const used={...(creature.resource_tracker_spent||{})};
       used[row.tracker_id]=(Number(used[row.tracker_id])||0)+Math.max(1,Number(row.tracker_cost)||1);
       await patch({resource_tracker_spent:used});
-      const count=dialog.querySelector('[data-roll-tracker-count="'+index+'"]');
-      if(count)count.textContent=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
+      const trackerButton=dialog.querySelector('[data-roll-tracker-button="'+index+'"]');
+      if(trackerButton){
+        const summary=(tracker.name||'Tracker')+' · '+Math.max(0,remaining-Math.max(1,Number(row.tracker_cost)||1))+' rim.';
+        trackerButton.title=summary;trackerButton.setAttribute('aria-label','Apri tracker '+summary);
+      }
     }
     dialog.usedRollBonuses.push(row);
     target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
