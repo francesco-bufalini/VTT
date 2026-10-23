@@ -171,7 +171,7 @@ try{
  assert.equal((await rollDialog.locator('.sheet-roll-math').nth(1).locator('strong').textContent()).trim(),'Tiro per danni');
  assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco']);
- assert.deepEqual(await rollDialog.locator('.sheet-roll-origin-symbol').allTextContents(),
+ assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').allTextContents(),
    ['1d6 + Modificatore',' + 2d4']);
  assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-term').count(),2,
    'Base dice and their modifier must stay in the same compact tile');
