@@ -68,7 +68,12 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const id=projected?.origin_id||entry.feature_origin||'';
   const trait={name,entries:entry.entries??entry.entry??entry.description??'',
    source:entry.source||'',category,origin,origin_key,level:at,rank,
-   feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name))};
+   feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
+   // Keep explicit activation metadata even for a standalone feat, item or
+   // monster trait that has no separate calculated feature record.
+   action_type:projected?.action_type||entry.action_type||entry.activation_type||entry.activation||'',
+   activation_requirements:projected?.activation_requirements||entry.activation_requirements||'',
+   resource_name:projected?.resource_name||entry.resource_name||''};
   // A calculated disabled flag is not a user decision. Treat privileges as
   // enabled by default; only an explicit owner/trait override can dim them.
   rows.push({...trait,inactive:Boolean(inactive||!traitIsActive(record,trait)||
