@@ -410,7 +410,7 @@ async function libraryView(){
     '</div>'+
     '<section class="library-roster" aria-label="Schede salvate">'+
       '<div class="library-roster-heading"><div><span class="library-section-kicker">LA TUA COLLEZIONE</span>'+
-       '<h2>Archivio creature</h2></div>'+
+       '<h2>Schede salvate</h2></div>'+
        '<span id="library-visible-count" class="library-roster-count">'+rows.length+' schede</span></div>'+
       (rows.length?
        '<div class="library-explore"><label class="library-search" for="library-search">'+actionGlyph('search')+
