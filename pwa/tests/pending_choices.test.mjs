@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {pendingCharacterChoices,savePendingChoice} from '../pending_choices.js';
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pending_choices.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const catalogs={proficiencyGrants:index,abilityGrants:abilities};
@@ -62,4 +62,44 @@ test('native origin spell choices share one unresolved-state list with other abi
  assert.equal(found.count,2);
  assert.deepEqual(found.selected,['magic-missile']);
  assert(!choices({...c,origin_enabled:{'feature:test':false}},{origin_choices:[choice]}).some(x=>x.id===found.id));
+});
+test('a selected feat ability can be cleared, leaving a new pending warning',()=>{
+  const feat=abilities.feat.find(x=>x.name==='Telepathic'&&x.ability_choices?.length===1);
+  const character={...artificer(),feats_catalog:[{name:feat.name,source:feat.source}]};
+  const choice=choices(character).find(x=>x.kind==='ability');
+  const set=savePendingChoice(character,choice,[choice.options[0]]);
+  const saved={...character,...set};
+  const clearing=savePendingChoice(saved,choices(saved).find(x=>x.id===choice.id),[]);
+  assert.equal(clearing.feats_catalog[0].ability_choice,'');
+  const pending=choices({...saved,...clearing}).find(x=>x.id===choice.id);
+  assert.equal(pending.selected.length,0);
+  assert.equal(pending.remaining,1);
+});
+test('deselecting all proficiency options preserves other trait choices',()=>{
+  const c=artificer(),skillChoice=choices(c).find(x=>x.label==='Abilità');
+  const initial=savePendingChoice(c,skillChoice,['arcana','history']);
+  const current={...c,...initial,proficiency_choices:[...initial.proficiency_choices,
+    {kind:'skill',key:'perception',origin_id:'other',origin_name:'Other'}]};
+  const updated=savePendingChoice(current,choices(current).find(x=>x.id===skillChoice.id),[]);
+  assert.equal(updated.proficiency_choices.length,1);
+  assert.equal(updated.proficiency_choices[0].origin_id,'other');
+  assert.equal(choices({...current,...updated}).find(x=>x.id===skillChoice.id).remaining,2);
+});
+test('trait benefit choices belong only to their structured grant origins',()=>{
+  const c=artificer(),skillChoice=choices(c).find(x=>x.label==='Abilità');
+  const feat=abilities.feat.find(x=>x.name==='Telepathic'&&x.ability_choices?.length===1);
+  c.feats_catalog=[{name:feat.name,source:feat.source}];
+  const all=choices(c);
+  const classSummary={category:'classi',rank:0,origin_key:skillChoice.origin_id,
+    key:skillChoice.origin_id+'|1|description'};
+  const classChoices=choicesForTrait(classSummary,c,all);
+  assert(classChoices.some(x=>x.id===skillChoice.id));
+  assert(!classChoices.some(x=>x.kind==='ability'));
+  const featSummary={category:'talenti',rank:0,
+    origin_key:'feat|'+feat.name.toLowerCase()+'|'+feat.source.toLowerCase(),key:'feat-summary'};
+  const traitChoices=choicesForTrait(featSummary,c,all);
+  assert.equal(traitChoices.length,1);
+  assert.equal(traitChoices[0].kind,'ability');
+  assert.equal(choicesForTrait({category:'classi',rank:2,origin_key:'other',
+    feature_origin:'feature:other',key:'unrelated'},c,all).length,0);
 });
