@@ -6,6 +6,7 @@ import {recoveryPatch,requirementPatch,nativeRows,nativeRowPatch,spellCastPlan} 
 import {sessionSpellEntries} from '../spell_selection.js';
 const load=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:load('class_mechanics'),abilityGrants:load('ability_grants'),proficiencyGrants:load('proficiency_grants')};
+const casterCatalogs={...catalogs,classFeatures:load('classes')};
 const base={kind:'character',level:8,class:'Wizard',class_source:'PHB',abilities:{str:10,dex:14,con:12,int:16,wis:10,cha:16}};
 
 test('tracker formulas, additive bonuses and requirement toggles preserve stable saved consumption',()=>{
@@ -51,7 +52,7 @@ test('formal recharge wins over monster supplements and ambiguous names get no g
 test('casting choices preserve class and origin identity; counters and effective casting math are validated before sending',()=>{
  const spell={id:'synthetic',name:'Synthetic spell',level:1,classes:['Wizard'],source:'PHB'};
  const record={...base,name:'Caster',prepared_spells:[spell],origin_spell_grants:[{id:'daily-grant',spell_id:spell.id,origin_id:'custom',origin_name:'Daily',payment_mode:'tracker',tracker_id:'daily',tracker_cost:2,spellcasting_ability:'cha'}],proficiency_origins:[{id:'custom',name:'Custom'}],resource_trackers:[{id:'daily',name:'Daily',max:3}],resource_tracker_spent:{daily:1},formula_bonuses:[{target:'spell_attack',expression:'2'},{target:'spell_dc',expression:'1'}]};
- const calculated=calculateSheet(record,catalogs),entries=sessionSpellEntries(record,calculated,[spell]);
+ const calculated=calculateSheet(record,casterCatalogs),entries=sessionSpellEntries(record,calculated,[spell]);
  assert.equal(entries.length,2);assert.equal(entries[1].id,'synthetic');assert.equal(entries[1].grant_id,'daily-grant');
  const origin=spellCastPlan(record,entries[1],0,calculated);
  assert.deepEqual(origin.patch,{resource_tracker_spent:{daily:3}});assert.equal(origin.slotLevel,1);
@@ -68,7 +69,7 @@ test('casting choices preserve class and origin identity; counters and effective
 test('pact casting charges the pact pool and cantrips charge no slots',()=>{
  const spell={id:'pact',name:'Pact spell',level:1,classes:['Warlock'],source:'PHB'},cantrip={id:'cantrip',name:'Cantrip',level:0,classes:['Warlock'],source:'PHB'};
  const record={...base,class:'Warlock',class_source:'PHB',level:5,prepared_spells:[spell,cantrip]};
- const calculated=calculateSheet(record,catalogs),entries=sessionSpellEntries(record,calculated,[spell,cantrip]);
+ const calculated=calculateSheet(record,casterCatalogs),entries=sessionSpellEntries(record,calculated,[spell,cantrip]);
  const plan=spellCastPlan(record,entries[0],0,calculated);assert.equal(plan.slotLevel,3);assert.deepEqual(plan.patch,{pact_slots_spent:1});
  assert.deepEqual(spellCastPlan(record,entries[1],0,calculated).patch,{});
 });
