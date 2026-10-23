@@ -187,11 +187,67 @@ try{
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-add-applicable"]').count(),1);
  assert.equal(await rollDialog.locator('.sheet-roll-bonus-term').count(),1);
  assert.match(await rollDialog.locator('.sheet-roll-bonus-term').textContent(),/Carica fulmine/);
- assert.match(await rollDialog.locator('[data-roll-tracker-count]').textContent(),/5 rim/);
+ assert.match(await rollDialog.locator('[data-act="sheet-roll-open-tracker"]').getAttribute('aria-label'),/5 rim/);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-term .sheet-roll-bonus-controls').count(),0,
+   'Use and tracker controls are outside, not inside, the formula tile');
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-item > .sheet-roll-bonus-controls > button').count(),2);
+ assert.equal(await rollDialog.locator('.sheet-roll-bonus-item .sheet-roll-bonus-term').count(),1);
+ assert.equal(await rollDialog.locator('.sheet-roll-tracker-open .vtt-action-glyph').count(),1,
+   'The crosshair action uses the shared icon set');
+ const typography=await rollDialog.evaluate(dialog=>{
+   const base=getComputedStyle(dialog.querySelector('.sheet-roll-formula:not(.sheet-roll-applicable)>span'));
+   const applied=getComputedStyle(dialog.querySelector('.sheet-roll-bonuses-head>span'));
+   return [base.fontSize,base.color,applied.fontSize,applied.color];
+ });
+ assert.equal(typography[0],typography[2],'Applicable heading matches the formula heading size');
+ assert.equal(typography[1],typography[3],'Applicable heading matches the formula heading color');
+ const tileStyle=await rollDialog.evaluate(dialog=>{
+   const base=getComputedStyle(dialog.querySelector('[data-roll-formula] .sheet-roll-origin-term'));
+   const applied=getComputedStyle(dialog.querySelector('.sheet-roll-bonus-term'));
+   return [base.backgroundColor,base.borderTopStyle,applied.backgroundColor,applied.borderTopStyle];
+ });
+ assert.deepEqual(tileStyle.slice(0,2),tileStyle.slice(2),'Applicable tiles share the formula tile surface');
+ for(const width of [320,360,390,430]){
+   await page.setViewportSize({width,height:844});
+   const bounds=await rollDialog.evaluate(dialog=>{
+     const popup=dialog.getBoundingClientRect();
+     const area=dialog.querySelector('.sheet-roll-applicable').getBoundingClientRect();
+     const head=dialog.querySelector('.sheet-roll-bonuses-head').getBoundingClientRect();
+     const list=dialog.querySelector('.sheet-roll-bonus-list').getBoundingClientRect();
+     return {popupWidth:popup.width,areaWidth:area.width,
+       areaRight:area.right,popupRight:popup.right,headRight:head.right,listRight:list.right,
+       tileWidth:dialog.querySelector('.sheet-roll-bonus-term').getBoundingClientRect().width,
+       bodyOverflow:document.documentElement.scrollWidth-innerWidth};
+   });
+   assert(bounds.areaWidth<bounds.popupWidth&&bounds.areaRight<=bounds.popupRight-8,
+     'Applicable section fits inside popup at '+width+'px');
+   assert(bounds.headRight<=bounds.areaRight+1&&bounds.listRight<=bounds.areaRight+1,
+     'Heading and bonus list stay within their own section at '+width+'px');
+   assert(bounds.tileWidth>=130&&bounds.bodyOverflow<=1,
+     'Tiles remain legible without page overflow at '+width+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
+ // A short +1 must not squeeze long origin names into letter-wide columns.
+ await rollDialog.evaluate(dialog=>{
+   const formula=dialog.querySelector('[data-roll-formula] .sheet-roll-origin-terms');
+   const clone=formula.querySelector('.sheet-roll-origin-term').cloneNode(true);
+   clone.classList.add('test-long-provenance');
+   clone.querySelector('.sheet-roll-origin-symbol').textContent='+1';
+   clone.querySelector('.sheet-roll-origin-name').textContent='Stone of Good Luck';
+   formula.append(clone);
+ });
+ const longLabel=rollDialog.locator('.test-long-provenance');
+ assert(await longLabel.evaluate(node=>{
+   const tile=node.getBoundingClientRect();
+   const label=node.querySelector('.sheet-roll-origin-name').getBoundingClientRect();
+   return tile.width>=120&&label.width>=100&&label.height<70;
+ }),'A Stone of Good Luck +1 tile must stay readable in a few lines');
+ await longLabel.evaluate(node=>node.remove());
  assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').count(),2);
  await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-roll-dialog [data-act="sheet-roll-use-bonus"]')?.textContent==='Usato');
  assert.equal(await rollDialog.locator('[data-act="sheet-roll-use-bonus"]').isDisabled(),true);
+ assert.match(await rollDialog.locator('[data-act="sheet-roll-open-tracker"]').getAttribute('aria-label'),/4 rim/);
  assert.deepEqual(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-damage-type').allTextContents(),
    ['Tagliente','Fuoco','Fulmine']);
  assert.equal(await rollDialog.locator('[data-roll-formula] .sheet-roll-origin-symbol').last().textContent(),'+1d6');
@@ -465,7 +521,16 @@ try{
  assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="target"]').inputValue(),'save:int');
  assert.equal(await page.locator('#trait-benefits-dialog [data-trait-fields="dice"] [name="tracker_id"]').count(),1);
  await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
- await sheet('battle');await popup('rests');
+ await sheet('battle');
+ // Crosshair opens the existing context popup with real tracker controls.
+ await page.locator('#sheet-play-view [data-target="attack_hit:item:local_sword"]').first()
+   .evaluate(node=>node.click());
+ await page.locator('#sheet-roll-dialog [data-act="sheet-roll-open-tracker"]').click();
+ await page.locator('#sheet-context-dialog').waitFor({state:'visible'});
+ assert.match(await page.locator('#sheet-context-dialog').getAttribute('data-context'),/^(power-resource:tracker:|resource:)focus$/);
+ assert.match(await page.locator('#sheet-context-dialog').textContent(),/Focus arcano/);
+ await dismiss();
+ await popup('rests');
  assert.equal(await page.locator('#sheet-context-dialog [data-rest-die]').count(),0,
   'Hit Dice must not be editable in the initial rest chooser');
  await page.locator('#sheet-context-dialog [data-act="tracker-short"]').click();
