@@ -202,7 +202,9 @@ export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bo
     '" data-target="'+esc(actualTarget)+'" data-label="'+esc(label)+
     '" data-calculated="'+esc(target)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+
     '" title="'+esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
-    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</button></span>';
+    esc(calculatedValue(data,target,{signed:sign,suffix}))+'</button>'+
+    (scoreAbility?'<button type="button" class="score-edit-action" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'" aria-label="Modifica punteggio base '+esc(scoreAbility.toUpperCase())+'" title="Modifica punteggio base">⚙</button>':'')+
+    '</span>';
 }
 export function calculationNote(data,loadError=""){
   const warnings=[...new Set([...(data?.warnings||[]),...(loadError?[loadError]:[])])];
