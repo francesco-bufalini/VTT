@@ -123,7 +123,24 @@ export function applicableDiceBonuses(record,target,spells=[]){
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
  const fits=row=>[target,scope].includes(row.target)||row.target==='any_d20'&&scope!=='damage_roll'||
    row.target==='spell_attack'&&(target==='spell_attack'||target.startsWith('casting_hit:'));
- const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&enabled(row.origin_id)&&fits(row));
+ const rows=arr(record.dice_bonuses).filter(row=>row&&!row.disabled&&validBonusDice(row.dice)&&fits(row))
+   .flatMap(row=>{
+    const id=String(row.origin_id||'');
+    if(!id.startsWith('item:'))return enabled(id)?[row]:[];
+    const copies=arr(record.inventory).reduce((sum,saved)=>{
+     const item=resolveOwnedItem(saved);
+     return id==='item:'+String(item.id||'')&&itemActive(item,record)?
+       sum+(['weapon','armor','shield'].includes(itemKind(item))?1:Math.max(1,int(item.quantity,1))):sum;
+    },0);
+    if(!copies)return [];
+    if(copies===1)return [row];
+    // A duplicate magic item grants its optional dice as many times as owned.
+    const match=/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i.exec(String(row.dice).replace(/\s+/g,''));
+    if(!match)return [row];
+    const dice=Number(match[1])*copies,constant=Number(match[3]||0)*copies;
+    if(dice>100)return [row]; // More than 100 dice cannot fit in one roll.
+    return [{...row,dice:dice+'d'+match[2]+(constant?(constant>0?'+':'')+constant:''),multiplier:copies}];
+   });
  for(const origin of arr(record.proficiency_origins)){
   if(origin?.group!=='spell'||!String(origin.id).startsWith('spell:')||!enabled(origin.id))continue;
   const id=origin.id.slice(6),spell=spells.find(s=>s.id===id),context=record.active_spell_context?.[id];
