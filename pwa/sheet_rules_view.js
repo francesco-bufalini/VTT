@@ -475,7 +475,17 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const max=Math.max(1,Number(d.values?.hp)||1),hp=Number(c.current_hp)||0;
   html='<section class="play-health" role="button" tabindex="0" data-act="sheet-context" data-sheet-context="hp" aria-label="Gestisci punti ferita"><header><span>Punti ferita</span><div class="play-health-tools">'+btn('Riposi e recuperi','rest_short','data-act="sheet-context" data-sheet-context="rests"','<span>Riposi</span>')+'</div></header><div class="play-hp-number">'+val('current_hp')+'<small> / '+scoreOutput('hp','PF massimi')+'</small></div><progress data-hp-progress value="'+hp+'" max="'+max+'" aria-label="Punti ferita rimanenti"></progress><div class="play-health-extra"><span>Temporanei <b>'+val('temporary_hp')+'</b></span>'+(Number(d.values?.second_max)>0?'<span>Seconda forma <b>'+val('second_form_hp')+' / '+scoreOutput('second_max','PF massimi seconda forma')+'</b></span>':'')+'</div><div class="play-hp-actions">'+btn('Danni','decrease','data-act="hp-damage"')+btn('Cura','healing','data-act="hp-heal"')+'</div></section>';
   const fastest=fastestMovement(d);
-  html+='<div class="play-vitals">'+btn('Classe armatura','shield','data-act="sheet-context" data-sheet-context="defense"','<small>CA</small>'+output('ac'))+roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+btn('Movimento e velocità','dash','data-act="sheet-context" data-sheet-context="movement"','<small data-fastest-movement-label>'+esc(fastest.label)+'</small>'+output(fastest.key,false,' ft').replace(' data-calculated=',' data-fastest-movement-value data-calculated='))+'</div>';
+  const vital=(context,title,glyph,label,key,suffix='',fastestLabel=false)=>
+    '<div class="play-button play-vital-card">'+
+      '<button type="button" class="play-vital-manage" data-act="sheet-context" data-sheet-context="'+context+'" aria-label="Gestisci '+esc(title)+'" title="Gestisci '+esc(title)+'">'+icon(glyph)+
+      '<small'+(fastestLabel?' data-fastest-movement-label':'')+'>'+esc(label)+'</small></button>'+
+      scoreOutput(key,title,false,suffix).replace(' data-calculated=',
+        (fastestLabel?' data-fastest-movement-value':'')+' data-calculated=')+
+    '</div>';
+  html+='<div class="play-vitals">'+
+    vital('defense','Classe armatura','shield','CA','ac')+
+    roll('initiative','Iniziativa','<small>Iniziativa</small>'+output('initiative',true),'lightning')+
+    vital('movement','Movimento e velocità','dash',fastest.label,fastest.key,' ft',true)+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
   html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+infused.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(row.name)+'</button>').join('')+'</div>';

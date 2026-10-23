@@ -3238,7 +3238,7 @@ async function handleAction(target){
   if(act==='sheet-score-formula'){
     const creature=state.editor?.read();
     if(!creature)throw Error('Apri prima una creatura');
-    const targetKey=String(target.dataset.target||target.dataset.calculated||'');
+    const targetKey=String(target.dataset.calculated||target.dataset.target||'');
     if(!targetKey)throw Error('Valore non specificato');
     openSheetScoreFormula(creature,await computeLocalData(creature),targetKey,
       String(target.dataset.label||target.getAttribute('aria-label')||''));

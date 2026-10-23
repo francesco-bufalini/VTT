@@ -2664,3 +2664,22 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 }
 .play-score-value:hover{color:#f4cc93}
 .play-score-value:focus-visible{outline:2px solid #edbd77;outline-offset:3px;border-radius:3px}
+
+/* The heading still manages equipment/movement; only the number opens its
+   computed formula. Keep the original three-column vital-card treatment. */
+.play-vitals>.play-vital-card{cursor:default}
+.play-vitals>.play-vital-card>.play-vital-manage{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:3px;min-height:36px;width:100%;padding:0;border:0;
+ background:transparent;color:inherit;font:inherit;cursor:pointer;
+}
+.play-vitals>.play-vital-card>.play-vital-manage>.vtt-action-glyph{
+ width:22px;height:22px;flex:0 0 22px;
+}
+.play-vitals>.play-vital-card>.play-vital-manage:hover,
+.play-vitals>.play-vital-card>.play-vital-manage:focus-visible{color:#f4cf94}
+.play-vitals>.play-vital-card>.play-score-value{
+ display:block;width:100%;font-weight:600;font-size:25px;
+ color:#f2d39a;white-space:nowrap;
+}
+.play-vitals>.play-vital-card:last-child>.play-score-value{font-size:21px}
