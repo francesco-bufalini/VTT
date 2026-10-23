@@ -15,7 +15,7 @@ test("Godot serves manifest icons with cache-busting query strings", async () =>
   assert.match(index, /rel="manifest" href="\/manifest.webmanifest"/);
   const manifest = JSON.parse(manifestText);
   assert.equal(manifest.display, "standalone");
-  for (const size of [192, 512]) {
+  for (const size of [192, 512, 1024]) {
     const icon = manifest.icons.find(entry => entry.sizes === size + "x" + size);
     assert(icon, "missing install icon " + size);
     assert.equal(icon.type, "image/png");

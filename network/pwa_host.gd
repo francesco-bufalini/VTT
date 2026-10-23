@@ -90,7 +90,8 @@ const FILES := {
 	"/icons/info/talents.svg": ["res://assets/creature_info/talents.svg", "image/svg+xml"],
 	"/icons/info/biography.svg": ["res://assets/creature_info/biography.svg", "image/svg+xml"],
 	"/icon-192.png": ["res://pwa/icon-192.png", "image/png"],
-	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"]
+	"/icon-512.png": ["res://pwa/icon-512.png", "image/png"],
+	"/icon-1024.png": ["res://pwa/icon-1024.png", "image/png"]
 }
 
 # Keep fixtures independent from a running desktop session.
