@@ -5,9 +5,6 @@ const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Applied = preload("res://vtt/creature_active_spells.gd")
 const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
-const Features = preload("res://vtt/creature_features.gd")
-const Mechanics = preload("res://vtt/class_mechanics_5etools.gd")
-const Overrides = preload("res://vtt/class_resource_overrides.gd")
 
 
 func _initialize() -> void:
@@ -64,13 +61,6 @@ func run() -> void:
 	}]
 	var external: Dictionary = _find(Granted.all_grants(custom), "cure_wounds")
 	assert(not external.is_empty(), "An origin can grant a standard catalog spell")
-	if Granted.remaining(custom, external) <= 0:
-		print("DEBUG tracker owner: ", String(inspiration.get("tracker_id", "")),
-			" rows=", Trackers.for_creature(custom),
-			" feat=", Features.collect_features(custom).filter(func(f: Dictionary) -> bool: return "Inspiration" in String(f.get("name", ""))),
-			" col=", Mechanics.column("Bard", "PHB", "Bardic Inspiration"),
-			" override=", Overrides.for_class("bard","PHB",5,"",custom),
-			" grant=", external)
 	assert(Granted.remaining(custom, external) > 0,
 		"An origin can spend a tracker awarded by another origin")
 	custom["origin_spell_configs"] = {"test-grant": {"payment_mode": "tracker", "tracker_cost": 2}}
