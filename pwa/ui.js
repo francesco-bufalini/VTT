@@ -4262,15 +4262,20 @@ async function handleAction(target){
     state.libraryFilter=target.dataset.kind;
     syncLibraryFilterUI();return;
   }
-  if(act==="library-clear"){
-    state.libraryQuery='';state.libraryFilter='all';
-    const search=app.querySelector('#library-search');
-    if(search)search.value='';
-    syncLibraryFilterUI();return;
-  }
-  if(act==="library-add"||act==="library-empty-add"){
+  if(act==="library-add"){
+    state.libraryMiniatureId='sariel';
     const dialog=app.querySelector('#library-create-dialog');
-    if(dialog){if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');}
+    if(dialog){
+      paintLibraryMiniatures();
+      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+      void loadLibraryMiniatures();
+    }
+    return;
+  }
+  if(act==="library-miniature-select"){
+    if(libraryMiniatureOptions().some(row=>row.id===target.dataset.miniatureId)){
+      state.libraryMiniatureId=target.dataset.miniatureId;paintLibraryMiniatures();
+    }
     return;
   }
   if(act==="library-create-close"){
@@ -4279,9 +4284,16 @@ async function handleAction(target){
     return;
   }
   if(act==="create"){
+    const dialog=app.querySelector('#library-create-dialog');
+    if(!dialog?.open)throw Error("Apri prima la creazione di una creatura.");
+    const name=String(dialog.querySelector('#library-create-name')?.value||'').trim()||'Nuova creatura';
+    const miniature=libraryMiniatureOptions().find(row=>row.id===state.libraryMiniatureId);
+    if(!miniature)throw Error("Seleziona una miniatura di base.");
     state.magicPopup="";
-    const row=await createCreature("character","Nuovo personaggio");
-    state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";await render();return;
+    const row=await createCreature("character",name,"default",miniature);
+    if(dialog.open&&dialog.close)dialog.close();
+    state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
+    await render();return;
   }
   if(act==="import"||act==="library-quick-import"){
     const dialog=app.querySelector('#library-create-dialog');
@@ -4294,7 +4306,15 @@ async function handleAction(target){
     message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
-  if(act==="open"){state.magicPopup="";state.creatureId=target.dataset.id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;}
+  if(act==="open"){
+    const id=target.dataset.id;
+    if(state.librarySelectedIds.size){
+      if(state.librarySelectedIds.has(id))state.librarySelectedIds.delete(id);
+      else state.librarySelectedIds.add(id);
+      syncLibrarySelectionUI();return;
+    }
+    state.magicPopup="";state.creatureId=id;state.libraryMode=false;state.sheet="info";state.editor=null;await render();return;
+  }
   if(act==="back"){
     await navigate("library");
     window.scrollTo(0,0);app.focus({preventScroll:true});
@@ -4915,9 +4935,8 @@ function listen(){
   const editable = "[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
-    if(target?.id==='library-search'){
-      state.libraryQuery=target.value;
-      syncLibraryFilterUI();return;
+    if(target?.id==='library-miniature-search'){
+      paintLibraryMiniatures();return;
     }
     if(target?.matches('[data-play-search]')){
       state.sheetSearch.set(state.creatureId+'|'+state.sheet,target.value);
@@ -4960,7 +4979,7 @@ function listen(){
     const target=e.target;
     if(target?.matches?.('[data-library-select-all]')){
       for(const box of app.querySelectorAll('input[data-library-select]')){
-        if(box.closest('.creature-card')?.hidden)continue;
+        if(box.closest('.library-creature-entry')?.hidden)continue;
         box.checked=target.checked;
         if(box.checked)state.librarySelectedIds.add(box.dataset.librarySelect);
         else state.librarySelectedIds.delete(box.dataset.librarySelect);
