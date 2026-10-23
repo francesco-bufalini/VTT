@@ -682,12 +682,19 @@ async function editorView() {
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
+    const containers=inventoryContainers(c);
+    const validTabs=new Set(['items','all','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)]);
+    if(!validTabs.has(state.inventorySubtab))state.inventorySubtab='items';
     const isDocuments=state.inventorySubtab==="documents",isScrolls=state.inventorySubtab==="scrolls";
-    const nav='<nav class="inventory-subtabs" role="tablist" aria-label="Sezioni inventario">'+
-      [['items','Oggetti','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book']].map(([key,label,glyph])=>
-        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+key+'" '+
-        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+label+'">'+
-        actionGlyph(glyph)+'<span>'+label+'</span></button>').join('')+'</nav>';
+    const inventoryTabs=[['items','Zaino','inventory'],['all','Tutti gli oggetti','inventory'],
+      ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
+      ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
+    const nav='<nav class="inventory-subtabs inventory-container-tabs" role="tablist" aria-label="Sezioni inventario">'+
+      inventoryTabs.map(([key,label,glyph])=>
+        '<button type="button" role="tab" data-act="inventory-subtab" data-subtab="'+esc(key)+'" '+
+        'aria-selected="'+(key===state.inventorySubtab)+'" aria-label="'+esc(label)+'">'+
+        actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>').join('')+
+      '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
     if(isDocuments){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
       const definitions=await Promise.all(documents.map(({item})=>
@@ -700,10 +707,10 @@ async function editorView() {
     }else{
       const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
       const ordinary=owned.filter(({item})=>!isSpellScroll(item));
-      const containers=inventoryContainers(c);
       const scrolls=owned.filter(({item})=>isSpellScroll(item));
       const attunements=owned.filter(({item})=>requiresAttunement(item));
-      const visibleRows=isScrolls?scrolls:ordinary;
+      const visibleRows=isScrolls?scrolls:ordinary.filter(({item})=>state.inventorySubtab==='all'||
+        itemContainerId(item,containers)===(state.inventorySubtab.startsWith('container:')?state.inventorySubtab.slice(10):DEFAULT_INVENTORY_CONTAINER));
       let selected=visibleRows.find(({index})=>index===state.inventorySelectedIndex);
       if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
       let resolvedDetail=selected?.item||{};
@@ -1354,14 +1361,14 @@ function inventoryAttunementView(c,entries){
 }
 function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
   if(!entries.length)return '<p class="hint">Nessun '+(scrolls?'incantesimo su pergamena.':'oggetto.')+'</p>';
-  const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Eq.","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
+  const headings=scrolls?["Qtà","Livello","Incantesimo"]:["Slot","mo","Peso","Qtà","Fonte","Proprietà / CA","Nome"];
   return '<div class="inventory-table" role="table" aria-label="'+(scrolls?'Pergamene':'Oggetti')+'">'+
     '<div class="inventory-table-head" role="row">'+headings.map((x,i)=>
       '<span class="inventory-col-'+(scrolls?["quantity","level","name"][i]:
         ["equip","value","weight","quantity","source","property","name"][i])+'" role="columnheader">'+x+'</span>').join('')+'</div>'+
     entries.map(({item,index})=>{
       const kind=itemKind(item),slots=Array.isArray(item.equipped_slots)?item.equipped_slots:[],
-        canEquip=kind!=="document",
+        canEquip=['weapon','shield','armor'].includes(kind),
         eqIcon=canEquip?((item.equipped||slots.length)?"✓":""):(slots.includes("main")?"⚔":"")+
           (slots.includes("off")?"🛡":"")+(slots.includes("body")?"▣":""),
         qty=Math.max(1,Number(item.quantity)||1),
@@ -1404,20 +1411,18 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
     }).join('')+'</div>';
 }
 function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex){
-  const sections=containers.map(container=>{
-    const rows=entries.filter(({item})=>itemContainerId(item,containers)===container.id);
-    const controls=container.id===DEFAULT_INVENTORY_CONTAINER?'': 
-      '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(container.id)+'">Rinomina</button>'+
-      '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(container.id)+'">Elimina</button>';
-    return '<section class="inventory-container"><header class="inventory-container-head"><h3>'+esc(container.name)+
-      '</h3><span class="hint">'+rows.length+' oggetti</span><div class="actions">'+controls+'</div></header>'+
-      inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
-      '<div class="actions"><button class="btn small" data-act="item-catalog" data-container-id="'+esc(container.id)+'">＋ Dal catalogo</button>'+
-      '<button class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(container.id)+'">＋ Homebrew</button></div></section>';
-  }).join('');
-  return panel("Oggetti posseduti",'<div class="inventory-container-list">'+sections+'</div>'+
-    '<div class="actions"><button type="button" class="btn" data-act="inventory-container-add">＋ Contenitore</button></div>',
-    "inventory-native-panel");
+  const key=state.inventorySubtab;
+  const active=key.startsWith('container:')?containers.find(row=>row.id===key.slice(10)):null;
+  const destination=active?.id||DEFAULT_INVENTORY_CONTAINER;
+  const rows=entries.filter(({item})=>key==='all'||itemContainerId(item,containers)===destination);
+  const controls=active?'<div class="inventory-container-management">'+
+    '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button>'+
+    '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(active.id)+'">Elimina sezione</button></div>':'';
+  return panel(key==='all'?'Tutti gli oggetti':active?.name||'Zaino',
+    controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
+    '<div class="actions"><button type="button" class="btn small" data-act="item-catalog" data-container-id="'+esc(destination)+'">＋ Dal catalogo</button>'+
+    '<button type="button" class="btn small" data-act="new-homebrew-item" data-container-id="'+esc(destination)+'">＋ Homebrew</button></div>',
+    "inventory-native-panel inventory-items-panel");
 }
 function inventoryItemDescription(obj,index){
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
@@ -1460,7 +1465,7 @@ function inventoryRow(item,index) {
     '<button type="button" class="btn danger small" data-act="remove-item" data-index="'+index+'">Rimuovi</button></div>'+
     '<p class="hint">'+esc(tags||"Oggetto personale")+'</p>'+quantity+
     '<div class="inventory-switches">'+
-    (!["weapon","shield","armor","document"].includes(kind)?enabled("equipped","Equipaggiato"):'')+
+    ''+
     (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
     enabled("active","Attivo")+'</div>'+
     (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
@@ -4504,7 +4509,9 @@ async function handleAction(target){
     const containers=inventoryContainers(record),id=target.dataset.containerId;
     if(act==="inventory-container-add"){
       const name=window.prompt("Nome del nuovo contenitore:");if(name===null)return;
-      await patch(createInventoryContainer(record,"container_"+crypto.randomUUID(),name));
+      const newId="container_"+crypto.randomUUID();
+      await patch(createInventoryContainer(record,newId,name));
+      state.inventorySubtab='container:'+newId;
     }else if(act==="inventory-container-rename"){
       const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Contenitore non rinominabile.");
       const name=window.prompt("Rinomina contenitore:",original.name);if(name===null)return;
@@ -4522,12 +4529,14 @@ async function handleAction(target){
         destination=other[index].id;
       }else if(!window.confirm("Eliminare il contenitore vuoto "+original.name+"?"))return;
       await patch(deleteInventoryContainer(record,id,destination));
+      state.inventorySubtab='items';
     }
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(act==="inventory-subtab"){
     const subtab=target.dataset.subtab;
-    if(!["items","scrolls","documents"].includes(subtab))throw Error("Sottoscheda inventario non valida.");
+    if(!["items","all","scrolls","documents",...inventoryContainers(state.editor.read()).slice(1).map(row=>'container:'+row.id)].includes(subtab))
+      throw Error("Sottoscheda inventario non valida.");
     state.inventorySubtab=subtab;state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }
@@ -4551,6 +4560,7 @@ async function handleAction(target){
     const record=state.editor.read(),index=Number(target.dataset.index);
     const owned=record.inventory?.[index];
     if(!owned)throw Error("Oggetto non trovato.");
+    if(!['weapon','armor','shield'].includes(itemKind(owned)))throw Error("Questo oggetto è sempre attivo; non richiede equipaggiamento.");
     const enabled=!(owned.equipped===true||(owned.equipped_slots||[]).length>0);
     const inventory=setItemEquipped(record.inventory,index,enabled);
     const itemKey='item:'+String(owned.id||'');
