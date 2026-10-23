@@ -1,6 +1,6 @@
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
-import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
+import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty, setItemEquipped } from "./item_controls.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -1226,8 +1226,8 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
         ["equip","value","weight","quantity","source","property","name"][i])+'" role="columnheader">'+x+'</span>').join('')+'</div>'+
     entries.map(({item,index})=>{
       const kind=itemKind(item),slots=Array.isArray(item.equipped_slots)?item.equipped_slots:[],
-        canEquip=!["weapon","shield","armor","document"].includes(kind),
-        eqIcon=canEquip?(item.equipped?"✓":""):(slots.includes("main")?"⚔":"")+
+        canEquip=kind!=="document",
+        eqIcon=canEquip?((item.equipped||slots.length)?"✓":""):(slots.includes("main")?"⚔":"")+
           (slots.includes("off")?"🛡":"")+(slots.includes("body")?"▣":""),
         qty=Math.max(1,Number(item.quantity)||1),
         controls='<div class="inventory-quantity-controls">'+
@@ -1252,9 +1252,9 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex){
              '<button type="button" class="btn small danger" data-act="remove-item" data-index="'+index+'">Rimuovi</button>'+
              '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button></span>':'')+'</span>',
         equip='<span class="inventory-col-equip">'+(scrolls?'':canEquip?
-          '<button type="button" class="inventory-equip-toggle" data-act="inventory-equip" data-index="'+index+
-          '" aria-label="'+(item.equipped?"Riponi":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
-          Boolean(item.equipped)+'">'+eqIcon+'</button>':
+          '<button type="button" class="inventory-equip-toggle'+((item.equipped||slots.length)?' is-equipped':'')+'" data-act="inventory-equip" data-index="'+index+
+          '" title="'+((item.equipped||slots.length)?'Disequipaggia':'Equipaggia')+'" aria-label="'+((item.equipped||slots.length)?"Disequipaggia":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
+          Boolean(item.equipped||slots.length)+'"><span class="inventory-equip-mark" aria-hidden="true">'+eqIcon+'</span></button>':
           '<span class="inventory-slotted-icon">'+(eqIcon||'')+'</span>')+'</span>';
       const cells=scrolls?[
         '<span class="inventory-col-quantity">'+controls+'</span>',
@@ -3835,7 +3835,18 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey)||
       (state.traitPopupTrait?.key===state.traitPopupKey?state.traitPopupTrait:null);
     if(!trait)throw Error('Tratto non disponibile');
-    await patch(traitActivationPatch(state.editor.read(),trait,Boolean(trait.inactive)));
+    const record=state.editor.read();
+    if(trait.category==='oggetti'&&trait.rank===0&&String(trait.origin_key||'').startsWith('item:')){
+      const id=String(trait.origin_key).slice(5);
+      const index=(record.inventory||[]).findIndex(item=>String(item.id||'')===id);
+      if(index<0)throw Error('Oggetto non presente nell’inventario.');
+      const active=(record.inventory||[]).some(item=>String(item.id||'')===id&&
+        (item.equipped===true||(item.equipped_slots||[]).length>0));
+      const inventory=setItemEquipped(record.inventory,index,!active);
+      // The equipment state is authoritative; clear stale manual overrides.
+      const enabledPatch=traitActivationPatch(record,trait,true);
+      await patch({...enabledPatch,inventory});
+    }else await patch(traitActivationPatch(record,trait,Boolean(trait.inactive)));
     await state.editor.flush();
     await render();return;
   }
@@ -4326,7 +4337,12 @@ async function handleAction(target){
     const record=state.editor.read(),index=Number(target.dataset.index);
     const owned=record.inventory?.[index];
     if(!owned)throw Error("Oggetto non trovato.");
-    await patch({inventory:changeOwnedItem(record.inventory,index,"equipped",!owned.equipped)});
+    const enabled=!(owned.equipped===true||(owned.equipped_slots||[]).length>0);
+    const inventory=setItemEquipped(record.inventory,index,enabled);
+    const itemKey='item:'+String(owned.id||'');
+    const trait=(state.traitRows||[]).find(row=>row.origin_key===itemKey);
+    const overrides=trait?traitActivationPatch(record,trait,true):{};
+    await patch({...overrides,inventory});
     state.inventorySelectedIndex=index;
     await render();return;
   }
