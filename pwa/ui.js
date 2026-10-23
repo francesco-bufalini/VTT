@@ -80,7 +80,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -165,6 +165,39 @@ function errorMessage(error) {
   if (code === 503) return "Apri una partita sul desktop per completare il collegamento.";
   if (code === 401) return "Associazione necessaria: inserisci il codice del desktop.";
   return error instanceof Error ? error.message : String(error);
+}
+// A character sheet must open from local storage even if one of its optional
+// reference catalogs is slow or unavailable. Do not clear locally saved data.
+function sheetLoadingDeadline(promise,ms,label){
+  let timer;
+  return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      const error=new Error("Caricamento "+label+" oltre il tempo massimo.");
+      error.code="SHEET_LOADING_TIMEOUT";
+      reject(error);
+    },ms);
+  })]).finally(()=>clearTimeout(timer));
+}
+let sheetLateRefreshTimer=null;
+function refreshSheetAfterLateLoad(promise,creatureId,sheet){
+  Promise.resolve(promise).then(()=>{
+    if(sheetLateRefreshTimer)clearTimeout(sheetLateRefreshTimer);
+    sheetLateRefreshTimer=setTimeout(()=>{
+      sheetLateRefreshTimer=null;
+      if(state.page==='library'&&!state.libraryMode&&
+        state.creatureId===creatureId&&state.sheet===sheet&&
+        app.querySelector('#sheet-play-view')){
+        void render();
+      }
+    },180);
+  }).catch(error=>console.warn("Catalogo opzionale della scheda non disponibile",error));
+}
+function sheetLoadingView(){
+  return '<section class="sheet-loading-view" role="status" aria-live="polite">'+
+    '<span class="sheet-loading-indicator" aria-hidden="true"></span>'+
+    '<h2>Caricamento della scheda</h2>'+
+    '<p>Sto aprendo i dati salvati sul dispositivo.</p>'+
+    '</section>';
 }
 // Exact icon keys used by CreatureArea._add_sheet_tab in the desktop.
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
@@ -302,6 +335,14 @@ async function navigate(page){
 async function render() {
   const ticket = ++state.renderTicket;
   syncNav();
+  const viewKey=[state.page,state.libraryMode?'archive':'sheet',state.creatureId||'',state.sheet].join('|');
+  // The header and the dock change synchronously. Change the central panel
+  // at the same time instead of leaving the old Creature list visible until
+  // asynchronous catalog requests and calculations finish.
+  if(app.dataset.renderViewKey!==viewKey){
+    app.innerHTML=sheetLoadingView();
+    app.dataset.renderViewKey=viewKey;
+  }
   try {
     let html = "";
     if (state.page === "library") html = await libraryView();
@@ -319,6 +360,7 @@ async function render() {
     const pendingCode=state.page==="session"?app.querySelector("#pair-secret")?.value:"";
     const rememberPair=state.page==="session"?app.querySelector("#pair-remember")?.checked:undefined;
     app.innerHTML = html;
+    app.dataset.renderViewKey=viewKey;
     syncLibrarySelectionUI();
     syncLibraryFilterUI();
     if(state.page==="session")sessionMapViewer.mount(app.querySelector("#session-map-canvas"),state.snapshotObjectUrl);
@@ -330,6 +372,16 @@ async function render() {
     app.dataset.renderedSheet=state.page==="library"&&!state.libraryMode?state.sheet:"";
     decorateSheetHeadings();
     organizeSheetPanels();
+    // Live token synchronization can finish while the first character load
+    // is pending. Apply at most one queued refresh after its main panel exists,
+    // rather than canceling every in-flight render before the sheet can paint.
+    if(state.page==='library'&&!state.libraryMode&&state.sheetNeedsRefresh){
+      state.sheetNeedsRefresh=false;
+      setTimeout(()=>{
+        if(state.page==='library'&&!state.libraryMode&&ticket===state.renderTicket)
+          void render();
+      },0);
+    }
     rememberUtilityDisclosures();
     mountTraitBenefitDialog();
     syncBrowserHistory();
@@ -346,6 +398,7 @@ async function render() {
     console.error("VTT Mobile: rendering della scheda fallito", {page:state.page,sheet:state.sheet}, error);
     app.innerHTML = header("Errore", "Operazione non riuscita", errorMessage(error))+
       btn("refresh","Riprova","primary");
+    app.dataset.renderViewKey='';
   }
 }
 // Offline-safe presets are real IDs from token_catalog_offline.json.
@@ -558,8 +611,13 @@ async function catalogView() {
 
 async function computeLocalData(record){
   let catalogs={},loadError="";
-  try{catalogs=await loadRuleCatalogs();}
-  catch(error){loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);}
+  const request=loadRuleCatalogs();
+  try{catalogs=await sheetLoadingDeadline(request,3000,"delle regole");}
+  catch(error){
+    loadError="Cataloghi numerici offline non disponibili: "+errorMessage(error);
+    if(error.code==='SHEET_LOADING_TIMEOUT')
+      refreshSheetAfterLateLoad(request,record.id,state.sheet);
+  }
   const calculated=calculateSheet(record,catalogs);
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
@@ -640,48 +698,111 @@ function promptEndWildShape(creatureId){
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 async function editorView() {
-  if(!state.editor) state.editor = await openCreatureEditor(state.creatureId);
+  const creatureId=state.creatureId;
+  if(!state.editor){
+    const editor=await sheetLoadingDeadline(openCreatureEditor(creatureId),7000,"dell'archivio locale");
+    if(state.creatureId!==creatureId||state.libraryMode)return '';
+    state.editor=editor;
+  }
   if(state.sheet==='origins')state.sheet='info';
   const c = state.editor.read();
   // The persistent header owns creature identity and tab navigation.
   let body = "";
+  // Start local calculation, descriptive references and spell lists together.
+  // A slow optional request must not keep the main screen on the old archive.
+  const pendingCalculation=computeLocalData(c),optionalTasks=[];
   if(state.sheet==='info'){
-    await Promise.all(["races","classes","subclasses","backgrounds",...['feats']].map(async key=>{
-      if(!state.referenceCatalogs[key])try{state.referenceCatalogs[key]=await catalogEntries(key);}
-      catch{ /* References stay editable offline. */ }
-    }));
+    optionalTasks.push(Promise.all(
+      ["races","classes","subclasses","backgrounds","feats"].map(async key=>{
+        if(state.referenceCatalogs[key])return;
+        const request=catalogEntries(key).then(rows=>{
+          state.referenceCatalogs[key]=rows;return rows;
+        });
+        try{await sheetLoadingDeadline(request,1600,"del catalogo "+key);}
+        catch(error){
+          if(error.code==='SHEET_LOADING_TIMEOUT')
+            refreshSheetAfterLateLoad(request,creatureId,'info');
+        }
+      })
+    ));
   }
   if(state.sheet==="battle"){
-    const [featureRules,generalRules]=await Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
-    state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
-    state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
-    state.actionCatalogError=generalRules.status==='rejected'?
-      'Le azioni generali e le regole varianti non sono state caricate: '+errorMessage(generalRules.reason):'';
+    optionalTasks.push((async()=>{
+      const request=Promise.allSettled([loadFeatureActionOverrides(),loadGeneralActionSupplements()]);
+      let results;
+      try{results=await sheetLoadingDeadline(request,2200,"delle azioni di battaglia");}
+      catch(error){
+        results=[{status:'rejected',reason:error},{status:'rejected',reason:error}];
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'battle');
+      }
+      const [featureRules,generalRules]=results;
+      state.featureActionOverrides=featureRules.status==='fulfilled'?featureRules.value:[];
+      state.generalActionSupplements=generalRules.status==='fulfilled'?generalRules.value:[];
+      state.actionCatalogError=generalRules.status==='rejected'?
+        'Le azioni opzionali non sono state caricate: '+errorMessage(generalRules.reason):'';
+    })());
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
-    try{state.spellCatalog=await catalogEntries("spells");state.spellCatalogError="";}
-    catch(error){state.spellCatalogError=errorMessage(error);}
+  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||
+      state.sheet==="inventory"&&state.inventorySubtab==="scrolls")&&!state.spellCatalog){
+    optionalTasks.push((async()=>{
+      const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
+      try{await sheetLoadingDeadline(request,2300,"degli incantesimi");state.spellCatalogError="";}
+      catch(error){
+        state.spellCatalogError=errorMessage(error);
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,state.sheet);
+      }
+    })());
   }
   if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
-    try{state.abilityCatalog=await loadActivatedAbilities();}
-    catch{state.abilityCatalog=[];}
+    optionalTasks.push((async()=>{
+      const request=loadActivatedAbilities().then(rows=>{state.abilityCatalog=rows;return rows;});
+      try{await sheetLoadingDeadline(request,2200,"delle capacità");}
+      catch(error){
+        state.abilityCatalog=[];
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,state.sheet);
+      }
+    })());
   }
-  const calculated=await computeLocalData(c);
+  await Promise.all(optionalTasks);
+  const calculated=await pendingCalculation;
+  if(state.creatureId!==creatureId||state.libraryMode)return '';
   state.calculated=calculated;
-  const featDetails=state.sheet==='info'?await Promise.all((Array.isArray(c.feats_catalog)?c.feats_catalog:[]).map(async feat=>{
-    const name=typeof feat==='string'?feat:feat?.name||'',source=typeof feat==='string'?'':feat?.source||'';
-    const match=(state.referenceCatalogs.feats||[]).find(row=>row.name?.toLowerCase()===name.toLowerCase()&&(!source||row.source?.toLowerCase()===source.toLowerCase()));
-    try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
-    catch{return {description:''};}
-  })):undefined;
+  let featDetails;
+  if(state.sheet==='info'){
+    const feats=Array.isArray(c.feats_catalog)?c.feats_catalog:[];
+    const request=Promise.all(feats.map(async feat=>{
+      const name=typeof feat==='string'?feat:feat?.name||'';
+      const source=typeof feat==='string'?'':feat?.source||'';
+      const match=(state.referenceCatalogs.feats||[]).find(row=>row.name?.toLowerCase()===name.toLowerCase()&&
+        (!source||row.source?.toLowerCase()===source.toLowerCase()));
+      try{return {description:flattenDescription(await detailedEntry('feats',match||{name,source}))};}
+      catch{return {description:''};}
+    }));
+    try{featDetails=await sheetLoadingDeadline(request,1600,"delle descrizioni dei talenti");}
+    catch(error){
+      featDetails=[];
+      if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'info');
+    }
+  }
   // Resolve selected optional powers through the very same detailed
   // compendium source used by the trait and feature viewers.
   let battleOptionalTraits=[];
   if(state.sheet==='battle'&&(c.optional_features_catalog||[]).length){
-    if(!state.referenceCatalogs.optional_features)
-      try{state.referenceCatalogs.optional_features=await catalogEntries('optional_features');}
-      catch{state.referenceCatalogs.optional_features=[];}
-    battleOptionalTraits=await Promise.all((c.optional_features_catalog||[]).map(async feature=>{
+    if(!state.referenceCatalogs.optional_features){
+      const request=catalogEntries('optional_features').then(rows=>{
+        state.referenceCatalogs.optional_features=rows;return rows;
+      });
+      try{await sheetLoadingDeadline(request,1800,"dei privilegi opzionali");}
+      catch(error){
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'battle');
+      }
+    }
+    const request=Promise.all((c.optional_features_catalog||[]).map(async feature=>{
       const name=String(feature?.name||feature||''),source=String(feature?.source||'');
       const reference=(state.referenceCatalogs.optional_features||[]).find(row=>
         String(row.name||'').toLowerCase()===name.toLowerCase()&&
@@ -691,10 +812,23 @@ async function editorView() {
       return {name,origin_id:feature?.origin_id||'',origin_key:feature?.origin_name||source,
         feature_key:'',description:flattenDescription(detail)||flattenDescription(feature)};
     }));
+    try{battleOptionalTraits=await sheetLoadingDeadline(request,1800,"delle capacità opzionali");}
+    catch(error){
+      if(error.code==='SHEET_LOADING_TIMEOUT')
+        refreshSheetAfterLateLoad(request,creatureId,'battle');
+    }
   }
   state.battleOptionalTraits=battleOptionalTraits;
   body=nativeSection(c,state.sheet,{field,area,panel,resources:resourceView(c,false,state.sheet==='battle'),resourcesEditor:resourceView(c,true),equipment:inventoryEquipmentView(c,calculated),armor:'',attacks:attacksView(calculated,state.sheet==='battle'),details:state.detail,catalogs:{...state.referenceCatalogs,featDetails,origins:calculated.origins,trackers:calculated.trackers,attacks:calculated.attacks,calculated,spells:state.spellCatalog||[]},calculated})||"";
-  if(state.sheet==="info")body+=await traitsView(c);
+  if(state.sheet==="info"){
+    const request=traitsView(c);
+    try{body+=await sheetLoadingDeadline(request,2500,"dei tratti");}
+    catch(error){
+      if(error.code!=='SHEET_LOADING_TIMEOUT')throw error;
+      body+=panel('Tratti','<p class="hint">I riferimenti stanno ancora caricando. Puoi usare la scheda nel frattempo.</p>');
+      refreshSheetAfterLateLoad(request,creatureId,'info');
+    }
+  }
   switch(state.sheet){
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
@@ -713,8 +847,15 @@ async function editorView() {
       '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
     if(isDocuments){
       const documents=inventory.map((item,index)=>({item,index})).filter(({item})=>isDocument(item));
-      const definitions=await Promise.all(documents.map(({item})=>
+      const request=Promise.all(documents.map(({item})=>
         getRecord("global","homebrew",String(item.id||""))));
+      let definitions;
+      try{definitions=await sheetLoadingDeadline(request,3500,"dei documenti");}
+      catch(error){
+        definitions=documents.map(()=>null);
+        if(error.code==='SHEET_LOADING_TIMEOUT')
+          refreshSheetAfterLateLoad(request,creatureId,'inventory');
+      }
       body=nav+panel("Documenti",
         (documents.length?documents.map(({item,index},i)=>documentRow(item,index,definitions[i])).join(""):
           '<p class="hint">Nessun documento.</p>')+
@@ -731,11 +872,25 @@ async function editorView() {
       if(!selected){selected=visibleRows[0];state.inventorySelectedIndex=selected?.index??-1;}
       let resolvedDetail=selected?.item||{};
       if(selected&&isCatalogItem(selected.item)){
-        if(!state.referenceCatalogs.items)try{state.referenceCatalogs.items=await catalogEntries("items");}catch{state.referenceCatalogs.items=[];}
-        const source=state.referenceCatalogs.items.find(row=>String(row.id||"")===String(selected.item.id||""));
+        if(!state.referenceCatalogs.items){
+          const request=catalogEntries("items").then(rows=>{state.referenceCatalogs.items=rows;return rows;});
+          try{await sheetLoadingDeadline(request,2500,"degli oggetti");}
+          catch(error){
+            if(error.code==='SHEET_LOADING_TIMEOUT')
+              refreshSheetAfterLateLoad(request,creatureId,'inventory');
+          }
+        }
+        const source=(state.referenceCatalogs.items||[]).find(row=>
+          String(row.id||"")===String(selected.item.id||""));
         if(source){
-          const detail=await detailedEntry("items",source);
-          resolvedDetail={...detail,...selected.item,
+          const request=detailedEntry("items",source);
+          let detail;
+          try{detail=await sheetLoadingDeadline(request,2000,"dei dettagli dell'oggetto");}
+          catch(error){
+            if(error.code==='SHEET_LOADING_TIMEOUT')
+              refreshSheetAfterLateLoad(request,creatureId,'inventory');
+          }
+          if(detail)resolvedDetail={...detail,...selected.item,
             entries:detail.entries??selected.item.entries,
             description:detail.description??selected.item.description};
         }
@@ -921,7 +1076,8 @@ async function traitsView(c){
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{},
    {includeUnavailable:true})};
- state.traitRows=rows;
+ if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info')
+   state.traitRows=rows;
  const renderCard=trait=>{
   const description=flattenDescription({entries:trait.entries});
   const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
@@ -2173,14 +2329,20 @@ function startMap() {
           if(state.page==='session'){
             state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
             state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
-          }else if(state.editor&&changed.includes(state.creatureId)){
-            if(!app.contains(document.activeElement)||document.activeElement.tagName==='BUTTON')
+          }else if(state.page==='library'&&!state.libraryMode&&
+            changed.includes(state.creatureId)){
+            if(!state.editor||!app.querySelector('#sheet-play-view')){
+              state.sheetNeedsRefresh=true;
+            }else if(!app.contains(document.activeElement)||
+                     document.activeElement.tagName==='BUTTON'){
               await render();
-            else{
+            }else{
               state.calculated=await computeLocalData(state.editor.read());
               refreshCalculatedValues(app,state.calculated);
             }
-          }else if(state.page==='library')await render();
+          }else if(state.page==='library'&&state.libraryMode){
+            await render();
+          }
         }
       }).catch(error=>{message("Sincronizzazione effetti: "+errorMessage(error),true);});
     }
