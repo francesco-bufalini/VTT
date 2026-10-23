@@ -655,14 +655,41 @@ try{
  await dismiss();
  await popup('magic-tools');assert.equal(await page.locator('#sheet-context-dialog .magic-toolbar button:visible').count(),6);await page.locator('#sheet-context-dialog [data-magic-tool="slots"]').click();await page.locator('#magic-tools-dialog').waitFor();assert.equal(await page.locator('#sheet-context-dialog').count(),0);await page.locator('[data-act="magic-tool-close"]').click();
  await sheet('info');assert.equal(await page.locator('#sheet-play-view [data-sheet-context="trait-notes"]').count(),0);
- const traitDisclosure=page.locator('.play-info-traits .play-traits-disclosure');
- assert.equal(await traitDisclosure.count(),1);
- // A link from a proficiency roll can leave Tratti expanded.
- // Keep the disclosure state when returning to Info and open it if necessary.
- if((await traitDisclosure.getAttribute('open'))===null)
-  await traitDisclosure.locator(':scope > summary').click();
- assert.equal(await traitDisclosure.getAttribute('open'),'');
- assert(await page.locator('.play-info-traits .trait-origin-group:visible').count()>0);
+ const traitSection=page.locator('.play-info-traits');
+ assert.equal(await traitSection.count(),1);
+ assert.equal(await traitSection.locator(':scope > h2.play-section-divider').textContent(),'Tratti',
+  'Tratti uses the same fixed divider heading as Competenze');
+ assert.equal(await traitSection.locator('.play-traits-disclosure').count(),0,
+  'Tratti must not be collapsible');
+ assert(await traitSection.locator('.trait-origin-group:visible').count()>0,
+  'Trait groups are always visible, without opening a disclosure');
+ // Adjacent entries, origins and sections must each have one CSS rule, not
+ // overlapping bottom- and top-borders.
+ const borders=await traitSection.evaluate(section=>{
+  const width=(node,side)=>node?parseFloat(getComputedStyle(node)[side])||0:0;
+  const lastRow=origin=>origin?.querySelector(':scope > .trait-origin-cards:last-child > .trait-row:last-child');
+  let checked=0,duplicates=0,missing=0;
+  const check=(last,next)=>{
+   if(!last||!next)return;
+   checked++;
+   const total=width(last,'borderBottomWidth')+width(next,'borderTopWidth');
+   if(total>1.5)duplicates++;
+   if(total<0.5)missing++;
+  };
+  const categories=[...section.querySelectorAll('.trait-category')];
+  for(const category of categories){
+   const origins=[...category.querySelectorAll(':scope > .trait-origin-group')];
+   for(let i=1;i<origins.length;i++)check(lastRow(origins[i-1]),origins[i]);
+  }
+  for(let i=1;i<categories.length;i++){
+   const origins=[...categories[i-1].querySelectorAll(':scope > .trait-origin-group')];
+   check(lastRow(origins[origins.length-1]),categories[i]);
+  }
+  return {checked,duplicates,missing};
+ });
+ assert(borders.checked>0,'At least one adjacent trait section was checked');
+ assert.equal(borders.duplicates,0,'Trait sections must not draw double divider lines');
+ assert.equal(borders.missing,0,'Trait sections must retain one divider line');
  // Benefits and description must be independent controls.
  assert.equal(await page.locator('.play-info-traits .trait-category-title').count(),0,
   'Origin category labels are inline before each stronger origin name, not separate headings');

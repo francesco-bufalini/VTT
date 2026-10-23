@@ -666,14 +666,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '</div></details>'+
    '<div class="play-competence-tools">'+go('tools','Altre competenze','proficiency')+'</div>'+
    '</section>';
-  // Same borderless disclosure pattern as Abilità: no nested cards.
+  // Tratti is a permanent Info section like Competenze; only each trait's
+  // description can be expanded. Keep all benefit controls visible.
   const traits=panelNamed('Tratti');
   if(traits){
    const content=[...traits.children].filter(child=>child.tagName!=='H2')
      .map(child=>child.outerHTML).join('');
-   html+='<section class="play-info-traits"><details class="play-traits-disclosure">'+
-    '<summary class="play-competence-heading">'+icon('proficiency')+'<strong>Tratti</strong></summary>'+
-    '<div class="play-info-traits-content">'+content+'</div></details></section>';
+   html+='<section class="play-info-traits" aria-labelledby="play-info-traits-heading">'+
+    '<h2 id="play-info-traits-heading" class="play-section-divider"><span>Tratti</span></h2>'+
+    '<div class="play-info-traits-content">'+content+'</div></section>';
   }
  }
  if(sheet==='magic'){
