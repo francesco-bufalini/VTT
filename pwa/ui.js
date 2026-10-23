@@ -44,7 +44,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', scrollSpellQuery:'', pendingItemOwner:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -1562,13 +1562,15 @@ function originPowersView(c,calculated,abilitiesList=[],forBattle=false){
  return (forBattle?'':slotPanels)+resourcePanels;
 }
 function originChoicesView(calculated){
- const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0);
+ const choices=(calculated.origin_choices||[]).filter(choice=>choice.remaining>0)
+   .sort((a,b)=>Number(b.id===state.pendingSpellChoiceId)-Number(a.id===state.pendingSpellChoiceId));
  if(!choices.length)return '';
  return panel('Scelte da origini',choices.map(choice=>{
   const eligible=choice.spell_options?.length?state.spellCatalog||[]:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version||'2014');
   const offered=eligible.filter(spell=>originChoiceMatches(choice,spell).matches&&!choice.selected.some(selected=>selected.spell_id===spell.id));
   const supported=(state.spellCatalog||[]).some(spell=>originChoiceMatches(choice,spell).supported);
-  return '<article class="native-entry"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
+  return '<article class="native-entry pending-spell-choice'+(choice.id===state.pendingSpellChoiceId?' is-target':'')+
+   '" data-pending-spell-choice="'+esc(choice.id)+'"><h3>'+esc(choice.origin_name)+' · Scegli ancora '+choice.remaining+'</h3><p class="hint">'+esc(choice.filters?.join(' oppure ')||choice.filter||'Elenco della concessione')+'</p>'+
    (offered.length?'<label>Incantesimo<select data-origin-choice="'+esc(choice.id)+'">'+groupedMagicOptions(offered)+'</select></label><label>Caratteristica<select data-choice-ability="'+esc(choice.id)+'">'+(choice.spellcasting_ability?'':'<option value="">Scegli…</option>')+Object.entries(abilities).map(([key,label])=>'<option value="'+key+'" '+(key===choice.spellcasting_ability?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button class="btn" data-act="origin-choice-pick" data-choice-id="'+esc(choice.id)+'">Conferma scelta</button>':
      '<p class="hint">'+(supported?'Nessun incantesimo disponibile nel catalogo locale per questa concessione.':'Questa concessione richiede un filtro non ancora supportato; la scelta rimane salvata e visibile.')+'</p>')+'</article>';
  }).join(''));
@@ -2840,6 +2842,24 @@ function openSheetScoreFormula(record,calculated,target,label){
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+function openPendingChoicesIndex(){
+ const choices=state.calculated?.pending_choices||[];
+ if(!choices.length)return;
+ app.querySelector('#pending-choice-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='pending-choice-dialog';
+ dialog.className='sheet-context-dialog pending-choice-dialog pending-choice-index';
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Scelte dei privilegi</h2>'+
+   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   '<div class="pending-choice-dialog-body pending-choices-notice-list">'+
+   choices.map(choice=>'<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
+     '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
+     '<span>'+esc(choice.selected.length)+'/'+esc(choice.count)+' <span aria-hidden="true">›</span></span></button>').join('')+
+   '</div>';
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 function openPendingChoiceDialog(choice){
  app.querySelector('#pending-choice-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -2881,20 +2901,20 @@ function openPendingChoiceDialog(choice){
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='pending-choice-manage'){
-    const all=state.calculated?.pending_choices||[];
-    const choice=all.find(row=>row.remaining>0&&row.kind!=='spell')||
-      all.find(row=>row.kind!=='spell')||all[0];
-    if(!choice)return;
-    if(choice.kind==='spell'){
-      state.sheet='magic';state.magicPopup='choices';await render();return;
-    }
-    openPendingChoiceDialog(choice);return;
+    openPendingChoicesIndex();return;
   }
   if(act==='pending-choice-open'){
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
     if(!choice)throw Error('Scelta non disponibile nella scheda.');
     if(choice.kind==='spell'){
-      state.sheet='magic';state.magicPopup='choices';await render();return;
+      app.querySelector('#pending-choice-dialog')?.remove();
+      state.pendingSpellChoiceId=choice.source_choice_id;
+      state.sheet='magic';state.magicPopup='choices';await render();
+      const row=[...app.querySelectorAll('[data-pending-spell-choice]')]
+        .find(node=>node.dataset.pendingSpellChoice===choice.source_choice_id);
+      row?.scrollIntoView?.({block:'nearest'});
+      row?.querySelector('select')?.focus?.({preventScroll:true});
+      return;
     }
     openPendingChoiceDialog(choice);return;
   }
