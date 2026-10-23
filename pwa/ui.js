@@ -883,8 +883,8 @@ function mountTraitBenefitDialog(){
  if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
  const trackerCost=dialog.querySelector('[data-trait-fields="dice"] [name="tracker_cost"]');
  if(trackerCost)trackerCost.value='1';
- dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
- dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';dialog.close();});
+ dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';dialog.close();});
+ dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';dialog.close();});
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 function documentRow(item,index,stored){
@@ -2567,6 +2567,39 @@ function rollBonusTerm(row){
   originId:row.origin_id||'',originName:row.origin_name||'Bonus',
   section:row.origin_id?'':'formula_bonuses'};
 }
+// Roll popups navigate only to concrete owned traits. The picker always uses
+// the current calculated trait projection (including equipped item traits).
+async function openRollTraitPicker(kind='bonus',target=''){
+ state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+ state.sheet='info';await render();
+ const traits=(state.traitRows||[]).filter(trait=>!trait.inactive);
+ if(!traits.length){message('Nessun tratto disponibile a cui associare il beneficio.',true);return;}
+ document.querySelector('#roll-trait-picker')?.remove();
+ const picker=document.createElement('dialog');picker.id='roll-trait-picker';picker.className='trait-benefits-dialog';
+ picker.dataset.benefitKind=kind;picker.dataset.benefitTarget=target;
+ picker.innerHTML='<header class="trait-benefits-dialog-head"><h2>Seleziona il tratto che concede il bonus</h2>'+
+  '<button type="button" class="trait-benefits-close" data-act="roll-trait-cancel" aria-label="Chiudi">×</button></header>'+
+  '<div class="trait-benefits-dialog-body"><label>Tratto<select data-roll-trait-key>'+
+  traits.map(row=>'<option value="'+esc(row.key)+'">'+esc(row.origin+' · '+row.name)+'</option>').join('')+
+  '</select></label><div class="actions"><button type="button" class="btn primary" data-act="roll-trait-pick">Continua</button></div></div>';
+ document.body.append(picker);picker.addEventListener('close',()=>picker.remove(),{once:true});
+ picker.showModal?.();
+}
+async function openRollTraitOrigin(originId){
+ state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+ state.sheet='info';await render();
+ const record=state.editor?.read()||{};
+ const candidates=(state.traitRows||[]).map(row=>({
+  row,score:row.feature_origin===originId||row.proficiency_origin===originId?5:
+    row.origin_key===originId?4:traitBenefitSources(row,record).has(originId)?3:0
+ })).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||b.row.rank-a.row.rank);
+ const trait=candidates[0]?.row;
+ if(!trait){
+   message('Origine non riconducibile a un tratto della creatura. Seleziona il tratto corretto.',true);
+   await openRollTraitPicker('bonus','');return;
+ }
+ state.traitPopupKey=trait.key;mountTraitBenefitDialog();
+}
 function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
  document.querySelector('#sheet-roll-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -3117,6 +3150,20 @@ async function handleAction(target){
         [...damageRollTerms(formula,type,dialog.rollAttack).segments,...chosenRollBonuses(dialog).map(rollBonusTerm)],esc);};
     return;
   }
+  if(act==='roll-trait-cancel'){
+    const picker=document.querySelector('#roll-trait-picker');
+    picker?.close?.();picker?.remove();return;
+  }
+  if(act==='roll-trait-pick'){
+    const picker=document.querySelector('#roll-trait-picker');
+    const key=picker?.querySelector('[data-roll-trait-key]')?.value;
+    if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
+    const kind=picker.dataset.benefitKind,targetKey=picker.dataset.benefitTarget;
+    picker.close?.();picker.remove();
+    state.traitPopupKey=key;state.traitPopupConfirm='';
+    state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
+    mountTraitBenefitDialog();return;
+  }
   if(act==='sheet-roll-add-bonus'||act==='sheet-roll-add-applicable'){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog)return;
@@ -3393,6 +3440,7 @@ async function handleAction(target){
   }
   if(act==='trait-benefits-open'){
     if(state.sheet!=='info')return;
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     const key=target.dataset.traitKey;
     if(!state.traitRows.some(row=>row.key===key))throw Error('Tratto non disponibile');
     state.traitPopupKey=key;state.traitPopupConfirm='';
@@ -3400,6 +3448,7 @@ async function handleAction(target){
   }
   if(act==='trait-benefits-close'){
     state.traitPopupKey='';state.traitPopupConfirm='';
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     const dialog=app.querySelector('#trait-benefits-dialog');
     if(dialog?.close)dialog.close();else dialog?.remove();
     return;
@@ -3407,6 +3456,9 @@ async function handleAction(target){
   if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
     const editor=app.querySelector('#trait-benefits-dialog [data-trait-add-form]');
     if(editor)editor.hidden=act!=='trait-benefits-add';
+    if(act==='trait-benefits-cancel-add'){
+      state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+    }
     return;
   }
   if(act==='trait-benefits-save'){
@@ -3428,7 +3480,7 @@ async function handleAction(target){
     // form from lingering after Save, without discarding it on save failure.
     const form=dialog?.querySelector('[data-trait-add-form]');
     if(form)form.hidden=true;
-    state.traitPopupConfirm='';
+    state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
     await render();return;
   }
   if(act==='trait-benefits-remove-request'){
