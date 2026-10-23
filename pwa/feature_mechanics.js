@@ -152,6 +152,7 @@ export function classFeatureRollSources(record,calculated,target){
  const applies=(rule)=>{
    const targets=rows(rule?.targets).length?rule.targets:[rule?.target];
    return targets.some(t=>t===target||
+     t==='any_d20'&&(target==='initiative'||/^(ability_check:|ability_mod:|skill:|save:|attack_hit:|casting_hit:)/.test(target))||
      t==='ability_check'&&(target.startsWith('skill:')||target.startsWith('ability_check:')||target==='initiative')||
      t==='saving_throw'&&target.startsWith('save:')||
      t==='attack_roll'&&target.startsWith('attack_hit:')||
@@ -162,6 +163,13 @@ export function classFeatureRollSources(record,calculated,target){
    for(const rule of rows(feature.roll_modes)){
      if(applies(rule))add(rule.mode,feature.origin_id,'Tratto · '+feature.name);
    }
+ }
+ // User-authored effects remain attached to a concrete trait and respect
+ // both the trait toggle and its owning catalog source.
+ for(const grant of rows(record.roll_mode_grants)){
+   if(grant?.disabled||!applies(grant)||record.trait_enabled?.[grant.trait_key]===false||
+      disabledOrigin(record,grant.origin_id)||disabledOrigin(record,grant.parent_origin))continue;
+   add(grant.mode,grant.origin_id,grant.origin_name||'Tratto','feature');
  }
  // Common unconditional conditions. Context-dependent modifiers (e.g.
  // Frightened only while its source is visible, or a ranged attack on a prone
