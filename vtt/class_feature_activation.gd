@@ -9,6 +9,8 @@ const Items = preload("res://vtt/creature_item_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 # One shared data source for PWA and desktop Armor Model states.
 const ARMOR_STATE_CATALOG := "res://pwa/catalog/trait_states.json"
+static var _armor_states_cache: Array[Dictionary] = []
+static var _armor_states_loaded := false
 const RULES := [
 	["armor_guardian", "Artificer", "Armor Model", "Modello armatura · Guardiano", "", "armor_model", "free"],
 	["armor_infiltrator", "Artificer", "Armor Model", "Modello armatura · Infiltratore", "", "armor_model", "free"],
@@ -50,6 +52,8 @@ const RULES := [
 # Armor Model trait authorizes a model; class/level or equipped armor alone
 # never grants either mode or its attacks.
 static func _armor_state_rules() -> Array[Dictionary]:
+	if _armor_states_loaded:
+		return _armor_states_cache
 	var rules: Array[Dictionary] = []
 	var file := FileAccess.open(ARMOR_STATE_CATALOG, FileAccess.READ)
 	if file == null:
@@ -63,6 +67,8 @@ static func _armor_state_rules() -> Array[Dictionary]:
 	for raw: Variant in states:
 		if raw is Dictionary and String((raw as Dictionary).get("group", "")) == "armor_model":
 			rules.append(raw)
+	_armor_states_cache = rules
+	_armor_states_loaded = true
 	return rules
 
 
@@ -175,10 +181,14 @@ static func entries(record: Dictionary) -> Array[Dictionary]:
 				continue
 			if rule[0] in ["defensive_field", "perfected_guardian"] and _selected_armor_state(record) != "armor_model:guardian":
 				continue
-			if rule[0] in ["defensive_field", "perfected_guardian"] and _model_trait(record,
-				_armor_state_rules().filter(func(row: Dictionary) -> bool: return String(row.get("id", "")) == "armor_model:guardian").front(),
-				collected).is_empty():
-				continue
+			if rule[0] in ["defensive_field", "perfected_guardian"]:
+				var guardian_trait_valid := false
+				for state: Dictionary in _armor_state_rules():
+					if String(state.get("id", "")) == "armor_model:guardian":
+						guardian_trait_valid = not _model_trait(record, state, collected).is_empty()
+						break
+				if not guardian_trait_valid:
+					continue
 			var origin := "feature:" + String(feature.get("key", ""))
 			if bool(feature.get("inactive", false)) or not bool(enabled.get(origin, true)):
 				continue
@@ -324,6 +334,8 @@ static func active_effects(record: Dictionary) -> Array[Dictionary]:
 		definitions[String(action.get("key", ""))] = action
 	for raw_key: Variant in saved.keys():
 		var key := String(raw_key)
+		if key.begins_with("trait_state:"):
+			continue  # Rendered through the same state-trait layer as the PWA.
 		var state: Dictionary = saved[key] if saved[key] is Dictionary else {}
 		var definition: Dictionary = definitions.get(key, {})
 		var name := String(definition.get("name", state.get("name", key.capitalize())))
