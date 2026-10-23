@@ -203,7 +203,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const equipped=arr(item.equipped_slots).length>0||item.equipped===true;
   const id=String(item.id);
   const previous=equippedItems.get(id);
-  if(!previous||(!(arr(previous.equipped_slots).length||previous.equipped===true||false)&&equipped))
+  if(!previous||(!(arr(previous.equipped_slots).length||previous.equipped===true)&&equipped))
     equippedItems.set(id,item);
  }
  for(const [id,item] of equippedItems){
