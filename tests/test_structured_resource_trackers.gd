@@ -126,6 +126,21 @@ func run() -> void:
 		"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": 4}]
 	})
 	assert(int(_find_resource(fighter, "Second Wind").get("max", 0)) == 3)
+	for example: Array in [[2, 1, 0], [9, 1, 1], [13, 1, 2], [17, 2, 3]]:
+		var fighter_resources: Array[Dictionary] = Trackers.for_creature({
+			"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": example[0]}]
+		})
+		var surge: Dictionary = _find_resource(fighter_resources, "Action Surge")
+		var indomitable: Dictionary = _find_resource(fighter_resources, "Indomitable")
+		assert(int(surge.get("max", 0)) == example[1]
+			and String(surge.get("id", "")) == "class:fighter:xphb:action_surge"
+			and String(surge.get("recharge", "")) == "short_rest",
+			"Action Surge must keep its spent-use ID and 2024 progression")
+		assert(int(indomitable.get("max", 0)) == example[2]
+			and (indomitable.is_empty() or (
+				String(indomitable.get("id", "")) == "class:fighter:xphb:indomitable"
+				and String(indomitable.get("recharge", "")) == "long_rest")),
+			"Indomitable must appear only at level 9 and keep its 2024 progression")
 
 	# The runtime accepts only the existing VTT formula symbols, never the
 	# Fight Club placeholders consumed by the offline asset generator.

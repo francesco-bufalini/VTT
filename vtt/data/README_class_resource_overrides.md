@@ -3,7 +3,8 @@
 The runtime reads `vtt/data/class_mechanics_5etools.json` for 5etools class-table
 progressions and complements it with `vtt/data/class_resource_overrides.json`.
 The latter is a curated snapshot of *counter metadata* taken from the public
-FightClub5eXML compendium files, plus a separately identified 2024 Bard entry.
+FightClub5eXML compendium files, plus separately identified 2024 Bard and
+Fighter entries from the source-qualified 5etools class features.
 The game never fetches Fight Club or other websites.
 
 - `classes[].resources[].steps`: when a counter becomes available or changes
@@ -38,6 +39,10 @@ python scripts/generate_fightclub_resources.py /path/to/fightclub5exml
 
 The checked-in JSON is the allowlist. Inspect the output before committing.
 The script does not fetch content or infer a resource from descriptive prose.
+The 2024 Fighter entries (Action Surge and Indomitable) are reviewed against
+`creature_references_5etools.json` and stay in this allowlist when the 2014
+Fight Club generator runs. The 2024 Second Wind class-table progression is
+already supplied by `class_mechanics_5etools.json` and is not duplicated here.
 Fight Club values (e.g. its `%6` token for CHA modifier) are translated to
 VTT-native formulas (e.g. `cha_mod`) **by this Python script only**. An unknown
 source placeholder causes an error instead of being stored. No source-specific

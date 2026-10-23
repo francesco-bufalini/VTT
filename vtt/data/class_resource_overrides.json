@@ -5,7 +5,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard and Fighter definitions are curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "classes": [
     {
@@ -878,6 +878,31 @@
           ],
           "source": "PHB",
           "subclass": "School of Divination"
+        }
+      ]
+    },
+    {
+      "class": "Fighter",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Action Surge",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Action Surge (Fighter XPHB, levels 2 and 17)",
+          "steps": [
+            {"level": 2, "value": "1", "reset": "short_rest"},
+            {"level": 17, "value": "2", "reset": "short_rest"}
+          ]
+        },
+        {
+          "name": "Indomitable",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Indomitable (Fighter XPHB, levels 9, 13 and 17)",
+          "steps": [
+            {"level": 9, "value": "1", "reset": "long_rest"},
+            {"level": 13, "value": "2", "reset": "long_rest"},
+            {"level": 17, "value": "3", "reset": "long_rest"}
+          ]
         }
       ]
     },

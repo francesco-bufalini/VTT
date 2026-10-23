@@ -182,13 +182,10 @@ const mechanics=await read('../../vtt/data/class_mechanics_5etools.json');
 const resources=await read('../../vtt/data/class_resource_overrides.json');
 mechanics.resource_overrides=resources.classes;
 mechanics.resource_overrides_meta=resources.meta;
-// Mirror the XPHB normalization in ClassResourceOverrides.for_class():
-// these consumables are absent from the numeric 5etools class tables.
-// Export concrete class-level steps so multiclass totals cannot inflate them.
+// Only resources still awaiting migration into the source-qualified data
+// supplement need normalization here. Keep class-level steps for multiclassing.
 const revisedResources=[
  ['Sorcerer','Innate Sorcery',[[1,2]],'long_rest'],
- ['Fighter','Action Surge',[[2,1],[17,2]],'short_rest'],
- ['Fighter','Indomitable',[[9,1],[13,2],[17,3]],'long_rest'],
  ['Paladin','Lay on Hands',Array.from({length:20},(_,i)=>[i+1,5*(i+1)]),'long_rest'],
  ['Wizard','Arcane Recovery',[[1,1]],'long_rest']
 ];

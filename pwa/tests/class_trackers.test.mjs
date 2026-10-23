@@ -63,6 +63,22 @@ test("native unlimited table entries cannot be overwritten by finite supplements
  assert.equal(classResourceTrackers(high,index,overrides)
   .some(x=>x.id==="class:barbarian:phb:rages"),false);
 });
+test("2024 Fighter uses the source-qualified Action Surge and Indomitable steps",()=>{
+ for(const [level,surgeMax,indomitableMax] of [[2,1,0],[9,1,1],[13,1,2],[17,2,3]]){
+  const record={kind:"character",level,classes:[{name:"Fighter",source:"XPHB",level}]};
+  const rows=classResourceTrackers(record,index,{classes:index.resource_overrides});
+  const surge=rows.find(row=>row.name==="Action Surge");
+  const indomitable=rows.find(row=>row.name==="Indomitable");
+  assert.equal(surge?.id,"class:fighter:xphb:action_surge");
+  assert.equal(surge?.max,surgeMax);
+  assert.equal(surge?.recharge,"short_rest");
+  assert.equal(indomitable?.max,indomitableMax||undefined);
+  if(indomitableMax){
+   assert.equal(indomitable.id,"class:fighter:xphb:indomitable");
+   assert.equal(indomitable.recharge,"long_rest");
+  }
+ }
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],
