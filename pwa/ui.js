@@ -1164,7 +1164,8 @@ function infusionPanel(c,calculated){
        '<button type="button" class="btn small" data-act="infusion-forget" data-index="'+index+
          '" aria-label="Dimentica '+esc(entry.name)+'">×</button></div>'+
        applied.map(({item,index:itemIndex})=>'<div class="infusion-equipped"><span>'+esc(item.name||item.id)+
-         ' · '+(item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
+         ' · '+(!['weapon','shield','armor'].includes(itemKind(item))?'Attivo nell’inventario':
+          item.equipped||item.attuned||(item.equipped_slots||[]).length?'In uso':'Non equipaggiato')+'</span>'+
          '<button type="button" class="btn small" data-act="infusion-clear" data-index="'+itemIndex+'">Rimuovi infusione</button></div>').join('');
    }).join('')+'</section>').join('')||'<p class="hint">Nessuna infusione conosciuta. Imparane una dal catalogo.</p>';
  const selected=known[state.infusionPending];
