@@ -317,7 +317,7 @@ const powerIdentity=power=>{
 // explicitly typed self/toggle powers have reversible sheet state.
 export function persistentBattleAbility(row={}){
  const power=row.power||{},action=row.classAction||{};
- if(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
+ if(action.mode==='trait_state'||['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind'].includes(action.class_feature_id)||
    power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape')return true;
  const sources=[power,action],isSelf=field=>['self','actor','owner','caster'].includes(String(field||'').toLowerCase());
  return sources.some(source=>{
@@ -388,7 +388,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
   if(repeated)continue;
   const cost=Math.max(0,Number(action.cost??0)||0);
   const identity=powerIdentity(action);
-  const same=rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
+  const same=action.mode==='trait_state'?null:rows.find(row=>row.kind==='ability'&&row.source==='activated'&&(
    (identity==='wild_shape'&&powerIdentity(row.power)==='wild_shape')||
    (action.origin_id&&row.power.feature_id===action.origin_id)||
    (identity&&identity===powerIdentity(row.power)&&
@@ -580,7 +580,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
    const persistent=persistentBattleAbility(row);
    const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':action.class_feature_id||'battle:'+String(id);
-   const active=!!c.active_class_features?.[statusKey];
+   const active=!!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true;
    const use=persistent?'Attiva':'Usa';
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+

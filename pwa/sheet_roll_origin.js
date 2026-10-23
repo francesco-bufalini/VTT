@@ -276,13 +276,13 @@ export function rollOptionalDice(record,calculated,bonuses=[],{kind='d20',attack
     spent:tracker?Number(tracker.spent||0):null,
     tracker_name:tracker?.name||'',tracker_cost:tracker?Math.max(1,Number(row.tracker_cost)||1):0});
  }
- if(kind==='damage'&&attackId==='class_feature:lightning_launcher'){
-  const tracker=trackerFor('feature:lightning_launcher:extra_damage');
-  const remaining=tracker?Math.max(0,Number(tracker.max)-Number(tracker.spent||0)):0;
-  if(tracker)result.push({id:'lightning-launcher:extra',selectionId:'lightning-launcher:extra',
-   dice:'1d6',damage_type:'lightning',origin_name:'Lightning Launcher',
-   origin_id:tracker.origin_id,tracker_id:tracker.id,tracker_cost:1,
-   tracker_name:tracker.name,spent:Number(tracker.spent||0),remaining});
+ for(const row of kind==='damage'?(calculated?.trait_state_optional_dice||[]):[]){
+  if(row.attack_id!==attackId)continue;
+  const tracker=trackerFor(row.tracker_id);
+  if(!tracker)continue;
+  result.push({...row,selectionId:row.id,
+    tracker_name:tracker.name,spent:Number(tracker.spent||0),
+    remaining:Math.max(0,Number(tracker.max)-Number(tracker.spent||0))});
  }
  return result;
 }

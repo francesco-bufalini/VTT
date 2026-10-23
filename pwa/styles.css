@@ -707,6 +707,21 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 @media(max-width:480px){.magic-panel .magic-source{padding:8px 0}.magic-spell-dialog{padding:14px}.magic-spell-description{max-height:40dvh}}
 
 .magic-spell-row{flex-wrap:wrap}
+/* Learned, prepared and applied feature choices use the same compact rows as magic. */
+.infusion-overview{display:flex;flex-wrap:wrap;gap:7px 12px;margin:7px 0 10px;font-size:.78rem;color:var(--text-muted,var(--text))}
+.infusion-overview strong{color:var(--vtt-gold,#ebc58c)}
+.infusion-level{min-width:0;margin:8px 0}
+.infusion-entry{min-width:0;gap:5px}
+.infusion-entry .magic-spell-open{cursor:default;display:grid;gap:2px;flex:1 1 135px;overflow-wrap:anywhere}
+.infusion-entry .magic-spell-open small{font-weight:400;color:var(--text-muted,var(--text));font-size:.71rem}
+.infusion-entry .btn{flex:0 0 auto;min-width:0;padding:5px 8px}
+.infusion-equipped{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;padding:5px 8px 7px 14px;font-size:.75rem;border-bottom:1px solid var(--line)}
+.infusion-learning,.infusion-target-picker{display:grid;gap:7px;min-width:0;padding:12px 0;border-top:1px solid var(--line)}
+.infusion-learning h3,.infusion-target-picker h3{margin:0;font-size:.86rem}
+.infusion-learning label,.infusion-target-picker label{min-width:0}
+.infusion-learning select,.infusion-target-picker select{max-width:100%;min-width:0}
+@media(max-width:380px){.infusion-entry .btn{font-size:.7rem;padding:5px 6px}}
+
 .magic-catalog-entry.btn{min-height:36px;padding:6px 9px;margin:2px 0;font-weight:500;text-align:left}
 .magic-entries .magic-catalog-entry{border-radius:5px}
 

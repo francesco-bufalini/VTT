@@ -7,8 +7,6 @@ const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school
 // Same explicit operations as vtt/class_feature_activation.gd. Descriptions
 // never determine effects, payments or eligibility.
 export const CLASS_FEATURE_RULES=[
- ['armor_guardian','Artificer','Armor Model','Modello armatura · Guardiano','','free','armor_model'],
- ['armor_infiltrator','Artificer','Armor Model','Modello armatura · Infiltratore','','free','armor_model'],
  ["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "action", "context"],
  ["flash_of_genius", "Artificer", "Flash of Genius", "Lampo di genio", "Flash of Genius", "reaction", "context"],
  ["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "bonus", "temporary_hp"],
@@ -67,7 +65,11 @@ export function classFeatureEntries(record={},calculated={}){
    low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(owner));
   if(!feature)continue;
   if(owner==='Artificer'&&low(feature.class_source||String(feature.origin_key).split('|')[1])!=='tce')continue;
-  if(key==='defensive_field'&&(!rows(record.inventory).map(resolveOwnedItem).some(i=>Number(i.quantity??1)>0&&rows(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0]))||(record.artificer_armor_model||'guardian')!=='guardian'))continue;
+  // State-dependent privileges are declared in the trait state catalog.
+  const rules=rows(calculated.trait_state_catalog);
+  if(rules.some(rule=>rows(rule.granted_features).includes(feature.name))&&
+    !rows(calculated.active_trait_state_ids).some(stateId=>
+      rules.some(rule=>rule.id===stateId&&rows(rule.granted_features).includes(feature.name))))continue;
   let resource=revised&&baseResource==='Ki Points'?'Focus Points':baseResource;
   if(revised&&key==='divine_sense')resource='Channel Divinity';
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)===low(resource)&&
@@ -193,7 +195,7 @@ export function classFeatureRollAdvantage(record,calculated,target){
  return resolveClassRollMode(classFeatureRollSources(record,calculated,target)).mode==='advantage';
 }
 export function classFeatureEffects(record,calculated){
- return Object.entries(record.active_class_features||{}).map(([key,state])=>{
+ return Object.entries(record.active_class_features||{}).filter(([key])=>!key.startsWith('trait_state:')).map(([key,state])=>{
   const action=classFeatureEntries(record,calculated).find(a=>a.class_feature_id===key);
   const effective=classFeatureActive(record,calculated,key);
   const summaries={rage:'Danni con attacchi di Forza validi +'+classFeatureDamage(record,calculated,{},'str')+
@@ -212,7 +214,6 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
  if(!action)throw Error('Privilegio non disponibile.');
  if(action.mode==='metamagic')throw Error('Scegli la Metamagia nella finestra di lancio.');
  const key=action.class_feature_id,active={...(record.active_class_features||{})};
- if(action.mode==='armor_model')return {artificer_armor_model:key==='armor_guardian'?'guardian':'infiltrator'};
  if(action.mode==='toggle'&&active[key]){delete active[key];return {active_class_features:active};}
  if(key==='rage'&&!classFeatureActive({...record,active_class_features:{...active,rage:{}}},calculated,key))
   throw Error('Ira non disponibile con armatura pesante o incapacità.');
@@ -460,14 +461,3 @@ export function artificerResources(level,intelligence,proficiency,selectedSubcla
   .map(([name,,max,sub,origin])=>({name,max,subclass:sub,origin:origin||name}));
 }
 
-export function armorerWeapons(record,features=[]){
- if(!rows(record.inventory).map(resolveOwnedItem).some(i=>Number(i.quantity??1)>0&&rows(i.equipped_slots).includes('body')&&['LA','MA','HA'].includes(String(i.type).split('|')[0])))return [];
- const guardian=(record.artificer_armor_model||'guardian')==='guardian';
- const name=guardian?'Thunder Gauntlets':'Lightning Launcher';
- const trait=features.find(f=>f.name===name&&featureEnabled(record,f)&&low(f.class_name||f.requirements?.class_name)==='artificer'&&low(f.class_source||String(f.origin_key).split('|')[1])==='tce');
- if(!trait)return [];
- return [{id:'class_feature:'+(guardian?'thunder_gauntlets':'lightning_launcher'),name,
-  origin_id:trait.origin_id,source:'class_feature',proficient:true,melee:guardian,
-  damage:guardian?'1d8':'1d6',damage_type:guardian?'T':'L',
-  ability:record.attack_ability==='int'?'int':guardian?'str':'dex',range_feet:guardian?5:90,long_range_feet:guardian?0:300}];
-}
