@@ -804,18 +804,34 @@ async function traitsView(c){
   return 'Origine';
  };
  const content=groups.map(group=>'<section class="trait-category" data-trait-category="'+esc(group.id)+'" aria-label="'+esc(group.title)+'">'+
+  (group.id==='talenti'||group.id==='oggetti'?
+   '<h3 class="trait-origin-title trait-category-heading"><span class="trait-origin-name">'+
+    (group.id==='talenti'?'Talenti':'Oggetti')+'</span></h3>':'')+
   group.origins.map(origin=>
    '<section class="trait-origin-group" data-trait-group="'+esc(origin.key)+'">'+
    (['talenti','oggetti'].includes(group.id)?'':
     '<h3 class="trait-origin-title"><span class="trait-origin-kind">'+esc(originKind(group.id,origin))+'</span>'+
      '<span class="trait-origin-name">'+esc(originTitle(origin.title))+'</span></h3>')+
    origin.levels.map(tier=>
-    (tier.level>=0?'<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
+    (tier.level>=0&&!['talenti','oggetti'].includes(group.id)?
+     '<h4 class="trait-level">LIVELLO '+tier.level+'</h4>':'')+
     '<div class="trait-origin-cards">'+tier.rows.map(renderCard).join('')+'</div>'
    ).join('')+'</section>'
   ).join('')+'</section>').join('');
  return panel('Tratti',(content||'<p>Nessun privilegio da mostrare.</p>'))+
    (warnings.length?'<p class="trait-catalog-warnings">'+esc([...new Set(warnings)].join(' · '))+'</p>':'');
+}
+// Popup closure is synchronous: a save/refresh of unrelated fields must
+// never hold an X button hostage or recreate a modal after it was dismissed.
+function dismissTraitBenefitDialog(){
+ state.traitPopupKey='';state.traitPopupConfirm='';
+ state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+ state.traitPopupTrait=null;
+ const dialog=document.querySelector('#trait-benefits-dialog');
+ if(dialog){
+  if(dialog.open&&typeof dialog.close==='function')dialog.close();
+  dialog.remove();
+ }
 }
 // Benefits are edited only here. The disclosure never owns an edit form, and
 // entering values does not persist anything until the explicit Salva action.
@@ -899,8 +915,13 @@ function mountTraitBenefitDialog(){
  if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
  const trackerCost=dialog.querySelector('[data-trait-fields="dice"] [name="tracker_cost"]');
  if(trackerCost)trackerCost.value='1';
- dialog.addEventListener('cancel',event=>{event.preventDefault();state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';state.traitPopupTrait=null;dialog.close();});
- dialog.addEventListener('click',event=>{if(event.target!==dialog)return;state.traitPopupKey='';state.traitPopupConfirm='';state.traitPopupDraftKind='';state.traitPopupDraftTarget='';state.traitPopupTrait=null;dialog.close();});
+ dialog.addEventListener('cancel',event=>{event.preventDefault();dismissTraitBenefitDialog();});
+ dialog.addEventListener('click',event=>{
+  if(event.target!==dialog)return;
+  const rect=dialog.getBoundingClientRect();
+  if(event.clientX<rect.left||event.clientX>rect.right||
+     event.clientY<rect.top||event.clientY>rect.bottom)dismissTraitBenefitDialog();
+ });
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
 function documentRow(item,index,stored){
@@ -3473,13 +3494,7 @@ async function handleAction(target){
     await state.editor.flush();
     await render();return;
   }
-  if(act==='trait-benefits-close'){
-    state.traitPopupKey='';state.traitPopupConfirm='';
-    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';state.traitPopupTrait=null;
-    const dialog=app.querySelector('#trait-benefits-dialog');
-    if(dialog?.close)dialog.close();else dialog?.remove();
-    return;
-  }
+  if(act==='trait-benefits-close'){dismissTraitBenefitDialog();return;}
   if(act==='trait-benefits-add'||act==='trait-benefits-cancel-add'){
     const editor=app.querySelector('#trait-benefits-dialog [data-trait-add-form]');
     if(editor)editor.hidden=act!=='trait-benefits-add';
@@ -4208,6 +4223,29 @@ function listen(){
         try{await flushPendingFields();await handleAction(card);}
         catch(error){message(errorMessage(error),true);}
       }
+      return;
+    }
+    // Modal dismissal is UI-only. Do it before any asynchronous field flush:
+    // a dirty input, slow IndexedDB transaction or rerender cannot block X.
+    const closeAction=button.dataset.act;
+    if(closeAction==='trait-benefits-close'){
+      dismissTraitBenefitDialog();return;
+    }
+    if(closeAction==='roll-trait-cancel'){
+      const dialog=document.querySelector('#roll-trait-picker');
+      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      return;
+    }
+    if(closeAction==='close-sheet-roll'){
+      const dialog=document.querySelector('#sheet-roll-dialog');
+      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      return;
+    }
+    if(closeAction==='action-cast-cancel'||closeAction==='magic-tool-close'){
+      if(closeAction==='magic-tool-close')state.magicPopup='';
+      const dialog=document.querySelector(closeAction==='action-cast-cancel'?
+       '#action-cast-dialog':'#magic-tools-dialog');
+      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
       return;
     }
     if(button.disabled)return;
