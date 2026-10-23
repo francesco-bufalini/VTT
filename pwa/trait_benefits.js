@@ -125,11 +125,11 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(id&&bonusSeen.has(id))continue;
   if(id)bonusSeen.add(id);
   add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),
-   signedTraitFormula(row.expression)+(row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
+   signedTraitFormula(row.dice_notation||row.expression)+(row.dice_notation?' → '+signedTraitFormula(row.expression):'')+(row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;
-  add('dice','Dadi bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
+  add('bonus','Bonus alle formule',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
  // An attack is a benefit in its own right; bonuses to an attack are
  // separate numeric benefits and must not be confused with the granted attack.
@@ -200,6 +200,12 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   }
  }
 
+ // User-authored mode grants use the same origin identity as other benefits.
+ for(const row of rows(record.roll_mode_grants)){
+  if(row.disabled||!belongs(row)||!['advantage','disadvantage'].includes(row.mode))continue;
+  add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(row.target),
+   row.mode==='advantage'?'Vantaggio':'Svantaggio','roll_mode:'+String(row.id||''));
+ }
  for(const featureName of rows(stateRule?.granted_features)){
   add('granted_features','Privilegi concessi',featureName,
    'Disponibile durante questo stato');
