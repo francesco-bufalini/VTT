@@ -23,6 +23,10 @@ The game never fetches Fight Club or other websites.
 - `column`: optional alias for a 5etools class-table label (e.g. Rage -> Rages).
   Native 5etools limits take precedence; supplement rest type fills the gap.
   Unlimited source progressions are never replaced by a finite fallback.
+- `source_counter`: optional spelling used by the historical Fight Club XML
+  when its counter label differs from the 5etools trait name. `column` keeps
+  the previously saved tracker ID while `name`/`origin_feature` use the exact
+  trait identity (for example Illusory Self versus XML Illusory Step).
 - IDs remain `class:<class>:<source>:<column>` so previously spent uses survive
   importing this supplement and class-level changes.
 

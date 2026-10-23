@@ -162,6 +162,20 @@ func run() -> void:
 				String(indomitable.get("id", "")) == "class:fighter:xphb:indomitable"
 				and String(indomitable.get("recharge", "")) == "long_rest")),
 			"Indomitable must appear only at level 9 and keep its 2024 progression")
+	for example: Array in [
+		["Warlock", "The Fiend", 6, "Dark One's Own Luck", "class:warlock:phb:dark_one's_luck"],
+		["Wizard", "School of Illusion", 10, "Illusory Self", "class:wizard:phb:illusory_step"],
+		["Wizard", "School of Divination", 10, "The Third Eye", "class:wizard:phb:third_eye"]
+	]:
+		var alias_row: Dictionary = _find_resource(Trackers.for_creature({
+			"kind": "character", "classes": [{"name": example[0], "source": "PHB",
+				"level": example[2], "subclass": example[1]}]
+		}), String(example[3]))
+		assert(String(alias_row.get("id", "")) == String(example[4])
+			and String(alias_row.get("origin", "")) == String(example[3])
+			and String(alias_row.get("origin_id", "")).begins_with("feature:")
+			and String(alias_row.get("recharge", "")) == "short_rest",
+			"Fight Club counter alias must retain stored ID and use the 5etools trait: " + str(example))
 
 	# The runtime accepts only the existing VTT formula symbols, never the
 	# Fight Club placeholders consumed by the offline asset generator.

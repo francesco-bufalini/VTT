@@ -726,7 +726,10 @@
           "subclass": "The Archfey"
         },
         {
-          "name": "Dark One's Luck",
+          "name": "Dark One's Own Luck",
+          "column": "Dark One's Luck",
+          "source_counter": "Dark One's Luck",
+          "origin_feature": "Dark One's Own Luck",
           "steps": [
             {
               "level": 6,
@@ -826,7 +829,10 @@
           "subclass": "School of Conjuration"
         },
         {
-          "name": "Illusory Step",
+          "name": "Illusory Self",
+          "column": "Illusory Step",
+          "source_counter": "Illusory Step",
+          "origin_feature": "Illusory Self",
           "steps": [
             {
               "level": 10,
@@ -868,7 +874,10 @@
           "subclass": "School of Transmutation"
         },
         {
-          "name": "Third Eye",
+          "name": "The Third Eye",
+          "column": "Third Eye",
+          "source_counter": "Third Eye",
+          "origin_feature": "The Third Eye",
           "steps": [
             {
               "level": 10,

@@ -180,6 +180,27 @@ sia stata effettuata.
   richiedono durata del riposo, condizioni, illuminazione o geometria della
   scena. Il testo visibile resta disponibile senza assegnare bonus universali.
 
+## Lotto 2026-10-23: identità di tre contatori PHB
+
+Confronto puntuale fra `class_resource_overrides.json`, i tratti
+`subclass_features_5etools.json` e gli XML FightClub5eXML
+`class-warlock-phb.xml` (`4c75c5ad0582229926886c3be5d50607427d1ce5`)
+e `class-wizard-phb.xml` (`c25716183abd3b40ea089c297a9ad4a9584108b6`).
+I limiti e il recupero breve coincidono; tre etichette di contatore XML non
+sono i nomi dei tratti 5etools. Il dato ora esplicita alias XML, nome del
+tratto e vecchia chiave persistita, senza migrare o perdere gli usi spesi.
+
+| Classe/sottoclasse | XML FightClub | Tratto 5etools mostrato | ID conservato |
+| --- | --- | --- | --- |
+| Warlock PHB, The Fiend 6 | Dark One's Luck | Dark One's Own Luck | `class:warlock:phb:dark_one's_luck` |
+| Wizard PHB, School of Illusion 10 | Illusory Step | Illusory Self | `class:wizard:phb:illusory_step` |
+| Wizard PHB, School of Divination 10 | Third Eye | The Third Eye | `class:wizard:phb:third_eye` |
+
+Restano fuori dal contatore: il dado da scegliere dopo il tiro di Dark One's
+Own Luck, l'attacco specifico annullato da Illusory Self e la scelta fra le
+quattro modalità temporanee di The Third Eye. I nomi corretti non trasformano
+questi effetti contestuali in bonus passivi.
+
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
 tratto, scelta attiva, progressione, recupero e compatibilità Android/PWA.

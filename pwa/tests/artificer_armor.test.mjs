@@ -33,6 +33,18 @@ test('all four artificer specialists have source-backed Flash of Genius and exac
   assert.equal(c.values.attunement_max,5);
  }
 });
+test('PHB Fight Club counter aliases open the actual granting subclass trait',()=>{
+ for(const [owner,subclass,level,name] of [
+  ['Warlock','The Fiend',6,"Dark One's Own Luck"],
+  ['Wizard','School of Illusion',10,'Illusory Self'],
+  ['Wizard','School of Divination',10,'The Third Eye']
+ ]){
+  const calculated=calculateSheet(sheet(owner,level,'PHB',subclass),catalogs);
+  const row=calculated.trackers.find(tracker=>tracker.name===name);
+  assert.ok(row?.origin_id?.startsWith('feature:'),name);
+  assert.equal(row.origin_name,'Tratto · '+name);
+ }
+});
 test('Defensive Field requires guardian armor and keeps the larger temporary HP pool',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  assert.ok(!classFeatureEntries(r,calculateSheet(r,catalogs)).some(a=>a.class_feature_id==='defensive_field'));

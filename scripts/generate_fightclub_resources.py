@@ -102,7 +102,7 @@ def main(checkout: Path) -> None:
             raise FileNotFoundError(file)
         counters = read_counters(file)
         for definition in group["resources"]:
-            key = (definition["name"], definition.get("subclass", ""))
+            key = (definition.get("source_counter", definition["name"]), definition.get("subclass", ""))
             # Older XML has two subclass features without a <subclass> tag.
             original_key = key
             if key == ("Natural Recovery", "Circle of the Land"):

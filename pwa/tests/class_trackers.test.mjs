@@ -126,6 +126,20 @@ test("Artificer TCE counters retain subclass gates, limits and feature origins",
   if(level>=7)assert.equal(rows.find(row=>row.name==="Flash of Genius")?.max,1);
  }
 });
+test("Fight Club counter aliases resolve to exact PHB subclass traits without changing saved IDs",()=>{
+ for(const [owner,subclass,level,name,id] of [
+  ["Warlock","The Fiend",6,"Dark One's Own Luck","class:warlock:phb:dark_one's_luck"],
+  ["Wizard","School of Illusion",10,"Illusory Self","class:wizard:phb:illusory_step"],
+  ["Wizard","School of Divination",10,"The Third Eye","class:wizard:phb:third_eye"]
+ ]){
+  const record={kind:"character",level,classes:[{name:owner,source:"PHB",level,subclass}]};
+  const row=classResourceTrackers(record,index,{classes:index.resource_overrides})
+   .find(resource=>resource.name===name);
+  assert.equal(row?.id,id);
+  assert.equal(row?.origin,name);
+  assert.equal(row?.recharge,"short_rest");
+ }
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],
