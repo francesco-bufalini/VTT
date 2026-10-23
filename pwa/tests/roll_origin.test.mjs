@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
 import {rollSheetDice,rollBattleDamage} from '../sheet_rules_view.js';
 import {collectTraitRows} from '../trait_projection.js';
@@ -272,12 +272,14 @@ test('Lightning Launcher abbreviation renders as full Lightning damage and optio
  assert.equal(rollDamageName(options[0].damage_type),'Fulmine');
  assert.equal(options[0].tracker_cost,1);
  assert.equal(options[0].remaining,1);
- assert.equal(rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
-   kind:'damage',attackId:'class_feature:lightning_launcher'}).length,0);
+ const exhausted=rollOptionalDice(record,{trackers:[{...calculated.trackers[0],spent:1}]},[],{
+   kind:'damage',attackId:'class_feature:lightning_launcher'});
+ assert.equal(exhausted.length,1,'An exhausted tracker must remain explicitly usable');
+ assert.equal(exhausted[0].remaining,0);
  assert.equal(rollOptionalDice(record,calculated,[],{
    kind:'damage',attackId:'item:normal_weapon'}).length,0);
 });
-test('generic one-time bonus requires unspent tracker and can target specific weapon damage',()=>{
+test('generic optional die keeps exhausted tracked sources selectable and identifies weapon damage',()=>{
  const bonus={id:'extra',target:'attack_damage:item:sword',dice:'1d6',
   damage_type:'lightning',tracker_id:'focus',tracker_cost:1,origin_name:'Fonte'};
  const calculated={trackers:[{id:'focus',name:'Focus',max:2,spent:1}]};
@@ -286,6 +288,23 @@ test('generic one-time bonus requires unspent tracker and can target specific we
  assert.equal(available.length,1);
  assert.equal(available[0].remaining,1);
  assert.equal(available[0].spent,1);
- assert.equal(rollOptionalDice(character(),{trackers:[{...calculated.trackers[0],spent:2}]},[bonus],{
-   kind:'damage',attackId:'item:sword'}).length,0);
+ const out=rollOptionalDice(character(),{trackers:[{...calculated.trackers[0],spent:2}]},[bonus],{
+   kind:'damage',attackId:'item:sword'});
+ assert.equal(out.length,1);
+ assert.equal(out[0].remaining,0);
+});
+
+test('the base hit and damage terms resolve to the granting equipped-item trait',()=>{
+ const attack={id:'item:test-sword',name:'Test sword',ability:'str',proficient:true,
+   damage:'1d8+4',damage_base_formula:'1d8',damage_ability_modifier:4,damage_extra_modifier:0};
+ const calculated={values:{'attack_hit:item:test-sword':6,proficiency:2},
+   attacks:[attack],proficiencies:[],roll_components:{}};
+ assert.equal(attackGrantOrigin(calculated,attack.id),'item:test-sword');
+ const hit=sheetRollOriginSegments(character(),calculated,'attack_hit:'+attack.id);
+ assert.equal(hit.find(row=>row.kind==='base').originId,'item:test-sword');
+ assert.match(sheetRollOriginHtml(hit,x=>x),/data-origin-id="item:test-sword"/);
+ const damage=damageRollSegments(rollBattleDamage(attack.damage,()=>1),'slashing',
+   {...attack,origin_id:attackGrantOrigin(calculated,attack.id)});
+ assert.equal(damage[0].originId,'item:test-sword');
+ assert.match(sheetRollOriginHtml(damage,x=>x),/data-act="roll-origin-open"/);
 });
