@@ -2,10 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
 import {initialCreature} from '../character_core.js';
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from '../sheet_roll_origin.js';
+import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollOriginLabel,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from '../sheet_roll_origin.js';
 import {classFeatureRollSources,resolveClassRollMode,classFeatureRollAdvantage} from '../feature_mechanics.js';
 import {rollSheetDice,rollBattleDamage} from '../sheet_rules_view.js';
 import {collectTraitRows} from '../trait_projection.js';
+import {traitBenefitSources,traitBenefitGroups} from '../trait_benefits.js';
 
 function character(){
  const c=initialCreature('character','Guerriero','origin-test','local');
@@ -311,4 +312,52 @@ test('the base hit and damage terms resolve to the granting equipped-item trait'
    {...attack,origin_id:attackGrantOrigin(calculated,attack.id)});
  assert.equal(damage[0].originId,'item:test-sword');
  assert.match(sheetRollOriginHtml(damage,x=>x),/data-act="roll-origin-open"/);
+});
+
+test('passive perception is a source-backed deterministic score with no d20',()=>{
+ const c={...character(),formula_bonuses:[...character().formula_bonuses,
+   {id:'passive',target:'passive_perception',expression:'2',
+    origin_id:'feature:passive',origin_name:'Sensi acuti'}]};
+ const calc=calculateSheet(c),rows=sheetScoreOriginSegments(c,calc,'passive_perception');
+ assert(!rows.some(row=>/d20/.test(row.formula)), 'A passive score cannot generate a roll');
+ assert(rows.some(row=>row.formula.startsWith('10 + Mod.SAG')));
+ assert.equal(rows.filter(row=>row.kind==='training').length,0,'no training from untrained Perception');
+ assert.equal(rows.find(row=>row.originId==='feature:passive')?.expanded,'+2');
+ assert.equal(rows.reduce((sum,row)=>sum+(row.value||0),0),calc.values.passive_perception);
+});
+test('HP maximum and ability score formula tiles preserve explicit origin bonuses',()=>{
+ const c={...character(),max_hp_base:19,
+   formula_bonuses:[
+     {id:'hp',target:'hp',expression:'3',origin_id:'feature:hp',origin_name:'Robustezza'},
+     {id:'str',target:'ability:str',expression:'2',origin_id:'feature:str',origin_name:'Forza'}
+   ]},calc=calculateSheet(c);
+ const hp=sheetScoreOriginSegments(c,calc,'hp');
+ assert.equal(hp.find(row=>row.kind==='base')?.value,19);
+ assert.equal(hp.find(row=>row.originId==='feature:hp')?.expanded,'+3');
+ assert.equal(hp.reduce((sum,row)=>sum+row.value,0),calc.values.hp);
+ const strength=sheetScoreOriginSegments(c,calc,'ability:str');
+ assert.equal(strength.find(row=>row.kind==='base')?.value,18);
+ assert.equal(strength.find(row=>row.originId==='feature:str')?.value,2);
+ assert.equal(strength.reduce((sum,row)=>sum+row.value,0),calc.values['ability:str']);
+ const html=sheetRollOriginHtml(hp,x=>x);
+ assert.match(html,/data-origin-id="feature:hp"/);
+ assert.doesNotMatch(html,/1d20|data-roll-mode/);
+});
+test('unattributed proficiency navigates to a real Competenze trait, never an add-bonus picker',async()=>{
+ const c={...character(),proficiency_choices:[{kind:'skill',key:'athletics',origin_id:''}]};
+ const calc=calculateSheet(c),training=sheetRollOriginSegments(c,calc,'skill:athletics')
+   .find(row=>row.kind==='training');
+ assert.equal(training?.originId,'proficiency:unattributed');
+ const traits=await collectTraitRows(c,calc,{entries:async()=>[]});
+ const owned=traits.find(row=>row.proficiency_origin===training.originId);
+ assert.equal(owned?.name,'Competenze');
+ assert.match(owned?.entries||'',/Atletica/);
+ assert(traitBenefitSources(owned,c).has('proficiency:unattributed'));
+});
+test('concrete proficiency IDs belong to the granting Competenze trait',async()=>{
+ const c=character(),calc=calculateSheet(c);
+ const rows=await collectTraitRows(c,calc,{entries:async()=>[]});
+ const source='class|phb|barbarian',trait=rows.find(row=>row.proficiency_origin===source);
+ assert(traitBenefitSources(trait,c).has(source));
+ assert(traitBenefitGroups(trait,c,calc).some(group=>group.type==='proficiency'));
 });

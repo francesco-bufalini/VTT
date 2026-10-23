@@ -109,9 +109,12 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-competences > .play-section-divider').textContent(),'Competenze');
  assert.equal(await page.locator('#sheet-play-view .play-competences.play-card').count(),0,'Competenze uses line dividers, not an enclosing card');
  assert.equal(await page.locator('#sheet-play-view .play-identity-mark').count(),0,'Info contains no creature icon');
- assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),null,'Tratti begins collapsed');
- await page.locator('#sheet-play-view .play-traits-disclosure > summary').click();
- assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'');
+ assert.equal(await page.locator('#sheet-play-view .play-info-traits > h2.play-section-divider').textContent(),'Tratti',
+  'Tratti uses the same permanent heading as Competenze');
+ assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').count(),0,
+  'Tratti must not be an expandable section');
+ assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
+  'The Tratti section is immediately visible even if this creature has no traits');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),null);
  await page.locator('#sheet-play-view .play-skills-disclosure > summary').click();
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'');
@@ -125,7 +128,8 @@ try{
  assert.equal(await page.locator('.disclosure-panel[open]').count(),0);
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('#sheet-play-view .play-skills-disclosure').getAttribute('open'),'','Expanded skills survive a return to Info');
- assert.equal(await page.locator('#sheet-play-view .play-traits-disclosure').getAttribute('open'),'','Expanded traits survive a return to Info');
+ assert(await page.locator('#sheet-play-view .play-info-traits-content').isVisible(),
+  'Tratti stays visible on return to Info');
  await page.locator('#sheet-play-view [data-sheet-context]').filter({hasText:'Aspetto'}).click();
  await sheet('battle');await sheet('info');
  assert.equal(await page.locator('[data-miniature-kind="base"]').isVisible(),false,'Leaving a section closes its editor');

@@ -22,7 +22,7 @@ import { isDocument, createDocumentDefinition, createOwnedDocument, editDocument
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
-import {sheetRollOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
+import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
@@ -348,8 +348,7 @@ async function libraryView() {
     '<p>Aggiungi un personaggio oppure importa una scheda esistente.</p>'+
     btn("demo","Prova personaggio demo","primary")+'</div>';
   return '<section class="library-index" aria-label="Archivio delle creature">'+
-    '<div class="library-intro"><span class="library-eyebrow">Archivio locale</span>'+
-      '<h1>Le tue creature</h1></div>'+
+    '<div class="library-intro"><h1>Le tue creature</h1></div>'+
     '<div class="library-list-header">'+
     (rows.length?'<label class="library-batch-check library-select-master" aria-label="Seleziona tutte le creature">'+
       '<input type="checkbox" data-library-select-all '+(allSelected?'checked':'')+'></label>':
@@ -2723,6 +2722,31 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+function openSheetScoreFormula(record,calculated,target,label){
+ const value=Number(calculated?.values?.[target]);
+ if(!Number.isFinite(value))throw Error('Valore calcolato non disponibile');
+ document.querySelector('#sheet-score-formula-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='sheet-score-formula-dialog';
+ dialog.className='sheet-roll-dialog sheet-roll-preview sheet-score-formula-dialog';
+ dialog.dataset.scoreTarget=target;
+ const title=label||({hp:'PF massimi',second_max:'PF seconda forma',
+   passive_perception:'Percezione passiva',proficiency:'Bonus competenza',
+   ac:'Classe armatura'})[target]||target;
+ const terms=sheetScoreOriginSegments(record,calculated,target);
+ dialog.innerHTML='<h2>'+esc(title)+
+   '<button type="button" class="sheet-roll-close" data-act="close-score-formula" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   '<div class="sheet-roll-math"><span>Valore calcolato</span><strong>'+esc(value)+'</strong></div>'+
+   '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del valore</span>'+
+   '<div class="sheet-roll-formula-line"><div data-score-formula>'+
+   sheetRollOriginHtml(terms,esc)+'</div>'+
+   '<button type="button" class="sheet-roll-add" data-act="sheet-score-add-bonus" title="Aggiungi un bonus tramite un tratto" aria-label="Aggiungi un bonus tramite un tratto">+</button></div></div>';
+ document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close?.();});
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ return dialog;
+}
 async function handleAction(target){
   const act=target.dataset.act;
   if(act==='battle-toggle-class-only'){
@@ -3245,6 +3269,26 @@ async function handleAction(target){
     state.traitPopupDraftKind=kind;state.traitPopupDraftTarget=targetKey;
     mountTraitBenefitDialog();return;
   }
+  if(act==='sheet-score-formula'){
+    const creature=state.editor?.read();
+    if(!creature)throw Error('Apri prima una creatura');
+    const targetKey=String(target.dataset.calculated||target.dataset.target||'');
+    if(!targetKey)throw Error('Valore non specificato');
+    openSheetScoreFormula(creature,await computeLocalData(creature),targetKey,
+      String(target.dataset.label||target.getAttribute('aria-label')||''));
+    return;
+  }
+  if(act==='close-score-formula'){
+    const dialog=document.querySelector('#sheet-score-formula-dialog');
+    dialog?.close?.();dialog?.remove();return;
+  }
+  if(act==='sheet-score-add-bonus'){
+    const dialog=document.querySelector('#sheet-score-formula-dialog');
+    if(!dialog)return;
+    const targetKey=String(dialog.dataset.scoreTarget||'');
+    dialog.close?.();dialog.remove();
+    await openRollTraitPicker('bonus',targetKey);return;
+  }
   if(act==='sheet-roll-add-bonus'||act==='sheet-roll-add-applicable'){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog)return;
@@ -3300,12 +3344,19 @@ async function handleAction(target){
     return;
   }
   if(act==='roll-origin-open'){
-    const dialog=document.querySelector('#sheet-roll-dialog');
+    const dialog=document.querySelector('#sheet-roll-dialog')||
+      document.querySelector('#sheet-score-formula-dialog');
     const originId=String(target.dataset.originId||''),section=String(target.dataset.originSection||'');
+    const fallbackTarget=dialog?.dataset.scoreTarget||dialog?.dataset.rollTarget||'';
     dialog?.close?.();dialog?.remove();
     if(originId){await openRollTraitOrigin(originId);return;}
     if(section==='conditions'){state.sheet='conditions';await render();return;}
-    await openRollTraitPicker('bonus',dialog?.dataset.rollTarget||'');return;
+    // Never translate a provenance click into a blank add-bonus form.
+    if(section==='proficiency_choices'){
+      state.sheet='info';await render();
+      state.sheetPopup='tools';state.sheetPopupTitle='Competenze';await render();return;
+    }
+    await openRollTraitPicker('bonus',fallbackTarget);return;
   }
   if(act==='sheet-roll'){
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
@@ -4295,6 +4346,11 @@ function listen(){
     }
     if(closeAction==='roll-trait-cancel'){
       const dialog=document.querySelector('#roll-trait-picker');
+      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      return;
+    }
+    if(closeAction==='close-score-formula'){
+      const dialog=document.querySelector('#sheet-score-formula-dialog');
       if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
       return;
     }

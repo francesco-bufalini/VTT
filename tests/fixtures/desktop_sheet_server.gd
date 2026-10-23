@@ -77,8 +77,7 @@ func run() -> void:
 func cleanup() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(archive_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(config_path))
-	if is_instance_valid(host):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(host.file_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(archive_path + ".file.json"))
 
 func _finalize() -> void:
 	if not archive_path.is_empty(): cleanup()
