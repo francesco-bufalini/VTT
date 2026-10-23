@@ -37,7 +37,7 @@ func run() -> void:
 	assert(desktop._owned_tree.columns == 7, "Owned inventory has seven compact columns")
 	assert(desktop._scroll_tree.columns == 3)
 	assert(desktop._maximum.value == 1)
-	assert(desktop._value_total(rope, 2) == "2 mo")
+	assert(desktop._value_total(rope, 2) == "2", "Owned table shows numeric gold values without repeated units")
 	assert(desktop._weight_total(rope, 2) == "20 lb")
 
 	_select(tab, 0)
