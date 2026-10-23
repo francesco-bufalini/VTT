@@ -478,7 +478,7 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   assert.equal(document.querySelector('[data-field="current_miniature_id"]'),null);
   assert.equal(document.querySelector('[data-field="type"]'),null);
   click('[data-sheet="info"]');
-  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="str"]'));
+  await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:str"]'));
   await changeScore('str',14);
   openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
@@ -926,7 +926,7 @@ test("sheet derived values update locally and never call a desktop calculation A
   assert.match(document.querySelector('[data-local-sheet-calculations]').textContent,/Calcolato localmente sul dispositivo/);
   click('[data-sheet="info"]');
   await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
-  await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
+  await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:dex"]'));
   await changeScore('dex',16);
   await until(()=>document.querySelector('[data-local-sheet-calculations]')?.textContent.includes("+3"));
   click('[data-sheet="battle"]');
@@ -1084,7 +1084,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-act="slots-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.spell_slots_spent[1]===0);
  click('[data-sheet="info"]');await until(()=>document.querySelector('[data-calculated="skill:stealth"]'));
- click('[data-sheet="info"]');await until(()=>document.querySelector('[data-act="edit-score"][data-ability-key="dex"]'));
+ click('[data-sheet="info"]');await until(()=>document.querySelector('[data-act="sheet-score-formula"][data-target="ability:dex"]'));
  await changeScore('dex',18);
  await until(()=>document.querySelector('[data-calculated="ability_mod:dex"]')?.textContent==='+4');
  assert.equal(document.querySelector('[data-calculated="save:dex"]').textContent,'+7','Bard adds automatic save proficiency');
