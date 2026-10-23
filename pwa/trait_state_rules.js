@@ -1,8 +1,9 @@
 // Generic, data-driven state privileges. Individual class/subclass effects live
 // in catalog/trait_states.json; this runtime never recognizes a trait by name.
+import {resolveOwnedItem} from './item_controls.js';
 const arr = value => Array.isArray(value) ? value : [];
 const norm = value => String(value ?? '').trim().toLowerCase();
-const members = record => arr(record.classes).length ? record.classes : [{name:record.class,source:record.class_source,subclass:record.subclass,level:record.level}];
+const members = record => (arr(record.classes).length ? record.classes : [{name:record.class,source:record.class_source,subclass:record.subclass,level:record.level}]).map(member=>({...member,source:member.source||record.class_source||'TCE',subclass:member.subclass||(norm(member.name)===norm(record.class)?record.subclass:'')}));
 const enabled = (record, feature) => {
   if (!feature || feature.inactive || feature.disabled) return false;
   const ids = [feature.origin_id,feature.origin_key,String(feature.origin_key||'').split('|').slice(0,3).join('|')];
@@ -20,10 +21,11 @@ function eligible(record,features,rule) {
   const trait=owningTrait(record,features,rule);
   if(!trait)return null;
   const requirement=rule.require_equipped;
-  if(requirement&&!arr(record.inventory).some(item=>{
+  if(requirement&&!arr(record.inventory).some(saved=>{
+    const item=resolveOwnedItem(saved);
     const type=String(item.type||'').split('|')[0].toUpperCase();
     const kind=['LA','MA','HA'].includes(type)?'armor':type==='S'?'shield':'other';
-    return Number(item.quantity??1)>0 && !item.disabled &&
+    return Number(saved.quantity??1)>0 && !saved.disabled &&
       arr(item.equipped_slots).includes(requirement.slot) &&
       (!arr(requirement.kinds).length||requirement.kinds.includes(kind));
   }))return null;
