@@ -3150,3 +3150,77 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
   box-shadow:inset 0 1px 2px #0003,0 0 0 2px #d9b87924!important;
 }
 .inventory-col-equip .inventory-equip-toggle:focus-visible{outline:2px solid #f4d29b;outline-offset:3px}
+
+
+/* Consistent understated dialog skin. Presentation only: existing markup,
+   handlers, button semantics and dialog positioning stay unchanged. */
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog,
+       dialog.tactical-dialog){
+  --popup-edge:#ae895a70;
+  --popup-rule:#ad855033;
+  color:#eddfca;
+  background:linear-gradient(145deg,#352925,#211b1b 65%);
+  border:1px solid var(--popup-edge);
+  box-shadow:0 18px 55px #000a,inset 0 1px 0 #ffe2ae12;
+}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog,
+       dialog.tactical-dialog)::backdrop{
+  background:#080606bc;
+  backdrop-filter:blur(3px);
+}
+/* The same restrained rim replaces the older heavy upper border. */
+dialog.sheet-roll-dialog,dialog.tactical-dialog{border-top-width:1px}
+dialog.sheet-context-dialog{border-bottom:0}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(.btn,.play-button,button:not(.inventory-equip-toggle)):not(.sheet-roll-origin-term):not(.sheet-roll-add){
+  border-width:1px;
+  border-style:solid;
+  border-color:#a7835266;
+  border-radius:9px;
+  background:#553f313d;
+  color:#ecd5b5;
+  box-shadow:none;
+  text-shadow:none;
+}
+/* No alarming bright red for ordinary destructive actions; still distinct. */
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(.btn.danger,button.danger){
+  background:#72453a42;
+  border-color:#ad796966;
+  color:#e6b1a2;
+}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(.btn.primary,button.primary){
+  background:#77503185;
+  border-color:#d0a16c91;
+  color:#ffe2b6;
+}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(.btn,.play-button,button):focus-visible{
+  outline:2px solid #edbd77;
+  outline-offset:2px;
+}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(.btn,button):disabled{opacity:.5;cursor:default}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(input:not([type=checkbox]):not([type=radio]),select,textarea){
+  border:1px solid #aa845157;
+  border-radius:8px;
+  background:#302622;
+  color:#f4e5ce;
+  box-shadow:inset 0 1px 2px #0005;
+}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(h2,h3){color:#f2d29e}
+:where(dialog.sheet-roll-dialog,dialog.session-dialog,dialog.sheet-context-dialog,
+       dialog.library-create-dialog,dialog.trait-benefits-dialog,dialog.pending-choice-dialog)
+  :where(hr,fieldset){border-color:#ad855033}
