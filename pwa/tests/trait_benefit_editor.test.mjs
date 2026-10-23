@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {addBenefitPatch,removeBenefitPatch,restoreBenefitPatch,traitOriginId,
- removedBenefitIds} from '../trait_benefit_editor.js';
+ removedBenefitIds,traitIsActive,traitActivationSource,traitActivationPatch} from '../trait_benefit_editor.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {fixedProficiencies} from '../structured_effects.js';
 
@@ -83,4 +83,37 @@ test('manual bonuses are visible on their owning individual trait, not on siblin
  const computed={bonuses:[row]};
  assert.deepEqual(traitBenefitGroups(card,{formula_bonuses:[row]},computed)[0].items.map(item=>item.value),['+2']);
  assert.deepEqual(traitBenefitGroups(sibling,{},computed),[]);
+});
+
+test('all traits default to active, explicit disabling is persistent and reversible',()=>{
+ const sibling={...trait,key:'other-gift',feature_origin:'feature:other'};
+ assert.equal(traitIsActive({},trait),true);
+ assert.equal(traitIsActive({},sibling),true);
+ const disabled=traitActivationPatch({},trait,false);
+ assert.equal(disabled.trait_enabled[trait.key],false);
+ assert.equal(disabled.origin_enabled['feature:arcane'],false);
+ assert.equal(traitIsActive(disabled,trait),false);
+ assert.equal(traitIsActive(disabled,sibling),true,'An unrelated trait remains enabled');
+ const enabled=traitActivationPatch(disabled,trait,true);
+ assert.equal(traitIsActive({...disabled,...enabled},trait),true);
+ assert.equal(enabled.origin_enabled['feature:arcane'],true);
+ assert.equal(traitIsActive({},trait),true,'Missing saved state must not mean disabled');
+});
+test('catalog-only trait, parent species, and explicit proficiency toggles use stable ownership',()=>{
+ const catalogTrait={...trait,feature_origin:'',rank:2,key:'catalog-feature'};
+ const off=traitActivationPatch({},catalogTrait,false);
+ assert.deepEqual(off,{trait_enabled:{'catalog-feature':false}});
+ assert.equal(traitIsActive(off,catalogTrait),false);
+ assert.equal(traitIsActive({...off,...traitActivationPatch(off,catalogTrait,true)},catalogTrait),true);
+ const species={...trait,rank:0,feature_origin:'',category:'razza',origin_key:'species|elf|phb'};
+ const record={species:'Elf',species_source:'PHB'};
+ assert.equal(traitActivationSource(species,record),'race|phb|elf');
+ const sourceOff=traitActivationPatch(record,species,false);
+ assert.equal(sourceOff.origin_enabled['race|phb|elf'],false);
+ assert.equal(traitIsActive({...record,...sourceOff},species),false);
+ const prof={...trait,key:'proficiencies',feature_origin:'',proficiency_origin:'class|phb|wizard',rank:2};
+ const withSources={proficiency_origins:[{id:'class|phb|wizard',disabled:true}]};
+ const back=traitActivationPatch(withSources,prof,true);
+ assert.equal(back.proficiency_origins[0].disabled,false);
+ assert.equal(traitIsActive({...withSources,...back},prof),true);
 });
