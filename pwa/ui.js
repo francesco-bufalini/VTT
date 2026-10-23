@@ -2056,7 +2056,7 @@ function renderSpellResults(){
       const isKnown=known.has(spell.id);
       return '<div class="magic-catalog-row"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
         (isKnown?command:'<span class="hint">Non conosciuto</span>')+
-        (member.book&&Number(spell.level)===0?'':'<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
+        ('<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
         ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
         (isKnown?'Dimentica':'+ Conosci')+'</button>')+'</div>';
     }
@@ -4971,7 +4971,7 @@ async function handleAction(target){
     if(!spell)throw Error('Incantesimo non trovato.');
     const wasKnown=target.dataset.known==='true';
     let change;
-    if(member.book){
+    if(member.book&&Number(spell.level)>0){
       const book=creature.spellbook_spells||[];
       const index=book.findIndex(row=>spellId(row)===spell.id);
       change=wasKnown?removeSelectedSpell(creature,'spellbook_spells',index):
