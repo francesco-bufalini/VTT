@@ -449,8 +449,13 @@ async function loadLibraryMiniatures(){
 }
 function librarySelectionActions(){
  const count=state.librarySelectedIds.size;
- return count?'<strong class="library-selection-count">'+count+' selezionate</strong>'+
-  btn('library-export','Esporta ('+count+')')+btn('library-delete','Elimina ('+count+')','danger'):'';
+ return count?'<span class="library-selection-count">'+count+' selezionate</span>'+
+  '<button type="button" class="library-bulk-button library-bulk-export" data-act="library-export">'+
+    '<span class="library-bulk-glyph" aria-hidden="true">'+actionGlyph('scroll')+'</span>'+
+    '<span>Esporta</span><span class="library-bulk-number">'+count+'</span></button>'+
+  '<button type="button" class="library-bulk-button library-bulk-delete" data-act="library-delete">'+
+    '<span class="library-bulk-glyph library-bulk-delete-symbol" aria-hidden="true">×</span>'+
+    '<span>Elimina</span><span class="library-bulk-number">'+count+'</span></button>':'';
 }
 function syncLibrarySelectionUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
@@ -513,14 +518,15 @@ async function libraryView(){
  }).join('');
  return '<section class="library-index" aria-label="Le tue creature">'+
   '<section class="library-home-hero"><h1>Le tue creature</h1>'+
+  '<span class="library-hero-crest" aria-hidden="true"><span class="library-hero-crest-inner">'+actionGlyph('proficiency')+'</span></span>'+
   '<div class="library-filters" role="group" aria-label="Filtra creature">'+
    [['all','Tutte'],['character','Personaggi'],['monster','Mostri']].map(([kind,label])=>
     '<button type="button" data-act="library-filter" data-kind="'+kind+'" aria-pressed="'+(kind===state.libraryFilter)+'">'+label+'</button>').join('')+
   '</div>'+
   '<div class="library-list-header" '+(state.librarySelectedIds.size?'':'hidden')+'>'+
-   '<label class="library-select-master"><input type="checkbox" data-library-select-all>'+
-   '<span class="library-check-graphic" aria-hidden="true">✓</span><span>Seleziona tutte</span></label></div>'+
-  '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+librarySelectionActions()+'</div>'+
+   '<label class="library-select-master"><input type="checkbox" data-library-select-all aria-label="Seleziona tutte le creature visibili">'+
+   '<span class="library-check-graphic" aria-hidden="true">✓</span><span class="library-select-master-copy">Seleziona tutte</span></label>'+
+   '<div id="library-selected-actions" class="library-selection-actions" '+(state.librarySelectedIds.size?'':'hidden')+'>'+librarySelectionActions()+'</div></div>'+
   '<div class="library-rows">'+(list||'<div class="library-empty">Nessuna creatura salvata.</div>')+'</div>'+
   (rows.length?'<div id="library-no-results" class="library-no-results" hidden>Nessuna creatura in questa categoria.</div>':'')+
   '</section>'+
