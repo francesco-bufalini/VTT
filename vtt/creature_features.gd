@@ -174,6 +174,31 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 					"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
 					bool(owned.get("disabled", false)))
 
+	# Every selected optional ability is a first-class trait with its own
+	# stable identity. This includes Metamagic, maneuvers and invocations:
+	# activation must not be granted merely by a class-level option list.
+	var seen_optional: Dictionary = {}
+	for raw_optional: Variant in record.get("optional_features_catalog", []):
+		if not raw_optional is Dictionary:
+			continue
+		var selected: Dictionary = raw_optional
+		var option_name: String = String(selected.get("name", "")).strip_edges()
+		if option_name.is_empty():
+			continue
+		var book: String = String(selected.get("source", "")).strip_edges()
+		var identity: String = "optional|" + book.to_lower() + "|" + option_name.to_lower()
+		if seen_optional.has(identity):
+			continue
+		seen_optional[identity] = true
+		var detail: Dictionary = PlayerCatalog.detailed_entry("optional_features", selected)
+		_append(result, {
+			"id": String(selected.get("id", option_name.to_lower())),
+			"name": option_name, "source": book,
+			"inactive": bool(selected.get("disabled", false)),
+			"entries": selected.get("entries", PlayerCatalog.description_text("optional_features", detail)),
+			"action_type": selected.get("action_type", detail.get("action_type", ""))
+		}, 0, "Privilegio opzionale · " + option_name, identity, "", "", 2)
+
 	# Known artificer infusions are already optional class features; display
 	# their existing 5etools descriptions among ordinary class traits.
 	for known: Dictionary in Infusions.known(record):
