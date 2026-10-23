@@ -2722,6 +2722,52 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
  return dialog;
 }
+const editableScoreBaseTarget=target=>
+  target==='hp'||target==='second_max'||
+  /^ability:(?:str|dex|con|int|wis|cha)$/.test(target);
+
+// A single restrained editor serves owned base scores, not derived figures.
+// Keep the formula behind it as the navigation context, then refresh it after
+// saving/cancelling to avoid presenting a stale computed total.
+function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
+ if(!editableScoreBaseTarget(target))throw Error('Questo valore è calcolato e non modificabile direttamente.');
+ const ability=target.startsWith('ability:')?target.split(':')[1]:'';
+ const isHp=target==='hp',isSecond=target==='second_max';
+ const title=isHp?'PF massimi':isSecond?'PF seconda forma':abilities[ability];
+ const value=isHp?(record.max_hp_base??record.max_hp??1):
+   isSecond?(record.second_form_max_hp??0):(record.abilities?.[ability]??10);
+ const minimum=isSecond?0:1,maximum=ability?30:99999;
+ const auto=calculated?.stats?.automatic_hp;
+ document.querySelector('#sheet-score-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='sheet-score-dialog';
+ dialog.className='sheet-roll-dialog sheet-roll-preview sheet-score-dialog sheet-base-editor';
+ dialog.dataset.scoreTarget=target;
+ dialog.dataset.returnFormulaTitle=returnTitle;
+ dialog.innerHTML='<h2>Modifica valore base'+
+   '<button type="button" class="sheet-roll-close" data-act="close-score" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   '<div class="sheet-base-editor-body">'+
+     '<p class="sheet-base-editor-eyebrow">'+esc(title)+'</p>'+
+     '<label class="sheet-base-editor-field" for="sheet-score-input">Valore base'+
+       '<input id="sheet-score-input" type="number" inputmode="numeric" step="1" min="'+minimum+
+       '" max="'+maximum+'" value="'+esc(value)+'" aria-label="Valore base '+esc(title)+'"></label>'+
+     (isHp?'<div class="sheet-base-editor-auto">'+
+       '<button type="button" class="sheet-base-editor-auto-button" data-act="sheet-base-auto-hp"'+
+         (auto?.available?'':' disabled')+'>Calcola automaticamente</button>'+
+       '<small>'+(auto?.available?'Progressione di classe · '+esc(auto.value)+' PF':
+         'Calcolo automatico non disponibile per questa creatura')+'</small>'+
+       '</div>':'')+
+     '<div class="sheet-base-editor-actions">'+
+       '<button type="button" data-act="close-score" class="sheet-base-editor-cancel">Annulla</button>'+
+       '<button type="button" data-act="save-score" class="sheet-base-editor-save">Salva</button>'+
+     '</div></div>';
+ document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ dialog.querySelector('input')?.focus();
+ dialog.querySelector('input')?.select();
+ return dialog;
+}
 function openSheetScoreFormula(record,calculated,target,label){
  const value=Number(calculated?.values?.[target]);
  if(!Number.isFinite(value))throw Error('Valore calcolato non disponibile');
@@ -2733,7 +2779,8 @@ function openSheetScoreFormula(record,calculated,target,label){
  const title=label||({hp:'PF massimi',second_max:'PF seconda forma',
    passive_perception:'Percezione passiva',proficiency:'Bonus competenza',
    ac:'Classe armatura'})[target]||target;
- const terms=sheetScoreOriginSegments(record,calculated,target);
+ const terms=sheetScoreOriginSegments(record,calculated,target).map(row=>
+   row.kind==='base'&&editableScoreBaseTarget(target)?{...row,editBaseTarget:target}:row);
  dialog.innerHTML='<h2>'+esc(title)+
    '<button type="button" class="sheet-roll-close" data-act="close-score-formula" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
    '<div class="sheet-roll-math"><span>Valore calcolato</span><strong>'+esc(value)+'</strong></div>'+
@@ -3201,35 +3248,61 @@ async function handleAction(target){
     tacticalViewer.setBasicAction({mode,rule});
     return;
   }
-  if(act==='edit-score'){
-    const ability=target.dataset.abilityKey;
-    if(!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
+  if(act==='edit-score'||act==='sheet-score-edit-base'){
+    const scoreTarget=act==='edit-score'?
+      'ability:'+String(target.dataset.abilityKey||''):
+      String(target.dataset.scoreBaseTarget||'');
+    if(!editableScoreBaseTarget(scoreTarget))throw Error('Valore base non modificabile');
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
-    document.querySelector('#sheet-score-dialog')?.remove();
-    const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog sheet-score-dialog';
-    dialog.id='sheet-score-dialog';dialog.dataset.abilityKey=ability;
-    dialog.innerHTML='<h2>Punteggio base · '+esc(abilities[ability])+'</h2>'+
-      ''+
-      '<label>Valore base<input id="sheet-score-input" type="number" min="1" max="30" step="1" value="'+
-      esc(creature.abilities?.[ability]??10)+'" aria-label="Punteggio base '+esc(abilities[ability])+'"></label>'+
-      '<div class="actions">'+btn('save-score','Salva','primary')+btn('close-score','Annulla')+'</div>';
-    document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
-    dialog.querySelector('input')?.focus();return;
+    const formula=document.querySelector('#sheet-score-formula-dialog');
+    const returnTitle=formula?.querySelector('h2')?.firstChild?.textContent||'';
+    if(formula){formula.close?.();formula.remove();}
+    openSheetBaseEditor(creature,await computeLocalData(creature),scoreTarget,{returnTitle});
+    return;
+  }
+  if(act==='sheet-base-auto-hp'){
+    const dialog=document.querySelector('#sheet-score-dialog');
+    if(dialog?.dataset.scoreTarget!=='hp')throw Error('Calcolo non applicabile');
+    const creature=state.editor?.read(),calculated=await computeLocalData(creature);
+    const automatic=calculated?.stats?.automatic_hp;
+    if(!automatic?.available||!Number.isFinite(Number(automatic.value)))
+      throw Error('PF automatici non disponibili');
+    const input=dialog.querySelector('#sheet-score-input');
+    input.value=String(Math.max(1,Math.trunc(automatic.value)));
+    input.focus();return;
   }
   if(act==='save-score'){
-    const dialog=document.querySelector('#sheet-score-dialog'),ability=dialog?.dataset.abilityKey;
-    if(!ability||!Object.hasOwn(abilities,ability))throw Error('Caratteristica non valida');
-    const input=dialog.querySelector('#sheet-score-input');
-    const score=Number(input?.value);
-    if(!input?.value||!Number.isInteger(score)||score<1||score>30)throw Error('Punteggio da 1 a 30');
-    const creature=state.editor.read();
-    await patch({abilities:{...creature.abilities,[ability]:score}});
-    dialog.close?.();dialog.remove();return;
+    const dialog=document.querySelector('#sheet-score-dialog');
+    const scoreTarget=String(dialog?.dataset.scoreTarget||'');
+    if(!editableScoreBaseTarget(scoreTarget))throw Error('Valore base non modificabile');
+    const input=dialog.querySelector('#sheet-score-input'),raw=input?.value?.trim();
+    const value=Number(raw),ability=scoreTarget.startsWith('ability:')?scoreTarget.split(':')[1]:'';
+    const min=scoreTarget==='second_max'?0:1,max=ability?30:99999;
+    if(!raw||!Number.isInteger(value)||value<min||value>max)
+      throw Error('Inserisci un valore intero tra '+min+' e '+max);
+    const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
+    const change=ability?{abilities:{...creature.abilities,[ability]:value}}:
+      scoreTarget==='hp'?{max_hp_base:value}:{second_form_max_hp:value};
+    const returnTitle=String(dialog.dataset.returnFormulaTitle||'');
+    await patch(change);
+    dialog.close?.();dialog.remove();
+    await render();
+    if(returnTitle){
+      const current=state.editor?.read();
+      if(current)openSheetScoreFormula(current,await computeLocalData(current),scoreTarget,returnTitle);
+    }
+    return;
   }
   if(act==='close-score'){
     const dialog=document.querySelector('#sheet-score-dialog');
-    dialog?.close?.();dialog?.remove();return;
+    const scoreTarget=dialog?.dataset.scoreTarget||'';
+    const returnTitle=dialog?.dataset.returnFormulaTitle||'';
+    dialog?.close?.();dialog?.remove();
+    if(returnTitle&&state.editor){
+      const creature=state.editor.read();
+      openSheetScoreFormula(creature,await computeLocalData(creature),scoreTarget,returnTitle);
+    }
+    return;
   }
   if(act==='battle-damage-roll'){
     const formula=String(target.dataset.damageFormula||'');
