@@ -361,3 +361,19 @@ test('concrete proficiency IDs belong to the granting Competenze trait',async()=
  assert(traitBenefitSources(trait,c).has(source));
  assert(traitBenefitGroups(trait,c,calc).some(group=>group.type==='proficiency'));
 });
+
+test('only explicitly owned base score terms gain a base-edit control',()=>{
+ const c=character(),calc=calculateSheet(c);
+ for(const target of ['ability:str','hp','second_max']){
+   const rows=sheetScoreOriginSegments(c,calc,target);
+   const enabled=rows.map(row=>row.kind==='base'?{...row,editBaseTarget:target}:row);
+   const html=sheetRollOriginHtml(enabled,x=>x);
+   assert.match(html,/data-act="sheet-score-edit-base"/);
+   assert.match(html,/data-score-base-target="/);
+   assert.equal((html.match(/data-act="sheet-score-edit-base"/g)||[]).length,1);
+ }
+ for(const target of ['ability_mod:str','passive_perception','proficiency']){
+   const html=sheetRollOriginHtml(sheetScoreOriginSegments(c,calc,target),x=>x);
+   assert.doesNotMatch(html,/data-act="sheet-score-edit-base"/);
+ }
+});

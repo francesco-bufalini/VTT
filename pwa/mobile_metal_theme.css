@@ -2683,3 +2683,117 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  color:#f2d39a;white-space:nowrap;
 }
 .play-vitals>.play-vital-card:last-child>.play-score-value{font-size:21px}
+
+/* Base score editor: same warm metal sheet as formula popups, with compact
+   neutral actions rather than the old oversized destructive-looking controls. */
+.sheet-roll-dialog.sheet-score-dialog.sheet-base-editor{
+ width:min(100%,520px);
+ box-sizing:border-box;
+ overflow-x:hidden;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-body{
+ box-sizing:border-box;
+ min-width:0;
+ padding:18px 0 calc(16px + env(safe-area-inset-bottom));
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-eyebrow{
+ margin:0 0 14px;
+ color:#e7c797;
+ font:600 15px/1.4 system-ui,sans-serif;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-field{
+ display:flex;
+ flex-direction:column;
+ gap:7px;
+ font:500 12px/1.4 system-ui,sans-serif;
+ color:#c7b8a4;
+}
+.sheet-roll-dialog.sheet-base-editor #sheet-score-input{
+ box-sizing:border-box;
+ display:block;
+ width:100%;
+ min-height:44px;
+ margin:0;
+ padding:7px 14px;
+ border:1px solid #bd945b85;
+ border-radius:9px;
+ outline:0;
+ background:#221b1a;
+ color:#f4dfc0;
+ font:600 24px/1.2 system-ui,sans-serif;
+ text-align:center;
+ font-variant-numeric:tabular-nums;
+}
+.sheet-roll-dialog.sheet-base-editor #sheet-score-input:focus{
+ border-color:#e6bb77;
+ box-shadow:0 0 0 2px #e6bb7736;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto{
+ display:flex;
+ flex-direction:column;
+ align-items:flex-start;
+ gap:6px;
+ margin:14px 0 0;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto-button,
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions button{
+ appearance:none;
+ min-height:36px;
+ padding:7px 13px;
+ border:1px solid #ac835471;
+ border-radius:8px;
+ background:#5b422e48;
+ color:#f0d4aa;
+ font:600 12px/1.35 system-ui,sans-serif;
+ cursor:pointer;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto-button:hover,
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions button:hover{
+ background:#7657375e;
+ border-color:#d8ac70;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto-button:focus-visible,
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions button:focus-visible{
+ outline:2px solid #e6bb77;outline-offset:2px;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto-button:disabled{
+ opacity:.45;cursor:default;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-auto small{
+ font:400 11px/1.4 system-ui,sans-serif;
+ color:#ad9980;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions{
+ display:flex;align-items:center;justify-content:flex-end;gap:8px;
+ margin-top:20px;padding-top:13px;
+ border-top:1px solid #ac835434;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions .sheet-base-editor-cancel{
+ border-color:#a68a6345;background:transparent;color:#c7b8a4;
+}
+.sheet-roll-dialog.sheet-base-editor .sheet-base-editor-actions .sheet-base-editor-save{
+ border-color:#c99e65a0;background:#79583975;color:#ffe0b1;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-origin-term.is-base-editable{
+ cursor:pointer;
+ border-color:#bd945d;
+ background:#43362e;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-origin-term.is-base-editable:hover{
+ border-color:#e8bd7f;background:#514031;
+}
+.sheet-roll-dialog.sheet-score-formula-dialog .sheet-roll-origin-term.is-base-editable:focus-visible{
+ outline:2px solid #e8bd7f;outline-offset:2px;
+}
+/* Ability scores retain the compact trait card composition, but are clearly
+   readable without a separate gear beside the characteristic abbreviation. */
+.sheet-play-view .play-ability header{min-height:27px;justify-content:center;padding:3px 0}
+.sheet-play-view .play-ability>small{font-size:11px}
+.sheet-play-view .play-ability>small .play-score-value{
+ font-size:15px;
+ font-weight:650;
+ color:#f4d7aa;
+}
+.stats-abilities-panel .native-ability-score .score-editor-trigger{
+ font-size:18px;
+}

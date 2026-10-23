@@ -203,7 +203,7 @@ export function formulaReadout(data,target,label,{signed:sign=false,suffix="",bo
     '" data-calculated="'+esc(target)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+
     '" title="'+esc(data?.explanations?.[target]||label)+'" aria-label="'+esc(label)+'">'+
     esc(calculatedValue(data,target,{signed:sign,suffix}))+'</button>'+
-    (scoreAbility?'<button type="button" class="score-edit-action" data-act="edit-score" data-ability-key="'+esc(scoreAbility)+'" aria-label="Modifica punteggio base '+esc(scoreAbility.toUpperCase())+'" title="Modifica punteggio base">⚙</button>':'')+
+
     '</span>';
 }
 export function calculationNote(data,loadError=""){
@@ -658,7 +658,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
    html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
   }
-  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+proxy(bank.querySelector('[data-act="edit-score"][data-ability-key="'+key+'"]'),'Modifica '+key.toUpperCase(),'settings','<span class="sr-only">Modifica punteggio</span>')+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_check:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
+  html+='<div class="play-abilities">'+ABILITIES.map(key=>'<article class="play-ability"><header><span>'+key.toUpperCase()+'</span>'+'</header>'+roll('ability_check:'+key,'Prova di '+key.toUpperCase(),output('ability_check:'+key,true))+'<small>Punteggio '+scoreOutput('ability:'+key,'Punteggio '+key.toUpperCase())+'</small>'+roll('save:'+key,'Tiro salvezza '+key.toUpperCase(),'<small>TS</small>'+output('save:'+key,true))+'</article>').join('')+'</div>';
   html+='<div class="play-passives"><span>Competenza <b>'+scoreOutput('proficiency','Bonus competenza',true)+'</b></span><span>Percezione passiva <b>'+scoreOutput('passive_perception','Percezione passiva')+'</b></span></div>';
   // Competences are one flat, line-divided section rather than another card.
   // Skills expand inline while equipment/language proficiencies retain their
