@@ -26,15 +26,14 @@ test('benefits are grouped and attached only to their own trait',()=>{
  };
  const groups=traitBenefitGroups(trait,record,calculated);
  assert.deepEqual(groups.map(group=>group.type),[
-  'bonus','dice','proficiency','defenses','resources','spells','actions','abilities']);
- assert.equal(groups[0].items.length,1);
- assert.equal(groups[0].items[0].value,'+1');
+  'bonus','proficiency','defenses','resources','spells','actions','abilities']);
+ assert.equal(groups[0].items.length,2,'dice and flat amounts belong to the same bonus group');
+ assert.deepEqual(groups[0].items.map(item=>item.value),['+1','+1d4']);
  assert.equal(groups[0].items[0].id,'bonus:b1','bonus rows keep their stable editor identity');
- assert.equal(groups[1].items[0].value,'+1d4');
- assert.deepEqual(groups[2].items.map(item=>[item.label,item.value]),[
+ assert.deepEqual(groups[1].items.map(item=>[item.label,item.value]),[
   ['Abilità','Percezione'],['Lingue','elvish']]);
- assert.deepEqual([groups[3].items[0].label,groups[3].items[0].value],['Resistenza','Fuoco']);
- assert.equal(groups[4].items[0].value,'Max 3 · Riposo lungo');
+ assert.deepEqual([groups[2].items[0].label,groups[2].items[0].value],['Resistenza','Fuoco']);
+ assert.equal(groups[3].items[0].value,'Max 3 · Riposo lungo');
  assert.ok(!JSON.stringify(groups).includes('Arcano'));
 });
 test('feature-granted numeric and active effects stay on exact feature; unrelated trait stays empty',()=>{

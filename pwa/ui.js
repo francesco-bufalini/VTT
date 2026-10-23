@@ -983,12 +983,18 @@ function mountTraitBenefitDialog(){
  const trackerOptions=[['','Nessuno'],...(state.calculated?.trackers||[]).map(t=>[t.id,t.name])];
  const fields=[
   ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
-     formInput('Formula','expression','Es. 1 oppure proficiency')],
-  ['dice',formSelect('Tipo di tiro','target',diceTargets).replace('name="target"','name="target" data-trait-target')+
-     formInput('Dadi','dice','Es. 1d4')+
+     formInput('Bonus (numero, formula o dadi)','expression','Es. +2, proficiency, 1d4')+
+     '<details class="trait-bonus-extra"><summary>Opzioni per dadi nei tiri</summary>'+
      formSelect('Tipo di danno (facoltativo)','damage_type',[['','Nessuno'],...DAMAGE_TYPES.map(id=>[id,rollDamageName(id)])])+
      formSelect('Tracker associato','tracker_id',trackerOptions)+
-     formInput('Utilizzi consumati','tracker_cost','1','number')],
+     formInput('Utilizzi consumati','tracker_cost','1','number')+'</details>'],
+  ['roll_mode',formSelect('Modalità','mode',[['advantage','Vantaggio'],['disadvantage','Svantaggio']])+
+     formSelect('Tipo di tiro','target',[
+      ['ability_check','Prove di caratteristica (incl. iniziativa)'],['saving_throw','Tiri salvezza'],
+      ['attack_roll','Tiri per colpire'],['spell_attack','Attacchi magici'],
+      ['any_d20','Qualunque tiro d20'],['initiative','Iniziativa'],
+      ...targets.filter(([id])=>/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(id))
+     ]).replace('name="target"','name="target" data-trait-target')],
   ['proficiency',formSelect('Categoria','proficiency_kind',PROFICIENCY_KINDS)+formInput('Competenza','key','Es. perception, firearms, elvish')],
   ['defenses',formSelect('Difesa','rank',DEFENSE_RANKS)+formSelect('Danno o condizione','key',
     [...DAMAGE_TYPES.map(key=>[key,key]),...['blinded','charmed','deafened','frightened','grappled','paralyzed','petrified','poisoned','prone','restrained','stunned','unconscious'].map(key=>[key,key])])],
@@ -1015,7 +1021,7 @@ function mountTraitBenefitDialog(){
     '<div class="trait-benefit-manage-row">'+
      '<div class="trait-benefit-entry"><span>'+esc(item.label)+'</span>'+
       (item.value?'<span class="trait-benefit-value">'+esc(sheetRollSymbol(item.value))+'</span>':'')+'</div>'+
-     (!trait.readonly&&!['attacks','armor_class','roll_modes','effects','granted_features'].includes(group.type)&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
+     (!trait.readonly&&!['attacks','armor_class','effects','granted_features'].includes(group.type)&&(group.type!=='roll_modes'||item.id.startsWith('roll_mode:trait:'))&&item.id?'<button type="button" class="trait-benefit-remove" data-act="trait-benefits-remove-request" data-benefit-id="'+esc(item.id)+'" data-benefit-type="'+esc(group.type)+'" aria-label="Elimina '+esc(item.label)+'" title="Elimina beneficio">×</button>':'')+
     '</div>').join('')+
    '</section>').join('');
  // Expose each structured choice only inside the popup of its granting trait.
@@ -1065,7 +1071,7 @@ function mountTraitBenefitDialog(){
   '</div>';
  app.append(dialog);
  if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
- const trackerCost=dialog.querySelector('[data-trait-fields="dice"] [name="tracker_cost"]');
+ const trackerCost=dialog.querySelector('[data-trait-fields="bonus"] [name="tracker_cost"]');
  if(trackerCost)trackerCost.value='1';
  dialog.addEventListener('cancel',event=>{event.preventDefault();dismissTraitBenefitDialog();});
  dialog.addEventListener('click',event=>{
@@ -3654,7 +3660,7 @@ async function handleAction(target){
   if(act==='sheet-roll-add-bonus'||act==='sheet-roll-add-applicable'){
     const dialog=document.querySelector('#sheet-roll-dialog');
     if(!dialog)return;
-    const kind=act==='sheet-roll-add-bonus'?'bonus':'dice';
+    const kind='bonus';
     const target=dialog.dataset.rollKind==='damage'?
       'attack_damage:'+String(dialog.dataset.damageAttackId||''):String(dialog.dataset.rollTarget||'');
     dialog.close?.();dialog.remove();
@@ -3943,9 +3949,11 @@ async function handleAction(target){
   if(act==="new-homebrew-item"){
     const owner=state.creatureId||"";
     state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";
-    await navigate("catalog");
+    // Open on the very first catalog render: async UI tests and mobile taps
+    // must not encounter a still-collapsed editor during a second render.
     state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;
-    await render();
+    state.disclosureState.set('catalog|'+state.sheet+'|Crea contenuto personalizzato',true);
+    await navigate("catalog");
     const creator=app.querySelector(".catalog-create");
     if(creator)creator.open=true;
     const name=app.querySelector("#quick-name");
@@ -4018,11 +4026,21 @@ async function handleAction(target){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
     if(!fields||!trait)throw Error('Tratto o campi mancanti');
     const values=Object.fromEntries([...fields.querySelectorAll('[name]')].map(node=>[node.name,node.value]));
+    // Dice that modify a permanent score resolve once; a sheet redraw never
+    // changes the rolled value or redirects the origin of the benefit.
+    if(type==='bonus'&&validBonusDice(values.expression)){
+      const targetKey=String(values.target||'');
+      const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(targetKey)||
+        /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(targetKey);
+      if(!rollable){
+        values.rolled_total=rollBattleDamage(String(values.expression).replaceAll(' ',''),
+          sides=>1+Math.floor(Math.random()*sides)).total;
+      }
+    }
     const changes=addBenefitPatch(state.editor.read(),trait,type,values,'trait:'+crypto.randomUUID());
-    // Validate before committing, but do not write any draft field on input.
-    if(type==='bonus'&&/Formula non applicata/.test(formulaPreview(values.expression,state.calculated)))
+    if(type==='bonus'&&!validBonusDice(values.expression)&&
+       /Formula non applicata/.test(formulaPreview(values.expression,state.calculated)))
       throw Error('Formula non valida');
-    if(type==='dice'&&!validBonusDice(values.dice))throw Error('Formula dei dadi non valida');
     await patch(changes);
     await state.editor.flush();
     // A persisted record may become visible before the asynchronous rerender.

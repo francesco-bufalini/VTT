@@ -4,7 +4,7 @@
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus alla formula'],['dice','Dado bonus'],['proficiency','Competenza'],
+ ['bonus','Bonus'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione']
 ];
@@ -67,14 +67,16 @@ export function traitRemovedIds(record={},trait={}){
 }
 export function removeBenefitPatch(record,trait,item){
  if(!trait?.key||!item?.id)throw Error('Beneficio non identificato');
- const collection={bonus:'formula_bonuses',dice:'dice_bonuses',
+ const id=String(item.id);
+ const collection={bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',defenses:'damage_defense_entries',
   resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants'}[item.type];
- const id=String(item.id);
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
+  if(item.type==='bonus'&&id.startsWith('dice:'))return 'dice:'+String(row.id||'')===id;
   if(item.type==='bonus')return 'bonus:'+String(row.id||'')===id&&!row.automatic;
   if(item.type==='dice')return 'dice:'+String(row.id||'')===id;
+  if(item.type==='roll_modes')return 'roll_mode:'+String(row.id||'')===id;
   if(item.type==='proficiency')return 'proficiency:'+String(row.origin_id||'')+':'+row.kind+':'+norm(row.key)===id;
   if(item.type==='defenses')return 'defense:'+String(row.origin_id||'')+':'+row.rank+':'+norm(row.key)===id;
   if(item.type==='resources')return 'tracker:'+String(row.id||'')===id;
@@ -97,7 +99,7 @@ export function restoreBenefitPatch(record,trait){
  return {trait_benefit_removed:removed};
 }
 export function addBenefitPatch(record,trait,kind,values={},id){
- if(!trait?.key||!BENEFIT_TYPES.some(([key])=>key===kind))throw Error('Tipo di beneficio non valido');
+ if(!trait?.key||!BENEFIT_TYPES.some(([key])=>key===kind)&&kind!=='dice')throw Error('Tipo di beneficio non valido');
  if(!/^trait:[a-z0-9-]{4,}$/i.test(String(id||'')))throw Error('ID del beneficio non valido');
  const origin_id=traitOriginId(trait,record),origin_name=trait.origin||trait.name||'';
  const common={id,origin_id,origin_name,disabled:false,automatic:false};
@@ -108,9 +110,38 @@ export function addBenefitPatch(record,trait,kind,values={},id){
  };
  let field,row;
  if(kind==='bonus'){
-  field='formula_bonuses';
-  row={...common,target:required('target'),expression:required('expression',200)};
-  if(!/^[a-z0-9_+*\-/. ()]+$/i.test(row.expression))throw Error('Formula non valida');
+  const target=required('target'),expression=required('expression',200).replace(/\s+/g,'');
+  const diceMatch=expression.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
+  if(diceMatch&&Number(diceMatch[1])<=100){
+   const rollable=['ability_check','saving_throw','attack_roll','damage_roll','any_d20','initiative','spell_attack'].includes(target)||
+     /^(ability_check:|skill:|save:|attack_hit:|attack_damage:|casting_hit:)/.test(target);
+   if(rollable){
+    field='dice_bonuses';row={...common,target,dice:expression};
+    const tracker=String(values.tracker_id||'').trim(),cost=Number(values.tracker_cost||1);
+    if(tracker){
+     if(!/^[\w:|.-]{1,160}$/.test(tracker))throw Error('Tracker non valido');
+     if(!Number.isInteger(cost)||cost<1||cost>100)throw Error('Costo tracker non valido');
+     row.tracker_id=tracker;row.tracker_cost=cost;
+    }
+    const damageType=norm(values.damage_type);
+    if(damageType){
+     if(!DAMAGE_TYPES.includes(damageType))throw Error('Tipo di danno non valido');
+     row.damage_type=damageType;
+    }
+   }else{
+    // Static scores cannot reroll on every recalculation: roll once at grant
+    // creation and persist the outcome alongside its original notation.
+    const total=Number(values.rolled_total);
+    if(values.rolled_total===undefined||!Number.isSafeInteger(total)||Math.abs(total)>100000)
+      throw Error('Tira il dado per determinare un bonus permanente al valore');
+    field='formula_bonuses';
+    row={...common,target,expression:String(total),dice_notation:expression};
+   }
+  }else{
+   if(/\d*d\d+/i.test(expression))throw Error('Dadi non validi');
+   field='formula_bonuses';row={...common,target,expression};
+   if(!/^[a-z0-9_+*\-/. ()]+$/i.test(row.expression))throw Error('Formula non valida');
+  }
  }else if(kind==='dice'){
   field='dice_bonuses';row={...common,target:required('target'),dice:required('dice')};
   if(!/^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$/i.test(row.dice.replaceAll(' ','')))throw Error('Dadi non validi');
@@ -125,6 +156,15 @@ export function addBenefitPatch(record,trait,kind,values={},id){
    if(!DAMAGE_TYPES.includes(damageType))throw Error('Tipo di danno non valido');
    row.damage_type=damageType;
   }
+ }else if(kind==='roll_mode'){
+  field='roll_mode_grants';
+  const target=required('target'),mode=required('mode');
+  if(!['advantage','disadvantage'].includes(mode))throw Error('Modalità non valida');
+  if(!['ability_check','saving_throw','attack_roll','spell_attack','initiative','any_d20'].includes(target)&&
+     !/^(ability_check:|skill:|save:|attack_hit:|casting_hit:)/.test(target))
+    throw Error('Vantaggio/svantaggio applicabile solo ai tiri d20');
+  row={...common,target,mode,trait_key:trait.key,
+    parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||''};
  }else if(kind==='proficiency'){
   field='proficiency_choices';row={...common,kind:required('proficiency_kind'),key:norm(required('key'))};
   if(!PROFICIENCY_KINDS.some(([x])=>x===row.kind))throw Error('Tipo competenza non valido');
