@@ -129,12 +129,12 @@ func run() -> void:
 		return String(attack.get("name", "")) == "Lightning Launcher"))
 	assert(not Runtime.armorer_weapons(switched.record).any(func(attack: Dictionary) -> bool:
 		return String(attack.get("name", "")) == "Thunder Gauntlets"))
-	var unequipped := switched.record.duplicate(true)
+	var unequipped: Dictionary = switched.record.duplicate(true)
 	unequipped["inventory"][0]["equipped_slots"] = []
 	assert(Runtime.armorer_weapons(unequipped).is_empty())
 	assert(not Runtime.entries(unequipped).any(func(action: Dictionary) -> bool:
 		return String(action.get("mode", "")) == "armor_model"))
-	var disabled_model := switched.record.duplicate(true)
+	var disabled_model: Dictionary = switched.record.duplicate(true)
 	for feature: Dictionary in preload("res://vtt/creature_features.gd").collect_features(disabled_model):
 		if String(feature.get("name", "")) == "Armor Model":
 			disabled_model["origin_enabled"] = {"feature:" + String(feature.get("key", "")): false}
