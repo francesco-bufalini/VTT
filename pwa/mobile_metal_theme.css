@@ -2068,15 +2068,19 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  cursor:pointer;font:23px/1 system-ui;
 }
 .trait-benefits-trigger .vtt-action-glyph{width:21px;height:21px}
-/* Feat ownership control: a discreet, independent tap target. */
-.play-info-traits .trait-row:has(>.trait-feat-remove){grid-template-columns:40px minmax(0,1fr) 38px}
-.play-info-traits .trait-feat-remove{
- align-self:start;display:grid;place-items:center;width:34px;height:42px;
+/* Manage feat ownership only in the dedicated Talenti panel; never in Tratti. */
+.info-owned-feat-row{
+ display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:start;
+ gap:4px;min-width:0;
+}
+.info-owned-feat-row>.info-feat-entry{min-width:0;margin:0}
+.info-owned-feat-remove{
+ align-self:start;display:grid;place-items:center;width:34px;height:44px;
  border:0;border-radius:8px;background:transparent;color:#bba791;
  font:21px/1 system-ui;cursor:pointer;
 }
-.play-info-traits .trait-feat-remove:hover,.play-info-traits .trait-feat-remove:focus-visible{
- color:#ffdbb4;background:#ad86502b;outline-offset:2px;
+.info-owned-feat-remove:hover,.info-owned-feat-remove:focus-visible{
+ color:#ffdbb4;background:#ad86502b;outline:2px solid #b99461;outline-offset:1px;
 }
 .feat-remove-dialog.sheet-context-dialog{
  width:min(460px,calc(100vw - 28px));max-height:85dvh;
