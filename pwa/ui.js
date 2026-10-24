@@ -17,7 +17,7 @@ import { listCreatures, loadCreature, createCreature, importCreatureFile, export
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
 import { createDemoCreature } from "./demo.js";
-import { CATALOG_CATEGORIES, catalogEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
+import { CATALOG_CATEGORIES, catalogEntries, selectedSpellEntries, detailedEntry, flattenDescription, createQuickHomebrew, quickGrantPatch, deleteQuickHomebrew } from "./catalog_data.js";
 import { collectTraitRows, groupTraitRows, withGrantedSpellPreviews } from "./trait_projection.js";
 import { traitBenefitGroups, traitBenefitSources } from "./trait_benefits.js";
 import {BENEFIT_TYPES,PROFICIENCY_KINDS,DEFENSE_RANKS,DAMAGE_TYPES,traitRemovedIds,removeBenefitPatch,restoreBenefitPatch,addBenefitPatch,traitActivationPatch,traitIsActive} from "./trait_benefit_editor.js";
@@ -85,7 +85,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -183,6 +183,70 @@ function sheetLoadingDeadline(promise,ms,label){
     },ms);
   })]).finally(()=>clearTimeout(timer));
 }
+
+// Foreground requests only contain selected spells and, when preparing, the
+// caster's eligible class list. A background download can later replace these
+// partial references with the entire catalog without blocking navigation.
+let fullSpellCatalogRequest=null;
+function loadFullSpellCatalog(){
+  if(state.spellCatalogComplete)return Promise.resolve(state.spellCatalog);
+  if(!fullSpellCatalogRequest)fullSpellCatalogRequest=catalogEntries("spells").then(rows=>{
+    state.spellCatalog=rows;
+    state.spellCatalogComplete=true;
+    state.spellCatalogError="";
+    return rows;
+  }).catch(error=>{
+    state.spellCatalogError=errorMessage(error);
+    throw error;
+  }).finally(()=>{fullSpellCatalogRequest=null;});
+  return fullSpellCatalogRequest;
+}
+function refreshWhenSpellsArrive(promise,creatureId,sheet){
+  refreshSheetAfterLateLoad(promise,creatureId,sheet);
+  if(state.page==='session')Promise.resolve(promise).then(()=>{
+    if(state.page==='session')void render();
+  }).catch(()=>{});
+}
+function ensureVisibleSpells(creature,calculated){
+  if(state.spellCatalogComplete)return null;
+  const ids=new Set();
+  for(const field of ['prepared_spells','spells','spellbook_spells','known_spells']){
+    for(const entry of creature[field]||[])if(spellId(entry))ids.add(spellId(entry));
+  }
+  for(const row of [...(calculated.origin_spells||[]),...(creature.origin_spell_grants||[])]){
+    if(row.spell_id)ids.add(row.spell_id);
+  }
+  const scopes=[];
+  if(state.sheet==='magic'&&state.magicPopup==='catalog'&&state.spellKnownView==='known'&&
+    state.spellTarget==='prepared_spells'){
+    const member=(calculated.casting_classes||[]).find(row=>row.id===state.spellClass);
+    if(member?.mode==='Preparati')scopes.push({
+      name:member.name,max_level:member.book?0:member.max_level
+    });
+  }
+  const key=JSON.stringify([[...ids].sort(),scopes,creature.id||'',state.sheet]);
+  if(state.spellDemandKey===key)return null;
+  state.spellDemandKey=key;
+  state.spellScopedLoading=true;
+  const request=selectedSpellEntries([...ids],scopes).then(rows=>{
+    if(!state.spellCatalogComplete){
+      const combined=new Map((state.spellCatalog||[]).map(row=>[row.id,row]));
+      for(const row of rows)combined.set(row.id,row);
+      state.spellCatalog=[...combined.values()];
+    }
+    state.spellCatalogError='';
+    return rows;
+  }).catch(error=>{
+    console.warn('VTT spell references unavailable; saved spells remain usable',error);
+  }).finally(()=>{state.spellScopedLoading=false;});
+  return request;
+}
+function requireFullSpellsForPicker(){
+  if(state.spellCatalogComplete)return;
+  const creatureId=state.creatureId,sheet=state.sheet;
+  refreshWhenSpellsArrive(loadFullSpellCatalog(),creatureId,sheet);
+}
+
 let sheetLateRefreshTimer=null;
 function refreshSheetAfterLateLoad(promise,creatureId,sheet){
   Promise.resolve(promise).then(()=>{
@@ -391,7 +455,7 @@ async function render() {
     else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "session") {
       state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
-      if(!state.spellCatalog)try{state.spellCatalog=await catalogEntries('spells');}catch{}
+      // Session navigation must never await the entire spell compendium.
       state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async creature=>[creature.id,await computeLocalData(creature)])));
       html=sessionView();
     }
@@ -817,18 +881,6 @@ async function editorView() {
         'Le azioni opzionali non sono state caricate: '+errorMessage(generalRules.reason):'';
     })());
   }
-  if((state.sheet==="battle"||state.sheet==="magic"||state.sheet==="conditions"||state.sheet==="info"||
-      state.sheet==="inventory"&&inventoryVisibleSections(c).includes("scrolls"))&&!state.spellCatalog){
-    optionalTasks.push((async()=>{
-      const request=catalogEntries("spells").then(rows=>{state.spellCatalog=rows;return rows;});
-      try{await sheetLoadingDeadline(request,2300,"degli incantesimi");state.spellCatalogError="";}
-      catch(error){
-        state.spellCatalogError=errorMessage(error);
-        if(error.code==='SHEET_LOADING_TIMEOUT')
-          refreshSheetAfterLateLoad(request,creatureId,state.sheet);
-      }
-    })());
-  }
   if((state.sheet==="magic"||state.sheet==="battle")&&!state.abilityCatalog){
     optionalTasks.push((async()=>{
       const request=loadActivatedAbilities().then(rows=>{state.abilityCatalog=rows;return rows;});
@@ -844,6 +896,19 @@ async function editorView() {
   const calculated=await pendingCalculation;
   if(state.creatureId!==creatureId||state.libraryMode)return '';
   state.calculated=calculated;
+  if(['battle','magic','conditions','info'].includes(state.sheet)||
+      state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls')){
+    const visibleRequest=ensureVisibleSpells(c,calculated);
+    if(visibleRequest)refreshWhenSpellsArrive(visibleRequest,creatureId,state.sheet);
+  }
+  if(state.sheet==='inventory'&&inventoryVisibleSections(c).includes('scrolls'))
+    requireFullSpellsForPicker();
+  if(state.sheet==='magic'&&state.magicPopup){
+    const member=calculated.casting_classes.find(row=>row.id===state.spellClass);
+    if(state.magicPopup==='choices'||state.magicPopup==='catalog'&&
+      !(member?.mode==='Preparati'&&state.spellTarget==='prepared_spells'&&state.spellKnownView==='known'))
+      requireFullSpellsForPicker();
+  }
   let featDetails;
   if(state.sheet==='info'){
     const feats=Array.isArray(c.feats_catalog)?c.feats_catalog:[];
@@ -2149,7 +2214,9 @@ function spellSelectionWarning(member,count){
 }
 function renderSpellResults(){
   const rows=state.spellCatalog||[],record=state.editor?.read()||{};
-  if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
+  if(!rows.length)return '<p class="hint">'+(state.spellScopedLoading||
+    fullSpellCatalogRequest?'Caricamento degli incantesimi disponibili…':
+    'Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.')+'</p>';
   const query=state.spellQuery.trim().toLocaleLowerCase('it');
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
@@ -3880,6 +3947,7 @@ async function handleAction(target){
   }
   if(act==='magic-known-filter'){
     state.spellKnownView=target.dataset.filter==='known'?'known':'all';
+    if(state.spellKnownView==='all')requireFullSpellsForPicker();
     await render();return;
   }
   if(act==='magic-tool-open'||act==='magic-select-spells'){
@@ -5761,6 +5829,15 @@ export async function mount(){
   state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
   await render();
   void loadBundledConditionCatalog();
+  // Idle-only background prefetch: never gate the library, sheet or pairing.
+  // The service worker also caches the complete catalog for later offline use.
+  setTimeout(()=>{
+    const preload=()=>loadFullSpellCatalog().catch(error=>
+      console.warn('VTT optional spell prefetch unavailable',error));
+    if(typeof window.requestIdleCallback==='function')
+      window.requestIdleCallback(preload,{timeout:12000});
+    else setTimeout(preload,1200);
+  },2400);
   if(qrCode){
     const input=document.querySelector("#pair-secret");
     if(input)input.value=qrCode;
