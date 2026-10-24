@@ -71,20 +71,24 @@ try{
     if(width===360){
      const movement=page.locator('[data-battle-action="movement"]');
      await movement.locator('summary.play-battle-summary').click();
-     assert.equal(await movement.locator('.play-battle-action-group[open]').count(),0,
-      'Opening a main action category reveals collapsed timing groups only');
-     const group=movement.locator('.play-battle-action-group').first();
-     await group.locator('summary.play-battle-action-heading').click();
+     const groups=movement.locator('.play-battle-action-group[data-action-timing]');
+     assert(await groups.count()>0,'Movement has action-timing subsections');
+     assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
+      'Opening an action category automatically opens every timing subsection');
+     const group=groups.first();
      const styles=await group.locator('.play-battle-action-rows').evaluate(node=>({
       rail:getComputedStyle(node).borderLeftStyle,
       branch:getComputedStyle(node.querySelector('.play-battle-attack-entry'),'::before').content
      }));
      assert.equal(styles.rail,'none','Nested action lists use a minimal layout without an index rail');
      assert.equal(styles.branch,'none','Action rows have no index branches');
+     await group.locator('summary.play-battle-action-heading').click();
+     assert.equal(await group.getAttribute('open'),null,
+      'A timing subsection may still be collapsed independently');
      await movement.locator('summary.play-battle-summary').click();
      await movement.locator('summary.play-battle-summary').click();
-     assert.equal(await movement.locator('.play-battle-action-group[open]').count(),0,
-      'Reopening a category shows its index instead of restoring expanded children');
+     assert.equal(await movement.locator('.play-battle-action-group[data-action-timing][open]').count(),await groups.count(),
+      'Reopening a category re-expands all timing subsections');
      await expand.click();
      assert.equal(await page.locator('#sheet-play-view .play-battle-disclosure:not([open]), #sheet-play-view .play-battle-action-group:not([open])').count(),0);
      await collapse.click();
@@ -140,7 +144,8 @@ try{
  await showGeneral();
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
  await page.locator('.play-battle-disclosure[data-battle-action="movement"] > summary').click();
- await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"]) > summary').click();
+ assert.equal(await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
+  'Stealth movement is visible automatically when its parent opens');
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
  await page.locator('[data-act="close-sheet-roll"]').click();
