@@ -817,15 +817,46 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const node=document.createElement('section');node.className='play-item-editor';
     if(row&&Number(view.inventorySelectedIndex)===i){
       const form=document.createElement('div');form.className='play-item-fields';
-      const field=(caption,control)=>{if(!control)return;const label=document.createElement('label');label.append(document.createTextNode(caption),control);form.append(label);};
-      const name=row.querySelector('[data-item-key="name"]'),quantity=row.querySelector('.inventory-quantity-controls');
-      const equip=row.querySelector('.inventory-equip-toggle'),more=row.querySelector('.inventory-more');
-      const actions=row.querySelector('.inventory-context-actions'),select=row.querySelector('.inventory-select');
-      field('Nome oggetto',name);field('Quantità',quantity);
-      if(['weapon','armor','shield'].includes(itemKind(item)))field('Slot equipaggiamento',equip);
-      const toolbar=document.createElement('div');toolbar.className='play-item-toolbar';
-      if(more)toolbar.append(more);if(actions)toolbar.append(actions);
-      row.replaceChildren(form,toolbar);if(select){select.hidden=true;row.append(select);}
+      const field=(caption,control,holder=form)=>{
+        if(!control)return;
+        const label=document.createElement('label');
+        const title=document.createElement('span');title.textContent=caption;
+        label.append(title,control);holder.append(label);
+      };
+      const name=row.querySelector('[data-item-key="name"]');
+      const quantity=row.querySelector('.inventory-quantity-controls');
+      const equip=row.querySelector('.inventory-equip-toggle');
+      if(name)field('Nome oggetto',name);
+      const primary=document.createElement('div');primary.className='play-item-main-fields';
+      field('Quantità',quantity,primary);
+      const location=document.createElement('select');
+      location.setAttribute('aria-label','Sezione dell’oggetto');
+      if(section==='scrolls'||section==='documents'){
+        const option=document.createElement('option');option.textContent=section==='scrolls'?'Pergamene':'Documenti';
+        location.append(option);location.disabled=true;
+      }else{
+        location.dataset.itemContainer=String(i);
+        for(const container of containers){
+          const option=document.createElement('option');option.value=container.id;
+          option.textContent=container.name;
+          option.selected=itemContainerId(item,containers)===container.id;
+          location.append(option);
+        }
+      }
+      field('Sezione',location,primary);
+      form.append(primary);
+      if(requiresAttunement(resolveOwnedItem(item))){
+        const label=document.createElement('label');label.className='inventory-popup-attunement';
+        const input=document.createElement('input');input.type='checkbox';
+        input.dataset.itemIndex=String(i);input.dataset.itemKey='attuned';
+        input.checked=item.attuned===true;
+        const copy=document.createElement('span');
+        const heading=document.createElement('strong');heading.textContent='Sintonia';
+        const detail=document.createElement('small');detail.textContent='Attiva o disattiva la sintonia con questo oggetto';
+        copy.append(heading,detail);label.append(input,copy);form.append(label);
+      }
+      if(equip)field('Equipaggiamento',equip);
+      row.replaceChildren(form);
     }
     if(row)node.append(row);
     if(documentRow){documentRow.open=true;node.append(documentRow);}
