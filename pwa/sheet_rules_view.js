@@ -621,7 +621,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<dl class="power-privilege-facts">'+
      '<div><dt>Origine</dt><dd>'+esc(originLabel||'Non specificata')+'</dd></div>'+
      '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
-     '<div><dt>Costo</dt><dd>'+esc(row.cost?row.cost+' utilizzi'+(tracker?' · '+tracker.name:''):'Nessun costo')+'</dd></div></dl>'+
+     (row.cost?'<div><dt>Costo</dt><dd>'+esc(row.cost+' utilizzi'+(tracker?' · '+tracker.name:''))+'</dd></div>':'')+'</dl>'+
     (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
