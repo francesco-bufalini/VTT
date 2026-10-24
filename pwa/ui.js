@@ -79,7 +79,7 @@ const abilities = {str:"Forza",dex:"Destrezza",con:"Costituzione",int:"Intellige
 const state = { page:"library", libraryMode:true, creatureId:null, editor:null, sheet:"info", detail:"overview", referenceCatalogs:{}, map:null,
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
-  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
+  sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
@@ -447,13 +447,24 @@ function paintLibraryMiniatures(){
  // The selected miniature must remain visible even in a large alphabetic
  // catalog where the first page would otherwise push it out of view.
  const selected=filtered.find(m=>m.id===state.libraryMiniatureId);
- const matches=(selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered).slice(0,36);
+ const ordered=selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered;
+ const matches=ordered.slice(0,state.libraryMiniatureLimit);
  const area=dialog.querySelector('.library-miniature-choices');
+ const previousScroll=area?.scrollTop||0;
  if(area)area.innerHTML=matches.length?matches.map(m=>
   '<button type="button" data-act="library-miniature-select" data-miniature-id="'+esc(m.id)+
   '" class="library-miniature-option" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
   actionGlyph('proficiency')+'<span>'+esc(m.name)+'</span></button>').join(''):
   '<p class="hint">Nessuna miniatura trovata.</p>';
+ if(area)area.scrollTop=previousScroll;
+ const progress=dialog.querySelector('.library-miniature-progress');
+ if(progress)progress.textContent=filtered.length?matches.length+' di '+filtered.length+' miniature':'Nessun risultato';
+ const more=dialog.querySelector('[data-act="library-miniature-more"]');
+ if(more){
+  const remaining=filtered.length-matches.length;
+  more.hidden=remaining<=0;
+  more.textContent=remaining>0?'Mostra altre '+Math.min(36,remaining):'';
+ }
  const chosen=profiles.find(m=>m.id===state.libraryMiniatureId);
  const label=dialog.querySelector('.library-miniature-current');
  if(label)label.textContent=chosen?'Selezionata: '+chosen.name:'Seleziona una miniatura';
@@ -480,13 +491,13 @@ async function loadLibraryMiniatures(){
 }
 function librarySelectionActions(){
  const count=state.librarySelectedIds.size;
- return count?'<span class="library-selection-count">'+count+' selezionate</span>'+
-  '<button type="button" class="library-bulk-button library-bulk-export" data-act="library-export">'+
+ return count?
+  '<button type="button" class="library-bulk-button library-bulk-export" data-act="library-export" aria-label="Esporta creature selezionate">'+
     '<span class="library-bulk-glyph" aria-hidden="true">'+actionGlyph('scroll')+'</span>'+
-    '<span>Esporta</span><span class="library-bulk-number">'+count+'</span></button>'+
-  '<button type="button" class="library-bulk-button library-bulk-delete" data-act="library-delete">'+
+    '<span>Esporta</span></button>'+
+  '<button type="button" class="library-bulk-button library-bulk-delete" data-act="library-delete" aria-label="Elimina creature selezionate">'+
     '<span class="library-bulk-glyph library-bulk-delete-symbol" aria-hidden="true">×</span>'+
-    '<span>Elimina</span><span class="library-bulk-number">'+count+'</span></button>':'';
+    '<span>Elimina</span></button>':'';
 }
 function syncLibrarySelectionUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
@@ -588,6 +599,8 @@ async function libraryView(){
     '<label class="library-miniature-search" for="library-miniature-search">'+actionGlyph('search')+
      '<input id="library-miniature-search" type="search" placeholder="Cerca miniatura" autocomplete="off"></label>'+
     '<div class="library-miniature-choices" role="group" aria-label="Scegli miniatura"></div>'+
+    '<div class="library-miniature-pagination"><span class="library-miniature-progress" aria-live="polite"></span>'+
+     '<button type="button" class="library-miniature-more" data-act="library-miniature-more" hidden>Mostra altre</button></div>'+
     '<div class="library-create-actions">'+
      '<button type="button" class="btn" data-act="library-create-close">Annulla</button>'+
      '<button type="button" class="btn primary" data-act="create">Crea creatura</button></div>'+
@@ -4607,6 +4620,7 @@ async function handleAction(target){
   }
   if(act==="library-add"){
     state.libraryMiniatureId='sariel';
+    state.libraryMiniatureLimit=36;
     const dialog=app.querySelector('#library-create-dialog');
     if(dialog){
       paintLibraryMiniatures();
@@ -4619,6 +4633,16 @@ async function handleAction(target){
     if(libraryMiniatureOptions().some(row=>row.id===target.dataset.miniatureId)){
       state.libraryMiniatureId=target.dataset.miniatureId;paintLibraryMiniatures();
     }
+    return;
+  }
+  if(act==="library-miniature-more"){
+    const count=app.querySelectorAll('#library-create-dialog .library-miniature-option').length;
+    state.libraryMiniatureLimit+=36;
+    paintLibraryMiniatures();
+    const area=app.querySelector('#library-create-dialog .library-miniature-choices');
+    const choices=area?.querySelectorAll('.library-miniature-option');
+    if(choices?.length>count)
+      area.scrollTop=choices[count].offsetTop-choices[0].offsetTop;
     return;
   }
   if(act==="library-create-close"){
@@ -5374,7 +5398,11 @@ function listen(){
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==='library-miniature-search'){
-      paintLibraryMiniatures();return;
+      state.libraryMiniatureLimit=36;
+      paintLibraryMiniatures();
+      const area=app.querySelector('#library-create-dialog .library-miniature-choices');
+      if(area)area.scrollTop=0;
+      return;
     }
     if(target?.matches('[data-play-search]')){
       state.sheetSearch.set(state.creatureId+'|'+state.sheet,target.value);
