@@ -4,6 +4,7 @@ import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverr
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
+import {structuredItemFacts} from "./item_detail_facts.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownClassSpellIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -1638,12 +1639,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
           '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
           (isCatalogItem(item)?'':name)+
-          (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+
-          '<button type="button" class="inventory-more" data-act="inventory-menu" data-index="'+index+
-          '" aria-label="Opzioni '+esc(item.name)+'" aria-expanded="'+(menuIndex===index)+'">⋯</button>'+
-          (menuIndex===index?'<span class="inventory-context-actions">'+
-             '<button type="button" class="btn small danger" data-act="remove-item" data-index="'+index+'">Rimuovi</button>'+
-             '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button>'+(!scrolls?'<label>Sposta in<select data-item-container="'+index+'">'+containers.map(c=>'<option value="'+esc(c.id)+'"'+(itemContainerId(item,containers)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></label>':'')+'</span>':'')+'</span>',
+          (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+'</span>',
         equip='<span class="inventory-col-equip">'+(scrolls?'':canEquip?
           '<button type="button" class="inventory-equip-toggle'+((item.equipped||slots.length)?' is-equipped':'')+'" data-act="inventory-equip" data-index="'+index+
           '" title="'+((item.equipped||slots.length)?'Disequipaggia':'Equipaggia')+'" aria-label="'+((item.equipped||slots.length)?"Disequipaggia":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
@@ -1680,6 +1676,12 @@ function inventoryItemDescription(obj,index){
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
     ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
+  // The brief readout is not a replacement for complete structured metadata.
+  const seen=new Set(pairs.map(([label])=>label.toLocaleLowerCase('it')));
+  for(const [label,value] of structuredItemFacts(resolveOwnedItem(obj))){
+    if(seen.has(label.toLocaleLowerCase('it')))continue;
+    pairs.push([label,value]);seen.add(label.toLocaleLowerCase('it'));
+  }
   const properties=inventoryReadout(obj,inventoryProperties({...obj,rarity:''}),isSpellScroll(obj)).properties||"—";
   const prose=flattenDescription(obj)||String(obj.description||'');
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
@@ -1693,6 +1695,8 @@ function inventoryItemDescription(obj,index){
     '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
     '</details>':'';
   return '<div class="inventory-description">'+
+    (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
+      '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
     (properties!=='—'?'<section class="inventory-detail-section"><h3>Proprietà</h3><p>'+esc(properties)+'</p></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
@@ -2730,7 +2734,12 @@ async function handleField(target) {
     await render();return;
   }
   if(target.dataset.itemContainer!==undefined){
-    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),target.value));
+    const destination=target.value;
+    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),destination));
+    // Moving an item into a previously hidden section must not close its
+    // editor or make the chosen item disappear after the rerender.
+    focusInventorySection(state.editor.read(),destination===DEFAULT_INVENTORY_CONTAINER?
+      'items':'container:'+destination);
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(target.dataset.itemOverride){
@@ -5029,6 +5038,20 @@ async function handleAction(target){
     state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }
+  if(act==="inventory-open-trait"){
+    const index=Number(target.dataset.index),item=state.editor?.read()?.inventory?.[index];
+    if(!item?.id||isDocument(item))throw Error('Tratto dell’oggetto non disponibile.');
+    state.sheetPopup='';state.sheet='info';await render();
+    const trait=(state.traitRows||[]).find(row=>row.category==='oggetti'&&row.rank===0&&
+      row.origin_key==='item:'+item.id);
+    if(!trait){message('Il tratto dell’oggetto non è disponibile in questa scheda.',true);return;}
+    const card=[...app.querySelectorAll('.trait-row [data-trait-key]')]
+      .find(row=>row.dataset.traitKey===trait.key);
+    card?.scrollIntoView?.({block:'center',behavior:'instant'});
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+    state.traitPopupKey=trait.key;state.traitPopupConfirm='';state.traitPopupTrait=trait;
+    mountTraitBenefitDialog();return;
+  }
   if(act==="inventory-select"){
     state.inventorySelectedIndex=Number(target.dataset.index);
     state.inventoryMenuIndex=-1;
@@ -5429,18 +5452,6 @@ function listen(){
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
-  });
-  // Right-click (and touch long-press where the browser emits contextmenu)
-  // opens the same per-item actions as the explicit touch-friendly ⋯ button.
-  app.addEventListener("contextmenu",e=>{
-    const row=e.target?.closest?.("[data-inventory-row]");
-    if(!row||state.sheet!=="inventory"||!state.editor)return;
-    e.preventDefault();
-    const index=Number(row.dataset.inventoryRow);
-    if(!Number.isInteger(index))return;
-    state.inventoryMenuIndex=index;
-    state.inventorySelectedIndex=index;
-    render().catch(error=>message(errorMessage(error),true));
   });
   app.addEventListener("submit",async e=>{
     if(!(e.target instanceof HTMLFormElement))return;
