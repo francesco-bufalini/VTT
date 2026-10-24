@@ -51,7 +51,8 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
  assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
  assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
- assert([...movement.querySelectorAll('.play-battle-attack-entry')].every(node=>node.querySelector('.play-battle-effect')));
+ assert([...movement.querySelectorAll('[data-action-timing="movement"] .play-battle-attack-entry')]
+  .every(node=>node.querySelector('.play-battle-effect')));
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
  assert.equal(movement.querySelector('[data-action-timing="action"] summary>.vtt-action-glyph')?.tagName,'SPAN');
@@ -409,7 +410,7 @@ test('native class activations use eligible collected features, edition and loca
  assert(markup.includes('Ira'));assert(markup.includes('2 / 3'));
  assert(!actionEconomyView(barbarian,{features:[],trackers:[]}).includes('>Ira<'));
  const fighter={class:'Fighter',class_source:'PHB',level:5};
- assert(find(actionEntries(fighter,calc),'attack').name.includes('×2'));
+ assert.equal(find(actionEntries(fighter,calc),'attack').attack_count,2);
  const revised={rules_version:'2024'};
  const paladin={...make('Lay on Hands','Paladin'),origin_key:'class|xphb|paladin'};
  const ability=nativeClassFeatureActions(revised,{features:[paladin],trackers:[]});
