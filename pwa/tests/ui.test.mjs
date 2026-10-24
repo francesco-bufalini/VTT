@@ -66,8 +66,11 @@ async function addHomebrewToInventory(name){
     "Creation controls are expanded when invoked from the inventory");
   change('#quick-name',name);
   click('[data-act="quick-create"]');
-  await until(()=>document.querySelector('[data-act="new-homebrew-item"]')&&
-    document.querySelector('.inventory-table-row')?.textContent.includes(name),5000);
+  await until(()=>[...document.querySelectorAll('#sheet-play-view [data-sheet-context^="item:"]')]
+    .some(node=>node.textContent.includes(name)),5000);
+  [...document.querySelectorAll('#sheet-play-view [data-sheet-context^="item:"]')]
+    .find(node=>node.textContent.includes(name)).click();
+  await until(()=>document.querySelector('#sheet-context-dialog [data-item-key="quantity"]'));
 }
 async function changeScore(ability,value){
   assert.equal(document.querySelector('[data-act="edit-score"][data-ability-key="'+ability+'"]'),null,
@@ -199,7 +202,7 @@ test("native reference catalog can add an item to an offline creature",async()=>
   await until(()=>document.querySelector('[data-inventory-row]'));
   const sword=(await listCreatures()).find(row=>row.creature.id===owner.creature.id).creature.inventory
     .findIndex(item=>item.name==="Spada lunga");
-  click('[data-act="inventory-select"][data-index="'+sword+'"]');
+  click('#sheet-play-view [data-sheet-context="item:'+sword+'"]');
   await until(()=>document.querySelector('.inventory-description-panel')?.textContent.includes("Spada lunga"),
     5000); // Wait for the asynchronous selected-item render to finish.
   assert.ok(document.querySelector('.inventory-description-panel').textContent.includes("Spada lunga"),
@@ -682,11 +685,12 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
     "Document operations stay inside their own subtab");
   assert.ok(document.querySelector('.inventory-attunement'),"Dedicated attunement list in mobile inventory");
   assert.ok(document.querySelector('.inventory-table[role="table"]'),"Compact mobile inventory table");
-  click('[data-act="inventory-equip"]');
+  assert.equal(document.querySelector('[data-act="inventory-equip"]'),null,
+    'A carried custom item grants passive benefits without a physical equipment toggle');
   await until(async()=>{
     const rows=await listCreatures();
     return rows.some(r=>r.creature.inventory?.[0]?.name==="Test personalizzato" &&
-      r.creature.inventory[0].quantity===3 && r.creature.inventory[0].equipped===true);
+      r.creature.inventory[0].quantity===3 && r.creature.inventory[0].active!==false);
   });
   assert.equal(document.querySelector('[data-item-key="attuned"]'),null);
   assert.ok(document.querySelector('[data-act="inventory-quantity"][data-delta="1"]'),"Quantity can be increased inline");

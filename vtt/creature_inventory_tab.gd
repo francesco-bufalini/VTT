@@ -628,6 +628,8 @@ func _send_selected_item_to(recipients: Array[String]) -> void:
 	instance["equipped"] = false
 	instance["equipped_slots"] = []
 	instance["attuned"] = false
+	if instance.has("attuned_count"):
+		instance["attuned_count"] = 0
 	instance["active"] = true
 	instance.erase("instance_id")
 	var reference: Dictionary = {"inventory": [instance]}
@@ -675,6 +677,8 @@ func receive_item() -> void:
 		owned["equipped"] = false
 		owned["equipped_slots"] = []
 		owned["attuned"] = false
+		if owned.has("attuned_count"):
+			owned["attuned_count"] = 0
 		owned["active"] = true
 		owned["instance_id"] = "received_item_%d" % Time.get_ticks_usec()
 		_inventory.append(owned)
@@ -1235,6 +1239,9 @@ func _on_quantity_changed(value: float) -> void:
 		_quantity.set_value_no_signal(1)
 		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
+	if _inventory[index].has("attuned_count"):
+		_inventory[index]["attuned_count"] = mini(int(_inventory[index]["attuned_count"]), int(_inventory[index]["quantity"]))
+		_inventory[index]["attuned"] = int(_inventory[index]["attuned_count"]) > 0
 	_sanitize_equipment()
 	_update_equip_buttons()
 	# Keep the active editor and selection intact while typing multiple digits.
@@ -1514,13 +1521,15 @@ func _set_attunement(value: bool) -> void:
 		var occupied := 0
 		for item: Dictionary in _inventory:
 			if bool(item.get("attuned", false)) and ItemRules.requires_attunement(_catalog_entry(item)):
-				occupied += 1
+				occupied += clampi(int(item.get("attuned_count", 1)), 0, int(item.get("quantity", 1)))
 		if occupied >= attunement_capacity():
 			if _on_status.is_valid():
 				_on_status.call("Limite di sintonia raggiunto.")
 			_refresh_inventory(index)
 			return
 	_inventory[index]["attuned"] = value
+	if _inventory[index].has("attuned_count"):
+		_inventory[index]["attuned_count"] = maxi(1, int(_inventory[index]["attuned_count"])) if value else 0
 	var category: String = ItemRules.kind(_catalog_entry(_inventory[index]))
 	if category not in ["weapon", "armor", "shield", "document"]:
 		_inventory[index]["equipped"] = value
@@ -1717,6 +1726,8 @@ func _forget_infusion() -> void:
 		if active is Dictionary and String(active.get("creator_id", "")) == _loaded_creature_id and String(active.get("id", "")) == sid and String(active.get("plan_item_id", "")) == plan:
 			owned.erase("infusion")
 			owned["attuned"] = false
+			if owned.has("attuned_count"):
+				owned["attuned_count"] = 0
 	_refresh_inventory(_selected_inventory_index())
 	_publish()
 
@@ -1760,6 +1771,12 @@ func _apply_infusion() -> void:
 		remainder["equipped_slots"] = []
 		remainder["equipped"] = false
 		remainder["attuned"] = false
+		if owned.has("attuned_count"):
+			var attuned: int = clampi(int(owned["attuned_count"]), 0, int(owned["quantity"]))
+			owned["attuned_count"] = mini(1, attuned)
+			owned["attuned"] = int(owned["attuned_count"]) > 0
+			remainder["attuned_count"] = maxi(0, attuned - 1)
+			remainder["attuned"] = int(remainder["attuned_count"]) > 0
 		_inventory.append(remainder)
 		owned["quantity"] = 1
 	owned["infusion"] = {
@@ -1779,5 +1796,7 @@ func _clear_infusion() -> void:
 		return
 	_inventory[index].erase("infusion")
 	_inventory[index]["attuned"] = false
+	if _inventory[index].has("attuned_count"):
+		_inventory[index]["attuned_count"] = 0
 	_refresh_inventory(index)
 	_publish()

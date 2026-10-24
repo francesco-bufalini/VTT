@@ -35,9 +35,9 @@ try{
  assert.equal(await page.locator('#sheet-context-dialog [data-act="inventory-open-trait"]').count(),1);
  await shot('inventory-detail-rich');await dismiss();
  await popup('item:2');
- const attune=page.locator('#sheet-context-dialog .inventory-popup-attunement input[type=checkbox]');
- assert.equal(await attune.count(),1,'Required attunement has a direct checkbox');
- assert.equal(await attune.isChecked(),true);
+ const attune=page.locator('#sheet-context-dialog .inventory-popup-attunement [data-item-key="attuned_count"]');
+ assert.equal(await attune.count(),1,'Required attunement has a per-copy counter');
+ assert.equal(await attune.inputValue(),'1');
  await dismiss();
  assert.equal(JSON.stringify(await record()),before,'Reading and searching inventory cannot mutate the archive');
  await popup('item:0');

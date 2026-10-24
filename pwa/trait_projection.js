@@ -3,7 +3,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
 import {localClasses,SKILLS} from './sheet_rules.js';
-import {activeInfusions,itemKind,requiresAttunement} from './item_controls.js';
+import {activeInfusions,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 
 const arr=value=>Array.isArray(value)?value:[];
@@ -70,6 +70,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    source:entry.source||'',category,origin,origin_key,level:at,rank,
    item_quantity:Math.max(1,Number(entry.item_quantity)||1),
    item_active_quantity:Math.max(0,Number(entry.item_active_quantity)||0),
+   item_requires_attunement:entry.item_requires_attunement===true,
    feature_origin:id,key:origin_key+'|'+(entry.id||at+'|'+norm(name)),
    // Keep explicit activation metadata even for a standalone feat, item or
    // monster trait that has no separate calculated feature record.
@@ -221,20 +222,24 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  // Common carried items do not need an equip flag. Armor and weapons retain
  // their physical slots; items requiring attunement still need that condition.
  const groupedItems=new Map();
- for(const item of arr(record.inventory)){
+ const attunements=calculated.attunements?.counts||inventoryAttunementCounts(record.inventory,
+  calculated.values?.attunement_max??record.attunement_max_base??3);
+ for(const [index,item] of arr(record.inventory).entries()){
   if(!item?.id||Number(item.quantity??1)<=0||isDocument(item))continue;
-  const kind=itemKind(item),slotted=['weapon','armor','shield'].includes(kind);
+  const effective=resolveOwnedItem(item),needsAttunement=requiresAttunement(effective);
+  const kind=itemKind(effective),slotted=['weapon','armor','shield'].includes(kind);
   const slots=arr(item.equipped_slots);
   const eligible=item.active!==false&&item.disabled!==true&&
-    (!requiresAttunement(item)||item.attuned===true);
+    (!needsAttunement||attunements[index]>0);
   const inSlot=kind==='armor'?slots.includes('body'):
     slots.includes('main')||slots.includes('off');
   const active=eligible&&(!slotted||inSlot);
   const qty=Math.max(1,Math.floor(Number(item.quantity)||1)),id=String(item.id);
-  const group=groupedItems.get(id)||{item,quantity:0,activeQuantity:0,slotted};
+  const group=groupedItems.get(id)||{item,quantity:0,activeQuantity:0,slotted,needsAttunement:false};
+  group.needsAttunement||=needsAttunement;
   group.quantity+=qty;
   if(active){
-   group.activeQuantity+=slotted?Math.min(qty,Math.max(1,slots.length)):qty;
+   group.activeQuantity+=needsAttunement?attunements[index]:slotted?Math.min(qty,Math.max(1,slots.length)):qty;
    group.item=item;
   }
   groupedItems.set(id,group);
@@ -249,6 +254,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   add({name,entries:info.entries??info.description??item.entries??item.description??'',
    source:info.source||item.source,
    item_quantity:group.quantity,item_active_quantity:group.activeQuantity,
+   item_requires_attunement:group.needsAttunement,
    action_type:item.action_type||info.action_type||info.activation||''}, {...options,rank:0});
   // Legacy activation toggles targeted the obsolete equipped flag.
   // Common owned items now activate their trait automatically.
@@ -258,7 +264,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   }
  }
  // Only an equipped, eligible infusion produces a visible subordinate trait.
- for(const applied of activeInfusions(record,calculated.infusion_catalog||[],calculated.features||[])){
+ const effectiveInventory=arr(record.inventory).map((item,i)=>requiresAttunement(resolveOwnedItem(item))?
+  {...item,attuned_count:attunements[i]||0,attuned:attunements[i]>0}:item);
+ for(const applied of activeInfusions({...record,inventory:effectiveInventory},calculated.infusion_catalog||[],calculated.features||[])){
    const detail=await lookup('optional_features',applied.name,'TCE')||applied.definition;
    add({name:'Infusione · '+applied.name,
      entries:detail.entries??detail.description??applied.definition.item_prerequisite??'',

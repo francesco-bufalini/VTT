@@ -11,6 +11,7 @@
     "test:navigation-browser": "node tests/navigation_browser.mjs",
     "test:inventory-powers-browser": "node tests/inventory_powers_browser.mjs",
     "test:inventory-sections-browser": "node tests/inventory_sections_browser.mjs",
+    "test:attunement-browser": "node tests/attunement_counts_browser.mjs",
     "test:sheets-browser": "node tests/sheet_play_browser.mjs",
     "test:actions-browser": "node tests/action_dashboard_browser.mjs",
     "test:native-origins": "node tests/compare_native_origins.mjs",

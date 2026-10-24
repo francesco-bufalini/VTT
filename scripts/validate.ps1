@@ -111,6 +111,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 
 $fastTests = @(
     "test_creature_variants.gd",
+    "test_item_attunement_roundtrip.gd",
     "test_desktop_sheet_archive.gd",
     "test_action_rules_2014.gd",
     "test_action_dashboard_ui.gd",

@@ -1,7 +1,7 @@
 // Read every available structured catalog field in the item summary; prose
 // stays in the description below and per-instance UI fields stay in the controls.
 const hidden=new Set(['name','id','instance_id','instanceId','quantity',
- 'container_id','equipped','equipped_slots','attuned','active','disabled',
+ 'container_id','equipped','equipped_slots','attuned','attuned_count','active','disabled',
  'instance_overrides','description','entries','text','fluff','additionalEntries',
  'entriesHigherLevel','_category','_homebrew','_description_warning',
  'raw','hash','uid','index','page','foundryData','foundryType']);

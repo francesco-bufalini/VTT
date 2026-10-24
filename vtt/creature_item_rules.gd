@@ -92,7 +92,7 @@ static func is_two_handed(entry: Dictionary) -> bool:
 # requirement string ("by a spellcaster", etc.). Never compare a String
 # with false: Godot 4 rejects mixed-type == / != operations at runtime.
 static func requires_attunement(entry: Dictionary) -> bool:
-	var requirement: Variant = entry.get("req_attune", entry.get("reqAttune", false))
+	var requirement: Variant = entry.get("req_attune", entry.get("reqAttune", entry.get("requires_attunement", entry.get("requiresAttunement", false))))
 	if requirement is bool:
 		return requirement
 	if requirement is String:

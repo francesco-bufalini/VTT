@@ -119,13 +119,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
  const bonusSeen=new Set();
+ const multipliers=new Map(Object.values(calculated.roll_components||{}).flat().map(row=>[row.id,row.multiplier]));
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){
   if(!belongs(row))continue;
   const id=String(row.id||'');
   if(id&&bonusSeen.has(id))continue;
   if(id)bonusSeen.add(id);
   add('bonus','Bonus',traitBenefitTargetLabel(row.target),
-   signedTraitFormula(row.dice_notation||row.expression)+(row.dice_notation?' → '+signedTraitFormula(row.expression):'')+(row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
+   signedTraitFormula(row.dice_notation||row.expression)+(row.dice_notation?' → '+signedTraitFormula(row.expression):'')+
+   (Number(row.multiplier??multipliers.get(row.id))>1?' ×'+Number(row.multiplier??multipliers.get(row.id)):'')+
+   (row.disabled?' · Disattivato':''),'bonus:'+String(row.id||''));
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;

@@ -2,7 +2,7 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
@@ -37,6 +37,20 @@ export function inventorySectionControls(record,selected=[]){
     '<button type="button" class="inventory-section-remove" data-act="inventory-container-delete" data-container-id="'+esc(key.slice(10))+
     '" aria-label="Elimina sezione '+esc(label)+'" title="Elimina sezione '+esc(label)+'">×</button></span>':toggle;
   }).join('')+'</nav>';
+}
+export function inventoryAttunementControl(record,index,calculated={},showName=true){
+ const item=record.inventory?.[index]||{},quantity=Math.max(0,Math.floor(Number(item.quantity??1)||0));
+ const maximum=calculated.attunements?.maximum??calculated.values?.attunement_max??record.attunement_max_base??3;
+ const counts=calculated.attunements?.counts||inventoryAttunementCounts(record.inventory,maximum);
+ const count=counts[index]||0,used=counts.reduce((sum,n)=>sum+n,0);
+ const limit=Math.max(count,Math.min(quantity,Math.max(0,maximum-used+count)));
+ return '<div class="inventory-popup-attunement" data-attunement-row="'+index+'">'+
+  '<span class="inventory-attunement-copy"><strong>'+esc(showName?item.name||'Oggetto':'Sintonie dedicate')+'</strong>'+
+  '<small>'+count+' / '+quantity+' copie · '+used+' / '+maximum+' sintonie totali</small></span>'+
+  '<div class="inventory-attunement-controls">'+
+  '<button type="button" data-act="inventory-attunement" data-index="'+index+'" data-delta="-1" aria-label="Rimuovi una sintonia da '+esc(item.name)+'"'+(count<=0?' disabled':'')+'>−</button>'+
+  '<input type="number" min="0" max="'+limit+'" step="1" data-item-index="'+index+'" data-item-key="attuned_count" value="'+count+'" aria-label="Sintonie dedicate a '+esc(item.name)+'">'+
+  '<button type="button" data-act="inventory-attunement" data-index="'+index+'" data-delta="1" aria-label="Aggiungi una sintonia a '+esc(item.name)+'"'+(count>=limit?' disabled':'')+'>+</button></div></div>';
 }
 // Lightweight inline portraits: share the same unmistakable character/monster
 // identity in the archive, persistent header, and creature sheet. No extra
@@ -325,7 +339,8 @@ export function inventoryReadout(item={},propertyText='',spellScroll=false){
  const slots={main:'Mano principale',off:'Mano secondaria',body:'Indossato'};
  const status=(Array.isArray(item.equipped_slots)?item.equipped_slots:[]).map(slot=>slots[slot]||slot);
  if(item.equipped&&!status.length&&['weapon','armor','shield'].includes(kind))status.push('Equipaggiato');
- if(item.attuned)status.push('In sintonia');else if(requiresAttunement(effective))status.push('Richiede sintonia');
+ const attuned=requiresAttunement(effective)?itemAttunementCount(item):item.attuned?1:0;
+ if(attuned)status.push('In sintonia'+(attuned>1?' ×'+attuned:''));else if(requiresAttunement(effective))status.push('Richiede sintonia');
  if(item.active===false)status.push('Disattivato');
  if(item.infusion)status.push('Infuso');
  const properties=String(propertyText==='—'?'':propertyText||'').split(' · ').filter(part=>
@@ -805,14 +820,16 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const equipped=(c.inventory||[]).filter(item=>item.equipped_slots?.length).map(item=>item.name).filter(Boolean).join(' · ');
     html+='<div class="inventory-shortcuts">'+
       go('equipment','Armi e armature','weapon',equipped||'Mani e armatura')+
-      go('attunement','Sintonia','spark',(c.inventory||[]).filter(item=>item.attuned).length+
-        ' / '+(c.attunement_max_base??3)+' oggetti')+
+      go('attunement','Sintonia','spark',(d.attunements?.used??inventoryAttunementCounts(c.inventory,d.values?.attunement_max??c.attunement_max_base??3).reduce((sum,n)=>sum+n,0))+
+        ' / '+(d.attunements?.maximum??d.values?.attunement_max??c.attunement_max_base??3)+' sintonie')+
       '<section class="inventory-play-coins" aria-label="Monete possedute">'+
         '<div class="inventory-play-coins-title">'+icon('coins')+'<strong>Monete</strong></div>'+
         '<div class="inventory-play-coins-fields">'+coinFields+coinTotal+'</div>'+
       '</section></div>';
   }
-  const readouts=(c.inventory||[]).map(item=>inventoryReadout(item,inventoryProperties(item),isSpellScroll(item)));
+  const attunements=d.attunements?.counts||inventoryAttunementCounts(c.inventory,d.values?.attunement_max??c.attunement_max_base??3);
+  const readouts=(c.inventory||[]).map((item,i)=>inventoryReadout(requiresAttunement(resolveOwnedItem(item))?
+    {...item,attuned_count:attunements[i]||0}:item,inventoryProperties(item),isSpellScroll(item)));
   if(showingItems){
     const owned=readouts.filter(info=>info.kind!=='document');
     const totals=key=>{const known=owned.filter(item=>item[key]!==null);return {count:known.length,value:known.reduce((sum,item)=>sum+item[key],0)};};
@@ -855,14 +872,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       field('Sezione',location,primary);
       form.append(primary);
       if(requiresAttunement(resolveOwnedItem(item))){
-        const label=document.createElement('label');label.className='inventory-popup-attunement';
-        const input=document.createElement('input');input.type='checkbox';
-        input.dataset.itemIndex=String(i);input.dataset.itemKey='attuned';
-        input.checked=item.attuned===true;
-        const copy=document.createElement('span');
-        const heading=document.createElement('strong');heading.textContent='Sintonia';
-        const detail=document.createElement('small');detail.textContent='Attiva o disattiva la sintonia con questo oggetto';
-        copy.append(heading,detail);label.append(input,copy);form.append(label);
+        form.insertAdjacentHTML('beforeend',inventoryAttunementControl(c,i,d,false));
       }
       if(equip)field('Equipaggiamento',equip);
       row.replaceChildren(form);

@@ -142,7 +142,7 @@ export function consolidateOwnedItems(inventory){
     const slots=array(row?.equipped_slots);
     const canStack=row&&typeof row==="object"&&!Array.isArray(row)&&
       String(row.id||row.name||"").trim()&&kind!=="document"&&
-      !row.infusion&&row.attuned!==true&&
+      !row.infusion&&itemAttunementCount(row)===0&&row.attuned!==true&&
       Number.isInteger(quantity)&&quantity>=1&&quantity<=99999&&
       slots.every(slot=>["main","off","body"].includes(slot))&&
       new Set(slots).size===slots.length&&slots.length<=quantity;
@@ -152,6 +152,7 @@ export function consolidateOwnedItems(inventory){
     identity.instance_overrides=identity.instance_overrides||{};
     identity.equipped=identity.equipped===true;
     identity.attuned=identity.attuned===true;
+    if(!Number(identity.attuned_count))delete identity.attuned_count;
     identity.active=identity.active!==false;
     const key=JSON.stringify(stable(identity));
     const candidates=groups.get(key)||[];
@@ -203,9 +204,17 @@ export function changeItemOverride(inventory,index,key,value){
     {...item.instance_overrides}:{};
   if(normalized===(current[key]??""))return rows;
   if(Number(item.quantity||1)>1){
+    const attuned=itemAttunementCount(item);
     rows[index].quantity=Number(item.quantity)-1;
+    if(requiresAttunement(item)){
+      rows[index].attuned_count=Math.min(attuned,rows[index].quantity);
+      rows[index].attuned=rows[index].attuned_count>0;
+    }
     const one=structuredClone(item);
     one.quantity=1;one.equipped_slots=[];one.equipped=false;one.attuned=false;
+    if(requiresAttunement(item)){
+      one.attuned_count=Math.max(0,attuned-rows[index].quantity);one.attuned=one.attuned_count>0;
+    }
     one.instance_id="pwa_instance_"+crypto.randomUUID();
     rows.splice(index+1,0,one);
     index++;
@@ -248,29 +257,57 @@ export function requiresAttunement(item={}){
     item.requiresAttunement??item.infusion?.requires_attunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
 }
+// A legacy boolean attunes one physical copy, never the entire stack.
+export function itemAttunementCount(item={}){
+  if(!requiresAttunement(resolveOwnedItem(item)))return 0;
+  const quantity=Math.max(0,Math.floor(Number(item.quantity??1)||0));
+  const count=Object.hasOwn(item,'attuned_count')?Number(item.attuned_count):item.attuned===true?1:0;
+  return Math.min(quantity,Math.max(0,Math.floor(Number.isFinite(count)?count:0)));
+}
+export function inventoryAttunementCounts(inventory=[],maximum=3){
+  let available=Math.max(0,Math.floor(Number(maximum)||0));
+  return array(inventory).map(item=>{
+    const count=Math.min(itemAttunementCount(item),available);
+    available-=count;return count;
+  });
+}
+export function itemBenefitCopies(item={}){
+  if(requiresAttunement(resolveOwnedItem(item)))return itemAttunementCount(item);
+  return ['weapon','armor','shield'].includes(itemKind(item))?1:
+    Math.max(0,Math.floor(Number(item.quantity??1)||0));
+}
 export const isCatalogItem=item=>!!String(item?.id||"")&&!String(item.id).startsWith("local_");
 export function createOwnedItem(entry,id){
   if(!entry||typeof entry!=="object"||!String(entry.id||"")||!String(entry.name||""))throw Error("Oggetto senza ID o nome.");
   const result=structuredClone(entry);
   delete result._category;delete result._homebrew;
-  Object.assign(result,{instance_id:id,quantity:1,equipped:false,equipped_slots:[],attuned:false,active:true,instance_overrides:{}});
+  Object.assign(result,{instance_id:id,quantity:1,equipped:false,equipped_slots:[],attuned:false,attuned_count:0,active:true,instance_overrides:{}});
   return result;
 }
-export function changeOwnedItem(inventory,index,key,value){
+export function changeOwnedItem(inventory,index,key,value,{attunementMax=3}={}){
   if(!Number.isInteger(index)||index<0||index>=array(inventory).length)throw Error("Oggetto non trovato.");
-  if(!["quantity","equipped","attuned","active","name","description"].includes(key))throw Error("Campo non modificabile.");
+  if(!["quantity","equipped","attuned","attuned_count","active","name","description"].includes(key))throw Error("Campo non modificabile.");
   const items=structuredClone(inventory),item=items[index],kind=itemKind(item);
   if(!item||typeof item!=="object"||Array.isArray(item))throw Error("Oggetto non valido.");
   if(key==="quantity"){
     const qty=Number(value);
     if(!Number.isInteger(qty)||qty<1||qty>99999||kind==="document")throw Error("Quantità non valida.");
     item.quantity=qty;
+    if(Object.hasOwn(item,'attuned_count')||item.attuned){
+      item.attuned_count=itemAttunementCount(item);item.attuned=item.attuned_count>0;
+    }
   }else if(key==="equipped"){
     if(["weapon","armor","shield","document"].includes(kind))throw Error("Equipaggia da Battaglia.");
     item.equipped=Boolean(value);
-  }else if(key==="attuned"){
-    if(!requiresAttunement(item))throw Error("Oggetto senza sintonia.");
-    item.attuned=Boolean(value);
+  }else if(key==="attuned"||key==="attuned_count"){
+    if(!requiresAttunement(resolveOwnedItem(item)))throw Error("Oggetto senza sintonia.");
+    const count=key==='attuned'?(value?Math.max(1,itemAttunementCount(item)):0):Number(value);
+    if(String(value).trim()===''||!Number.isInteger(count)||count<0||count>Number(item.quantity??1))
+      throw Error('Sintonie non valide: non possono superare la quantità posseduta.');
+    const occupied=items.reduce((sum,row,i)=>sum+(i===index?0:itemAttunementCount(row)),0);
+    if(count>itemAttunementCount(item)&&occupied+count>Math.max(0,Number(attunementMax)||0))
+      throw Error('Limite massimo di sintonie raggiunto.');
+    item.attuned_count=count;item.attuned=count>0;
   }else if(key==="active")item.active=Boolean(value);
   else{
     if(isCatalogItem(item)||typeof value!=="string"||value.length>(key==="name"?160:12000)||
@@ -431,9 +468,14 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
  const active=items.filter(row=>Number(row?.quantity??1)>0&&row?.infusion?.creator_id===record.id).length;
  if(!old?.id&&active>=caps.active)throw Error("Limite di oggetti infusi raggiunto.");
  if(Number(item.quantity??1)>1){
+   const attuned=itemAttunementCount(item);
    const remaining=structuredClone(item);
    remaining.quantity=Number(item.quantity)-1;remaining.equipped_slots=[];
    remaining.equipped=false;remaining.attuned=false;delete remaining.infusion;
+   if(requiresAttunement(item)){
+     remaining.attuned_count=Math.max(0,attuned-1);remaining.attuned=remaining.attuned_count>0;
+     item.attuned_count=Math.min(1,attuned);item.attuned=item.attuned_count>0;
+   }
    remaining.instance_id="pwa_instance_"+crypto.randomUUID();
    items.splice(index+1,0,remaining);item.quantity=1;
  }
@@ -447,7 +489,7 @@ export function applyInfusionPatch(record,known,definitions,classMechanics,index
 export function clearInfusionPatch(record,index){
  const items=structuredClone(array(record.inventory));
  if(!items[index]?.infusion?.id)throw Error("Nessuna infusione da rimuovere.");
- delete items[index].infusion;items[index].attuned=false;
+ delete items[index].infusion;items[index].attuned=false;items[index].attuned_count=0;
  return {inventory:items};
 }
 export function forgetInfusionPatch(record,known){
@@ -461,7 +503,7 @@ export function forgetInfusionPatch(record,known){
    const inf=item.infusion||{};
    if(inf.creator_id===record.id&&inf.id===known.id&&
      String(inf.plan_item_id||"")===String(known.plan_item_id||"")){
-     delete item.infusion;item.attuned=false;
+     delete item.infusion;item.attuned=false;item.attuned_count=0;
    }
  }
  const legacyKnown=array(record.optional_features_catalog).filter(row=>

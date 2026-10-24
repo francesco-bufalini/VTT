@@ -12,7 +12,7 @@ const SNAPSHOT_FIELDS := [
 	"bonus_spell_attack", "bonusSpellAttack", "bonus_spell_save_dc", "bonusSpellSaveDc",
 	"bonus_spell_damage", "bonusSpellDamage", "bonus_proficiency_bonus", "bonusProficiencyBonus",
 	"bonus_saving_throw_concentration", "bonusSavingThrowConcentration",
-	"bonus_ability", "bonusAbility", "req_attune", "reqAttune",
+	"bonus_ability", "bonusAbility", "req_attune", "reqAttune", "requires_attunement", "requiresAttunement",
 	"requirements",
 	"feats", "entries", "description", "value", "value_gp", "weight", "rarity", "custom_item_type",
 	"spell", "spell_name", "spellName", "spell_level", "spellLevel", "level"
@@ -61,6 +61,11 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 	for field: String in SNAPSHOT_FIELDS:
 		if saved.has(field):
 			result[field] = saved[field].duplicate(true) if saved[field] is Array or saved[field] is Dictionary else saved[field]
+	# Preserve PWA allocations when the shared archive passes through Godot.
+	# Legacy records keep their boolean until an explicit allocation is saved.
+	if saved.has("attuned_count"):
+		result["attuned_count"] = clampi(int(saved["attuned_count"]), 0, int(result["quantity"]))
+		result["attuned"] = int(result["attuned_count"]) > 0
 	var extra: Variant = saved.get("instance_overrides", {})
 	if extra is Dictionary:
 		result["instance_overrides"] = (extra as Dictionary).duplicate(true)

@@ -124,16 +124,19 @@ test('items grant one full-description trait only while equipped, held, worn or 
  const changed=await collectTraitRows({...creature,inventory:lowerQty},{},provider);
  assert.deepEqual(changed.filter(r=>r.category==='oggetti').map(r=>r.name).sort(),items.map(r=>r.name).sort());
 });
-test('unequipped items never leak traits from calculated numeric effects',async()=>{
+test('explicitly inactive items never leak traits from calculated numeric effects',async()=>{
  const computed={features:[{name:'Hidden bonus',origin_key:'item:wand',origin_id:'feature:item:wand'},
   {name:'Known class feature',origin_key:'class|phb|wizard',level:2}]};
- const inventory=[{id:'wand',name:'Wand',quantity:12,equipped:false,attuned:false,equipped_slots:[]}];
+ const inventory=[{id:'wand',name:'Wand',quantity:12,active:false,equipped:false,attuned:false,equipped_slots:[]}];
  const rows=await collectTraitRows({...creature,inventory},computed,provider);
  assert.ok(rows.some(row=>row.category==='oggetti'&&row.name==='Wand'&&row.inactive),
-  'Unequipped inventory remains a disabled trait so equipment can be changed');
+  'Inactive inventory remains visible as a disabled trait');
  assert.ok(!rows.some(row=>row.name==='Hidden bonus'),
-  'Unequipped items must not leak calculated effects');
+  'Inactive items must not leak calculated effects');
  assert.ok(rows.some(row=>row.name==='Known class feature'));
+ const carried=await collectTraitRows({...creature,inventory:[{...inventory[0],active:true}]},computed,provider);
+ assert.ok(carried.some(row=>row.category==='oggetti'&&row.name==='Wand'&&!row.inactive&&row.item_active_quantity===12),
+  'Carried items without an attunement requirement retain their quantity-based passive benefits');
 });
 test('origin groups are contiguous and their levels ordered independently',()=>{
  const rows=[

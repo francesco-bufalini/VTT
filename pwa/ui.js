@@ -4,6 +4,8 @@ import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverr
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
+import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
+import {inventoryAttunementControl} from "./sheet_rules_view.js";
 import {structuredItemFacts} from "./item_detail_facts.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownClassSpellIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
@@ -1141,6 +1143,7 @@ async function traitsView(c){
  if(state.creatureId===c.id&&!state.libraryMode&&state.sheet==='info')
    state.traitRows=rows;
  const renderCard=trait=>{
+  const itemQuantity=trait.item_requires_attunement?trait.item_active_quantity:trait.item_quantity;
   const description=flattenDescription({entries:trait.entries});
   const benefitCount=traitBenefitGroups(trait,c,benefitProjection)
     .reduce((total,group)=>total+group.items.length,0);
@@ -1151,8 +1154,8 @@ async function traitsView(c){
       (benefitCount?actionGlyph('proficiency'):'<span aria-hidden="true">＋</span>')+'</button>'+
     '<details class="trait-card'+(active?'':' trait-inactive')+'" data-trait-key="'+esc(trait.key)+'" data-trait-origin="'+esc(trait.origin_key)+'" data-trait-feature="'+esc(trait.feature_origin||'')+'" data-trait-proficiency="'+esc(trait.proficiency_origin||'')+'">'+
     '<summary><span class="trait-title">'+esc(/^Descrizione · /.test(trait.name)?'Panoramica':trait.name)+'</span>'+
-      (trait.category==='oggetti'&&trait.rank===0&&trait.item_quantity>1?
-        '<span class="trait-item-quantity" aria-label="Quantità '+trait.item_quantity+'">×'+trait.item_quantity+'</span>':'')+
+      (trait.category==='oggetti'&&trait.rank===0&&(trait.item_requires_attunement||itemQuantity>1)?
+        '<span class="trait-item-quantity" aria-label="'+(trait.item_requires_attunement?'Sintonie attive ':'Quantità ')+itemQuantity+'">×'+itemQuantity+'</span>':'')+
       '<span class="trait-chevron" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15" fill="none"><path d="M3 6 L12 11 L21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>'+
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
@@ -1218,8 +1221,9 @@ function mountTraitBenefitDialog(){
    String(item.id||'')===String(trait.origin_key).slice(5)):[];
  const passiveItem=isOwnedItem&&ownedCopies.length>0&&ownedCopies.every(item=>
    !['weapon','shield','armor'].includes(itemKind(item)));
- const itemQuantity=isOwnedItem?Math.max(1,ownedCopies.reduce((total,item)=>
-   total+Math.max(0,Number(item.quantity??1)||0),0)):1;
+ const attunedItem=isOwnedItem&&trait.item_requires_attunement;
+ const itemQuantity=isOwnedItem?(attunedItem?trait.item_active_quantity:
+   Math.max(1,ownedCopies.reduce((total,item)=>total+Math.max(0,Number(item.quantity??1)||0),0))):1;
  const hidden=traitRemovedIds(record,trait);
  const ownedChoices=choicesForTrait(trait,record,state.calculated?.pending_choices||[]);
  const optionList=(options,selected='')=>options.map(([value,label])=>
@@ -1298,13 +1302,14 @@ function mountTraitBenefitDialog(){
  dialog.setAttribute('aria-labelledby','trait-benefits-title');
  dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
   '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+
-   (itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
+   (attunedItem||itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
   '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
   '<div class="trait-benefits-dialog-body">'+
    (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
      '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
-      '<span class="trait-activation-description">Attivi per ogni copia posseduta'+(itemQuantity>1?' · ×'+itemQuantity:'')+
-       (ownedCopies.some(item=>requiresAttunement(item))?' · Richiede sintonia':'')+'</span></div></div>':
+      '<span class="trait-activation-description">'+(attunedItem?
+       (itemQuantity?'Benefici applicati a '+itemQuantity+' copie in sintonia':'Nessuna copia in sintonia'):
+       'Attivi per ogni copia posseduta'+(itemQuantity>1?' · ×'+itemQuantity:''))+'</span></div></div>':
    '<div class="trait-activation-control" data-trait-activation>'+
     '<div class="trait-activation-copy"><span class="trait-activation-heading">'+(trait.readonly?'Stato attivo':'Stato del privilegio')+'</span>'+
      '<span class="trait-activation-description">'+(trait.inactive?'Benefici disattivati':'Benefici attivi')+'</span></div>'+
@@ -1597,15 +1602,13 @@ function inventoryCoinsView(c){
     "inventory-native-panel inventory-coins-panel");
 }
 function inventoryAttunementView(c,entries){
-  const max=Math.max(0,Math.min(99,Number(c.attunement_max_base??3)||0));
-  const active=entries.filter(({item})=>item.attuned===true).length;
-  const lines=entries.map(({item,index})=>
-    '<label class="inventory-attunement-row"><input type="checkbox" data-item-index="'+index+
-    '" data-item-key="attuned"'+(item.attuned?' checked':'')+'><span>'+esc(item.name||"Oggetto")+
-    '</span></label>').join('');
+  const base=Math.max(0,Math.min(99,Number(c.attunement_max_base??3)||0));
+  const max=state.calculated?.attunements?.maximum??state.calculated?.values?.attunement_max??base;
+  const active=state.calculated?.attunements?.used??inventoryAttunementCounts(c.inventory,max).reduce((sum,n)=>sum+n,0);
+  const lines=entries.map(({index})=>inventoryAttunementControl(c,index,state.calculated||{})).join('');
   return panel("Oggetti che richiedono sintonia",
-    '<div class="inventory-attunement-meta"><span>Sintonia '+active+'/'+max+' · Base</span>'+
-    '<input type="number" aria-label="Massimo sintonia base" data-inventory-attunement-max min="0" max="99" value="'+max+'"></div>'+
+    '<div class="inventory-attunement-meta"><span>Sintonie '+active+'/'+max+'</span>'+
+    '<label>Massimo base<input type="number" aria-label="Massimo sintonia base" data-inventory-attunement-max min="0" max="99" value="'+base+'"></label></div>'+
     (lines||'<p class="hint">Nessun oggetto richiede sintonia.</p>'),
     "inventory-native-panel inventory-attunement");
 }
@@ -1718,6 +1721,8 @@ function inventoryContainerSections(record,entries,containers,selectedIndex,menu
       "inventory-native-panel inventory-items-panel")+'</div>';
 }
 function inventoryItemDescription(obj,index){
+  if(requiresAttunement(resolveOwnedItem(obj))&&state.calculated?.attunements)
+    obj={...obj,attuned_count:state.calculated.attunements.counts[index]||0};
   const info=inventoryReadout(obj,inventoryProperties(obj),isSpellScroll(obj));
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
@@ -1767,7 +1772,7 @@ function inventoryRow(item,index) {
     '<p class="hint">'+esc(tags||"Oggetto personale")+'</p>'+quantity+
     '<div class="inventory-switches">'+
     ''+
-    (requiresAttunement(obj)?enabled("attuned","Sintonia"):'')+
+    (requiresAttunement(obj)?inventoryAttunementControl(state.editor.read(),index,state.calculated||{}):'')+
     enabled("active","Attivo")+'</div>'+
     (obj.equipped_slots?.length?'<p class="hint">Slot: '+esc(obj.equipped_slots.join(", "))+'</p>':'')+
     '<details><summary>Proprietà della singola copia</summary>'+
@@ -2819,6 +2824,11 @@ async function handleField(target) {
   if(target.dataset.inventoryAttunementMax!==undefined){
     const max=Number(target.value);
     if(!Number.isInteger(max)||max<0||max>99)throw Error("Massimo di sintonia non valido.");
+    const next=await computeLocalData({...creature,attunement_max_base:max});
+    const occupied=(creature.inventory||[]).reduce((sum,item)=>sum+itemAttunementCount(item),0);
+    if(occupied>next.attunements.maximum){
+      await render();throw Error('Libera le sintonie in eccesso prima di ridurre il massimo.');
+    }
     await patch({attunement_max_base:max});
     await render();return;
   }
@@ -3010,7 +3020,10 @@ async function handleField(target) {
       await patch({inventory});
       await render();
     }else{
-      await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value)});
+      try{
+        await patch({inventory:changeOwnedItem(creature.inventory||[],index,key,value,
+          {attunementMax:state.calculated?.attunements?.maximum??state.calculated?.values?.attunement_max??creature.attunement_max_base??3})});
+      }catch(error){if(key==='attuned_count'||key==='attuned')await render();throw error;}
       // Text editors are debounced: don't destroy their DOM and caret while
       // the user is typing a name or a custom description.
       if(key==="name"||key==="description"){
@@ -4109,7 +4122,7 @@ async function handleAction(target){
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
     const bonuses=rollOptionalDice(creature,calculated,
-      applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[]),
+      applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],state.calculated),
       {kind:'damage',attackId});
     const dialog=openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
@@ -4230,7 +4243,7 @@ async function handleAction(target){
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro';
     const bonuses=rollOptionalDice(creature,calculated,
-      applicableDiceBonuses(creature,key,state.spellCatalog||[]),{kind:'d20'});
+      applicableDiceBonuses(creature,key,state.spellCatalog||[],state.calculated),{kind:'d20'});
     const autoSources=classFeatureRollSources(creature,calculated,key);
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
@@ -5109,6 +5122,14 @@ async function handleAction(target){
     const overrides=trait?traitActivationPatch(record,trait,true):{};
     await patch({...overrides,inventory});
     state.inventorySelectedIndex=index;
+    await render();return;
+  }
+  if(act==="inventory-attunement"){
+    const creature=state.editor?.read(),index=Number(target.dataset.index),delta=Number(target.dataset.delta);
+    if(!creature||![-1,1].includes(delta))throw Error('Sintonia non valida.');
+    const current=state.calculated?.attunements?.counts[index]??itemAttunementCount(creature.inventory?.[index]);
+    await patch({inventory:changeOwnedItem(creature.inventory||[],index,'attuned_count',current+delta,
+      {attunementMax:state.calculated?.attunements?.maximum??creature.attunement_max_base??3})});
     await render();return;
   }
   if(act==="inventory-quantity"){

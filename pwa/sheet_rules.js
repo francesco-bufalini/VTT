@@ -3,7 +3,7 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
-import {itemKind,requiresAttunement,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
+import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants} from './spell_selection.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
@@ -118,7 +118,11 @@ export function validBonusDice(value){
  const match=String(value).toLowerCase().replaceAll(' ','').match(/^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$/);
  return !!match&&Number(match[1])<=100;
 }
-export function applicableDiceBonuses(record,target,spells=[]){
+export function applicableDiceBonuses(record,target,spells=[],calculated=null){
+ const attunements=calculated?.attunements?.counts||inventoryAttunementCounts(record.inventory,
+  calculated?.values?.attunement_max??record.attunement_max_base??3);
+ record={...record,inventory:arr(record.inventory).map((item,i)=>
+  requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:attunements[i]||0}:item)};
  const scope=target==='initiative'||/^(ability_check:|ability_mod:|skill:)/.test(target)?'ability_check':target.startsWith('save:')?'saving_throw':/^(attack_hit:|casting_hit:)/.test(target)||target==='spell_attack'?'attack_roll':target.startsWith('attack_damage:')||target==='spell_damage'?'damage_roll':'';
  if(!scope)return [];
  const enabled=id=>!id||record.origin_enabled?.[id]!==false&&!arr(record.proficiency_origins).some(o=>o.id===id&&o.disabled);
@@ -132,7 +136,7 @@ export function applicableDiceBonuses(record,target,spells=[]){
     const copies=arr(record.inventory).reduce((sum,saved)=>{
      const item=resolveOwnedItem(saved),itemKey='item:'+String(item.id||'');
      return (id===itemKey||id.startsWith('feature:trait:'+itemKey+'|'))&&itemActive(item,record)?
-       sum+(['weapon','armor','shield'].includes(itemKind(item))?1:Math.max(1,int(item.quantity,1))):sum;
+       sum+itemBenefitCopies(item):sum;
     },0);
     if(!copies)return [];
     if(copies===1)return [row];
@@ -217,7 +221,7 @@ function indexRows(record,index,warnings){
 function itemActive(item,record={}){
   if(item.requirements&&!requirementsAllow(record,item))return false;
   if(int(item.quantity,1)<=0||item.active===false)return false;
-  if(requiresAttunement(item)&&!item.attuned)return false;
+  if(requiresAttunement(item)&&!itemAttunementCount(item))return false;
   const slots=arr(item.equipped_slots),kind=itemKind(item);
   if(kind==="armor")return slots.includes("body");
   if(["weapon","shield"].includes(kind))return slots.includes("main")||slots.includes("off");
@@ -237,7 +241,7 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
     // Preserve the original automatic ID for the first stack, and give later
     // stacks their own IDs so removals and explanations stay stable.
     const suffix=ordinary&&seen.has(sid)?"|stack:"+index:"";
-    const copies=ordinary?Math.max(1,int(item.quantity,1)):1;
+    const copies=itemBenefitCopies(item);
     const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
@@ -566,6 +570,26 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
+  let effective=record;
+  // Imported or externally edited stacks can exceed the current capacity.
+  // Bound their effective benefits without rewriting the owner's saved data.
+  for(let pass=0;pass<8;pass++){
+    const calculated=calculateSheetValues(effective,catalogs);
+    const maximum=Math.max(0,Math.floor(Number(calculated.values.attunement_max)||0));
+    const counts=inventoryAttunementCounts(effective.inventory,maximum);
+    if(counts.every((count,i)=>count===itemAttunementCount(arr(effective.inventory)[i])))
+      return {...calculated,attunements:{counts,maximum,used:counts.reduce((sum,n)=>sum+n,0)}};
+    effective={...effective,inventory:arr(effective.inventory).map((item,i)=>
+      requiresAttunement(resolveOwnedItem(item))?{...item,attuned_count:counts[i],attuned:counts[i]>0}:item)};
+  }
+  const inventory=arr(effective.inventory).map(item=>requiresAttunement(resolveOwnedItem(item))?
+    {...item,attuned_count:0,attuned:false}:item);
+  const result=calculateSheetValues({...effective,inventory},catalogs);
+  result.warnings.push('Sintonie sospese: il massimo dipende dalle stesse sintonie.');
+  result.complete=false;
+  return {...result,attunements:{counts:inventory.map(()=>0),maximum:Math.max(0,Math.floor(result.values.attunement_max||0)),used:0}};
+}
+function calculateSheetValues(record={},catalogs={}){
   if(record.variant_rules_kind==='monster')record={...record,kind:'monster'};
   const suppressed=removedBenefitIds(record);
   // Suppress legacy/manual grants in the calculation as well as in the popup.
@@ -594,7 +618,7 @@ export function calculateSheet(record={},catalogs={}){
   for(const saved of arr(record.inventory)){
     const item=resolveOwnedItem(saved);
     if(!item?.id||!itemActive(item,record))continue;
-    const kind=itemKind(item),amount=["weapon","armor","shield"].includes(kind)?1:Math.max(1,int(item.quantity,1));
+    const kind=itemKind(item),amount=itemBenefitCopies(item);
     const key="item:"+item.id;
     activeItemCopies.set(key,(activeItemCopies.get(key)||0)+amount);
     if(!["weapon","armor","shield"].includes(kind))alwaysCarriedSources.add(key);
