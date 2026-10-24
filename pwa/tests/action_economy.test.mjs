@@ -19,7 +19,10 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const calculated={attacks:[{id:'item:sword',name:'Spada',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8'},
   {id:'item:off:dagger',name:'Pugnale',slot:'off',melee:false,range_feet:20,long_range_feet:60,offhand_bonus:true,hit:4,damage:'1d4'},
   {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',slot:'shield',melee:true,hit:2,damage:'1d4 + 2'}],skills:{athletics:3}};
- const panels=battleActionPanels({rules_version:'2014'},calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
+ const panels=battleActionPanels({rules_version:'2014',inventory:[
+  {id:'sword',name:'Spada',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']}]
+ },calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
  const attacks=doc(panels.attacks),movement=doc(panels.others);
  assert(attacks.querySelector('[data-target="attack_hit:shield:improvised:off:sh"]'));
  assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
@@ -36,13 +39,16 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!sword.querySelector('.play-battle-attack-chevron'));
 
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
- const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
+ const dagger=movement.querySelector('[data-attack-id="two_weapon"]');
  assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
  assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Gittata 20/60 ft');
  assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:off:dagger');
- assert.equal(dagger.closest('[data-action-timing]'),null,'Attacks are a flat catalogue');
+ assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus',
+  'The secondary-hand strike is in bonus actions');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
+ assert(!attacks.querySelector('[data-attack-id="item:off:dagger"]'),
+  'The offhand strike does not appear twice in the physical attack catalogue');
  assert(![...attacks.querySelectorAll('.play-battle-attack-copy strong')].some(node=>/^(Attaccare|Combattere con due armi)$/.test(node.textContent)));
  const grapple=attacks.querySelector('[data-attack-id="grapple"]');
  assert.match(grapple.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 3 · Atletica/);
@@ -127,13 +133,18 @@ test('flat attacks order equipped weapons first; typed Azioni prioritize Attack,
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
   offhand_bonus:true,hit:4,damage:'1d4'};
  const monster={id:'monster:action:0',name:'Artiglio',melee:true,hit:5,damage:'1d4'};
- const result=battleActionPanels({rules_version:'2014'},{attacks:[monster,off,main]},[],[],catalog.actions);
+ const result=battleActionPanels({rules_version:'2014',inventory:[
+  {id:'blade',name:'Lama principale',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']}]
+ },{attacks:[monster,off,main]},[],[],catalog.actions);
  const flat=doc(result.attacks),others=doc(result.others);
  const ids=[...flat.querySelectorAll('.play-battle-attack-entry')].map(n=>n.dataset.attackId);
- assert.deepEqual(ids.slice(0,2),['item:blade','item:off:dagger']);
+ assert.deepEqual(ids.slice(0,2),['item:blade','monster:action:0']);
+ assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
  assert(ids.includes('unarmed'),'Unarmed is always available');
  assert(!flat.querySelector('[data-action-timing]'));
  assert.equal(others.querySelector('[data-action-timing="action"] .play-battle-attack-entry').dataset.attackId,'attack');
+ assert.equal(others.querySelector('[data-action-timing="bonus"] .play-battle-attack-entry').dataset.attackId,'two_weapon');
  assert.equal(others.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
  assert.equal(others.querySelector('[data-action-timing="movement"] [data-attack-id="movement"]')!==null,true);
  assert.equal(result.movement,'');
