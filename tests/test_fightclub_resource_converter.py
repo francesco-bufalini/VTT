@@ -72,6 +72,7 @@ class FightClubResourceFormulaTests(unittest.TestCase):
                 matches = [row for row in rows
                            if row.get("class_name") == group["class"]
                            and row.get("class_source", row.get("source")) == group["source"]
+                           and row.get("source") == resource.get("source", group["source"])
                            and row.get("name", "").casefold() == origin.casefold()
                            and (not subclass or subclass_key(row.get("subclass_name", "")) == subclass_key(subclass))]
                 self.assertTrue(matches, (group["class"], group["source"], subclass, origin))

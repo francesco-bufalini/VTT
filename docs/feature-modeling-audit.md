@@ -676,3 +676,46 @@ soffi e delle trasformazioni, geometria e TS del soffio, applicazione di
 resistenze condizionate alla scelta e stato del volo/della taglia. Non si
 aggiungono usi a una classe fittizia né si deduce una scelta dalle sole
 descrizioni o dalla presenza dei blocchi `additionalSpells`.
+
+## Lotto 2026-10-24: Ranger PHB e opzioni TCE
+
+Controllate le **31 voci** `class_features` associate a Ranger PHB
+(24 nomi distinti). La fonte del singolo tratto è essenziale: alcune voci
+hanno `class_source: PHB` ma `source: TCE` perché sono **opzioni sostitutive**,
+non privilegi ricevuti da tutti i Ranger PHB. Confronto con FightClub5eXML
+`class-ranger-phb.xml` (`37ea050ea34a4501ec0aba847a3ba9effccecb4a`)
+per la base 2014. Il test dei contatori controlla ora anche `source` del
+tratto, oltre alla fonte della classe, così un eventuale contatore TCE non
+può essere validato contro un tratto PHB omonimo.
+
+| Privilegio (fonte, livello) | Esito |
+| --- | --- |
+| Favored Enemy (PHB, 1) | Tipo di nemico e lingua scelti; non bonus generalizzato contro ogni creatura. |
+| Natural Explorer (PHB, 1) | Terreno preferito scelto, benefici nel relativo contesto di viaggio/prova. |
+| Deft Explorer (TCE opz., 1) | Sostituisce Natural Explorer; Canny sceglie un'abilità già competente per expertise e due lingue. |
+| Favored Foe (TCE opz., 1) | Sostituisce Favored Enemy; marchio sul colpo, concentrazione, danno una volta per turno e usi pari a competenza per riposo lungo. Non si concede senza la scelta sostitutiva. |
+| Fighting Style (PHB, 2) | Uno stile scelto. |
+| Spellcasting (PHB, 2) | Incantesimi conosciuti e slot nel modello magico. |
+| Spellcasting Focus (TCE opz., 2) | Focus druidico ammesso solo se l'opzione è selezionata. |
+| Primeval Awareness (PHB, 3) | Spende uno slot per individuare tipi di creature in un raggio dipendente dal terreno; non individua posizione o numero. |
+| Primal Awareness (TCE opz., 3) | Sostituisce Primeval Awareness; cinque incantesimi a soglie diverse e un lancio gratuito **per ciascuno** al riposo lungo. |
+| Ranger Archetype (PHB, 3) | Sottoclasse scelta. |
+| Ability Score Improvement (PHB, 4, 8, 12, 16, 19) | Scelta di incremento/talento, non bonus identico per tutti. |
+| Martial Versatility (TCE opz., 4) | Può sostituire lo stile a una soglia ASI; non conferisce uno stile aggiuntivo. |
+| Extra Attack (PHB, 5) | Due attacchi nell'azione Attack. |
+| Deft Explorer Improvement (TCE opz., 6, 10) | Roving a 6, Tireless a 10; quest'ultimo ha usi pari a competenza per PF temporanei e riduce Exhaustion al riposo breve. Solo se Deft Explorer è attivo. |
+| Favored Enemy and Natural Explorer improvements (PHB, 6) | Nuovo terreno e nemico/lingua scelti, se i tratti originali non sono stati sostituiti. |
+| Ranger Archetype feature (PHB, 7, 11, 15) | Segnaposto dei tratti della sottoclasse scelta. |
+| Land's Stride (PHB, 8) | Movimento fra terreni/piante e TS specifici; dipende dal terreno reale. |
+| Hide in Plain Sight (PHB, 10) | Mimetismo con materiali, tempo e posizione richiesti. |
+| Natural Explorer improvement (PHB, 10) | Nuovo terreno scelto se Natural Explorer è ancora attivo. |
+| Nature's Veil (TCE opz., 10) | Sostituisce Hide in Plain Sight; Invisible fino all'inizio del turno successivo, usi pari a competenza per riposo lungo. |
+| Favored Enemy improvement (PHB, 14) | Nuovo nemico/lingua scelti se il tratto non è sostituito. |
+| Vanish (PHB, 14) | Hide come azione bonus e tracciamento non magico limitato. |
+| Feral Senses (PHB, 18) | Attacchi a creature non viste e localizzazione di Invisible entro 30 piedi con condizioni. |
+| Foe Slayer (PHB, 20) | Aggiunge SAG a un tiro d'attacco **o** danno contro nemico favorito, una volta per turno; la sostituzione Favored Foe cambia quale bersaglio è valido. |
+
+I sette nomi di tratti TCE opzionali, con Deft Explorer Improvement a due
+livelli, richiedono una selezione persistita prima che
+contatori o effetti possano essere assegnati. Non sono stati aggiunti
+contatori automatici PHB per Favored Foe, Tireless o Nature's Veil TCE.

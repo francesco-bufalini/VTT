@@ -32,6 +32,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 | Paladin XPHB: Lay on Hands, Restoring Touch, Divine Sense, Abjure Foes | Punti spesi, bersaglio, condizioni e sensi al momento dell'uso. |
 | Paladin XPHB: Paladin's Smite, Faithful Steed, Aura of Protection/Courage/Expansion | Lanci gratuiti specifici di Divine Smite/Find Steed e stato della creatura evocata; bonus/immunità entro aura spaziale attiva, con raggio progressivo. |
 | Ranger XPHB: Tireless, Nature's Veil, Hunter's Mark features | PF temporanei e condizione Invisible attivati, riduzione di Exhaustion, concentrazione/bersaglio marcato. I limiti numerici di Tireless e Nature's Veil sono già presenti. |
+| Ranger PHB con opzioni TCE: Favored Foe, Deft Explorer/Tireless, Primal Awareness, Nature's Veil | La fonte del tratto è TCE anche con `class_source: PHB`; occorre registrare le sostituzioni opzionali e i tratti effettivamente scelti prima di attribuire usi o incantesimi. Favored Foe, Tireless e Nature's Veil hanno limiti verificati ma non sono concessi a tutti i Ranger PHB. |
 | Rogue XPHB: Cunning Strike, Devious Strikes, Improved Cunning Strike | Dadi Sneak Attack rinunciati sul singolo attacco, opzioni, TS, condizioni e durata; i dadi non sono una riserva persistente. |
 | Sorcerer XPHB: Innate Sorcery, Sorcery Incarnate, Arcane Apotheosis | Durata/attivazione, incantesimo e Metamagia scelti, costi alternativi in Sorcery Points. |
 | Sorcerer XPHB: Font of Magic, Metamagic | Conversione Sorcery Points↔slot con costi, opzioni scelte e spesa contestuale al lancio. |
