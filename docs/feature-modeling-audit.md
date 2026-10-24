@@ -797,3 +797,69 @@ mentre `creature_references_5etools.json` conserva solo i tratti descrittivi
 non generici. La scelta Half-Elf non va simulata assegnando +1 a due
 caratteristiche predefinite. Anche la competenza e il valore fisso numerico
 già presenti vanno ricondotti al tratto, rispettando gli ID persistiti.
+
+## Lotto 2026-10-24: Barbarian e Monk PHB
+
+Controllate le **59 voci** `class_features` associate alle due classi PHB
+(Barbarian 25, Monk 34; 20/28 nomi distinti). Confronto FightClub5eXML:
+`class-barbarian-phb.xml` (`f5511fec11c9bb352e490942e1f35d9af7e5cced`)
+e `class-monk-phb.xml` (`94c3f9c3490462d290421827648e4478ae5f046b`).
+Le voci con `source: TCE` sono opzioni aggiunte a una classe con
+`class_source: PHB`; richiedono scelta esplicita e non cambiano i tratti
+PHB per tutti. Il contatore Rage PHB e la colonna Ki Points PHB restano
+distinti dai corrispondenti XPHB.
+
+| Barbarian (fonte, livello) | Esito |
+| --- | --- |
+| Rage (PHB, 1) | Usi progressivi nel dato, riposo lungo; al livello 20 la tabella è illimitata e il supplemento finito non deve prevalere. Durata e condizioni dipendono dall'attivazione. |
+| Unarmored Defense (PHB, 1) | CA 10 + DES + COS solo senza armatura, scudo permesso. |
+| Danger Sense (PHB, 2) | Vantaggio ai TS DES contro effetti **visibili** e senza condizioni che lo impediscono. |
+| Reckless Attack (PHB, 2) | Scelta al primo attacco del turno; vantaggio in mischia con FOR e vantaggio per chi attacca il Barbarian fino al turno seguente. |
+| Primal Knowledge (TCE opz., 3) | Scelta di abilità ai livelli 3 e 10 solo se l'opzione è adottata. |
+| Primal Path (PHB, 3) | Sottoclasse scelta. |
+| Ability Score Improvement (PHB, 4, 8, 12, 16, 19) | Scelta di incremento/talento. |
+| Extra Attack (PHB, 5) | Due attacchi nell'azione Attack. |
+| Fast Movement (PHB, 5) | +10 piedi senza armatura pesante. |
+| Path Feature / Path feature (PHB, 6, 10, 14) | Segnaposto dei tratti della sottoclasse effettiva. |
+| Feral Instinct (PHB, 7) | Vantaggio all'iniziativa; regola separata per sorpresa e stato Incapacitated. |
+| Instinctive Pounce (TCE opz., 7) | Movimento durante l'azione bonus che avvia Rage, solo se scelta l'opzione. |
+| Brutal Critical (1 die, 2 dice, 3 dice; PHB, 9, 13, 17) | Dadi aggiuntivi sul critico con attacco in mischia; progressione sostitutiva, non somma 1+2+3. |
+| Relentless Rage (PHB, 11) | TS COS quando si scende a 0 PF durante Rage, CD crescente dopo gli usi e azzerata al riposo breve/lungo. |
+| Persistent Rage (PHB, 15) | Modifica quando Rage finisce; non è il recupero giornaliero omonimo XPHB. |
+| Indomitable Might (PHB, 18) | Soglia del totale delle **prove** FOR rispetto al punteggio FOR, non dei TS come XPHB. |
+| Primal Champion (PHB, 20) | FOR e COS +4, massimo 24; XPHB ha un tetto diverso. |
+
+| Monk (fonte, livello) | Esito |
+| --- | --- |
+| Martial Arts (PHB, 1) | Armi Monk ammesse, dado e regole del colpo senz'armi, con condizioni di armatura/scudo. |
+| Unarmored Defense (PHB, 1) | CA 10 + DES + SAG solo senza armatura/scudo. |
+| Dedicated Weapon (TCE opz., 2) | Arma scelta dopo riposo, con vincoli di competenza e proprietà. |
+| Flurry of Blows (PHB, 2) | Un Ki Point dopo l'azione Attack, due colpi senz'armi. |
+| Ki (PHB, 2) | Pool Ki progressivo già in tabella, recupero breve/lungo; non pool Focus XPHB. |
+| Patient Defense (PHB, 2) | Un Ki Point per Dodge come azione bonus. |
+| Step of the Wind (PHB, 2) | Un Ki Point per Dash **o** Disengage come azione bonus e salto raddoppiato. |
+| Unarmored Movement (PHB, 2) | Velocità progressiva senza armatura/scudo; regola di superfici al livello 9. |
+| Deflect Missiles (PHB, 3) | Reazione a colpo a distanza, riduzione del danno e possibile restituzione pagando Ki. |
+| Ki-Fueled Attack (TCE opz., 3) | Attacco come azione bonus solo se si sono spesi Ki nell'azione di quel turno. |
+| Monastic Tradition (PHB, 3) | Sottoclasse scelta. |
+| Ability Score Improvement (PHB, 4, 8, 12, 16, 19) | Scelta di incremento/talento. |
+| Quickened Healing (TCE opz., 4) | Due Ki Points per cura con dado Martial Arts e competenza, soltanto se scelta. |
+| Slow Fall (PHB, 4) | Reazione e danno da caduta ridotto in base al livello. |
+| Extra Attack (PHB, 5) | Due attacchi nell'azione Attack. |
+| Focused Aim (TCE opz., 5) | Spesa contestuale da 1 a 3 Ki per correggere un attacco mancato. |
+| Stunning Strike (PHB, 5) | Un Ki Point su colpo con arma da mischia, TS e condizione temporanea. |
+| Ki-Empowered Strikes (PHB, 6) | Colpi senz'armi considerati magici per resistenze/immunità; non aggiunge un dado. |
+| Monastic Tradition feature (PHB, 6, 11, 17) | Segnaposto dei tratti della sottoclasse effettiva. |
+| Evasion (PHB, 7) | Danno dipendente dall'esito del TS DES. |
+| Stillness of Mind (PHB, 7) | Azione per terminare su sé Charmed/Frightened quando l'azione è disponibile. |
+| Unarmored Movement improvement (PHB, 9) | Movimento su superfici verticali/liquidi durante il turno. |
+| Purity of Body (PHB, 10) | Immunità a malattie e veleno; origine del tratto. |
+| Tongue of the Sun and Moon (PHB, 13) | Comprensione delle lingue parlate e farsi capire da creature che capiscono una lingua. |
+| Diamond Soul (PHB, 14) | Competenza a tutti i TS e nuovo tiro dopo fallimento spendendo un Ki Point. |
+| Timeless Body (PHB, 15) | Regole d'età, cibo e acqua; non risorsa consumabile. |
+| Empty Body (PHB, 18) | Spese distinte di Ki per Invisible/resistenza temporanea e per Astral Projection; durata e bersagli. |
+| Perfect Self (PHB, 20) | All'iniziativa, se Ki è a zero, recupera quattro punti; non un contatore giornaliero. |
+
+Restano separati gli effetti contestuali, il pagamento Ki all'azione e le
+scelte TCE. Un nome condiviso fra PHB e XPHB (come Persistent Rage) non
+implica effetti o recuperi condivisi.

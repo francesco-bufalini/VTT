@@ -19,6 +19,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 | Fighter XPHB: Tactical Mind, Tactical Shift, Tactical Master, Studied Attacks | Esito del tiro, consumo di Second Wind, movimento o proprietà dell'arma al momento dell'azione. |
 | Barbarian XPHB: Rage, Persistent Rage | Recupero di **un** uso Rage al riposo breve, recupero completo condizionato all'iniziativa, durata e cessazione di Rage. Il contatore di Persistent Rage copre solo l'uso giornaliero. |
 | Barbarian XPHB: Reckless Attack, Brutal Strike, Relentless Rage | Scelta sul colpo, vantaggio con conseguenze temporanee, opzioni d'effetto e CD che aumenta dopo i tentativi e si azzera al riposo. |
+| Barbarian PHB: Rage, Relentless Rage, Brutal Critical, opzioni TCE | Durata di Rage e limite illimitato al livello 20, CD crescente dei tentativi, dado critico progressivo non cumulativo; Primal Knowledge/Instinctive Pounce TCE richiedono scelta. Persistent Rage PHB modifica la durata, mentre XPHB ha anche un recupero giornaliero. |
 | Bard XPHB: Bardic Inspiration, Font of Inspiration, Superior Inspiration | Trasferimento e spesa del dado su altro personaggio, conversione slot→uso, ricarica fino a due usi all'iniziativa. Il pool numerico è già presente. |
 | Bard XPHB: Expertise, Magical Secrets, Words of Creation | Abilità e incantesimi scelti, seconda creatura bersaglio nel lancio. |
 | Cleric XPHB: Channel Divinity, Divine Spark, Turn Undead, Sear Undead | Recupero di **un** uso al riposo breve; scelta dell'opzione, bersagli, TS, cura, danno e condizioni d'effetto. |
@@ -30,6 +31,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 | Druid XPHB: Wild Resurgence, Archdruid | Conversioni bidirezionali fra slot e usi Wild Shape, vincoli dei valori e ricarica condizionata all'iniziativa. |
 | Monk XPHB: Flurry of Blows, Patient Defense, Step of the Wind, Stunning Strike, Deflect Attacks, Superior Defense | Consumo contestuale del pool Focus, azioni, TS, condizioni, danno e durata. |
 | Monk XPHB: Uncanny Metabolism, Perfect Focus | Ripristino dei Focus Points all'iniziativa e guarigione; soglia di quattro punti e mutua esclusione. Il contatore giornaliero di Uncanny Metabolism è già presente. |
+| Monk PHB: Ki, Deflect Missiles, Stunning Strike, Diamond Soul, Empty Body, Perfect Self e opzioni TCE | Spese Ki legate all'azione, bersaglio/TS/durata e recupero condizionato all'iniziativa; Dedicated Weapon, Ki-Fueled Attack, Quickened Healing e Focused Aim non si concedono senza selezione TCE. |
 | Paladin XPHB: Lay on Hands, Restoring Touch, Divine Sense, Abjure Foes | Punti spesi, bersaglio, condizioni e sensi al momento dell'uso. |
 | Paladin XPHB: Paladin's Smite, Faithful Steed, Aura of Protection/Courage/Expansion | Lanci gratuiti specifici di Divine Smite/Find Steed e stato della creatura evocata; bonus/immunità entro aura spaziale attiva, con raggio progressivo. |
 | Paladin PHB: Divine Smite, Lay on Hands, aure e Harness Divine Power (TCE opz.) | Colpo concreto e slot speso, cura/rimozione su bersaglio e area delle aure; l'opzione TCE non è concessa automaticamente con la classe PHB. |
