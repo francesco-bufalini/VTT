@@ -150,14 +150,14 @@ try{
    'Empty generic action categories disappear by default');
  await classFilter.click(); // Exercise general actions with the filter disabled.
  const weaponPanel=page.locator('#sheet-play-view [data-battle-action="attacks"]');
- const movementPanel=page.locator('#sheet-play-view [data-battle-action="movement"]');
+ const movementPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
- assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi fisici/);
+ assert.match(await weaponPanel.locator('summary.play-battle-summary').textContent(),/Attacchi/);
  const otherPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
 
  assert.equal(await otherPanel.count(),1);
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities belong beneath resources');
- assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Altre azioni/);
+ assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Azioni/);
  await otherPanel.locator('summary.play-battle-summary').click();
  assert.equal(await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"])').getAttribute('open'),'',
   'Opening Other Actions automatically expands its action-type subsections');
@@ -196,15 +196,17 @@ try{
 
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
  assert.equal(await mainAttack.count(),1);
- const mainTiming=weaponPanel.locator('[data-action-timing="action"]');
+ assert.equal(await weaponPanel.locator('[data-action-timing]').count(),0,
+  'Weapon attacks have no timing subsections');
+ const mainTiming=otherPanel.locator('[data-action-timing="action"]');
  assert.equal(await mainTiming.locator('summary.play-battle-action-heading').count(),1);
- assert.equal(await mainTiming.getAttribute('open'),null,'Timing groups start collapsed');
+ await otherPanel.locator('summary.play-battle-summary').click();
+ assert.equal(await mainTiming.getAttribute('open'),'',
+  'Opening Azioni expands all action-time groups');
  await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),'','Tapping the timing label expands its actions');
+ assert.equal(await mainTiming.getAttribute('open'),null,'Individual timing groups can close');
  await mainTiming.locator('summary.play-battle-action-heading').click();
- assert.equal(await mainTiming.getAttribute('open'),null,'Tapping again collapses without any extra icon');
- await mainTiming.locator('summary.play-battle-action-heading').click();
- const opportunity=weaponPanel.locator('[data-attack-id="opportunity"]');
+ const opportunity=otherPanel.locator('[data-attack-id="opportunity"]');
  assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
  assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),1);
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null);
@@ -422,7 +424,7 @@ try{
  assert(await movementPanel.locator('[data-action-timing="action"]').textContent().then(t=>t.includes('Scattare')));
  assert(await movementPanel.locator('[data-action-timing="movement"]').textContent().then(t=>t.includes('Muoversi')));
  await sheet('info');await sheet('battle');
- assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').getAttribute('open'),'');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="others"]').getAttribute('open'),'');
  await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-confirm').click();
  await page.waitForFunction(()=>document.querySelector('#sheet-play-view [data-read-field="current_hp"]')?.textContent==='37');
  assert.deepEqual([(await record()).temporary_hp,(await record()).second_form_hp,(await record()).current_hp],[0,0,37]);
@@ -460,10 +462,11 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
  assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
- assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-heading').textContent(),'Nessun costo');
- assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
- assert.doesNotMatch(await resourcesPanel.locator('[data-ability-resource="free"]').textContent(),/Azioni gratuite/,
-  'Only free-cost abilities belong inside Resources');
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege]').count()>0,true,
+  'Free abilities belong to their granting traits, not to a generic free tracker');
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
+ assert.equal(await resourcesPanel.locator('[data-ability-resource="free"]').count(),0,
+  'No generic free tracker remains');
  assert.equal(await resourcesPanel.locator('.play-resource-free-actions').count(),0);
  const freeActions=page.locator('#sheet-play-view [data-battle-action="others"] [data-action-timing="free"]');
  assert.equal(await freeActions.count(),1,'Free general actions belong beneath Other Actions');
@@ -476,7 +479,7 @@ try{
  await linkedSpell.locator('[data-act="power-spell"]').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').first().click();
- assert.equal(await resourcesPanel.locator('[data-ability-resource="free"] [data-ability-id="arcane_pulse"]').count(),0);
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege] [data-ability-id="arcane_pulse"]').count(),0);
  const focusButton=resourcesPanel.locator('[data-sheet-context="power-resource:tracker:focus"]');
  await focusButton.click();
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Focus arcano|Utilizzi disponibili/);
@@ -877,9 +880,11 @@ try{
   }
  }
  await sheet('battle');
- assert(await page.locator('#sheet-play-view [data-battle-action="movement"]').evaluate(node=>
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
+  'Movement choices are integrated in Azioni');
+ assert(await page.locator('#sheet-play-view [data-battle-action="others"]').evaluate(node=>
   Boolean(node.compareDocumentPosition(document.querySelector('#sheet-play-view [data-battle-action="checks"]'))&Node.DOCUMENT_POSITION_FOLLOWING)),
-  'Spostamento is rendered before Prove abilità');
+  'Azioni is rendered before Prove abilità');
  const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
  await checks.locator('summary.play-battle-summary').click();
  assert.equal(await checks.locator('[data-action-ability]').count(),6);

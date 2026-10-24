@@ -4517,3 +4517,33 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
   font-size: 18px;
  }
 }
+
+
+/* Battle: flat physical attack catalogue, timing only under Azioni. */
+.play-battle-attack-flat{padding-top:5px;padding-bottom:9px}
+.play-battle-attack-flat>.play-battle-attack-entry:first-child{border-top:0}
+.play-battle-attack-details>summary>.play-battle-attacks-per-action{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ min-width:46px;min-height:32px;margin-left:auto;padding:4px 11px;border-radius:9px;
+ border:1px solid #e5c18785;background:linear-gradient(140deg,#765029,#413020);
+ color:#ffe5b1;font:800 19px/1 system-ui;letter-spacing:.01em;
+ font-variant-numeric:tabular-nums;box-shadow:inset 0 1px 0 #ffe3ae30
+}
+/* An unlimited ability is owned by its granting privilege, not a fake tracker. */
+.play-resource-privilege{margin-top:8px;border-top:1px solid #ab825038}
+.play-resource-privilege>.play-resource{align-items:center}
+.play-resource-privilege .play-resource-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.play-resource-privilege .play-resource-name{color:#f0d6aa;font-weight:650;overflow-wrap:anywhere}
+.play-resource-privilege .play-resource-recovery{color:#b7a387;font-size:11px;line-height:1.35}
+.play-resource-trait-link{
+ display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;margin-left:auto;
+ border:0;border-radius:8px;background:transparent;color:#dcb986;cursor:pointer
+}
+.play-resource-trait-link .vtt-action-glyph{width:17px;height:17px}
+.play-resource-rule--inactive{opacity:.5}
+.play-resource-rule--inactive .play-resource-power-open{cursor:default}
+.play-resource-rule .play-resource-power-open{width:100%}
+.play-resource-rule .play-resource-power-open span>small{display:block;color:#bca987}
+@media(max-width:360px){
+ .play-battle-attack-details>summary>.play-battle-attacks-per-action{min-height:29px;min-width:42px;font-size:17px}
+}

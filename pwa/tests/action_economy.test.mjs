@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
@@ -19,8 +19,11 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const calculated={attacks:[{id:'item:sword',name:'Spada',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8'},
   {id:'item:off:dagger',name:'Pugnale',slot:'off',melee:false,range_feet:20,long_range_feet:60,offhand_bonus:true,hit:4,damage:'1d4'},
   {id:'shield:improvised:off:sh',name:'Scudo · arma improvvisata',slot:'shield',melee:true,hit:2,damage:'1d4 + 2'}],skills:{athletics:3}};
- const panels=battleActionPanels({rules_version:'2014'},calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
- const attacks=doc(panels.attacks),movement=doc(panels.movement);
+ const panels=battleActionPanels({rules_version:'2014',inventory:[
+  {id:'sword',name:'Spada',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']}]
+ },calculated,[],[],catalog.actions,['disarm_dmg','overrun_dmg']);
+ const attacks=doc(panels.attacks),movement=doc(panels.others);
  assert(attacks.querySelector('[data-target="attack_hit:shield:improvised:off:sh"]'));
  assert(attacks.querySelector('[data-target="attack_hit:item:sword"]'));
  const sword=attacks.querySelector('[data-attack-id="item:sword"]');
@@ -36,13 +39,16 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!sword.querySelector('.play-battle-attack-chevron'));
 
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
- const dagger=attacks.querySelector('[data-attack-id="item:off:dagger"]');
+ const dagger=movement.querySelector('[data-attack-id="two_weapon"]');
  assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
  assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Gittata 20/60 ft');
  assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:off:dagger');
- assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus');
+ assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus',
+  'The secondary-hand strike is in bonus actions');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
  assert.equal(attacks.querySelectorAll('[data-attack-id="item:sword"]').length,1);
+ assert(!attacks.querySelector('[data-attack-id="item:off:dagger"]'),
+  'The offhand strike does not appear twice in the physical attack catalogue');
  assert(![...attacks.querySelectorAll('.play-battle-attack-copy strong')].some(node=>/^(Attaccare|Combattere con due armi)$/.test(node.textContent)));
  const grapple=attacks.querySelector('[data-attack-id="grapple"]');
  assert.match(grapple.querySelector('.play-battle-roll-formula').textContent,/1d20 \+ 3 · Atletica/);
@@ -51,13 +57,14 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert.match(grapple.querySelector('.play-battle-effect').textContent,/Afferrato/);
  assert.match(attacks.querySelector('[data-attack-id="prone"] .play-battle-effect').textContent,/Prono/);
  assert.equal(movement.querySelector('[data-attack-id="dash"] .play-battle-effect').dataset.effectKind,'movement');
- assert([...movement.querySelectorAll('.play-battle-attack-entry')].every(node=>node.querySelector('.play-battle-effect')));
+ assert([...movement.querySelectorAll('[data-action-timing="movement"] .play-battle-attack-entry')]
+  .every(node=>node.querySelector('.play-battle-effect')));
 
  assert(attacks.querySelector('[data-attack-id="disarm"] .play-battle-attack-roll'));
- assert.equal(attacks.querySelector('[data-action-timing="action"] summary>.vtt-action-glyph')?.tagName,'SPAN');
+ assert.equal(movement.querySelector('[data-action-timing="action"] summary>.vtt-action-glyph')?.tagName,'SPAN');
  assert.equal(movement.querySelector('[data-action-timing="movement"] summary>.vtt-action-glyph')?.tagName,'SPAN');
- assert(attacks.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
- const opportunity=attacks.querySelector('[data-attack-id="opportunity"]');
+ assert(movement.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
+ const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
  assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
  assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
@@ -66,7 +73,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
- const actionGroup=attacks.querySelector('[data-action-timing="action"]');
+ const actionGroup=movement.querySelector('[data-action-timing="action"]');
  assert.equal(actionGroup.tagName,'DETAILS');
  assert.equal(actionGroup.open,false,'Timing groups start collapsed');
  assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
@@ -83,37 +90,28 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
 });
 
-test('class-only attacks keep both the offhand bonus and opportunity reaction',()=>{
- const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,
-  range_feet:5,hit:5,damage:'4'};
+test('flat Attacks retain unarmed and equipped weapons; the basic actions are timed',()=>{
+ const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:5,damage:'4'};
  const off={id:'unarmed:off',name:'Colpo senz’armi · secondaria',slot:'off',
   offhand_bonus:true,melee:true,range_feet:5,hit:5,damage:'4'};
- const shield={id:'shield:improvised:off:shield',name:'Scudo · arma improvvisata · secondaria',
-  slot:'shield',hand:'off',offhand_bonus:true,melee:true,range_feet:5,hit:3,damage:'1d4 + 3'};
- const render=(attacks,features=[],onlyClass=true)=>doc(battleActionPanels(
-  {rules_version:'2014'}, {attacks,features},[],[],catalog.actions,[],[],onlyClass).attacks);
- const plain=render([unarmed,off],[{name:'Extra Attack',attacks_per_action:2}]);
- assert(plain.querySelector('[data-action-timing="action"] [data-attack-id="unarmed"]'));
- assert(plain.querySelector('[data-action-timing="bonus"] [data-attack-id="unarmed:off"]'));
- assert(plain.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
- assert.equal(plain.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×2');
- assert.equal(plain.querySelectorAll('[data-action-timing]>.play-battle-action-heading>.play-badge').length,0,
-  'Timing headings never show counts of available entries');
- assert.equal(plain.querySelectorAll('[data-action-timing="action"] .play-battle-attacks-per-action').length,1,
-  'Only the multiattack count remains on the Attack action heading');
- assert.equal(plain.querySelector('[data-action-timing="bonus"] .play-battle-attacks-per-action'),null,
-  'The attack count is never repeated on bonus actions');
- const protectedHand=render([unarmed,shield]);
- assert(protectedHand.querySelector('[data-action-timing="bonus"] [data-attack-id="shield:improvised:off:shield"]'));
- assert(!protectedHand.querySelector('[data-action-timing="action"] [data-attack-id="shield:improvised:off:shield"]'));
- assert(!protectedHand.querySelector('[data-attack-id="unarmed:off"]'));
- assert(protectedHand.querySelector('[data-attack-id="opportunity"]'));
- const unloaded=doc(battleActionPanels({}, {attacks:[unarmed,off]},[],[],[],[],[],true).attacks);
- assert(unloaded.querySelector('[data-attack-id="opportunity"]'),
-  'Offline fallback still exposes an opportunity attack');
- assert(!render([unarmed,off],[{name:'Extra Attack',attacks_per_action:2,disabled:true}])
+ const record={rules_version:'2014'};
+ const projected=battleActionPanels(record,{attacks:[unarmed,off],
+  features:[{name:'Extra Attack',attacks_per_action:2}]},[],[],catalog.actions,[],[],true);
+ const attacks=doc(projected.attacks),others=doc(projected.others);
+ assert(attacks.querySelector('[data-attack-id="unarmed"]'));
+ assert(!attacks.querySelector('[data-action-timing]'));
+ assert(!attacks.querySelector('[data-attack-id="opportunity"]'));
+ assert(!attacks.querySelector('[data-attack-id="unarmed:off"]'));
+ assert(others.querySelector('[data-action-timing="action"] [data-attack-id="attack"]'));
+ assert(others.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
+ assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×2');
+ assert.equal(projected.basicActions.find(row=>row.id==='two_weapon').available,false);
+ assert(!others.querySelector('[data-attack-id="two_weapon"]'));
+ assert(!doc(battleActionPanels(record,{attacks:[unarmed,off],features:[
+  {name:'Extra Attack',attacks_per_action:2,disabled:true}]},[],[],catalog.actions).others)
   .querySelector('.play-battle-attacks-per-action'));
 });
+
 
 test('multiattack counter uses active structured features or a monster multiattack',()=>{
  assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (2)',attacks_per_action:3}]}),3);
@@ -126,41 +124,33 @@ test('multiattack counter uses active structured features or a monster multiatta
  const typedMonster={kind:'monster',stat_block:{action:[{name:'Multiattack',attacks_per_action:4}]}};
  assert.equal(attacksPerAction(typedMonster,{features:collectStructuredFeatures(typedMonster)}),4);
  const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
- const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).attacks);
- assert.equal(html.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×3');
+ const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).others);
+ assert.equal(html.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×3');
 });
 
-test('equipped weapon attacks lead each timing list and follow equipment changes',()=>{
- const bonusAction={edition:'2014',id:'test_bonus',name:'Azione bonus generica',
-  timings:['bonus'],parent_action:'',source:'Test',description:'Opzione non legata ad armi'};
- const rules=[bonusAction,...catalog.actions];
- const monster={id:'monster:action:0',name:'Artiglio',melee:true,hit:5,damage:'1d4'};
- const shield={id:'shield:improvised:off:shield',name:'Scudo improvvisato',slot:'shield',
-  melee:true,hit:3,damage:'1d4'};
+test('flat attacks order equipped weapons first; typed Azioni prioritize Attack, offhand and opportunity',()=>{
  const main={id:'item:blade',name:'Lama principale',slot:'main',melee:true,hit:6,damage:'1d8'};
- const thrown={id:'item:throw:main:blade',name:'Lama principale · lancio',slot:'main',
-  melee:false,hit:6,damage:'1d8'};
  const off={id:'item:off:dagger',name:'Pugnale secondario',slot:'off',melee:true,
   offhand_bonus:true,hit:4,damage:'1d4'};
- const panel=attacks=>doc(battleActionPanels({rules_version:'2014'}, {attacks},[],[],rules).attacks);
- const ids=(root,time)=>[...root.querySelectorAll('[data-action-timing="'+time+'"] .play-battle-attack-entry')]
-  .map(node=>node.dataset.attackId);
- const equipped=panel([monster,shield,off,main,thrown]);
- assert.deepEqual(ids(equipped,'action').slice(0,2),['item:blade','item:throw:main:blade'],
-  'Main-hand attacks, including thrown variants, go before generic and monster attacks');
- assert.equal(ids(equipped,'bonus')[0],'item:off:dagger',
-  'Offhand attack goes before generic bonus actions');
- assert.equal(ids(equipped,'reaction')[0],'opportunity',
-  'An opportunity attack using an equipped melee weapon goes before other reactions');
- const baseline=panel([monster,shield]);
- const withoutEquipped=ids(equipped,'action').filter(id=>!id.startsWith('item:'));
- assert.deepEqual(withoutEquipped,ids(baseline,'action'),
-  'The original order of non-weapon actions is unchanged');
- const replaced=panel([monster,shield,{...main,id:'item:axe',name:'Ascia'}]);
- assert.equal(ids(replaced,'action')[0],'item:axe',
-  'The priority follows the current weapon projection, not a previously equipped item');
- assert(!ids(replaced,'action').includes('item:blade'));
+ const monster={id:'monster:action:0',name:'Artiglio',melee:true,hit:5,damage:'1d4'};
+ const result=battleActionPanels({rules_version:'2014',inventory:[
+  {id:'blade',name:'Lama principale',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']}]
+ },{attacks:[monster,off,main]},[],[],catalog.actions);
+ const flat=doc(result.attacks),others=doc(result.others);
+ const ids=[...flat.querySelectorAll('.play-battle-attack-entry')].map(n=>n.dataset.attackId);
+ assert.equal(ids[0],'item:blade');
+ assert(ids.includes('monster:action:0'),'Monster attack choices remain available');
+ assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
+ assert(ids.includes('unarmed'),'Unarmed is always available');
+ assert(!flat.querySelector('[data-action-timing]'));
+ assert.equal(others.querySelector('[data-action-timing="action"] .play-battle-attack-entry').dataset.attackId,'attack');
+ assert.equal(others.querySelector('[data-action-timing="bonus"] .play-battle-attack-entry').dataset.attackId,'two_weapon');
+ assert.equal(others.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
+ assert.equal(others.querySelector('[data-action-timing="movement"] [data-attack-id="movement"]')!==null,true);
+ assert.equal(result.movement,'');
 });
+
 
 test('spell casting times show structured values for tracker spells instead of privilege placeholder',()=>{
  const spells=[
@@ -432,7 +422,7 @@ test('native class activations use eligible collected features, edition and loca
  assert(markup.includes('Ira'));assert(markup.includes('2 / 3'));
  assert(!actionEconomyView(barbarian,{features:[],trackers:[]}).includes('>Ira<'));
  const fighter={class:'Fighter',class_source:'PHB',level:5};
- assert(find(actionEntries(fighter,calc),'attack').name.includes('×2'));
+ assert.equal(find(actionEntries(fighter,calc),'attack').attack_count,2);
  const revised={rules_version:'2024'};
  const paladin={...make('Lay on Hands','Paladin'),origin_key:'class|xphb|paladin'};
  const ability=nativeClassFeatureActions(revised,{features:[paladin],trackers:[]});
@@ -496,14 +486,14 @@ test('battle projects all unported actions without duplicating weapons, movement
  const activated=[{id:'inspire',name:'Ispirazione',origin:'Classe · bard · PHB',action_type:'bonus',
   resource_cost:1,tracker_id:'inspire',tracker_name:'Ispirazioni'}];
  const result=battleActionPanels(record,calculated,[],[],catalog.actions,[],activated);
- const others=doc(result.others),movement=doc(result.movement);
+ const others=doc(result.others),movement=others;
  const powers=battleResourcePowers(calculated,result.abilityEntries,activated);
  const surge=powers.find(row=>row.id==='surge');
  assert(others.body.textContent.includes('Cercare'));
  assert(others.body.textContent.includes('Schivare'));
  assert(others.body.textContent.includes('Talento personalizzato'));
- assert(!others.body.textContent.includes('Attaccare'));
- assert(!others.body.textContent.includes('Scattare'));
+ assert(others.body.textContent.includes('Attaccare'));
+ assert(others.body.textContent.includes('Scattare'));
  assert(!others.body.textContent.includes('Impeto di battaglia'));
  const search=others.querySelector('[data-attack-id="search"]');
  assert(search.querySelector('[data-target="skill:perception"]'));
@@ -592,4 +582,59 @@ test('Resource-granted spells carry the casting time from actual spell metadata'
   {id:'normal_spell',name:'Luce',time:[{unit:'action',number:1}]}]);
  assert.equal(data.find(x=>x.id==='quick').timing,'bonus');
  assert.equal(data.find(x=>x.id==='ordinary').timing,'action');
+});
+
+test('basic action availability derives from melee, spell slots and a real dual-wield loadout',()=>{
+ const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true};
+ const main={id:'item:sword',name:'Spada',slot:'main',melee:true};
+ const off={id:'item:off:dagger',name:'Pugnale',slot:'off',melee:true,offhand_bonus:true};
+ const base={rules_version:'2014',inventory:[
+  {id:'sword',name:'Spada',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']} ]};
+ const calc={attacks:[unarmed,main,off],spell_slots:[{level:1,total:2}],trackers:[]};
+ assert(offhandActionAvailable(base,calc),'Two equipped light weapons grant bonus attack');
+ const result=battleActionPanels(base,calc,[],[],catalog.actions,[],[],true);
+ assert.equal(result.basicActions.find(a=>a.id==='opportunity').available,true);
+ assert.equal(result.basicActions.find(a=>a.id==='two_weapon').available,true);
+ assert.equal(result.basicActions.find(a=>a.id==='spell_cast').available,true);
+ const actions=doc(result.others);
+ assert.equal(actions.querySelector('[data-action-timing="action"] .play-battle-attack-entry').dataset.attackId,'attack');
+ assert.equal(actions.querySelector('[data-action-timing="bonus"] .play-battle-attack-entry').dataset.attackId,'two_weapon');
+ assert.equal(actions.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
+ const naked=battleActionPanels(base,{attacks:[unarmed],spell_slots:[]},[],[],catalog.actions);
+ assert.equal(naked.basicActions.find(a=>a.id==='two_weapon').available,false);
+ assert.equal(naked.basicActions.find(a=>a.id==='spell_cast').available,false);
+ const withShield={...base,inventory:[
+  {...base.inventory[0],properties:[]},
+  {id:'shield',name:'Scudo',type:'S',equipped_slots:['off']}]};
+ const shieldCalc={attacks:[unarmed,main,{id:'shield:improvised:off:shield',slot:'shield',hand:'off',melee:true}]};
+ assert.equal(offhandActionAvailable(withShield,shieldCalc),false);
+ assert.equal(offhandActionAvailable({...withShield,feats_catalog:[{name:'Dual Wielder'}]},shieldCalc),true,
+  'Dual Wielder 2014 makes an equipped improvised shield eligible');
+ assert.equal(offhandActionAvailable({...base,rules_version:'2024'},calc),true);
+});
+
+test('Cunning Action keeps its owning trait and changed timing for resource grouping',()=>{
+ const record={rules_version:'2014',class:'Rogue',class_source:'PHB',level:2,
+  classes:[{name:'Rogue',source:'PHB',level:2}]};
+ const feature={name:'Cunning Action',origin_key:'class|phb|rogue',
+  origin_id:'feature:class|phb|rogue|cunning-action'};
+ const projected={features:[feature],feature_rules:featureRules};
+ const result=battleActionPanels(record,projected,[],[],catalog.actions,[],[],false);
+ assert(result.overriddenActions.some(a=>a.id==='dash'&&a.time==='bonus'&&
+  a.action_change_origin===feature.origin_id&&a.original_time==='action'));
+ const bonus=doc(result.others).querySelector('[data-action-timing="bonus"]');
+ assert(bonus.querySelector('[data-attack-id="dash"]'),'Cunning Action Dash belongs to bonus actions');
+});
+
+test('extra attack stays next to the Attack row; the flat list never repeats it',()=>{
+ const calculated={features:[
+  {name:'Extra Attack',attacks_per_action:2,origin_id:'feature:one'},
+  {name:'Extra Attack (2)',attacks_per_action:3,origin_id:'feature:two'}]};
+ const result=battleActionPanels({},calculated,[],[],catalog.actions,[],[],true);
+ const actions=doc(result.others),attack=actions.querySelector('[data-attack-id="attack"]');
+ assert.equal(attack.querySelector('.play-battle-attacks-per-action').textContent,'×3');
+ assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
+ assert(!result.attacks.includes('play-battle-attacks-per-action'));
+ assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));
 });
