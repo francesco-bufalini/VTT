@@ -775,10 +775,13 @@ test("inventory section switches keep their order and can all be disabled",async
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="inventory"]');
   await until(()=>document.querySelector('#sheet-play-view [data-subtab="items"]'));
-  const allToggle=()=>document.querySelector('#sheet-play-view [data-act="inventory-toggle-all"]');
+  const allToggle=()=>document.querySelector('.page-head.play-inventory-page-title [data-act="inventory-toggle-all"]');
   const sectionNav=()=>document.querySelector('#sheet-play-view .inventory-container-tabs');
-  assert.equal(document.querySelector('.page-head [data-act="inventory-toggle-all"]'),null);
-  assert.deepEqual([...sectionNav().children].map(n=>n.textContent),['＋','Tutti','Zaino','Pergamene','Documenti']);
+  assert.ok(allToggle(),'Show-all shortcut must sit beside Inventario');
+  assert.equal(sectionNav().querySelector('[data-act="inventory-toggle-all"]'),null,
+    'The shortcut cannot appear inside the section selector');
+  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
+  assert.deepEqual([...sectionNav().children].map(n=>n.textContent),['＋','Zaino','Pergamene','Documenti']);
   assert.equal(allToggle().getAttribute('aria-pressed'),'false');
   assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,1);
   assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
@@ -794,7 +797,7 @@ test("inventory section switches keep their order and can all be disabled",async
   assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section').length,2);
   assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino','Borsa da campo']);
   assert.deepEqual([...sectionNav().querySelectorAll('[data-subtab]')].map(n=>n.dataset.subtab),
-    ['all','items','scrolls','documents',document.querySelector('#sheet-play-view [data-subtab^="container:"]').dataset.subtab]);
+    ['items','scrolls','documents',document.querySelector('#sheet-play-view [data-subtab^="container:"]').dataset.subtab]);
   const bagTab=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
   const bagId=bagTab.dataset.subtab.slice('container:'.length);
   const bagPanel=[...document.querySelectorAll('#sheet-play-view .play-inventory-section')]
@@ -813,19 +816,22 @@ test("inventory section switches keep their order and can all be disabled",async
   click('#sheet-play-view [data-subtab="scrolls"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
   assert.equal(allToggle().getAttribute('aria-pressed'),'true');
+  assert.match(allToggle().textContent,/Mostra solo zaino/);
   const custom=document.querySelector('#sheet-play-view [data-subtab^="container:"]');
   custom.click();
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===3);
   assert.equal(allToggle().getAttribute('aria-pressed'),'false');
+  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
   allToggle().click();
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===4);
   assert.equal(allToggle().getAttribute('aria-pressed'),'true');
+  assert.match(allToggle().textContent,/Mostra solo zaino/);
   allToggle().click();
-  await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===0);
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'false');
-  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute('aria-pressed'),'false');
-  click('#sheet-play-view [data-subtab="items"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===1);
+  assert.match(allToggle().textContent,/Mostra tutti gli oggetti/);
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="items"]').getAttribute('aria-pressed'),'true');
+  assert.equal(document.querySelector('#sheet-play-view [data-subtab="scrolls"]').getAttribute('aria-pressed'),'false');
+  assert.deepEqual([...document.querySelectorAll('#sheet-play-view .play-inventory-section h2')].map(n=>n.textContent),['Zaino']);
   click('#sheet-play-view [data-subtab="items"]');
   await until(()=>document.querySelectorAll('#sheet-play-view .play-inventory-section').length===0);
   click('[data-nav="library"]');
