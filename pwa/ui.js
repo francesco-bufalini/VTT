@@ -201,9 +201,22 @@ function loadFullSpellCatalog(){
   }).finally(()=>{fullSpellCatalogRequest=null;});
   return fullSpellCatalogRequest;
 }
+function refreshSpellPickers(){
+  // Do not recreate the modal: the player may be typing in its search field.
+  const results=app.querySelector('#magic-tools-dialog[open] #spell-results');
+  if(results&&state.magicPopup==='catalog')results.innerHTML=renderSpellResults();
+  const scroll=app.querySelector('#sheet-context-dialog[open] #scroll-spell-select');
+  if(scroll){
+    const selected=scroll.value;
+    scroll.innerHTML=scrollSpellSelectOptions(state.scrollSpellQuery);
+    if([...scroll.options].some(row=>row.value===selected))scroll.value=selected;
+    updateScrollSpellLevels();
+  }
+}
 function refreshWhenSpellsArrive(promise,creatureId,sheet){
   refreshSheetAfterLateLoad(promise,creatureId,sheet);
-  if(state.page==='session')Promise.resolve(promise).then(()=>{
+  Promise.resolve(promise).then(()=>{
+    refreshSpellPickers();
     if(state.page==='session')void render();
   }).catch(()=>{});
 }
