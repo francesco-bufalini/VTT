@@ -8,7 +8,7 @@ import {traitBenefitSources} from './trait_benefits.js';
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
 const abilities=['str','dex','con','int','wis','cha'];
-const kindNames={skill:'Abilità',expertise:'Maestria',save:'Tiri salvezza',
+const kindNames={mixed:'Abilità o strumenti',skill:'Abilità',expertise:'Maestria',save:'Tiri salvezza',
   weapon:'Armi',armor:'Armature',tool:'Strumenti',language:'Lingue'};
 const kindFields=['weapon','armor','skill','expertise','save','tool','language'];
 const artisanTools=['alchemist\'s supplies','brewer\'s supplies','calligrapher\'s supplies',
@@ -83,6 +83,13 @@ function allowedByRule(kind,data,key,record,index){
  if(data?.anyExotic!==undefined)return kind==='language'&&(exoticLanguages.has(key)||rareLanguages.has(key));
  return false;
 }
+function mixedOptions(rule,record,index){
+ const kinds=arr(rule?.choose?.fromKinds).filter(kind=>kind==='skill'||kind==='tool');
+ const allowed=rule?.choose?.fromByKind||{};
+ return unique(kinds.flatMap(kind=>optionPool(kind,record,index)
+   .filter(key=>!Array.isArray(allowed[kind])||allowed[kind].map(strip).includes(key))
+   .map(key=>kind+':'+key)));
+}
 function requirementEntries(source){
  const entries=[];
  for(const kind of kindFields){
@@ -99,6 +106,11 @@ function requirementEntries(source){
    }
   }
  }
+ for(const rule of arr(source.source?.proficiencyChoices)){
+  const choose=rule?.choose;
+  if(!choose||!arr(choose.fromKinds).length)continue;
+  entries.push({kind:'mixed',count:Math.max(1,Number(choose.count)||1),data:rule});
+ }
  return entries;
 }
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
@@ -106,21 +118,23 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  for(const source of selectedSources(record,index)){
   if(!enabled(record,source.id))continue;
   for(const [i,req] of requirementEntries(source).entries()){
-   const options=optionPool(req.kind,record,index)
-     .filter(key=>allowedByRule(req.kind,req.data,key,record,index))
+   const mixed=req.kind==='mixed';
+   const options=(mixed?mixedOptions(req.data,record,index):
+     optionPool(req.kind,record,index).filter(key=>allowedByRule(req.kind,req.data,key,record,index)))
      .sort((a,b)=>a.localeCompare(b,'it'));
-   const stored=presentRows(record,source.id,req.kind);
-   const selected=unique(stored.map(row=>strip(row.key)).filter(key=>
-     stored.some(row=>row.custom&&strip(row.key)===key)||
-     allowedByRule(req.kind,req.data,key,record,index)));
-   const custom_values=unique(stored.filter(row=>row.custom===true)
+   const stored=mixed?arr(record.proficiency_choices).filter(row=>
+     row?.origin_id===source.id&&['skill','tool'].includes(row.kind)&&!row.disabled):presentRows(record,source.id,req.kind);
+   const valueOf=row=>mixed?row.kind+':'+strip(row.key):strip(row.key);
+   const selected=unique(stored.map(valueOf).filter(key=>
+     stored.some(row=>row.custom&&valueOf(row)===key)||options.includes(key)));
+   const custom_values=unique(stored.filter(row=>row.custom===true&&(!mixed||row.kind==='tool'))
      .map(row=>strip(row.key)));
    const total=Math.max(1,Math.floor(req.count));
    result.push({id:'proficiency:'+source.id+':'+req.kind+':'+i,kind:'proficiency',
      origin_id:source.id,name:source.origin||source.source?.name||source.id,
      label:kindNames[req.kind]||req.kind,proficiency_kind:req.kind,
      count:total,selected,options,custom_values,
-     custom_allowed:['tool','language'].includes(req.kind),
+     custom_allowed:['tool','language','mixed'].includes(req.kind),
      remaining:Math.max(0,total-selected.length)});
   }
  }
@@ -164,6 +178,8 @@ export function knownProficiencyOptions(record={},calculated={},choice={},index=
  const all=new Set([...fixedProficiencies(record,index).keys(),
    ...arr(calculated.proficiencies)].map(norm));
  const kind=choice.proficiency_kind;
+ if(kind==='mixed')return new Set(arr(choice.options).filter(key=>
+   all.has(key)||(key.startsWith('skill:')&&all.has('expertise:'+key.slice(6)))));
  return new Set(arr(choice.options).filter(key=>
    all.has(kind+':'+key)||(kind==='skill'&&all.has('expertise:'+key))));
 }
@@ -176,14 +192,16 @@ export function savePendingChoice(record,choice,values=[]){
  if(!choice||!['ability','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
  const raw=unique(arr(values).map(strip));
  const prefix='__custom__:';
- const custom=raw.filter(key=>key.startsWith(prefix)).map(key=>key.slice(prefix.length));
+ const mixed=choice.proficiency_kind==='mixed';
+ const custom=raw.filter(key=>key.startsWith(prefix)).map(key=>
+   (mixed?'tool:':'')+key.slice(prefix.length));
  const regular=raw.filter(key=>!key.startsWith(prefix));
  const selected=unique([...regular,...custom]);
  if(selected.length>choice.count||
     regular.some(key=>!choice.options.includes(key))||
     (custom.length&&(!choice.custom_allowed||choice.kind!=='proficiency'))||
-    custom.some(key=>!key||key.length>80||/[<>{}\x00-\x1f]/.test(key)||
-       choice.options.includes(key)||regular.includes(key)))
+    custom.some(key=>!(mixed?key.slice(5):key)||(mixed?key.slice(5):key).length>80||
+       /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
  if(choice.kind==='ability'){
   if(selected.length>1)throw Error('Puoi scegliere una sola caratteristica.');
@@ -196,11 +214,37 @@ export function savePendingChoice(record,choice,values=[]){
   if(!updated)throw Error('Talento non più disponibile.');
   return {feats_catalog:feats};
  }
- const rows=arr(record.proficiency_choices).filter(row=>!(
-   row?.origin_id===choice.origin_id&&row.kind===choice.proficiency_kind&&
-   (choice.options.includes(strip(row.key))||row.custom===true)&&!row.automatic));
- for(const key of selected)rows.push({kind:choice.proficiency_kind,key,
-   origin_id:choice.origin_id,origin_name:choice.name,disabled:false,
-   ...(custom.includes(key)?{custom:true}:{})});
+ const rows=arr(record.proficiency_choices).filter(row=>{
+   if(row?.origin_id!==choice.origin_id||row.automatic)return true;
+   if(mixed)return !['skill','tool'].includes(row.kind)||
+     !(choice.options.includes(row.kind+':'+strip(row.key))||row.custom===true);
+   return row.kind!==choice.proficiency_kind||
+     !(choice.options.includes(strip(row.key))||row.custom===true);
+ });
+ for(const key of selected){
+   const colon=mixed?key.indexOf(':'):-1;
+   const kind=mixed?key.slice(0,colon):choice.proficiency_kind;
+   const proficiencyKey=mixed?key.slice(colon+1):key;
+   if(mixed&&!['skill','tool'].includes(kind))throw Error('Categoria di competenza non valida.');
+   rows.push({kind,key:proficiencyKey,origin_id:choice.origin_id,
+     origin_name:choice.name,disabled:false,
+     ...(custom.includes(key)?{custom:true}:{})});
+ }
  return {proficiency_choices:rows};
+}
+// Remove only one owned feat, plus its own selected proficiency rows.
+// Other feats, class grants and manually added proficiencies are preserved.
+export function removeOwnedFeatPatch(record={},originKey=''){
+ const feats=arr(record.feats_catalog);
+ const index=feats.findIndex(feat=>feat?.name&&
+   'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source))===originKey);
+ if(index<0)throw Error('Talento non più presente nella scheda.');
+ const feat=feats[index],sourceId='feat|'+norm(feat.source)+'|'+norm(feat.name);
+ const origin_enabled={...(record.origin_enabled||{})};
+ delete origin_enabled[sourceId];
+ delete origin_enabled[originKey];
+ return {feats_catalog:feats.filter((_,i)=>i!==index),
+   proficiency_choices:arr(record.proficiency_choices).filter(row=>
+     row?.origin_id!==sourceId&&row?.origin_id!==originKey),
+   origin_enabled};
 }
