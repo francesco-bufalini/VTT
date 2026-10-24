@@ -577,7 +577,7 @@ export function equipSlot(inventory,slot,index,{allowOffhandWithTwoHanded=false}
     const slots=Array.isArray(row.equipped_slots)?row.equipped_slots:[];
     row.equipped_slots=slots.filter(v=>v!==slot&&
       !(slot==="main"&&twoHanded&&!allowOffhandWithTwoHanded&&v==="off")&&
-      !(slot==="off"&&hasProperty(row,"2H")&&v==="main"));
+      !(slot==="off"&&!allowOffhandWithTwoHanded&&hasProperty(row,"2H")&&v==="main"));
   }
   if(index>=0){
     const row=rows[index],slots=row.equipped_slots;
