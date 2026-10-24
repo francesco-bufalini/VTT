@@ -619,7 +619,7 @@ export function offhandActionAvailable(record={},calculated={}){
  return offhandActionEligibility(record,calculated).available;
 }
 
-export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[],onlyClass=false){
+export function battleActionPanels(record,calculated,spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[],activatedAbilities=[]){
  const entries=actionEntries(record,calculated,spells,featureOverrides,generalActions,enabledVariants);
  const count=attacksPerAction(record,calculated);
  const descriptions={
@@ -657,7 +657,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon'].includes(row.id)&&
   (row.parent_action!=='two_weapon'||String(row.attack_id||row.id||'').startsWith('shield:improvised:')||
-   String(row.attack_id||row.id||'').startsWith('item:improvised:'))&&row.id!=='unarmed:off');
+   String(row.attack_id||row.id||'').startsWith('item:improvised:')||
+   attacksById.get(String(row.attack_id||row.id||''))?.improvised===true)&&row.id!=='unarmed:off');
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
   const known=attacksById.get('unarmed');
