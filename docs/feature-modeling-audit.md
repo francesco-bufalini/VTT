@@ -719,3 +719,53 @@ I sette nomi di tratti TCE opzionali, con Deft Explorer Improvement a due
 livelli, richiedono una selezione persistita prima che
 contatori o effetti possano essere assegnati. Non sono stati aggiunti
 contatori automatici PHB per Favored Foe, Tireless o Nature's Veil TCE.
+
+## Lotto 2026-10-24: Cleric e Paladin PHB
+
+Controllate le **48 voci** `class_features` associate alle due classi PHB
+(24 ciascuna; 15 nomi Cleric e 18 Paladin). La base 2014 è stata confrontata
+con FightClub5eXML `class-cleric-phb.xml`
+(`0c1118e94e7ae1fb0b608b65b3513fdaf0c65d13`) e
+`class-paladin-phb.xml` (`249020fa50366d1c300fdc4e076bcddc469e408d`).
+Le opzioni TCE che 5etools associa a una classe PHB hanno fonte del
+**tratto** TCE e non sono automatiche. I contatori PHB già presenti per
+Channel Divinity, Lay on Hands, Divine Sense e Cleansing Touch restano
+distinti dai cambiamenti XPHB.
+
+| Cleric (fonte, livello) | Esito |
+| --- | --- |
+| Divine Domain (PHB, 1) | Dominio scelto; incantesimi e privilegi della sottoclasse reale. |
+| Spellcasting (PHB, 1) | Trucchetti, preparazione, slot e focus nel modello magico. |
+| Channel Divinity (PHB, 2, 6, 18) | Pool di 1/2/3 usi per riposo breve, già strutturato; ogni effetto consuma lo stesso pool. |
+| Channel Divinity: Turn Undead (PHB, 2) | Opzione con TS, bersagli Undead, movimento e durata; non un pool distinto. |
+| Channel Divinity: Harness Divine Power (TCE opz., 2) | Spende Channel Divinity per recuperare uno slot con livello massimo e usi propri progressivi; non concedere senza l'opzione TCE. |
+| Divine Domain feature (PHB, 2, 6, 8, 17) | Segnaposto dei tratti del dominio selezionato. |
+| Ability Score Improvement (PHB, 4, 8, 12, 16, 19) | Scelta di incremento/talento. |
+| Cantrip Versatility (TCE opz., 4) | Permette sostituire un trucchetto a una soglia ASI; non aggiunge un trucchetto. |
+| Destroy Undead (CR 1/2, 1, 2, 3, 4; PHB, 5, 8, 11, 14, 17) | Soglia CR progressiva sul fallimento del TS di Turn Undead; evento contestuale. |
+| Divine Intervention (PHB, 10) | Tiro percentile con soglia pari al livello, recupero lungo se fallisce e sette giorni se riesce; non contatore a recupero fisso. |
+| Divine Intervention Improvement (PHB, 20) | Successo automatico del tratto esistente, nessun uso supplementare. |
+
+| Paladin (fonte, livello) | Esito |
+| --- | --- |
+| Divine Sense (PHB, 1) | Usi 1+CAR per riposo lungo già strutturati; rilevamento e durata richiedono scena reale. |
+| Lay on Hands (PHB, 1) | Pool di 5 PF per livello Paladin già strutturato; cura e rimozione di malattia/veleno richiedono spesa e bersaglio. |
+| Divine Smite (PHB, 2) | Spesa di uno slot dopo colpo con arma da mischia, dadi e tetto per livello dello slot; non lancio gratuito della versione XPHB. |
+| Fighting Style (PHB, 2) | Stile scelto. |
+| Spellcasting (PHB, 2) | Preparazione e slot del modello magico. |
+| Channel Divinity (PHB, 3) | Un uso per riposo breve/lungo; l'effetto dipende dal giuramento scelto. |
+| Channel Divinity: Harness Divine Power (TCE opz., 3) | Opzione TCE che spende il pool condiviso per uno slot, con limite di uso progressivo. |
+| Divine Health (PHB, 3) | Immunità alle malattie; origine del tratto, non una risorsa. |
+| Sacred Oath (PHB, 3) | Giuramento scelto. |
+| Ability Score Improvement (PHB, 4, 8, 12, 16, 19) | Scelta di incremento/talento. |
+| Martial Versatility (TCE opz., 4) | Sostituisce lo stile a una soglia ASI solo se l'opzione è adottata. |
+| Extra Attack (PHB, 5) | Due attacchi nell'azione Attack. |
+| Aura of Protection (PHB, 6) | Bonus ai TS pari a CAR, minimo +1, entro 10 piedi e solo da Paladin cosciente; portata di 30 piedi al livello 18. |
+| Sacred Oath feature (PHB, 7, 15, 20) | Segnaposto dei privilegi del giuramento scelto. |
+| Aura of Courage (PHB, 10) | Protezione da Frightened entro 10 piedi, poi 30 al livello 18; richiede Paladin cosciente. |
+| Improved Divine Smite (PHB, 11) | 1d8 Radiant aggiuntivo sui colpi con arma da mischia. |
+| Cleansing Touch (PHB, 14) | Usi pari a CAR, minimo uno, recupero lungo già strutturato; azione per terminare un incantesimo su sé o creatura consenziente toccata. |
+| Aura improvements (PHB, 18) | Espande l'aura, non aggiunge un bonus numerico sommabile. |
+
+Restano da rappresentare in modo contestuale gli effetti su bersagli, slot
+e area e le opzioni TCE selezionate.

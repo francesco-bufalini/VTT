@@ -24,6 +24,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 | Cleric XPHB: Channel Divinity, Divine Spark, Turn Undead, Sear Undead | Recupero di **un** uso al riposo breve; scelta dell'opzione, bersagli, TS, cura, danno e condizioni d'effetto. |
 | Cleric XPHB: Divine Order, Blessed Strikes | Opzione esclusiva e beneficio derivato dal solo tratto selezionato. |
 | Cleric XPHB: Divine Intervention, Greater Divine Intervention | Incantesimo idoneo scelto al lancio e recupero di 2d4 riposi lunghi dopo Wish; non un secondo contatore statico. |
+| Cleric PHB: Divine Intervention, Channel Divinity: Harness Divine Power (TCE opz.) | Recupero diverso dopo successo/fallimento del tiro percentile; l'opzione TCE richiede selezione e spende Channel Divinity per uno slot entro un tetto. |
 | Druid XPHB: Wild Shape, Wild Companion | Recupero breve parziale, forme conosciute e statistiche della trasformazione, scelta fra slot e uso Wild Shape per Find Familiar. |
 | Druid XPHB: Primal Order, Elemental Fury, Improved Elemental Fury | Opzione esclusiva e progressione dipendente dall'opzione scelta. |
 | Druid XPHB: Wild Resurgence, Archdruid | Conversioni bidirezionali fra slot e usi Wild Shape, vincoli dei valori e ricarica condizionata all'iniziativa. |
@@ -31,6 +32,7 @@ persistiti e verifica con entrambe le interfacce; resta aperto.
 | Monk XPHB: Uncanny Metabolism, Perfect Focus | Ripristino dei Focus Points all'iniziativa e guarigione; soglia di quattro punti e mutua esclusione. Il contatore giornaliero di Uncanny Metabolism è già presente. |
 | Paladin XPHB: Lay on Hands, Restoring Touch, Divine Sense, Abjure Foes | Punti spesi, bersaglio, condizioni e sensi al momento dell'uso. |
 | Paladin XPHB: Paladin's Smite, Faithful Steed, Aura of Protection/Courage/Expansion | Lanci gratuiti specifici di Divine Smite/Find Steed e stato della creatura evocata; bonus/immunità entro aura spaziale attiva, con raggio progressivo. |
+| Paladin PHB: Divine Smite, Lay on Hands, aure e Harness Divine Power (TCE opz.) | Colpo concreto e slot speso, cura/rimozione su bersaglio e area delle aure; l'opzione TCE non è concessa automaticamente con la classe PHB. |
 | Ranger XPHB: Tireless, Nature's Veil, Hunter's Mark features | PF temporanei e condizione Invisible attivati, riduzione di Exhaustion, concentrazione/bersaglio marcato. I limiti numerici di Tireless e Nature's Veil sono già presenti. |
 | Ranger PHB con opzioni TCE: Favored Foe, Deft Explorer/Tireless, Primal Awareness, Nature's Veil | La fonte del tratto è TCE anche con `class_source: PHB`; occorre registrare le sostituzioni opzionali e i tratti effettivamente scelti prima di attribuire usi o incantesimi. Favored Foe, Tireless e Nature's Veil hanno limiti verificati ma non sono concessi a tutti i Ranger PHB. |
 | Rogue XPHB: Cunning Strike, Devious Strikes, Improved Cunning Strike | Dadi Sneak Attack rinunciati sul singolo attacco, opzioni, TS, condizioni e durata; i dadi non sono una riserva persistente. |
