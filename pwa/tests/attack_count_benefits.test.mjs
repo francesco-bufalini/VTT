@@ -74,8 +74,9 @@ test('custom trait benefits can be added, displayed, removed and do not stack',(
  assert.equal(attacksPerActionFromBenefits(attackCountBenefits({...active,trait_enabled:{[trait.key]:false}},[])),1);
  assert.throws(()=>addBenefitPatch(record,trait,'attack_count',{attacks_per_action:0},'trait:attack-count-0002'),/non valido/);
  assert.throws(()=>addBenefitPatch(record,trait,'attack_count',{attacks_per_action:'2.5'},'trait:attack-count-0003'),/non valido/);
- const doubled={attack_count_grants:[...grants,{id:'manually-2',attacks_per_action:2}]};
- assert.equal(attacksPerAction({},doubled),5);
+ const doubled={...active,attack_count_grants:[...active.attack_count_grants,
+  {...active.attack_count_grants[0],id:'trait:attack-count-0002',attacks_per_action:2}]};
+ assert.equal(attacksPerAction(doubled,{}),5);
 });
 
 test('old monster multiattack is projected into a trait benefit; typed count takes precedence',()=>{
