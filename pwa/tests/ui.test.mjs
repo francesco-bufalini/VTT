@@ -1136,6 +1136,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'The attack ability scope can be changed in the shared editor');
  assert.equal(document.querySelectorAll('.battle-attack-settings').length,0,
   'The obsolete separate battle attack equipment editor is removed');
+ await until(()=>document.querySelector('.battle-resources-panel .battle-resource-row'),4500);
  assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
   'Trackers use compact action rows in battle');
  assert.ok(document.querySelector('.battle-attacks-panel .battle-attack-row'),
