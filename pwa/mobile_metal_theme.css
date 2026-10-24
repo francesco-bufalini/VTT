@@ -3961,32 +3961,130 @@ dialog.sheet-context-dialog{border-bottom:0}
 @keyframes vtt-sheet-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.sheet-loading-indicator{animation:none}}
 
-/* Poteri: tactile slot actions, compact preparation choices and source groups. */
+/* Poteri: quiet gold accents, one-line spell actions, and an inline slot spell list. */
 .magic-level-slot{cursor:pointer;touch-action:manipulation}
 .magic-level-slot:hover,.magic-level-slot:focus-visible{border-color:#e1bb81;box-shadow:0 0 0 2px #d2a16c27}
-.magic-slot-popup{display:grid;gap:14px;padding:3px 0 6px}
+dialog.magic-tools-dialog{
+  width:min(95vw,620px);max-height:min(88dvh,820px);
+  padding:14px;border:1px solid #a28a6a80;border-radius:15px;
+  background:linear-gradient(168deg,#332b26 0%,#231e1d 38%,#1c1919 100%);
+  box-shadow:0 20px 60px #000a,inset 0 1px #ecd5ac19;color:#f1e0c6;
+}
+.magic-tools-dialog .magic-tools-head{
+  top:-14px;margin:-14px -14px 8px;padding:13px 16px 12px;
+  border-bottom:1px solid #ba956140;background:linear-gradient(180deg,#3a3029,#292420);
+  border-radius:14px 14px 0 0;
+}
+.magic-tools-dialog .magic-tools-head h2{font-size:1.03rem;letter-spacing:.015em;color:#f5ddba}
+.magic-tools-dialog .magic-tools-body{gap:12px}
+.magic-tools-dialog .magic-tool-close{
+  border:1px solid #b5976e4f;border-radius:9px;background:#6e523b36;
+  color:#dec9aa;box-shadow:none;
+}
+.magic-tools-dialog .magic-tool-close:hover{background:#a07b4b36;border-color:#d5af75}
+.magic-tools-dialog .magic-editor-class{display:grid;gap:6px;font-size:12px;font-weight:650;color:#dac19d}
+.magic-tools-dialog .magic-editor-class select,.magic-tools-dialog .magic-editor-search input{
+  width:100%;min-height:41px;border:1px solid #ab89605e;border-radius:9px;
+  background:#1716169a;color:#f1e0c8;padding:8px 11px;font-size:13px;
+}
+.magic-learn-link,.magic-learn-back{
+  appearance:none;display:flex;align-items:center;gap:9px;width:100%;
+  min-height:40px;padding:9px 12px;border:1px solid #b38b5a66;border-radius:10px;
+  background:linear-gradient(130deg,#69503950,#32282174);
+  color:#ebd2aa;font:650 12px/1.35 system-ui,sans-serif;text-align:left;
+  cursor:pointer;
+}
+.magic-learn-link span:last-child{margin-left:auto;font-size:19px;font-weight:400}
+.magic-learn-link .vtt-action-glyph{width:17px;height:17px}
+.magic-learn-back{width:max-content;max-width:100%;border-color:#a68b6744;background:#2d28256e}
+.magic-learn-link:hover,.magic-learn-link:focus-visible,.magic-learn-back:hover,.magic-learn-back:focus-visible{
+  background:#795c3e6b;border-color:#d4af76;color:#ffe6bf;
+}
+.magic-editor-help{margin:0;color:#c6af91;font-size:12px;line-height:1.55}
+.magic-tools-dialog .magic-selection-summary{padding:2px 0;color:#e6cea5}
+.magic-tools-dialog .magic-selection-current{
+  padding:11px 12px;margin:0;border:1px solid #a17e524a;border-radius:10px;
+  background:#1e1b1a70;
+}
+.magic-tools-dialog .magic-selection-current>h3{margin-bottom:9px}
+.magic-tools-dialog .magic-editor-search{font-size:12px;font-weight:600;color:#d8be98}
+.magic-tools-dialog .magic-editor-results{max-height:46dvh;overflow:auto;padding-right:2px}
+.magic-editor-results .magic-groups,.magic-slot-spells .magic-groups{display:grid;gap:10px}
+.magic-editor-results .magic-level,.magic-slot-spells .magic-level{
+  overflow:hidden;border:1px solid #97744d50;border-radius:10px;background:#231f1e9e;
+}
+.magic-editor-results .magic-level-heading,.magic-slot-spells .magic-level-heading{
+  min-height:34px;margin:0;padding:8px 11px;border-bottom:1px solid #ad845247;background:#6447303a;
+}
+.magic-editor-results .magic-level-heading h4,.magic-slot-spells .magic-level-heading h4{
+  color:#e5c69a;font-size:12px;letter-spacing:.02em;
+}
+.magic-editor-results .magic-entries,.magic-slot-spells .magic-entries{display:grid;gap:0}
+.magic-editor-results .magic-catalog-row{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:8px;min-height:40px;padding:4px 9px;
+  flex-wrap:nowrap!important;border-bottom:1px solid #a4845a22;
+  background:transparent;
+}
+.magic-editor-results .magic-catalog-row:last-child{border-bottom:0}
+.magic-editor-results .magic-catalog-name{
+  display:block;min-width:0;max-width:100%;padding:5px 0;
+  border:0;background:transparent;box-shadow:none;color:#f0dec5;
+  font:600 12px/1.35 system-ui,sans-serif;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
+}
+.magic-editor-results .magic-catalog-name:hover,.magic-editor-results .magic-catalog-name:focus-visible{
+  color:#ffdda8;text-decoration:underline;text-underline-offset:3px;
+}
+.magic-editor-results .magic-catalog-action{
+  flex:0 0 auto;min-width:76px;min-height:30px;padding:5px 10px;
+  border:1px solid #bc956659;border-radius:7px;background:linear-gradient(160deg,#66503c,#473628);
+  color:#f0d3aa;font:650 11px/1.15 system-ui,sans-serif;
+  white-space:nowrap;cursor:pointer;
+}
+.magic-editor-results .magic-catalog-action.is-selected{
+  border-color:#a48f7260;background:#3d39319e;color:#d2c4a9;
+}
+.magic-editor-results .magic-catalog-action:hover,.magic-editor-results .magic-catalog-action:focus-visible{
+  border-color:#e0b77a;background:#775637;color:#ffe2b6;
+}
+.magic-slot-popup{display:grid;gap:13px;padding:2px 0 5px}
 .magic-slot-popup-count{margin:0;color:#e5cba8;font-size:13px;line-height:1.5}
 .magic-slot-popup-count strong{font-variant-numeric:tabular-nums;color:#f5dfb9}
 .magic-slot-popup-actions{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
-.magic-slot-popup-actions>.btn{min-width:0;min-height:40px;white-space:normal}
-.magic-slot-popup-actions>.btn:last-child{grid-column:1/-1}
-.magic-slot-castable{appearance:none;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:10px 11px;text-align:left;cursor:pointer;border:1px solid #ad8b6349;border-radius:8px;background:#59443737;color:#f3ddbb;font:600 12px/1.4 system-ui,sans-serif}
-.magic-slot-castable:hover,.magic-slot-castable:focus-visible{border-color:#d8ae78;background:#986d4140}
-.magic-slot-castable span{font-weight:500;color:#d0b08a;white-space:nowrap;font-size:11px}
-.magic-known-filter{display:flex;gap:5px;margin:10px 0 8px;padding:4px;border:1px solid #ae875342;border-radius:10px;background:#201d1b77}
-.magic-filter-button{appearance:none;flex:1 1 0;min-width:0;min-height:36px;padding:7px 10px;border:1px solid transparent;border-radius:7px;background:transparent;color:#bca992;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer}
-.magic-filter-button[aria-pressed="true"]{background:linear-gradient(145deg,#805d3e,#59402d);border-color:#d4a36a90;color:#ffe5c0;box-shadow:0 2px 6px #0004}
-.magic-catalog-row{display:flex;align-items:center;gap:7px;padding:8px 7px;border-bottom:1px solid #b08a5b27}
-.magic-catalog-name{flex:1 1 auto;min-width:90px;color:#f0ddc2;font-size:12px;font-weight:630;overflow-wrap:anywhere}
-.magic-catalog-row>.btn{flex:0 0 auto;width:auto;min-height:32px;padding:5px 9px;font-size:11px}
-.magic-catalog-row>.hint{font-size:11px}
-.magic-catalog-row>.magic-known-toggle{border-color:#bd996254;color:#ddc29b;background:#47352666}
+.magic-slot-popup-actions>.btn{min-width:0;min-height:39px;white-space:normal;border-radius:8px}
+.magic-slot-spells{display:grid;gap:8px;padding-top:12px;border-top:1px solid #ac88583d}
+.magic-slot-spells>h3{margin:0;color:#f0d6ae;font-size:13px}
+.magic-slot-spells .magic-slot-castable{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;
+  padding:5px 9px;min-height:42px;border:0;border-bottom:1px solid #a4845a22;
+  border-radius:0;background:transparent;box-shadow:none;
+}
+.magic-slot-spells .magic-slot-castable:last-child{border-bottom:0}
+.magic-slot-spell-name{
+  appearance:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-align:left;border:0;padding:5px 0;background:transparent;
+  color:#ecd6b9;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer;
+}
+.magic-slot-spell-name:hover,.magic-slot-spell-name:focus-visible{color:#fbe2b7;text-decoration:underline}
+.magic-slot-cast-button{
+  appearance:none;min-height:31px;padding:5px 13px;border-radius:8px;
+  border:1px solid #c49c69a0;background:linear-gradient(145deg,#846444,#533c29);
+  color:#ffdeb0;font:700 11px system-ui,sans-serif;cursor:pointer;
+}
+.magic-slot-cast-button:hover,.magic-slot-cast-button:focus-visible{
+  border-color:#edc187;background:#896643;color:#ffebca;
+}
 .magic-origin-tracker{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:8px 0;border:1px solid #b1895538;border-radius:9px;background:#261f1b73;color:#cdb89d;font-size:12px}
 .magic-origin-tracker .magic-tracker-controls{display:flex;gap:8px;align-items:center}
 .magic-origin-tracker .magic-tracker-controls button{border-radius:7px;min-width:33px;min-height:31px;border:1px solid #a8845e88;background:#644a33;color:#e4d0ae;font-weight:700;cursor:pointer}
 .magic-origin-tracker .magic-tracker-controls button:disabled{opacity:.45}
-@media(max-width:430px){.magic-catalog-row{flex-wrap:wrap}.magic-catalog-name{flex-basis:100%}.magic-catalog-row>.btn{flex:1 1 auto}}
-
+@media(max-width:430px){
+  dialog.magic-tools-dialog{padding:11px}
+  .magic-tools-dialog .magic-tools-head{top:-11px;margin:-11px -11px 6px;padding:11px 13px}
+  .magic-editor-results .magic-catalog-row{gap:6px;padding:4px 7px}
+  .magic-editor-results .magic-catalog-action{min-width:65px;padding:5px 7px}
+}
 /* Creature forms share the persistent identity bar. */
 .topbar .header-forms{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;padding:10px;border:1px solid #b18b5959;border-radius:50%;background:radial-gradient(circle at 35% 20%,#66503e,#302723 75%);color:#e4c695;box-shadow:inset 0 1px #ffe4ab26,0 2px 8px #0005;cursor:pointer}
 .topbar .header-forms[hidden]{display:none}.topbar .header-forms .vtt-action-glyph{width:25px;height:25px}.topbar .header-forms.has-variant{border-color:#e7bd7b;background:radial-gradient(circle at 35% 20%,#84613d,#403025 75%);box-shadow:inset 0 0 0 2px #efca8a1c,0 0 12px #e0b56c22}
