@@ -593,7 +593,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
    source.insertAdjacentHTML('beforeend',detail);
   }
-  const abilityButtons=key=>powerRows.filter(row=>row.key===key).map(row=>{
+  const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key)).map(row=>{
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    const disabled=row.cost>0&&(!tracker||tracker.disabled||available<row.cost);
@@ -651,11 +651,87 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
     '</div>'+abilityButtons(key)+'</div>';
   }).join('');
-  const untracked=['missing','free'].map(key=>{
-   const powers=abilityButtons(key);
-   return powers?'<div class="play-resource-ungrouped" data-ability-resource="'+esc(key)+'"><div class="play-resource"><span class="play-resource-heading">'+
-    (key==='free'?'Nessun costo':'Tracker non disponibile')+'</span></div>'+powers+'</div>':'';
-  }).join('');
+  // Unlimited abilities belong to their granting trait rather than to a
+  // fictitious free-use tracker. Keep paid powers under their real trackers.
+  const freeByTrait=new Map();
+  for(const row of powerRows.filter(row=>row.key==='free')){
+   const action=row.classAction||{},power=row.power||{},grant=row.grant||{};
+   const originId=grant.origin_id||power.feature_id||power.origin_id||
+    action.origin_id||action.feature_id||'';
+   const trait=featureFor([originId],action.feature_name||row.name);
+   const key=trait?.origin_id||originId||'unattributed:'+row.id;
+   if(!freeByTrait.has(key))freeByTrait.set(key,{
+    id:key,name:trait?.name||grant.origin_name||power.origin_name||
+     action.feature_name||row.name,rows:[]});
+   freeByTrait.get(key).rows.push(row);
+  }
+  const privilegeGroup=(id,title,body,sourceId='',status='Privilegio')=>
+   '<div class="play-resource-ungrouped play-resource-privilege" data-resource-privilege="'+esc(id)+'">'+
+    '<div class="play-resource"><span class="play-resource-copy">'+
+     '<strong class="play-resource-name">'+esc(title)+'</strong>'+
+     '<small class="play-resource-recovery">'+esc(status)+'</small></span>'+
+     (sourceId?'<button type="button" class="play-resource-trait-link" data-act="power-trait" data-origin-id="'+esc(sourceId)+'" aria-label="Apri il tratto '+esc(title)+'">'+icon('details')+'</button>':'')+
+    '</div>'+body+'</div>';
+  const freePrivileges=[...freeByTrait.values()].map(group=>
+   privilegeGroup(group.id,group.name,abilityButtons('free',group.rows),
+    group.id.startsWith('unattributed:')?'':group.id));
+  const actionLink=(id,name,time,available=true,extra='')=>
+   '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+'" data-rule-action="'+esc(id)+'">'+
+    '<button type="button" class="play-resource-power-open" data-act="battle-action-jump" data-action-id="'+esc(id)+'"'+
+    (available?'':' disabled')+' aria-label="'+esc(name)+'">'+icon(actionGlyphKey({id,name,time}))+
+    '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
+     available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):'Requisiti non soddisfatti'))+
+    '</small></span></button></div>';
+  // A rule is always listed here but is enabled only if its requirements are
+  // met. These are *not* consumable trackers or synthetic class privileges.
+  const basic=view.battleActions?.basicActions||[];
+  const base=id=>basic.find(row=>row.id===id)||{id,available:false};
+  const rulesOfBase=[
+   ['opportunity','Attacco di opportunità','reaction'],
+   ['spell_cast','Lanciare un incantesimo','action'],
+   ['two_weapon','Attacco con arma secondaria','bonus']
+  ];
+  const basicRules=privilegeGroup('basic-rules','Regole di base',
+   rulesOfBase.map(([id,name,time])=>actionLink(id,name,time,!!base(id).available)).join(''),
+   '','Azioni disponibili in base ai requisiti');
+  // The highest active Extra Attack grant controls the Attack action, not the
+  // sum of all class bonuses. Its owner receives a visible no-cost group.
+  const attackGrants=(d.attack_count_benefits||[]).filter(row=>Number(row.attacks_per_action)>1);
+  const bestCount=Math.max(1,...attackGrants.map(row=>Number(row.attacks_per_action)));
+  const governing=attackGrants.filter(row=>Number(row.attacks_per_action)===bestCount);
+  const multiattackPrivileges=governing.map(grant=>{
+   const trait=featureFor([grant.origin_id],grant.origin_name);
+   return privilegeGroup('multiattack:'+grant.id,trait?.name||grant.origin_name||'Multiattacco',
+    actionLink('attack','Attaccare','action',true,'×'+bestCount+' attacchi per azione'),
+    trait?.origin_id||grant.origin_id,'Multiattacco · '+bestCount+' attacchi');
+  });
+  // Trait-specific timing overrides (for example Cunning Action) are
+  // capacities of the feature that changes the normal action economy.
+  const changedByTrait=new Map();
+  for(const action of view.battleActions?.overriddenActions||[]){
+   const id=action.action_change_origin,trait=featureFor([id],action.action_change_feature);
+   const key=trait?.origin_id||id;
+   if(!key||!action.id||changedByTrait.get(key)?.some(a=>a.id===action.id))continue;
+   if(!changedByTrait.has(key))changedByTrait.set(key,[]);
+   changedByTrait.get(key).push(action);
+  }
+  const overriddenPrivileges=[...changedByTrait.entries()].map(([id,actions])=>{
+   const trait=featureFor([id],actions[0].action_change_feature);
+   const title=trait?.name||actions[0].action_change_feature||'Privilegio';
+   const names={action:'Azione',bonus:'Azione bonus',reaction:'Reazione',free:'Nessun costo',movement:'Movimento'};
+   return privilegeGroup('timing:'+id,title,actions.map(action=>
+    actionLink(action.id,action.name,action.time,true,
+     (names[action.original_time]||'Azione')+' → '+(names[action.time]||action.time))).join(''),
+    trait?.origin_id||id,'Modifica il tipo di azione');
+  });
+  // Missing trackers are exceptional and must remain visible, not be
+  // misrepresented as cost-free privileges.
+  const missingPowers=abilityButtons('missing');
+  const untracked=(missingPowers?'<div class="play-resource-ungrouped" data-ability-resource="missing">'+
+   '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
+    missingPowers+'</div>':'')+
+   freePrivileges.join('')+multiattackPrivileges.join('')+
+   overriddenPrivileges.join('')+basicRules;
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
    '<details class="play-battle-disclosure" data-battle-action="'+esc(key)+'"'+(open?' open':'')+'>'+
@@ -669,13 +745,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    btn('Mostra solo privilegi di classe','proficiency','data-act="battle-toggle-class-only" aria-pressed="'+onlyClass+'"','<span>Solo privilegi</span>')+'</div>';
   if(resources+untracked||!onlyClass)html+=disclosure('resources','Risorse','reset',
    resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
-  if(view.battleActions?.attacks||!onlyClass)html+=disclosure('attacks','Attacchi fisici','weapon',
+  if(view.battleActions?.attacks||!onlyClass)html+=disclosure('attacks','Attacchi','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
-  if(view.battleActions?.others||!onlyClass)html+=disclosure('others','Altre azioni','hand',
+  if(view.battleActions?.others||!onlyClass)html+=disclosure('others','Azioni','hand',
    view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
-  if(view.battleActions?.movement||!onlyClass)html+=disclosure('movement','Spostamento','dash',
-   view.battleActions?.movement||'<p class="play-empty">Nessuna opzione di spostamento.</p>');
   if(view.battleActions?.checks||!onlyClass)html+=disclosure('checks','Prove abilità','skill',
    view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
   if(view.battleActions?.spells||!onlyClass)html+=disclosure('spells','Incantesimi','spell_cast',
