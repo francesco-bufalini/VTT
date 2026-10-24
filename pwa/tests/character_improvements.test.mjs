@@ -100,7 +100,10 @@ test('class-only action panels hide D&D generic options but preserve equipped at
  const projected={attacks:[{id:'item:sword',name:'Spada',slot:'main',hit:4,damage:'1d8',melee:true,range_feet:5}],skills:{}};
  const all=battleActionPanels(c,projected,[],[],general,[],[],false);
  const personal=battleActionPanels(c,projected,[],[],general,[],[],true);
- assert.match(all.movement,/Scattare/);
+ assert.match(all.others,/Scattare/);
+ assert(!personal.others.includes('Scattare'));
+ assert(personal.others.includes('Attaccare'));
+ assert.equal(all.movement,'');
  assert.equal(personal.movement,'');
  assert.match(personal.attacks,/Spada/);
  assert.equal(personal.checks,'');
