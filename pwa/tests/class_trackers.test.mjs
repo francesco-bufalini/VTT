@@ -163,6 +163,25 @@ test("2024 Ranger tracks only the limited Tireless action and Nature's Veil uses
  assert.equal(veil?.max,1);
  assert.equal(veil?.recharge,"long_rest");
 });
+test("2024 recovery features keep separate trait counters and edition identities",()=>{
+ const rowsAt=(name,source,level)=>classResourceTrackers({kind:"character",level,
+  classes:[{name,source,level}]},index,{classes:index.resource_overrides});
+ for(const [name,level,feature,id] of [
+  ["Barbarian",15,"Persistent Rage","class:barbarian:xphb:persistent_rage"],
+  ["Monk",2,"Uncanny Metabolism","class:monk:xphb:uncanny_metabolism"],
+  ["Warlock",2,"Magical Cunning","class:warlock:xphb:magical_cunning"]
+ ]){
+  assert.equal(rowsAt(name,"XPHB",level-1).some(row=>row.name===feature),false);
+  const row=rowsAt(name,"XPHB",level).find(row=>row.name===feature);
+  assert.equal(row?.id,id);
+  assert.equal(row?.origin,feature);
+  assert.equal(row?.max,1);
+  assert.equal(row?.recharge,"long_rest");
+  assert.equal(rowsAt(name,"PHB",level).some(row=>row.name===feature),false);
+ }
+ assert.equal(rowsAt("Monk","XPHB",2).find(row=>row.name==="Focus Points")?.max,2);
+ assert.equal(rowsAt("Barbarian","XPHB",15).find(row=>row.name==="Rages")?.max,5);
+});
 test("saved custom trackers coexist with typed class resources and preserve other counters",()=>{
  const record={kind:"character",level:2,
   classes:[{name:"Druid",source:"PHB",level:2}],

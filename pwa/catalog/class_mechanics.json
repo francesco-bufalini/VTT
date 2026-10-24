@@ -2520,6 +2520,60 @@
           ]
         }
       ]
+    },
+    {
+      "class": "Barbarian",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Persistent Rage",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Persistent Rage (Barbarian XPHB, level 15); initiative-triggered restoration of Rage uses only",
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Uncanny Metabolism",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Uncanny Metabolism (Monk XPHB, level 2); initiative-triggered recovery, with Focus Points and healing applied separately",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Magical Cunning",
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Magical Cunning (Warlock XPHB, level 2); rite use only, Pact Magic slot recovery applied separately",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        }
+      ]
     }
   ],
   "resource_overrides_meta": {
@@ -2528,7 +2582,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Bard, Fighter, Paladin, Ranger, Rogue, Sorcerer and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "monster_resources": [
     {

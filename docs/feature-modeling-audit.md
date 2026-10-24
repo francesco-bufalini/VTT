@@ -302,3 +302,97 @@ Nessuna di queste viene dedotta dal numero di usi salvati.
 Per i lotti successivi, partire dalle altre classi e specie PHB/XPHB. Prima
 di marcare una voce come automatica, verificare fonte/edizione, identità del
 tratto, scelta attiva, progressione, recupero e compatibilità Android/PWA.
+
+## Lotto 2026-10-24: Barbarian, Monk e Warlock XPHB
+
+Verificate una per una le **79 voci** `class_features` delle tre classi
+(Barbarian 26, Monk 34, Warlock 19; rispettivamente 20, 29 e 11 nomi
+distinti). La tabella di classe 5etools contiene già le capacità di **Rages**
+e **Focus Points**, mentre Pact Magic resta nel modello degli incantesimi.
+Nel supplemento sono stati aggiunti solo tre usi giornalieri con un tratto
+concedente esatto: `Persistent Rage`, `Uncanny Metabolism` e `Magical Cunning`.
+I tre contatori registrano l'attivazione; non applicano automaticamente
+recupero di altre risorse, cura o effetti in combattimento.
+
+| Barbarian XPHB (livello) | Esito |
+| --- | --- |
+| Rage (1) | Capacità Rages e Rage Damage già nella tabella XPHB; un uso rientra al riposo breve, tutti al lungo. Il recupero parziale e le condizioni di mantenimento restano da modellare. |
+| Unarmored Defense (1) | CA 10 + DES + COS solo senza armatura; scudo consentito. Non è un bonus di CA incondizionato. |
+| Weapon Mastery (1) | Due tipi d'arma scelti, capacità progressiva già in tabella; mantenere la scelta. |
+| Danger Sense (2) | Vantaggio ai TS DES salvo Incapacitated; condizione da valutare al tiro. |
+| Reckless Attack (2) | Scelta al primo attacco del turno e vantaggi reciproci temporanei. |
+| Barbarian Subclass (3) | Segnaposto; gli effetti appartengono ai tratti della sottoclasse scelta. |
+| Primal Knowledge (3) | Competenza in un'abilità scelta; sostituzione della caratteristica per prove specifiche mentre Rage è attiva. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento, nessun effetto comune da assegnare. |
+| Extra Attack (5) | Due attacchi nell'azione Attack, non due usi. |
+| Fast Movement (5) | Velocità condizionata all'assenza di armatura pesante. |
+| Subclass Feature (6, 10, 14) | Segnaposto, nessun privilegio di classe generico da assegnare. |
+| Feral Instinct (7) | Vantaggio all'iniziativa, non contatore. |
+| Instinctive Pounce (7) | Movimento durante l'azione bonus che avvia Rage. |
+| Brutal Strike (9) | Rinuncia contestuale al vantaggio di Reckless Attack, danno extra e opzione d'effetto sul colpo. |
+| Relentless Rage (11) | TS COS quando si scende a 0 PF durante Rage; CD crescente dopo gli usi e azzerata al riposo breve/lungo, non usi fissi. |
+| Improved Brutal Strike (13, 17) | Opzioni aggiuntive, poi dado di danno maggiore e due effetti distinti per colpo. |
+| Persistent Rage (15) | **Dato aggiunto:** un'attivazione al tiro di iniziativa per recuperare gli usi Rage, recupero del privilegio al riposo lungo; recupero di Rage e durata restano da applicare. |
+| Indomitable Might (18) | Soglia del totale di prova/TS Forza rispetto al punteggio di Forza. |
+| Epic Boon (19) | Scelta del talento. |
+| Primal Champion (20) | Aumento di Forza e Costituzione con tetto specifico; non una risorsa. |
+
+| Monk XPHB (livello) | Esito |
+| --- | --- |
+| Bonus Unarmed Strike (1) | Colpo senz'armi come azione bonus; economia delle azioni. |
+| Dexterous Attacks (1) | DES alternativa a FOR per attacchi/danni e CD di Grapple/Shove, solo nei casi descritti. |
+| Martial Arts (1) | Definizione delle armi ammesse e relative regole, non pool. |
+| Martial Arts Die (1) | Dado progressivo dalla tabella di classe; non effetto universale ai danni. |
+| Unarmored Defense (1) | CA 10 + DES + SAG solo senza armatura né scudo. |
+| Flurry of Blows (2) | Un Focus Point per due colpi; usare il pool comune `Monk's Focus`. |
+| Monk's Focus (2) | Focus Points progressivi già in tabella XPHB, recupero breve/lungo; CD dei TS derivata da SAG e competenza. |
+| Patient Defense (2) | Disengage gratuito come azione bonus oppure Focus Point per Disengage e Dodge; scelta contestuale. |
+| Step of the Wind (2) | Dash gratuito come azione bonus oppure Focus Point per Dash, Disengage e salto; scelta contestuale. |
+| Unarmored Movement (2) | Velocità progressiva condizionata a niente armatura/scudo. |
+| Uncanny Metabolism (2) | **Dato aggiunto:** un uso per riposo lungo al tiro d'iniziativa; Focus Points e PF recuperati restano effetti separati. |
+| Deflect Attacks (3) | Reazione a un colpo e riduzione del danno; eventuale reindirizzamento spende Focus solo se il danno scende a zero. |
+| Monk Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Slow Fall (4) | Reazione alla caduta e riduzione del danno in base al livello. |
+| Extra Attack (5) | Due attacchi nell'azione Attack. |
+| Stunning Strike (5) | Un Focus Point, massimo una volta per turno, TS ed esiti diversi su successo/fallimento. |
+| Empowered Strikes (6) | Tipo di danno scelto per il colpo senz'armi. |
+| Subclass Feature (6, 11, 17) | Segnaposto; origine nella sottoclasse effettiva. |
+| Evasion (7) | Danno dipendente dall'esito del TS DES e dall'assenza di Incapacitated. |
+| Acrobatic Movement (9) | Movimento su superfici/liquidi durante il turno, condizionato all'equipaggiamento. |
+| Heightened Focus (10) | Modifica le tre opzioni che spendono Focus, senza creare un nuovo pool. |
+| Self-Restoration (10) | Rimozione di una condizione ammessa a fine turno; esenzione specifica da Exhaustion. |
+| Deflect Energy (13) | Allarga i tipi di danno di Deflect Attacks, senza duplicarne il tratto. |
+| Disciplined Survivor (14) | Competenza a tutti i TS e ritentativo dopo fallimento pagando Focus. |
+| Perfect Focus (15) | Recupero condizionato all'iniziativa soltanto se Uncanny Metabolism non è usato e Focus è a 3 o meno. |
+| Superior Defense (18) | Tre Focus Points e resistenza temporanea con durata/interruzione. |
+| Epic Boon (19) | Scelta del talento. |
+| Body and Mind (20) | Aumento di DES e SAG con tetto specifico. |
+
+| Warlock XPHB (livello) | Esito |
+| --- | --- |
+| Eldritch Invocation Options (1) | Elenco di opzioni, non concessione di tutte le invocazioni. |
+| Eldritch Invocations (1) | Scelte progressive con prerequisiti, sostituzione e divieto di duplicati salvo eccezioni. |
+| Pact Magic (1) | Slot e incantesimi nel modello magico, non nuovo contatore di privilegio. |
+| Magical Cunning (2) | **Dato aggiunto:** un rito per riposo lungo; il recupero di slot Pact Magic fino a metà del massimo (arrotondato in alto) resta separato. |
+| Warlock Subclass (3) | Segnaposto della sottoclasse effettiva. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Subclass Feature (6, 10, 14) | Segnaposto, non effetto generico di classe. |
+| Contact Patron (9) | `Contact Other Plane` sempre preparato e lancio gratuito specifico una volta per riposo lungo; appartiene al flusso incantesimi. |
+| Mystic Arcanum (11, 13, 15, 17) | Quattro scelte di incantesimo di livelli diversi e lanci gratuiti distinti; non pool condiviso. |
+| Epic Boon (19) | Scelta del talento. |
+| Eldritch Master (20) | Cambia quanti slot recupera Magical Cunning, non aggiunge un uso. |
+
+### Da modellare separatamente
+
+- Recuperi **parziali** di Rage al riposo breve e recupero in iniziativa da
+  Persistent Rage, con le condizioni e la durata di Rage.
+- Incremento e azzeramento della CD di Relentless Rage fra i riposi; effetti
+  temporanei e scelte sul colpo di Reckless Attack e Brutal Strike.
+- Spesa contestuale di Focus Points e applicazione di colpi, TS, condizioni e
+  riduzioni del danno; guarigione/ricarica di Uncanny Metabolism e soglia di
+  Perfect Focus. Il contatore giornaliero da solo non li simula.
+- Ripristino dei Pact Magic slot da Magical Cunning (inclusa la modifica di
+  Eldritch Master), invocazioni scelte, Contact Patron e Mystic Arcanum nel
+  modello degli incantesimi. Nessun lancio gratuito è stato trasformato in
+  un privilegio generico o attribuito alla classe anziché al tratto.
