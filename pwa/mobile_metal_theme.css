@@ -1651,6 +1651,11 @@ input:disabled{opacity:.75;cursor:default}
 .magic-source-controls .magic-selection-button{flex:1 1 auto;width:auto;min-height:36px;padding:7px 10px;font-size:12px;text-align:center}
 .magic-selection-summary{margin:0;padding:4px 0;color:#e4cda9;font-size:12px;font-weight:650}
 .magic-selection-status{margin-left:auto;white-space:nowrap;font-size:11px;color:#d8c29b}
+.magic-spell-row .magic-known-cantrip-label{
+  flex:0 0 auto;margin-left:auto;padding:4px 7px;border:1px solid #a17d5145;
+  border-radius:7px;background:#6d573329;color:#dec6a0;
+  font:600 10px/1.2 system-ui,sans-serif;white-space:nowrap;
+}
 .magic-catalog-entry[disabled]{opacity:.66}
 .magic-selection-warning{margin:6px 0 9px;padding:8px 10px;border-left:3px solid #d9a45e;border-radius:4px;background:#b27d2830;color:#f4d5a5;font-size:12px;line-height:1.5}
 .magic-selection-current{padding:9px 0 11px;margin:0 0 12px;border-bottom:1px solid #a37b474b}
