@@ -101,10 +101,11 @@ test('inline capability presets are serializable and use the same section/filter
 test('portable full transformations expose monster traits and stats while preserving the archive identity',async()=>{
  const {collectTraitRows}=await import('../trait_projection.js');
  const stat={name:'Wolf',source:'MM',type:'beast',cr:'1/4',hp:{average:11},ac:[13],speed:{walk:40},str:12,dex:15,con:12,int:3,wis:12,cha:6,trait:[{name:'Keen Hearing',entries:['A published trait.']}],action:[{name:'Bite',entries:['Melee Weapon Attack: +4 to hit, reach 5 ft. Hit: 2d4 + 2 piercing damage.']}]};
- let c=base(),v=createVariant(c,{id:'wolf',preset:'polymorph'});
+ let c={...base(),conditions:['poisoned'],active_spell_context:{old:{spell_level:1}}},v=createVariant(c,{id:'wolf',preset:'polymorph'});
  v=importVariantSections(c,v,bestiarySheet(stat,{id:'wolf'}));c={...c,variants:[v],current_form_id:'wolf'};
  const effective=resolveVariant(c),out=calculateSheet(effective);
  assert.equal(effective.kind,'character');assert.equal(effective.id,'hero');assert.equal(effective.name,'Wolf');
+ assert.deepEqual(effective.conditions,[]);assert.deepEqual(effective.active_spell_context,{});assert.deepEqual(c.conditions,['poisoned']);
  assert.equal(out.values.hp,11);assert.equal(out.values.ac,13);assert.equal(out.values.speed,40);assert.equal(out.abilities.int.score,3);
  assert(out.features.some(f=>f.name==='Keen Hearing'));
  const traits=await collectTraitRows(effective,out);assert(traits.some(t=>t.name==='Keen Hearing'&&t.category==='mostro'));
