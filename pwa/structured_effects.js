@@ -199,7 +199,7 @@ export function collectStructuredFeatures(record,catalogs={}){
    // Isolated at the catalog-projection boundary; gameplay consumes a benefit.
    if(!/^multiattack$/i.test(String(row.name||'').trim()))return 0;
    const prose=JSON.stringify(row.entries||row.description||'');
-   const match=prose.match(/\\b(?:makes?|can make|effettua|può effettuare)\\s+(?:up to\\s+)?(\\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\\s+(?:(?:melee|ranged|weapon|spell|arma)\\s+)*attacks?\\b/i);
+   const match=prose.match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
    const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
    return match?Number(match[1])||words[match[1].toLowerCase()]||0:0;
   };
