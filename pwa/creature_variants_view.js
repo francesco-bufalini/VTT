@@ -1,5 +1,5 @@
 import {VARIANT_SECTIONS,VARIANT_PRESETS,createVariant,configureVariant,importVariantSections,bestiarySheet,creatureMatchesFilter,resolveVariant} from './creature_variants.js';
-import {openDialog,closeDialog,matchesSearch} from './ui_primitives.js';
+import {openDialog,closeDialog,dialogCloseButton,matchesSearch} from './ui_primitives.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function variantDescription(variant){
  const preset=VARIANT_PRESETS.find(p=>p.id===variant.preset);
@@ -17,12 +17,12 @@ export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=
  const close=()=>closeDialog(dialog,{remove:true});
  const draw=()=>{
   const c=read();
-  dialog.innerHTML='<header class="variants-head"><div><small>FORME</small><h2 id="variants-title">Forme e varianti</h2></div><button type="button" class="variants-icon-button vtt-popup-close" data-variant-close aria-label="Chiudi">×</button></header><div class="variants-content"><div class="variant-list vtt-selection-list">'+
+  dialog.innerHTML='<header class="variants-head"><div><small>FORME</small><h2 id="variants-title">Forme e varianti</h2></div>'+dialogCloseButton("variant-close","Chiudi","variants-icon-button")+'</header><div class="variants-content"><div class="variant-list vtt-selection-list">'+
    [{id:'',name:c.name},...(c.variants||[])].map(row=>{
     const current=(c.current_form_id||'')===row.id,name=row.id?formName(row):row.name;
     return '<article class="variant-card'+(current?' is-current':'')+'"'+(current?' aria-current="true"':'')+'><span class="variant-emblem" aria-hidden="true">'+icon(row.id?'wild_shape':'proficiency')+'</span><div class="variant-copy"><strong>'+esc(name)+'</strong><small>'+esc(row.id?variantDescription(row):'Base')+'</small></div><div class="variant-actions"><button type="button" class="variants-icon-button variant-use" data-variant-switch="'+esc(row.id)+'" aria-label="'+(current?'Forma attuale · '+esc(name):'Usa forma '+esc(name))+'" title="'+(current?'Forma attuale':'Usa forma')+'"'+(current?' disabled':'')+'>'+(current?'<span aria-hidden="true">✓</span>':icon('wild_shape'))+'</button>'+(row.id?'<button type="button" class="variants-icon-button" data-variant-edit="'+esc(row.id)+'" aria-label="Modifica '+esc(name)+'" title="Modifica">'+icon('settings')+'</button>':'')+'</div></article>';
    }).join('')+'</div><button type="button" class="btn variant-create" data-variant-new>'+icon('increase')+'<span>Crea variante</span></button><section data-variant-editor></section></div>';
-  dialog.querySelector('[data-variant-close]').onclick=close;
+  dialog.querySelector('[data-act="variant-close"]').onclick=close;
   dialog.querySelector('[data-variant-new]').onclick=()=>{draft=createVariant(c,{preset:'alias',name:'Nuova variante'});edit();};
   dialog.querySelectorAll('[data-variant-switch]').forEach(b=>b.onclick=guard(async()=>{await switchForm(b.dataset.variantSwitch);draw();}));
   dialog.querySelectorAll('[data-variant-edit]').forEach(b=>b.onclick=()=>{draft=structuredClone(c.variants.find(v=>v.id===b.dataset.variantEdit));draft.name=formName(draft);edit();});
