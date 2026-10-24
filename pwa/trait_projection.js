@@ -2,7 +2,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 // Read-only portable counterpart of CreatureFeatures.collect_features in the desktop.
 // Do not infer mechanics from descriptions: this projection only decides which
 // owned/level-available traits the PWA lists. Structured effects remain separate.
-import {localClasses,SKILLS} from './sheet_rules.js';
+import {localClasses} from './sheet_rules.js';
 import {activeInfusions,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
 
@@ -325,96 +325,12 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   add(feature,{category,origin,origin_key:normalizedKey,level:feature.level||0,
    rank:2});
  }
- // Ordinary class/species/background proficiencies have a stable origin ID,
- // but no concrete feature ID. Give them a read-only trait representing
- // the granted competences instead of opening an unrelated class trait.
- const proficiencySources=new Map();
- for(const [key,sources] of Object.entries(calculated.proficiency_sources||{})){
-  const kind=key.split(':')[0];
-  if(!['skill','expertise','save'].includes(kind))continue;
-  for(const source of arr(sources)){
-   const id=String(source?.id||'');
-   if(!/^(class|race|subrace|background|feat)[|]/.test(id))continue;
-   if(!proficiencySources.has(id))proficiencySources.set(id,{name:source.name,grants:new Set()});
-   proficiencySources.get(id).grants.add(key);
-  }
- }
- for(const [id,source] of proficiencySources){
-  const normId=id.toLowerCase();
-  const anchor=rows.find(row=>norm(row.origin_key)===normId)||
-    rows.find(row=>normId.startsWith('race|')&&row.category==='razza'&&
-      norm(row.origin).endsWith(norm(id.split('|').slice(2).join('|'))))||
-    rows.find(row=>normId.startsWith('subrace|')&&row.category==='razza'&&
-      norm(row.origin).includes(norm(record.species)));
-  const idGroup=id.split('|')[0];
-  const category=anchor?.category||({class:'classi',race:'razza',subrace:'razza',
-    background:'background',feat:'talenti'}[idGroup]||'altro');
-  const names=[...source.grants].map(key=>{
-   const [kind,...parts]=key.split(':');
-   const name=parts.join(':');
-   const localized=SKILLS.find(([key])=>key===name)?.[1]||name;
-   const label=kind==='save'?'Tiro salvezza':kind==='expertise'?'Maestria':'Abilità';
-   return label+' · '+(kind==='save'?({str:'Forza',dex:'Destrezza',con:'Costituzione',
-     int:'Intelligenza',wis:'Saggezza',cha:'Carisma'}[name]||name):localized);
-  });
-  rows.push({name:'Competenze',entries:names.join(' · '),
-    category,origin:anchor?.origin||String(source.name||id),
-    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,
-    rank:2,feature_origin:'',proficiency_origin:id,
-    key:'proficiency:'+id,inactive:record.origin_enabled?.[id]===false||
-      arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled===true)});
- }
- // Older and manually entered proficiencies can lack an origin ID. Represent
- // them with one explicit, non-fabricated Competenze trait so clicking the
- // provenance never opens an unrelated "Add bonus" form.
- const unassigned=Object.entries(calculated.proficiency_sources||{})
-   .filter(([key,sources])=>['skill','expertise','save','weapon'].includes(key.split(':')[0])&&
-     !arr(sources).length && arr(calculated.proficiencies).includes(key))
-   .map(([key])=>key);
- if(unassigned.length){
-   rows.push({name:'Competenze',category:'altro',origin:'Competenze senza origine',
-     entries:unassigned.map(key=>{
-       const [kind,...parts]=key.split(':');
-       const label=SKILLS.find(([id])=>id===parts.join(':'))?.[1]||parts.join(':');
-       return (kind==='expertise'?'Maestria':kind==='save'?'Tiro salvezza':kind==='weapon'?'Armi':'Abilità')+' · '+label;
-     }).join(' · '),origin_key:'proficiency:unattributed',level:0,rank:2,
-     feature_origin:'',proficiency_origin:'proficiency:unattributed',
-     key:'proficiency:unattributed',inactive:false});
- }
- // Preserve an explicitly disabled proficiency trait even when its calculated
- // grants disappear. Otherwise a user could disable it but never reopen the
- // popup to reenable it after reloading the PWA.
- for(const [key,enabled] of Object.entries(record.trait_enabled||{})){
-  if(enabled!==false||!key.startsWith('proficiency:')||rows.some(row=>row.key===key))continue;
-  const id=key.slice('proficiency:'.length),parts=id.split('|'),group=parts[0];
-  let category='',display='';
-  if(group==='class'){
-   const member=localClasses(record).find(row=>same(row.name,parts.slice(2).join('|'))&&
-     same(row.source,parts[1]));
-   if(!member)continue;
-   category='classi';display='Classe · '+member.name;
-  }else if(group==='race'&&same(record.species,parts.slice(2).join('|'))){
-   category='razza';display='Specie · '+record.species;
-  }else if(group==='subrace'&&same(record.subrace,parts.slice(2).join('|'))){
-   category='razza';display='Sottorazza · '+record.subrace;
-  }else if(group==='background'){
-   const owner=effectiveBackgrounds(record).find(row=>same(row.name,parts.slice(2).join('|')));
-   if(!owner)continue;
-   category='background';display='Background · '+owner.name;
-  }else if(group==='feat'){
-   const owner=arr(record.feats_catalog).find(row=>same(row.name,parts.slice(2).join('|')));
-   if(!owner)continue;
-   category='talenti';display='Talento · '+owner.name;
-  }else continue;
-  const anchor=rows.find(row=>row.category===category&&
-    (row.origin_key===id||category==='razza'&&
-      ((group==='race'&&row.origin_key.startsWith('species|'))||
-       (group==='subrace'&&row.origin_key.startsWith('subrace|')))))||
-    rows.find(row=>row.category===category&&row.origin===display);
-  rows.push({name:'Competenze',entries:'',category,origin:anchor?.origin||display,
-    origin_key:anchor?.origin_key||id,level:category==='classi'?1:0,rank:2,
-    inactive:true,feature_origin:'',proficiency_origin:id,key});
- }
+ // Proficiencies remain benefits on their actual granting trait.
+ // Origin-level grants belong to the existing class/species/background/feat
+ // overview and feature-level grants to the matching concrete feature.
+ // Manual proficiencies without a named origin are shown in Altre competenze.
+ // Old trait_enabled["proficiency:<id>"] values are legacy metadata, not a
+ // reason to recreate a separate and duplicated "Competenze" trait.
  rows.sort((a,b)=>
   CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||
   (a.category==='razza'&&b.category==='razza'?
