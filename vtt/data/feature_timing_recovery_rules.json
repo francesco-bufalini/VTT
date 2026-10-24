@@ -5,7 +5,7 @@
     "FightClub5eXML/class-druid-phb.xml",
     "FightClub5eXML/class-bard-phb.xml"
   ],
-  "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use.",
+  "note": "Validated class/edition/subclass activation alternatives and full/partial/limited recovery. Runtime uses exact structured identifiers; text and tags are informative only. Partial recovery is not a short-rest reset. Optional recovery requires explicit use. Attack-count benefits use their granting feature and never stack: highest active attacks_per_action wins.",
   "actions": [
     {
       "id": "druid_phb_wild_shape",
@@ -363,6 +363,198 @@
       "event": "short_rest",
       "mode": "full",
       "feature": "Focus Points"
+    }
+  ],
+  "attack_count_grants": [
+    {
+      "class_name": "Barbarian",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Monk",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "feature": "Extra Attack (2)",
+      "min_level": 11,
+      "attacks_per_action": 3
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "PHB",
+      "feature": "Extra Attack (3)",
+      "min_level": 20,
+      "attacks_per_action": 4
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Valor"
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Swords"
+    },
+    {
+      "class_name": "Wizard",
+      "class_source": "PHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Bladesinging"
+    },
+    {
+      "class_name": "Barbarian",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Monk",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Paladin",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Ranger",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "XPHB",
+      "feature": "Extra Attack (2)",
+      "min_level": 11,
+      "attacks_per_action": 3
+    },
+    {
+      "class_name": "Fighter",
+      "class_source": "XPHB",
+      "feature": "Extra Attack (3)",
+      "min_level": 20,
+      "attacks_per_action": 4
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Valor"
+    },
+    {
+      "class_name": "Bard",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Swords"
+    },
+    {
+      "class_name": "Wizard",
+      "class_source": "XPHB",
+      "feature": "Extra Attack",
+      "min_level": 6,
+      "attacks_per_action": 2,
+      "subclass": "Bladesinging"
+    },
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2,
+      "subclass": "Armorer"
+    },
+    {
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "feature": "Extra Attack",
+      "min_level": 5,
+      "attacks_per_action": 2,
+      "subclass": "Battle Smith"
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "feature": "Thirsting Blade",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "PHB",
+      "feature": "Devouring Blade",
+      "min_level": 12,
+      "attacks_per_action": 3
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "XPHB",
+      "feature": "Thirsting Blade",
+      "min_level": 5,
+      "attacks_per_action": 2
+    },
+    {
+      "class_name": "Warlock",
+      "class_source": "XPHB",
+      "feature": "Devouring Blade",
+      "min_level": 12,
+      "attacks_per_action": 3
     }
   ]
 }

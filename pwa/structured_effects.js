@@ -192,6 +192,29 @@ export function numericGrant(sid,name,field,target,value,suffix=""){
 // data-driven projections, not inferred mechanics from English descriptions.
 export function collectStructuredFeatures(record,catalogs={}){
   const results=[],seen=new Set();
+  const attackRules=array(catalogs.featureRules?.attack_count_grants);
+  const subclassKey=value=>norm(value).replace(/^(?:college of |school of |circle of |way of |oath of |order of |the )/,'');
+  const legacyMonsterAttacks=row=>{
+   // Compatibility with older 5etools monster records lacking typed counts.
+   // Isolated at the catalog-projection boundary; gameplay consumes a benefit.
+   if(!/^multiattack$/i.test(String(row.name||'').trim()))return 0;
+   const prose=JSON.stringify(row.entries||row.description||'');
+   const match=prose.match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
+   const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
+   return match?Number(match[1])||words[match[1].toLowerCase()]||0:0;
+  };
+  const attackCount=(row,origin,level,className,classSource)=>{
+   const direct=Number(row.attacks_per_action);
+   if(Number.isSafeInteger(direct)&&direct>=2)return direct;
+   if(origin.startsWith('monster|action'))return legacyMonsterAttacks(row);
+   const originSubclass=origin.includes('|subclass|')?
+     origin.split('|subclass|')[1].split('|')[0]:'';
+   const found=attackRules.find(rule=>match(rule.class_name,className)&&
+     match(rule.class_source,classSource)&&match(rule.feature,row.name)&&
+     level>=Number(rule.min_level||1)&&
+     (!rule.subclass||originSubclass&&subclassKey(rule.subclass)===subclassKey(originSubclass)));
+   return Number(found?.attacks_per_action)||0;
+  };
   const members=classMembers(record),total=Number(record.level??members.reduce((n,c)=>n+Math.max(0,Number(c.level)||0),0)??1)||1;
   const classLevel=(name,source)=>members.filter(c=>match(c.name,name)&&(!source||!c.source||match(c.source,source)))
     .reduce((n,c)=>Math.max(n,Number(c.level)||0),0);
@@ -202,9 +225,12 @@ export function collectStructuredFeatures(record,catalogs={}){
     if(at<Number(gate.min_level||0)||gate.max_level!==undefined&&gate.max_level!==""&&at>Number(gate.max_level))return;
     const id=String(row.id||"").trim()||origin+"|"+level+"|"+norm(row.name);
     const key=origin+"|"+id;if(seen.has(key))return;seen.add(key);
+    const attacksPerAction=attackCount(row,origin,level,className,classSource);
     results.push({...row,key,origin_key:origin,origin_id:"feature:"+key,
       level,requirements:gate,inactive:inactive||row.inactive===true,
-      bonuses:array(row.bonuses),action_type:row.action_type||row.activation_type||row.activation||row.time||"",
+      bonuses:array(row.bonuses),
+      ...(attacksPerAction>=2?{attacks_per_action:attacksPerAction}:{}),
+      action_type:row.action_type||row.activation_type||row.activation||row.time||"",
       action_kind:row.action_kind||"Capacità"});
   }
   if(record.kind==="monster"){
@@ -280,6 +306,22 @@ export function collectStructuredFeatures(record,catalogs={}){
       const at=Number(row?.level??1);
       if(at>=1&&at<=level)append(row,origin,at,"class",name,source);
     }
+  }
+  // Invocations and other selected optional class traits are individual owned
+  // benefits, not permanent class-level grants. Only project choices which
+  // explicitly declare an attack-count grant in the structured catalogue.
+  for(const optional of array(record.optional_features_catalog)){
+    if(!optional?.name)continue;
+    const rule=attackRules.find(grant=>match(grant.feature,optional.name)&&
+      members.some(member=>match(member.name,grant.class_name)&&
+        match(member.source||record.class_source||selectedEdition,grant.class_source)&&
+        Number(member.level||0)>=Number(grant.min_level||1)));
+    const amount=Number(optional.attacks_per_action||rule?.attacks_per_action);
+    if(!Number.isSafeInteger(amount)||amount<2)continue;
+    const origin=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
+    // Use the same stable key as the optional-trait card in trait_projection.
+    append({...optional,id:'0|'+norm(optional.name),attacks_per_action:amount},
+      origin,0,'character','','',optional.disabled===true);
   }
   return results;
 }

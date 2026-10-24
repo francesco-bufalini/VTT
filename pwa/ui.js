@@ -1405,6 +1405,7 @@ function mountTraitBenefitDialog(){
    choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
  const trackerOptions=[['','Nessuno'],...(state.calculated?.trackers||[]).map(t=>[t.id,t.name])];
  const fields=[
+  ['attack_count',formInput('Numero totale di attacchi con Azione','attacks_per_action','Es. 2','number')],
   ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
      formInput('Bonus (numero, formula o dadi)','expression','Es. +2, proficiency, 1d4')+
      '<details class="trait-bonus-extra"><summary>Opzioni per dadi nei tiri</summary>'+
@@ -3384,18 +3385,17 @@ function organizeSheetPanels(){
       heading.append(manage);
     }
   }
-  // Preserve expanded combat cards across sheet rerenders. Opening a parent
-  // from its heading reveals the index first, without auto-opening its children.
+  // Opening a battle category also expands its action-timing groups.
+  // Ability-check categories remain independently collapsible.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.querySelector(':scope > summary')?.addEventListener('click',()=>{
       if(details.open)return;
-      for(const group of details.querySelectorAll(':scope > .play-battle-action-group')){
-        group.open=false;
-        const groupKey=group.dataset.actionAbility?'battle-ability:'+group.dataset.actionAbility:
-          'battle-timing:'+details.dataset.battleAction+':'+group.dataset.actionTiming;
-        state.disclosureState.set(groupKey,false);
+      for(const group of details.querySelectorAll(':scope > .play-battle-action-group[data-action-timing]')){
+        group.open=true;
+        const groupKey='battle-timing:'+details.dataset.battleAction+':'+group.dataset.actionTiming;
+        state.disclosureState.set(groupKey,true);
       }
     });
     details.addEventListener('toggle',()=>{

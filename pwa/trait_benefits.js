@@ -2,6 +2,7 @@
 // Use structured grants only; never extract mechanics from free-form descriptions.
 import {CLASS_FEATURE_RULES,classFeatureRollSources} from './feature_mechanics.js';
 import {resolveOwnedItem} from './item_controls.js';
+import {attackCountBenefits} from './attack_count_benefits.js';
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 const ABILITIES={str:'Forza',dex:'Destrezza',con:'Costituzione',int:'Intelligenza',wis:'Saggezza',cha:'Carisma'};
@@ -118,6 +119,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group.seen.has(key))return;
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
+ // Attack-count grants are non-additive benefits owned by individual traits.
+ const attackGrants=Array.isArray(calculated.attack_count_benefits)?
+   calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
+ for(const grant of attackGrants){
+  if(!belongs(grant))continue;
+  add('attack_count','Attacchi per azione','Attacchi disponibili',
+   '×'+grant.attacks_per_action,'attack_count:'+grant.id);
+ }
  const bonusSeen=new Set();
  const multipliers=new Map(Object.values(calculated.roll_components||{}).flat().map(row=>[row.id,row.multiplier]));
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){

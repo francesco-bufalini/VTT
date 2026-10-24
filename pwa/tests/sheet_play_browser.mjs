@@ -159,7 +159,8 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="abilities"]').count(),0,'Abilities belong beneath resources');
  assert.match(await otherPanel.locator('summary.play-battle-summary').textContent(),/Altre azioni/);
  await otherPanel.locator('summary.play-battle-summary').click();
- await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"]) > summary').click();
+ assert.equal(await otherPanel.locator('.play-battle-action-group:has([data-attack-id="search"])').getAttribute('open'),'',
+  'Opening Other Actions automatically expands its action-type subsections');
  const searchAction=otherPanel.locator('[data-attack-id="search"]');
  assert.equal(await searchAction.locator('[data-target="skill:perception"]').count(),1);
  assert.equal(await searchAction.locator('[data-target="skill:investigation"]').count(),1);
@@ -184,7 +185,8 @@ try{
  assert.equal(await spellPanel.locator('.action-economy-preview').count(),0,'Spell descriptions remain hidden until opened');
  const lightEntry=spellPanel.locator('[data-spell-id="spell:light|phb"]').first();
  assert.match(await lightEntry.textContent(),/Trucchetto/);
- await spellPanel.locator('[data-action-timing="action"] > summary').click();
+ assert.equal(await spellPanel.locator('[data-action-timing="action"]').getAttribute('open'),'',
+  'Opening Spells expands all of its action-type subsections');
  await lightEntry.locator('.play-battle-spell-open').click();
  assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
  assert(await page.locator('#action-cast-dialog .magic-spell-facts').count(),
@@ -403,7 +405,8 @@ try{
  await rollDialog.locator('.sheet-roll-close').click();
  assert.equal(await movementPanel.getAttribute('open'),null);
  await movementPanel.locator('summary.play-battle-summary').click();
- await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"]) > summary').click();
+ assert.equal(await movementPanel.locator('.play-battle-action-group:has([data-attack-id="escape_grapple"])').getAttribute('open'),'',
+  'Movement action-type subsections expand alongside their parent');
  const escapeAction=movementPanel.locator('[data-attack-id="escape_grapple"]');
  assert.equal(await escapeAction.locator('[data-target="skill:athletics"]').count(),1);
  assert.equal(await escapeAction.locator('[data-target="skill:acrobatics"]').count(),1);
