@@ -998,7 +998,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
  const filter=String(view.search||'').trim().toLocaleLowerCase('it');
- for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(filter);
+ for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
  const utilities=app.querySelector(':scope > .archive-tools');
  if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
