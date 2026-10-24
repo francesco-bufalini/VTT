@@ -146,8 +146,8 @@ function featureSpellReference(token,edition,catalog){
  if(found)return found;
  const [name,source='']=norm(token).split('#')[0].split('|');
  if(source&&!['phb','xphb'].includes(source))return '';
- const slug=name.replace(/['’]/g,'').replace(/[\\/-\\s]+/g,'_')
-   .replace(/[^a-z0-9_]/g,'').replace(/_+/g,'_');
+ const slug=name.replace(/['’]/g,'').replace(/[^a-z0-9]+/g,'_')
+   .replace(/_+/g,'_').replace(/^_|_$/g,'');
  if(!slug)return '';
  return source==='xphb'||!source&&edition==='2024'?slug:'phb2014_'+slug;
 }
