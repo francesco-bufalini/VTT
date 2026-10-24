@@ -34,6 +34,7 @@ import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvant
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
+import {inventorySearchResults} from "./inventory_search.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -89,7 +90,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
-  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
+  inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
   saving:false, saveError:"", pendingActions:0, busy:false };
 let tacticalViewer=null;
 const sessionMapViewer=new SessionMapViewer();
@@ -865,6 +866,70 @@ function promptVariantOverflow(creatureId,formId,overflow){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
  openDialog(dialog);
 }
+let inventoryCatalogRequest=null;
+function ensureInventorySearchCatalog(){
+  if(state.referenceCatalogs.items||inventoryCatalogRequest||state.inventorySearchCatalogError)return;
+  inventoryCatalogRequest=catalogEntries('items').then(rows=>{
+    state.referenceCatalogs.items=rows;
+    paintInventorySearchResults();
+  }).catch(error=>{
+    state.inventorySearchCatalogError=errorMessage(error);
+    paintInventorySearchResults();
+  }).finally(()=>{inventoryCatalogRequest=null;});
+}
+function paintInventorySearchResults(){
+  const area=app.querySelector('#inventory-search-results');
+  if(!area||state.sheet!=='inventory'||!state.editor)return;
+  const query=state.sheetSearch.get(state.creatureId+'|inventory')||'';
+  if(!query.trim()){
+    area.hidden=true;area.innerHTML='';
+    state.inventorySearchMatches=[];
+    return;
+  }
+  const results=inventorySearchResults(state.editor.read().inventory||[],
+    state.referenceCatalogs.items||[],query,state.inventorySearchLimit);
+  state.inventorySearchMatches=results;
+  area.hidden=false;
+  area.innerHTML=(results.length?results.map((row,i)=>
+    '<button type="button" class="inventory-search-result" data-act="inventory-search-result" data-search-result-index="'+i+
+    '" aria-label="'+esc(row.kind==='owned'?row.quantity+' copie possedute di '+row.name:'Aggiungi '+row.name)+'">'+
+    '<span class="inventory-search-result-count'+(row.kind==='catalog'?' is-add':'')+
+    '" aria-hidden="true">'+(row.kind==='owned'?'×'+row.quantity:'+')+'</span>'+
+    '<span class="inventory-search-result-copy"><strong>'+esc(row.name)+'</strong>'+
+    (row.source?'<small>'+esc(row.source)+'</small>':'')+'</span>'+
+    '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>').join(''):
+    '<p class="inventory-search-notice">Nessun oggetto corrispondente.</p>')+
+    (results.length===state.inventorySearchLimit?
+      '<button type="button" class="inventory-search-more" data-act="inventory-search-more">Mostra altri risultati</button>':'')+
+    (!state.referenceCatalogs.items?
+      '<p class="inventory-search-notice">'+
+      (state.inventorySearchCatalogError?
+        'Catalogo non disponibile. La ricerca negli oggetti posseduti resta attiva. '+
+        '<button type="button" data-act="inventory-search-retry">Riprova</button>':
+        'Caricamento del catalogo in corso…')+'</p>':'');
+}
+function openInventorySearchAddDialog(catalogIndex){
+  const entry=state.referenceCatalogs.items?.[catalogIndex],creature=state.editor?.read();
+  if(!entry||!creature||!entry.name)throw Error('Oggetto del catalogo non disponibile.');
+  app.querySelector('#inventory-search-add-dialog')?.remove();
+  const options=inventoryContainers(creature).map(row=>
+    '<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('');
+  const dialog=document.createElement('dialog');
+  dialog.id='inventory-search-add-dialog';
+  dialog.className='sheet-context-dialog inventory-search-add-dialog';
+  dialog.dataset.catalogIndex=String(catalogIndex);
+  dialog.innerHTML='<header class="sheet-context-head"><h2>Aggiungi '+esc(entry.name)+'</h2>'+
+    dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
+    '<div class="sheet-context-body inventory-search-add-fields">'+
+    '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
+    '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
+    '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  app.append(dialog);
+  openDialog(dialog);
+}
+
 async function editorView() {
   const creatureId=state.creatureId;
   if(!state.editor){
@@ -1000,6 +1065,9 @@ async function editorView() {
   }
   switch(state.sheet){
   case "inventory": {
+    // Catalog rows arrive independently: drawing the inventory must never wait
+    // for a large catalog download (or for an unavailable offline resource).
+    ensureInventorySearchCatalog();
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
     const containers=inventoryContainers(c),selectedTabs=setInventoryVisibleSections(c,state.inventorySelectedTabs);
     const nav=inventorySectionControls(c,selectedTabs);
@@ -3242,10 +3310,11 @@ function decorateSheetHeadings(){
 }
 function organizeSheetPanels(){
   if(state.page!=="library"||state.libraryMode||!state.editor)return;
-  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
+  state.sheetSources=mountPlaySheet(app,{creature:state.editor.read(),calculated:state.calculated,sheet:state.sheet,view:{inventorySelectedIndex:state.inventorySelectedIndex,inventoryHighlightedIndices:state.inventoryHighlightedIndices,inventorySubtab:state.inventorySubtab,inventorySelectedTabs:inventoryVisibleSections(state.editor.read()),search:state.sheetSearch.get(state.creatureId+"|"+state.sheet)||"",battleActions:state.sheet==="battle"?battleActionPanels(state.editor.read(),state.calculated,state.spellCatalog||[],state.featureActionOverrides||[],state.generalActionSupplements||[],readActionVariants(),abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated),state.battleOnlyClass):null,battleOnlyClass:state.battleOnlyClass,battleAbilities:state.sheet==="battle"?abilitiesForCreature(state.editor.read(),state.abilityCatalog||[],state.calculated):[],battleSpells:state.sheet==="battle"?state.spellCatalog||[]:[],battleTraits:state.sheet==="battle"?[
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  if(state.sheet==='inventory')paintInventorySearchResults();
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
@@ -3675,6 +3744,62 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='inventory-search-more'){
+    state.inventorySearchLimit+=75;
+    paintInventorySearchResults();return;
+  }
+  if(act==='inventory-search-retry'){
+    state.inventorySearchCatalogError='';
+    ensureInventorySearchCatalog();
+    paintInventorySearchResults();return;
+  }
+  if(act==='inventory-search-result'){
+    const item=state.inventorySearchMatches[Number(target.dataset.searchResultIndex)];
+    if(!item)throw Error('Risultato della ricerca non più disponibile.');
+    if(item.kind==='catalog'){openInventorySearchAddDialog(item.catalogIndex);return;}
+    const record=state.editor?.read();
+    if(!record||!item.indices.length)throw Error('Oggetto posseduto non disponibile.');
+    setInventoryVisibleSections(record,inventorySectionKeys(record));
+    state.inventorySubtab='items';
+    state.inventoryHighlightedIndices=item.indices.filter(index=>record.inventory?.[index]);
+    state.inventorySelectedIndex=state.inventoryHighlightedIndices[0]??-1;
+    state.sheetPopup='';
+    state.sheetSearch.set(state.creatureId+'|inventory','');
+    await render();
+    app.querySelector('[data-inventory-search-index="'+state.inventorySelectedIndex+'"]')?.
+      scrollIntoView?.({block:'center',behavior:'smooth'});
+    return;
+  }
+  if(act==='inventory-search-add-close'){
+    closeDialog(app.querySelector('#inventory-search-add-dialog'),{remove:true});return;
+  }
+  if(act==='inventory-search-add-confirm'){
+    const dialog=app.querySelector('#inventory-search-add-dialog');
+    const catalogIndex=Number(dialog?.dataset.catalogIndex);
+    const entry=state.referenceCatalogs.items?.[catalogIndex];
+    const record=state.editor?.read();
+    if(!dialog||!entry||!record)throw Error('Oggetto del catalogo non più disponibile.');
+    const quantity=Number(dialog.querySelector('#inventory-search-add-quantity')?.value);
+    if(!Number.isSafeInteger(quantity)||quantity<1||quantity>99999)
+      throw Error('La quantità deve essere compresa tra 1 e 99999.');
+    const destination=dialog.querySelector('#inventory-search-add-section')?.value;
+    if(!inventoryContainers(record).some(section=>section.id===destination))
+      throw Error('Sezione inventario non valida.');
+    const owned=createOwnedItem(entry,'pwa_'+crypto.randomUUID());
+    owned.quantity=quantity;
+    if(destination!==DEFAULT_INVENTORY_CONTAINER)owned.container_id=destination;
+    const index=(record.inventory||[]).length;
+    closeDialog(dialog,{remove:true});
+    state.inventoryHighlightedIndices=[index];
+    state.inventorySelectedIndex=index;
+    state.sheetSearch.set(state.creatureId+'|inventory','');
+    focusInventorySection(record,destination===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+destination);
+    await patch({inventory:[...(record.inventory||[]),owned]});
+    await render();
+    message(quantity+' × '+(entry.name||'Oggetto')+' aggiunti a '+
+      (inventoryContainers(record).find(row=>row.id===destination)?.name||'Zaino')+'.');
+    return;
+  }
   if(act==='catalog-more'){
     state.catalogResultLimit+=90;
     const results=app.querySelector('#catalog-results');
@@ -5745,6 +5870,11 @@ function listen(){
     }
     if(target?.matches('[data-play-search]')){
       state.sheetSearch.set(state.creatureId+'|'+state.sheet,target.value);
+      if(state.sheet==='inventory'){
+        state.inventorySearchLimit=75;
+        paintInventorySearchResults();
+        return;
+      }
       const query=target.value.trim().toLocaleLowerCase('it');
       for(const row of app.querySelectorAll('#sheet-play-view [data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(query);
       return;
