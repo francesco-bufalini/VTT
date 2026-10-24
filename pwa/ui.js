@@ -809,7 +809,7 @@ async function activateClassAbility(c,calculated,ability){
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
- dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
   const button=event.currentTarget;button.disabled=true;
@@ -849,7 +849,7 @@ function promptVariantOverflow(creatureId,formId,overflow){
  document.querySelector('#form-depleted-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='form-depleted-dialog';
  dialog.innerHTML='<header class="vtt-popup-heading"><h2>Punti ferita della variante esauriti</h2>'+dialogCloseButton('form-keep-close','Chiudi','')+'</header><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
- dialog.querySelectorAll('[data-form-keep],[data-act="form-keep-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelectorAll('[data-form-keep],[data-act="form-keep-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-form-restore]').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
@@ -3964,9 +3964,9 @@ async function handleAction(target){
     };
     search.addEventListener('input',()=>{miniatureLimit=60;paint();});
     results.addEventListener('click',event=>{
-      if(event.target.closest('[data-act="miniature-more"]')){miniatureLimit+=60;paint();}
+      if(event.target.closest('[data-act="miniature-more"]')){event.stopPropagation();miniatureLimit+=60;paint();}
     });
-    dialog.querySelectorAll('[data-miniature-close],[data-act="miniature-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+    dialog.querySelectorAll('[data-miniature-close],[data-act="miniature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
     if(wildShape)dialog.querySelector('[data-form-confirm]').addEventListener('click',async event=>{
       const button=event.currentTarget;if(button.disabled||!selectedProfile)return;button.disabled=true;
       try{
