@@ -236,10 +236,13 @@ export function savePendingChoice(record,choice,values=[]){
 // Other feats, class grants and manually added proficiencies are preserved.
 export function removeOwnedFeatPatch(record={},originKey=''){
  const feats=arr(record.feats_catalog);
- const index=feats.findIndex(feat=>feat?.name&&
-   'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source))===originKey);
+ const asFeat=feat=>typeof feat==='string'?{name:feat}:feat;
+ const index=feats.findIndex(raw=>{
+   const feat=asFeat(raw);
+   return !!feat?.name&&'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source))===originKey;
+ });
  if(index<0)throw Error('Talento non più presente nella scheda.');
- const feat=feats[index],sourceId='feat|'+norm(feat.source)+'|'+norm(feat.name);
+ const feat=asFeat(feats[index]),sourceId='feat|'+norm(feat.source)+'|'+norm(feat.name);
  const origin_enabled={...(record.origin_enabled||{})};
  delete origin_enabled[sourceId];
  delete origin_enabled[originKey];
