@@ -861,7 +861,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         kind==='shield'?[['off','Equipaggia scudo']]:[];
       const equipButtons=equipOptions.map(([slot,label])=>{
         const equipped=slots.includes(slot);
-        const disabled=!validSlot(item,slot)||slot==='off'&&offBlocked;
+        // Even an inconsistent saved configuration must allow removal.
+        const disabled=!validSlot(item,slot)||!equipped&&slot==='off'&&offBlocked;
         return '<button type="button" class="inventory-equip-action'+(equipped?' is-equipped':'')+
           '" data-act="inventory-equip-slot" data-index="'+i+'" data-slot="'+slot+'"'+
           (disabled?' disabled':'')+' aria-pressed="'+equipped+'"'+
