@@ -107,7 +107,7 @@ test('Luckstone grants all ability checks, initiative and saving throws only whe
 test('actual bundled Alchemist subclass table grants real spells at levels 3 and 5',()=>{
  const index=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
  const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
- const bundled=JSON.parse(readFileSync(new URL('../catalog/spells.json',import.meta.url),'utf8')).spells;
+ const bundled=spells; // Spells are generated at deployment; use a deterministic lookup fixture.
  const record=artificer('Alchemist',5);
  const projected=calculateSheet(record,{classFeatures:index,classMechanics:mechanics,spells:bundled});
  const spells=projected.origin_spells.filter(g=>/alchemist.*spells/i.test(g.origin_name||''));
