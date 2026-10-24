@@ -48,7 +48,8 @@ const key=(row)=>String(row?.name||"").toLowerCase()+"|"+String(row?.source||"")
 
 export function localClasses(record={}){
   const classes=arr(record.classes).filter(c=>c&&typeof c==="object"&&String(c.name||"").trim());
-  return classes.length?classes:[...(record.class?[{name:record.class,source:record.class_source||"",level:record.level??1}]:[])];
+  return classes.length?classes:[...(record.class?[{name:record.class,source:record.class_source||"",level:record.level??1,
+    subclass:record.subclass||"",subclass_source:record.subclass_source||""}]:[])];
 }
 export function classLevel(record,name,source=""){
   const classes=localClasses(record);

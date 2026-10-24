@@ -102,6 +102,10 @@ def main(checkout: Path) -> None:
             raise FileNotFoundError(file)
         counters = read_counters(file)
         for definition in group["resources"]:
+            if definition.get("source", group["source"]) != "PHB":
+                # This importer reads PHB XML only. Preserve separately
+                # source-qualified subclass counters from later books.
+                continue
             key = (definition.get("source_counter", definition["name"]), definition.get("subclass", ""))
             # Older XML has two subclass features without a <subclass> tag.
             original_key = key

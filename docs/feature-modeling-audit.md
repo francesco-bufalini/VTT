@@ -13,6 +13,99 @@ specie presenti nello snapshot locale 5etools. Questa è una revisione dei
 dati, non una dichiarazione di automazione completa. I tratti PHB 2014
 confrontati nei lotti sotto sono una selezione e proseguono separatamente.
 
+## Lotto 2026-10-24: domini PHB 2014 senza ristampa
+
+Il campo `reprintedAs` del 5etools sorgente (`data/class/class-cleric.json`,
+`subclass` con `source=PHB` e `classSource=PHB`) manca per **Nature** e
+**Tempest**; gli altri cinque domini PHB hanno una ristampa dichiarata.
+Le voci duplicate con `classSource=XPHB` sono riferimenti di compatibilità,
+non una nuova edizione di questi tratti. Sono state confrontate tutte le
+**14 voci** `subclassFeature` PHB dei due domini con
+`vtt/data/subclass_features_5etools.json` e FightClub5eXML
+`class-cleric-phb.xml` (`0c1118e94e7ae1fb0b608b65b3513fdaf0c65d13`).
+La nuova modellazione usa solo `feature_timing_recovery_rules.json`, con
+classe, edizione, sottoclasse e **nome del tratto concedente** esatti.
+
+| Dominio | Privilegio (livello) | Esito |
+| --- | --- | --- |
+| Nature | Nature Domain (1) | Intestazione e incantesimi di dominio nel sorgente; le concessioni magiche richiedono ancora l'origine del tratto e la selezione della sottoclasse. |
+| Nature | Acolyte of Nature (1) | Cantrip da Druido e abilità scelti; nessuna scelta inventata. |
+| Nature | Bonus Proficiency (1) | Armature pesanti; da attribuire al tratto, non a tutti i Chierici. |
+| Nature | Channel Divinity: Charm Animals and Plants (2) | **Ora strutturati:** azione e consumo del pool Channel Divinity PHB. Bersagli, TS e durata restano manuali. |
+| Nature | Dampen Elements (6) | **Ora strutturata:** reazione senza contatore. Resistenza valida solo per quell'istanza di danno. |
+| Nature | Divine Strike (8; migliora al 14) | Danno una volta nel turno, tipo scelto e dado progressivo; non un bonus permanente. |
+| Nature | Master of Nature (17) | **Ora strutturata:** azione bonus. Richiede creature ancora affascinate dal privilegio del dominio. |
+| Tempest | Tempest Domain (1) | Intestazione e incantesimi di dominio nel sorgente; stessa cautela sulle concessioni. |
+| Tempest | Bonus Proficiencies (1) | Armi marziali e armature pesanti; da attribuire al tratto della sottoclasse. |
+| Tempest | Wrath of the Storm (1) | **Ora strutturata:** reazione collegata al contatore già presente (modificatore Saggezza, minimo uno, riposo lungo). Colpo scatenante, TS e danno restano manuali. |
+| Tempest | Channel Divinity: Destructive Wrath (2) | **Ora strutturati:** intervento contestuale senza azione e consumo del pool Channel Divinity PHB; non un secondo contatore. |
+| Tempest | Thunderbolt Strike (6) | Spinta facoltativa solo dopo danno da fulmine a creatura idonea; resta contestuale. |
+| Tempest | Divine Strike (8; migliora al 14) | Danno da tuono una volta nel turno e dado progressivo; non un bonus permanente. |
+| Tempest | Stormborn (17) | Volo pari alla velocità attuale solo fuori da interni e sotterranei; resta contestuale. |
+
+La verifica PWA copre presenza del tratto e della sottoclasse, soglia di
+livello, assenza nelle schede XPHB e collegamento al contatore condiviso.
+Le parti che richiedono scelta, bersaglio o stato sono nella lista separata.
+
+## Lotto 2026-10-24: Warlock SCAG The Undying, regole 2014
+
+La sottoclasse `The Undying|Warlock|PHB|SCAG` non ha `reprintedAs` nel
+5etools sorgente (`data/class/class-warlock.json`). SCAG è stato pubblicato
+dopo il PHB, ma questa è la sua versione per le **regole 2014**. Confrontati
+tutti i **5 privilegi** con `vtt/data/subclass_features_5etools.json` e
+FightClub5eXML `class-warlock-scag.xml`
+(`90df7e27adcb2a62fe4da065989c9c02bde2a36b`).
+
+| Privilegio (livello) | Esito |
+| --- | --- |
+| The Undying (1) | Intestazione e lista di incantesimi ampliata; non equivale a incantesimi conosciuti automaticamente. |
+| Among the Dead (1) | Concede *spare the dying*; il vantaggio contro malattie e la protezione dal bersagliamento dei non morti sono contestuali. |
+| Defy Death (6) | **Ora strutturato:** un uso, riposo lungo, esattamente nel tratto SCAG. Il recupero PF richiede il successo al TS morte o la stabilizzazione di una creatura. |
+| Undying Nature (10) | Respiro, sostentamento, riposo e invecchiamento particolari; nessun bonus numerico generico. |
+| Indestructible Life (14) | **Ora strutturati:** un uso, riposo breve e azione bonus dal tratto SCAG. Guarigione e riattacco di parti del corpo restano contestuali. |
+
+La proiezione PWA di una vecchia scheda con sottoclasse nel campo principale
+ora conserva quella scelta nella classe locale, così i due contatori restano
+legati a `The Undying` anziché sparire. L'ID dei contatori conserva il formato
+esistente `class:warlock:phb:<privilegio>`; non c'è un gestore speciale per
+questa sottoclasse.
+
+## Lotto 2026-10-24: Battlerager, Long Death e Crown SCAG
+
+Nessuna delle tre sottoclassi SCAG ha `reprintedAs` nel 5etools sorgente.
+Controllate una per una le **20 voci** `subclassFeature` con classe PHB e
+fonte SCAG contro FightClub5eXML: `class-barbarian-scag.xml`
+(`074dce2361317ef74358e895bb9264aeeb0f5664`),
+`class-monk-scag.xml` (`69f052b85b3b378e0fa455def347f55d701367eb`) e
+`class-paladin-scag.xml` (`092b4a8d0bf78a198b597dca6ea1cff7dffffe0d`).
+
+| Sottoclasse e privilegio (livello) | Esito |
+| --- | --- |
+| Battlerager: Path of the Battlerager (3) | Intestazione della sottoclasse. |
+| Battlerager: Battlerager Armor (3) | Attacco bonus solo con armatura chiodata indossata e Ira attiva; danno da presa condizionato. Nessuna azione sempre disponibile. |
+| Battlerager: Restriction—Dwarves Only (3) | Restrizione di ambientazione revocabile dal DM; nessun blocco automatico per tutte le campagne. |
+| Battlerager: Reckless Abandon (6) | PF temporanei solo quando usa Reckless Attack durante Ira; terminano con Ira. |
+| Battlerager: Battlerager Charge (10) | Dash come azione bonus solo durante Ira; non un'alternativa sempre attiva. |
+| Battlerager: Spiked Retribution (14) | Danno al colpitore solo con armatura, Ira e capacità di agire. |
+| Long Death: Way of the Long Death (3) | Intestazione della sottoclasse. |
+| Long Death: Touch of Death (3) | PF temporanei al trigger 0 PF di una creatura entro 5 piedi. |
+| Long Death: Hour of Reaping (6) | **Ora strutturata:** azione senza contatore, con origine nel tratto SCAG. Bersagli, TS e Frightened restano manuali. |
+| Long Death: Mastery of Death (11) | Spende 1 Ki solo al trigger 0 PF; nessun nuovo pool. |
+| Long Death: Touch of the Long Death (17) | Azione e spesa **scelta** da 1 a 10 Ki; un costo fisso sarebbe scorretto, quindi resta aperta. |
+| Crown: Oath of the Crown (3) | Intestazione della sottoclasse. |
+| Crown: Champion Challenge (3) | **Ora strutturati:** azione bonus e pool Channel Divinity PHB; scelta bersagli, TS e movimento restano manuali. |
+| Crown: Channel Divinity (3) | Introduce due opzioni, non un pool aggiuntivo. |
+| Crown: Oath Spells (3) | Incantesimi sempre preparati subordinati alla scelta di questo giuramento. |
+| Crown: Tenets of the Crown (3) | Testo narrativo, nessun bonus numerico. |
+| Crown: Turn the Tide (3) | **Ora strutturati:** azione bonus e stesso pool Channel Divinity; cura richiede ascolto, distanza e PF non oltre metà. |
+| Crown: Divine Allegiance (7) | **Ora strutturata:** reazione; bersaglio vicino e trasferimento del danno senza riduzione restano contestuali. |
+| Crown: Unyielding Spirit (15) | Vantaggio solo ai TS per evitare Paralyzed o Stunned. |
+| Crown: Exalted Champion (20) | **Ora strutturati:** un uso per riposo lungo e azione dal tratto SCAG. Aura, vantaggi, resistenze e durata restano contestuali. |
+
+Per `Oath of the Crown` è stata corretta la normalizzazione generica dei nomi
+di sottoclasse in Godot: rimuove in ordine `Oath of` e `the`, così il dato
+`Crown` corrisponde al nome completo già salvato senza eccezioni dedicate.
+
 ## Lotto 2026-10-23: Fighter e Dwarf
 
 Fonti confrontate: `vtt/data/player_5etools_catalog.json` (identità),

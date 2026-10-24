@@ -3,7 +3,8 @@
 The runtime reads `vtt/data/class_mechanics_5etools.json` for 5etools class-table
 progressions and complements it with `vtt/data/class_resource_overrides.json`.
 The latter is a curated snapshot of *counter metadata* taken from the public
-FightClub5eXML compendium files, plus separately identified 2024 Bard,
+FightClub5eXML compendium files for the PHB and the non-reprinted SCAG
+Undying/Crown subclasses, plus separately identified 2024 Bard,
 Fighter, Paladin, Sorcerer and Wizard entries from the source-qualified
 5etools class features, and Artificer TCE class/subclass counter limits.
 The game never fetches Fight Club or other websites.
@@ -37,6 +38,10 @@ Repository: https://github.com/vidalvanbergen/fightclub5exml
 2014 source path in that repo:
 `Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/`
 
+2014-rule SCAG source path in that repo:
+`Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/`
+(`class-paladin-scag.xml` and `class-warlock-scag.xml`).
+
 To regenerate approved entries, use an **already downloaded, local** checkout:
 
 ```sh
@@ -53,6 +58,9 @@ Fight Club generator runs. Lay on Hands has explicit class-level steps to
 preserve its five-points-per-Paladin-level pool for multiclass characters.
 The TCE Artificer resource limits are checked against source-qualified
 `creature_references_5etools.json` and `subclass_features_5etools.json`.
+The SCAG Undying/Crown counters are checked against their Fight Club XML and
+source-qualified `subclass_features_5etools.json`; the PHB-only generator
+does not regenerate that separately curated subclass entry.
 Their free-use counters do not model chosen elixirs, a cannon object, spell
 slot alternatives or targets; those mechanics need separate structured data.
 The 2024 Second Wind class-table progression is already supplied by

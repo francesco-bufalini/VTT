@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "scripts/generate_fightclub_resources.py"
@@ -47,6 +49,26 @@ class FightClubResourceFormulaTests(unittest.TestCase):
                     self.assertEqual(generator.to_vtt_formula(maximum), maximum.lower())
                     count += 1
         self.assertGreater(count, 0)
+
+    def test_phb_refresh_preserves_source_qualified_scag_counter(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            checkout = Path(directory)
+            self.assertTrue(checkout.resolve().is_relative_to(ROOT.resolve()))
+            source = checkout / generator.SOURCE / "class-paladin-phb.xml"
+            source.parent.mkdir(parents=True)
+            source.write_text("<compendium/>", encoding="utf-8")
+            output = checkout / "resources.json"
+            output.write_text(json.dumps({"classes": [{"class": "Paladin", "source": "PHB", "resources": [
+                {"name": "Channel Divinity", "steps": [{"level": 3, "value": "0", "reset": "manual"}]},
+                {"name": "Exalted Champion", "source": "SCAG", "subclass": "Oath of the Crown",
+                 "steps": [{"level": 20, "value": "1", "reset": "long_rest"}]},
+            ]}]}), encoding="utf-8")
+            counters = {("Channel Divinity", ""): [{"level": 3, "value": "1", "reset": "short_rest"}]}
+            with patch.object(generator, "OUTPUT", output), patch.object(generator, "read_counters", return_value=counters):
+                generator.main(checkout)
+            refreshed = json.loads(output.read_text(encoding="utf-8"))["classes"][0]["resources"]
+            self.assertEqual(refreshed[0]["steps"][0]["value"], "1")
+            self.assertEqual(refreshed[1]["steps"], [{"level": 20, "value": "1", "reset": "long_rest"}])
 
     def test_every_counter_names_a_source_qualified_5etools_trait(self) -> None:
         data = json.loads((ROOT / "vtt/data/class_resource_overrides.json").read_text(encoding="utf-8"))
