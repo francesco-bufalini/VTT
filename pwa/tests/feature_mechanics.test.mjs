@@ -43,6 +43,124 @@ test('typed supplement tracks feature, class source, level and subclass without 
  assert(actionsFor(creature('Ranger','2014',14)).some(a=>a.name.includes('Svanire')));
 });
 
+test('unreprinted 2014 Cleric domains expose only their own trait actions and shared counters',()=>{
+ const nature=creature('Cleric','2014',17,'Nature');
+ const tempest=creature('Cleric','2014',17,'Tempest');
+ const selected=record=>actionsFor(record,calculateSheet(record,catalogs).trackers)
+  .filter(row=>row.rule_id.startsWith('cleric_phb_nature_')||row.rule_id.startsWith('cleric_phb_tempest_'));
+ const n=selected(nature),t=selected(tempest);
+ assert.deepEqual(n.map(row=>row.time),['action','reaction','bonus']);
+ assert.deepEqual(t.map(row=>row.time),['reaction','free']);
+ assert(n.every(row=>row.origin_id.includes('subclass')));
+ assert(t.every(row=>row.origin_id.includes('subclass')));
+ assert.equal(n.find(row=>row.rule_id.endsWith('charm_animals_and_plants')).tracker,'Channel Divinity');
+ assert.equal(t.find(row=>row.rule_id.endsWith('destructive_wrath')).tracker,'Channel Divinity');
+ assert.equal(t.find(row=>row.rule_id.endsWith('wrath_of_the_storm')).tracker,'Wrath of the Storm');
+ assert.equal(selected(creature('Cleric','2014',2)).length,0);
+ assert.equal(selected(creature('Cleric','2024',17,'Tempest')).length,0);
+ assert.deepEqual(selected(creature('Cleric','2014',2,'Nature')).map(row=>row.rule_id),
+  ['cleric_phb_nature_charm_animals_and_plants']);
+});
+
+test('SCAG Undying counters stay attached to the selected 2014 Warlock patron',()=>{
+ const undying=creature('Warlock','2014',14,'The Undying');
+ const own=calculateSheet(undying,catalogs).trackers;
+ const defy=own.find(row=>row.name==='Defy Death');
+ const life=own.find(row=>row.name==='Indestructible Life');
+ assert.equal(defy?.max,1);
+ assert.equal(defy?.recharge,'long_rest');
+ assert.equal(life?.max,1);
+ assert.equal(life?.recharge,'short_rest');
+ assert(defy.origin_id.includes('subclass'));
+ assert(life.origin_id.includes('subclass'));
+ const action=actionsFor(undying,own).find(row=>row.rule_id==='warlock_phb_undying_indestructible_life');
+ assert.equal(action?.time,'bonus');
+ assert.equal(action?.tracker_id,life.id);
+ assert.equal(actionsFor(undying,own).some(row=>row.feature==='Defy Death'),false);
+ assert.equal(calculateSheet(creature('Warlock','2014',5,'The Undying'),catalogs)
+  .trackers.some(row=>row.name==='Defy Death'),false);
+ assert.equal(calculateSheet(creature('Warlock','2014',14,'The Fiend'),catalogs)
+  .trackers.some(row=>['Defy Death','Indestructible Life'].includes(row.name)),false);
+ assert.equal(calculateSheet(creature('Warlock','2024',14,'The Undying'),catalogs)
+  .trackers.some(row=>['Defy Death','Indestructible Life'].includes(row.name)),false);
+});
+
+test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclass traits',()=>{
+ const longDeath=creature('Monk','2014',6,'Long Death');
+ const hour=actionsFor(longDeath,calculateSheet(longDeath,catalogs).trackers)
+  .find(row=>row.rule_id==='monk_phb_long_death_hour_of_reaping');
+ assert.equal(hour?.time,'action');
+ assert.equal(hour?.tracker_id,'');
+ assert.equal(actionsFor(creature('Monk','2014',6,'Open Hand')).some(row=>row.rule_id===hour.rule_id),false);
+ const crown=creature('Paladin','2014',20,'Oath of the Crown');
+ const trackers=calculateSheet(crown,catalogs).trackers;
+ const champion=trackers.find(row=>row.name==='Exalted Champion');
+ assert.equal(champion?.max,1);
+ assert.equal(champion?.recharge,'long_rest');
+ assert(champion.origin_id.includes('subclass'));
+ const actions=actionsFor(crown,trackers).filter(row=>row.rule_id.startsWith('paladin_phb_crown_'));
+ assert.deepEqual(actions.map(row=>row.time),['bonus','bonus','reaction','action']);
+ assert(actions.slice(0,2).every(row=>row.tracker==='Channel Divinity'&&row.tracker_id));
+ assert.equal(actions[3].tracker_id,champion.id);
+ assert.equal(actionsFor(creature('Paladin','2014',3,'Oath of the Crown'),calculateSheet(creature('Paladin','2014',3,'Oath of the Crown'),catalogs).trackers)
+  .filter(row=>row.rule_id.startsWith('paladin_phb_crown_')).length,2);
+ assert.equal(calculateSheet(creature('Paladin','2014',20,'Oath of Devotion'),catalogs).trackers
+  .some(row=>row.name==='Exalted Champion'),false);
+});
+
+test('XGE Samurai and Cavalier counters use their own trait and limit only the special attack',()=>{
+ const samurai=creature('Fighter','2014',18,'Samurai');
+ const samuraiTrackers=calculateSheet(samurai,catalogs).trackers;
+ const fighting=samuraiTrackers.find(row=>row.name==='Fighting Spirit');
+ const strength=samuraiTrackers.find(row=>row.name==='Strength before Death');
+ assert.equal(fighting?.max,3);
+ assert.equal(strength?.max,1);
+ assert([fighting,strength].every(row=>row.recharge==='long_rest'&&row.origin_id.includes('subclass')));
+ const samuraiActions=actionsFor(samurai,samuraiTrackers).filter(row=>row.rule_id.startsWith('fighter_phb_samurai_'));
+ assert.deepEqual(samuraiActions.map(row=>row.time),['bonus','reaction']);
+ assert.equal(samuraiActions[0].tracker_id,fighting.id);
+ const cavalier={...creature('Fighter','2014',7,'Cavalier'),abilities:{str:16,dex:10,con:16,int:10,wis:10,cha:10}};
+ const cavalierTrackers=calculateSheet(cavalier,catalogs).trackers;
+ const mark=cavalierTrackers.find(row=>row.name==='Unwavering Mark (Special Attack)');
+ const ward=cavalierTrackers.find(row=>row.name==='Warding Maneuver');
+ assert.equal(mark?.max,3);
+ assert.equal(mark?.id,'class:fighter:phb:unwavering_mark_special_attack');
+ assert.equal(mark?.origin_name,'Tratto · Unwavering Mark');
+ assert.equal(ward?.max,3);
+ assert.equal(actionsFor(cavalier,cavalierTrackers).find(row=>row.rule_id==='fighter_phb_cavalier_warding_maneuver')?.tracker_id,ward.id);
+ assert.equal(calculateSheet(creature('Fighter','2014',18,'Champion'),catalogs).trackers
+  .some(row=>['Fighting Spirit','Warding Maneuver'].includes(row.name)),false);
+ assert.equal(calculateSheet(creature('Fighter','2024',18,'Samurai'),catalogs).trackers
+  .some(row=>row.name==='Fighting Spirit'),false);
+});
+
+test('XGE Dreams and Shepherd retain class-level pools, shared uses and trait actions',()=>{
+ const dreams=creature('Druid','2014',14,'Circle of Dreams');
+ const own=calculateSheet(dreams,catalogs).trackers;
+ const balm=own.find(row=>row.name==='Balm of the Summer Court');
+ const paths=own.find(row=>row.name==='Hidden Paths');
+ const walker=own.find(row=>row.name==='Walker in Dreams');
+ assert.equal(balm?.max,14);
+ assert.equal(paths?.max,3);
+ assert.equal(walker?.max,1);
+ assert([balm,paths,walker].every(row=>row.recharge==='long_rest'&&row.origin_id.includes('subclass')));
+ const actions=actionsFor(dreams,own).filter(row=>row.rule_id.startsWith('druid_phb_dreams_'));
+ assert.deepEqual(actions.map(row=>row.time),['bonus','action']);
+ assert(actions.every(row=>row.tracker_id===paths.id));
+ assert.equal(actionsFor(dreams,own).some(row=>row.feature==='Balm of the Summer Court'),false,
+  'variable die spend must not become a fixed-cost action');
+ const multiclass={...creature('Druid','2014',15,'Circle of Dreams'),classes:[
+  {name:'Druid',source:'PHB',level:10,subclass:'Circle of Dreams',subclass_source:'XGE'},
+  {name:'Fighter',source:'PHB',level:5}]};
+ assert.equal(calculateSheet(multiclass,catalogs).trackers.find(row=>row.name==='Balm of the Summer Court')?.max,10);
+ const shepherd=creature('Druid','2014',14,'Circle of the Shepherd');
+ const flock=calculateSheet(shepherd,catalogs).trackers;
+ assert.equal(flock.find(row=>row.name==='Spirit Totem')?.recharge,'short_rest');
+ assert.equal(flock.find(row=>row.name==='Faithful Summons')?.max,1);
+ assert.equal(actionsFor(shepherd,flock).find(row=>row.rule_id==='druid_phb_shepherd_spirit_totem')?.time,'bonus');
+ assert.equal(flock.some(row=>row.name==='Balm of the Summer Court'),false);
+});
+
 test('2024 short rest recovers one use, long rest recovers all, without modifying counters in stored sheet',()=>{
  for(const [name,level,res] of [['Barbarian',3,'Rages'],['Cleric',4,'Channel Divinity'],
   ['Druid',5,'Wild Shape'],['Fighter',3,'Second Wind'],['Paladin',5,'Channel Divinity']]){

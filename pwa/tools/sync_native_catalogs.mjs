@@ -213,13 +213,20 @@ const references=await read('../../vtt/data/creature_references_5etools.json');
 // mechanics/identity here; the existing features URL owns descriptions.
 mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
+const browserProficiencies=await read('../catalog/proficiency_grants.json');
+browserProficiencies.subrace=proficiencies.subrace;
+await writeFile(new URL('../catalog/proficiency_grants.json',import.meta.url),JSON.stringify(browserProficiencies)+'\n');
 const featureCatalog=await read('../../vtt/data/subclass_features_5etools.json');
 mechanics.resource_features=[...references.class_features,...featureCatalog.subclass_features].map(row=>Object.fromEntries(['id','name','class_name','class_source','subclass_name','subclass_short_name','subclass_source','level'].filter(k=>row[k]!==undefined).map(k=>[k,row[k]])));
+const previousSubraceIdentities=(await read('../catalog/class_mechanics.json')).subraces||[];
 mechanics.subraces=proficiencies.subrace.map(row=>{
  const full=mechanics.races.find(r=>r.name.toLowerCase()===(row.raceName+' ('+row.name+')').toLowerCase()&&r.source.toLowerCase()===row.source.toLowerCase());
  return {name:row.name,source:row.source,raceName:row.raceName,raceSource:row.raceSource,
   id:full?.id||'subrace:'+row.raceName.toLowerCase()+'|'+row.raceSource.toLowerCase()+'|'+row.name.toLowerCase()+'|'+row.source.toLowerCase()};
 });
+// A selectable subrace can have no unconditional proficiency grant.
+for(const row of previousSubraceIdentities)if(!mechanics.subraces.some(s=>s.id===row.id)&&
+ mechanics.races.some(r=>r.id===row.id))mechanics.subraces.push(row);
 for(const row of additional.entries.filter(row=>row.kind==='race'&&row.blocks?.length>1))for(const block of row.blocks){
  if(!block.name||mechanics.subraces.some(s=>s.raceName===row.name&&s.raceSource===row.source&&s.name===block.name))continue;
  mechanics.subraces.push({name:block.name,source:row.source,raceName:row.name,raceSource:row.source,
