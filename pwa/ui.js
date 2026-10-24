@@ -866,6 +866,70 @@ function promptVariantOverflow(creatureId,formId,overflow){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
  openDialog(dialog);
 }
+let inventoryCatalogRequest=null;
+function ensureInventorySearchCatalog(){
+  if(state.referenceCatalogs.items||inventoryCatalogRequest||state.inventorySearchCatalogError)return;
+  inventoryCatalogRequest=catalogEntries('items').then(rows=>{
+    state.referenceCatalogs.items=rows;
+    paintInventorySearchResults();
+  }).catch(error=>{
+    state.inventorySearchCatalogError=errorMessage(error);
+    paintInventorySearchResults();
+  }).finally(()=>{inventoryCatalogRequest=null;});
+}
+function paintInventorySearchResults(){
+  const area=app.querySelector('#inventory-search-results');
+  if(!area||state.sheet!=='inventory'||!state.editor)return;
+  const query=state.sheetSearch.get(state.creatureId+'|inventory')||'';
+  if(!query.trim()){
+    area.hidden=true;area.innerHTML='';
+    state.inventorySearchMatches=[];
+    return;
+  }
+  const results=inventorySearchResults(state.editor.read().inventory||[],
+    state.referenceCatalogs.items||[],query,state.inventorySearchLimit);
+  state.inventorySearchMatches=results;
+  area.hidden=false;
+  area.innerHTML=(results.length?results.map((row,i)=>
+    '<button type="button" class="inventory-search-result" data-act="inventory-search-result" data-search-result-index="'+i+
+    '" aria-label="'+esc(row.kind==='owned'?row.quantity+' copie possedute di '+row.name:'Aggiungi '+row.name)+'">'+
+    '<span class="inventory-search-result-count'+(row.kind==='catalog'?' is-add':'')+
+    '" aria-hidden="true">'+(row.kind==='owned'?'×'+row.quantity:'+')+'</span>'+
+    '<span class="inventory-search-result-copy"><strong>'+esc(row.name)+'</strong>'+
+    (row.source?'<small>'+esc(row.source)+'</small>':'')+'</span>'+
+    '<span class="inventory-search-result-chevron" aria-hidden="true">›</span></button>').join(''):
+    '<p class="inventory-search-notice">Nessun oggetto corrispondente.</p>')+
+    (results.length===state.inventorySearchLimit?
+      '<button type="button" class="inventory-search-more" data-act="inventory-search-more">Mostra altri risultati</button>':'')+
+    (!state.referenceCatalogs.items?
+      '<p class="inventory-search-notice">'+
+      (state.inventorySearchCatalogError?
+        'Catalogo non disponibile. La ricerca negli oggetti posseduti resta attiva. '+
+        '<button type="button" data-act="inventory-search-retry">Riprova</button>':
+        'Caricamento del catalogo in corso…')+'</p>':'');
+}
+function openInventorySearchAddDialog(catalogIndex){
+  const entry=state.referenceCatalogs.items?.[catalogIndex],creature=state.editor?.read();
+  if(!entry||!creature||!entry.name)throw Error('Oggetto del catalogo non disponibile.');
+  app.querySelector('#inventory-search-add-dialog')?.remove();
+  const options=inventoryContainers(creature).map(row=>
+    '<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('');
+  const dialog=document.createElement('dialog');
+  dialog.id='inventory-search-add-dialog';
+  dialog.className='sheet-context-dialog inventory-search-add-dialog';
+  dialog.dataset.catalogIndex=String(catalogIndex);
+  dialog.innerHTML='<header class="sheet-context-head"><h2>Aggiungi '+esc(entry.name)+'</h2>'+
+    dialogCloseButton('inventory-search-add-close','Chiudi','play-button')+'</header>'+
+    '<div class="sheet-context-body inventory-search-add-fields">'+
+    '<label>Sezione<select id="inventory-search-add-section">'+options+'</select></label>'+
+    '<label>Quantità<input type="number" id="inventory-search-add-quantity" value="1" min="1" max="99999" step="1" required></label></div>'+
+    '<footer class="pending-choice-actions"><button type="button" data-act="inventory-search-add-close">Annulla</button>'+
+    '<button type="button" data-act="inventory-search-add-confirm">Aggiungi oggetto</button></footer>';
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  app.append(dialog);
+  openDialog(dialog);
+}
+
 async function editorView() {
   const creatureId=state.creatureId;
   if(!state.editor){
@@ -3680,6 +3744,62 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='inventory-search-more'){
+    state.inventorySearchLimit+=75;
+    paintInventorySearchResults();return;
+  }
+  if(act==='inventory-search-retry'){
+    state.inventorySearchCatalogError='';
+    ensureInventorySearchCatalog();
+    paintInventorySearchResults();return;
+  }
+  if(act==='inventory-search-result'){
+    const item=state.inventorySearchMatches[Number(target.dataset.searchResultIndex)];
+    if(!item)throw Error('Risultato della ricerca non più disponibile.');
+    if(item.kind==='catalog'){openInventorySearchAddDialog(item.catalogIndex);return;}
+    const record=state.editor?.read();
+    if(!record||!item.indices.length)throw Error('Oggetto posseduto non disponibile.');
+    setInventoryVisibleSections(record,inventorySectionKeys(record));
+    state.inventorySubtab='items';
+    state.inventoryHighlightedIndices=item.indices.filter(index=>record.inventory?.[index]);
+    state.inventorySelectedIndex=state.inventoryHighlightedIndices[0]??-1;
+    state.sheetPopup='';
+    state.sheetSearch.set(state.creatureId+'|inventory','');
+    await render();
+    app.querySelector('[data-inventory-search-index="'+state.inventorySelectedIndex+'"]')?.
+      scrollIntoView?.({block:'center',behavior:'smooth'});
+    return;
+  }
+  if(act==='inventory-search-add-close'){
+    closeDialog(app.querySelector('#inventory-search-add-dialog'),{remove:true});return;
+  }
+  if(act==='inventory-search-add-confirm'){
+    const dialog=app.querySelector('#inventory-search-add-dialog');
+    const catalogIndex=Number(dialog?.dataset.catalogIndex);
+    const entry=state.referenceCatalogs.items?.[catalogIndex];
+    const record=state.editor?.read();
+    if(!dialog||!entry||!record)throw Error('Oggetto del catalogo non più disponibile.');
+    const quantity=Number(dialog.querySelector('#inventory-search-add-quantity')?.value);
+    if(!Number.isSafeInteger(quantity)||quantity<1||quantity>99999)
+      throw Error('La quantità deve essere compresa tra 1 e 99999.');
+    const destination=dialog.querySelector('#inventory-search-add-section')?.value;
+    if(!inventoryContainers(record).some(section=>section.id===destination))
+      throw Error('Sezione inventario non valida.');
+    const owned=createOwnedItem(entry,'pwa_'+crypto.randomUUID());
+    owned.quantity=quantity;
+    if(destination!==DEFAULT_INVENTORY_CONTAINER)owned.container_id=destination;
+    const index=(record.inventory||[]).length;
+    closeDialog(dialog,{remove:true});
+    state.inventoryHighlightedIndices=[index];
+    state.inventorySelectedIndex=index;
+    state.sheetSearch.set(state.creatureId+'|inventory','');
+    focusInventorySection(record,destination===DEFAULT_INVENTORY_CONTAINER?'items':'container:'+destination);
+    await patch({inventory:[...(record.inventory||[]),owned]});
+    await render();
+    message(quantity+' × '+(entry.name||'Oggetto')+' aggiunti a '+
+      (inventoryContainers(record).find(row=>row.id===destination)?.name||'Zaino')+'.');
+    return;
+  }
   if(act==='catalog-more'){
     state.catalogResultLimit+=90;
     const results=app.querySelector('#catalog-results');
