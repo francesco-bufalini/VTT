@@ -4547,3 +4547,43 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 @media(max-width:360px){
  .play-battle-attack-details>summary>.play-battle-attacks-per-action{min-height:29px;min-width:42px;font-size:17px}
 }
+
+
+/* Action timing labels are clear section headings, not ordinary action rows. */
+#sheet-play-view [data-battle-action="others"] .play-battle-action-heading {
+ min-height:49px;margin:7px 8px 4px;padding:10px 12px;
+ border:1px solid #d2a6665f;border-radius:10px;
+ background:linear-gradient(105deg,#76502e6e,#453326a6 70%,#3b302572);
+ color:#ffe1a8;font:750 15px/1.3 system-ui,sans-serif;
+ letter-spacing:.02em;box-shadow:inset 0 1px 0 #ffde9c22
+}
+#sheet-play-view [data-battle-action="others"] .play-battle-action-heading>.vtt-action-glyph {
+ width:21px;height:21px;flex-basis:21px
+}
+#sheet-play-view [data-battle-action="others"] .play-battle-action-group {
+ border-top:0
+}
+/* Direct spellcasting opens Powers immediately, no intermediate action detail. */
+.play-battle-attack-direct-button {
+ display:flex;align-items:center;gap:10px;width:100%;min-height:48px;
+ padding:8px 12px;border:0;background:transparent;color:#f5d9af;
+ font:inherit;text-align:left;cursor:pointer
+}
+.play-battle-attack-direct-button>.vtt-action-glyph{width:22px;height:22px;flex:0 0 22px}
+.play-battle-attack-direct-button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.play-battle-unavailable-reason{display:block;margin-top:4px;color:#d9ae82;font:450 11px/1.45 system-ui}
+.play-battle-attack-unavailable{opacity:.82}
+.play-resource-rule--inactive{opacity:1}
+.play-resource-rule--inactive .play-resource-power-open{cursor:pointer}
+.play-resource-rule--inactive .play-resource-power-open small{color:#e2b287}
+.play-resource-rule--attack .play-resource-power-open{
+ display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 12px;
+ background:linear-gradient(90deg,#6745261e,#39291d12)
+}
+.play-resource-rule--attack .play-resource-power-open>.play-battle-attacks-per-action {
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ min-width:45px;min-height:32px;margin-left:auto;padding:4px 10px;
+ border:1px solid #f2c88199;border-radius:9px;
+ background:linear-gradient(150deg,#77512c,#47321e);
+ color:#ffe7bb;font:800 19px/1 system-ui;font-variant-numeric:tabular-nums
+}
