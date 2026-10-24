@@ -307,6 +307,21 @@ export function collectStructuredFeatures(record,catalogs={}){
       if(at>=1&&at<=level)append(row,origin,at,"class",name,source);
     }
   }
+  // Invocations and other selected optional class traits are individual owned
+  // benefits, not permanent class-level grants. Only project choices which
+  // explicitly declare an attack-count grant in the structured catalogue.
+  for(const optional of array(record.optional_features_catalog)){
+    if(!optional?.name)continue;
+    const rule=attackRules.find(grant=>match(grant.feature,optional.name)&&
+      members.some(member=>match(member.name,grant.class_name)&&
+        match(member.source||record.class_source||selectedEdition,grant.class_source)&&
+        Number(member.level||0)>=Number(grant.min_level||1)));
+    const amount=Number(optional.attacks_per_action||rule?.attacks_per_action);
+    if(!Number.isSafeInteger(amount)||amount<2)continue;
+    const origin=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
+    append({...optional,attacks_per_action:amount},origin,0,'character','','',
+      optional.disabled===true);
+  }
   return results;
 }
 export function structuredFeatureGrants(record,catalogs={},features=collectStructuredFeatures(record,catalogs)){
