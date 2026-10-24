@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
@@ -81,6 +81,47 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-timing="movement"]').textContent.includes('Muoversi'));
  assert(!movement.body.textContent.includes('Afferrare una creatura'));
  assert(!doc(battleActionPanels({},calculated,[],[],catalog.actions).attacks).body.textContent.includes('Disarmare'));
+});
+
+test('class-only attacks keep both the offhand bonus and opportunity reaction',()=>{
+ const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,
+  range_feet:5,hit:5,damage:'4'};
+ const off={id:'unarmed:off',name:'Colpo senz’armi · secondaria',slot:'off',
+  offhand_bonus:true,melee:true,range_feet:5,hit:5,damage:'4'};
+ const shield={id:'shield:improvised:off:shield',name:'Scudo · arma improvvisata · secondaria',
+  slot:'shield',hand:'off',offhand_bonus:true,melee:true,range_feet:5,hit:3,damage:'1d4 + 3'};
+ const render=(attacks,features=[],onlyClass=true)=>doc(battleActionPanels(
+  {rules_version:'2014'}, {attacks,features},[],[],catalog.actions,[],[],onlyClass).attacks);
+ const plain=render([unarmed,off],[{name:'Extra Attack'}]);
+ assert(plain.querySelector('[data-action-timing="action"] [data-attack-id="unarmed"]'));
+ assert(plain.querySelector('[data-action-timing="bonus"] [data-attack-id="unarmed:off"]'));
+ assert(plain.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
+ assert.equal(plain.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×2');
+ assert.equal(plain.querySelector('[data-action-timing="action"] .play-badge').textContent,'1',
+  'Available attacks are counted separately from the number of attacks per action');
+ const protectedHand=render([unarmed,shield]);
+ assert(protectedHand.querySelector('[data-action-timing="bonus"] [data-attack-id="shield:improvised:off:shield"]'));
+ assert(!protectedHand.querySelector('[data-action-timing="action"] [data-attack-id="shield:improvised:off:shield"]'));
+ assert(!protectedHand.querySelector('[data-attack-id="unarmed:off"]'));
+ assert(protectedHand.querySelector('[data-attack-id="opportunity"]'));
+ const unloaded=doc(battleActionPanels({}, {attacks:[unarmed,off]},[],[],[],[],[],true).attacks);
+ assert(unloaded.querySelector('[data-attack-id="opportunity"]'),
+  'Offline fallback still exposes an opportunity attack');
+ assert(!render([unarmed,off],[{name:'Extra Attack',disabled:true}])
+  .querySelector('.play-battle-attacks-per-action'));
+});
+
+test('multiattack counter uses active structured features or a monster multiattack',()=>{
+ assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (2)'}]}),3);
+ assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (3)',inactive:true}]}),1);
+ const monster={stat_block:{action:[{name:'Multiattack',entries:[
+  'The creature makes three attacks: one with its bite and two with its claws.'
+ ]}]}};
+ assert.equal(attacksPerAction(monster,{}),3);
+ assert.equal(attacksPerAction({stat_block:{action:[{name:'Multiattack',attack_count:4}]}},{}),4);
+ const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
+ const html=doc(battleActionPanels(monster,{attacks:[attack]},[],[],catalog.actions,[],[],true).attacks);
+ assert.equal(html.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×3');
 });
 
 test('equipped weapon attacks lead each timing list and follow equipment changes',()=>{
