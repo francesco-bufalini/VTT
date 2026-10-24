@@ -3319,6 +3319,16 @@ async function openRollTraitOrigin(originId){
  })).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||b.row.rank-a.row.rank);
  const trait=candidates[0]?.row;
  if(!trait){
+   const isProficiency=originId==='proficiency:unattributed'||
+     Object.values(state.calculated?.proficiency_sources||{}).some(sources=>
+       Array.isArray(sources)&&sources.some(source=>source?.id===originId));
+   if(isProficiency){
+     // Unattributed proficiency or unavailable source metadata is not a trait.
+     // Keep the real proficiency readout reachable without an add-bonus picker.
+     app.querySelector('#play-competences-heading')?.scrollIntoView?.({block:'center'});
+     message('Questa competenza è riepilogata in Info > Competenze.');
+     return;
+   }
    message('Origine non riconducibile a un tratto della creatura. Seleziona il tratto corretto.',true);
    await openRollTraitPicker('bonus','');return;
  }
