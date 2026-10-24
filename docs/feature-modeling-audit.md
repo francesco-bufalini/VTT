@@ -396,3 +396,100 @@ recupero di altre risorse, cura o effetti in combattimento.
   Eldritch Master), invocazioni scelte, Contact Patron e Mystic Arcanum nel
   modello degli incantesimi. Nessun lancio gratuito è stato trasformato in
   un privilegio generico o attribuito alla classe anziché al tratto.
+
+## Lotto 2026-10-24: Cleric e Druid XPHB
+
+Controllate tutte le **45 voci** `class_features` (Cleric 22, Druid 23).
+`Channel Divinity` e `Wild Shape` hanno già capacità progressive nelle
+rispettive tabelle XPHB. I due tratti recuperano **un** uso al riposo breve e
+tutti al lungo: un contatore con il solo `reset: short_rest` perderebbe tale
+distinzione, quindi non è stato aggiunto un duplicato nel supplemento.
+
+| Cleric XPHB (livello) | Esito |
+| --- | --- |
+| Divine Order (1) | Una scelta fra Protector e Thaumaturge; mai concedere entrambe. |
+| Protector (1) | Competenza con armi marziali e armatura pesante solo se l'opzione è scelta. |
+| Spellcasting (1) | Trucchetti, incantesimi preparati e slot nella tabella/nel modello magico. |
+| Thaumaturge (1) | Trucchetto extra scelto e bonus a prove Arcana/Religion, con minimo +1, solo se scelta. |
+| Channel Divinity (2) | Pool progressivo già in tabella; scelta di effetto al consumo e recupero parziale breve. |
+| Divine Spark (2) | Un'opzione di Channel Divinity: cura o danno con scelta di tipo, TS e dado; nessun pool proprio. |
+| Turn Undead (2) | Un'opzione dello stesso pool: bersagli Undead, TS, condizioni e durata. |
+| Cleric Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Sear Undead (5) | Danno aggiuntivo ai bersagli che falliscono il TS contro Turn Undead; usa lo stesso evento. |
+| Subclass Feature (6, 17) | Segnaposto dei tratti reali di sottoclasse. |
+| Blessed Strikes (7) | Scelta esclusiva fra Divine Strike e Potent Spellcasting. |
+| Divine Strike (7) | Danno una volta per turno solo su colpo con arma; scelta fra Necrotic e Radiant. |
+| Potent Spellcasting (7) | SAG aggiunta al danno dei trucchetti Cleric, se questa opzione è scelta. |
+| Divine Intervention (10) | Lancio di un incantesimo Cleric idoneo senza slot/materiali una volta per riposo lungo; deve restare legato al flusso incantesimi. |
+| Improved Blessed Strikes (14) | Migliora solo l'opzione Blessed Strikes effettivamente scelta. |
+| Epic Boon (19) | Scelta del talento. |
+| Greater Divine Intervention (20) | Apre Wish tramite Divine Intervention e impone recupero dopo 2d4 riposi lunghi in quel caso; non è un uso separato fisso. |
+
+| Druid XPHB (livello) | Esito |
+| --- | --- |
+| Druidic (1) | Linguaggio speciale, messaggi e `Speak with Animals` sempre preparato; il testo non concede un lancio gratuito generico. |
+| Magician (1) | Trucchetto extra scelto e bonus Arcana/Nature, con minimo +1, solo se scelta. |
+| Primal Order (1) | Una scelta fra Magician e Warden. |
+| Spellcasting (1) | Trucchetti, preparazione e slot del modello magico. |
+| Warden (1) | Competenza con armi marziali e armatura media solo se scelta. |
+| Wild Companion (2) | `Find Familiar` tramite slot oppure un uso Wild Shape; entrambi i costi dipendono dalla scelta attiva. |
+| Wild Shape (2) | Pool progressivo già in tabella, recupero parziale breve; forme conosciute, limiti CR/volo, PF temporanei e sostituzione delle statistiche richiedono modello della trasformazione. |
+| Druid Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Wild Resurgence (5) | Conversione slot→uso Wild Shape solo quando gli usi sono zero; conversione inversa per slot di livello 1 una volta per riposo lungo. Due operazioni diverse, non ricarica automatica. |
+| Subclass Feature (6, 10, 14) | Segnaposto dei tratti della sottoclasse reale. |
+| Elemental Fury (7) | Scelta esclusiva fra Potent Spellcasting e Primal Strike. |
+| Potent Spellcasting (7) | SAG ai danni dei trucchetti Druid, se scelta. |
+| Primal Strike (7) | Danno elementale una volta per turno su colpo con arma o attacco Beast durante Wild Shape. |
+| Improved Elemental Fury (15) | Aumenta gittata dei trucchetti oppure dado di Primal Strike secondo la scelta precedente. |
+| Beast Spells (18) | Permette incantesimi in Wild Shape con eccezioni per componenti materiali costosi/consumati. |
+| Epic Boon (19) | Scelta del talento. |
+| Archdruid (20) | Un uso Wild Shape all'iniziativa solo se a zero; conversione Wild Shape→slot una volta per riposo lungo con valore per uso; longevità. Non modifica indiscriminatamente il pool. |
+
+Restano nella lista separata: recupero parziale dei due pool; scelta e
+applicazione delle opzioni di Channel Divinity; scelte Divine Order, Blessed
+Strikes, Primal Order ed Elemental Fury; trasformazioni Wild Shape; conversioni
+di Wild Resurgence/Archdruid; Divine Intervention con selezione di incantesimo
+e recupero variabile dopo Wish. La sola presenza del testo 5etools non
+autorizza contatori o effetti fittizi.
+
+## Lotto 2026-10-24: Gnome e Halfling PHB/XPHB
+
+Controllate le **otto voci di specie** del catalogo 5etools: quattro basi
+Gnome/Halfling PHB/XPHB e quattro sottorazze PHB (Forest/Rock,
+Lightfoot/Stout). Velocità e identità restano qualificate dalla fonte:
+25 piedi PHB, 30 piedi XPHB. Gli incrementi di caratteristiche PHB provengono
+da `structured_ability_grants_5etools.json`; non vanno assegnati alle specie
+XPHB. `Natural Illusionist` Forest PHB è già nel catalogo strutturato degli
+incantesimi; `Tinker` Rock PHB fornisce la competenza con tinker's tools nel
+catalogo delle competenze.
+
+| Tratto 5etools | Esito |
+| --- | --- |
+| Gnome PHB: Age, Size, Languages | Dati descrittivi; taglia Small e lingue PHB conservate con fonte. |
+| Gnome PHB: Darkvision | Vista al buio 60 piedi, senza inventare un bonus ai tiri. |
+| Gnome PHB: Gnome Cunning | Vantaggio ai TS INT/SAG/CAR **contro magia**, non a tutti i TS di quelle caratteristiche. |
+| Forest PHB: Natural Illusionist | `Minor Illusion` noto con INT; origine esatta della sottorazza, già in `additional_spells_5etools.json`. |
+| Forest PHB: Speak with Small Beasts | Comunicazione di idee semplici con bestie Small o minori; non equivale all'incantesimo `Speak with Animals`. |
+| Rock PHB: Artificer's Lore | Competenza raddoppiata soltanto nelle prove History pertinenti a oggetti magici/alchemici/tecnologici. |
+| Rock PHB: Tinker | Competenza negli strumenti già strutturata; costruzione, costo, durata e limite di tre dispositivi restano inventario contestuale. |
+| Gnome XPHB: Darkvision | Vista al buio 60 piedi con fonte XPHB. |
+| Gnome XPHB: Gnomish Cunning | Vantaggio a tutti i TS INT/SAG/CAR, senza la condizione «contro magia» del PHB. |
+| Gnome XPHB: Gnomish Lineage | Scelta Forest/Rock **e** INT/SAG/CAR come caratteristica degli incantesimi; nessuna scelta predefinita. Forest concede `Minor Illusion`, `Speak with Animals` preparato e lanci gratuiti pari a competenza per riposo lungo; Rock concede `Mending`, `Prestidigitation` e dispositivi. Il catalogo `additionalSpells` estratto non ha una voce XPHB Gnome: restano da modellare senza dedurli da una stringa descrittiva. |
+| Halfling PHB: Age, Size, Languages | Dati descrittivi e lingue PHB; sottorazze Lightfoot/Stout distinte. |
+| Halfling PHB: Lucky | Ripetizione del d20 soltanto su 1 per attacchi, prove e TS. |
+| Halfling PHB: Brave | Vantaggio ai TS contro Frightened. |
+| Halfling PHB: Halfling Nimbleness | Attraversa lo spazio di una creatura di taglia maggiore. |
+| Lightfoot PHB: Naturally Stealthy | Può nascondersi quando oscurato soltanto da creatura più grande. |
+| Stout PHB: Stout Resilience | Vantaggio contro veleno e resistenza al danno da veleno. |
+| Halfling XPHB: Brave | Vantaggio ai TS per evitare **o terminare** Frightened. |
+| Halfling XPHB: Halfling Nimbleness | Attraversa lo spazio di creatura più grande ma non può fermarvisi. |
+| Halfling XPHB: Luck | Ripetizione del d20 su 1 per qualunque D20 Test; nome e ambito differiscono da Lucky PHB. |
+| Halfling XPHB: Naturally Stealthy | Hide quando oscurato solo da creatura almeno una taglia più grande. |
+
+Da modellare: attivazione contestuale dei vantaggi e reroll, movimento attraverso
+creature, invisibilità/oscuramento per Hide, oggetti Tinker, e soprattutto la
+scelta Gnomish Lineage con incantesimi e numero di lanci Forest dipendente da
+competenza. Nessuno di questi effetti è stato inventato come bonus fisso di
+specie o privilegio senza il suo tratto concedente.
