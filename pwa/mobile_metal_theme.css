@@ -4150,3 +4150,33 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
     flex-basis:148px;gap:4px;padding:7px 6px;font-size:10px;
   }
 }
+
+
+/* Item popup: actions represent a real slot choice, not a checkbox. */
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-field{
+  display:grid;gap:8px;min-width:0;
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-caption{
+  color:#ccb392;font:600 11px/1.4 system-ui,sans-serif;
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-actions{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:42px;
+  padding:9px 12px;border:1px solid #a7835277;border-radius:9px;
+  background:#59412f66;color:#f0d9b6;font:600 12px/1.3 system-ui,sans-serif;
+  cursor:pointer;text-align:center;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action.is-equipped{
+  border-color:#d9bb81;background:#a17e464d;color:#ffedc9;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action:disabled{
+  opacity:.4;cursor:not-allowed;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action:focus-visible{
+  outline:2px solid #f4d29b;outline-offset:2px;
+}
+#sheet-context-dialog[data-context="equipment"] .equipment-offhand-override{
+  padding:9px 10px;border:1px solid #a783524d;border-radius:9px;
+}
