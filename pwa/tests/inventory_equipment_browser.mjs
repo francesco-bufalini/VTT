@@ -16,6 +16,11 @@ const close=async()=>{
  await popup().locator('[data-act="sheet-context-close"]').click();
  await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
 };
+const waitSlots=async(index,expected)=>page.waitForFunction(async({index,expected})=>{
+ const {listCreatures}=await import('/creatures.js');
+ const slots=(await listCreatures())[0].creature.inventory[index].equipped_slots||[];
+ return JSON.stringify(slots)===JSON.stringify(expected);
+},{index,expected});
 try{
  await seedPlayCreature(page,origin);
  await page.evaluate(async()=>{
@@ -37,24 +42,63 @@ try{
  assert(await popup().locator('.inventory-equip-action[data-slot="off"]').isDisabled(),
    'Two-handed weapons cannot be put into the offhand slot');
  await popup().locator('.inventory-equip-action[data-slot="main"]').click();
+ await waitSlots(3,['main']);
+ assert.equal(await popup().getAttribute('data-context'),'item:3',
+   'Equipping must not open the equipment dialog');
+ await popup().locator('.inventory-equip-action[data-slot="main"]').click();
+ await waitSlots(3,[]);
+ assert.equal((await record()).inventory[3].equipped,false,'Unequipped weapons have no stale equipped flag');
+ assert.equal(await popup().getAttribute('data-context'),'item:3');
+ await popup().locator('.inventory-equip-action[data-slot="main"]').click();
+ await waitSlots(3,['main']);
+ await close();
+
+ await page.locator('#sheet-play-view [data-sheet-context="equipment"]').click();
  await page.locator('#sheet-context-dialog[data-context="equipment"]').waitFor();
- assert.deepEqual((await record()).inventory[3].equipped_slots,['main']);
  const override=popup().locator('[data-field="hand_off_with_two_handed"]');
  assert.equal(await override.isChecked(),false,'Two-handed offhand override must default to off');
  assert(await popup().locator('[data-equip-slot="off"]').isDisabled());
+ const label=popup().locator('.equipment-offhand-override');
+ assert.equal(await label.evaluate(node=>getComputedStyle(node).borderTopWidth),'0px',
+   'The offhand override uses the same unboxed style as other settings');
+ assert.equal(await label.evaluate(node=>getComputedStyle(node).whiteSpace),'nowrap');
  await override.check();
  await page.waitForFunction(async()=>{
-  const {listCreatures}=await import('/creatures.js');
-  return (await listCreatures())[0].creature.hand_off_with_two_handed===true;
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.hand_off_with_two_handed===true;
+ });
+ await page.waitForFunction(()=>{
+  const control=document.querySelector('#sheet-context-dialog[data-context="equipment"] [data-equip-slot="off"]');
+  return control&&!control.disabled;
  });
  assert.equal(await popup().locator('[data-equip-slot="off"]').isDisabled(),false);
  await close();
+
+ // One-handed offhand weapon: equip and unequip without replacing the item popup.
+ await open(0);
+ await popup().locator('.inventory-equip-action[data-slot="off"]').click();
+ await waitSlots(0,['off']);
+ assert.deepEqual((await record()).inventory[3].equipped_slots,['main']);
+ assert.equal(await popup().getAttribute('data-context'),'item:0');
+ await popup().locator('.inventory-equip-action[data-slot="off"]').click();
+ await waitSlots(0,[]);
+ await close();
+
+ // Shields use the same toggle and preserve the two-handed weapon when unlocked.
  await open(5);
  await popup().locator('.inventory-equip-action[data-slot="off"]').click();
- await page.locator('#sheet-context-dialog[data-context="equipment"]').waitFor();
+ await waitSlots(5,['off']);
+ assert.equal(await popup().getAttribute('data-context'),'item:5');
  let current=await record();
  assert.deepEqual(current.inventory[3].equipped_slots,['main']);
- assert.deepEqual(current.inventory[5].equipped_slots,['off']);
+ await popup().locator('.inventory-equip-action[data-slot="off"]').click();
+ await waitSlots(5,[]);
+ await popup().locator('.inventory-equip-action[data-slot="off"]').click();
+ await waitSlots(5,['off']);
+ await close();
+
+ await page.locator('#sheet-play-view [data-sheet-context="equipment"]').click();
+ await page.locator('#sheet-context-dialog[data-context="equipment"]').waitFor();
  await popup().locator('[data-field="hand_off_with_two_handed"]').uncheck();
  await page.waitForFunction(async()=>{
   const {listCreatures}=await import('/creatures.js');
@@ -62,13 +106,18 @@ try{
   return c.hand_off_with_two_handed===false&&!c.inventory[5].equipped_slots.length;
  });
  await close();
+
  await open(4);
  assert.equal(await popup().locator('.inventory-equip-action').count(),1);
  await popup().locator('.inventory-equip-action[data-slot="body"]').click();
- await page.locator('#sheet-context-dialog[data-context="equipment"]').waitFor();
+ await waitSlots(4,['body']);
+ assert.equal(await popup().getAttribute('data-context'),'item:4');
+ await popup().locator('.inventory-equip-action[data-slot="body"]').click();
+ await waitSlots(4,[]);
+ await popup().locator('.inventory-equip-action[data-slot="body"]').click();
+ await waitSlots(4,['body']);
  current=await record();
- assert.deepEqual(current.inventory[4].equipped_slots,['body']);
  assert.deepEqual(current.inventory[3].equipped_slots,['main']);
  assert.deepEqual(f.errors,[]);assert.deepEqual(f.missing,[]);assert.deepEqual(f.writes,[]);
- console.log('PASS: main/offhand/armor popup buttons, 2H offhand lock and persisted opt-in.');
+ console.log('PASS: gear buttons toggle without navigation; unboxed offhand override; 2H restrictions.');
 }finally{await f.close();}

@@ -866,7 +866,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         kind==='shield'?[['off','Equipaggia scudo']]:[];
       const equipButtons=equipOptions.map(([slot,label])=>{
         const equipped=slots.includes(slot);
-        const disabled=!validSlot(item,slot)||slot==='off'&&offBlocked;
+        // Even blocked saved offhand equipment must remain removable.
+        const disabled=!validSlot(item,slot)||!equipped&&slot==='off'&&offBlocked;
         return '<button type="button" class="inventory-equip-action'+(equipped?' is-equipped':'')+
           '" data-act="inventory-equip-slot" data-index="'+i+'" data-slot="'+slot+'"'+
           (disabled?' disabled':'')+' aria-pressed="'+equipped+'"'+
@@ -959,19 +960,17 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
           '</strong>'+(known.length&&known.length<visible.length?
           '<small>Dati parziali</small>':'')+'</span>';
       };
-      return '<div class="inventory-section-metrics" aria-label="Peso e valore sezione">'+
-        metric('weight','lb','Peso sezione')+metric('value','mo','Valore sezione')+'</div>';
+      return '<span class="inventory-section-metrics" role="group" aria-label="Peso e valore sezione">'+
+        metric('weight','lb','Peso')+metric('value','mo','Valore')+'</span>';
     })():'';
+    const addButton=isScrolls?edit('scroll-create','Crea pergamena','increase'):
+      edit(key,isDocuments?'Aggiungi documento':'Aggiungi oggetto','increase');
     html+=card(name,
-      '<p class="inventory-list-count">'+visible.length+' voci · '+
-        visible.reduce((sum,{info})=>sum+info.quantity,0)+' unità</p>'+
-      sectionMetrics+
       visible.map(row=>renderItem(row,section)).join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
       controls,
-      isScrolls?edit('scroll-create','Crea pergamena','increase'):
-        edit(key,isDocuments?'Aggiungi documento':'Aggiungi oggetto','increase'),
-      'play-inventory-section');
+      sectionMetrics?'<span class="inventory-section-head-tools">'+sectionMetrics+addButton+'</span>':addButton,
+      'play-inventory-section'+(sectionMetrics?' has-section-metrics':''));
   }
  }
  if(sheet==='traits'){

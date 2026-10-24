@@ -24,8 +24,26 @@ try{
  const totals=page.locator('#sheet-play-view .inventory-overview');
  assert.equal(await totals.count(),1,'Existing total cards are retained');
  assert.equal(await page.locator('#sheet-play-view .inventory-section-metrics').count(),2,
-   'Both owned-item sections have weight/value subtotals');
- assert.equal(await page.locator('#sheet-play-view .inventory-section-metrics>span').count(),4);
+   'Both owned-item sections have weight/value subtotals in their headings');
+ assert.equal(await page.locator('#sheet-play-view .play-card-head .inventory-section-metrics>span').count(),4);
+ assert.equal(await page.locator('#sheet-play-view .inventory-list-count').count(),0,
+   'The old inventory item-count stripe must be gone');
+ for(const width of [320,390]){
+  await page.setViewportSize({width,height:844});
+  const headers=await page.locator('.play-inventory-section.has-section-metrics>.play-card-head').evaluateAll(nodes=>
+   nodes.map(header=>{
+    const rect=header.getBoundingClientRect();
+    const boxes=[...header.querySelectorAll('.inventory-section-metrics>span')].map(node=>node.getBoundingClientRect());
+    const tools=header.querySelector('.inventory-section-head-tools')?.getBoundingClientRect();
+    return {boxes:boxes.map(box=>({height:box.height,top:box.top})),
+     within:!!tools&&tools.right<=rect.right+1&&tools.left>=rect.left-1,
+     sameRow:boxes.every(box=>Math.abs(box.top-rect.top)<22)};
+   }));
+  assert.equal(headers.length,2);
+  assert(headers.every(row=>row.within&&row.sameRow&&row.boxes.every(box=>box.height>=36)),
+   'Subtotals must remain within the title row at '+width+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
  const search=page.locator('#sheet-play-view [data-play-search]');
  const layout=await page.evaluate(()=>{
   const a=document.querySelector('.inventory-overview').getBoundingClientRect();

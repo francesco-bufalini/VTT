@@ -1733,7 +1733,7 @@ function inventoryEquipmentView(c,calculated={}){
       (c.hand_grip_two_handed?' checked':'')+'>Due mani (Versatile)</label>':'')+
     '<label class="check equipment-offhand-override"><input type="checkbox" data-field="hand_off_with_two_handed"'+
       (c.hand_off_with_two_handed===true?' checked':'')+
-      '>Consenti la mano secondaria anche con un’arma a due mani</label>'+
+      '>Secondaria libera con arma a due mani</label>'+
     '</div>';
   const defense='<div class="equipment-defense">'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
@@ -5450,28 +5450,30 @@ async function handleAction(target){
      const owned=record.inventory?.[index];
      if(!owned||!['main','off','body'].includes(slot)||!validSlot(owned,slot)||
        slot==='main'&&itemKind(owned)==='shield')throw Error('Slot equipaggiamento non valido.');
+     const equipped=Array.isArray(owned.equipped_slots)&&owned.equipped_slots.includes(slot);
      const main=record.inventory.find(item=>item.equipped_slots?.includes('main'));
      const resolved=main?resolveOwnedItem(main):null;
-     if(slot==='off'&&record.hand_off_with_two_handed!==true&&resolved&&
+     if(!equipped&&slot==='off'&&record.hand_off_with_two_handed!==true&&resolved&&
        (hasProperty(resolved,'2H')||
         record.hand_grip_two_handed&&hasProperty(resolved,'V')))
        throw Error('Mano secondaria occupata. Puoi sbloccarla dal popup Equipaggiamento.');
-     const inventory=equipSlot(record.inventory,slot,index,
+     // A repeated press frees just the chosen slot without re-equipping the item.
+     const inventory=equipSlot(record.inventory,slot,equipped?-1:index,
        {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
+     inventory[index].equipped=inventory[index].equipped_slots.length>0;
      const nextMain=inventory.find(item=>item.equipped_slots?.includes('main'));
      const nextResolved=nextMain?resolveOwnedItem(nextMain):null;
      const grip=Boolean(nextResolved&&hasProperty(nextResolved,'V')&&record.hand_grip_two_handed);
      if(slot==='main'&&grip&&record.hand_off_with_two_handed!==true)
        for(const item of inventory)item.equipped_slots=(item.equipped_slots||[]).filter(s=>s!=='off');
      const trait=(state.traitRows||[]).find(row=>row.origin_key==='item:'+String(owned.id||''));
-     const overrides=trait?traitActivationPatch(record,trait,true):{};
+     const overrides=trait?traitActivationPatch(record,trait,inventory[index].equipped):{};
      await patch({...overrides,inventory,
        ...(slot==='main'?{hand_main_special:'none',hand_grip_two_handed:grip,
          ...((nextResolved&&hasProperty(nextResolved,'2H')||grip)&&
            record.hand_off_with_two_handed!==true?{hand_off_special:'none'}:{})}:{}),
        ...(slot==='off'?{hand_off_special:'none'}:{})});
      state.inventorySelectedIndex=index;
-     state.sheetPopup='equipment';state.sheetPopupTitle='Equipaggiamento';
      await render();return;
    }
    if(act==="inventory-equip"){

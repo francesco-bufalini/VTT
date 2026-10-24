@@ -153,6 +153,7 @@ jobs:
             navigation)
               node tests/navigation_browser.mjs
               node tests/inventory_search_browser.mjs
+              node tests/inventory_equipment_browser.mjs
               ;;
             sheets)
               node tests/sheet_play_browser.mjs

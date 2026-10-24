@@ -4276,7 +4276,8 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
   outline:2px solid #f4d29b;outline-offset:2px;
 }
 #sheet-context-dialog[data-context="equipment"] .equipment-offhand-override{
-  padding:9px 10px;border:1px solid #a783524d;border-radius:9px;
+  padding:0;border:0;background:none;box-shadow:none;
+  font-size:11px;white-space:nowrap;
 }
 
 /* Shared popup, search and selectable-list presentation.
@@ -4335,13 +4336,30 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 .inventory-search-notice{margin:0;padding:10px;color:#c8b396;font-size:11px;line-height:1.45}
 .inventory-search-notice button,.inventory-search-more{border:0;background:transparent;
  color:#e8c28a;text-decoration:underline;cursor:pointer;padding:4px;font-size:11px}
-.inventory-section-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
- gap:8px;margin:4px 12px 12px}
-.inventory-section-metrics>span{display:flex;min-width:0;flex-direction:column;gap:3px;
- border:1px solid #aa824c27;border-radius:9px;padding:9px 11px;background:#3427212f}
-.inventory-section-metrics small{font:500 10px/1.3 system-ui;color:#bdaa91}
-.inventory-section-metrics strong{font:600 13px/1.2 system-ui;color:#f0d4a0;
- font-variant-numeric:tabular-nums}
+/* Section weight/value sit beside the title; no additional item-count strip. */
+.play-inventory-section.has-section-metrics>.play-card-head{display:flex;
+ align-items:center;gap:6px;min-height:58px;padding:7px 8px 7px 11px}
+.play-inventory-section.has-section-metrics>.play-card-head h2{
+ min-width:0;flex:1 1 auto;overflow-wrap:anywhere;font-size:14px;line-height:1.3}
+.inventory-section-head-tools{display:flex;align-items:center;gap:5px;flex:0 0 auto;min-width:0}
+.inventory-section-head-tools>.play-button{min-width:40px;min-height:40px;padding:7px;flex:none}
+.inventory-section-metrics{display:flex;align-items:stretch;gap:5px;margin:0;min-width:0}
+.inventory-section-metrics>span{display:flex;align-items:center;justify-content:center;
+ min-width:58px;max-width:100px;min-height:40px;flex-direction:column;gap:2px;
+ border:1px solid #aa824c43;border-radius:8px;padding:5px 7px;background:#3427214d;
+ text-align:center}
+.inventory-section-metrics small{font:500 9px/1.15 system-ui;color:#bdaa91}
+.inventory-section-metrics strong{font:600 11px/1.18 system-ui;color:#f0d4a0;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:360px){
+ .play-inventory-section.has-section-metrics>.play-card-head{padding-inline:7px;gap:4px}
+ .play-inventory-section.has-section-metrics>.play-card-head h2{font-size:12px}
+ .inventory-section-head-tools{gap:3px}
+ .inventory-section-head-tools>.play-button{min-width:36px;min-height:38px;padding:5px}
+ .inventory-section-metrics{gap:3px}
+ .inventory-section-metrics>span{min-width:50px;max-width:78px;min-height:38px;padding:4px}
+ .inventory-section-metrics strong{font-size:10px}
+}
 .play-inventory-section .inventory-search-highlight>.inventory-play-item{
  background:#8b653d3f;box-shadow:inset 3px 0 #e5bd7e,inset 0 0 0 1px #c49b6580}
 .play-inventory-section .inventory-search-highlight>.inventory-play-item:hover{
@@ -4353,8 +4371,7 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 .inventory-search-add-fields :is(select,input){box-sizing:border-box;width:100%;min-width:0;
  border:1px solid #ad855059;border-radius:8px;padding:9px;
  background:#2c2220;color:#edd7b6}
-@media(max-width:350px){.inventory-section-metrics{margin:4px 7px 10px;gap:5px}
- .inventory-section-metrics>span{padding:8px 7px}}
+
 
 
 /* PWA-wide dialog chrome. Even highly specific legacy dialog selectors must
