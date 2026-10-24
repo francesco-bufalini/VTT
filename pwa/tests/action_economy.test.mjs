@@ -97,8 +97,12 @@ test('class-only attacks keep both the offhand bonus and opportunity reaction',(
  assert(plain.querySelector('[data-action-timing="bonus"] [data-attack-id="unarmed:off"]'));
  assert(plain.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
  assert.equal(plain.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×2');
- assert.equal(plain.querySelector('[data-action-timing="action"] .play-badge').textContent,'1',
-  'Available attacks are counted separately from the number of attacks per action');
+ assert.equal(plain.querySelectorAll('[data-action-timing]>.play-battle-action-heading>.play-badge').length,0,
+  'Timing headings never show counts of available entries');
+ assert.equal(plain.querySelectorAll('[data-action-timing="action"] .play-battle-attacks-per-action').length,1,
+  'Only the multiattack count remains on the Attack action heading');
+ assert.equal(plain.querySelector('[data-action-timing="bonus"] .play-battle-attacks-per-action'),null,
+  'The attack count is never repeated on bonus actions');
  const protectedHand=render([unarmed,shield]);
  assert(protectedHand.querySelector('[data-action-timing="bonus"] [data-attack-id="shield:improvised:off:shield"]'));
  assert(!protectedHand.querySelector('[data-action-timing="action"] [data-attack-id="shield:improvised:off:shield"]'));
