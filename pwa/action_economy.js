@@ -125,6 +125,33 @@ export function topSkillEntries(calculated={},limit=4){
    .sort((a,b)=>b.bonus-a.bonus||a.label.localeCompare(b.label,'it')||a.id.localeCompare(b.id))
    .slice(0,limit);
 }
+// The attack-action multiplier is shared by the legacy action list and the
+// mobile battle heading, so the same active traits control both views.
+export function attacksPerAction(record={},calculated={}){
+ const counts={'extra attack':2,'extra attack (2)':3,'extra attack (3)':4,
+  'two extra attacks':3,'three extra attacks':4,'thirsting blade':2,'devouring blade':3};
+ let amount=1;
+ for(const feature of arr(calculated.features)){
+  if(feature?.inactive||feature?.disabled)continue;
+  amount=Math.max(amount,counts[String(feature?.name||'').trim().toLowerCase()]||1);
+  const explicit=Number(feature?.attacks_per_action??feature?.attack_count);
+  if(Number.isInteger(explicit)&&explicit>1)amount=Math.max(amount,explicit);
+ }
+ for(const action of arr(record.stat_block?.action)){
+  if(!/^multiattac(?:k|co)$/i.test(String(action?.name||'').trim()))continue;
+  const explicit=Number(action?.attacks_per_action??action?.attack_count);
+  if(Number.isInteger(explicit)&&explicit>1){amount=Math.max(amount,explicit);continue;}
+  // 5etools monster entries usually state a single explicit total.
+  // Only accept that wording for the visual counter, never infer attacks from
+  // a list of named weapons or from other descriptive abilities.
+  const written=details(action.entries??action.description);
+  const match=written.match(/\b(?:makes?|can make|effettua|può effettuare)\s+(?:up to\s+)?(\d+|one|two|three|four|five|six|uno|due|tre|quattro|cinque|sei)\s+(?:(?:melee|ranged|weapon|spell|arma)\s+)*attacks?\b/i);
+  const words={one:1,two:2,three:3,four:4,five:5,six:6,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6};
+  const count=match?Number(match[1])||words[match[1].toLowerCase()]:0;
+  if(count>1)amount=Math.max(amount,count);
+ }
+ return amount;
+}
 export function actionEntries(record={},calculated={},spells=[],featureOverrides=[],generalActions=generalActionsCache||[],enabledVariants=[]){
  const out=[];
  const edition=record.rules_version==='2024'?'2024':'2014';
@@ -225,13 +252,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  // Extra Attack modifies the Attack action; it is not a separate action.
  const attackAction=out.find(row=>row.id==='attack');
  if(attackAction){
-  const counts={'extra attack':2,'extra attack (2)':3,'extra attack (3)':4,
-   'two extra attacks':3,'three extra attacks':4,'thirsting blade':2,'devouring blade':3};
-  let amount=1;
-  for(const feature of arr(calculated.features)){
-   if(feature.inactive||feature.disabled)continue;
-   amount=Math.max(amount,counts[String(feature.name||'').toLowerCase()]||1);
-  }
+  const amount=attacksPerAction(record,calculated);
   if(amount>1){
    attackAction.name+=' ×'+amount;
    attackAction.attack_count=amount;
@@ -583,7 +604,15 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
 
  const classAbilities=battleAbilityEntries(record,calculated,entries,activatedAbilities);
  const classIds=new Set(classAbilities.filter(row=>!String(row.id||'').startsWith('activated:')));
- const weapon=entries.filter(row=>(!onlyClass||row.origin!=='general')&&row.id!=='attack'&&row.id!=='two_weapon'&&
+ // Keep the opportunity reaction in the short "Solo privilegi" view too.
+ // It requires a melee strike but must not vanish with the general rules.
+ const opportunity=entries.find(row=>row.id==='opportunity');
+ if(!opportunity&&[...attacksById.values()].some(row=>row.melee)){
+  entries.push({id:'opportunity',name:'Attacco di opportunità',time:'reaction',type:'Attacco',
+   origin:'general',description:'Attacco in mischia effettuato come reazione.'});
+ }
+ const weapon=entries.filter(row=>(!onlyClass||row.origin!=='general'||row.id==='opportunity')&&
+  row.id!=='attack'&&row.id!=='two_weapon'&&
   (row.type==='Attacco'||row.parent_action==='attack'||row.parent_action==='two_weapon'||row.id==='opportunity'));
  const weaponIds=new Set(weapon);
  const movement=entries.filter(row=>(!onlyClass||row.origin!=='general')&&!weaponIds.has(row)&&!classIds.has(row)&&
@@ -620,7 +649,10 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    String(a.name||'').localeCompare(String(b.name||''),'it'));
   return matching.length?'<details class="play-battle-action-group" data-action-timing="'+esc(time)+'">'+
    '<summary class="play-battle-action-heading">'+actionGlyph(HEADER_GLYPHS[time]||'proficiency')+
-   '<span>'+esc(label)+'</span><span class="play-badge">'+matching.length+'</span></summary>'+
+   '<span>'+esc(label)+'</span>'+
+   (kind==='attacks'&&time==='action'&&attacksPerAction(record,calculated)>1?
+    '<span class="play-battle-attacks-per-action" aria-label="'+esc(attacksPerAction(record,calculated))+' attacchi per azione" title="Attacchi per azione">×'+esc(attacksPerAction(record,calculated))+'</span>':'')+
+   '<span class="play-badge">'+matching.length+'</span></summary>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||(onlyClass?'':'<p class="play-empty">Nessuna azione disponibile.</p>');
