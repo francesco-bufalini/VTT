@@ -633,7 +633,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    '<span>'+esc(label)+'</span>'+
    (kind==='attacks'&&time==='action'&&attacksPerAction(record,calculated)>1?
     '<span class="play-battle-attacks-per-action" aria-label="'+esc(attacksPerAction(record,calculated))+' attacchi per azione" title="Attacchi per azione">×'+esc(attacksPerAction(record,calculated))+'</span>':'')+
-   '<span class="play-badge">'+matching.length+'</span></summary>'+
+   '</summary>'+
    '<div class="play-battle-action-rows">'+matching.map(row=>kind==='spells'?battleSpellRow(row):
     battleAttackRow(row,calculated,attacksById,descriptions)).join('')+'</div></details>':'';
  }).join('')||(onlyClass?'':'<p class="play-empty">Nessuna azione disponibile.</p>');
