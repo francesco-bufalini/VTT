@@ -3,9 +3,9 @@
     "format": 1,
     "source": "FightClub5eXML + 5etools",
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
-    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-paladin-scag.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-warlock-scag.xml",
+    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-paladin-scag.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-warlock-scag.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-fighter-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-druid-xge.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014-rule PHB and SCAG). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+    "note": "Curated consumable class counters (2014-rule PHB, SCAG and XGE). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "classes": [
     {
@@ -161,6 +161,141 @@
             }
           ],
           "source": "PHB"
+        },
+        {
+          "name": "Balm of the Summer Court",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "4",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "6",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "7",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "8",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "9",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "11",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "12",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "13",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "14",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "16",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "17",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "18",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "19",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "20",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "XGE",
+          "subclass": "Circle of Dreams"
+        },
+        {
+          "name": "Hidden Paths",
+          "steps": [
+            {"level": 10, "value": "wis_mod", "reset": "long_rest"}
+          ],
+          "minimum": 1,
+          "source": "XGE",
+          "subclass": "Circle of Dreams"
+        },
+        {
+          "name": "Walker in Dreams",
+          "steps": [
+            {"level": 14, "value": "1", "reset": "long_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Circle of Dreams"
+        },
+        {
+          "name": "Spirit Totem",
+          "steps": [
+            {"level": 2, "value": "1", "reset": "short_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Circle of the Shepherd"
+        },
+        {
+          "name": "Faithful Summons",
+          "steps": [
+            {"level": 14, "value": "1", "reset": "long_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Circle of the Shepherd"
         }
       ]
     },
@@ -238,6 +373,58 @@
           "source": "PHB",
           "subclass": "Battle Master",
           "origin_feature": "Combat Superiority"
+        },
+        {
+          "name": "Fighting Spirit",
+          "steps": [
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "XGE",
+          "subclass": "Samurai"
+        },
+        {
+          "name": "Strength before Death",
+          "steps": [
+            {
+              "level": 18,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "XGE",
+          "subclass": "Samurai"
+        },
+        {
+          "name": "Unwavering Mark (Special Attack)",
+          "column": "Unwavering Mark Special Attack",
+          "origin_feature": "Unwavering Mark",
+          "steps": [
+            {
+              "level": 3,
+              "value": "str_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "minimum": 1,
+          "source": "XGE",
+          "subclass": "Cavalier"
+        },
+        {
+          "name": "Warding Maneuver",
+          "steps": [
+            {
+              "level": 7,
+              "value": "con_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "minimum": 1,
+          "source": "XGE",
+          "subclass": "Cavalier"
         }
       ]
     },

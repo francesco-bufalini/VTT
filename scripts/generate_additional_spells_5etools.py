@@ -33,6 +33,13 @@ def gather(checkout: Path) -> dict:
                 blocks = item.get("additionalSpells")
                 if not isinstance(blocks, list) or not blocks:
                     continue
+                if kind == "subrace" and any(
+                    "additionalSpells" in version and version["additionalSpells"] is None
+                    for version in item.get("_versions", [])
+                ):
+                    # The spell package is one selectable version, not a
+                    # grant from the unspecialized subrace itself.
+                    continue
                 row = {
                     "kind": kind,
                     "name": item["name"],

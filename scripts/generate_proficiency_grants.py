@@ -54,8 +54,15 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
         if kind == "subrace":
             row["raceName"] = record.get("raceName", "")
             row["raceSource"] = record.get("raceSource", "")
+        # Some subraces have mutually exclusive _versions. A null field in
+        # one version explicitly removes the parent grant for that choice;
+        # the unspecialized parent row must not grant it to every variant.
+        alternative_fields = {
+            field for version in record.get("_versions", [])
+            for field in FIELDS if field in version and version[field] is None
+        } if kind == "subrace" else set()
         for field in FIELDS:
-            if field in record:
+            if field in record and field not in alternative_fields:
                 row[field] = record[field]
         if kind == "feat":
             # Preserve upstream structured values when present.

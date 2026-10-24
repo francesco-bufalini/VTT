@@ -86,6 +86,33 @@ func run() -> void:
 	assert(crown_actions.size() == 4)
 	assert(String(crown_actions[3].get("tracker_id", "")) == String(crown_tracker.get("id", "")))
 	assert(_tracker(_sheet("Paladin", "2014", 20, "Oath of Devotion"), "Exalted Champion").is_empty())
+	var samurai := _sheet("Fighter", "2014", 18, "Samurai")
+	assert(int(_tracker(samurai, "Fighting Spirit").get("max", 0)) == 3)
+	assert(int(_tracker(samurai, "Strength before Death").get("max", 0)) == 1)
+	var samurai_actions := Mechanics.action_entries(samurai, Trackers.for_creature(samurai))
+	assert(samurai_actions.size() == 2)
+	assert(String(samurai_actions[0].get("activation", "")) == "bonus")
+	var cavalier := _sheet("Fighter", "2014", 7, "Cavalier")
+	cavalier["abilities"]["str"] = 16
+	cavalier["abilities"]["con"] = 16
+	assert(int(_tracker(cavalier, "Unwavering Mark (Special Attack)").get("max", 0)) == 3)
+	assert(int(_tracker(cavalier, "Warding Maneuver").get("max", 0)) == 3)
+	assert(Mechanics.action_entries(cavalier, Trackers.for_creature(cavalier)).size() == 1)
+	var dreams := _sheet("Druid", "2014", 14, "Circle of Dreams")
+	assert(int(_tracker(dreams, "Balm of the Summer Court").get("max", 0)) == 14)
+	assert(int(_tracker(dreams, "Hidden Paths").get("max", 0)) == 3)
+	assert(int(_tracker(dreams, "Walker in Dreams").get("max", 0)) == 1)
+	var dreams_actions := Mechanics.action_entries(dreams, Trackers.for_creature(dreams))
+	assert(dreams_actions.size() == 3, "Two paths plus base Wild Shape")
+	var multiclass_dreams := _sheet("Druid", "2014", 15, "Circle of Dreams")
+	multiclass_dreams["classes"] = [
+		{"name": "Druid", "source": "PHB", "level": 10, "subclass": "Circle of Dreams", "subclass_source": "XGE"},
+		{"name": "Fighter", "source": "PHB", "level": 5}
+	]
+	assert(int(_tracker(multiclass_dreams, "Balm of the Summer Court").get("max", 0)) == 10)
+	var shepherd := _sheet("Druid", "2014", 14, "Circle of the Shepherd")
+	assert(String(_tracker(shepherd, "Spirit Totem").get("recharge", "")) == "short_rest")
+	assert(int(_tracker(shepherd, "Faithful Summons").get("max", 0)) == 1)
 
 	for kind: String in ["Barbarian", "Cleric", "Druid", "Fighter", "Paladin"]:
 		var level := 3

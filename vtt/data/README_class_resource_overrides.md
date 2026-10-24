@@ -3,8 +3,8 @@
 The runtime reads `vtt/data/class_mechanics_5etools.json` for 5etools class-table
 progressions and complements it with `vtt/data/class_resource_overrides.json`.
 The latter is a curated snapshot of *counter metadata* taken from the public
-FightClub5eXML compendium files for the PHB and the non-reprinted SCAG
-Undying/Crown subclasses, plus separately identified 2024 Bard,
+FightClub5eXML compendium files for the PHB, the non-reprinted SCAG
+Undying/Crown subclasses and XGE Samurai/Cavalier/Dreams/Shepherd, plus separately identified 2024 Bard,
 Fighter, Paladin, Sorcerer and Wizard entries from the source-qualified
 5etools class features, and Artificer TCE class/subclass counter limits.
 The game never fetches Fight Club or other websites.
@@ -42,6 +42,10 @@ Repository: https://github.com/vidalvanbergen/fightclub5exml
 `Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/`
 (`class-paladin-scag.xml` and `class-warlock-scag.xml`).
 
+2014-rule XGE source path in that repo:
+`Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/`
+(`class-fighter-xge.xml` and `class-druid-xge.xml`).
+
 To regenerate approved entries, use an **already downloaded, local** checkout:
 
 ```sh
@@ -60,7 +64,15 @@ The TCE Artificer resource limits are checked against source-qualified
 `creature_references_5etools.json` and `subclass_features_5etools.json`.
 The SCAG Undying/Crown counters are checked against their Fight Club XML and
 source-qualified `subclass_features_5etools.json`; the PHB-only generator
-does not regenerate that separately curated subclass entry.
+does not regenerate those separately curated subclass entries.
+The XGE Samurai/Cavalier limits use the same source-qualified trait checks.
+Fight Club has an explicit counter for Fighting Spirit; the other limits
+are stated in its feature text and corroborated by 5etools. The PHB-only
+generator preserves these entries as well.
+The XGE Dreams Balm dice pool uses Fight Club's explicit Druid-level steps
+2–20, so multiclass total level cannot inflate it. Spirit Totem and Faithful
+Summons also have explicit XML counters; Hidden Paths and Walker in Dreams
+are checked against both source texts.
 Their free-use counters do not model chosen elixirs, a cannon object, spell
 slot alternatives or targets; those mechanics need separate structured data.
 The 2024 Second Wind class-table progression is already supplied by

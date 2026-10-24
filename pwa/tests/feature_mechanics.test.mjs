@@ -108,6 +108,59 @@ test('non-reprinted SCAG Monk and Paladin actions require their own 2014 subclas
   .some(row=>row.name==='Exalted Champion'),false);
 });
 
+test('XGE Samurai and Cavalier counters use their own trait and limit only the special attack',()=>{
+ const samurai=creature('Fighter','2014',18,'Samurai');
+ const samuraiTrackers=calculateSheet(samurai,catalogs).trackers;
+ const fighting=samuraiTrackers.find(row=>row.name==='Fighting Spirit');
+ const strength=samuraiTrackers.find(row=>row.name==='Strength before Death');
+ assert.equal(fighting?.max,3);
+ assert.equal(strength?.max,1);
+ assert([fighting,strength].every(row=>row.recharge==='long_rest'&&row.origin_id.includes('subclass')));
+ const samuraiActions=actionsFor(samurai,samuraiTrackers).filter(row=>row.rule_id.startsWith('fighter_phb_samurai_'));
+ assert.deepEqual(samuraiActions.map(row=>row.time),['bonus','reaction']);
+ assert.equal(samuraiActions[0].tracker_id,fighting.id);
+ const cavalier={...creature('Fighter','2014',7,'Cavalier'),abilities:{str:16,dex:10,con:16,int:10,wis:10,cha:10}};
+ const cavalierTrackers=calculateSheet(cavalier,catalogs).trackers;
+ const mark=cavalierTrackers.find(row=>row.name==='Unwavering Mark (Special Attack)');
+ const ward=cavalierTrackers.find(row=>row.name==='Warding Maneuver');
+ assert.equal(mark?.max,3);
+ assert.equal(mark?.id,'class:fighter:phb:unwavering_mark_special_attack');
+ assert.equal(mark?.origin_name,'Tratto · Unwavering Mark');
+ assert.equal(ward?.max,3);
+ assert.equal(actionsFor(cavalier,cavalierTrackers).find(row=>row.rule_id==='fighter_phb_cavalier_warding_maneuver')?.tracker_id,ward.id);
+ assert.equal(calculateSheet(creature('Fighter','2014',18,'Champion'),catalogs).trackers
+  .some(row=>['Fighting Spirit','Warding Maneuver'].includes(row.name)),false);
+ assert.equal(calculateSheet(creature('Fighter','2024',18,'Samurai'),catalogs).trackers
+  .some(row=>row.name==='Fighting Spirit'),false);
+});
+
+test('XGE Dreams and Shepherd retain class-level pools, shared uses and trait actions',()=>{
+ const dreams=creature('Druid','2014',14,'Circle of Dreams');
+ const own=calculateSheet(dreams,catalogs).trackers;
+ const balm=own.find(row=>row.name==='Balm of the Summer Court');
+ const paths=own.find(row=>row.name==='Hidden Paths');
+ const walker=own.find(row=>row.name==='Walker in Dreams');
+ assert.equal(balm?.max,14);
+ assert.equal(paths?.max,3);
+ assert.equal(walker?.max,1);
+ assert([balm,paths,walker].every(row=>row.recharge==='long_rest'&&row.origin_id.includes('subclass')));
+ const actions=actionsFor(dreams,own).filter(row=>row.rule_id.startsWith('druid_phb_dreams_'));
+ assert.deepEqual(actions.map(row=>row.time),['bonus','action']);
+ assert(actions.every(row=>row.tracker_id===paths.id));
+ assert.equal(actionsFor(dreams,own).some(row=>row.feature==='Balm of the Summer Court'),false,
+  'variable die spend must not become a fixed-cost action');
+ const multiclass={...creature('Druid','2014',15,'Circle of Dreams'),classes:[
+  {name:'Druid',source:'PHB',level:10,subclass:'Circle of Dreams',subclass_source:'XGE'},
+  {name:'Fighter',source:'PHB',level:5}]};
+ assert.equal(calculateSheet(multiclass,catalogs).trackers.find(row=>row.name==='Balm of the Summer Court')?.max,10);
+ const shepherd=creature('Druid','2014',14,'Circle of the Shepherd');
+ const flock=calculateSheet(shepherd,catalogs).trackers;
+ assert.equal(flock.find(row=>row.name==='Spirit Totem')?.recharge,'short_rest');
+ assert.equal(flock.find(row=>row.name==='Faithful Summons')?.max,1);
+ assert.equal(actionsFor(shepherd,flock).find(row=>row.rule_id==='druid_phb_shepherd_spirit_totem')?.time,'bonus');
+ assert.equal(flock.some(row=>row.name==='Balm of the Summer Court'),false);
+});
+
 test('2024 short rest recovers one use, long rest recovers all, without modifying counters in stored sheet',()=>{
  for(const [name,level,res] of [['Barbarian',3,'Rages'],['Cleric',4,'Channel Divinity'],
   ['Druid',5,'Wild Shape'],['Fighter',3,'Second Wind'],['Paladin',5,'Channel Divinity']]){

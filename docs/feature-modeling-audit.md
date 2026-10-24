@@ -106,6 +106,66 @@ Per `Oath of the Crown` è stata corretta la normalizzazione generica dei nomi
 di sottoclasse in Godot: rimuove in ordine `Oath of` e `the`, così il dato
 `Crown` corrisponde al nome completo già salvato senza eccezioni dedicate.
 
+## Lotto 2026-10-24: Fighter XGE Samurai e Cavalier
+
+Le due sottoclassi XGE, usate con Fighter PHB, non hanno `reprintedAs` nel
+5etools sorgente. Controllate le **15 voci** `subclassFeature` (7 Samurai,
+8 Cavalier) contro FightClub5eXML `class-fighter-xge.xml`
+(`2f6c94111ea863648ecea2ece01b3df07685f579`). Il suo contatore esplicito
+per Fighting Spirit conferma tre usi; per gli altri tre limiti si sono
+confrontati il testo XML e la voce strutturata 5etools, senza inferire usi da
+un titolo o da un'altra edizione.
+
+| Sottoclasse e privilegio (livello) | Esito |
+| --- | --- |
+| Samurai (3) | Intestazione della sottoclasse. |
+| Bonus Proficiency (3) | Abilità oppure lingua scelta; nessuna scelta precompilata. |
+| Fighting Spirit (3) | **Ora strutturati:** 3 usi/riposo lungo e azione bonus del tratto XGE. Vantaggio e PF temporanei 5/10/15 richiedono stato e livello della classe. |
+| Elegant Courtier (7) | Modificatore Saggezza sulla sola Persuasion e competenza in TS Saggezza, con sostituzione a scelta se già posseduta. |
+| Tireless Spirit (10) | Recupera un uso di Fighting Spirit all'iniziativa **solo a zero**; non un reset completo. |
+| Rapid Strike (15) | Un attacco aggiuntivo una volta nel turno solo rinunciando al vantaggio su un tiro idoneo. |
+| Strength before Death (18) | **Ora strutturati:** 1 uso/riposo lungo e reazione del tratto XGE. Il turno extra al trigger 0 PF e i TS morte restano contestuali. |
+| Cavalier (3) | Intestazione della sottoclasse. |
+| Bonus Proficiency (3) | Abilità oppure lingua scelta. |
+| Born to the Saddle (3) | Vantaggio e movimento solo nel contesto di cavalcare/cadere. |
+| Unwavering Mark (3) | **Ora strutturato:** solo il limite dell'**attacco speciale** (modificatore Forza, minimo uno, riposo lungo), con origine nel tratto. Il marchio iniziale non consuma usi. |
+| Warding Maneuver (7) | **Ora strutturati:** usi pari al modificatore Costituzione, minimo uno, riposo lungo, e reazione. Bersaglio vicino, arma/scudo, d8 alla CA e resistenza condizionale restano manuali. |
+| Hold the Line (10) | Attacco di opportunità e velocità zero richiedono posizione, movimento e colpo reale. |
+| Ferocious Charger (15) | Movimento in linea, colpo e TS per Prone, una volta nel turno. |
+| Vigilant Defender (18) | Reazione speciale per opportunità su turni altrui; non è un contatore ordinario. |
+
+`Unwavering Mark (Special Attack)` è il nome del contatore, mentre
+`origin_feature` punta esattamente al tratto `Unwavering Mark`. Il testo del
+marchio resta utilizzabile senza spendere quel contatore.
+
+## Lotto 2026-10-24: Druid XGE Dreams e Shepherd
+
+Entrambe le sottoclassi per Druid PHB sono senza `reprintedAs` nel 5etools
+sorgente. Controllate le **11 voci** `subclassFeature` (5 Dreams, 6 Shepherd)
+contro FightClub5eXML `class-druid-xge.xml`
+(`f73f8113290da33348f2ab2a90e0a28b9d065e18`). L'XML contiene 19 passi
+espliciti per il pool di Balm, dal livello da Druido 2 al 20: sono riportati
+nei dati senza usare il livello totale del personaggio in multiclasse.
+
+| Sottoclasse e privilegio (livello) | Esito |
+| --- | --- |
+| Dreams: Circle of Dreams (2) | Intestazione della sottoclasse. |
+| Dreams: Balm of the Summer Court (2) | **Ora strutturato:** pool di d6 pari al livello da Druido, riposo lungo. Ogni uso spende un numero *scelto* di dadi fino a metà livello: nessuna falsa azione a costo fisso. |
+| Dreams: Hearth of Moonlight and Shadow (6) | Sfera scelta all'inizio di un riposo, con bonus solo all'interno e limiti di copertura; non un +5 permanente. |
+| Dreams: Hidden Paths (10) | **Ora strutturati:** usi pari a Saggezza (minimo uno), riposo lungo, due attivazioni sullo stesso pool: bonus per sé, azione per creatura consenziente toccata. Posizione e spazio libero restano manuali. |
+| Dreams: Walker in Dreams (14) | **Ora strutturato:** un uso/riposo lungo. Incantesimo scelto dopo un riposo breve, destinazione speciale e fallimento non consumante restano aperti. |
+| Shepherd: Circle of the Shepherd (2) | Intestazione della sottoclasse. |
+| Shepherd: Speech of the Woods (2) | Lingua Silvano e comunicazione con bestie; attribuire la lingua al tratto esatto. |
+| Shepherd: Spirit Totem (2) | **Ora strutturati:** un uso/riposo breve e azione bonus per evocare. Tipo di spirito scelto, aura, durata e spostamento del totem restano contestuali. |
+| Shepherd: Mighty Summoner (6) | PF e attacchi delle creature evocate da propri incantesimi; non un bonus al Druido. |
+| Shepherd: Guardian Spirit (10) | Cura a fine turno delle creature evocate dentro l'aura del totem. |
+| Shepherd: Faithful Summons (14) | **Ora strutturato:** un uso/riposo lungo, ma attivazione solo al trigger 0 PF o Incapacitated involontario; creature e durata restano aperte. |
+
+L'XML porta inoltre contatori espliciti per Spirit Totem e Faithful Summons;
+per Hidden Paths e Walker in Dreams il limite è verificato sul testo di XML e
+5etools. Il modello mantiene gli ID dei tratti e non trasforma la magia di
+Shepherd in una capacità generica della classe.
+
 ## Lotto 2026-10-23: Fighter e Dwarf
 
 Fonti confrontate: `vtt/data/player_5etools_catalog.json` (identità),
