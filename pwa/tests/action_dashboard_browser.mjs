@@ -69,6 +69,20 @@ try{
     const collapse=page.locator('[data-act="battle-collapse-all"]');
     assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
     if(width===360){
+     const physical=page.locator('[data-battle-action="attacks"]');
+     assert.match(await physical.locator('summary.play-battle-summary').textContent(),/^Attacchi$/);
+     assert.equal(await physical.locator('[data-action-timing]').count(),0,'Attacks are not divided by action cost');
+     assert.equal(await physical.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is always available');
+     const resources=page.locator('[data-battle-action="resources"]');
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),3);
+     assert.equal(await resources.locator('[data-ability-resource="free"]').count(),0,
+      'Unlimited abilities are not placed in a fake free tracker');
+     const actionSection=page.locator('[data-battle-action="others"]');
+     assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
+     assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
+     assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
+     assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
      const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
      const groups=movement.locator('.play-battle-action-group[data-action-timing]');
