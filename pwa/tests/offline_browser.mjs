@@ -77,7 +77,10 @@ try {
     const cache = await caches.open(currentCache);
     const paths = ["/", "/index.html", "/main.js", "/ui.js", "/storage.js",
       "/creatures.js", "/styles.css", "/catalog/class_mechanics.json",
-      "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json"];
+      "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json",
+      "/catalog/miniatures.json", "/catalog/combat_action_supplements_5etools.json",
+      "/icons/action_controls.svg", "/icons/gold_generated/gold_2.svg",
+      "/icons/info/identity.svg", "/icon-192.png"];
     return (await Promise.all(paths.map(path => cache.match(path)))).every(Boolean);
   }, null, { timeout: 60000 });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
@@ -90,6 +93,22 @@ try {
   hostDown = true;
   await page.reload();
   await archive();
+  // Static app resources must come straight from CacheStorage (not from the
+  // 502 proxy), including sprite atlases and assets referenced by CSS.
+  const offlineAssets = await page.evaluate(async () => {
+    const paths = ["/main.js", "/ui.js", "/styles.css", "/mobile_metal_theme.css",
+      "/icons/gold_generated/gold_2.svg", "/icons/action_controls.svg",
+      "/icons/info/identity.svg", "/icon-192.png", "/catalog/miniatures.json"];
+    return Promise.all(paths.map(async path => {
+      const response = await fetch(path + (path.endsWith(".png") ? "?v=installed" : ""),
+        { cache: "no-store" });
+      return { path, ok: response.ok, type: response.headers.get("content-type") };
+    }));
+  });
+  assert(offlineAssets.every(row => row.ok),
+    "Offline static assets missing: " + JSON.stringify(offlineAssets.filter(row => !row.ok)));
+  assert(offlineAssets.find(row => row.path === "/icons/gold_generated/gold_2.svg")
+    .type.includes("image/svg+xml"));
   await page.locator('[data-act="open"]').first().click();
   await rename("Creatura modificata offline");
   await page.reload();

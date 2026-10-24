@@ -1,6 +1,6 @@
 // Bump this version with every app-shell release. User data is in IndexedDB,
 // outside the service worker cache, and MUST NEVER be purged on updates.
-const CACHE = "vtt-mobile-shell-v131";
+const CACHE = "vtt-mobile-shell-v132";
 const CATALOGS = ["/catalog/backgrounds.json", "/catalog/features.json", "/catalog/items.json", "/catalog/miniatures.json"];
 const SHELL = ["/creature_variants.js", "/creature_variants_view.js", "/", "/index.html", "/main.js", "/ui.js", "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/condition_catalog.js", "/chat_notifications.js", "/action_economy.js", "/icons/action_dashboard_gloss.svg", "/icons/action_extras.svg", "/icons/gold_generated/gold_0.svg", "/icons/gold_generated/gold_1.svg", "/icons/gold_generated/gold_2.svg", "/icons/gold_generated/gold_3.svg", "/icons/info/identity.svg", "/icons/info/physique.svg", "/icons/info/progression.svg", "/icons/info/talents.svg", "/icons/info/biography.svg", "/catalog/species_types.json", "/feature_mechanics.js", "/trait_state_rules.js", "/native_sheet.js", "/item_controls.js", "/item_detail_facts.js", "/documents.js", "/spell_selection.js", "/activated_abilities.js", "/character_core.js", "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/sheet_rules.js", "/structured_effects.js", "/pending_choices.js", "/sheet_rules_view.js", "/sheet_roll_origin.js", "/demo.js", "/tactical_view.js", "/session_map.js", "/catalog_data.js", "/styles.css", "/mobile_metal_theme.css", "/client.js", "/storage.js", "/creatures.js", "/creature_format.js",
   "/catalog/action_feature_overrides.json", "/catalog/combat_action_supplements_5etools.json", "/catalog/combat_actions_5etools.json", "/icons/action_controls.svg", "/catalog/effects_5etools.json", "/catalog/feature_timing_recovery_rules.json", "/catalog/classes.json", "/catalog/ability_grants.json", "/catalog/activated_abilities.json", "/catalog/class_resource_overrides.json", "/catalog/class_mechanics.json", "/catalog/trait_states.json", "/catalog/proficiency_grants.json", "/catalog/player.json", "/catalog/spells.json", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png", "/icon-1024.png"];
@@ -8,8 +8,8 @@ const SHELL = ["/creature_variants.js", "/creature_variants_view.js", "/", "/ind
 // Catalog JSONs can be very large and the Godot host has limited concurrent
 // connections. Downloading everything with cache.addAll() during install can
 // starve the actual UI requests and fail the whole worker on one bad response.
-// Prioritize code needed for offline startup. Decorative icons and large
-// catalogs are cached on demand instead of competing with module downloads.
+// Prioritize executable code, essential rules, icon atlases and the miniature
+// index. Only bulky supplementary compendia download after activation.
 // Installation is atomic for executable code and essential character rules:
 // a partial cache must NEVER replace a previously working offline version.
 const CORE_SHELL = SHELL.filter(path =>
@@ -20,18 +20,30 @@ const REQUIRED_CATALOGS = [
   "/catalog/player.json", "/catalog/spells.json",
   "/catalog/feature_timing_recovery_rules.json", "/catalog/trait_states.json",
   "/catalog/activated_abilities.json", "/catalog/effects_5etools.json", "/catalog/species_types.json",
-  "/catalog/action_feature_overrides.json", "/catalog/combat_actions_5etools.json"
+  "/catalog/action_feature_overrides.json", "/catalog/combat_actions_5etools.json",
+  "/catalog/combat_action_supplements_5etools.json",
+  "/catalog/class_resource_overrides.json",
+  "/catalog/miniatures.json"
 ];
-const REQUIRED_SHELL = [...new Set([...CORE_SHELL, ...REQUIRED_CATALOGS])];
+// Fonts and sprite atlases are UI dependencies, not optional decoration:
+// cached CSS without its icons results in an unusable offline interface.
+const REQUIRED_ICONS = SHELL.filter(path =>
+  path.startsWith("/icons/") || /^\/icon(?:-|\.)/.test(path));
+const REQUIRED_SHELL = [...new Set([...CORE_SHELL, ...REQUIRED_CATALOGS, ...REQUIRED_ICONS])];
 const OPTIONAL_SHELL = [...new Set([...SHELL, ...CATALOGS])]
   .filter(path => !REQUIRED_SHELL.includes(path));
 
 function usableResponse(path, response) {
   if (!response?.ok) return false;
-  // A reverse proxy can occasionally serve a 200 HTML fallback for a .js
-  // request. WebKit rejects it as a module; never poison our offline cache.
-  if (/\.js$/.test(path) &&
-      !/javascript|ecmascript/i.test(response.headers.get("content-type") || "")) return false;
+  // A reverse proxy can return HTTP 200 with HTML for a missing JS, JSON,
+  // CSS or image. Never make that invalid body our offline copy.
+  const type = response.headers.get("content-type") || "";
+  if (/\.js$/.test(path)) return /javascript|ecmascript/i.test(type);
+  if (/\.json$|\.webmanifest$/.test(path)) return /json/i.test(type);
+  if (/\.css$/.test(path)) return /text\/css/i.test(type);
+  if (/\.svg$/.test(path)) return /image\/svg\+xml/i.test(type);
+  if (/\.png$/.test(path)) return /image\/png/i.test(type);
+  if (path === "/" || /\.html$/.test(path)) return /text\/html/i.test(type);
   return true;
 }
 
@@ -80,37 +92,33 @@ self.addEventListener("message", event => {
     event.waitUntil(cacheAssets(OPTIONAL_SHELL));
 });
 self.addEventListener("fetch", event => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin ||
-      url.pathname.startsWith("/api/")) return; // Never cache game state/credentials.
-  if (!SHELL.includes(url.pathname) && !CATALOGS.includes(url.pathname) && url.pathname!=="/catalog/bestiary.json" && !url.pathname.startsWith("/catalog/bestiary/")) return;
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== self.location.origin ||
+      url.pathname.startsWith("/api/")) return; // No caching of game state or credentials.
+  if (!SHELL.includes(url.pathname) && !CATALOGS.includes(url.pathname) &&
+      url.pathname !== "/catalog/bestiary.json" &&
+      !url.pathname.startsWith("/catalog/bestiary/")) return;
 
-  // Store by path, not by request URL: /?open=chat must still use the cached /.
-  const network = fetch(event.request, { cache: "no-store" });
-  event.waitUntil(network.then(response => {
-    if (!usableResponse(url.pathname, response)) return;
-    const copy = response.clone();
-    return caches.open(CACHE).then(cache => cache.put(url.pathname, copy));
-  }).catch(error => console.warn("VTT offline caching skipped:", error)));
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    // Cache-first is essential for Android/Chromium: attempting the network on
+    // every module, stylesheet and SVG adds multi-second delays and can reject
+    // the module graph while the desktop or Tailscale proxy is unavailable.
+    // Each app release gets a new atomic cache, so cached modules stay in sync.
+    // Query strings (/?open=chat and icon ?v=...) resolve to the same asset.
     const cached = await cache.match(url.pathname);
-    let timer;
+    if (cached) return cached;
     try {
-      // An unreachable desktop or HTTPS reverse proxy may hang without
-      // rejecting promptly. Prefer the cached version after a short grace.
-      const response = await Promise.race([
-        network, new Promise(resolve => { timer = setTimeout(() => resolve(null), 1800); })
-      ]);
-      if (usableResponse(url.pathname, response)) return response;
-      // Tailscale Serve may return 502/504 (not just 503) when Godot is down.
-      if (cached) return cached;
-      if (response) return response;
-      return await network;
+      const response = await fetch(request, { cache: "no-store" });
+      if (!usableResponse(url.pathname, response)) return response;
+      // Opportunistically store lazily opened bestiary segments too. If the
+      // device is low on space, deliver the network response nonetheless.
+      await cache.put(url.pathname, response.clone()).catch(error =>
+        console.warn("VTT offline caching skipped:", url.pathname, error));
+      return response;
     } catch (_) {
-      return cached || Response.error();
-    } finally {
-      clearTimeout(timer);
+      return Response.error();
     }
   })());
 });
