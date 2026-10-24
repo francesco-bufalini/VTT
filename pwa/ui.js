@@ -3365,7 +3365,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
          '</div></div>';
      }).join('')+'</div>':'')+'</section>';
  dialog.innerHTML='<h2>'+esc(heading)+
-   '<button type="button" class="sheet-roll-close vtt-popup-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-sheet-roll','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
    '<div class="sheet-roll-math"><span>Tipo di tiro</span><strong>'+esc(rollType)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
@@ -3402,7 +3402,7 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.dataset.scoreTarget=target;
  dialog.dataset.returnFormulaTitle=returnTitle;
  dialog.innerHTML='<h2>Modifica valore base'+
-   '<button type="button" class="sheet-roll-close vtt-popup-close" data-act="close-score" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-score','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-base-editor-body">'+
      '<p class="sheet-base-editor-eyebrow">'+esc(title)+'</p>'+
      '<label class="sheet-base-editor-field" for="sheet-score-input">Valore base'+
@@ -3439,7 +3439,7 @@ function openSheetScoreFormula(record,calculated,target,label){
  const terms=sheetScoreOriginSegments(record,calculated,target).map(row=>
    row.kind==='base'&&editableScoreBaseTarget(target)?{...row,editBaseTarget:target}:row);
  dialog.innerHTML='<h2>'+esc(title)+
-   '<button type="button" class="sheet-roll-close vtt-popup-close" data-act="close-score-formula" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-score-formula','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-roll-math"><span>Valore calcolato</span><strong>'+esc(value)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del valore</span>'+
    '<div class="sheet-roll-formula-line"><div data-score-formula>'+
@@ -3506,7 +3506,7 @@ function openPendingChoiceDialog(choice){
    'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
    ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
-   (rows||customRow?'<div class="pending-choice-options">'+rows+customRow+'</div>':
+   (rows||customRow?'<div class="pending-choice-options vtt-selection-list">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
    '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
    '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
@@ -3561,13 +3561,21 @@ async function handleAction(target){
   if(act==='catalog-more'){
     state.catalogResultLimit+=90;
     const results=app.querySelector('#catalog-results');
-    if(results)results.innerHTML=renderCatalogRows();
+    if(results){
+      const previousScroll=results.scrollTop;
+      results.innerHTML=renderCatalogRows();
+      results.scrollTop=previousScroll;
+    }
     return;
   }
   if(act==='spell-results-more'){
     state.spellResultLimit+=60;
     const results=app.querySelector('#spell-results');
-    if(results)results.innerHTML=renderSpellResults();
+    if(results){
+      const previousScroll=results.scrollTop;
+      results.innerHTML=renderSpellResults();
+      results.scrollTop=previousScroll;
+    }
     return;
   }
   if(act==='feat-remove'){
