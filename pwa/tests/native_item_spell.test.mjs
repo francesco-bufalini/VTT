@@ -100,6 +100,23 @@ test("offhand override preserves a two-handed main weapon but never puts 2H weap
   assert.deepEqual(normal[2].equipped_slots,[]);
 });
 
+test("clearing an equipment slot does not re-equip or remove unrelated equipment",()=>{
+  const sword={name:"Spada",type:"M",properties:["L"],equipped_slots:[],quantity:1};
+  const shield={name:"Scudo",type:"S",equipped_slots:[],quantity:1};
+  const armor={name:"Corazza",type:"HA",equipped_slots:[],quantity:1};
+  const main=equipSlot([sword,shield,armor],"main",0);
+  const armored=equipSlot(main,"body",2);
+  const both=equipSlot(armored,"off",1);
+  const withoutShield=equipSlot(both,"off",-1);
+  assert.deepEqual(withoutShield.map(item=>item.equipped_slots),[["main"],[],["body"]]);
+  const withoutSword=equipSlot(withoutShield,"main",-1);
+  assert.deepEqual(withoutSword.map(item=>item.equipped_slots),[[],[],["body"]]);
+  const withoutArmor=equipSlot(withoutSword,"body",-1);
+  assert.deepEqual(withoutArmor.map(item=>item.equipped_slots),[[],[],[]]);
+  const doubleHand=equipSlot([{name:"Spadone",type:"M",properties:["2H"],equipped_slots:[]}],"main",0);
+  assert.deepEqual(equipSlot(doubleHand,"main",-1)[0].equipped_slots,[]);
+});
+
 test("identical shields collapse into one quantity stack without losing occupied hands",()=>{
   const template={id:"shield:phb",name:"Shield",type:"S",ac:2,source:"PHB"};
   const main={...createOwnedItem(template,"shield_1"),equipped_slots:["main"]};
