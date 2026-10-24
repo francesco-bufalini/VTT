@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {featureTableSpellGrants,supplementalFeatureSpellGrants,sessionSpellEntries} from '../spell_selection.js';
 
@@ -101,4 +102,15 @@ test('Luckstone grants all ability checks, initiative and saving throws only whe
    {itemGrants:[itemRule]});
  assert.equal(own.values.initiative-without.values.initiative,2,
    'specific structured fields override the supplemental fallback');
+});
+
+test('actual bundled Alchemist subclass table grants real spells at levels 3 and 5',()=>{
+ const index=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
+ const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
+ const bundled=JSON.parse(readFileSync(new URL('../catalog/spells.json',import.meta.url),'utf8')).spells;
+ const record=artificer('Alchemist',5);
+ const projected=calculateSheet(record,{classFeatures:index,classMechanics:mechanics,spells:bundled});
+ const spells=projected.origin_spells.filter(g=>/alchemist.*spells/i.test(g.origin_name||''));
+ assert.equal(spells.length,4,'class-feature catalog should preserve the structured Alchemist Spells table');
+ assert.ok(spells.every(g=>g.mode==='prepared'&&g.payment_mode==='slot'));
 });
