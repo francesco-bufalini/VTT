@@ -67,9 +67,9 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
  assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
- assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
- assert.equal(opportunity.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
- assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
+ assert(!opportunity.querySelector('[data-act="battle-damage-roll"]'),
+  'Opportunity shows the generic action, not the main-hand weapon roll');
+ assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
@@ -106,7 +106,9 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
  assert(others.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
  assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×2');
  assert.equal(projected.basicActions.find(row=>row.id==='two_weapon').available,false);
- assert(!others.querySelector('[data-attack-id="two_weapon"]'));
+ assert(others.querySelector('[data-attack-id="two_weapon"]'),
+  'Offhand action stays visible even when unavailable');
+ assert.match(others.querySelector('[data-attack-id="two_weapon"]').textContent,/Equipaggia/);
  assert(!doc(battleActionPanels(record,{attacks:[unarmed,off],features:[
   {name:'Extra Attack',attacks_per_action:2,disabled:true}]},[],[],catalog.actions).others)
   .querySelector('.play-battle-attacks-per-action'));
@@ -603,6 +605,7 @@ test('basic action availability derives from melee, spell slots and a real dual-
  assert.equal(actions.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
  const naked=battleActionPanels(base,{attacks:[unarmed],spell_slots:[]},[],[],catalog.actions);
  assert.equal(naked.basicActions.find(a=>a.id==='two_weapon').available,false);
+ assert(doc(naked.others).querySelector('[data-attack-id="two_weapon"]'));
  assert.equal(naked.basicActions.find(a=>a.id==='spell_cast').available,false);
  const withShield={...base,inventory:[
   {...base.inventory[0],properties:[]},
@@ -637,4 +640,28 @@ test('extra attack stays next to the Attack row; the flat list never repeats it'
  assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
  assert(!result.attacks.includes('play-battle-attacks-per-action'));
  assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));
+});
+
+test('improvised shield strike remains among Attacchi while the offhand action is separate',()=>{
+ const shield={id:'shield:improvised:off:shield',name:'Scudo · arma improvvisata',
+  slot:'shield',hand:'off',melee:true,hit:3,damage:'1d4'};
+ const result=battleActionPanels({rules_version:'2014'},
+  {attacks:[shield,{id:'unarmed',name:'Colpo senz’armi',melee:true,hit:2,damage:'1'}]},[],[],catalog.actions);
+ const attacks=doc(result.attacks),actions=doc(result.others);
+ assert(attacks.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert(actions.querySelector('[data-attack-id="two_weapon"]'));
+ assert(!actions.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert.match(actions.querySelector('[data-attack-id="two_weapon"]').textContent,/Equipaggia/);
+ assert(!actions.querySelector('[data-attack-id="opportunity"] .play-battle-attack-roll'));
+});
+
+test('spellcasting action opens Powers directly without an intermediary dialog',()=>{
+ const record={rules_version:'2014'};
+ const result=battleActionPanels(record,{spell_slots:[{level:1,total:2}]},[],[],catalog.actions);
+ const dom=doc(result.others);
+ const cast=dom.querySelector('[data-attack-id="spell_cast"]');
+ assert(cast);
+ assert.equal(cast.querySelector('[data-act="action-open-spells"]').tagName,'BUTTON');
+ assert(!cast.querySelector('details'),'No intermediate disclosure is required');
+ assert.equal(result.spells,'','The separate battle spell section has been removed');
 });
