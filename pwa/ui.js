@@ -32,7 +32,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -1160,7 +1160,10 @@ async function traitsView(c){
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    '</div></details></div>';
+    '</div></details>'+
+    (trait.category==='talenti'&&trait.rank===0?
+      '<button type="button" class="trait-feat-remove" data-act="feat-remove" data-feat-key="'+esc(trait.origin_key)+'" title="Rimuovi talento" aria-label="Rimuovi il talento '+esc(trait.name)+'">×</button>':'')+
+    '</div>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const originKind=(category,origin)=>{
@@ -3487,18 +3490,23 @@ function openPendingChoiceDialog(choice){
  const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
  Object.assign(labels,abilities);
  const known=knownProficiencyOptions(state.editor?.read()||{},state.calculated||{},choice);
- const rows=choice.options.map(key=>'<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
-   '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
-   '><span>'+esc(labels[key]||key)+'</span>'+
-   (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
-   '</label>').join('');
+ const rows=choice.options.map(key=>{
+   const mixed=choice.proficiency_kind==='mixed',at=mixed?key.indexOf(':'):-1;
+   const kind=mixed?key.slice(0,at):'',item=mixed?key.slice(at+1):key;
+   const label=(kind==='skill'?'Abilità · ':kind==='tool'?'Strumento · ':'')+(labels[item]||item);
+   return '<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
+     '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
+     '><span>'+esc(label)+'</span>'+
+     (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
+     '</label>';
+ }).join('');
  const customValues=choice.custom_values||[];
  const customRow=choice.custom_allowed?
    '<div class="pending-choice-option pending-choice-custom'+(choice.count===1?' pending-choice-option--single':'')+'">'+
      '<label class="pending-choice-custom-label"><input type="checkbox" name="pending-options" value="__custom__"'+
      (customValues.length?' checked':'')+'><span>＋ Personalizzata…</span></label>'+
      '<input type="text" data-pending-custom-value maxlength="250" autocomplete="off" '+
-     'placeholder="Nome dello strumento o della lingua" value="'+esc(customValues.join(', '))+'"'+
+     'placeholder="'+(choice.proficiency_kind==='mixed'?'Nome dello strumento personalizzato':'Nome dello strumento o della lingua')+'" value="'+esc(customValues.join(', '))+'"'+
      (customValues.length?'':' disabled')+' aria-label="Nomi personalizzati, separati da virgole">'+
    '</div>':'';
  dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
@@ -3537,8 +3545,44 @@ function openPendingChoiceDialog(choice){
  update();
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
+function openRemoveFeatDialog(originKey){
+ const record=state.editor?.read();
+ if(!record)throw Error('Apri una creatura prima di rimuovere talenti.');
+ removeOwnedFeatPatch(record,originKey);
+ const feat=(record.feats_catalog||[]).find(row=>row?.name&&
+   'feat|'+(row.id||String(row.name).trim().toLowerCase()+'|'+String(row.source||'').trim().toLowerCase())===originKey);
+ if(!feat)throw Error('Talento non più disponibile.');
+ app.querySelector('#feat-remove-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='feat-remove-dialog';dialog.className='sheet-context-dialog feat-remove-dialog';
+ dialog.dataset.featKey=originKey;
+ dialog.innerHTML='<header class="sheet-context-head"><h2>Rimuovere talento?</h2>'+
+   '<button type="button" class="play-button" data-act="feat-remove-cancel" aria-label="Chiudi">×</button></header>'+
+   '<div class="sheet-context-body"><p>Vuoi rimuovere <strong>'+esc(feat.name)+'</strong> dai talenti posseduti? '+
+   'Le competenze scelte tramite questo talento non saranno più concesse.</p></div>'+
+   '<footer class="pending-choice-actions"><button type="button" data-act="feat-remove-cancel">Annulla</button>'+
+   '<button type="button" data-act="feat-remove-confirm">Rimuovi talento</button></footer>';
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ app.append(dialog);
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+}
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='feat-remove'){
+    openRemoveFeatDialog(target.dataset.featKey||'');return;
+  }
+  if(act==='feat-remove-cancel'){
+    const dialog=app.querySelector('#feat-remove-dialog');
+    if(dialog?.close)dialog.close();else dialog?.remove();
+    return;
+  }
+  if(act==='feat-remove-confirm'){
+    const dialog=app.querySelector('#feat-remove-dialog');
+    const key=dialog?.dataset.featKey||'';
+    if(!key)throw Error('Seleziona il talento da rimuovere.');
+    const changes=removeOwnedFeatPatch(state.editor.read(),key);
+    dialog.remove();await patch(changes);await render();return;
+  }
   if(act==='pending-choice-manage'){
     openPendingChoicesIndex();return;
   }
