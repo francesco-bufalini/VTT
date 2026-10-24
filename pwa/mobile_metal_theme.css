@@ -3976,3 +3976,93 @@ dialog.sheet-context-dialog{border-bottom:0}
 .variant-list{display:grid;gap:10px;margin:16px 0}.variant-list article{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line,#746445);border-radius:10px;padding:12px}.variant-list article>strong{overflow-wrap:anywhere}
 .variant-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:4px}.variants-dialog label.check{display:flex;align-items:center;gap:10px;min-height:48px}.variants-dialog .btn{min-height:48px}.variants-dialog input[type=checkbox]{width:22px;height:22px;flex-shrink:0}.variants-dialog textarea{width:100%}.variants-dialog select{max-width:100%}
 .variants-dialog [data-variant-editor]:not(:empty){margin-top:20px;padding-top:16px;border-top:1px solid var(--line,#746445)}
+
+
+/* The inventory has one shared search above its container cards. */
+.inventory-global-search{display:flex;align-items:center;width:100%;min-width:0;margin:8px 0 4px;
+ border:1px solid #af88534d;border-radius:10px;background:#241d1b75;padding:0 11px}
+.inventory-global-search .vtt-action-glyph{flex:none;width:18px;height:18px;color:#c6a67c}
+.inventory-global-search input[type=search]{flex:1;min-width:0;width:100%;border:0!important;
+ background:transparent!important;box-shadow:none!important;color:#f0dbc0;min-height:45px!important;
+ font:500 13px/1.4 system-ui,sans-serif}
+.inventory-global-search:focus-within{border-color:#d4ab74;box-shadow:0 0 0 2px #d4ab7422}
+/* Compact, permanently visible first row of the item popup. */
+#sheet-context-dialog[data-context^="item:"] .sheet-context-body{padding:12px 15px 20px}
+#sheet-context-dialog[data-context^="item:"] .play-item-editor>.inventory-table-row{
+ margin:0;padding:0 0 14px;border-bottom:1px solid #b18b5940
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-fields{gap:12px}
+#sheet-context-dialog[data-context^="item:"] .play-item-main-fields{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-main-fields>label{min-width:0;gap:6px;
+ font:600 11px/1.4 system-ui,sans-serif;color:#ccb392}
+#sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls{
+ grid-template-columns:32px minmax(0,1fr) 32px;gap:4px;width:100%;min-width:0
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls input{
+ height:38px;min-height:38px!important;padding:4px;min-width:0!important;
+ font-size:14px!important;text-align:center;border:1px solid #b38f5d6e;border-radius:7px;
+ background:#221c1b;color:#f3ddbd
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-qty-btn{
+ width:32px!important;min-width:32px!important;min-height:38px!important;
+ border:1px solid #ad8a5d63;border-radius:7px;background:#674a363b;
+ color:#eed3ae;font-size:18px
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-main-fields select{
+ box-sizing:border-box;display:block;min-height:38px;width:100%;min-width:0;
+ border:1px solid #b38f5d6e;border-radius:7px;background:#2d2421;
+ color:#ead1aa;font:500 12px/1.4 system-ui,sans-serif;padding:6px 8px
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-main-fields select:disabled{
+ opacity:.75;cursor:default
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-popup-attunement{
+ display:flex;flex-direction:row;align-items:center;gap:12px;
+ padding:10px 12px;border:1px solid #b28a5849;border-radius:10px;
+ background:linear-gradient(110deg,#80592f2b,#30241d55);cursor:pointer
+}
+.inventory-popup-attunement input[type=checkbox]{
+ appearance:none;-webkit-appearance:none;display:grid;place-items:center;flex:none;
+ width:21px;height:21px;min-width:21px;min-height:21px;margin:0;
+ border:1.5px solid #bd9b69;border-radius:6px;background:#241e1c;cursor:pointer
+}
+.inventory-popup-attunement input[type=checkbox]::after{
+ content:'✓';color:#261d16;font:bold 14px/1 system-ui,sans-serif;opacity:0
+}
+.inventory-popup-attunement input[type=checkbox]:checked{
+ background:#d9b47d;border-color:#e5c79b
+}
+.inventory-popup-attunement input[type=checkbox]:checked::after{opacity:1}
+.inventory-popup-attunement input[type=checkbox]:focus-visible{
+ outline:2px solid #f3d29a;outline-offset:3px
+}
+.inventory-popup-attunement>span{display:grid;gap:3px;min-width:0}
+.inventory-popup-attunement strong{color:#f3dbb3;font:600 12px/1.3 system-ui,sans-serif}
+.inventory-popup-attunement small{color:#bdae95;font:400 11px/1.4 system-ui,sans-serif}
+#sheet-context-dialog[data-context^="item:"] .inventory-description-panel{margin:0;padding:0}
+#sheet-context-dialog[data-context^="item:"] .inventory-detail-facts{gap:12px;
+ margin:12px 0 18px;padding:12px;border-radius:10px;background:#2d242064}
+#sheet-context-dialog[data-context^="item:"] .inventory-detail-facts dt{font-size:10px}
+#sheet-context-dialog[data-context^="item:"] .inventory-detail-facts dd{
+ font-size:12px;line-height:1.55;overflow-wrap:anywhere
+}
+.inventory-trait-link{width:100%;display:flex;align-items:center;gap:9px;
+ min-height:40px;padding:9px 11px;margin:3px 0 10px;text-align:left;
+ background:#654a2d40;color:#edca91;border:1px solid #ae8b5973;
+ border-radius:9px;font:600 12px/1.4 system-ui,sans-serif;cursor:pointer}
+.inventory-trait-link .vtt-action-glyph{width:18px;height:18px;flex:none}
+.inventory-trait-link>span:last-child{margin-left:auto}
+.inventory-trait-link:hover{background:#80603c55;border-color:#dcb47e}
+.inventory-trait-link:focus-visible{outline:2px solid #e8c38b;outline-offset:2px}
+@media(max-width:359px){
+ #sheet-context-dialog[data-context^="item:"] .sheet-context-body{padding-inline:10px}
+ #sheet-context-dialog[data-context^="item:"] .play-item-main-fields{gap:7px}
+ #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-quantity-controls{
+  grid-template-columns:28px minmax(0,1fr) 28px;gap:3px
+ }
+ #sheet-context-dialog[data-context^="item:"] .play-item-fields .inventory-qty-btn{
+  width:28px!important;min-width:28px!important
+ }
+}
