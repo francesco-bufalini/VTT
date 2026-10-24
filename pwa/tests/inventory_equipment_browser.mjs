@@ -67,6 +67,10 @@ try{
    const {listCreatures}=await import('/creatures.js');
    return (await listCreatures())[0].creature.hand_off_with_two_handed===true;
  });
+ await page.waitForFunction(()=>{
+  const control=document.querySelector('#sheet-context-dialog[data-context="equipment"] [data-equip-slot="off"]');
+  return control&&!control.disabled;
+ });
  assert.equal(await popup().locator('[data-equip-slot="off"]').isDisabled(),false);
  await close();
 
