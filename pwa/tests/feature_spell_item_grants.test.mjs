@@ -40,7 +40,7 @@ test('structured subclass table grants exactly the spells unlocked at the class 
   'phb2014_flaming_sphere','phb2014_melfs_acid_arrow']);
  assert.ok(grants.every(g=>g.origin_id===feature.origin_id&&g.origin_name===feature.name&&g.mode==='prepared'));
  assert.equal(featureTableSpellGrants(artificer('Alchemist',3),[feature],spells).length,2);
- assert.equal(featureTableSpellGrants(artificer('Alchemist',9),[feature],spells).length,5);
+ assert.equal(featureTableSpellGrants(artificer('Alchemist',9),[feature],spells).length,6);
  assert.equal(featureTableSpellGrants(artificer('Alchemist',9),[{...feature,name:'Expanded Spell List'}],spells).length,0);
 });
 
@@ -110,7 +110,7 @@ test('actual bundled Alchemist subclass table grants real spells at levels 3 and
  const bundled=spells; // Spells are generated at deployment; use a deterministic lookup fixture.
  const record=artificer('Alchemist',5);
  const projected=calculateSheet(record,{classFeatures:index,classMechanics:mechanics,spells:bundled});
- const spells=projected.origin_spells.filter(g=>/alchemist.*spells/i.test(g.origin_name||''));
- assert.equal(spells.length,4,'class-feature catalog should preserve the structured Alchemist Spells table');
- assert.ok(spells.every(g=>g.mode==='prepared'&&g.payment_mode==='slot'));
+ const granted=projected.origin_spells.filter(g=>/alchemist.*spells/i.test(g.origin_name||''));
+ assert.equal(granted.length,4,'class-feature catalog should preserve the structured Alchemist Spells table');
+ assert.ok(granted.every(g=>g.mode==='prepared'&&g.payment_mode==='slot'));
 });
