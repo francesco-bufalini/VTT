@@ -138,6 +138,20 @@ export function removeSelectedSpell(creature,target,index,{classId,classes=[],ca
 }
 
 
+// The scoped loader only has spell IDs after a feature asks for them.
+// A 5etools {@spell} tag provides a stable name/source, so derive the standard
+// PHB/XPHB catalog identifier before fetching its full definition on demand.
+function featureSpellReference(token,edition,catalog){
+ const found=originSpellId(token,edition,catalog);
+ if(found)return found;
+ const [name,source='']=norm(token).split('#')[0].split('|');
+ if(source&&!['phb','xphb'].includes(source))return '';
+ const slug=name.replace(/['’]/g,'').replace(/[\\/-\\s]+/g,'_')
+   .replace(/[^a-z0-9_]/g,'').replace(/_+/g,'_');
+ if(!slug)return '';
+ return source==='xphb'||!source&&edition==='2024'?slug:'phb2014_'+slug;
+}
+
 // Subclass spell tables are structured 5etools data (not description prose).
 // Each grant retains the *feature* identity so it can appear under its trait.
 export function featureTableSpellGrants(record={},features=[],catalog=[],castingClasses=[]){
@@ -178,7 +192,7 @@ export function featureTableSpellGrants(record={},features=[],catalog=[],casting
        if(!Number.isInteger(requirement)||requirement<1||requirement>current)continue;
        for(const column of spellColumns){
          for(const match of String(row[column]||'').matchAll(/\{@spell\s+([^}]+)\}/gi)){
-           const id=originSpellId(match[1],edition,catalog);
+           const id=featureSpellReference(match[1],edition,catalog);
            if(!id||seen.has(feature.origin_id+'|'+id))continue;
            seen.add(feature.origin_id+'|'+id);
            grants.push({id:'feature-spell:'+feature.origin_id+'|'+id,
@@ -216,7 +230,7 @@ export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],
    for(const stage of arr(rule.levels)){
      if(!Number.isInteger(Number(stage.level))||Number(stage.level)>current)continue;
      for(const token of arr(stage.spells)){
-       const id=originSpellId(token,edition,catalog);
+       const id=featureSpellReference(token,edition,catalog);
        if(!id||seen.has(feature.origin_id+'|'+id))continue;
        seen.add(feature.origin_id+'|'+id);
        grants.push({id:'supplemental-spell:'+feature.origin_id+'|'+id,
