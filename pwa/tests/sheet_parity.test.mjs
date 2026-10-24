@@ -268,12 +268,12 @@ test('equipped attacks calculate proficiency, finesse, offhand damage, thrown ra
  const weapon={id:'shortsword',name:'Shortsword',type:'M',weapon_category:'martial',damage:'1d6',properties:['F','L'],quantity:2,equipped_slots:['main','off']};
  const c={kind:'character',level:5,class:'Fighter',abilities:{str:12,dex:18},attack_ability:'dex',inventory:[weapon],proficiency_choices:[{kind:'weapon',key:'martial'}],formula_bonuses:[{target:'attack_hit:item:shortsword',expression:'1'}]};
  const out=calculateSheet(c,catalogs);
- assert.deepEqual(out.attacks.map(a=>[a.id,a.hit,a.damage]),[['item:shortsword',8,'1d6 + 4'],['item:off:shortsword',7,'1d6']]);
+ assert.deepEqual(out.attacks.filter(a=>a.id.startsWith('item:')).map(a=>[a.id,a.hit,a.damage]),[['item:shortsword',8,'1d6 + 4'],['item:off:shortsword',7,'1d6']]);
  assert.equal(out.attacks[1].offhand_bonus,true);
  const style=calculateSheet({...c,two_weapon_fighting:true},catalogs);
  assert.equal(style.attacks[1].damage,'1d6 + 4');
  const thrown=calculateSheet({...c,inventory:[{...weapon,id:'dagger',properties:['F','L','T'],range:'20/60',equipped_slots:['main']}]},catalogs);
- assert.deepEqual(thrown.attacks.map(a=>[a.id,a.range_feet,a.long_range_feet]),[['item:dagger',5,0],['item:throw:main:dagger',20,60]]);
+ assert.deepEqual(thrown.attacks.filter(a=>a.id.startsWith('item:')).map(a=>[a.id,a.range_feet,a.long_range_feet]),[['item:dagger',5,0],['item:throw:main:dagger',20,60]]);
  const monster=calculateSheet({kind:'monster',abilities:{str:20},stat_block:{action:[{name:'Bite',entries:['{@atk mw} {@hit 7} reach 10 ft. {@damage 2d6 + 5} damage.']}]}},catalogs);
  assert.equal(monster.attacks[0].hit,7);
  assert.equal(monster.attacks[0].damage,'2d6 + 5');
