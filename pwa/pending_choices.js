@@ -182,7 +182,7 @@ export function savePendingChoice(record,choice,values=[]){
  if(selected.length>choice.count||
     regular.some(key=>!choice.options.includes(key))||
     (custom.length&&(!choice.custom_allowed||choice.kind!=='proficiency'))||
-    custom.some(key=>!key||key.length>80||/[<>{}\\x00-\\x1f]/.test(key)||
+    custom.some(key=>!key||key.length>80||/[<>{}\x00-\x1f]/.test(key)||
        choice.options.includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
  if(choice.kind==='ability'){
