@@ -17,16 +17,25 @@ globalThis.HTMLFormElement=dom.window.HTMLFormElement;
 globalThis.self=dom.window;
 Object.defineProperty(globalThis,"crypto",{value:webcrypto,configurable:true});
 let apiCalls=[];
+const fixtureSpells=[
+  {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1,classes:["Bard","Wizard"]},
+  {id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Bard","Wizard"]}
+];
 globalThis.fetch=async (url,options={})=>{
   apiCalls.push({url,options});
   if(url==="/api/status") return new Response(JSON.stringify({protocol:1,desktop_online:false}),{status:200});
   if(url==="/catalog/player.json") return new Response(JSON.stringify({weapons:[{id:"weapon:longsword|phb",name:"Spada lunga",source:"PHB",type:"M",value:15,ac:null}],feats:[],backgrounds:[]}),{status:200});
-  if(url==="/catalog/spells.json") return new Response(JSON.stringify({version:1,spells:[
-    {id:"spell:shield|phb",name:"Shield",source:"PHB",level:1,classes:["Bard","Wizard"]},
-    {id:"spell:light|phb",name:"Light",source:"PHB",level:0,classes:["Bard","Wizard"]}
-  ]}),{status:200});
+  if(url==="/catalog/spells.json")return new Response(JSON.stringify({version:1,spells:fixtureSpells}),{status:200});
+  if(url==="/catalog/spells/selected"){
+    const {ids=[],classes=[]}=JSON.parse(options.body||'{}');
+    const spellIds=new Set(ids);
+    const spells=fixtureSpells.filter(spell=>spellIds.has(spell.id)||classes.some(row=>
+      spell.level<=row.max_level&&spell.classes.includes(row.name)));
+    return new Response(JSON.stringify({version:1,spells}),{status:200});
+  }
   return new Response(JSON.stringify({error:"no_active_desktop_session"}),{status:503});
 };
+const referenceCatalogFetch=globalThis.fetch;
 const {mount,stopRealtime}=await import("../ui.js");
 const {takeQrPairCode}=await import("../client.js");
 const {listCreatures,loadCreature,exportCreature,openCreatureEditor,saveCreature}=await import("../creatures.js");
@@ -247,6 +256,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const calls=[];
   globalThis.fetch=async (url,options={})=>{
     calls.push({url,options});
+    if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
     if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true}),{status:200});
     if(url==="/api/pair")return new Response(JSON.stringify({token:"a".repeat(64)}),{status:200});
     if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
@@ -423,7 +433,8 @@ test("successful one-time pairing survives an initial transient map error",async
   click('[data-act="disconnect"]');
   await until(()=>document.querySelector("#pair-form"));
   let mapRequests=0, pairRequests=0;
-  globalThis.fetch=async(url)=>{
+  globalThis.fetch=async(url,options={})=>{
+    if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
     if(url==="/api/pair"){
       pairRequests++;
       return new Response(JSON.stringify({token:"b".repeat(64)}),{status:200});
@@ -1125,6 +1136,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'The attack ability scope can be changed in the shared editor');
  assert.equal(document.querySelectorAll('.battle-attack-settings').length,0,
   'The obsolete separate battle attack equipment editor is removed');
+ await until(()=>document.querySelector('.battle-resources-panel .battle-resource-row'),4500);
  assert.ok(document.querySelector('.battle-resources-panel .battle-resource-row'),
   'Trackers use compact action rows in battle');
  assert.ok(document.querySelector('.battle-attacks-panel .battle-attack-row'),
