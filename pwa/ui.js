@@ -1450,7 +1450,7 @@ function scrollSpellCandidates(query=''){
       (String(spell.name).toLocaleLowerCase('it').includes(value)||
        String(spell.source||'').toLocaleLowerCase('it').includes(value)))
     .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it')||
-      String(a.source||'').localeCompare(String(b.source||''),'it')).slice(0,80);
+      String(a.source||'').localeCompare(String(b.source||''),'it'));
 }
 function scrollSpellSelectOptions(query=''){
   const candidates=scrollSpellCandidates(query);
@@ -3218,7 +3218,7 @@ function fillAppliedSpellOptions(query=''){
  const select=app.querySelector('#condition-spell-picker');if(!select)return;
  const rules=state.editor?.read()?.rules_version||'2014';
  const matches=spellsForEdition(state.spellCatalog||[],rules).filter(isPersistentSpell)
-   .filter(row=>row?.id&&row?.name&&String(row.name).toLocaleLowerCase('it').includes(String(query).trim().toLocaleLowerCase('it'))).slice(0,120);
+   .filter(row=>row?.id&&row?.name&&matchesSearch(query,row.name,row.source));
  select.innerHTML=matches.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('');
 }
 // D20 checks and weapon damage use one sheet-roll popup structure.
