@@ -257,6 +257,11 @@ function refreshSheetAfterLateLoad(promise,creatureId,sheet){
     if(sheetLateRefreshTimer)clearTimeout(sheetLateRefreshTimer);
     sheetLateRefreshTimer=setTimeout(()=>{
       sheetLateRefreshTimer=null;
+      // Never replace an open editor/popup or a focused input merely because
+      // an optional spell reference finished downloading. Its rows are already
+      // cached and the next normal render will pick them up.
+      if(document.querySelector('dialog[open]')||
+        app.querySelector('input:focus,textarea:focus,select:focus'))return;
       if(state.page==='library'&&!state.libraryMode&&
         state.creatureId===creatureId&&state.sheet===sheet&&
         app.querySelector('#sheet-play-view')){
