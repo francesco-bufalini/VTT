@@ -44,6 +44,7 @@ const FILES := {
 	"/quick_homebrew.js": ["res://pwa/quick_homebrew.js", "text/javascript; charset=utf-8"],
 	"/catalog/class_resource_overrides.json": ["res://vtt/data/class_resource_overrides.json", "application/json; charset=utf-8"],
 	"/structured_effects.js": ["res://pwa/structured_effects.js", "text/javascript; charset=utf-8"],
+	"/attack_count_benefits.js": ["res://pwa/attack_count_benefits.js", "text/javascript; charset=utf-8"],
 	"/pending_choices.js": ["res://pwa/pending_choices.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/sheet_roll_origin.js": ["res://pwa/sheet_roll_origin.js", "text/javascript; charset=utf-8"],
