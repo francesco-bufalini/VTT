@@ -54,6 +54,24 @@ try{
  assert.notEqual(await toggle('container:bag').evaluate(n=>getComputedStyle(n).backgroundImage),inactiveBackground,
   'Active custom sections need the same visible pressed style as base sections');
  await shot('inventory-sections');
+ // Item popup section selector must dispatch an actual inventory mutation.
+ await page.locator('#sheet-play-view [data-sheet-context="item:1"]').click();
+ const itemDialog=page.locator('#sheet-context-dialog[data-context="item:1"]');
+ await itemDialog.waitFor({state:'visible'});
+ await itemDialog.locator('[data-item-container="1"]').selectOption('case');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.inventory?.[1]?.container_id==='case';
+ });
+ assert.equal(await itemDialog.locator('[data-item-container="1"]').inputValue(),'case',
+   'The item popup must remain usable after changing sections');
+ await itemDialog.locator('[data-item-container="1"]').selectOption('bag');
+ await page.waitForFunction(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures())[0]?.creature?.inventory?.[1]?.container_id==='bag';
+ });
+ await itemDialog.locator('[data-act="sheet-context-close"]').click();
+ assert.deepEqual(await record(),before,'Moving an item back restores inventory data');
  await remove('bag').click();await dialog().waitFor({state:'visible'});
  assert.equal(await toggle('container:bag').getAttribute('aria-pressed'),'true');
  assert(await dialog().locator('[data-container-delete-confirm]').isDisabled());

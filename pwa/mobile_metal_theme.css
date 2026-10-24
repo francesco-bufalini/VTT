@@ -4150,3 +4150,64 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
     flex-basis:148px;gap:4px;padding:7px 6px;font-size:10px;
   }
 }
+
+
+/* Item popup: actions represent a real slot choice, not a checkbox. */
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-field{
+  display:grid;gap:8px;min-width:0;
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-caption{
+  color:#ccb392;font:600 11px/1.4 system-ui,sans-serif;
+}
+#sheet-context-dialog[data-context^="item:"] .play-item-equip-actions{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:42px;
+  padding:9px 12px;border:1px solid #a7835277;border-radius:9px;
+  background:#59412f66;color:#f0d9b6;font:600 12px/1.3 system-ui,sans-serif;
+  cursor:pointer;text-align:center;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action.is-equipped{
+  border-color:#d9bb81;background:#a17e464d;color:#ffedc9;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action:disabled{
+  opacity:.4;cursor:not-allowed;
+}
+#sheet-context-dialog[data-context^="item:"] .inventory-equip-action:focus-visible{
+  outline:2px solid #f4d29b;outline-offset:2px;
+}
+#sheet-context-dialog[data-context="equipment"] .equipment-offhand-override{
+  padding:9px 10px;border:1px solid #a783524d;border-radius:9px;
+}
+
+/* Shared popup, search and selectable-list presentation.
+   Individual dialogs retain their layout, body, actions and state owners. */
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;
+ width:40px;height:40px;min-width:40px;padding:0;
+ border:1px solid transparent;border-radius:10px;background:transparent;
+ color:#ead1ab;font:400 25px/1 system-ui,sans-serif;
+ cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:hover{
+ background:#a9804b30;border-color:#b48c5b70;color:#ffdfab;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:focus-visible{
+ outline:2px solid #f4cd94;outline-offset:2px;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:active{
+ background:#a9804b48;
+}
+.vtt-list-search{display:grid;gap:5px;min-width:0;color:#cfb991;font:600 12px/1.4 system-ui,sans-serif}
+.vtt-list-search input[type=search]{box-sizing:border-box;min-width:0;width:100%;min-height:40px;
+ border:1px solid #ae8a586b;border-radius:9px;padding:9px 11px;
+ background:#211c1abb;color:#f1dfc4;font:400 14px/1.3 system-ui,sans-serif}
+.vtt-list-search input[type=search]:focus-visible{outline:2px solid #eac187;outline-offset:1px}
+.library-miniature-search.vtt-list-search,.play-search.vtt-list-search{display:flex;align-items:center;gap:9px}
+.vtt-selection-list{max-height:min(52dvh,620px);min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.vtt-results-footer{display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:9px;padding:10px 4px 4px;color:#cdbba2;font:500 12px/1.4 system-ui,sans-serif}
+.vtt-results-footer .btn{min-height:38px;border:1px solid #b58d5866;border-radius:9px;
+ padding:7px 12px;color:#f1d0a0;background:#64493242;box-shadow:none;font-size:12px}
+.vtt-results-footer .btn:focus-visible{outline:2px solid #eac187;outline-offset:2px}

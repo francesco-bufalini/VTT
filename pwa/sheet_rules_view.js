@@ -2,7 +2,7 @@ import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph} from "./action_economy.js";
-import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
+import {itemKind,resolveOwnedItem,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,spellScrollLevel,spellScrollName,activeInfusions,hasProperty,validSlot} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
 const inventoryContainers=inventoryModule.inventoryContainers||((record={})=>{
@@ -20,6 +20,7 @@ const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=
 });
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
+import {matchesSearch} from './ui_primitives.js';
 
 export function inventorySectionControls(record,selected=[]){
  const containers=inventoryContainers(record);
@@ -717,7 +718,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
      '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
-     '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
+     '<label class="play-search vtt-list-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
      '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
        const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
        return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
@@ -850,7 +851,24 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       };
       const name=row.querySelector('[data-item-key="name"]');
       const quantity=row.querySelector('.inventory-quantity-controls');
-      const equip=row.querySelector('.inventory-equip-toggle');
+      const kind=itemKind(item);
+      const slots=Array.isArray(item.equipped_slots)?item.equipped_slots:[];
+      const mainItem=(c.inventory||[]).find(entry=>entry.equipped_slots?.includes('main'));
+      const mainResolved=mainItem?resolveOwnedItem(mainItem):null;
+      const offBlocked=c.hand_off_with_two_handed!==true&&mainResolved&&(
+        hasProperty(mainResolved,'2H')||c.hand_grip_two_handed&&hasProperty(mainResolved,'V'));
+      const equipOptions=kind==='weapon'?[['main','Mano primaria'],['off','Mano secondaria']]:
+        kind==='armor'?[['body','Indossa armatura']]:
+        kind==='shield'?[['off','Equipaggia scudo']]:[];
+      const equipButtons=equipOptions.map(([slot,label])=>{
+        const equipped=slots.includes(slot);
+        const disabled=!validSlot(item,slot)||slot==='off'&&offBlocked;
+        return '<button type="button" class="inventory-equip-action'+(equipped?' is-equipped':'')+
+          '" data-act="inventory-equip-slot" data-index="'+i+'" data-slot="'+slot+'"'+
+          (disabled?' disabled':'')+' aria-pressed="'+equipped+'"'+
+          (disabled?' title="Mano secondaria occupata o arma a due mani non compatibile"':'')+'>'+
+          (equipped?'✓ ':'')+esc(label)+'</button>';
+      }).join('');
       if(name)field('Nome oggetto',name);
       const primary=document.createElement('div');primary.className='play-item-main-fields';
       field('Quantità',quantity,primary);
@@ -873,7 +891,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       if(requiresAttunement(resolveOwnedItem(item))){
         form.insertAdjacentHTML('beforeend',inventoryAttunementControl(c,i,d,false));
       }
-      if(equip)field('Equipaggiamento',equip);
+      if(equipButtons){
+        const equipField=document.createElement('div');
+        equipField.className='play-item-equip-field';
+        equipField.innerHTML='<span class="play-item-equip-caption">Equipaggiamento</span>'+
+          '<div class="play-item-equip-actions">'+equipButtons+'</div>';
+        form.append(equipField);
+      }
       row.replaceChildren(form);
     }
     if(row)node.append(row);
@@ -943,8 +967,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=card('Stati attivi',activeConditions.map(({id,label})=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
-  const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name).slice(0,80);
-  const picker='<div class="play-effect-add"><label>Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
+  const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name);
+  const picker='<div class="play-effect-add"><label class="vtt-list-search">Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
   html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
   const active=Object.entries(c.active_class_features||{});
@@ -997,7 +1021,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
  const filter=String(view.search||'').trim().toLocaleLowerCase('it');
- for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!row.dataset.playFilter.includes(filter);
+ for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
  const utilities=app.querySelector(':scope > .archive-tools');
  if(utilities){bind('sheet-tools',utilities);bank.append(utilities);}
