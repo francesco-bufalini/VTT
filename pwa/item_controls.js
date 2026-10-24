@@ -526,7 +526,7 @@ export function activeInfusions(record={},definitions=[],features=[]){
    // Carried items without a slot are automatically in use.
    if(["weapon","shield","armor"].includes(itemKind(owned))&&
       !array(owned.equipped_slots).length)return [];
-   if(requiresAttunement(resolveOwnedItem(owned))&&!owned.attuned)return [];
+   if(requiresAttunement(resolveOwnedItem(owned))&&!itemAttunementCount(owned))return [];
    if(inf.creator_id===record.id&&!source)return [];
    const definition=array(definitions).find(row=>row.id===inf.id);
    if(!definition)return [];

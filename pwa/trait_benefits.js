@@ -132,7 +132,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  }
  for(const row of rows(record.dice_bonuses)){
   if(row.disabled||!belongs(row))continue;
-  add('bonus','Bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
+  const copies=trait.category==='oggetti'&&trait.rank===0?trait.item_active_quantity:1;
+  add('bonus','Bonus',traitBenefitTargetLabel(row.target),signedTraitFormula(row.dice)+(copies>1?' ×'+copies:''),'dice:'+String(row.id||[row.origin_id,row.target,row.dice].join('|')));
  }
  // An attack is a benefit in its own right; bonuses to an attack are
  // separate numeric benefits and must not be confused with the granted attack.

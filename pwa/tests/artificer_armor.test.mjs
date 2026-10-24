@@ -45,6 +45,17 @@ test('PHB Fight Club counter aliases open the actual granting subclass trait',()
   assert.equal(row.origin_name,'Tratto · '+name);
  }
 });
+test('Soul of Artifice counts dedicated copies rather than inventory rows',()=>{
+ const record=sheet('Artificer',20,'TCE'),baseline=calculateSheet(record,catalogs);
+ for(const count of [1,3]){
+  const result=calculateSheet({...record,inventory:[{id:'luckstone',name:'Stone of Good Luck',
+   quantity:4,req_attune:true,attuned:true,attuned_count:count}]},catalogs);
+  assert.equal(result.attunements.used,count);
+  for(const ability of ['str','dex','con','int','wis','cha'])
+   assert.equal(result.saves[ability],baseline.saves[ability]+count);
+ }
+});
+
 test('Defensive Field requires guardian armor and keeps the larger temporary HP pool',()=>{
  const r=sheet('Artificer',8,'TCE','Armorer');
  assert.ok(!classFeatureEntries(r,calculateSheet(r,catalogs)).some(a=>a.class_feature_id==='defensive_field'));

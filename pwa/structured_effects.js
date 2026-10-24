@@ -1,4 +1,5 @@
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {itemAttunementCount} from './item_controls.js';
 // Generic structured effects and fixed proficiency projection based on
 // creature_structured_bonuses.gd and creature_proficiency_rules.gd.
 // No mechanics are inferred from descriptions or HTML/prose.
@@ -297,7 +298,7 @@ export function structuredFeatureGrants(record,catalogs={},features=collectStruc
       if(feature.name==='Magic Item Master')amount=3;
       if(amount)result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'attunement','attunement_max',amount));
       if(feature.name==='Soul of Artifice'){
-        const count=array(record.inventory).filter(i=>i.attuned&&Number(i.quantity??1)>0).length;
+        const count=array(record.inventory).reduce((sum,item)=>sum+itemAttunementCount(item),0);
         for(const ability of ['str','dex','con','int','wis','cha'])result.push(numericGrant(feature.origin_id,'Tratto · '+feature.name,'soul','save:'+ability,count));
       }
     }
