@@ -75,6 +75,29 @@ test("worn shield grants improvised attack and removal withdraws it",()=>{
  assert(!without.attacks.some(a=>a.id.startsWith("shield:improvised:")));
 });
 
+test("automatic unarmed strikes and shield respect offhand availability",()=>{
+ const base=character({abilities:{str:16,dex:14,con:12,int:10,wis:10,cha:10}});
+ const attacks=extra=>calculateSheet({...base,...extra},catalogs).attacks;
+ const bare=attacks({});
+ assert(bare.some(a=>a.id==="unarmed"&&!a.offhand_bonus));
+ assert(bare.some(a=>a.id==="unarmed:off"&&a.slot==="off"&&a.offhand_bonus));
+ assert.equal(bare.find(a=>a.id==="unarmed:off").damage,"4");
+ assert.equal(bare.filter(a=>a.id.startsWith("unarmed")).length,2);
+ const shield={id:"shield",name:"Scudo",type:"S",custom_item_type:"shield",ac:2,quantity:1,equipped_slots:["off"]};
+ const protectedHands=attacks({inventory:[shield]});
+ assert(!protectedHands.some(a=>a.id==="unarmed:off"),"No unarmed offhand while shield occupies it");
+ assert(protectedHands.some(a=>a.id==="shield:improvised:off:shield"&&a.offhand_bonus));
+ const greatsword={id:"great",name:"Spadone",type:"M",custom_item_type:"weapon",
+  damage:"2d6",properties:["2H"],quantity:1,equipped_slots:["main"]};
+ assert(!attacks({inventory:[greatsword]}).some(a=>a.id==="unarmed:off"));
+ assert(attacks({inventory:[greatsword],hand_off_with_two_handed:true}).some(a=>a.id==="unarmed:off"));
+ assert(attacks({inventory:[greatsword,shield],hand_off_with_two_handed:true})
+  .some(a=>a.id==="shield:improvised:off:shield"&&a.offhand_bonus));
+ const special=attacks({hand_main_special:"unarmed",hand_off_special:"unarmed"});
+ assert.deepEqual(special.filter(a=>a.id.startsWith("unarmed")).map(a=>a.id),["unarmed","unarmed:off"],
+  "Legacy manual unarmed selections must not cause duplicates");
+});
+
 test("2014/2024 full, half, pact and multiclass slot progressions match Godot tables",()=>{
   const wizard=spellProgression(character(),[{name:"Wizard",level:5}]);
   assert.deepEqual(wizard.slots.slice(0,4),[0,4,3,2]);
