@@ -4,7 +4,7 @@
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
+ ['bonus','Bonus'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione']
 ];
@@ -70,7 +70,8 @@ export function removeBenefitPatch(record,trait,item){
  const id=String(item.id);
  const collection={bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',defenses:'damage_defense_entries',
-  resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants'}[item.type];
+  resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',
+  attack_count:'attack_count_grants'}[item.type];
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
   if(item.type==='bonus'&&id.startsWith('dice:'))return 'dice:'+String(row.id||'')===id;
@@ -82,6 +83,7 @@ export function removeBenefitPatch(record,trait,item){
   if(item.type==='resources')return 'tracker:'+String(row.id||'')===id;
   if(item.type==='spells')return 'spell:'+String(row.origin_id||'')+':'+String(row.spell_id||'')===id;
   if(item.type==='actions')return 'action:'+String(row.id||'')===id;
+  if(item.type==='attack_count')return 'attack_count:'+String(row.id||'')===id;
   return false;
  }): -1;
  // A user-created row is genuinely removed. Catalog-defined rows are masked
@@ -142,6 +144,13 @@ export function addBenefitPatch(record,trait,kind,values={},id){
    field='formula_bonuses';row={...common,target,expression};
    if(!/^[a-z0-9_+*\-/. ()]+$/i.test(row.expression))throw Error('Formula non valida');
   }
+ }else if(kind==='attack_count'){
+  const value=Number(values.attacks_per_action);
+  if(!Number.isSafeInteger(value)||value<2||value>99)throw Error('Numero di attacchi non valido (2–99)');
+  field='attack_count_grants';
+  row={...common,trait_key:trait.key,
+   parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||'',
+   attacks_per_action:value};
  }else if(kind==='dice'){
   field='dice_bonuses';row={...common,target:required('target'),dice:required('dice')};
   if(!/^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$/i.test(row.dice.replaceAll(' ','')))throw Error('Dadi non validi');
