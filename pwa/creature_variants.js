@@ -67,6 +67,10 @@ export function configureVariant(record,previous,{name=previous.name,sections=pr
  const old=ownedPaths(previous,record);
  v.values={};
  for(const path of ownedPaths(v,record))set(v.values,path,old.some(p=>path===p||path.startsWith(p+'.'))?get(previous.values,path):get(record,path));
+ if(name!==previous.name){
+  if(!v.sections.includes('*')&&!v.sections.includes('name'))v.sections.push('name');
+  v.values.name=name;
+ }
  v.sources=Object.fromEntries(Object.entries(v.sources||{}).filter(([key])=>key==='base'||sections.includes('*')||sections.includes(key)));
  validateVariants({...record,variants:[v],current_form_id:''});return v;
 }
@@ -74,6 +78,10 @@ export function configureVariant(record,previous,{name=previous.name,sections=pr
 // effective value to route individual nested changes to their actual state owner.
 export function applyVariantEdit(record,patch){
  const next=copy(record),view=resolveVariant(record),v=activeVariant(next);
+ if(v&&Object.hasOwn(patch,'name')&&patch.name!==view.name){
+  if(!v.sections.includes('*')&&!v.sections.includes('name'))v.sections.push('name');
+  v.name=patch.name;
+ }
  const paths=v?ownedPaths(v,record):[];
  const assign=(path,before,after)=>{
   if(JSON.stringify(before)===JSON.stringify(after))return;

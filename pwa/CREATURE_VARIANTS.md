@@ -6,6 +6,9 @@ Per ogni variante si scelgono le sezioni da personalizzare, anche separando le
 sei caratteristiche. Le sezioni non selezionate sono condivise: modificarle
 dalla variante modifica la base e tutte le altre forme che le ereditano.
 Le sezioni personalizzate si modificano dai normali controlli della scheda.
+Il comando delle forme è un’icona nella barra del nome. Rinominare una variante,
+anche dai normali campi della scheda, personalizza il nome e lo aggiorna ovunque
+nella scheda; l’elenco creature continua a mostrare il nome della base.
 Deselezionare una sezione nell'editor della variante scarta quella sua
 personalizzazione e ripristina l'ereditarietà. Eliminare la variante attuale
 riporta prima alla base.

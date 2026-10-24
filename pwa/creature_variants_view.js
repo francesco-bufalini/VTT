@@ -1,23 +1,30 @@
-import {VARIANT_SECTIONS,VARIANT_PRESETS,activeVariant,createVariant,configureVariant,importVariantSections,bestiarySheet,creatureMatchesFilter,resolveVariant} from './creature_variants.js';
+import {VARIANT_SECTIONS,VARIANT_PRESETS,createVariant,configureVariant,importVariantSections,bestiarySheet,creatureMatchesFilter,resolveVariant} from './creature_variants.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function variantBar(record){
- const v=activeVariant(record);
- return '<div class="variant-bar"><div><span>Forma attuale</span><strong>'+esc(v?.name||'Base')+'</strong></div><button type="button" class="btn" data-act="creature-variants">Forme e varianti</button></div>';
+export function variantDescription(variant){
+ const preset=VARIANT_PRESETS.find(p=>p.id===variant.preset);
+ const label=preset&&preset.id!=='custom'?preset.label.replace(' · personalizzabile',''):'';
+ const creatures=[...new Set(Object.values(variant.sources||{}).map(ref=>ref.name?ref.name+(ref.source?' ('+ref.source+')':''):'').filter(Boolean))];
+ if(label||creatures.length)return [label,...creatures].filter(Boolean).join(' · ');
+ return variant.sections.includes('*')?'Intera scheda':variant.sections.map(id=>VARIANT_SECTIONS.find(s=>s.id===id)?.label).filter(Boolean).join(' · ')||'Nessuna parte personalizzata';
 }
-export function openVariantsDialog({read,save,switchForm,sources,notify}){
+const formName=v=>(v.sections?.includes('*')||v.sections?.includes('name'))&&v.values?.name?v.values.name:v.name;
+export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=>''}){
  document.querySelector('#creature-variants-dialog')?.remove();
- const dialog=document.createElement('dialog');dialog.id='creature-variants-dialog';dialog.className='sheet-roll-dialog variants-dialog';
+ const dialog=document.createElement('dialog');dialog.id='creature-variants-dialog';dialog.className='sheet-context-dialog variants-dialog';dialog.setAttribute('aria-labelledby','variants-title');
  let draft=null,entries=[],selectedSource=null;
  const guard=fn=>async event=>{const button=event?.currentTarget;try{if(button?.tagName==='BUTTON')button.disabled=true;await fn(event);}catch(e){notify(e.message,true);}finally{if(button?.isConnected)button.disabled=false;}};
  const close=()=>dialog.close?dialog.close():dialog.remove();
  const draw=()=>{
-  const c=read(),v=activeVariant(c);
-  dialog.innerHTML='<header><h2>Forme e varianti</h2><button type="button" class="btn" data-variant-close>Chiudi</button></header><p>Una sola scheda base, una forma attuale. Ogni variante conserva le sezioni personalizzate; le altre sono condivise con la base.</p><div class="variant-list">'+
-   [{id:'',name:'Base · '+c.name},...(c.variants||[])].map(row=>'<article><strong>'+esc(row.name)+'</strong><div class="actions"><button type="button" class="btn" data-variant-switch="'+esc(row.id)+'"'+((c.current_form_id||'')===row.id?' disabled':'')+'>'+((c.current_form_id||'')===row.id?'Attuale':'Usa forma')+'</button>'+(row.id?'<button type="button" class="btn" data-variant-edit="'+esc(row.id)+'">Modifica</button>':'')+'</div></article>').join('')+'</div><button type="button" class="btn primary" data-variant-new>Crea variante</button><section data-variant-editor></section>';
+  const c=read();
+  dialog.innerHTML='<header class="variants-head"><div><small>FORME</small><h2 id="variants-title">Forme e varianti</h2></div><button type="button" class="variants-icon-button" data-variant-close aria-label="Chiudi">×</button></header><div class="variants-content"><div class="variant-list">'+
+   [{id:'',name:c.name},...(c.variants||[])].map(row=>{
+    const current=(c.current_form_id||'')===row.id,name=row.id?formName(row):row.name;
+    return '<article class="variant-card'+(current?' is-current':'')+'"'+(current?' aria-current="true"':'')+'><span class="variant-emblem" aria-hidden="true">'+icon(row.id?'wild_shape':'proficiency')+'</span><div class="variant-copy"><strong>'+esc(name)+'</strong><small>'+esc(row.id?variantDescription(row):'Base')+'</small></div><div class="variant-actions"><button type="button" class="variants-icon-button variant-use" data-variant-switch="'+esc(row.id)+'" aria-label="'+(current?'Forma attuale · '+esc(name):'Usa forma '+esc(name))+'" title="'+(current?'Forma attuale':'Usa forma')+'"'+(current?' disabled':'')+'>'+(current?'<span aria-hidden="true">✓</span>':icon('wild_shape'))+'</button>'+(row.id?'<button type="button" class="variants-icon-button" data-variant-edit="'+esc(row.id)+'" aria-label="Modifica '+esc(name)+'" title="Modifica">'+icon('settings')+'</button>':'')+'</div></article>';
+   }).join('')+'</div><button type="button" class="btn variant-create" data-variant-new>'+icon('increase')+'<span>Crea variante</span></button><section data-variant-editor></section></div>';
   dialog.querySelector('[data-variant-close]').onclick=close;
   dialog.querySelector('[data-variant-new]').onclick=()=>{draft=createVariant(c,{preset:'alias',name:'Nuova variante'});edit();};
   dialog.querySelectorAll('[data-variant-switch]').forEach(b=>b.onclick=guard(async()=>{await switchForm(b.dataset.variantSwitch);draw();}));
-  dialog.querySelectorAll('[data-variant-edit]').forEach(b=>b.onclick=()=>{draft=structuredClone(c.variants.find(v=>v.id===b.dataset.variantEdit));edit();});
+  dialog.querySelectorAll('[data-variant-edit]').forEach(b=>b.onclick=()=>{draft=structuredClone(c.variants.find(v=>v.id===b.dataset.variantEdit));draft.name=formName(draft);edit();});
  };
  const capture=()=>{
   const root=dialog.querySelector('[data-variant-editor]');
@@ -28,7 +35,9 @@ export function openVariantsDialog({read,save,switchForm,sources,notify}){
  };
  const edit=()=>{
   const root=dialog.querySelector('[data-variant-editor]'),all=draft.sections.includes('*');
-  root.innerHTML='<h3>'+esc(draft.name)+'</h3><label>Nome della variante<input data-variant-name maxlength="160" value="'+esc(draft.name)+'"></label><label>Preset<select data-variant-preset>'+VARIANT_PRESETS.map(p=>'<option value="'+p.id+'"'+(draft.preset===p.id?' selected':'')+'>'+esc(p.label)+'</option>').join('')+'</select></label><p>Il preset propone le sezioni. Puoi modificarle; i limiti della capacità dipendono dalle regole della tua scheda.</p><label class="check"><input type="checkbox" data-variant-all'+(all?' checked':'')+'>Intera scheda</label><div class="variant-sections">'+VARIANT_SECTIONS.map(s=>'<label class="check"><input type="checkbox" data-variant-section="'+s.id+'"'+(all||draft.sections.includes(s.id)?' checked':'')+'>'+esc(s.label)+'</label>').join('')+'</div><p>Sezione selezionata: dati propri della variante. Sezione non selezionata: dati condivisi.</p><details><summary>Creature consentite dal preset</summary><p>Filtro JSON: ids, type, sources, max_cr, no_fly, no_swim. Un oggetto vuoto consente tutte le creature.</p><textarea data-variant-filter rows="4">'+esc(JSON.stringify(draft.creature_filter||{},null,2))+'</textarea></details><h3>Importa personalizzazioni dal bestiario</h3><p>Prima seleziona le sezioni. Puoi importarle tutte da una creatura e poi sostituire singole sezioni da altre.</p><button type="button" class="btn" data-variant-load>Apri bestiario</button><div data-variant-import-controls hidden><label>Cerca creatura<input type="search" data-variant-search></label><label>Creatura di origine<select data-variant-source></select></label><label>Sezioni da importare<select data-variant-import-section></select></label><button type="button" class="btn" data-variant-import>Importa nella variante</button></div><p data-variant-sources>'+esc(Object.entries(draft.sources||{}).map(([id,ref])=>(VARIANT_SECTIONS.find(s=>s.id===id)?.label||'Tutte')+': '+(ref.name||ref.id||'Creatura')).join(' · '))+'</p><div class="actions"><button type="button" class="btn primary" data-variant-save>Salva variante</button><button type="button" class="btn" data-variant-cancel>Annulla modifiche</button>'+(read().variants?.some(v=>v.id===draft.id)?'<button type="button" class="btn" data-variant-delete>Elimina variante</button>':'')+'</div><p>Dopo il salvataggio usa la forma e modifica i dati dai normali controlli della scheda.</p>';
+  dialog.querySelector('.variant-list').hidden=true;dialog.querySelector('[data-variant-new]').hidden=true;
+  root.innerHTML='<div class="variant-editor-heading"><button type="button" class="variants-icon-button" data-variant-back aria-label="Torna alle forme">‹</button><h3>'+esc(draft.name)+'</h3></div><div class="variant-editor-fields"><label>Nome della variante<input data-variant-name maxlength="160" value="'+esc(draft.name)+'"></label><label>Preset<select data-variant-preset>'+VARIANT_PRESETS.map(p=>'<option value="'+p.id+'"'+(draft.preset===p.id?' selected':'')+'>'+esc(p.label.replace(' · personalizzabile',''))+'</option>').join('')+'</select></label></div><fieldset class="variant-parts"><legend>Parti personalizzate</legend><label class="check variant-all"><input type="checkbox" data-variant-all'+(all?' checked':'')+'>Intera scheda</label><div class="variant-sections">'+VARIANT_SECTIONS.map(s=>'<label class="check"><input type="checkbox" data-variant-section="'+s.id+'"'+(all||draft.sections.includes(s.id)?' checked':'')+'>'+esc(s.label)+'</label>').join('')+'</div></fieldset><fieldset class="variant-import"><legend>Bestiario</legend><button type="button" class="btn" data-variant-load>'+icon('book')+'<span>Importa</span></button><div data-variant-import-controls hidden><label>Cerca creatura<input type="search" data-variant-search></label><label>Creatura<select data-variant-source></select></label><label>Sezione<select data-variant-import-section></select></label><button type="button" class="btn" data-variant-import>Importa dati</button></div><div class="variant-source-tags" data-variant-sources>'+Object.entries(draft.sources||{}).map(([id,ref])=>'<span>'+esc((VARIANT_SECTIONS.find(s=>s.id===id)?.label||'Tutte')+' · '+(ref.name||ref.id||'Creatura'))+'</span>').join('')+'</div></fieldset><details class="variant-filter"><summary>Filtro creature</summary><textarea data-variant-filter aria-label="Filtro creature JSON" rows="4">'+esc(JSON.stringify(draft.creature_filter||{},null,2))+'</textarea></details><footer class="variant-editor-actions"><button type="button" class="btn primary" data-variant-save>Salva variante</button><button type="button" class="btn" data-variant-cancel>Annulla</button>'+(read().variants?.some(v=>v.id===draft.id)?'<button type="button" class="btn danger" data-variant-delete>Elimina</button>':'')+'</footer>';
+  root.querySelector('[data-variant-back]').onclick=()=>{draft=null;draw();};
   root.querySelector('[data-variant-all]').onchange=e=>root.querySelectorAll('[data-variant-section]').forEach(b=>b.checked=e.target.checked);
   root.querySelector('[data-variant-preset]').onchange=guard(async e=>{
    capture();const preset=VARIANT_PRESETS.find(p=>p.id===e.target.value);
@@ -59,7 +68,7 @@ export function openVariantsDialog({read,save,switchForm,sources,notify}){
    const source=loaded.kind?resolveVariant(loaded):bestiarySheet(loaded,selectedSource.miniature);
    const section=root.querySelector('[data-variant-import-section]').value;
    draft=importVariantSections(read(),draft,source,section==='*'?draft.sections:[section],{id:selectedSource.id||selectedSource.key,name:selectedSource.name,source:selectedSource.source||''});
-   edit();notify('Personalizzazioni importate. Salva la variante per conservarle.');
+   edit();notify('Dati importati.');
   });
  };
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);draw();

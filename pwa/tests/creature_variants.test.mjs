@@ -110,3 +110,12 @@ test('portable full transformations expose monster traits and stats while preser
  assert(out.features.some(f=>f.name==='Keen Hearing'));
  const traits=await collectTraitRows(effective,out);assert(traits.some(t=>t.name==='Keen Hearing'&&t.category==='mostro'));
 });
+
+test('renaming any active variant isolates its visible name from the base and archive name',()=>{
+ let c=add(base(),{id:'mask',name:'Maschera',sections:['appearance']});c.current_form_id='mask';
+ c=applyVariantEdit(c,{name:'Ombra'});
+ assert.equal(c.name,'Lyria');assert.equal(resolveVariant(c).name,'Ombra');assert.equal(c.variants[0].name,'Ombra');
+ assert(c.variants[0].sections.includes('name'));
+ const edited=configureVariant(c,c.variants[0],{name:'Viandante'});
+ assert.equal(edited.values.name,'Viandante');assert.equal(resolveVariant({...c,variants:[edited]}).name,'Viandante');assert.equal(c.name,'Lyria');
+});

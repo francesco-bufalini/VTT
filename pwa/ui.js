@@ -1,5 +1,5 @@
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
-import {variantBar,openVariantsDialog,variantSources} from './creature_variants_view.js';
+import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
@@ -223,6 +223,13 @@ function syncNav(){
   const dock=document.querySelector('#mobile-tabs');
   const sessionTab=document.querySelector('#dock-session');
   back.hidden=!hasCreature;
+  const forms=document.querySelector('#creature-forms');
+  if(forms){
+    forms.hidden=!hasCreature||!state.editor;
+    forms.innerHTML=actionGlyph('wild_shape');
+    forms.classList.toggle('has-variant',Boolean(creature?.current_form_id));
+    forms.title='Forme e varianti'+(creature?.current_form_id?' · '+(activeVariant(creature)?.name||creature.name):'');
+  }
   if(label)label.textContent=hasCreature?(creature?.name||'Creatura'):
     state.page==='catalog'?'Catalogo':state.page==='session'?'Partita':'VTT Mobile';
   if(classLabel){
@@ -3068,7 +3075,6 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
-  app.querySelector('#sheet-play-view')?.insertAdjacentHTML('afterbegin',variantBar(state.editor.read()));
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
@@ -3652,7 +3658,7 @@ async function handleAction(target){
     await flushPendingFields();
     const editor=state.editor,creatureId=state.creatureId;
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
-    openVariantsDialog({read:check,notify:message,save:async changes=>{check();await patch(changes);await render();},
+    openVariantsDialog({read:check,notify:message,icon:actionGlyph,save:async changes=>{check();await patch(changes);await render();},
       switchForm:async id=>{check();await applyFormPatch(editor.read(),{current_form_id:id});await render();},
       sources:async()=>variantSources((await listCreatures()).map(r=>r.creature),await (await import('./storage.js')).listRecords('global','homebrew'))});
     return;

@@ -17,12 +17,22 @@ try{
   await saveCreature({...wolf.data,current_hp:11,max_hp_base:11,abilities:{str:16,dex:14,con:12,int:3,wis:12,cha:6},stat_block:{name:'Wolf',source:'MM',type:'beast',cr:'1/4'},default_miniature_id:'wolf',current_miniature_id:'wolf'},'default',wolf.revision);
  });
  await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await page.locator('#sheet-play-view').waitFor();
+ assert.equal(await page.locator('.topbar #creature-forms:visible').count(),1);assert.equal(await page.locator('#app [data-act="creature-variants"],.variant-bar').count(),0);
  await forms();await create('Identità segreta','alias');await page.locator('[data-variant-save]').click();
  await page.locator('.variant-list article').filter({hasText:'Identità segreta'}).getByRole('button',{name:'Usa forma'}).click();
  await closeForms();await popup('identity');
  await page.locator('#sheet-context-dialog [data-field="name"]').fill('Ombra');await dismiss();
  await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra');
  let c=await record();const aliasId=c.current_form_id;assert.equal(c.name,'Lyria base');assert.equal(c.variants[0].values.name,'Ombra');
+ assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra');
+ await forms();assert.equal(await page.locator('#creature-variants-dialog p').count(),0);assert.match(await page.locator('.variant-list [aria-current="true"] .variant-copy small').textContent(),/Alias/);
+ await page.locator('[data-variant-edit="'+aliasId+'"]').click();await page.locator('[data-variant-name]').fill('Ombra della luna');await page.locator('[data-variant-save]').click();await closeForms();
+ await page.waitForFunction(()=>document.querySelector('#creature-name')?.textContent==='Ombra della luna');
+ assert.equal(await page.locator('#sheet-play-view .play-identity [data-read-field="name"]').textContent(),'Ombra della luna');
+ for(const tab of ['battle','magic','inventory','info']){await sheet(tab);assert.equal(await page.locator('#creature-name').textContent(),'Ombra della luna');assert.equal(await page.locator('#app [data-act="creature-variants"],.variant-bar').count(),0);}
+ await page.locator('#creature-back').click();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).waitFor();assert.equal(await page.locator('#creature-forms:visible').count(),0);
+ await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await page.locator('#sheet-play-view').waitFor();
+
  await sheet('battle');await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('5');await page.locator('#hp-adjust-confirm').click();
  await page.waitForFunction(()=>document.querySelector('[data-read-field="current_hp"]')?.textContent==='25');assert.equal((await record()).current_hp,25);
  await forms();await create('Lupo','custom');
@@ -40,10 +50,10 @@ try{
  await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('10');await page.locator('#hp-adjust-confirm').click();await page.locator('#form-depleted-dialog[open]').waitFor();
  await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,22);
  await forms();await page.locator('[data-variant-switch="'+aliasId+'"]').click();await closeForms();
- assert.equal(await page.locator('#creature-name').textContent(),'Ombra');
+ assert.equal(await page.locator('#creature-name').textContent(),'Ombra della luna');
  await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await page.locator('#sheet-play-view').waitFor();
- assert.equal(await page.locator('#creature-name').textContent(),'Ombra');assert.equal((await record()).variants.length,2);
- await forms();await page.locator('[data-variant-edit="'+wolfId+'"]').click();
+ assert.equal(await page.locator('#creature-name').textContent(),'Ombra della luna');assert.equal((await record()).variants.length,2);
+ await forms();assert(await page.locator('[data-variant-new]').evaluate(n=>n.getBoundingClientRect().height<=64));assert(await page.locator('#creature-variants-dialog .vtt-action-glyph').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().width<=32)));await shot('creature-variants-list');await page.locator('[data-variant-edit="'+wolfId+'"]').click();
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:950});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Horizontal layout at '+width);
