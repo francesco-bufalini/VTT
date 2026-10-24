@@ -11,10 +11,11 @@ try{
  await page.evaluate(async()=>{
   const {listCreatures,saveCreature}=await import('/creatures.js');
   const saved=(await listCreatures())[0],creature=saved.creature;
-  const copy={...creature.inventory[0],instance_id:'test_sword_chest',quantity:2,container_id:'chest'};
+  const sword={...creature.inventory[0],weight:3,value_gp:10};
+  const copy={...sword,instance_id:'test_sword_chest',quantity:2,container_id:'chest'};
   await saveCreature({...creature,
     inventory_containers:[{id:'chest',name:'Baule'}],
-    inventory:[...creature.inventory,copy]},'default',saved.revision);
+    inventory:[sword,...creature.inventory.slice(1),copy]},'default',saved.revision);
  });
  await page.reload();await page.locator('[data-act="open"]').click();await sheet('inventory');
  await page.locator('[data-act="inventory-toggle-all"]').click();
