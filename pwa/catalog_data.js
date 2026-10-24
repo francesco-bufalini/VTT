@@ -107,15 +107,28 @@ export async function selectedSpellEntries(ids=[],classes=[]){
   const key=JSON.stringify([wanted,scopes]);
   if(!scopedRequests.has(key)){
     const request=(async()=>{
-      const response=await fetch("/catalog/spells/selected",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ids:wanted,classes:scopes})
-      });
-      if(!response.ok)throw new Error("Riferimenti incantesimi non disponibili.");
-      const data=await response.json();
-      if(data?.version!==1||!Array.isArray(data.spells))
-        throw new Error("Riferimenti incantesimi non validi.");
-      for(const spell of data.spells)if(spell?.id)scopedSpells.set(spell.id,spell);
+      let selected;
+      try{
+        const response=await fetch("/catalog/spells/selected",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ids:wanted,classes:scopes})
+        });
+        if(!response.ok)throw new Error("Riferimenti incantesimi non disponibili.");
+        const data=await response.json();
+        if(data?.version!==1||!Array.isArray(data.spells))
+          throw new Error("Riferimenti incantesimi non validi.");
+        selected=data.spells;
+      }catch(error){
+        // Older desktop bridges and static offline exports do not expose POST.
+        // Reuse the already-cached full offline catalog if it is available,
+        // without ever making it a requirement for opening a character sheet.
+        const full=await spellCatalog();
+        const keys=new Set(wanted);
+        selected=full.filter(row=>keys.has(row.id)||scopes.some(scope=>
+          Number(row.level)<=scope.max_level&&
+          (row.classes||[]).some(name=>String(name).toLowerCase()===scope.name.toLowerCase())));
+      }
+      for(const spell of selected)if(spell?.id)scopedSpells.set(spell.id,spell);
       const homebrew=await listRecords("global","homebrew");
       for(const record of homebrew){
         if(record.id?.split(":")[2]!=="spells")continue;
