@@ -765,6 +765,14 @@ async function computeLocalData(record){
     if(error.code==='SHEET_LOADING_TIMEOUT')
       refreshSheetAfterLateLoad(request,record.id,state.sheet);
   }
+  // Combine only the spell definitions already present in the local sheet,
+  // scoped lookups, and bundled legacy rules. Never turn a calculation into
+  // a blocking fetch of the complete compendium.
+  const visibleSpells=[...(state.spellCatalog||[]),
+    ...(record.prepared_spells||[]),...(record.spellbook_spells||[]),
+    ...(record.known_spells||[])].filter(spell=>spell&&typeof spell==='object'&&spell.id);
+  catalogs={...catalogs,spells:[...new Map([...(catalogs.spells||[]),...visibleSpells]
+    .map(spell=>[spell.id,spell])).values()]};
   const calculated=calculateSheet(record,catalogs);
   return {...calculated,loadError,
     pending_choices:pendingCharacterChoices(record,calculated,catalogs),
