@@ -608,11 +608,15 @@ test("inline spell catalog adds available and spellbook choices without divergin
   assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
   click('[data-act="action-cast-cancel"]');
   await until(()=>!document.querySelector('#action-cast-dialog'));
-  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
-  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-target'));
-  change('#spell-target',"spellbook_spells");
-  await until(()=>document.querySelector('#spell-target')?.value==='spellbook_spells'&&
-    document.querySelector('[data-act="spell-pick"]')?.disabled===false);
+  click('[data-act="magic-tool-open"][data-magic-tool="book"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="magic-select-spells"][data-magic-target="spellbook_spells"]'));
+  assert.equal(document.querySelector('#spell-target'),null,'Destination selector is no longer needed');
+  click('#magic-tools-dialog [data-act="magic-select-spells"][data-magic-target="spellbook_spells"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
+  const bookSearch=document.querySelector('#spell-search');
+  bookSearch.value="Shield";
+  bookSearch.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
+  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="spell-pick"]'));
   click('[data-act="spell-pick"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
@@ -626,6 +630,49 @@ test("inline spell catalog adds available and spellbook choices without divergin
     return current?.prepared_spells?.length===0 && current?.spells?.length===0 &&
       current?.spellbook_spells?.length===1;
   });
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="create"]'));
+});
+
+test("slot popup casts inline while compact search opens the existing spell detail",async()=>{
+  const {createCreature}=await import('../creatures.js');
+  const saved=await createCreature('character','Incantatore con slot');
+  const spell={...fixtureSpells[0]};
+  await saveCreature({...saved.data,prepared_spells:[spell],spells:[spell],
+    spell_slots_manual:true,spell_slots_automatic:false,
+    spell_slots_total:[0,3,0,0,0,0,0,0,0,0]},'default',saved.revision);
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+  click('[data-act="open"][data-id="'+saved.data.id+'"]');
+  await until(()=>document.querySelector('[data-field="name"]'));
+  click('[data-sheet="magic"]');
+  await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
+  click('.magic-level-slot[data-level="1"][data-pact="false"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-cast-button'));
+  assert.equal(document.querySelector('#magic-tools-dialog [data-act="slot-spells"]'),null);
+  assert.match(document.querySelector('.magic-slot-spell-name')?.textContent||'',/Shield/);
+  click('.magic-slot-cast-button');
+  await until(()=>document.querySelector('#action-cast-dialog[open]'));
+  assert.equal(document.querySelector('#action-cast-choice')?.value,'slot:1');
+  assert.ok(document.querySelector('#action-cast-dialog [data-act="action-cast-confirm"]'));
+  assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent?.[1]||0,0);
+  click('[data-act="action-cast-cancel"]');
+  await until(()=>!document.querySelector('#action-cast-dialog'));
+  click('[data-act="magic-tool-open"][data-magic-tool="catalog"]');
+  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
+  assert.equal(document.querySelector('#spell-target'),null);
+  assert.equal(document.querySelector('[data-act="magic-known-filter"]'),null);
+  const search=document.querySelector('#spell-search');
+  search.value='Shield';search.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+  await until(()=>document.querySelector('#magic-tools-dialog .magic-catalog-row .magic-catalog-name'));
+  assert.equal(document.querySelectorAll('#magic-tools-dialog .magic-catalog-row .magic-catalog-action').length,1);
+  click('#magic-tools-dialog .magic-catalog-row .magic-catalog-name');
+  await until(()=>document.querySelector('#action-cast-dialog[open]'));
+  assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
+  click('[data-act="action-cast-cancel"]');
+  await until(()=>!document.querySelector('#action-cast-dialog'));
+  click('#magic-tools-dialog [data-act="magic-tool-close"]');
+  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
 });
@@ -1186,14 +1233,11 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
  const spentBefore=(await loadCreature(saved.data.id)).data.spell_slots_spent[1];
  click('.magic-level-slot[data-level="1"][data-pact="false"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="slot-spells"]'));
+ await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-spells'));
+ assert.equal(document.querySelector('#magic-tools-dialog [data-act="slot-spells"]'),null,
+   'The extra castable-spells popup action is removed');
  assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent[1],spentBefore,
-   'Opening the spell slot menu must not spend a slot');
- click('#magic-tools-dialog [data-act="slot-spells"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-castable')||
-   document.querySelector('#magic-tools-dialog[open] .magic-slot-popup-count')===null);
- assert.equal((await loadCreature(saved.data.id)).data.spell_slots_spent[1],spentBefore,
-   'Browsing castable spells must not spend a slot');
+   'Opening the slot and browsing inline castable spells must not spend a slot');
  click('#magic-tools-dialog [data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
@@ -1202,13 +1246,14 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('.play-magic-selection [data-act="sheet-proxy"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-class'));
  assert.equal(document.querySelector('#spell-class').value,'class|phb|bard');
- assert.equal(document.querySelector('#spell-target').value,'prepared_spells');
+ assert.equal(document.querySelector('#spell-target'),null);
+ assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-known-filter"]'),null);
  assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
   'Incomplete selections show a warning without blocking choices');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-pick"]'));
  click('#magic-tools-dialog [data-act="spell-pick"]');
  await until(()=>document.querySelector('#magic-tools-dialog .magic-selection-current [data-act="remove-spell"]'));
- assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-entry[data-act="remove-spell"]')?.disabled,false,
+ assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-action[data-act="remove-spell"]')?.disabled,false,
   'Already known spells can be unselected directly in the catalog');
  const savedKnown=(await loadCreature(saved.data.id)).data;
  assert.equal(savedKnown.prepared_spells?.length,1);
