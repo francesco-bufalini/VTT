@@ -61,6 +61,28 @@ try{
  assert.equal(await page.locator('#library-create-name').getAttribute('placeholder'),'Nuova creatura');
  assert(await page.locator('.library-create-type[disabled]').isVisible(),'Bestiary path is visible but disabled');
  assert(await page.locator('.library-miniature-option[aria-pressed="true"]').count()>=1,'A base miniature is always selected');
+ const miniatureSearch=page.locator('#library-miniature-search');
+ assert(await miniatureSearch.evaluate(input=>{
+  const r=input.getBoundingClientRect();
+  const outer=input.closest('.library-miniature-search').getBoundingClientRect();
+  return r.width>=100&&r.height>=38&&r.height<=47&&
+   r.left>=outer.left&&r.right<=outer.right+1&&r.top>=outer.top-1&&r.bottom<=outer.bottom+1;
+ }), 'Miniature search fits properly inside its compact field');
+ const moreMiniatures=page.locator('[data-act="library-miniature-more"]');
+ await moreMiniatures.waitFor({state:'visible'});
+ const initialMiniatures=await page.locator('.library-miniature-option').count();
+ assert.equal(initialMiniatures,36,'First miniature page shows 36 entries');
+ const initialProgress=await page.locator('.library-miniature-progress').textContent();
+ const totalMiniatures=Number(initialProgress.match(/di (\d+)/)?.[1]);
+ assert(totalMiniatures>initialMiniatures,'Catalog has additional browseable miniatures');
+ await moreMiniatures.click();
+ assert.equal(await page.locator('.library-miniature-option').count(),
+   Math.min(initialMiniatures+36,totalMiniatures),'Show more reveals additional miniatures without search');
+ await miniatureSearch.fill('___no_matching_miniature___');
+ assert(await moreMiniatures.isHidden(),'Show more hides for empty search results');
+ await miniatureSearch.fill('');
+ assert.equal(await page.locator('.library-miniature-option').count(),36,
+   'Clearing search restarts browsing from the first page');
  await page.locator('[data-act="library-create-close"]').first().click();await shot('library');
  await page.locator('[data-act="library-add"]').click();
  await page.locator('[data-act="create"]').click();
@@ -204,6 +226,27 @@ try{
  }), 'Select-all has a properly sized custom control');
  assert.equal(await page.locator('.library-list-header .library-bulk-button').count(),2,
   'Export and delete use styled controls in one selection toolbar');
+ assert.equal(await page.locator('.library-list-header .library-selection-count').count(),0,
+  'No selection count is shown');
+ for(const width of [320,360,390,430,768]){
+  await page.setViewportSize({width,height:820});
+  const metrics=await page.locator('.library-list-header').evaluate(header=>{
+   const items=[header.querySelector('.library-select-master'),...header.querySelectorAll('.library-bulk-button')];
+   return {box:header.getBoundingClientRect().toJSON(),
+    elements:items.map(n=>n.getBoundingClientRect().toJSON())};
+  });
+  assert.equal(metrics.elements.length,3);
+  const [a,b,c]=metrics.elements;
+  assert(Math.abs(a.top-b.top)<2&&Math.abs(b.top-c.top)<2,
+    'All selection controls share one row at '+width);
+  assert(Math.abs(a.height-b.height)<2&&Math.abs(b.height-c.height)<2,
+    'All selection controls share one height at '+width);
+  assert(a.left>=metrics.box.left&&c.right<=metrics.box.right+1,
+    'Selection toolbar fits its frame at '+width);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
+    'Selection toolbar must not overflow at '+width);
+ }
+ await page.setViewportSize({width:390,height:844});
  assert.equal(await page.locator('.library-creature-entry .library-batch-check:visible').count(),1);
  await page.locator('[data-library-select-all]').uncheck();
  assert.equal(await page.locator('.library-list-header').isVisible(),false,'Selection mode exits after deselect');
