@@ -13,8 +13,7 @@ const classFeatures={class_features:[
  {class_name:'Fighter',class_source:'PHB',level:11,name:'Extra Attack (2)'},
  {class_name:'Fighter',class_source:'PHB',level:20,name:'Extra Attack (3)'},
  {class_name:'Barbarian',class_source:'PHB',level:5,name:'Extra Attack'},
- {class_name:'Fighter',class_source:'XPHB',level:5,name:'Extra Attack'},
- {class_name:'Warlock',class_source:'XPHB',level:12,name:'Devouring Blade'}
+ {class_name:'Fighter',class_source:'XPHB',level:5,name:'Extra Attack'}
  ],subclass_features:[
  {class_name:'Artificer',class_source:'TCE',subclass_name:'Battle Smith',level:5,name:'Extra Attack'},
  {class_name:'Bard',class_source:'PHB',subclass_name:'College of Valor',level:6,name:'Extra Attack'}
@@ -38,7 +37,13 @@ test('class and subclass catalogs grant typed attack counts on their specific tr
  assert.equal(bard.count,2);
  assert.equal(evaluate({classes:[{name:'Bard',source:'PHB',level:6}]}).count,1,
   'Subclass benefits never spill into another or the base class');
- assert.equal(evaluate({classes:[{name:'Warlock',source:'XPHB',level:12}]}).count,3);
+ const warlock={classes:[{name:'Warlock',source:'XPHB',level:12}]};
+ assert.equal(evaluate(warlock).count,1,'An unselected invocation does not grant attacks');
+ const withInvocation={...warlock,optional_features_catalog:[{name:'Devouring Blade',source:'XPHB'}]};
+ const selected=evaluate(withInvocation);
+ assert.equal(selected.count,3);
+ assert(selected.benefits[0].origin_id.includes('optional|xphb|devouring blade'));
+ assert.equal(evaluate({...withInvocation,optional_features_catalog:[{name:'Devouring Blade',source:'XPHB',disabled:true}]}).count,1);
 });
 
 test('multiclass, disabled traits and removed benefits choose the highest active grant',()=>{
