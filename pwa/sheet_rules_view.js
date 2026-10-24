@@ -807,10 +807,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const requested=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
   const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
   const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
-  html+=inventorySectionControls(c,selected)+
-   '<label class="play-search inventory-global-search">'+icon('search')+
-     '<input type="search" data-play-search value="'+esc(view.search||'')+
-     '" placeholder="Cerca in tutte le sezioni visibili" aria-label="Cerca nell’inventario"></label>';
+  html+=inventorySectionControls(c,selected);
   if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
     const coinPanel=bank.querySelector('.inventory-coins-panel');
@@ -836,6 +833,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const weight=totals('weight'),value=totals('value'),format=value=>Number(value.toFixed(2)).toLocaleString('it-IT');
     if(weight.count||value.count)html+='<div class="inventory-overview" aria-label="Riepilogo inventario"><div><span>Peso registrato</span><strong>'+(weight.count?format(weight.value)+' <small>lb</small>':'—')+'</strong>'+(weight.count&&weight.count<owned.length?'<small>Dati parziali</small>':'')+'</div><div><span>Valore degli oggetti</span><strong>'+(value.count?format(value.value)+' <small>mo</small>':'—')+'</strong>'+(value.count&&value.count<owned.length?'<small>Dati parziali</small>':'')+'</div></div>';
   }
+  // The search selects all the owner's containers; it does not hide rows.
+  const highlighted=new Set(view.inventoryHighlightedIndices||[]);
+  html+='<div class="inventory-search-area">'+
+    '<label class="play-search inventory-global-search">'+icon('search')+
+    '<input type="search" data-play-search value="'+esc(view.search||'')+
+    '" placeholder="Cerca nell’inventario e nel catalogo" aria-label="Cerca oggetti posseduti o nel catalogo" autocomplete="off" aria-controls="inventory-search-results"></label>'+
+    '<div id="inventory-search-results" class="inventory-search-results vtt-selection-list" role="region" aria-label="Risultati ricerca inventario" aria-live="polite" hidden></div></div>';
   const renderItem=({info,i},section)=>{
     const item=c.inventory[i],key='item:'+i,scroll=section==='scrolls';
     const row=bank.querySelector('[data-inventory-row="'+i+'"]');
@@ -909,12 +913,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     bind(key,node);
     const search=[item.name,spellScrollName(item),spellScrollLevel(item),info.type,info.source,info.properties,...info.status].filter(Boolean).join(' ').toLocaleLowerCase('it');
     const level=spellScrollLevel(item),levelLabel=level==='0'?'Trucchetto':level==='—'?'—':level+'°';
-    if(scroll)return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
+    if(scroll)return '<div data-play-filter="'+esc(search)+'" data-inventory-search-index="'+i+'" class="'+(highlighted.has(i)?'inventory-search-highlight':'')+'"><button type="button" class="inventory-play-item inventory-play-scroll" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Pergamena')+'">'+
       '<span class="inventory-item-mark" aria-hidden="true">'+icon('scroll')+'</span>'+
       '<span class="inventory-item-content"><strong>'+esc(spellScrollName(item))+'</strong><small>'+esc(info.source||'Pergamena magica')+'</small></span>'+
       '<span class="inventory-scroll-stats"><span class="inventory-scroll-level" aria-label="Livello dell’incantesimo">'+esc(levelLabel)+'</span>'+
       '<span class="play-badge" aria-label="Quantità">×'+info.quantity+'</span></span></button></div>';
-    return '<div data-play-filter="'+esc(search)+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
+    return '<div data-play-filter="'+esc(search)+'" data-inventory-search-index="'+i+'" class="'+(highlighted.has(i)?'inventory-search-highlight':'')+'"><button type="button" class="inventory-play-item" data-act="sheet-context" data-sheet-context="'+key+'" title="'+esc(item.name||'Oggetto')+'">'+
       '<span class="inventory-item-mark" aria-hidden="true">'+icon(info.glyph)+'</span><span class="inventory-item-content"><span class="inventory-item-heading"><strong>'+esc(item.name||'Oggetto')+'</strong><span class="play-badge">×'+info.quantity+'</span></span>'+
       '<span class="inventory-item-type">'+esc([info.type,info.source].filter(Boolean).join(' · '))+'</span>'+
       (info.properties?'<span class="inventory-item-properties">'+esc(info.properties)+'</span>':'')+
@@ -946,9 +950,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       '<div class="inventory-container-management">'+
         btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
       '</div>':'';
+    const sectionMetrics=(!isDocuments&&!isScrolls)?(()=>{
+      const metric=(field,unit,label)=>{
+        const known=visible.filter(({info})=>info[field]!==null);
+        const total=known.reduce((sum,{info})=>sum+info[field],0);
+        return '<span><small>'+label+'</small><strong>'+
+          (known.length?Number(total.toFixed(2)).toLocaleString('it-IT')+' '+unit:'—')+
+          '</strong>'+(known.length&&known.length<visible.length?
+          '<small>Dati parziali</small>':'')+'</span>';
+      };
+      return '<div class="inventory-section-metrics" aria-label="Peso e valore sezione">'+
+        metric('weight','lb','Peso sezione')+metric('value','mo','Valore sezione')+'</div>';
+    })():'';
     html+=card(name,
       '<p class="inventory-list-count">'+visible.length+' voci · '+
         visible.reduce((sum,{info})=>sum+info.quantity,0)+' unità</p>'+
+      sectionMetrics+
       visible.map(row=>renderItem(row,section)).join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
       controls,
@@ -1020,7 +1037,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
  root.prepend(main);
- const filter=String(view.search||'').trim().toLocaleLowerCase('it');
+ const filter=sheet==='inventory'?'':String(view.search||'').trim().toLocaleLowerCase('it');
  for(const row of main.querySelectorAll('[data-play-filter]'))row.hidden=!matchesSearch(filter,row.dataset.playFilter);
  for(const warning of [...bank.querySelectorAll(':scope > [role=alert],:scope > .action-catalog-warning')])main.prepend(warning);
  const utilities=app.querySelector(':scope > .archive-tools');

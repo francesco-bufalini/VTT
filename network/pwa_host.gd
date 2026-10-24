@@ -31,6 +31,7 @@ const FILES := {
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
+  "/inventory_search.js": ["res://pwa/inventory_search.js", "text/javascript; charset=utf-8"],
   "/item_detail_facts.js": ["res://pwa/item_detail_facts.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],

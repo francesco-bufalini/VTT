@@ -4211,3 +4211,49 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 .vtt-results-footer .btn{min-height:38px;border:1px solid #b58d5866;border-radius:9px;
  padding:7px 12px;color:#f1d0a0;background:#64493242;box-shadow:none;font-size:12px}
 .vtt-results-footer .btn:focus-visible{outline:2px solid #eac187;outline-offset:2px}
+
+/* Unified inventory/compendium search: results belong to the search field,
+   never filter or remove the actual section rows. */
+.inventory-search-area{display:grid;gap:0;margin:9px 0 13px;min-width:0}
+.inventory-search-area>.inventory-global-search{margin:0;border-radius:10px}
+.inventory-search-results:not([hidden]){display:flex;flex-direction:column;max-height:360px;
+ overflow-y:auto;overscroll-behavior:contain;margin-top:5px;padding:4px;
+ border:1px solid #ad85504f;border-radius:10px;background:#241d1be8;
+ box-shadow:0 9px 22px #09070755}
+.inventory-search-result{display:flex;align-items:center;gap:10px;min-height:48px;width:100%;
+ border:0;border-bottom:1px solid #a4824933;border-radius:6px;
+ padding:7px 9px;background:transparent;color:#eed9b8;text-align:left;cursor:pointer}
+.inventory-search-result:last-of-type{border-bottom:0}
+.inventory-search-result:hover,.inventory-search-result:focus-visible{background:#87613a37;
+ outline:none}
+.inventory-search-result-count{display:grid;place-items:center;flex:0 0 34px;min-height:30px;
+ border:1px solid #b68d555d;border-radius:7px;background:#6b4e324a;
+ color:#f0d4a7;font:700 12px/1.2 system-ui;font-variant-numeric:tabular-nums}
+.inventory-search-result-count.is-add{font-size:20px;color:#efd2a1}
+.inventory-search-result-copy{min-width:0;display:flex;flex:1;flex-direction:column;gap:2px}
+.inventory-search-result-copy strong{font:600 12px/1.35 system-ui;overflow-wrap:anywhere}
+.inventory-search-result-copy small{font:400 10px/1.2 system-ui;color:#baa68b}
+.inventory-search-result-chevron{flex:none;color:#c7a16b;font-size:20px}
+.inventory-search-notice{margin:0;padding:10px;color:#c8b396;font-size:11px;line-height:1.45}
+.inventory-search-notice button,.inventory-search-more{border:0;background:transparent;
+ color:#e8c28a;text-decoration:underline;cursor:pointer;padding:4px;font-size:11px}
+.inventory-section-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;margin:4px 12px 12px}
+.inventory-section-metrics>span{display:flex;min-width:0;flex-direction:column;gap:3px;
+ border:1px solid #aa824c27;border-radius:9px;padding:9px 11px;background:#3427212f}
+.inventory-section-metrics small{font:500 10px/1.3 system-ui;color:#bdaa91}
+.inventory-section-metrics strong{font:600 13px/1.2 system-ui;color:#f0d4a0;
+ font-variant-numeric:tabular-nums}
+.play-inventory-section .inventory-search-highlight>.inventory-play-item{
+ background:#8b653d3f;box-shadow:inset 3px 0 #e5bd7e,inset 0 0 0 1px #c49b6580}
+.play-inventory-section .inventory-search-highlight>.inventory-play-item:hover{
+ background:#98714550}
+.inventory-search-add-fields{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(88px,.75fr);
+ gap:10px;align-items:end}
+.inventory-search-add-fields label{display:grid;gap:6px;min-width:0;
+ color:#e0c69f;font:500 12px/1.4 system-ui}
+.inventory-search-add-fields :is(select,input){box-sizing:border-box;width:100%;min-width:0;
+ border:1px solid #ad855059;border-radius:8px;padding:9px;
+ background:#2c2220;color:#edd7b6}
+@media(max-width:350px){.inventory-section-metrics{margin:4px 7px 10px;gap:5px}
+ .inventory-section-metrics>span{padding:8px 7px}}
