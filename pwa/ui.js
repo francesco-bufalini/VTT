@@ -33,6 +33,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -85,7 +86,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -454,12 +455,12 @@ function paintLibraryMiniatures(){
  const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
  const query=(dialog.querySelector('#library-miniature-search')?.value||'').toLocaleLowerCase('it').trim();
  const profiles=libraryMiniatureOptions();
- const filtered=profiles.filter(m=>(m.name+' '+m.id).toLocaleLowerCase('it').includes(query));
+ const filtered=profiles.filter(m=>matchesSearch(query,m.name,m.id));
  // The selected miniature must remain visible even in a large alphabetic
  // catalog where the first page would otherwise push it out of view.
  const selected=filtered.find(m=>m.id===state.libraryMiniatureId);
  const ordered=selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered;
- const matches=ordered.slice(0,state.libraryMiniatureLimit);
+ const matches=pageResults(ordered,state.libraryMiniatureLimit).items;
  const area=dialog.querySelector('.library-miniature-choices');
  const previousScroll=area?.scrollTop||0;
  if(area)area.innerHTML=matches.length?matches.map(m=>
@@ -607,9 +608,9 @@ async function libraryView(){
     '<label class="library-create-field" for="library-create-name">Nome'+
      '<input id="library-create-name" type="text" maxlength="120" placeholder="Nuova creatura" autocomplete="off"></label>'+
     '<div class="library-create-miniature-title"><strong>Miniatura di base</strong><small class="library-miniature-current" role="status">Selezionata: Sariel</small></div>'+
-    '<label class="library-miniature-search" for="library-miniature-search">'+actionGlyph('search')+
+    '<label class="library-miniature-search vtt-list-search" for="library-miniature-search">'+actionGlyph('search')+
      '<input id="library-miniature-search" type="search" placeholder="Cerca miniatura" autocomplete="off"></label>'+
-    '<div class="library-miniature-choices" role="group" aria-label="Scegli miniatura"></div>'+
+    '<div class="library-miniature-choices vtt-selection-list" role="group" aria-label="Scegli miniatura"></div>'+
     '<div class="library-miniature-pagination"><span class="library-miniature-progress" aria-live="polite"></span>'+
      '<button type="button" class="library-miniature-more" data-act="library-miniature-more" hidden>Mostra altre</button></div>'+
     '<div class="library-create-actions">'+
@@ -618,15 +619,14 @@ async function libraryView(){
    '</div></dialog>';
 }
 function renderCatalogRows() {
-  const filter=state.catalogQuery.trim().toLocaleLowerCase();
-  const matches=state.catalogRows.map((row,i)=>({row,i})).filter(({row})=>{
-    const string=String(row.name||"")+" "+String(row.source||"");
-    return !filter || string.toLocaleLowerCase().includes(filter);
-  }).slice(0,90);
-  return matches.length?matches.map(({row,i})=>
+  const matches=state.catalogRows.map((row,i)=>({row,i}))
+    .filter(({row})=>matchesSearch(state.catalogQuery,row.name,row.source));
+  const {items,shown,total}=pageResults(matches,state.catalogResultLimit);
+  return (items.length?items.map(({row,i})=>
     '<button type="button" class="btn full catalog-entry" data-act="catalog-open" data-index="'+i+'">'+
     '<span>'+esc(row.name||"Senza nome")+'</span><span class="tag">'+esc(row.source||row._category||"")+'</span></button>').join("") :
-    '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>';
+    '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>')+
+    resultsFooter('catalog-more',shown,total,90);
 }
 async function catalogView() {
   state.catalogRows=await catalogEntries(state.catalogCategory);
@@ -663,10 +663,10 @@ async function catalogView() {
     (chosen?detail:panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
-      '</select></label><label>Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
+      '</select></label><label class="vtt-list-search">Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
-      state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
-      '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
+      state.catalogRows.length+' voci nel catalogo · risultati caricati progressivamente</p>'+
+      '<div id="catalog-results" class="catalog-results vtt-selection-list">'+renderCatalogRows()+'</div>')+
     (quickPanel?'<details class="archive-tools catalog-create"><summary>Crea contenuto personalizzato</summary>'+quickPanel+'</details>':''));
 }
 
@@ -1884,9 +1884,9 @@ function magicToolsDialog(c,calculated){
      spellSelectionWarning(selectedMember,classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[])):'')+
    '<section class="magic-selection-current"><h3>'+esc(selectedTarget==='spellbook_spells'?'Nel libro':selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
    spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,{includeSlots:false})+'</section>'+
-   '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
+   '<label class="vtt-list-search">Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
-   '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>';
+   '<div id="spell-results" class="catalog-results vtt-selection-list">'+renderSpellResults()+'</div>';
  const chosenLevel=Number(state.magicSlotLevel);
  const chosenPact=Boolean(state.magicSlotPact);
  const chosenSlot=chosenPact?calculated.pact_slots:
@@ -2150,7 +2150,7 @@ function spellSelectionWarning(member,count){
 function renderSpellResults(){
   const rows=state.spellCatalog||[],record=state.editor?.read()||{};
   if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
-  const query=state.spellQuery.trim().toLocaleLowerCase('it');
+  const query=state.spellQuery.trim();
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
   const target=(!member||member.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
@@ -2163,17 +2163,18 @@ function renderSpellResults(){
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
-  const found=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
+  const filtered=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
     (preparing?(Number(spell.level)<=member.max_level&&
       (state.spellKnownView!=='known'||known.has(spell.id))):
       member?.mode==='Preparati'&&target==='spellbook_spells'?
         spellEligible(spell,member):
         !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0)&&
-    (!query||(String(spell.name||'')+' '+String(spell.source||'')).toLocaleLowerCase('it').includes(query)))
+    matchesSearch(query,spell.name,spell.source))
     .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
       String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}))
-    .slice(0,60);
+    ;
+  const {items:found,shown,total}=pageResults(filtered,state.spellResultLimit);
   if(!found.length)return '<p class="hint">'+
     (preparing&&state.spellKnownView==='known'?
       'Nessun incantesimo conosciuto corrispondente. Passa alla lista completa per aggiungerne altri.':
@@ -2200,7 +2201,7 @@ function renderSpellResults(){
       (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       '><span>'+esc(info.name)+'</span>'+
       '<span class="magic-selection-status">'+(already?'× Rimuovi':'+ Aggiungi')+'</span></button>';
-  });
+  })+resultsFooter('spell-results-more',shown,total,60);
 }
 function diceResult(){
   if(!state.roll)return '';
@@ -3565,6 +3566,18 @@ function openRemoveFeatDialog(originKey){
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='catalog-more'){
+    state.catalogResultLimit+=90;
+    const results=app.querySelector('#catalog-results');
+    if(results)results.innerHTML=renderCatalogRows();
+    return;
+  }
+  if(act==='spell-results-more'){
+    state.spellResultLimit+=60;
+    const results=app.querySelector('#spell-results');
+    if(results)results.innerHTML=renderSpellResults();
+    return;
+  }
   if(act==='feat-remove'){
     openRemoveFeatDialog(target.dataset.featKey||'');return;
   }
@@ -3890,7 +3903,7 @@ async function handleAction(target){
     if(act==='magic-select-spells'){
       state.spellClass=target.dataset.magicClass||'manual';
       state.spellTarget=target.dataset.magicTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
-      state.spellQuery='';
+      state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=state.calculated?.casting_classes?.find(row=>row.id===state.spellClass)?.mode==='Preparati'?
         'known':'all';
     }
@@ -5587,13 +5600,13 @@ function listen(){
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
     if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){
-      state.spellQuery=target.value;
+      state.spellQuery=target.value;state.spellResultLimit=60;
       const matches=document.querySelector("#spell-results");
       if(matches)matches.innerHTML=renderSpellResults();
       return;
     }
     if(target?.id==="catalog-search"){
-      state.catalogQuery=target.value;
+      state.catalogQuery=target.value;state.catalogResultLimit=90;
       const results=document.querySelector("#catalog-results");
       if(results)results.innerHTML=renderCatalogRows();
       return;
@@ -5632,7 +5645,7 @@ function listen(){
     if(target?.id==='spell-class'){
       state.spellClass=target.value;
       state.spellTarget='prepared_spells';
-      state.spellQuery='';
+      state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=state.calculated?.casting_classes?.find(row=>row.id===state.spellClass)?.mode==='Preparati'?
         'known':'all';
       render().catch(error=>message(errorMessage(error),true));return;
@@ -5643,7 +5656,7 @@ function listen(){
         .catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="catalog-category"){
-      state.catalogCategory=target.value;state.catalogSelected=-1;
+      state.catalogCategory=target.value;state.catalogSelected=-1;state.catalogResultLimit=90;
       render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="cast-creature"){
