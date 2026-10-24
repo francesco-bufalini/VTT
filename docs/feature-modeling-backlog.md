@@ -23,12 +23,15 @@ sola non concede effetti generici.
 | Monk XPHB: Flurry of Blows, Patient Defense, Step of the Wind, Stunning Strike, Deflect Attacks, Superior Defense | Consumo contestuale del pool Focus, azioni, TS, condizioni, danno e durata. |
 | Monk XPHB: Uncanny Metabolism, Perfect Focus | Ripristino dei Focus Points all'iniziativa e guarigione; soglia di quattro punti e mutua esclusione. Il contatore giornaliero di Uncanny Metabolism è già presente. |
 | Paladin XPHB: Lay on Hands, Restoring Touch, Divine Sense, Abjure Foes | Punti spesi, bersaglio, condizioni e sensi al momento dell'uso. |
+| Paladin XPHB: Paladin's Smite, Faithful Steed, Aura of Protection/Courage/Expansion | Lanci gratuiti specifici di Divine Smite/Find Steed e stato della creatura evocata; bonus/immunità entro aura spaziale attiva, con raggio progressivo. |
 | Ranger XPHB: Tireless, Nature's Veil, Hunter's Mark features | PF temporanei e condizione Invisible attivati, riduzione di Exhaustion, concentrazione/bersaglio marcato. I limiti numerici di Tireless e Nature's Veil sono già presenti. |
 | Rogue XPHB: Cunning Strike, Devious Strikes, Improved Cunning Strike | Dadi Sneak Attack rinunciati sul singolo attacco, opzioni, TS, condizioni e durata; i dadi non sono una riserva persistente. |
 | Sorcerer XPHB: Innate Sorcery, Sorcery Incarnate, Arcane Apotheosis | Durata/attivazione, incantesimo e Metamagia scelti, costi alternativi in Sorcery Points. |
+| Sorcerer XPHB: Font of Magic, Metamagic | Conversione Sorcery Points↔slot con costi, opzioni scelte e spesa contestuale al lancio. |
 | Warlock XPHB: Magical Cunning, Eldritch Master | Ripristino degli slot Pact Magic in quantità diversa prima e dopo il livello 20. Il contatore di Magical Cunning copre solo il rito giornaliero. |
 | Warlock XPHB: Eldritch Invocations, Contact Patron, Mystic Arcanum | Scelte con prerequisiti, lancio gratuito specifico e quattro incantesimi distinti. |
 | Wizard XPHB: Arcane Recovery, Memorize Spell, Signature Spells | Slot scelti entro tetto cumulativo, preparazione e due incantesimi scelti. Il contatore Arcane Recovery copre solo l'uso. |
+| Wizard XPHB: Scholar, Ritual Adept, Spell Mastery | Abilità già competente scelta, libro di incantesimi effettivo, rituali ammissibili e due incantesimi scelti per lanci gratuiti al livello base. |
 | Artificer TCE: Magic Item Adept/Savant/Master, Soul of Artifice | Le eccezioni esistenti nel codice vanno espresse con dati del tratto: limite di sintonia che **sostituisce** il precedente e bonus dinamico legato agli oggetti davvero in sintonia. |
 | Artificer TCE: Experimental Elixir, Eldritch Cannon, Spell-Storing Item, Magical Tinkering | Stato di oggetti specifici, creazione, scelta, durata, bersaglio e pagamento alternativo con slot. |
 | Dwarf PHB/XPHB: Darkvision, Dwarven Toughness, Dwarven Resilience, Stonecunning | Senso contestuale, PF per livello, TS contro veleno e origine esatta del tratto; in XPHB Stonecunning ha usi e Tremorsense temporaneo. |

@@ -550,3 +550,69 @@ tracker generico perderebbe il tratto concedente e le condizioni di
 attivazione. Restano esplicitamente in attesa di una rappresentazione dei
 contatori di specie collegata al tratto, insieme alle scelte di Skillful e
 Versatile e allo stato Heroic Inspiration di Resourceful.
+
+## Lotto 2026-10-24: Paladin, Sorcerer e Wizard XPHB completi
+
+Ricontrollate una per una le **59 voci** `class_features` di queste tre
+classi (24/19/16; 19/12/11 nomi distinti). I contatori `Lay on Hands`,
+`Innate Sorcery` e `Arcane Recovery` erano già stati aggiunti nel lotto
+precedente. `Channel Divinity` e `Sorcery Points` hanno progressione nelle
+tabelle di classe; aggiungere un secondo pool con nome diverso produrrebbe
+risorse duplicate. Nessun effetto è stato spostato da un tratto alla classe.
+
+| Paladin XPHB (livello) | Esito |
+| --- | --- |
+| Lay on Hands (1) | Pool di cinque PF per livello Paladin, già strutturato; bersaglio e quantità curata sono scelti all'uso. |
+| Spellcasting (1) | Incantesimi preparati e slot nel modello magico. |
+| Weapon Mastery (1) | Due tipi di arma scelti fra quelli competenti, sostituibili al riposo lungo. |
+| Fighting Style (2) | Talento Fighting Style scelto, inclusa l'opzione Blessed Warrior. |
+| Paladin's Smite (2) | `Divine Smite` sempre preparato e un lancio senza slot per riposo lungo; uso legato al lancio, non bonus danni passivo. |
+| Channel Divinity (3) | Pool della tabella, condiviso fra gli effetti concessi dai tratti; scelta dell'effetto all'uso. |
+| Divine Sense (3) | Usa Channel Divinity; tipi di creatura, posizione, raggio e durata contestuali. |
+| Paladin Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Extra Attack (5) | Due attacchi nell'azione Attack. |
+| Faithful Steed (5) | `Find Steed` sempre preparato e un lancio senza slot per riposo lungo; creatura evocata distinta. |
+| Aura of Protection (6) | Bonus ai TS pari a CAR, minimo +1, ad alleati **nell'aura** e solo quando il Paladin non è Incapacitated. |
+| Subclass Feature (7, 15, 20) | Segnaposto dei tratti reali di sottoclasse. |
+| Abjure Foes (9) | Spende Channel Divinity, seleziona fino a CAR bersagli visibili (minimo uno), TS e condizioni. |
+| Aura of Courage (10) | Immunità a Frightened dentro Aura of Protection; effetto spaziale, non immunità globale. |
+| Radiant Strikes (11) | Danno Radiante su colpo con arma da mischia o colpo senz'armi. |
+| Restoring Touch (14) | Rimuove condizioni ammesse spendendo 5 punti dal pool Lay on Hands per condizione, insieme all'uso del tratto. |
+| Aura Expansion (18) | Allarga Aura of Protection a 30 piedi, non aggiunge una seconda aura. |
+| Epic Boon (19) | Scelta del talento. |
+
+| Sorcerer XPHB (livello) | Esito |
+| --- | --- |
+| Innate Sorcery (1) | Due usi per riposo lungo già strutturati; vantaggi e CD +1 valgono solo durante il minuto di attivazione. |
+| Spellcasting (1) | Trucchetti, preparazione e slot del modello magico. |
+| Font of Magic (2) | Sorcery Points progressivi già nella tabella; conversione punti↔slot con costi specifici. |
+| Metamagic (2, 10, 17) | Scelte progressive di opzioni e spesa di punti al lancio; non assegnare tutte le opzioni. |
+| Metamagic Options (2) | Catalogo di possibilità, non concessione di ognuna. |
+| Sorcerer Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Sorcerous Restoration (5) | Recupera al riposo breve fino a metà livello Sorcerer, arrotondata in basso, una volta per riposo lungo; la regola di recupero è già nel dato dedicato. |
+| Subclass Feature (6, 14, 18) | Segnaposto della sottoclasse reale. |
+| Sorcery Incarnate (7) | Può pagare due Sorcery Points per attivare Innate Sorcery se gli usi sono esauriti; durante l'attivazione ammette fino a due Metamagie sullo stesso incantesimo. |
+| Epic Boon (19) | Scelta del talento. |
+| Arcane Apotheosis (20) | Una Metamagia gratuita per turno soltanto mentre Innate Sorcery è attiva. |
+
+| Wizard XPHB (livello) | Esito |
+| --- | --- |
+| Arcane Recovery (1) | Un'attivazione per riposo lungo già strutturata; scelta degli slot dopo un riposo breve, somma dei livelli limitata e nessuno slot di livello 6+. |
+| Ritual Adept (1) | Rituali presenti nel libro anche se non preparati; richiede libro e tag Ritual. |
+| Spellcasting (1) | Libro, preparazione, trucchetti e slot del modello magico. |
+| Scholar (2) | Expertise in **una** fra sei abilità in cui è già competente. |
+| Wizard Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Memorize Spell (5) | Sostituzione di un preparato di livello 1+ dal libro a fine riposo breve; scelta, non incremento della capacità. |
+| Subclass Feature (6, 10, 14) | Segnaposto dei tratti della sottoclasse. |
+| Spell Mastery (18) | Un incantesimo di livello 1 e uno di livello 2 scelti dal libro, sempre preparati e gratuiti solo al livello base; scelta sostituibile secondo il testo. |
+| Epic Boon (19) | Scelta del talento. |
+| Signature Spells (20) | Due incantesimi di livello 3 scelti dal libro, sempre preparati; un lancio gratuito **per ciascuno** per riposo breve/lungo. |
+
+Restano fuori dall'automazione: selezione dei lanci gratuiti e del bersaglio
+per Paladin's Smite/Faithful Steed; raggio, posizione e condizioni delle aure;
+conversione fra Sorcery Points e slot e costi di Metamagia; libro,
+preparazione e incantesimi scelti per Spell Mastery/Signature Spells. I
+contatori già presenti non trasformano queste operazioni in effetti impliciti.
