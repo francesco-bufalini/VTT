@@ -59,7 +59,7 @@ function optionPool(kind,record,index){
    }
   }
  }
- for(const row of arr(record.proficiency_choices))if(row?.kind===kind)values.push(strip(row.key));
+ for(const row of arr(record.proficiency_choices))if(row?.kind===kind&&!row.custom)values.push(strip(row.key));
  return unique(values.map(strip));
 }
 function allowedByRule(kind,data,key,record,index){
@@ -109,13 +109,19 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    const options=optionPool(req.kind,record,index)
      .filter(key=>allowedByRule(req.kind,req.data,key,record,index))
      .sort((a,b)=>a.localeCompare(b,'it'));
-   const selected=unique(presentRows(record,source.id,req.kind)
-     .map(row=>strip(row.key)).filter(key=>allowedByRule(req.kind,req.data,key,record,index)));
+   const stored=presentRows(record,source.id,req.kind);
+   const selected=unique(stored.map(row=>strip(row.key)).filter(key=>
+     stored.some(row=>row.custom&&strip(row.key)===key)||
+     allowedByRule(req.kind,req.data,key,record,index)));
+   const custom_values=unique(stored.filter(row=>row.custom===true)
+     .map(row=>strip(row.key)));
    const total=Math.max(1,Math.floor(req.count));
    result.push({id:'proficiency:'+source.id+':'+req.kind+':'+i,kind:'proficiency',
      origin_id:source.id,name:source.origin||source.source?.name||source.id,
      label:kindNames[req.kind]||req.kind,proficiency_kind:req.kind,
-     count:total,selected,options,remaining:Math.max(0,total-selected.length)});
+     count:total,selected,options,custom_values,
+     custom_allowed:['tool','language'].includes(req.kind),
+     remaining:Math.max(0,total-selected.length)});
   }
  }
  // The native code recognizes exactly one 5etools one-score choice per feat.
@@ -151,6 +157,16 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  }
  return result;
 }
+// A choice picker may contain already-owned proficiencies from any source,
+// including fixed grants and the current character's selected proficiencies.
+export function knownProficiencyOptions(record={},calculated={},choice={},index={}){
+ if(choice.kind!=='proficiency')return new Set();
+ const all=new Set([...fixedProficiencies(record,index).keys(),
+   ...arr(calculated.proficiencies)].map(norm));
+ const kind=choice.proficiency_kind;
+ return new Set(arr(choice.options).filter(key=>
+   all.has(kind+':'+key)||(kind==='skill'&&all.has('expertise:'+key))));
+}
 // Link pickers to the exact trait that granted them; never match by display name.
 export function choicesForTrait(trait,record,choices=[]){
  const origins=traitBenefitSources(trait,record);
@@ -158,8 +174,16 @@ export function choicesForTrait(trait,record,choices=[]){
 }
 export function savePendingChoice(record,choice,values=[]){
  if(!choice||!['ability','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
- const selected=unique(arr(values).map(strip));
- if(selected.length>choice.count||selected.some(key=>!choice.options.includes(key)))
+ const raw=unique(arr(values).map(strip));
+ const prefix='__custom__:';
+ const custom=raw.filter(key=>key.startsWith(prefix)).map(key=>key.slice(prefix.length));
+ const regular=raw.filter(key=>!key.startsWith(prefix));
+ const selected=unique([...regular,...custom]);
+ if(selected.length>choice.count||
+    regular.some(key=>!choice.options.includes(key))||
+    (custom.length&&(!choice.custom_allowed||choice.kind!=='proficiency'))||
+    custom.some(key=>!key||key.length>80||/[<>{}\x00-\x1f]/.test(key)||
+       choice.options.includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
  if(choice.kind==='ability'){
   if(selected.length>1)throw Error('Puoi scegliere una sola caratteristica.');
@@ -174,8 +198,9 @@ export function savePendingChoice(record,choice,values=[]){
  }
  const rows=arr(record.proficiency_choices).filter(row=>!(
    row?.origin_id===choice.origin_id&&row.kind===choice.proficiency_kind&&
-   choice.options.includes(strip(row.key))&&!row.automatic));
+   (choice.options.includes(strip(row.key))||row.custom===true)&&!row.automatic));
  for(const key of selected)rows.push({kind:choice.proficiency_kind,key,
-   origin_id:choice.origin_id,origin_name:choice.name,disabled:false});
+   origin_id:choice.origin_id,origin_name:choice.name,disabled:false,
+   ...(custom.includes(key)?{custom:true}:{})});
  return {proficiency_choices:rows};
 }

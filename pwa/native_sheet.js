@@ -296,7 +296,13 @@ export function nativeRows(c,key,catalogs={},startIndex=0){
     if(key==='classes'&&['source','subclass_source'].includes(field))
       return '<div class="native-readonly-source"><span>'+esc(label)+'</span><strong>'+esc(row[field]||'—')+'</strong></div>';
     if(key==='proficiency_choices'&&field==='key'){
-      if(['skill','expertise'].includes(row.kind))type=SKILLS.map(([id,name])=>[id,name]);
+      if(['skill','expertise'].includes(row.kind))type=SKILLS.map(([id,name])=>{
+        const owned=list(catalogs.calculated?.proficiencies);
+        const expert=owned.includes('expertise:'+id);
+        const trained=expert||owned.includes('skill:'+id);
+        return [id,name+(row.kind==='expertise'?(expert?' ✓ Maestria':trained?' ✓ Competenza':''):
+          trained?' ✓':'')];
+      });
       if(row.kind==='save')type=['str','dex','con','int','wis','cha'].map(a=>[a,a.toUpperCase()]);
     }
     if(['formula_bonuses','dice_bonuses'].includes(key)&&field==='origin_id')type=[['','Senza origine'],...list(catalogs.origins).map(o=>[o.id,o.name])];
@@ -467,7 +473,16 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='';
  const skillPanels=()=>panel('Abilità','<dl class="native-summary">'+SKILLS.map(([id,label,ability])=>'<div><dt>'+esc(label)+' · '+ability.toUpperCase()+' '+(calculated.proficiencies?.includes('expertise:'+id)?'🎓🎓':calculated.proficiencies?.includes('skill:'+id)?'🎓':'')+'</dt><dd>'+read('skill:'+id,label,true)+'</dd></div>').join('')+'</dl>','stats-skills-panel')+
-  panel('Altre competenze',summary(['tool','language','weapon','armor'].map((kind,i)=>[['Strumenti','Linguaggi','Armi','Armature'][i],(calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':')).map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])))+
+  panel('Altre competenze',summary([
+    ['Abilità',SKILLS.filter(([key])=>(calculated.proficiencies||[]).some(id=>
+      id==='skill:'+key||id==='expertise:'+key)).map(([,label])=>label).join(', ')||'Nessuna'],
+    ['Maestrie',SKILLS.filter(([key])=>(calculated.proficiencies||[]).includes('expertise:'+key))
+      .map(([,label])=>label).join(', ')||'Nessuna'],
+    ...['tool','language','weapon','armor'].map((kind,i)=>[
+      ['Strumenti','Linguaggi','Armi','Armature'][i],
+      (calculated.proficiencies||[]).filter(key=>key.startsWith(kind+':'))
+        .map(key=>key.slice(kind.length+1)).join(', ')||'Nessuno'])
+  ]))+
   '';
  const statsIntro=()=>panel('Caratteristiche',
    '<div class="native-abilities" role="table" aria-label="Caratteristiche e tiri salvezza">'+

@@ -24,8 +24,27 @@ try{
  }
  await page.setViewportSize({width:390,height:844});await shot('inventory-rich');
  await page.locator('[data-play-search]').fill('raro');assert.equal(await page.locator('#sheet-play-view [data-play-filter]:visible').count(),1);await page.locator('[data-play-search]').fill('');
- await popup('item:0');assert.equal(await page.locator('#sheet-context-title').textContent(),'Lama lunare');assert.match(await page.locator('.inventory-detail-facts').textContent(),/1d8/);await shot('inventory-detail-rich');await dismiss();
+ assert.equal(await page.locator('#sheet-play-view .inventory-global-search').count(),1);
+ assert.equal(await page.locator('#sheet-play-view .play-inventory-section [data-play-search]').count(),0);
+ await popup('item:0');
+ assert.equal(await page.locator('#sheet-context-title').textContent(),'Lama lunare');
+ assert.match(await page.locator('.inventory-detail-facts').textContent(),/1d8/);
+ assert.equal(await page.locator('#sheet-context-dialog .play-item-main-fields>label').count(),2);
+ assert.equal(await page.locator('#sheet-context-dialog [data-item-container="0"]').inputValue(),'backpack');
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="inventory-menu"],#sheet-context-dialog [data-act="remove-item"],#sheet-context-dialog [data-act="inventory-view-catalog"]').count(),0);
+ assert.equal(await page.locator('#sheet-context-dialog [data-act="inventory-open-trait"]').count(),1);
+ await shot('inventory-detail-rich');await dismiss();
+ await popup('item:2');
+ const attune=page.locator('#sheet-context-dialog .inventory-popup-attunement input[type=checkbox]');
+ assert.equal(await attune.count(),1,'Required attunement has a direct checkbox');
+ assert.equal(await attune.isChecked(),true);
+ await dismiss();
  assert.equal(JSON.stringify(await record()),before,'Reading and searching inventory cannot mutate the archive');
+ await popup('item:0');
+ await page.locator('#sheet-context-dialog [data-act="inventory-open-trait"]').click();
+ await page.locator('#trait-benefits-dialog').waitFor();
+ assert.match(await page.locator('#trait-benefits-title').textContent(),/Lama lunare/);
+ await page.locator('#trait-benefits-dialog [data-act="trait-benefits-close"]').click();
  await sheet('magic');
  const powers=page.locator('#sheet-play-view [data-sheet-context^="power:"]');
  assert(await powers.filter({hasText:'Focus arcano'}).textContent().then(t=>t.includes('1 potere')));

@@ -4,6 +4,7 @@ import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverr
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
+import {structuredItemFacts} from "./item_detail_facts.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownClassSpellIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
@@ -29,7 +30,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions} from "./pending_choices.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -1636,12 +1637,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
           '<button type="button" class="inventory-select" data-act="inventory-select" data-index="'+index+
           '" aria-label="Mostra descrizione di '+esc(item.name)+'">'+(isCatalogItem(item)?name:scrolls?esc(displayName):'Dettagli')+'</button>'+
           (isCatalogItem(item)?'':name)+
-          (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+
-          '<button type="button" class="inventory-more" data-act="inventory-menu" data-index="'+index+
-          '" aria-label="Opzioni '+esc(item.name)+'" aria-expanded="'+(menuIndex===index)+'">⋯</button>'+
-          (menuIndex===index?'<span class="inventory-context-actions">'+
-             '<button type="button" class="btn small danger" data-act="remove-item" data-index="'+index+'">Rimuovi</button>'+
-             '<button type="button" class="btn small" data-act="inventory-view-catalog" data-index="'+index+'">Vedi nel bestiario</button>'+(!scrolls?'<label>Sposta in<select data-item-container="'+index+'">'+containers.map(c=>'<option value="'+esc(c.id)+'"'+(itemContainerId(item,containers)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></label>':'')+'</span>':'')+'</span>',
+          (scrolls?'':'<small class="inventory-mobile-properties">'+esc(inventoryProperties(item))+'</small>')+'</span>',
         equip='<span class="inventory-col-equip">'+(scrolls?'':canEquip?
           '<button type="button" class="inventory-equip-toggle'+((item.equipped||slots.length)?' is-equipped':'')+'" data-act="inventory-equip" data-index="'+index+
           '" title="'+((item.equipped||slots.length)?'Disequipaggia':'Equipaggia')+'" aria-label="'+((item.equipped||slots.length)?"Disequipaggia":"Equipaggia")+' '+esc(item.name)+'" aria-pressed="'+
@@ -1726,6 +1722,12 @@ function inventoryItemDescription(obj,index){
   const pairs=[['Tipo',info.type],...(obj.source?[['Fonte',String(obj.source)]]:[]),
     ...(obj.rarity&&obj.rarity!=='none'?[['Rarità',INVENTORY_RARITIES[String(obj.rarity).toLowerCase()]||obj.rarity]]:[]),
     ...info.facts.map(fact=>[fact.label,fact.value]),...(info.status.length?[['Stato',info.status.join(' · ')]]:[])];
+  // The brief readout is not a replacement for complete structured metadata.
+  const seen=new Set(pairs.map(([label])=>label.toLocaleLowerCase('it')));
+  for(const [label,value] of structuredItemFacts(resolveOwnedItem(obj))){
+    if(seen.has(label.toLocaleLowerCase('it')))continue;
+    pairs.push([label,value]);seen.add(label.toLocaleLowerCase('it'));
+  }
   const properties=inventoryReadout(obj,inventoryProperties({...obj,rarity:''}),isSpellScroll(obj)).properties||"—";
   const prose=flattenDescription(obj)||String(obj.description||'');
   const localEdit=!isCatalogItem(obj)?'<label>Descrizione<textarea data-item-index="'+index+
@@ -1739,6 +1741,8 @@ function inventoryItemDescription(obj,index){
     '<input data-item-override="'+key+'" data-item-index="'+index+'" value="'+esc(obj.instance_overrides?.[key]??'')+'"></label>').join('')+
     '</details>':'';
   return '<div class="inventory-description">'+
+    (obj.id?'<button type="button" class="inventory-trait-link" data-act="inventory-open-trait" data-index="'+index+
+      '">'+actionGlyph('proficiency')+'<span>Apri il tratto dell’oggetto</span><span aria-hidden="true">↗</span></button>':'')+
     '<dl class="inventory-detail-facts">'+pairs.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+
     (properties!=='—'?'<section class="inventory-detail-section"><h3>Proprietà</h3><p>'+esc(properties)+'</p></section>':'')+
     (localEdit?localEdit:prose?'<section class="inventory-detail-section"><h3>Descrizione</h3><div class="inventory-prose">'+esc(prose)+'</div></section>':'<p class="hint">Nessuna descrizione disponibile nel catalogo locale.</p>')+overrides+'</div>';
@@ -2776,7 +2780,12 @@ async function handleField(target) {
     await render();return;
   }
   if(target.dataset.itemContainer!==undefined){
-    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),target.value));
+    const destination=target.value;
+    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),destination));
+    // Moving an item into a previously hidden section must not close its
+    // editor or make the chosen item disappear after the rerender.
+    focusInventorySection(state.editor.read(),destination===DEFAULT_INVENTORY_CONTAINER?
+      'items':'container:'+destination);
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(target.dataset.itemOverride){
@@ -3454,9 +3463,21 @@ function openPendingChoiceDialog(choice){
  const inputType='checkbox';
  const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
  Object.assign(labels,abilities);
+ const known=knownProficiencyOptions(state.editor?.read()||{},state.calculated||{},choice);
  const rows=choice.options.map(key=>'<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
    '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
-   '><span>'+esc(labels[key]||key)+'</span></label>').join('');
+   '><span>'+esc(labels[key]||key)+'</span>'+
+   (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
+   '</label>').join('');
+ const customValues=choice.custom_values||[];
+ const customRow=choice.custom_allowed?
+   '<div class="pending-choice-option pending-choice-custom'+(choice.count===1?' pending-choice-option--single':'')+'">'+
+     '<label class="pending-choice-custom-label"><input type="checkbox" name="pending-options" value="__custom__"'+
+     (customValues.length?' checked':'')+'><span>＋ Personalizzata…</span></label>'+
+     '<input type="text" data-pending-custom-value maxlength="250" autocomplete="off" '+
+     'placeholder="Nome dello strumento o della lingua" value="'+esc(customValues.join(', '))+'"'+
+     (customValues.length?'':' disabled')+' aria-label="Nomi personalizzati, separati da virgole">'+
+   '</div>':'';
  dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
    '<h2>'+esc(choice.label)+'</h2></div>'+
    '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
@@ -3464,19 +3485,30 @@ function openPendingChoiceDialog(choice){
    'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
    ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
-   (rows?'<div class="pending-choice-options">'+rows+'</div>':
+   (rows||customRow?'<div class="pending-choice-options">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
    '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
-   '<button type="button" data-act="pending-choice-save"'+(rows?'':' disabled')+'>Applica</button></footer>';
+   '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
  const update=()=>{
    const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
+   const custom=dialog.querySelector('[data-pending-custom-value]');
+   const customChecked=checked.some(row=>row.value==='__custom__');
+   const customNames=customChecked?(custom?.value||'').split(',').map(x=>x.trim()).filter(Boolean):[];
+   if(custom)custom.disabled=!customChecked;
+   const total=checked.filter(row=>row.value!=='__custom__').length+customNames.length;
+   const invalid=(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
+     total>choice.count||new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
    const progress=dialog.querySelector('.pending-choice-progress');
-   if(progress)progress.textContent=checked.length+' / '+choice.count+' selezionate';
+   if(progress)progress.textContent=total+' / '+choice.count+' selezionate'+
+     (invalid?' · Controlla i nomi personalizzati':'');
    for(const input of dialog.querySelectorAll('[name="pending-options"]')){
-     input.disabled=!input.checked&&checked.length>=choice.count;
+     input.disabled=!input.checked&&total>=choice.count;
    }
+   const save=dialog.querySelector('[data-act="pending-choice-save"]');
+   if(save)save.disabled=invalid;
  };
  dialog.addEventListener('change',update);
+ dialog.querySelector('[data-pending-custom-value]')?.addEventListener('input',update);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);
  update();
@@ -3512,7 +3544,10 @@ async function handleAction(target){
     const dialog=app.querySelector('#pending-choice-dialog');
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===dialog?.dataset.choiceId);
     if(!choice)throw Error('La scelta è cambiata: riapri il selettore.');
-    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].map(row=>row.value);
+    const customField=dialog.querySelector('[data-pending-custom-value]');
+    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].flatMap(row=>
+      row.value==='__custom__'?(customField?.value||'').split(',').map(v=>v.trim())
+        .filter(Boolean).map(value=>'__custom__:'+value):[row.value]);
     const current=state.editor.read();
     // Validate once again against freshly derived grants before persisting.
     const fresh=await computeLocalData(current);
@@ -5032,6 +5067,20 @@ async function handleAction(target){
     state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
   }
+  if(act==="inventory-open-trait"){
+    const index=Number(target.dataset.index),item=state.editor?.read()?.inventory?.[index];
+    if(!item?.id||isDocument(item))throw Error('Tratto dell’oggetto non disponibile.');
+    state.sheetPopup='';state.sheet='info';await render();
+    const trait=(state.traitRows||[]).find(row=>row.category==='oggetti'&&row.rank===0&&
+      row.origin_key==='item:'+item.id);
+    if(!trait){message('Il tratto dell’oggetto non è disponibile in questa scheda.',true);return;}
+    const card=[...app.querySelectorAll('.trait-row [data-trait-key]')]
+      .find(row=>row.dataset.traitKey===trait.key);
+    card?.scrollIntoView?.({block:'center',behavior:'instant'});
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+    state.traitPopupKey=trait.key;state.traitPopupConfirm='';state.traitPopupTrait=trait;
+    mountTraitBenefitDialog();return;
+  }
   if(act==="inventory-select"){
     state.inventorySelectedIndex=Number(target.dataset.index);
     state.inventoryMenuIndex=-1;
@@ -5432,18 +5481,6 @@ function listen(){
     const card=e.target.closest?.('#sheet-play-view .play-health[role="button"]');
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
-  });
-  // Right-click (and touch long-press where the browser emits contextmenu)
-  // opens the same per-item actions as the explicit touch-friendly ⋯ button.
-  app.addEventListener("contextmenu",e=>{
-    const row=e.target?.closest?.("[data-inventory-row]");
-    if(!row||state.sheet!=="inventory"||!state.editor)return;
-    e.preventDefault();
-    const index=Number(row.dataset.inventoryRow);
-    if(!Number.isInteger(index))return;
-    state.inventoryMenuIndex=index;
-    state.inventorySelectedIndex=index;
-    render().catch(error=>message(errorMessage(error),true));
   });
   app.addEventListener("submit",async e=>{
     if(!(e.target instanceof HTMLFormElement))return;

@@ -244,7 +244,8 @@ export function changeEquippedWeaponSize(inventory,slot,size){
 }
 
 export function requiresAttunement(item={}){
-  const v=item.req_attune??item.reqAttune??item.infusion?.requires_attunement??false;
+  const v=item.req_attune??item.reqAttune??item.requires_attunement??
+    item.requiresAttunement??item.infusion?.requires_attunement??false;
   return v===true||(typeof v==="string"&&v.trim().length>0);
 }
 export const isCatalogItem=item=>!!String(item?.id||"")&&!String(item.id).startsWith("local_");
