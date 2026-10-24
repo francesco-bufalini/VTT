@@ -783,7 +783,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
       '<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
       '" aria-pressed="'+selected.includes(key)+'" aria-label="'+esc(label)+'">'+icon(glyph)+
       '<span>'+esc(label)+'</span></button>').join('')+
-    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>';
+    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>'+
+   '<label class="play-search inventory-global-search">'+icon('search')+
+     '<input type="search" data-play-search value="'+esc(view.search||'')+
+     '" placeholder="Cerca in tutte le sezioni visibili" aria-label="Cerca nell’inventario"></label>';
   if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
     const coinPanel=bank.querySelector('.inventory-coins-panel');
@@ -874,9 +877,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     html+=card(name,
       '<p class="inventory-list-count">'+visible.length+' voci · '+
         visible.reduce((sum,{info})=>sum+info.quantity,0)+' unità</p>'+
-      '<label class="play-search">'+icon('search')+
-        '<input type="search" data-play-search value="'+esc(view.search||'')+
-        '" placeholder="Cerca in '+esc(name)+'" aria-label="Cerca in '+esc(name)+'"></label>'+
       visible.map(row=>renderItem(row,section)).join('')+
         (!visible.length?'<p class="play-empty">Nessuna voce disponibile.</p>':'')+
       controls,
