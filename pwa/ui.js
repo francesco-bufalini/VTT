@@ -3363,18 +3363,18 @@ function organizeSheetPanels(){
       heading.append(manage);
     }
   }
-  // Preserve expanded combat cards across sheet rerenders. Opening a parent
-  // from its heading reveals the index first, without auto-opening its children.
+  // Opening a battle category also expands every immediate timing/ability
+  // group inside it. Each child can still be collapsed independently.
   for(const details of app.querySelectorAll('#sheet-play-view .play-battle-disclosure')){
     const key='battle-disclosure:'+details.dataset.battleAction;
     if(state.disclosureState.has(key))details.open=state.disclosureState.get(key);
     details.querySelector(':scope > summary')?.addEventListener('click',()=>{
       if(details.open)return;
       for(const group of details.querySelectorAll(':scope > .play-battle-action-group')){
-        group.open=false;
+        group.open=true;
         const groupKey=group.dataset.actionAbility?'battle-ability:'+group.dataset.actionAbility:
           'battle-timing:'+details.dataset.battleAction+':'+group.dataset.actionTiming;
-        state.disclosureState.set(groupKey,false);
+        state.disclosureState.set(groupKey,true);
       }
     });
     details.addEventListener('toggle',()=>{
