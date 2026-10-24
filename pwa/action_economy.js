@@ -490,7 +490,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
- const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
+ const target=item.id==='spell_cast'?'<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':
+  item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
@@ -641,7 +642,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Their action economy is defined in "Azioni", not repeated here.
  const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon'].includes(row.id)&&
-  row.parent_action!=='two_weapon'&&row.id!=='unarmed:off');
+  row.id!=='unarmed:off');
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
   const known=attacksById.get('unarmed');
