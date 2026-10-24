@@ -863,3 +863,35 @@ distinti dai corrispondenti XPHB.
 Restano separati gli effetti contestuali, il pagamento Ki all'azione e le
 scelte TCE. Un nome condiviso fra PHB e XPHB (come Persistent Rage) non
 implica effetti o recuperi condivisi.
+
+## Lotto 2026-10-24: Bard PHB
+
+Controllate le **28 voci** `class_features` Bard PHB (20 nomi distinti),
+confrontate con FightClub5eXML `class-bard-phb.xml`
+(`32e201ceee460c825132bf84b42adf6126192617`). Il pool Bardic
+Inspiration PHB già presente usa CAR (minimo un uso), recupero lungo ai
+livelli 1–4 e breve dal livello 5; il dado crescente non è un aumento del
+numero di usi. `Magical Inspiration` e `Bardic Versatility` hanno fonte
+del tratto TCE e restano opzioni.
+
+| Privilegio (fonte, livello) | Esito |
+| --- | --- |
+| Bardic Inspiration (PHB, 1; d8/d10/d12 ai livelli 5/10/15) | Il dado custodito dal bersaglio cresce, mentre il contatore usa CAR; bersaglio diverso dal Bard e uso contestuale. |
+| Spellcasting (PHB, 1) | Incantesimi conosciuti, trucchetti e slot nel modello magico. |
+| Jack of All Trades (PHB, 2) | Metà competenza alle prove che non la includono già; ambito diverso dalla formulazione XPHB legata alle abilità. |
+| Magical Inspiration (TCE opz., 2) | Dado Bardic Inspiration usabile nel lancio di incantesimi per danno o cura, solo se l'opzione è scelta. |
+| Song of Rest (d6/d8/d10/d12; PHB, 2/9/13/17) | Dado extra ai PF recuperati spendendo Hit Dice al riposo breve, progressione sostitutiva; non presente come tratto Bard XPHB. |
+| Bard College (PHB, 3) | Sottoclasse scelta. |
+| Expertise (PHB, 3/10) | Due abilità già competenti scelte a ciascuna soglia. |
+| Ability Score Improvement (PHB, 4/8/12/16/19) | Scelta di incremento/talento. |
+| Bardic Versatility (TCE opz., 4) | Sostituzione di una scelta a una soglia ASI; non concede una scelta ulteriore a tutti. |
+| Font of Inspiration (PHB, 5) | Cambia il recupero del pool Bardic Inspiration a riposo breve/lungo; la conversione di slot in usi appartiene alla versione XPHB. |
+| Bard College feature (PHB, 6/14) | Segnaposto della sottoclasse effettiva. |
+| Countercharm (PHB, 6) | Performance avviata con azione che dura fino a fine turno successivo e aiuta TS contro Charmed/Frightened; XPHB è una reazione a TS fallito. |
+| Magical Secrets (PHB, 10/14/18) | Due incantesimi da qualsiasi classe scelti a ciascuna soglia; non tutte le liste diventano automaticamente disponibili come nella progressione XPHB. |
+| Superior Inspiration (PHB, 20) | All'iniziativa recupera **un** uso solo se Bardic Inspiration è a zero; XPHB porta fino a due se sotto due. |
+
+Restano da modellare il dado e il suo destinatario, l'applicazione di Song
+of Rest nel riposo, le scelte Expertise/Magical Secrets, la performance di
+Countercharm e il recupero condizionato di Superior Inspiration. La fonte
+del tratto impedisce di trasferire un effetto 2024 alla classe PHB.
