@@ -808,7 +808,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
   const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
   html+=inventorySectionControls(c,selected)+
-   '<label class="play-search inventory-global-search">'+icon('search')+
+   '<label class="play-search inventory-global-search vtt-list-search">'+icon('search')+
      '<input type="search" data-play-search value="'+esc(view.search||'')+
      '" placeholder="Cerca in tutte le sezioni visibili" aria-label="Cerca nell’inventario"></label>';
   if(showingItems){
