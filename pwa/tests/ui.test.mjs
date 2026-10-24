@@ -690,16 +690,13 @@ test("native-like inventory shows read-only catalog attributes and mutable custo
   });
   assert.equal(document.querySelector('[data-item-key="attuned"]'),null);
   assert.ok(document.querySelector('[data-act="inventory-quantity"][data-delta="1"]'),"Quantity can be increased inline");
-  assert.ok(document.querySelector('[data-act="inventory-menu"]'),"Touch menu exposes item options");
-  click('[data-act="inventory-menu"]');
-  await until(()=>document.querySelector('[data-act="remove-item"]'));
-  assert.ok(document.querySelector('[data-act="inventory-view-catalog"]'));
-  click('[data-act="inventory-menu"]');
-  await until(()=>!document.querySelector('[data-act="remove-item"]'));
-  const contextEvent=new dom.window.MouseEvent("contextmenu",{bubbles:true,cancelable:true});
-  document.querySelector('[data-inventory-row="0"]').dispatchEvent(contextEvent);
-  assert.ok(contextEvent.defaultPrevented,"Right-click is handled by the item context menu");
-  await until(()=>document.querySelector('[data-act="inventory-view-catalog"]'));
+  assert.equal(document.querySelector('[data-act="inventory-menu"]'),null,
+    "The three-dot action menu is removed");
+  assert.equal(document.querySelector('[data-act="remove-item"]'),null);
+  assert.equal(document.querySelector('[data-act="inventory-view-catalog"]'),null);
+  assert.equal(document.querySelectorAll('#sheet-play-view .inventory-global-search').length,1,
+    "Inventory sections share exactly one global search bar");
+  assert.equal(document.querySelectorAll('#sheet-play-view .play-inventory-section [data-play-search]').length,0);
   click('[data-act="item-catalog"]');
   await until(()=>document.querySelector('#catalog-category'));
   assert.equal(document.querySelector('#catalog-category').value,"items");
