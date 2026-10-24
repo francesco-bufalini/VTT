@@ -20,6 +20,7 @@ const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=
 });
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
+import {matchesSearch} from './ui_primitives.js';
 
 export function inventorySectionControls(record,selected=[]){
  const containers=inventoryContainers(record);
@@ -717,7 +718,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<summary class="play-competence-heading">'+icon('skill')+'<strong>Abilità</strong></summary>'+
     '<div class="play-skills-content">'+
      '<div class="play-skills-tools">'+proxy(bank.querySelector('[data-detail="proficiency_choices"]'),'Modifica competenze','settings')+'</div>'+
-     '<label class="play-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
+     '<label class="play-search vtt-list-search">'+icon('search')+'<input type="search" data-play-search value="'+esc(view.search||'')+'" placeholder="Cerca un’abilità" aria-label="Cerca un’abilità"></label>'+
      '<div class="play-skills">'+SKILLS.map(([key,label,ability])=>{
        const rank=(d.proficiencies||[]).includes('expertise:'+key)?2:(d.proficiencies||[]).includes('skill:'+key)?1:0;
        return '<div data-play-filter="'+esc(label.toLocaleLowerCase('it'))+'">'+roll('skill:'+key,label,
@@ -943,8 +944,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   html+=card('Stati attivi',activeConditions.map(({id,label})=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
-  const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name).slice(0,80);
-  const picker='<div class="play-effect-add"><label>Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
+  const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name);
+  const picker='<div class="play-effect-add"><label class="vtt-list-search">Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
   html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
   const active=Object.entries(c.active_class_features||{});
