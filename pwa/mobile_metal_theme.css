@@ -3961,32 +3961,130 @@ dialog.sheet-context-dialog{border-bottom:0}
 @keyframes vtt-sheet-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.sheet-loading-indicator{animation:none}}
 
-/* Poteri: tactile slot actions, compact preparation choices and source groups. */
+/* Poteri: quiet gold accents, one-line spell actions, and an inline slot spell list. */
 .magic-level-slot{cursor:pointer;touch-action:manipulation}
 .magic-level-slot:hover,.magic-level-slot:focus-visible{border-color:#e1bb81;box-shadow:0 0 0 2px #d2a16c27}
-.magic-slot-popup{display:grid;gap:14px;padding:3px 0 6px}
+dialog.magic-tools-dialog{
+  width:min(95vw,620px);max-height:min(88dvh,820px);
+  padding:14px;border:1px solid #a28a6a80;border-radius:15px;
+  background:linear-gradient(168deg,#332b26 0%,#231e1d 38%,#1c1919 100%);
+  box-shadow:0 20px 60px #000a,inset 0 1px #ecd5ac19;color:#f1e0c6;
+}
+.magic-tools-dialog .magic-tools-head{
+  top:-14px;margin:-14px -14px 8px;padding:13px 16px 12px;
+  border-bottom:1px solid #ba956140;background:linear-gradient(180deg,#3a3029,#292420);
+  border-radius:14px 14px 0 0;
+}
+.magic-tools-dialog .magic-tools-head h2{font-size:1.03rem;letter-spacing:.015em;color:#f5ddba}
+.magic-tools-dialog .magic-tools-body{gap:12px}
+.magic-tools-dialog .magic-tool-close{
+  border:1px solid #b5976e4f;border-radius:9px;background:#6e523b36;
+  color:#dec9aa;box-shadow:none;
+}
+.magic-tools-dialog .magic-tool-close:hover{background:#a07b4b36;border-color:#d5af75}
+.magic-tools-dialog .magic-editor-class{display:grid;gap:6px;font-size:12px;font-weight:650;color:#dac19d}
+.magic-tools-dialog .magic-editor-class select,.magic-tools-dialog .magic-editor-search input{
+  width:100%;min-height:41px;border:1px solid #ab89605e;border-radius:9px;
+  background:#1716169a;color:#f1e0c8;padding:8px 11px;font-size:13px;
+}
+.magic-learn-link,.magic-learn-back{
+  appearance:none;display:flex;align-items:center;gap:9px;width:100%;
+  min-height:40px;padding:9px 12px;border:1px solid #b38b5a66;border-radius:10px;
+  background:linear-gradient(130deg,#69503950,#32282174);
+  color:#ebd2aa;font:650 12px/1.35 system-ui,sans-serif;text-align:left;
+  cursor:pointer;
+}
+.magic-learn-link span:last-child{margin-left:auto;font-size:19px;font-weight:400}
+.magic-learn-link .vtt-action-glyph{width:17px;height:17px}
+.magic-learn-back{width:max-content;max-width:100%;border-color:#a68b6744;background:#2d28256e}
+.magic-learn-link:hover,.magic-learn-link:focus-visible,.magic-learn-back:hover,.magic-learn-back:focus-visible{
+  background:#795c3e6b;border-color:#d4af76;color:#ffe6bf;
+}
+.magic-editor-help{margin:0;color:#c6af91;font-size:12px;line-height:1.55}
+.magic-tools-dialog .magic-selection-summary{padding:2px 0;color:#e6cea5}
+.magic-tools-dialog .magic-selection-current{
+  padding:11px 12px;margin:0;border:1px solid #a17e524a;border-radius:10px;
+  background:#1e1b1a70;
+}
+.magic-tools-dialog .magic-selection-current>h3{margin-bottom:9px}
+.magic-tools-dialog .magic-editor-search{font-size:12px;font-weight:600;color:#d8be98}
+.magic-tools-dialog .magic-editor-results{max-height:46dvh;overflow:auto;padding-right:2px}
+.magic-editor-results .magic-groups,.magic-slot-spells .magic-groups{display:grid;gap:10px}
+.magic-editor-results .magic-level,.magic-slot-spells .magic-level{
+  overflow:hidden;border:1px solid #97744d50;border-radius:10px;background:#231f1e9e;
+}
+.magic-editor-results .magic-level-heading,.magic-slot-spells .magic-level-heading{
+  min-height:34px;margin:0;padding:8px 11px;border-bottom:1px solid #ad845247;background:#6447303a;
+}
+.magic-editor-results .magic-level-heading h4,.magic-slot-spells .magic-level-heading h4{
+  color:#e5c69a;font-size:12px;letter-spacing:.02em;
+}
+.magic-editor-results .magic-entries,.magic-slot-spells .magic-entries{display:grid;gap:0}
+.magic-editor-results .magic-catalog-row{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:8px;min-height:40px;padding:4px 9px;
+  flex-wrap:nowrap!important;border-bottom:1px solid #a4845a22;
+  background:transparent;
+}
+.magic-editor-results .magic-catalog-row:last-child{border-bottom:0}
+.magic-editor-results .magic-catalog-name{
+  display:block;min-width:0;max-width:100%;padding:5px 0;
+  border:0;background:transparent;box-shadow:none;color:#f0dec5;
+  font:600 12px/1.35 system-ui,sans-serif;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
+}
+.magic-editor-results .magic-catalog-name:hover,.magic-editor-results .magic-catalog-name:focus-visible{
+  color:#ffdda8;text-decoration:underline;text-underline-offset:3px;
+}
+.magic-editor-results .magic-catalog-action{
+  flex:0 0 auto;min-width:76px;min-height:30px;padding:5px 10px;
+  border:1px solid #bc956659;border-radius:7px;background:linear-gradient(160deg,#66503c,#473628);
+  color:#f0d3aa;font:650 11px/1.15 system-ui,sans-serif;
+  white-space:nowrap;cursor:pointer;
+}
+.magic-editor-results .magic-catalog-action.is-selected{
+  border-color:#a48f7260;background:#3d39319e;color:#d2c4a9;
+}
+.magic-editor-results .magic-catalog-action:hover,.magic-editor-results .magic-catalog-action:focus-visible{
+  border-color:#e0b77a;background:#775637;color:#ffe2b6;
+}
+.magic-slot-popup{display:grid;gap:13px;padding:2px 0 5px}
 .magic-slot-popup-count{margin:0;color:#e5cba8;font-size:13px;line-height:1.5}
 .magic-slot-popup-count strong{font-variant-numeric:tabular-nums;color:#f5dfb9}
 .magic-slot-popup-actions{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
-.magic-slot-popup-actions>.btn{min-width:0;min-height:40px;white-space:normal}
-.magic-slot-popup-actions>.btn:last-child{grid-column:1/-1}
-.magic-slot-castable{appearance:none;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:10px 11px;text-align:left;cursor:pointer;border:1px solid #ad8b6349;border-radius:8px;background:#59443737;color:#f3ddbb;font:600 12px/1.4 system-ui,sans-serif}
-.magic-slot-castable:hover,.magic-slot-castable:focus-visible{border-color:#d8ae78;background:#986d4140}
-.magic-slot-castable span{font-weight:500;color:#d0b08a;white-space:nowrap;font-size:11px}
-.magic-known-filter{display:flex;gap:5px;margin:10px 0 8px;padding:4px;border:1px solid #ae875342;border-radius:10px;background:#201d1b77}
-.magic-filter-button{appearance:none;flex:1 1 0;min-width:0;min-height:36px;padding:7px 10px;border:1px solid transparent;border-radius:7px;background:transparent;color:#bca992;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer}
-.magic-filter-button[aria-pressed="true"]{background:linear-gradient(145deg,#805d3e,#59402d);border-color:#d4a36a90;color:#ffe5c0;box-shadow:0 2px 6px #0004}
-.magic-catalog-row{display:flex;align-items:center;gap:7px;padding:8px 7px;border-bottom:1px solid #b08a5b27}
-.magic-catalog-name{flex:1 1 auto;min-width:90px;color:#f0ddc2;font-size:12px;font-weight:630;overflow-wrap:anywhere}
-.magic-catalog-row>.btn{flex:0 0 auto;width:auto;min-height:32px;padding:5px 9px;font-size:11px}
-.magic-catalog-row>.hint{font-size:11px}
-.magic-catalog-row>.magic-known-toggle{border-color:#bd996254;color:#ddc29b;background:#47352666}
+.magic-slot-popup-actions>.btn{min-width:0;min-height:39px;white-space:normal;border-radius:8px}
+.magic-slot-spells{display:grid;gap:8px;padding-top:12px;border-top:1px solid #ac88583d}
+.magic-slot-spells>h3{margin:0;color:#f0d6ae;font-size:13px}
+.magic-slot-spells .magic-slot-castable{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;
+  padding:5px 9px;min-height:42px;border:0;border-bottom:1px solid #a4845a22;
+  border-radius:0;background:transparent;box-shadow:none;
+}
+.magic-slot-spells .magic-slot-castable:last-child{border-bottom:0}
+.magic-slot-spell-name{
+  appearance:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-align:left;border:0;padding:5px 0;background:transparent;
+  color:#ecd6b9;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer;
+}
+.magic-slot-spell-name:hover,.magic-slot-spell-name:focus-visible{color:#fbe2b7;text-decoration:underline}
+.magic-slot-cast-button{
+  appearance:none;min-height:31px;padding:5px 13px;border-radius:8px;
+  border:1px solid #c49c69a0;background:linear-gradient(145deg,#846444,#533c29);
+  color:#ffdeb0;font:700 11px system-ui,sans-serif;cursor:pointer;
+}
+.magic-slot-cast-button:hover,.magic-slot-cast-button:focus-visible{
+  border-color:#edc187;background:#896643;color:#ffebca;
+}
 .magic-origin-tracker{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:8px 0;border:1px solid #b1895538;border-radius:9px;background:#261f1b73;color:#cdb89d;font-size:12px}
 .magic-origin-tracker .magic-tracker-controls{display:flex;gap:8px;align-items:center}
 .magic-origin-tracker .magic-tracker-controls button{border-radius:7px;min-width:33px;min-height:31px;border:1px solid #a8845e88;background:#644a33;color:#e4d0ae;font-weight:700;cursor:pointer}
 .magic-origin-tracker .magic-tracker-controls button:disabled{opacity:.45}
-@media(max-width:430px){.magic-catalog-row{flex-wrap:wrap}.magic-catalog-name{flex-basis:100%}.magic-catalog-row>.btn{flex:1 1 auto}}
-
+@media(max-width:430px){
+  dialog.magic-tools-dialog{padding:11px}
+  .magic-tools-dialog .magic-tools-head{top:-11px;margin:-11px -11px 6px;padding:11px 13px}
+  .magic-editor-results .magic-catalog-row{gap:6px;padding:4px 7px}
+  .magic-editor-results .magic-catalog-action{min-width:65px;padding:5px 7px}
+}
 /* Creature forms share the persistent identity bar. */
 .topbar .header-forms{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;padding:10px;border:1px solid #b18b5959;border-radius:50%;background:radial-gradient(circle at 35% 20%,#66503e,#302723 75%);color:#e4c695;box-shadow:inset 0 1px #ffe4ab26,0 2px 8px #0005;cursor:pointer}
 .topbar .header-forms[hidden]{display:none}.topbar .header-forms .vtt-action-glyph{width:25px;height:25px}.topbar .header-forms.has-variant{border-color:#e7bd7b;background:radial-gradient(circle at 35% 20%,#84613d,#403025 75%);box-shadow:inset 0 0 0 2px #efca8a1c,0 0 12px #e0b56c22}
@@ -4177,8 +4275,210 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 #sheet-context-dialog[data-context^="item:"] .inventory-equip-action:focus-visible{
   outline:2px solid #f4d29b;outline-offset:2px;
 }
-/* Matches the unboxed equipment checkboxes; the shorter caption stays inline. */
 #sheet-context-dialog[data-context="equipment"] .equipment-offhand-override{
   padding:0;border:0;background:none;box-shadow:none;
   font-size:11px;white-space:nowrap;
 }
+
+/* Shared popup, search and selectable-list presentation.
+   Individual dialogs retain their layout, body, actions and state owners. */
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;
+ width:40px;height:40px;min-width:40px;padding:0;
+ border:1px solid transparent;border-radius:10px;background:transparent;
+ color:#ead1ab;font:400 25px/1 system-ui,sans-serif;
+ cursor:pointer;box-shadow:none;transition:background .15s,border-color .15s,color .15s;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:hover{
+ background:#a9804b30;border-color:#b48c5b70;color:#ffdfab;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:focus-visible{
+ outline:2px solid #f4cd94;outline-offset:2px;
+}
+:is(.sheet-context-dialog,.sheet-roll-dialog,.trait-benefits-dialog,.library-create-dialog,.variants-dialog) .vtt-popup-close:active{
+ background:#a9804b48;
+}
+.vtt-list-search{display:grid;gap:5px;min-width:0;color:#cfb991;font:600 12px/1.4 system-ui,sans-serif}
+.vtt-list-search input[type=search]{box-sizing:border-box;min-width:0;width:100%;min-height:40px;
+ border:1px solid #ae8a586b;border-radius:9px;padding:9px 11px;
+ background:#211c1abb;color:#f1dfc4;font:400 14px/1.3 system-ui,sans-serif}
+.vtt-list-search input[type=search]:focus-visible{outline:2px solid #eac187;outline-offset:1px}
+.library-miniature-search.vtt-list-search,.play-search.vtt-list-search{display:flex;align-items:center;gap:9px}
+.vtt-selection-list{max-height:min(52dvh,620px);min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.vtt-results-footer{display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:9px;padding:10px 4px 4px;color:#cdbba2;font:500 12px/1.4 system-ui,sans-serif}
+.vtt-results-footer .btn{min-height:38px;border:1px solid #b58d5866;border-radius:9px;
+ padding:7px 12px;color:#f1d0a0;background:#64493242;box-shadow:none;font-size:12px}
+.vtt-results-footer .btn:focus-visible{outline:2px solid #eac187;outline-offset:2px}
+
+/* Unified inventory/compendium search: results belong to the search field,
+   never filter or remove the actual section rows. */
+.inventory-search-area{display:grid;gap:0;margin:9px 0 13px;min-width:0}
+.inventory-search-area>.inventory-global-search{margin:0;border-radius:10px}
+.inventory-search-results:not([hidden]){display:flex;flex-direction:column;max-height:360px;
+ overflow-y:auto;overscroll-behavior:contain;margin-top:5px;padding:4px;
+ border:1px solid #ad85504f;border-radius:10px;background:#241d1be8;
+ box-shadow:0 9px 22px #09070755}
+.inventory-search-result{display:flex;align-items:center;gap:10px;min-height:48px;width:100%;
+ border:0;border-bottom:1px solid #a4824933;border-radius:6px;
+ padding:7px 9px;background:transparent;color:#eed9b8;text-align:left;cursor:pointer}
+.inventory-search-result:last-of-type{border-bottom:0}
+.inventory-search-result:hover,.inventory-search-result:focus-visible{background:#87613a37;
+ outline:none}
+.inventory-search-result-count{display:grid;place-items:center;flex:0 0 34px;min-height:30px;
+ border:1px solid #b68d555d;border-radius:7px;background:#6b4e324a;
+ color:#f0d4a7;font:700 12px/1.2 system-ui;font-variant-numeric:tabular-nums}
+.inventory-search-result-count.is-add{font-size:20px;color:#efd2a1}
+.inventory-search-result-copy{min-width:0;display:flex;flex:1;flex-direction:column;gap:2px}
+.inventory-search-result-copy strong{font:600 12px/1.35 system-ui;overflow-wrap:anywhere}
+.inventory-search-result-copy small{font:400 10px/1.2 system-ui;color:#baa68b}
+.inventory-search-result-chevron{flex:none;color:#c7a16b;font-size:20px}
+.inventory-search-notice{margin:0;padding:10px;color:#c8b396;font-size:11px;line-height:1.45}
+.inventory-search-notice button,.inventory-search-more{border:0;background:transparent;
+ color:#e8c28a;text-decoration:underline;cursor:pointer;padding:4px;font-size:11px}
+/* Section weight/value sit beside the title; no additional item-count strip. */
+.play-inventory-section.has-section-metrics>.play-card-head{display:flex;
+ align-items:center;gap:6px;min-height:58px;padding:7px 8px 7px 11px}
+.play-inventory-section.has-section-metrics>.play-card-head h2{
+ min-width:0;flex:1 1 auto;overflow-wrap:anywhere;font-size:14px;line-height:1.3}
+.inventory-section-head-tools{display:flex;align-items:center;gap:5px;flex:0 0 auto;min-width:0}
+.inventory-section-head-tools>.play-button{min-width:40px;min-height:40px;padding:7px;flex:none}
+.inventory-section-metrics{display:flex;align-items:stretch;gap:5px;margin:0;min-width:0}
+.inventory-section-metrics>span{display:flex;align-items:center;justify-content:center;
+ min-width:58px;max-width:100px;min-height:40px;flex-direction:column;gap:2px;
+ border:1px solid #aa824c43;border-radius:8px;padding:5px 7px;background:#3427214d;
+ text-align:center}
+.inventory-section-metrics small{font:500 9px/1.15 system-ui;color:#bdaa91}
+.inventory-section-metrics strong{font:600 11px/1.18 system-ui;color:#f0d4a0;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:360px){
+ .play-inventory-section.has-section-metrics>.play-card-head{padding-inline:7px;gap:4px}
+ .play-inventory-section.has-section-metrics>.play-card-head h2{font-size:12px}
+ .inventory-section-head-tools{gap:3px}
+ .inventory-section-head-tools>.play-button{min-width:36px;min-height:38px;padding:5px}
+ .inventory-section-metrics{gap:3px}
+ .inventory-section-metrics>span{min-width:50px;max-width:78px;min-height:38px;padding:4px}
+ .inventory-section-metrics strong{font-size:10px}
+}
+.play-inventory-section .inventory-search-highlight>.inventory-play-item{
+ background:#8b653d3f;box-shadow:inset 3px 0 #e5bd7e,inset 0 0 0 1px #c49b6580}
+.play-inventory-section .inventory-search-highlight>.inventory-play-item:hover{
+ background:#98714550}
+.inventory-search-add-fields{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(88px,.75fr);
+ gap:10px;align-items:end}
+.inventory-search-add-fields label{display:grid;gap:6px;min-width:0;
+ color:#e0c69f;font:500 12px/1.4 system-ui}
+.inventory-search-add-fields :is(select,input){box-sizing:border-box;width:100%;min-width:0;
+ border:1px solid #ad855059;border-radius:8px;padding:9px;
+ background:#2c2220;color:#edd7b6}
+
+
+
+/* PWA-wide dialog chrome. Even highly specific legacy dialog selectors must
+   never reintroduce a boxed X. Keep a generous invisible touch target. */
+dialog button.vtt-popup-close,
+dialog button.vtt-popup-close:hover,
+dialog button.vtt-popup-close:active,
+dialog button.vtt-popup-close:focus-visible{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 40px;min-width:40px;width:40px;height:40px;min-height:40px;
+  padding:0;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+  text-shadow:none!important;color:#efd1a8;
+  font:400 27px/1 system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+dialog button.vtt-popup-close:hover{color:#ffe6be;filter:brightness(1.1)}
+dialog button.vtt-popup-close:active{color:#fff1d6;opacity:.75}
+dialog button.vtt-popup-close:focus-visible{
+  outline:2px solid #f1ca8b;outline-offset:-2px;
+}
+/* All list selection surfaces follow the creature roster: subdued metal
+   rows, warm highlight for the active choice, and a visible keyboard focus. */
+.vtt-selectable{transition:border-color .14s,background-color .14s,box-shadow .14s}
+.vtt-selectable:is(button,label,article):hover:not(:disabled){
+  border-color:#c9a073;
+}
+.vtt-selectable:is(button,label,article):focus-visible,
+.vtt-selectable:focus-within{outline:2px solid #ffdea5;outline-offset:2px}
+.vtt-selectable:is(.is-selected,.is-current,[aria-pressed="true"]),
+.vtt-selectable:has(input[type="checkbox"]:checked),
+.is-selected > .vtt-selectable{
+  border-color:#e6b97e;
+  background:linear-gradient(115deg,#75513778,#3b2b25)!important;
+  box-shadow:inset 0 0 0 1px #e7c08b27,0 3px 9px #0005;
+}
+.vtt-selectable[aria-pressed="true"]{color:#ffe4bc}
+.vtt-selectable[aria-pressed="true"]:disabled{opacity:1}
+/* Same square, gold-accented checked control as "Le tue creature".
+   Labels remain full-width tappable targets (including the custom option). */
+.pending-choice-option.vtt-selectable{position:relative;min-height:44px;gap:9px}
+.pending-choice-option.vtt-selectable input[type="checkbox"]{
+  -webkit-appearance:none;appearance:none;
+  box-sizing:border-box;flex:0 0 27px;width:27px;height:27px;
+  margin:0;border:1px solid #b28d5f;border-radius:8px;
+  background:linear-gradient(#332924,#211c1b);
+  box-shadow:inset 0 1px 3px #0008;cursor:pointer;
+}
+.pending-choice-option.vtt-selectable input[type="checkbox"]:checked{
+  border-color:#e5bc82;border-radius:8px;
+  background:linear-gradient(#90663e,#68472e);
+  box-shadow:inset 0 1px #ffe1aa60,0 0 0 1px #e9bd8330;
+}
+.pending-choice-option.vtt-selectable input[type="checkbox"]:focus-visible{
+  outline:2px solid #ffe2aa;outline-offset:3px;
+}
+.pending-choice-option.vtt-selectable .vtt-choice-check{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;pointer-events:none;
+  width:27px;height:27px;font:700 17px/1 system-ui,sans-serif;
+  color:transparent;
+}
+.pending-choice-option.vtt-selectable input:checked + .vtt-choice-check{
+  color:#ffe9c7;text-shadow:0 1px 1px #362416;
+}
+.pending-choice-option.vtt-selectable:has(input:disabled:not(:checked)){opacity:.52}
+.pending-choice-option.vtt-selectable.pending-choice-custom .vtt-choice-check{
+  top:18px;
+}
+.pending-choice-option.vtt-selectable.pending-choice-custom .pending-choice-custom-label{
+  position:relative;
+}
+.pending-choice-option.vtt-selectable.pending-choice-custom .pending-choice-custom-label .vtt-choice-check{
+  left:0;top:50%;
+}
+/* Preserve compact existing controls and desktop/mobile layouts. */
+.vtt-selection-list{scrollbar-gutter:stable}
+.miniature-results.vtt-selection-list{max-height:min(48dvh,430px);overflow-y:auto}
+.miniature-results .miniature-choice[aria-pressed="true"]{
+  border-color:#e6b97e;background:linear-gradient(115deg,#75513778,#3b2b25)!important
+}
+
+
+/* Small reusable heading for standalone dialogs that previously lacked an X. */
+dialog .vtt-popup-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-width:0;margin:0 0 10px;
+}
+dialog .vtt-popup-heading h2{
+  min-width:0;flex:1;margin:0;padding:0;
+  font:500 clamp(18px,4.5vw,22px)/1.25 Georgia,"Palatino Linotype",serif;
+}
+dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
+/* Source selection in variant editing uses the same full-row, pressed-state
+   interaction as the creature cards; no long, inaccessible native select. */
+.vtt-variant-source-picker{min-width:0;margin:6px 0}
+.vtt-variant-source-list{
+  display:grid;gap:6px;max-height:min(34dvh,320px);padding:3px 2px;
+}
+.vtt-variant-source-option{
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  width:100%;min-width:0;min-height:48px;padding:9px 12px;
+  border:1px solid #a8875659;border-radius:10px;
+  background:linear-gradient(#3a2d28,#292321);
+  color:#f2d7b1;text-align:left;cursor:pointer;
+}
+.vtt-variant-source-option strong{font:600 13px/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.vtt-variant-source-option small{font:450 11px/1.3 system-ui,sans-serif;color:#c3ab8b}
+.vtt-variant-source-list .vtt-results-footer{padding:8px 1px 4px}
+.vtt-variant-source-list .hint{margin:8px 0}

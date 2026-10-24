@@ -31,11 +31,13 @@ const FILES := {
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
   "/item_controls.js": ["res://pwa/item_controls.js", "text/javascript; charset=utf-8"],
+  "/inventory_search.js": ["res://pwa/inventory_search.js", "text/javascript; charset=utf-8"],
   "/item_detail_facts.js": ["res://pwa/item_detail_facts.js", "text/javascript; charset=utf-8"],
   "/documents.js": ["res://pwa/documents.js", "text/javascript; charset=utf-8"],
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
+	"/rule_supplements.js": ["res://pwa/rule_supplements.js", "text/javascript; charset=utf-8"],
 	"/character_core.js": ["res://pwa/character_core.js", "text/javascript; charset=utf-8"],
 	"/class_spells.js": ["res://pwa/class_spells.js", "text/javascript; charset=utf-8"],
 	"/class_trackers.js": ["res://pwa/class_trackers.js", "text/javascript; charset=utf-8"],
@@ -46,6 +48,7 @@ const FILES := {
 	"/sheet_rules_view.js": ["res://pwa/sheet_rules_view.js", "text/javascript; charset=utf-8"],
 	"/sheet_roll_origin.js": ["res://pwa/sheet_roll_origin.js", "text/javascript; charset=utf-8"],
 	"/ui.js": ["res://pwa/ui.js", "text/javascript; charset=utf-8"],
+	"/ui_primitives.js": ["res://pwa/ui_primitives.js", "text/javascript; charset=utf-8"],
 	"/trait_benefits.js": ["res://pwa/trait_benefits.js", "text/javascript; charset=utf-8"],
 	"/trait_benefit_editor.js": ["res://pwa/trait_benefit_editor.js", "text/javascript; charset=utf-8"],
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
@@ -116,6 +119,7 @@ var _short_code := ""
 var _short_code_expiry := 0
 var _short_code_attempts := 0
 var _public_spells_payload := PackedByteArray()
+var _public_spell_entries: Array[Dictionary] = []
 
 # PWA HTTP runs only while the native 3D board is open. A permanently
 # installed autoload tracks the scene, but does not keep a listening socket
@@ -374,6 +378,7 @@ func public_spells_json() -> PackedByteArray:
 				"requires_concentration": ActiveSpells.requires_concentration(entry),
 				"description": String(entry.get("description", ""))
 			})
+		_public_spell_entries = spells
 		_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
 	return _public_spells_payload
 
@@ -526,6 +531,57 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	# This payload is also used to package the standalone offline prototype.
 	if path == "/catalog/spells.json" and method == "GET":
 		_respond(client, 200, "application/json; charset=utf-8", public_spells_json())
+		return
+	# Serve only the spell definitions a character actually needs. The full
+	# compendium is still exposed separately for discovery and offline prefetch.
+	if path == "/catalog/spells/selected" and method == "POST":
+		if body.size() > 32768:
+			_answer(client, 413, {"error": "too_many_spell_references"})
+			return
+		var selection: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if not selection is Dictionary:
+			_answer(client, 400, {"error": "invalid_spell_selection"})
+			return
+		var requested: Variant = selection.get("ids", [])
+		var classes: Variant = selection.get("classes", [])
+		if not requested is Array or not classes is Array or requested.size() > 250 or classes.size() > 16:
+			_answer(client, 400, {"error": "invalid_spell_selection"})
+			return
+		var requested_ids: Dictionary = {}
+		for spell_id: Variant in requested:
+			if not spell_id is String or (spell_id as String).length() > 180:
+				_answer(client, 400, {"error": "invalid_spell_id"})
+				return
+			requested_ids[spell_id] = true
+		var filters: Array[Dictionary] = []
+		for candidate: Variant in classes:
+			if not candidate is Dictionary:
+				_answer(client, 400, {"error": "invalid_class_selection"})
+				return
+			var target_class_name: String = String(candidate.get("name", "")).strip_edges().to_lower()
+			var max_level: int = int(candidate.get("max_level", -1))
+			if target_class_name.is_empty() or target_class_name.length() > 100 or max_level < 0 or max_level > 9:
+				_answer(client, 400, {"error": "invalid_class_selection"})
+				return
+			filters.append({"name": target_class_name, "max_level": max_level})
+		# Initialization and serialization are cached on the desktop, not the phone.
+		public_spells_json()
+		var selected: Array[Dictionary] = []
+		for spell: Dictionary in _public_spell_entries:
+			var include_spell: bool = requested_ids.has(spell.get("id", ""))
+			if not include_spell:
+				for filter: Dictionary in filters:
+					if int(spell.get("level", 0)) > int(filter["max_level"]):
+						continue
+					for spell_class_name: Variant in spell.get("classes", []):
+						if String(spell_class_name).to_lower() == String(filter["name"]):
+							include_spell = true
+							break
+					if include_spell:
+						break
+			if include_spell:
+				selected.append(spell)
+		_answer(client, 200, {"version": 1, "spells": selected})
 		return
 	# One-time pairing endpoint. No authentication is needed for this narrow
 	# exchange; wrong guesses are limited globally per displayed code.

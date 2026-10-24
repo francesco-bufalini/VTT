@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/activated_abilities.js pwa/character_core.js pwa/class_spells.js pwa/class_trackers.js pwa/quick_homebrew.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
+          for file in pwa/main.js pwa/ui.js pwa/demo.js pwa/tactical_view.js pwa/catalog_data.js pwa/native_sheet.js pwa/item_controls.js pwa/documents.js pwa/spell_selection.js pwa/activated_abilities.js pwa/character_core.js pwa/class_spells.js pwa/class_trackers.js pwa/quick_homebrew.js pwa/sheet_rules.js pwa/feature_mechanics.js pwa/structured_effects.js pwa/sheet_rules_view.js pwa/inventory_search.js pwa/client.js pwa/storage.js pwa/creatures.js pwa/creature_format.js pwa/sw.js; do
             node --input-type=module --check < "$file"
           done
       - name: Test offline creature persistence with IndexedDB emulation
@@ -152,6 +152,8 @@ jobs:
               ;;
             navigation)
               node tests/navigation_browser.mjs
+              node tests/inventory_search_browser.mjs
+              node tests/inventory_equipment_browser.mjs
               ;;
             sheets)
               node tests/sheet_play_browser.mjs

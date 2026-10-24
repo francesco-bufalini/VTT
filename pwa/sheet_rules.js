@@ -5,7 +5,8 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 // are bundled with the PWA and loaded even when the native desktop is closed.
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
-import {structuredSpellGrants} from './spell_selection.js';
+import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
+import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects} from './trait_state_rules.js';
@@ -230,7 +231,7 @@ function itemActive(item,record={}){
   return true;
 }
 function numericField(o,snake,camel){const val=o?.[snake]??o?.[camel];return val===undefined||val===null?"":String(val);}
-function itemRows(record,warnings,infusionCatalog=[],features=[]){
+function itemRows(record,warnings,infusionCatalog=[],features=[],itemGrants=[]){
   const rows=[],seen=new Set(),seenAttacks=new Set();
   for(const [index,saved] of arr(record.inventory).entries()){
     const item=resolveOwnedItem(saved);
@@ -242,10 +243,15 @@ function itemRows(record,warnings,infusionCatalog=[],features=[]){
     // stacks their own IDs so removals and explanations stay stable.
     const suffix=ordinary&&seen.has(sid)?"|stack:"+index:"";
     const copies=itemBenefitCopies(item);
+    // Optional catalog supplements are typed grants, not parsed from item prose.
+    // Existing per-item numeric fields always override fallback data.
+    const rule=arr(itemGrants).find(entry=>arr(entry.names).some(name=>same(name,item.name))&&
+      (!arr(entry.sources).length||arr(entry.sources).some(source=>same(source,item.source))));
+    const supplemental=rule?.bonuses||{};
     const infusion=infusionNumericBonuses(record,item,infusionCatalog,features);
     const infusionName="Infusione · "+String(item.infusion?.name||"Artefice");
     const add=(target,field,snake,camel)=>{
-      const raw=item?.[snake]??item?.[camel];
+      const raw=item?.[snake]??item?.[camel]??supplemental[target];
       const grant=numericGrant(sid,"Oggetto · "+(item.name||item.id),field,target,raw,suffix);
       if(grant){grant.multiplier=copies;rows.push(grant);}
     };
@@ -645,7 +651,7 @@ function calculateSheetValues(record={},catalogs={}){
       featureEnabled(record,feature));
   };
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[],features),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
+    ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
@@ -932,7 +938,13 @@ function calculateSheetValues(record={},catalogs={}){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
-  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],catalogs.features||[]);
+  const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features);
+  // Permanently prepared subclass spells are attached to their actual feature,
+  // not to the class itself; the same source identity powers UI and calculations.
+  const classCasting=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])));
+  additional.grants.push(...featureTableSpellGrants(record,features,catalogs.spells||[],classCasting),
+    ...supplementalFeatureSpellGrants(record,features,catalogs.spells||[],
+      catalogs.featureSpellGrants||[],classCasting));
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
   for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
@@ -1018,7 +1030,9 @@ export function loadRuleCatalogs(){
     fetch("/catalog/ability_grants.json").then(r=>{if(!r.ok)throw Error("Indice abilità non caricato");return r.json();}),
     fetch("/catalog/class_mechanics.json").then(r=>{if(!r.ok)throw Error("Regole classi non caricate");return r.json();}),
     fetch("/catalog/proficiency_grants.json").then(r=>{if(!r.ok)throw Error("Competenze delle origini non caricate");return r.json();}),
-    fetch('/catalog/spells.json').then(r=>{if(!r.ok)throw Error('Catalogo incantesimi non disponibile');return r.json();}).then(data=>Array.isArray(data.spells)?data.spells:[]).catch(()=>[]),
+    // Numeric rules do not block on the entire spell compendium.
+    // Already visible spell references are supplied by the PWA on demand.
+    Promise.resolve([]),
     fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.states)?data.states:[]),
@@ -1029,7 +1043,8 @@ export function loadRuleCatalogs(){
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,classFeatures,originDetails,
+    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,classFeatures,
+    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
