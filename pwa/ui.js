@@ -3915,6 +3915,21 @@ async function handleAction(target){
     await patch(savePendingChoice(current,live,selected));
     dialog.remove();await render();return;
   }
+  if(act==='battle-action-jump'){
+    const actionId=String(target.dataset.actionId||'');
+    const panel=app.querySelector('#sheet-play-view [data-battle-action="others"]');
+    const action=[...panel?.querySelectorAll('[data-attack-id]')||[]]
+      .find(node=>node.dataset.attackId===actionId);
+    if(!panel||!action)return;
+    panel.open=true;
+    const timing=action.closest('.play-battle-action-group');
+    if(timing)timing.open=true;
+    state.disclosureState.set('battle-disclosure:others',true);
+    if(timing)state.disclosureState.set('battle-timing:others:'+timing.dataset.actionTiming,true);
+    action.scrollIntoView({behavior:'smooth',block:'center'});
+    action.querySelector('.play-battle-attack-details>summary')?.focus({preventScroll:true});
+    return;
+  }
   if(act==='battle-toggle-class-only'){
     state.battleOnlyClass=!state.battleOnlyClass;await render();return;
   }
