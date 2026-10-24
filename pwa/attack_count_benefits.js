@@ -30,6 +30,11 @@ export function attackCountBenefits(record={},features=[]){
  for(const grant of rows(record.attack_count_grants)){
   if(!grant||grant.disabled||record.trait_enabled?.[grant.trait_key]===false||
     !sourceEnabled(record,grant.origin_id)||!sourceEnabled(record,grant.parent_origin))continue;
+  // A custom grant on a class trait inherits the status of its owning feature.
+  const parent=rows(features).find(feature=>feature.origin_id===grant.parent_origin);
+  if(parent&&(!featureEnabled(record,parent)||record.trait_enabled?.[parent.key]===false||
+    !sourceEnabled(record,parent.origin_key)||
+    !sourceEnabled(record,String(parent.origin_key).split('|subclass|')[0])))continue;
   add(String(grant.id||''),grant.origin_id,grant.origin_name||'Tratto',
     grant.attacks_per_action,false);
  }
