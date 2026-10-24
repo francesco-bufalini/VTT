@@ -69,7 +69,7 @@ try{
     const collapse=page.locator('[data-act="battle-collapse-all"]');
     assert(await expand.isVisible()&&await collapse.isVisible(),'Global list controls appear above attacks');
     if(width===360){
-     const movement=page.locator('[data-battle-action="movement"]');
+     const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
      const groups=movement.locator('.play-battle-action-group[data-action-timing]');
      assert(await groups.count()>0,'Movement has action-timing subsections');
@@ -143,8 +143,8 @@ try{
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
  await showGeneral();
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
- await page.locator('.play-battle-disclosure[data-battle-action="movement"] > summary').click();
- assert.equal(await page.locator('[data-battle-action="movement"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
+ await page.locator('.play-battle-disclosure[data-battle-action="others"] > summary').click();
+ assert.equal(await page.locator('[data-battle-action="others"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
   'Stealth movement is visible automatically when its parent opens');
  await page.locator('[data-attack-id="stealth_movement"] [data-target="skill:stealth"]').click();
  await page.locator('#sheet-roll-dialog').waitFor();assert((await page.locator('#sheet-roll-dialog h2').textContent()).includes('Furtività'));
