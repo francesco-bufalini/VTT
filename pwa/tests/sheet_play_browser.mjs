@@ -125,11 +125,11 @@ try{
  assert.equal((await record()).max_hp_base,40,
    'Cancel leaves the original maximum HP untouched');
  await scoreFormula.locator('[data-act="close-score-formula"]').click();
- const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
- assert.equal(await classFilter.getAttribute('aria-pressed'),'true','Only character privileges are shown initially');
+ assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
+  'Obsolete class-only toggle is absent');
 
  const toolbar=page.locator('#sheet-play-view .play-battle-expansion-tools');
- assert.equal(await toolbar.locator('button').count(),3);
+ assert.equal(await toolbar.locator('button').count(),2);
  const activeState=page.locator('#sheet-play-view .play-status-strip');
  assert.equal(await activeState.count(),1);
  assert.equal(await activeState.evaluate(node=>getComputedStyle(node).borderTopStyle),'solid',
@@ -138,9 +138,9 @@ try{
   await page.setViewportSize({width,height:844});
   const buttons=await toolbar.locator('button').evaluateAll(nodes=>
    nodes.map(node=>{const rect=node.getBoundingClientRect();return {top:rect.top,right:rect.right};}));
-  assert.equal(buttons.length,3);
+  assert.equal(buttons.length,2);
   assert(buttons.every(rect=>Math.abs(rect.top-buttons[0].top)<2),
-   'Expand, collapse and class filter remain on one row at '+width+'px');
+   'Expand and collapse remain on one row at '+width+'px');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
    'Single-row action buttons must not overflow at '+width+'px');
  }
@@ -148,7 +148,6 @@ try{
 
  assert.equal(await page.locator('#sheet-play-view [data-battle-action="movement"]').count(),0,
    'Empty generic action categories disappear by default');
- await classFilter.click(); // Exercise general actions with the filter disabled.
  const weaponPanel=page.locator('#sheet-play-view [data-battle-action="attacks"]');
  const movementPanel=page.locator('#sheet-play-view [data-battle-action="others"]');
  assert.equal(await weaponPanel.count(),1);assert.equal(await weaponPanel.getAttribute('open'),'');
@@ -170,30 +169,18 @@ try{
  assert.equal(alternativeRolls.length,2);
  assert(alternativeRolls[1].y>alternativeRolls[0].y+10,'Alternative dice buttons must stack');
  await otherPanel.locator('summary.play-battle-summary').click();
- const spellPanel=page.locator('#sheet-play-view [data-battle-action="spells"]');
- assert.equal(await spellPanel.count(),1);
- assert.equal(await weaponPanel.locator('.play-chevron').count(),0,'No disclosure arrow in attack header');
- assert.equal(await spellPanel.locator('.play-chevron').count(),0,'No disclosure arrow in spell header');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0,
+  'There is no second spell list below skill checks');
+ assert.equal(await weaponPanel.locator('.play-chevron').count(),0);
  assert.equal(await page.locator('.play-battle-heading-tools [data-sheet-context="equipment"]').count(),1);
- assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),1);
- await spellPanel.locator('summary.play-battle-summary').click();
- assert.equal(await spellPanel.getAttribute('open'),'');
- const combatSpells=spellPanel.locator('.play-battle-spell-entry');
- assert(await combatSpells.count()>=2,'Prepared slot spells and grants appear in the unified spell list');
- assert(await spellPanel.locator('[data-action-timing="action"] .play-battle-spell-entry[data-spell-id="spell:light|phb"]').count()>=1);
- assert.equal(await spellPanel.locator('[data-action-timing="reaction"] .play-battle-spell-entry[data-spell-id="spell:shield|phb"]').count(),1);
- assert.equal(await spellPanel.locator('.action-economy-preview').count(),0,'Spell descriptions remain hidden until opened');
- const lightEntry=spellPanel.locator('[data-spell-id="spell:light|phb"]').first();
- assert.match(await lightEntry.textContent(),/Trucchetto/);
- assert.equal(await spellPanel.locator('[data-action-timing="action"]').getAttribute('open'),'',
-  'Opening Spells expands all of its action-type subsections');
- await lightEntry.locator('.play-battle-spell-open').click();
- assert.match(await page.locator('#action-cast-dialog').textContent(),/Light/);
- assert(await page.locator('#action-cast-dialog .magic-spell-facts').count(),
-   'The same detailed Magia spell dialog opens from the action row');
- await page.locator('#action-cast-dialog [data-act="action-cast-cancel"]').click();
- await spellPanel.locator('summary.play-battle-summary').click();
-
+ assert.equal(await page.locator('.play-battle-heading-tools [data-act="action-open-spells"]').count(),0);
+ // Spellcasting must open the Powers tab in a single click.
+ await otherPanel.locator('summary.play-battle-summary').click();
+ const castFromActions=otherPanel.locator('[data-attack-id="spell_cast"] [data-act="action-open-spells"]');
+ assert.equal(await castFromActions.count(),1);
+ await castFromActions.click();
+ await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
+ await sheet('battle');
  const mainAttack=weaponPanel.locator('[data-attack-id="item:local_sword"]');
  assert.equal(await mainAttack.count(),1);
  assert.equal(await weaponPanel.locator('[data-action-timing]').count(),0,
@@ -208,7 +195,8 @@ try{
  await mainTiming.locator('summary.play-battle-action-heading').click();
  const opportunity=otherPanel.locator('[data-attack-id="opportunity"]');
  assert.match(await opportunity.locator('.play-battle-attack-copy strong').textContent(),/Attacco di opportunità/);
- assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),1);
+ assert.equal(await opportunity.locator('[data-act="battle-damage-roll"]').count(),0,
+  'Opportunity is generic rather than a main-hand weapon attack');
  assert.equal(await mainAttack.locator('details').getAttribute('open'),null);
  assert.match(await mainAttack.locator('.play-battle-roll-formula').textContent(),/1d20 \+ [0-9]+ · Mischia/);
  assert.equal(await weaponPanel.locator('[data-attack-id="item:local_sword"]').count(),1);
@@ -462,6 +450,10 @@ try{
  assert.match(await page.locator('#sheet-context-dialog .sheet-context-body').textContent(),/Origine[\s\S]*Attivazione[\s\S]*Costo/);
  assert.equal(await page.locator('#sheet-context-dialog [data-act="power-trait"]').count(),1);
  await dismiss();
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="two_weapon"] button:not([disabled])').count(),1,
+  'An unavailable secondary attack remains clickable in base rules');
+ assert.equal(await resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] [data-act="action-open-spells"]').count(),1,
+  'Base-rule spellcasting opens Powers directly');
  assert.equal(await resourcesPanel.locator('[data-resource-privilege]').count()>0,true,
   'Free abilities belong to their granting traits, not to a generic free tracker');
  assert.equal(await resourcesPanel.locator('[data-resource-privilege] .play-resource-power-row[data-ability-id="free_pulse"]').count(),1);
