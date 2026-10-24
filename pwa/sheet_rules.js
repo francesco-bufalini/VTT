@@ -1,5 +1,6 @@
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
@@ -973,6 +974,7 @@ function calculateSheetValues(record={},catalogs={}){
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
   const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
+  const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
@@ -1019,7 +1021,9 @@ function calculateSheetValues(record={},catalogs={}){
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'))];})),
-    casting_classes:spellClasses,trackers,attacks,feature_rules:catalogs.featureRules||{},
+    casting_classes:spellClasses,trackers,attacks,
+    attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
+    feature_rules:catalogs.featureRules||{},
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
     active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id),
     state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
