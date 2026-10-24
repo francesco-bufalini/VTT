@@ -769,3 +769,31 @@ distinti dai cambiamenti XPHB.
 
 Restano da rappresentare in modo contestuale gli effetti su bersagli, slot
 e area e le opzioni TCE selezionate.
+
+## Lotto 2026-10-24: Half-Elf e Half-Orc PHB
+
+Controllati i **13 tratti** delle due specie base PHB nel catalogo 5etools
+(6 Half-Elf, 7 Half-Orc), confrontati con FightClub5eXML `races-phb.xml`
+(`3b311d741bca2af58eadbc8068431ef28eb5b05b`) e con il campo `ability`
+di 5etools `data/races.json` (`cefd817691d5ace9adebb5521811943efc378bf0`).
+La fonte distingue la concessione fissa dalla scelta del personaggio.
+
+| Tratto PHB | Esito |
+| --- | --- |
+| Half-Elf: Age, Size, Languages | Medium, Common/Elvish e una lingua scelta; l'indice delle lingue contiene la scelta. |
+| Half-Elf: Darkvision | Portata 60 piedi, visibilità della scena ancora separata. |
+| Half-Elf: Fey Ancestry | Vantaggio ai TS contro Charmed e impossibilità di dormire per magia, non vantaggio a ogni TS. |
+| Half-Elf: Skill Versatility | Due abilità scelte; `proficiency_grants_5etools.json` conserva `any: 2`, ma l'origine proiettata è la razza e va attribuita al tratto. |
+| Half-Elf: Ability Score Increase (XML/campo 5etools) | CAR +2 fisso già in `structured_ability_grants_5etools.json`; **due altre caratteristiche distinte** +1 scelte dall'insieme FOR/DES/COS/INT/SAG non sono ancora rappresentate. Il generatore attuale conserva solo i valori fissi per le razze. |
+| Half-Orc: Age, Size, Languages | Medium e lingue Common/Orc. |
+| Half-Orc: Darkvision | Portata 60 piedi. |
+| Half-Orc: Menacing | Competenza Intimidation già nell'indice, da attribuire al tratto esatto. |
+| Half-Orc: Relentless Endurance | Una volta per riposo lungo da 0 a 1 PF solo se il danno non uccide subito; richiede un contatore di specie e trigger di danno. |
+| Half-Orc: Savage Attacks | Su critico con arma da mischia, un dado dell'arma aggiuntivo; dipende dal tiro e dall'arma effettiva. |
+| Half-Orc: Ability Score Increase (XML/campo 5etools) | FOR +2 e COS +1 già nel dato strutturato; l'origine del tratto va resa esplicita. |
+
+L'XML include `Ability Score Increase` come tratto per entrambe le specie,
+mentre `creature_references_5etools.json` conserva solo i tratti descrittivi
+non generici. La scelta Half-Elf non va simulata assegnando +1 a due
+caratteristiche predefinite. Anche la competenza e il valore fisso numerico
+già presenti vanno ricondotti al tratto, rispettando gli ID persistiti.
