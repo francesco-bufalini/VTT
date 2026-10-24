@@ -36,6 +36,7 @@ const FILES := {
   "/spell_selection.js": ["res://pwa/spell_selection.js", "text/javascript; charset=utf-8"],
   "/activated_abilities.js": ["res://pwa/activated_abilities.js", "text/javascript; charset=utf-8"],
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
+	"/rule_supplements.js": ["res://pwa/rule_supplements.js", "text/javascript; charset=utf-8"],
 	"/character_core.js": ["res://pwa/character_core.js", "text/javascript; charset=utf-8"],
 	"/class_spells.js": ["res://pwa/class_spells.js", "text/javascript; charset=utf-8"],
 	"/class_trackers.js": ["res://pwa/class_trackers.js", "text/javascript; charset=utf-8"],

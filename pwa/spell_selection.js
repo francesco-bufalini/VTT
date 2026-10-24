@@ -137,6 +137,112 @@ export function removeSelectedSpell(creature,target,index,{classId,classes=[],ca
   return target==="prepared_spells"?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
 }
 
+
+// The scoped loader only has spell IDs after a feature asks for them.
+// A 5etools {@spell} tag provides a stable name/source, so derive the standard
+// PHB/XPHB catalog identifier before fetching its full definition on demand.
+function featureSpellReference(token,edition,catalog){
+ const found=originSpellId(token,edition,catalog);
+ if(found)return found;
+ const [name,source='']=norm(token).split('#')[0].split('|');
+ if(source&&!['phb','xphb'].includes(source))return '';
+ const slug=name.replace(/['’]/g,'').replace(/[^a-z0-9]+/g,'_')
+   .replace(/_+/g,'_').replace(/^_|_$/g,'');
+ if(!slug)return '';
+ return source==='xphb'||!source&&edition==='2024'?slug:'phb2014_'+slug;
+}
+
+// Subclass spell tables are structured 5etools data (not description prose).
+// Each grant retains the *feature* identity so it can appear under its trait.
+export function featureTableSpellGrants(record={},features=[],catalog=[],castingClasses=[]){
+ const grants=[],seen=new Set(),edition=record.rules_version||'2014';
+ const members=arr(record.classes).length?record.classes:
+   record.class?[{name:record.class,source:record.class_source,level:record.level}]:[];
+ const levels=feature=>members.filter(member=>
+   norm(member.name)===norm(feature.requirements?.class_name||feature.class_name||String(feature.origin_key||'').split('|')[2])&&
+   (!feature.requirements?.class_source&&!feature.class_source||
+     norm(member.source)===norm(feature.requirements?.class_source||feature.class_source)))
+   .reduce((max,member)=>Math.max(max,Number(member.level)||0),0);
+ const walk=(parts,visit)=>{
+   for(const part of arr(parts)){
+     if(!part||typeof part!=='object')continue;
+     visit(part);
+     walk(part.entries,visit);
+   }
+ };
+ for(const feature of arr(features)){
+   if(!feature?.origin_id||feature.inactive||
+      !String(feature.origin_key||'').startsWith('class|')||
+      !String(feature.origin_key||'').includes('|subclass|'))continue;
+   const current=levels(feature);
+   if(current<=0)continue;
+   // An expanded-list feature is not a permanently prepared entitlement.
+   if(/expanded spell list|additional spell list/i.test(feature.name||''))continue;
+   const owner=String(feature.requirements?.class_name||feature.class_name||String(feature.origin_key).split('|')[2]);
+   const ability=castingClasses.find(member=>norm(member.name)===norm(owner))?.ability||'int';
+   walk(feature.entries,table=>{
+     if(table.type!=='table'||!Array.isArray(table.rows))return;
+     const labels=arr(table.colLabels).map(label=>String(label||''));
+     const spellColumns=labels.flatMap((name,index)=>
+       /^(?:spells?|always prepared(?: spells?)?)$/i.test(name.trim())?[index]:[]);
+     if(!spellColumns.length||!labels.some(label=>/level/i.test(label)))return;
+     for(const row of table.rows){
+       if(!Array.isArray(row))continue;
+       const requirement=Number(String(row[0]??'').match(/^\s*(\d{1,2})/)?.[1]);
+       if(!Number.isInteger(requirement)||requirement<1||requirement>current)continue;
+       for(const column of spellColumns){
+         for(const match of String(row[column]||'').matchAll(/\{@spell\s+([^}]+)\}/gi)){
+           const id=featureSpellReference(match[1],edition,catalog);
+           if(!id||seen.has(feature.origin_id+'|'+id))continue;
+           seen.add(feature.origin_id+'|'+id);
+           grants.push({id:'feature-spell:'+feature.origin_id+'|'+id,
+             origin_id:feature.origin_id,origin_name:feature.name,
+             parent_origin:feature.origin_key,spell_id:id,mode:'prepared',
+             spellcasting_ability:ability,automatic:true,
+             mechanic_source:'5etools.feature.spell_table'});
+         }
+       }
+     }
+   });
+ }
+ return grants;
+}
+
+
+export function supplementalFeatureSpellGrants(record={},features=[],catalog=[],rules=[],castingClasses=[]){
+ const grants=[],seen=new Set(),edition=record.rules_version||'2014';
+ const members=arr(record.classes).length?record.classes:
+   record.class?[{name:record.class,source:record.class_source,level:record.level,subclass:record.subclass,subclass_source:record.subclass_source}]:[];
+ for(const rule of arr(rules)){
+   const member=members.find(row=>norm(row.name)===norm(rule.class_name)&&
+     (!arr(rule.class_sources).length||arr(rule.class_sources).some(source=>norm(source)===norm(row.source)))&&
+     norm(row.subclass||(norm(row.name)===norm(record.class)?record.subclass:''))===norm(rule.subclass)&&
+     (!arr(rule.subclass_sources).length||!row.subclass_source||
+       arr(rule.subclass_sources).some(source=>norm(source)===norm(row.subclass_source))));
+   if(!member)continue;
+   const origin='class|'+norm(member.source||record.class_source)+'|'+norm(member.name)+'|subclass|'+norm(rule.subclass)+'|';
+   // Do not grant spells to a class/subclass without an owned structured trait.
+   const feature=arr(rule.feature_names).flatMap(name=>arr(features).filter(row=>
+     !row.inactive&&String(row.origin_key||'').startsWith(origin)&&norm(row.name)===norm(name)))[0];
+   if(!feature?.origin_id)continue;
+   const current=Math.max(0,Number(member.level)||0);
+   const ability=castingClasses.find(row=>norm(row.name)===norm(member.name))?.ability||'int';
+   for(const stage of arr(rule.levels)){
+     if(!Number.isInteger(Number(stage.level))||Number(stage.level)>current)continue;
+     for(const token of arr(stage.spells)){
+       const id=featureSpellReference(token,edition,catalog);
+       if(!id||seen.has(feature.origin_id+'|'+id))continue;
+       seen.add(feature.origin_id+'|'+id);
+       grants.push({id:'supplemental-spell:'+feature.origin_id+'|'+id,
+         origin_id:feature.origin_id,origin_name:feature.name,parent_origin:feature.origin_key,
+         spell_id:id,mode:'prepared',spellcasting_ability:ability,automatic:true,
+         mechanic_source:'structured.supplemental_class_spells'});
+     }
+   }
+ }
+ return grants;
+}
+
 // StructuredOriginSpells5e: only explicit additionalSpells usages create
 // entitlements. Expanded/prepared lists never become free casts by inference.
 export function originSpellId(token,edition,spells){
