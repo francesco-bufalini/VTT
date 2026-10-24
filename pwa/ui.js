@@ -5119,7 +5119,7 @@ async function handleAction(target){
     const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
     const keys=inventorySectionKeys(record),selected=inventoryVisibleSections(record);
     if(act==="inventory-toggle-all"){
-      setInventoryVisibleSections(record,selected.length===keys.length?[]:keys);
+      setInventoryVisibleSections(record,selected.length===keys.length?['items']:keys);
       state.inventorySubtab='items';
     }else{
       const key=target.dataset.subtab;

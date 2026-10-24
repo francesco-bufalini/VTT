@@ -25,10 +25,9 @@ export function inventorySectionControls(record,selected=[]){
  const containers=inventoryContainers(record);
  const tabs=[['items','Zaino','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book'],
   ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory'])];
- const allVisible=tabs.every(([key])=>selected.includes(key));
  return '<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
   '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button>'+
-  '<button type="button" data-act="inventory-toggle-all" data-subtab="all" aria-pressed="'+allVisible+'">'+actionGlyph('inventory')+'<span>Tutti</span></button>'+
+
   tabs.map(([key,label,glyph])=>{
    const custom=key.startsWith('container:');
    const toggle='<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
@@ -977,6 +976,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    title.classList.add('play-actions-page-title');
    title.insertAdjacentHTML('beforeend',btn('Varianti alle regole','settings',
     'data-act="action-variants"','<span>Varianti alle regole</span>'));
+  }
+ }
+ // Keep the "show all" control alongside the inventory title, rather
+ // than treating it as another section in the multi-select wrap.
+ if(sheet==='inventory'){
+  const title=app.querySelector(':scope > .page-head');
+  if(title){
+   const containers=inventoryContainers(c);
+   const keys=['items','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)];
+   const selected=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
+   const allVisible=keys.every(key=>selected.includes(key)||selected.includes('all'));
+   const label=allVisible?'Mostra solo zaino':'Mostra tutti gli oggetti';
+   title.classList.add('play-inventory-page-title');
+   title.insertAdjacentHTML('beforeend',btn(label,'inventory',
+    'data-act="inventory-toggle-all" aria-pressed="'+allVisible+'"',
+    '<span>'+label+'</span>'));
   }
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
