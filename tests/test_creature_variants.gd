@@ -21,5 +21,8 @@ func _initialize() -> void:
 		assert(next.conditions == ["poisoned"])
 		next.current_form_id = ""
 		assert(Archive.resolve_form(next).name == "Base")
+	var complete := {"id": "base", "kind": "monster", "stat_block": {"name": "Dragon", "legendary": [{"name": "Tail"}]}, "current_form_id": "wolf", "variants": [{"id": "wolf", "sections": ["*"], "values": {"id": "must-not-change", "stat_block": {"name": "Wolf"}}}]}
+	var replaced := Archive.resolve_form(complete)
+	assert(replaced.id == "base" and replaced.stat_block.name == "Wolf" and not replaced.stat_block.has("legendary"))
 	print("PASS: native archive preserves variants for characters and monsters; public name/appearance changes keep the base intact")
 	quit()

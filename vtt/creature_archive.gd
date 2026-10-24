@@ -226,16 +226,16 @@ static func resolve_form(record: Dictionary) -> Dictionary:
 	for form: Dictionary in record.get("variants", []):
 		if String(form.get("id", "")) != String(record.get("current_form_id", "")):
 			continue
-		_merge_form_values(result, form.get("values", {}))
+		_merge_form_values(result, form.get("values", {}), "*" in form.get("sections", []))
 		break
 	return result
 
-static func _merge_form_values(target: Dictionary, values: Dictionary) -> void:
+static func _merge_form_values(target: Dictionary, values: Dictionary, replace_objects: bool = false, protect_identity: bool = true) -> void:
 	for key: String in values:
-		if key in ["id", "owner_id", "kind", "transfer_revision", "linked_token_sync_id", "linked_token_name", "variants", "current_form_id", "variant_schema_version"]:
+		if protect_identity and key in ["id", "owner_id", "kind", "transfer_revision", "linked_token_sync_id", "linked_token_name", "variants", "current_form_id", "variant_schema_version"]:
 			continue
-		if values[key] is Dictionary and target.get(key) is Dictionary:
-			_merge_form_values(target[key], values[key])
+		if not replace_objects and values[key] is Dictionary and target.get(key) is Dictionary:
+			_merge_form_values(target[key], values[key], false, false)
 		else:
 			target[key] = values[key].duplicate(true) if values[key] is Dictionary or values[key] is Array else values[key]
 
