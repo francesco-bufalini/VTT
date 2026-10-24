@@ -129,7 +129,7 @@ export function topSkillEntries(calculated={},limit=4){
 // The attack-action multiplier is shared by the legacy action list and the
 // mobile battle heading, so the same active traits control both views.
 export function attacksPerAction(record={},calculated={}){
- const benefits=arr(calculated.attack_count_benefits).length?
+ const benefits=Array.isArray(calculated.attack_count_benefits)?
    calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);
  return attacksPerActionFromBenefits(benefits);
 }
