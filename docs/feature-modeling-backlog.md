@@ -3,9 +3,16 @@
 Questa lista riguarda soltanto i lotti già verificati nella
 [revisione per tratto](feature-modeling-audit.md). Un contatore già presente
 può rappresentare gli **usi** senza rappresentare l'effetto, il bersaglio o
-la scelta. L'origine resta sempre il tratto `classFeature`, `subclassFeature`
+la scelta. L'origine richiesta è il tratto `classFeature`, `subclassFeature`
 o il tratto della specie con fonte/edizione esatta; una classe o specie da
 sola non concede effetti generici.
+
+Il catalogo `additional_spells_5etools.json` conserva oggi le concessioni
+magiche al livello `race`/`subrace`; i risolutori Godot e PWA producono ID
+di quell'origine. Per i tratti di specie qui sotto, la presenza di un blocco
+di incantesimi è utile, ma **non certifica ancora l'identità del tratto
+concedente**. Il passaggio a tale identità richiede continuità degli ID
+persistiti e verifica con entrambe le interfacce; resta aperto.
 
 | Fonte e tratti | Parte ancora da rappresentare fedelmente |
 | --- | --- |
@@ -38,9 +45,14 @@ sola non concede effetti generici.
 | Elf PHB/XPHB: Elven Lineage, Keen Senses, weapon training, Fey Ancestry, Trance, Darkvision | Scelte di stirpe/abilità/armi, competenze attribuite al tratto esatto, TS contestuali, riposo e vista sulla mappa. |
 | Gnome PHB/XPHB: Gnome Cunning, Gnomish Cunning, Gnomish Lineage, Artificer's Lore, Tinker | Ambito diverso dei TS PHB/XPHB; scelta Forest/Rock e capacità magica; lanci gratuiti Forest pari a competenza; prova History contestuale e dispositivi. `additionalSpells` estratto non contiene Gnome XPHB. |
 | Halfling PHB/XPHB: Lucky/Luck, Brave, Nimbleness, Naturally Stealthy, Stout Resilience | Ripetizione condizionata del d20, TS contro Frightened/veleno, passaggio tra creature e Hide con oscuramento valido. |
-| Human PHB: caratteristiche | La base Human PHB non compare in `structured_ability_grants_5etools.json`; verificare il campo 5etools e l'XML FightClub5e prima di aggiungere incrementi, senza estenderli a XPHB. |
+| Human PHB: Ability Score Increase / Variant | FightClub5eXML concede +1 a tutte le caratteristiche per Standard; 5etools lo colloca in una sottorazza PHB **senza nome** che il generatore salta. La variante sceglie due caratteristiche. Serve distinguere e persistere Standard/Variant e il tratto d'origine prima di aggiungere incrementi; non applicare +1 a tutti gli Human. |
 | Human XPHB: Resourceful, Skillful, Versatile | Stato Heroic Inspiration al riposo, una abilità scelta e un talento Origin scelto. L'indice delle competenze non contiene ancora una concessione `Skillful` con origine di tratto. |
 | Orc XPHB: Adrenaline Rush, Relentless Endurance | Contatori di **specie** con origine di tratto, usi di Adrenaline Rush pari a competenza e recupero breve/lungo, PF temporanei all'uso e trigger 0→1 PF di Relentless Endurance. Non attribuirli a una classe. |
+| Aasimar XPHB: Healing Hands, Celestial Revelation | Contatori di specie con origine di tratto, cura su bersaglio, opzione di trasformazione scelta a ogni uso, durata, danno/volo/luce/TS relativi. |
+| Dragonborn PHB/XPHB: Draconic Ancestry, Breath Weapon, Damage Resistance, Draconic Flight | Scelta dell'antenato, area e TS diversi per edizione, usi e dado progressivi, resistenza al tipo scelto e volo temporaneo. Il soffio PHB non usa le regole XPHB. |
+| Goliath XPHB: Giant Ancestry, Large Form, Powerful Build | Beneficio gigante scelto e usi pari a competenza, taglia/velocità temporanee con spazio sufficiente, capacità di trasporto senza taglia permanente. |
+| Tiefling XPHB: Fiendish Legacy, Otherworldly Presence | Stirpe e caratteristica magica scelte; resistenza, trucchetti e lanci gratuiti dei livelli del personaggio 3/5 legati alla stirpe reale. I blocchi `additionalSpells` non sono una scelta già compiuta. |
+| Aasimar/Tiefling/Elf e altri incantesimi di specie | Collegare ogni blocco `additionalSpells` al tratto preciso che lo concede, mantenendo gli ID dei lanci e dei contatori già salvati; oggi l'origine proiettata è `race`/`subrace`. |
 
 Prima di chiudere una riga occorrono una fonte 5etools/FightClub5eXML
 verificata, l'identità del tratto concedente, una scelta/stato persistito se

@@ -7,6 +7,12 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+**Copertura XPHB 2024 verificata:** tutte le 283 voci `class_features` delle
+12 classi (210 coppie classe/tratto distinte) e tutti i 38 tratti delle 10
+specie presenti nello snapshot locale 5etools. Questa è una revisione dei
+dati, non una dichiarazione di automazione completa. I tratti PHB 2014
+confrontati nei lotti sotto sono una selezione e proseguono separatamente.
+
 ## Lotto 2026-10-23: Fighter e Dwarf
 
 Fonti confrontate: `vtt/data/player_5etools_catalog.json` (identità),
@@ -534,6 +540,17 @@ caratteristiche 2014 va verificata e attribuita alla fonte PHB senza copiarla
 su XPHB. Le due specie XPHB hanno identità e fonte distinte nel catalogo
 5etools.
 
+Verifica della lacuna Human PHB: `races-phb.xml` FightClub5eXML
+(`3b311d741bca2af58eadbc8068431ef28eb5b05b`) dichiara il tratto
+`Ability Score Increase` e +1 a tutte e sei le caratteristiche. Nel
+`data/races.json` 5etools (`cefd817691d5ace9adebb5521811943efc378bf0`)
+il pacchetto +1 è una **sottorazza PHB senza nome**, mentre `Variant` è un'altra
+sottorazza con due caratteristiche scelte. Il generatore degli incrementi
+salta le sottorazze senza `name`; forzare +1 sulla razza base Human
+assegnerebbe erroneamente gli incrementi anche alla variante. La lacuna
+resta nella lista separata finché la scelta Standard/Variant non ha identità
+e origine del tratto persistite.
+
 | Tratto 5etools | Esito |
 | --- | --- |
 | Human PHB: Age, Size, Languages | Medium, Common più una lingua scelta; provenienza PHB. |
@@ -616,3 +633,46 @@ per Paladin's Smite/Faithful Steed; raggio, posizione e condizioni delle aure;
 conversione fra Sorcery Points e slot e costi di Metamagia; libro,
 preparazione e incantesimi scelti per Spell Mastery/Signature Spells. I
 contatori già presenti non trasformano queste operazioni in effetti impliciti.
+
+## Lotto 2026-10-24: Aasimar, Dragonborn, Goliath e Tiefling
+
+Controllate le **16 voci di tratto** XPHB nel catalogo 5etools (5 Aasimar,
+5 Dragonborn, 3 Goliath, 3 Tiefling) e i tratti base Dragonborn/Tiefling PHB.
+I blocchi magici Aasimar e Tiefling PHB/XPHB già presenti in
+`additional_spells_5etools.json` conservano la fonte, ma non provano che
+una stirpe Tiefling sia stata scelta. Mancando un modello di contatore di
+**specie** collegato al tratto concedente, i limiti di uso nel testo non sono
+stati travasati nel supplemento dei contatori di classe.
+
+| Specie e tratto | Esito |
+| --- | --- |
+| Aasimar XPHB: Celestial Resistance | Resistenza a Necrotic e Radiant; origine nel tratto, non protezione generica a ogni danno. |
+| Aasimar XPHB: Darkvision | Portata 60 piedi; applicazione visuale alla mappa ancora separata. |
+| Aasimar XPHB: Healing Hands | Un uso per riposo lungo, azione Magic e cura pari a tanti d4 quanti sono i punti di competenza, su creatura toccata. |
+| Aasimar XPHB: Light Bearer | `Light` noto con CAR; blocco magico strutturato già presente. |
+| Aasimar XPHB: Celestial Revelation | Dal livello **del personaggio** 3, una trasformazione per riposo lungo, con opzione scelta a ogni uso (Heavenly Wings, Inner Radiance, Necrotic Shroud), durata un minuto e danno/volo/luce/TS diversi. |
+| Dragonborn PHB: Age, Size, Languages | Dati descrittivi della versione PHB e Common/Draconic. |
+| Dragonborn PHB: Draconic Ancestry | Tipo di drago scelto determina danno, forma e tipo del TS del soffio. |
+| Dragonborn PHB: Breath Weapon | Azione intera, un uso per riposo breve/lungo, danno 2d6→5d6 ai livelli 1/6/11/16; forma e TS dipendono dall'antenato. |
+| Dragonborn PHB: Damage Resistance | Resistenza al tipo scelto con Draconic Ancestry. |
+| Dragonborn XPHB: Draconic Ancestry | Scelta del drago determina **tipo** del danno e resistenza, non la forma dell'area. |
+| Dragonborn XPHB: Breath Weapon | Sostituisce un attacco nell'azione Attack; cono 15 piedi o linea 30×5 scelti all'uso, TS DES, d10 progressivi ai livelli del personaggio 1/5/11/17, usi pari a competenza per riposo lungo. |
+| Dragonborn XPHB: Damage Resistance | Resistenza al tipo dell'antenato selezionato. |
+| Dragonborn XPHB: Darkvision | Portata 60 piedi, assente nella base Dragonborn PHB. |
+| Dragonborn XPHB: Draconic Flight | Dal livello del personaggio 5, un uso per riposo lungo, volo pari alla velocità per 10 minuti finché la condizione lo permette. |
+| Goliath XPHB: Giant Ancestry | Scelta di **uno** fra sei benefici; usi pari a competenza per riposo lungo. Teletrasporto, danno, rallentamento, Prone e reazioni dipendono dal beneficio effettivo. |
+| Goliath XPHB: Large Form | Dal livello del personaggio 5, un uso per riposo lungo, taglia Large solo con spazio sufficiente, durata 10 minuti, vantaggio a prove FOR e +10 piedi di velocità temporanei. |
+| Goliath XPHB: Powerful Build | Vantaggio alle prove per terminare Grappled e capacità di trasporto come taglia superiore; non taglia Large permanente. |
+| Tiefling PHB: Age, Size, Languages, Darkvision | Dati descrittivi, Common/Infernal e vista al buio 60 piedi della versione PHB. |
+| Tiefling PHB: Hellish Resistance | Resistenza Fire indipendente dalla scelta di stirpe della versione XPHB. |
+| Tiefling PHB: Infernal Legacy | Thaumaturgy, Hellish Rebuke dal livello 3 e Darkness dal 5, usi gratuiti giornalieri e CAR; blocco magico PHB già strutturato. |
+| Tiefling XPHB: Darkvision | Portata 60 piedi. |
+| Tiefling XPHB: Fiendish Legacy | Scelta Abyssal/Chthonic/Infernal; resistenza e trucchetto diversi al livello 1, incantesimi dei livelli del personaggio 3/5 con un lancio gratuito ciascuno per riposo lungo; caratteristica magica INT/SAG/CAR scelta. Blocchi magici XPHB presenti. |
+| Tiefling XPHB: Otherworldly Presence | Thaumaturgy con la caratteristica magica della stirpe scelta, senza scelta indipendente. |
+
+Da modellare separatamente: contatori di specie con origine del tratto,
+scelte Draconic/Giant Ancestry e Fiendish Legacy, l'attivazione reale dei
+soffi e delle trasformazioni, geometria e TS del soffio, applicazione di
+resistenze condizionate alla scelta e stato del volo/della taglia. Non si
+aggiungono usi a una classe fittizia né si deduce una scelta dalle sole
+descrizioni o dalla presenza dei blocchi `additionalSpells`.
