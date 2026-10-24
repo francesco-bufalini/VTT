@@ -224,6 +224,7 @@ function ensureVisibleSpells(creature,calculated){
       name:member.name,max_level:member.book?0:member.max_level
     });
   }
+  if(!ids.size&&!scopes.length)return null;
   const key=JSON.stringify([[...ids].sort(),scopes,creature.id||'',state.sheet]);
   if(state.spellDemandKey===key)return null;
   state.spellDemandKey=key;
@@ -237,6 +238,9 @@ function ensureVisibleSpells(creature,calculated){
     state.spellCatalogError='';
     return rows;
   }).catch(error=>{
+    // Let the next explicit navigation or refresh retry once connectivity
+    // returns; failure never blocks rendering locally saved spells.
+    if(state.spellDemandKey===key)state.spellDemandKey='';
     console.warn('VTT spell references unavailable; saved spells remain usable',error);
   }).finally(()=>{state.spellScopedLoading=false;});
   return request;
