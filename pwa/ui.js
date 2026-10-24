@@ -24,7 +24,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
@@ -257,22 +257,21 @@ function syncNav(){
   connection.classList.toggle('connected',state.paired&&state.online);
 }
 
-// Several inventory containers can be visible at once. Never let the
-// selection become empty, and migrate the former single "all" tab.
+// Each section is independent, including an empty selection. Migrate the
+// former single "all" tab when restoring older navigation history.
 function inventorySectionKeys(record){
-  return ['items',...inventoryContainers(record).slice(1).map(row=>'container:'+row.id),
-    'scrolls','documents'];
+  return ['items','scrolls','documents',...inventoryContainers(record).slice(1).map(row=>'container:'+row.id)];
 }
 function inventoryVisibleSections(record,selection=state.inventorySelectedTabs){
   const valid=inventorySectionKeys(record),chosen=Array.isArray(selection)?selection:[selection];
   if(chosen.includes('all'))return valid;
   const selected=valid.filter(key=>chosen.includes(key));
-  return selected.length?selected:['items'];
+  return selected;
 }
 function setInventoryVisibleSections(record,selection){
   const selected=inventoryVisibleSections(record,selection);
   state.inventorySelectedTabs=selected;
-  if(!selected.includes(state.inventorySubtab))state.inventorySubtab=selected[0];
+  if(!selected.includes(state.inventorySubtab))state.inventorySubtab=selected[0]||'items';
   return selected;
 }
 function focusInventorySection(record,key){
@@ -905,15 +904,7 @@ async function editorView() {
   case "inventory": {
     const inventory=Array.isArray(c.inventory)?c.inventory:[];
     const containers=inventoryContainers(c),selectedTabs=setInventoryVisibleSections(c,state.inventorySelectedTabs);
-    const inventoryTabs=[['items','Zaino','inventory'],
-      ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
-      ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
-    const nav='<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
-      inventoryTabs.map(([key,label,glyph])=>
-        '<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+'" '+
-        'aria-pressed="'+selectedTabs.includes(key)+'" aria-label="'+esc(label)+'">'+
-        actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>').join('')+
-      '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button></nav>';
+    const nav=inventorySectionControls(c,selectedTabs);
     const owned=inventory.map((item,index)=>({item,index})).filter(({item})=>!isDocument(item));
     const ordinary=owned.filter(({item})=>!isSpellScroll(item));
     const scrolls=owned.filter(({item})=>isSpellScroll(item));
@@ -1668,13 +1659,61 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
 }
+function openInventoryContainerDelete(id){
+  const editor=state.editor,record=editor?.read(),containers=inventoryContainers(record);
+  const original=containers.find(row=>row.id===id);
+  if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Zaino non eliminabile.");
+  document.querySelector('#inventory-container-delete-dialog')?.remove();
+  const remaining=(record.inventory||[]).filter(item=>itemContainerId(item,containers)===id).length;
+  const dialog=document.createElement('dialog');
+  dialog.id='inventory-container-delete-dialog';dialog.className='sheet-context-dialog';
+  dialog.setAttribute('aria-labelledby','inventory-container-delete-title');
+  dialog.innerHTML='<div class="sheet-context-body"><h2 id="inventory-container-delete-title">Elimina sezione</h2>'+
+    '<p>Vuoi eliminare la sezione <strong>'+esc(original.name)+'</strong>?</p>'+
+    (remaining?'<p>La sezione contiene '+(remaining===1?'una voce':remaining+' voci')+'. Scegli dove trasferire gli oggetti prima di eliminarla.</p>'+
+      '<label>Sposta gli oggetti in<select data-container-destination required><option value="">Seleziona una sezione</option>'+
+      containers.filter(row=>row.id!==id).map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>':
+      '<p>La sezione è vuota.</p>')+
+    '<p data-container-delete-error role="alert"></p><div class="actions">'+
+    '<button type="button" class="btn" data-container-delete-cancel>Annulla</button>'+
+    '<button type="button" class="btn danger" data-container-delete-confirm'+(remaining?' disabled':'')+'>Elimina sezione</button></div></div>';
+  const destination=dialog.querySelector('[data-container-destination]');
+  const confirm=dialog.querySelector('[data-container-delete-confirm]');
+  const cancel=dialog.querySelector('[data-container-delete-cancel]');
+  const close=()=>{if(dialog.close)dialog.close();else dialog.remove();};
+  let saving=false;
+  destination?.addEventListener('change',()=>{confirm.disabled=!destination.value;});
+  cancel.addEventListener('click',close);
+  dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+  confirm.addEventListener('click',async()=>{
+    if(confirm.disabled||saving)return;
+    saving=true;confirm.disabled=true;cancel.disabled=true;if(destination)destination.disabled=true;
+    try{
+      if(state.editor!==editor)throw Error('La creatura è cambiata. Riapri la sezione da eliminare.');
+      const current=editor.read(),freshContainers=inventoryContainers(current);
+      const hasItems=(current.inventory||[]).some(item=>itemContainerId(item,freshContainers)===id);
+      if(hasItems&&!destination?.value)throw Error('La sezione contiene oggetti. Riapri la finestra e scegli una destinazione.');
+      await patch(deleteInventoryContainer(current,id,destination?.value||DEFAULT_INVENTORY_CONTAINER));
+      await editor.flush();
+      setInventoryVisibleSections(editor.read(),state.inventorySelectedTabs.filter(key=>key!=='container:'+id));
+      state.inventoryMenuIndex=-1;close();await render();
+    }catch(error){
+      saving=false;confirm.disabled=!!destination&&!destination.value;cancel.disabled=false;
+      if(destination)destination.disabled=false;
+      dialog.querySelector('[data-container-delete-error]').textContent=errorMessage(error);
+    }
+  });
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  document.body.append(dialog);
+  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+  (destination||cancel).focus();
+}
 function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex,key){
   const active=key.startsWith('container:')?containers.find(row=>row.id===key.slice(10)):null;
   const destination=active?.id||DEFAULT_INVENTORY_CONTAINER;
   const rows=entries.filter(({item})=>itemContainerId(item,containers)===destination);
   const controls=active?'<div class="inventory-container-management">'+
-    '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button>'+
-    '<button type="button" class="btn small" data-act="inventory-container-delete" data-container-id="'+esc(active.id)+'">Elimina sezione</button></div>':'';
+    '<button type="button" class="btn small" data-act="inventory-container-rename" data-container-id="'+esc(active.id)+'">Rinomina sezione</button></div>':'';
   return '<div data-inventory-section="'+esc(key)+'">'+
     panel(active?.name||'Zaino',
       controls+inventoryTable(rows,false,selectedIndex,menuIndex,containers)+
@@ -4974,37 +5013,21 @@ async function handleAction(target){
       const name=window.prompt("Rinomina contenitore:",original.name);if(name===null)return;
       const trimmed=name.trim();if(!trimmed||trimmed.length>80||containers.some(row=>row.id!==id&&row.name.toLowerCase()===trimmed.toLowerCase()))throw Error("Nome non valido o già utilizzato.");
       await patch({inventory_containers:containers.slice(1).map(row=>row.id===id?{...row,name:trimmed}:row)});
-    }else{
-      const original=containers.find(row=>row.id===id);if(!original||id===DEFAULT_INVENTORY_CONTAINER)throw Error("Zaino non eliminabile.");
-      const other=containers.filter(row=>row.id!==id);
-      const remaining=(record.inventory||[]).filter(item=>itemContainerId(item,containers)===id).length;
-      let destination=DEFAULT_INVENTORY_CONTAINER;
-      if(remaining){
-        const choice=window.prompt("Sposta i "+remaining+" oggetti di "+original.name+" in quale contenitore?\\n"+other.map((row,i)=>(i+1)+". "+row.name).join("\\n"),"1");
-        if(choice===null)return;
-        const index=Number(choice)-1;if(!Number.isInteger(index)||!other[index])throw Error("Destinazione non valida.");
-        destination=other[index].id;
-      }else if(!window.confirm("Eliminare il contenitore vuoto "+original.name+"?"))return;
-      await patch(deleteInventoryContainer(record,id,destination));
-      setInventoryVisibleSections(state.editor.read(),
-        state.inventorySelectedTabs.filter(key=>key!=='container:'+id));
-      state.inventorySubtab=state.inventorySelectedTabs[0]||'items';
-    }
+    }else{openInventoryContainerDelete(id);return;}
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(act==="inventory-subtab"||act==="inventory-toggle-all"){
     const record=state.editor?.read();if(!record)throw Error("Apri prima una creatura.");
     const keys=inventorySectionKeys(record),selected=inventoryVisibleSections(record);
     if(act==="inventory-toggle-all"){
-      setInventoryVisibleSections(record,selected.length===keys.length?['items']:keys);
+      setInventoryVisibleSections(record,selected.length===keys.length?[]:keys);
       state.inventorySubtab='items';
     }else{
       const key=target.dataset.subtab;
       if(!keys.includes(key))throw Error("Sezione inventario non valida.");
       const next=selected.includes(key)?selected.filter(x=>x!==key):[...selected,key];
-      if(!next.length)return;
       setInventoryVisibleSections(record,next);
-      state.inventorySubtab=next.includes(key)?key:next[0];
+      state.inventorySubtab=next.includes(key)?key:next[0]||'items';
     }
     state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;

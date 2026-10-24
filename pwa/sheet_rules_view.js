@@ -1,7 +1,7 @@
 import {hitDicePools} from './character_core.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
-import {actionGlyphKey} from "./action_economy.js";
+import {actionGlyphKey,actionGlyph} from "./action_economy.js";
 import {itemKind,resolveOwnedItem,requiresAttunement,spellScrollLevel,spellScrollName,activeInfusions} from "./item_controls.js";
 import * as inventoryModule from "./item_controls.js";
 const DEFAULT_INVENTORY_CONTAINER=inventoryModule.DEFAULT_INVENTORY_CONTAINER||"backpack";
@@ -20,6 +20,24 @@ const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=
 });
 import {isDocument} from "./documents.js";
 import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
+
+export function inventorySectionControls(record,selected=[]){
+ const containers=inventoryContainers(record);
+ const tabs=[['items','Zaino','inventory'],['scrolls','Pergamene','scroll'],['documents','Documenti','book'],
+  ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory'])];
+ const allVisible=tabs.every(([key])=>selected.includes(key));
+ return '<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
+  '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione inventario">＋</button>'+
+  '<button type="button" data-act="inventory-toggle-all" data-subtab="all" aria-pressed="'+allVisible+'">'+actionGlyph('inventory')+'<span>Tutti</span></button>'+
+  tabs.map(([key,label,glyph])=>{
+   const custom=key.startsWith('container:');
+   const toggle='<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
+    '" aria-pressed="'+selected.includes(key)+'" aria-label="'+esc(label)+'">'+actionGlyph(glyph)+'<span>'+esc(label)+'</span></button>';
+   return custom?'<span class="inventory-custom-section">'+toggle+
+    '<button type="button" class="inventory-section-remove" data-act="inventory-container-delete" data-container-id="'+esc(key.slice(10))+
+    '" aria-label="Elimina sezione '+esc(label)+'" title="Elimina sezione '+esc(label)+'">×</button></span>':toggle;
+  }).join('')+'</nav>';
+}
 // Lightweight inline portraits: share the same unmistakable character/monster
 // identity in the archive, persistent header, and creature sheet. No extra
 // network asset is required when the PWA is running offline.
@@ -770,20 +788,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  if(sheet==='inventory'){
   const containers=inventoryContainers(c);
-  const keys=['items',...containers.slice(1).map(row=>'container:'+row.id),'scrolls','documents'];
+  const keys=['items','scrolls','documents',...containers.slice(1).map(row=>'container:'+row.id)];
   const requested=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
   const selected=keys.filter(key=>requested.includes(key)||requested.includes('all'));
-  if(!selected.length)selected.push('items');
   const showingItems=selected.some(key=>key==='items'||key.startsWith('container:'));
-  const tabs=[['items','Zaino','inventory'],
-    ...containers.slice(1).map(row=>['container:'+row.id,row.name,'inventory']),
-    ['scrolls','Pergamene','scroll'],['documents','Documenti','book']];
-  html+='<nav class="inventory-subtabs inventory-container-tabs" role="group" aria-label="Sezioni inventario · selezione multipla">'+
-    tabs.map(([key,label,glyph])=>
-      '<button type="button" data-act="inventory-subtab" data-subtab="'+esc(key)+
-      '" aria-pressed="'+selected.includes(key)+'" aria-label="'+esc(label)+'">'+icon(glyph)+
-      '<span>'+esc(label)+'</span></button>').join('')+
-    '<button type="button" class="inventory-add-container-tab" data-act="inventory-container-add" aria-label="Aggiungi sezione">＋</button></nav>';
+  html+=inventorySectionControls(c,selected);
   if(showingItems){
     target('equipment','.inventory-equipment');target('attunement','.inventory-attunement');
     const coinPanel=bank.querySelector('.inventory-coins-panel');
@@ -869,7 +878,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     const controls=activeContainer?
       '<div class="inventory-container-management">'+
         btn('Rinomina '+name,'settings','data-act="inventory-container-rename" data-container-id="'+esc(activeContainer.id)+'"','<span>Rinomina</span>')+
-        btn('Elimina '+name,'cross','data-act="inventory-container-delete" data-container-id="'+esc(activeContainer.id)+'"','<span>Elimina</span>')+
       '</div>':'';
     html+=card(name,
       '<p class="inventory-list-count">'+visible.length+' voci · '+
@@ -928,20 +936,6 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    title.classList.add('play-actions-page-title');
    title.insertAdjacentHTML('beforeend',btn('Varianti alle regole','settings',
     'data-act="action-variants"','<span>Varianti alle regole</span>'));
-  }
- }
- if(sheet==='inventory'){
-  const title=app.querySelector(':scope > .page-head');
-  if(title){
-   const containers=inventoryContainers(c);
-   const keys=['items',...containers.slice(1).map(row=>'container:'+row.id),'scrolls','documents'];
-   const selected=Array.isArray(view.inventorySelectedTabs)?view.inventorySelectedTabs:[view.inventorySubtab||'items'];
-   const allVisible=keys.every(key=>selected.includes(key)||selected.includes('all'));
-   const label=allVisible?'Mostra solo zaino':'Mostra tutti gli oggetti';
-   title.classList.add('play-inventory-page-title');
-   title.insertAdjacentHTML('beforeend',btn(label,'inventory',
-    'data-act="inventory-toggle-all" aria-pressed="'+allVisible+'"',
-    '<span>'+label+'</span>'));
   }
  }
  const main=document.createElement('div');main.id='sheet-play-view';main.className='sheet-play-view';main.dataset.sheet=sheet;main.innerHTML=html;
