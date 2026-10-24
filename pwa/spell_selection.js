@@ -24,6 +24,20 @@ export function sessionSpellEntries(creature,calculated,catalog=[]){
   for(const member of members.length?members:[null])entries.push({...definition,...stored,casting_class:member?.id||'',
     granting_trait_id:member?.granting_trait_id||'',caster_ability:(member&&creature.spellcasting_section_abilities?.[member.id])||member?.ability||creature.spellcasting_section_abilities?.manual||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',pact:member?.name.toLowerCase()==='warlock',casting_label:member?.name||'Scheda'});
  }
+ // Learned cantrips for preparing classes are ready without being saved in
+ // the prepared-spell list. Preserve legacy saved cantrips without duplicates.
+ for(const member of arr(calculated.casting_classes)){
+  for(const id of knownClassCantripIds(creature,member,catalog)){
+   const definition=catalog.find(spell=>spellId(spell)===id);
+   if(!definition||Number(definition.level)!==0||
+     entries.some(row=>row.id===id&&row.casting_class===member.id&&!row.grant_id))continue;
+   entries.push({...definition,casting_class:member.id,
+     granting_trait_id:member.granting_trait_id||'',
+     caster_ability:creature.spellcasting_section_abilities?.[member.id]||
+       member.ability||creature.spellcasting_ability||'int',
+     pact:member.name.toLowerCase()==='warlock',casting_label:member.name||'Scheda'});
+  }
+ }
  for(const grant of calculated.origin_spells){
   const definition=catalog.find(s=>s.id===grant.spell_id);if(!definition)continue;
   entries.push({...definition,grant_id:grant.id,caster_ability:creature.spellcasting_section_abilities?.['origin:'+grant.origin_id]||grant.spellcasting_ability||creature.spellcasting_ability||calculated.casting_classes[0]?.ability||'int',casting_label:grant.origin_name||'Origine'});
@@ -54,23 +68,38 @@ export function castingSources(entry,classes,catalog=[]){
 // Preparing casters normally know their class list. A per-class override records
 // only deliberate additions/removals, so existing characters need no migration.
 // Wizards instead know exactly the spells recorded in their spellbook.
-export function knownClassSpellIds(creature={},member,catalog=[]){
- if(!member)return new Set();
- if(member.book){
-   const entry=creature.known_spell_overrides?.[member.id]||{};
-   const removed=new Set(arr(entry.removed));
-   const cantrips=spellsForEdition(catalog,creature.rules_version||'2014')
-     .filter(spell=>Number(spell.level)===0&&spellEligible(spell,member)&&!removed.has(spell.id))
-     .map(spellId);
-   return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips,...arr(entry.added)]);
- }
- if(member.mode!=='Preparati')return new Set(availableSpells(creature)
-   .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
- const options=spellsForEdition(catalog,creature.rules_version||'2014');
+// Cantrips are learned, not prepared. An explicit learned override or a
+// legacy cantrip saved in prepared_spells makes one known; never assume the
+// entire class cantrip catalogue has been learned.
+export function knownClassCantripIds(creature={},member,catalog=[]){
+ if(!member||member.mode!=='Preparati')return new Set();
+ const definitions=new Map(arr(catalog).map(spell=>[spellId(spell),spell]));
  const overrides=creature.known_spell_overrides?.[member.id]||{};
  const removed=new Set(arr(overrides.removed));
- return new Set([...options.filter(spell=>spellEligible(spell,member)&&!removed.has(spell.id))
-   .map(spellId),...arr(overrides.added)]);
+ const legacy=availableSpells(creature).filter(spell=>
+   castingSources(spell,[member],catalog).includes(member.id));
+ const candidates=[...arr(overrides.added),...legacy.map(spellId)];
+ const legacyById=new Map(legacy.map(spell=>[spellId(spell),spell]));
+ return new Set(candidates.filter(id=>{
+   if(removed.has(id))return false;
+   const definition=definitions.get(id)||legacyById.get(id);
+   return definition&&Number(definition.level)===0;
+ }));
+}
+export function knownClassSpellIds(creature={},member,catalog=[]){
+ if(!member)return new Set();
+ if(member.mode!=='Preparati')return new Set(availableSpells(creature)
+   .filter(row=>castingSources(row,[member],catalog).includes(member.id)).map(spellId));
+ const cantrips=knownClassCantripIds(creature,member,catalog);
+ const overrides=creature.known_spell_overrides?.[member.id]||{};
+ if(member.book)return new Set([...arr(creature.spellbook_spells).map(spellId),...cantrips,
+   ...arr(overrides.added)]);
+ const options=spellsForEdition(catalog,creature.rules_version||'2014');
+ const removed=new Set(arr(overrides.removed));
+ return new Set([...options.filter(spell=>Number(spell.level)>0&&
+   spellEligible(spell,member)&&!removed.has(spell.id)).map(spellId),
+   ...arr(overrides.added).filter(id=>Number(options.find(spell=>spellId(spell)===id)?.level)>0),
+   ...cantrips]);
 }
 export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
  if(!member||member.mode!=='Preparati'||member.book&&Number(spell?.level)>0)
@@ -80,15 +109,21 @@ export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
    throw Error('Incantesimo non disponibile per questo livello.');
  const map=structuredClone(creature.known_spell_overrides||{});
  const entry=map[member.id]||{},added=new Set(arr(entry.added)),removed=new Set(arr(entry.removed));
- if(known){removed.delete(id);if(!spellEligible(spell,member))added.add(id);}
- else {added.delete(id);if(spellEligible(spell,member))removed.add(id);}
+ if(known){
+   removed.delete(id);
+   if(Number(spell.level)===0||!spellEligible(spell,member))added.add(id);
+ }else{
+   added.delete(id);
+   if(Number(spell.level)===0||spellEligible(spell,member))removed.add(id);
+ }
  map[member.id]={added:[...added],removed:[...removed]};
  return {known_spell_overrides:map};
 }
 export function classSelectionCount(creature,member,classes,catalog=[]){
  const selected=availableSpells(creature).filter(row=>castingSources(row,classes,catalog).includes(member.id));
  const level=row=>Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0);
- return {cantrips:selected.filter(row=>level(row)===0).length,leveled:selected.filter(row=>level(row)>0).length};
+ return {cantrips:member.mode==='Preparati'?knownClassCantripIds(creature,member,catalog).size:
+   selected.filter(row=>level(row)===0).length,leveled:selected.filter(row=>level(row)>0).length};
 }
 // Selection limits are advisory: report deviations in the UI, never reject an editor choice.
 export function classSelectionWarnings(member,count){
@@ -105,6 +140,8 @@ export function addSelectedSpell(creature,entry,target="prepared_spells",{member
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
+  if(member?.mode==='Preparati'&&spell.level===0&&target==='prepared_spells')
+    throw Error('I trucchetti si imparano e sono sempre pronti: non si preparano.');
   if(member){
     if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&!entry.internal_grant&&spell.level<=member.max_level&&
       (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id))))

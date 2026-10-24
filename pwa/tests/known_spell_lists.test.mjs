@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {knownClassSpellIds,changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
+import {knownClassSpellIds,knownClassCantripIds,sessionSpellEntries,classSelectionCount,
+  changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
 const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,book:false};
 const wizard={id:'class|phb|wizard',name:'Wizard',mode:'Preparati',max_level:3,book:true};
@@ -13,9 +14,9 @@ const catalog=[
 
 test('preparing casters initially know their class list without changing saved sheets',()=>{
  const record={rules_version:'2014',prepared_spells:[],spells:[]};
- assert.deepEqual([...knownClassSpellIds(record,cleric,catalog)].sort(),['cure','light']);
- assert.deepEqual(knownClassSpellIds(record,wizard,catalog),new Set(['light']),
-   'wizard cantrips remain selectable without requiring a spellbook entry');
+ assert.deepEqual([...knownClassSpellIds(record,cleric,catalog)].sort(),['cure']);
+ assert.deepEqual(knownClassSpellIds(record,wizard,catalog),new Set(),
+   'cantrips must be explicitly learned, not automatically taken from the entire class list');
  assert.equal(record.known_spell_overrides,undefined);
 });
 
@@ -53,11 +54,11 @@ test('wizard spellbook stays the source of known spells and known-only preparati
 
 test('wizard cantrips can be learned and forgotten without changing the spellbook',()=>{
  let c={rules_version:'2014',prepared_spells:[],spellbook_spells:[]};
- assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
- c={...c,...changeKnownClassSpell(c,wizard,catalog[2],false,catalog)};
  assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),false);
  c={...c,...changeKnownClassSpell(c,wizard,catalog[2],true,catalog)};
  assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),true);
+ c={...c,...changeKnownClassSpell(c,wizard,catalog[2],false,catalog)};
+ assert.equal(knownClassSpellIds(c,wizard,catalog).has('light'),false);
  assert.deepEqual(c.spellbook_spells,[]);
 });
 
@@ -66,3 +67,35 @@ test('known-spell overrides never alter spontaneous casters',()=>{
  assert.equal(knownClassSpellIds(record,bard,catalog).has('cure'),true);
  assert.throws(()=>changeKnownClassSpell(record,bard,catalog[0],false,catalog),/non è modificabile/);
 });
+
+test('learned cantrips for preparing classes are immediately castable without preparation',()=>{
+ let c={rules_version:'2014',prepared_spells:[],spells:[],spellbook_spells:[]};
+ c={...c,...changeKnownClassSpell(c,cleric,catalog[2],true,catalog)};
+ assert.equal(knownClassCantripIds(c,cleric,catalog).has('light'),true);
+ assert.equal(availableCount(c,cleric),1);
+ assert.equal(c.prepared_spells.length,0,'Learning does not prepare or duplicate cantrips in saved spells');
+ const calculated={casting_classes:[cleric],origin_spells:[]};
+ assert.deepEqual(sessionSpellEntries(c,calculated,catalog).map(spell=>spell.id),['light']);
+ assert.throws(()=>addSelectedSpell(c,catalog[2],'prepared_spells',
+   {member:cleric,classes:[cleric],catalog}),/non si preparano/);
+ c={...c,...changeKnownClassSpell(c,cleric,catalog[2],false,catalog)};
+ assert.deepEqual(sessionSpellEntries(c,calculated,catalog),[],
+   'Forgetting a known cantrip removes the automatic casting option');
+});
+
+test('cantrips already saved by old preparation remain ready, without duplicate casts',()=>{
+ const old={rules_version:'2014',prepared_spells:[{...catalog[2],casting_classes:[cleric.id]}],
+   spells:[{...catalog[2],casting_classes:[cleric.id]}]};
+ const calculated={casting_classes:[cleric],origin_spells:[]};
+ assert.equal(knownClassCantripIds(old,cleric,catalog).has('light'),true);
+ assert.equal(availableCount(old,cleric),1);
+ const entries=sessionSpellEntries(old,calculated,catalog);
+ assert.equal(entries.length,1);
+ assert.equal(entries[0].id,'light');
+ const newer={...old,...changeKnownClassSpell(old,cleric,catalog[2],false,catalog)};
+ assert.equal(knownClassCantripIds(newer,cleric,catalog).has('light'),false);
+});
+
+function availableCount(record,member){
+ return classSelectionCount(record,member,[member],catalog).cantrips;
+}

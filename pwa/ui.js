@@ -7,7 +7,7 @@ import * as inventoryModule from "./item_controls.js";
 import {itemAttunementCount,inventoryAttunementCounts} from "./item_controls.js";
 import {inventoryAttunementControl} from "./sheet_rules_view.js";
 import {structuredItemFacts} from "./item_detail_facts.js";
-import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownClassSpellIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
+import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownClassSpellIds, knownClassCantripIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
@@ -230,6 +230,11 @@ function ensureVisibleSpells(creature,calculated){
   }
   for(const row of [...(calculated.origin_spells||[]),...(creature.origin_spell_grants||[])]){
     if(row.spell_id)ids.add(row.spell_id);
+  }
+  // A preparing caster's known cantrips are no longer stored as prepared
+  // spells, but the small on-demand lookup must still resolve their details.
+  for(const member of calculated.casting_classes||[]){
+    for(const id of creature.known_spell_overrides?.[member.id]?.added||[])ids.add(id);
   }
   const scopes=[];
   if(state.sheet==='magic'&&state.magicPopup==='catalog'&&state.spellKnownView==='known'&&
@@ -2050,7 +2055,8 @@ function magicToolsDialog(c,calculated){
    selectionSummary+
    '<section class="magic-selection-current"><h3>'+esc(selectedTarget==='spellbook_spells'?'Nel libro':
      selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
-   spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,{includeSlots:false})+'</section>'+
+   spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,
+     {includeSlots:false,minLevel:selectedMember?.mode==='Preparati'?1:0})+'</section>'+
    searchField;
  const learning='<button type="button" class="magic-learn-back" data-act="magic-learn-back">'+
    '‹ Torna alla preparazione</button>'+classPicker+
@@ -2305,20 +2311,36 @@ function manualMagicSources(c,calculated){
       castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
       spellList(c,'prepared_spells','manual',classes,{originId:id})+'</section>').join('');
 }
-function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null}={}) {
+function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null,minLevel=0}={}) {
   const rows=key==="prepared_spells"?availableSpells(c):
     Array.isArray(c[key])?c[key]:[];
+  const member=classes.find(row=>row.id===classId);
+  const autoCantrips=key==='prepared_spells'&&member?.mode==='Preparati'&&minLevel===0?
+    knownClassCantripIds(c,member,state.spellCatalog||[]):new Set();
   const visible=rows.map((spell,i)=>({spell,i,info:magicSpellInfo(spell)}))
+    .filter(({spell,info})=>info.level===null||info.level>=minLevel)
     .filter(({spell})=>(!classId||
       (classId==='manual'?!castingSources(spell,classes,state.spellCatalog||[]).some(id=>classes.some(member=>member.id===id)):
         castingSources(spell,classes,state.spellCatalog||[]).includes(classId)))&&
       (originId===null||String(spell?.origin_id||spell?.origin_name||'manual')===originId)&&
       !(classId==='manual'&&(state.calculated?.origin_spells||[]).some(grant=>grant.spell_id===spellId(spell)&&
         String(grant.origin_id||'manual')===String(spell?.origin_id||spell?.origin_name||'manual'))));
-  return groupedMagicSpells(visible,({i,info})=>
-    '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell" data-spell-key="'+esc(key)+'" data-spell-index="'+i+'" data-casting-class="'+esc(classId||'')+'" aria-label="Apri '+esc(info.name)+'">'+esc(info.name||'Incantesimo senza nome')+'</button>'+
-    '<button type="button" class="btn small magic-remove-spell" data-act="remove-spell" data-key="'+esc(key)+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'" title="Rimuovi" aria-label="Rimuovi '+esc(info.name)+'">×</button></div>',
-    {slotSummary:includeSlots&&key==='prepared_spells'?magicSlotSummary(state.calculated):null});
+  const visibleIds=new Set(visible.map(({spell})=>spellId(spell)));
+  for(const id of autoCantrips){
+    if(visibleIds.has(id))continue;
+    const spell=(state.spellCatalog||[]).find(row=>spellId(row)===id);
+    if(spell&&Number(spell.level)===0)visible.push({spell,i:-1,info:magicSpellInfo(spell)});
+  }
+  return groupedMagicSpells(visible,({spell,i,info})=>{
+    const auto=autoCantrips.has(spellId(spell))&&info.level===0;
+    const attrs=auto?' data-spell-id="'+esc(spellId(spell))+'" data-casting-class="'+esc(classId||'')+'"':
+      ' data-spell-key="'+esc(key)+'" data-spell-index="'+i+'" data-casting-class="'+esc(classId||'')+'"';
+    return '<div class="magic-spell-row"><button type="button" class="magic-spell-open" data-act="power-spell"'+attrs+
+      ' aria-label="Apri '+esc(info.name)+'">'+esc(info.name||'Incantesimo senza nome')+'</button>'+
+      (auto?'<span class="magic-known-cantrip-label">Conosciuto</span>':
+        '<button type="button" class="btn small magic-remove-spell" data-act="remove-spell" data-key="'+esc(key)+'" data-class-id="'+esc(classId||'')+'" data-index="'+i+'" title="Rimuovi" aria-label="Rimuovi '+esc(info.name)+'">×</button>')+
+      '</div>';
+  },{slotSummary:includeSlots&&key==='prepared_spells'?magicSlotSummary(state.calculated):null});
 }
 function spellSelectionWarning(member,count){
  const warnings=classSelectionWarnings(member,count);
@@ -2345,7 +2367,7 @@ function renderSpellResults(){
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
   const filtered=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
-    (preparing?Number(spell.level)<=member.max_level&&known.has(spell.id):
+    (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&known.has(spell.id):
       learning?Number(spell.level)<=member.max_level&&
         (!member.book||Number(spell.level)===0||spellEligible(spell,member)):
       member?.mode==='Preparati'&&target==='spellbook_spells'?
