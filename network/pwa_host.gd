@@ -555,12 +555,12 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			if not candidate is Dictionary:
 				_answer(client, 400, {"error": "invalid_class_selection"})
 				return
-			var class_name: String = String(candidate.get("name", "")).strip_edges().to_lower()
+			var target_class_name: String = String(candidate.get("name", "")).strip_edges().to_lower()
 			var max_level: int = int(candidate.get("max_level", -1))
-			if class_name.is_empty() or class_name.length() > 100 or max_level < 0 or max_level > 9:
+			if target_class_name.is_empty() or target_class_name.length() > 100 or max_level < 0 or max_level > 9:
 				_answer(client, 400, {"error": "invalid_class_selection"})
 				return
-			filters.append({"name": class_name, "max_level": max_level})
+			filters.append({"name": target_class_name, "max_level": max_level})
 		# Initialization and serialization are cached on the desktop, not the phone.
 		public_spells_json()
 		var selected: Array[Dictionary] = []
@@ -570,8 +570,8 @@ func _handle_http(client: Dictionary, method: String, path: String,
 				for filter: Dictionary in filters:
 					if int(spell.get("level", 0)) > int(filter["max_level"]):
 						continue
-					for class_name: Variant in spell.get("classes", []):
-						if String(class_name).to_lower() == String(filter["name"]):
+					for spell_class_name: Variant in spell.get("classes", []):
+						if String(spell_class_name).to_lower() == String(filter["name"]):
 							include_spell = true
 							break
 					if include_spell:
