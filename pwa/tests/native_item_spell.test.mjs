@@ -81,6 +81,25 @@ test("equipping weapons, shields and armor uses native slots and two-hand confli
   assert.throws(()=>equipSlot(initial,"head",1),/Slot/);
 });
 
+test("offhand override preserves a two-handed main weapon but never puts 2H weapons offhand",()=>{
+  const greatsword={name:"Spadone",type:"M",properties:["2H"],quantity:1,equipped_slots:[]};
+  const dagger={name:"Pugnale",type:"M",properties:["L"],quantity:1,equipped_slots:[]};
+  const shield={name:"Scudo",type:"S",quantity:1,equipped_slots:[]};
+  const initial=[greatsword,dagger,shield];
+  const main=equipSlot(initial,"main",0);
+  assert.throws(()=>equipSlot(main,"off",1),/secondaria occupata/);
+  const unlocked=equipSlot(main,"off",1,{allowOffhandWithTwoHanded:true});
+  assert.deepEqual(unlocked[0].equipped_slots,["main"]);
+  assert.deepEqual(unlocked[1].equipped_slots,["off"]);
+  assert.deepEqual(initial[0].equipped_slots,[]);
+  assert.throws(()=>equipSlot(main,"off",0,{allowOffhandWithTwoHanded:true}),/incompatibile/);
+  const switched=equipSlot(unlocked,"off",2,{allowOffhandWithTwoHanded:true});
+  assert.deepEqual(switched[0].equipped_slots,["main"]);
+  assert.deepEqual(switched[2].equipped_slots,["off"]);
+  const normal=equipSlot(switched,"main",0);
+  assert.deepEqual(normal[2].equipped_slots,[]);
+});
+
 test("identical shields collapse into one quantity stack without losing occupied hands",()=>{
   const template={id:"shield:phb",name:"Shield",type:"S",ac:2,source:"PHB"};
   const main={...createOwnedItem(template,"shield_1"),equipped_slots:["main"]};

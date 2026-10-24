@@ -562,17 +562,22 @@ export function validSlot(item,slot){
     (kind==="shield"&&["main","off"].includes(slot)) ||
     (kind==="armor"&&slot==="body");
 }
-export function equipSlot(inventory,slot,index){
+export function equipSlot(inventory,slot,index,{allowOffhandWithTwoHanded=false}={}){
   if(!["main","off","body"].includes(slot))throw Error("Slot equipaggiamento non valido.");
   const rows=structuredClone(Array.isArray(inventory)?inventory:[]);
   if(index!==-1&&(!Number.isInteger(index)||index<0||index>=rows.length||
     !validSlot(rows[index],slot)))throw Error("Oggetto incompatibile con lo slot.");
+  // This explicit character option relaxes the occupied off hand; a 2H
+  // weapon itself is still never a valid offhand weapon.
+  if(slot==="off"&&!allowOffhandWithTwoHanded&&index>=0&&
+    rows.some(row=>array(row.equipped_slots).includes("main")&&hasProperty(row,"2H")))
+    throw Error("Mano secondaria occupata da un'arma a due mani.");
   const twoHanded=index>=0&&hasProperty(rows[index],"2H");
   for(const row of rows){
     const slots=Array.isArray(row.equipped_slots)?row.equipped_slots:[];
     row.equipped_slots=slots.filter(v=>v!==slot&&
-      !(slot==="main"&&twoHanded&&v==="off")&&
-      !(slot==="off"&&hasProperty(row,"2H")&&v==="main"));
+      !(slot==="main"&&twoHanded&&!allowOffhandWithTwoHanded&&v==="off")&&
+      !(slot==="off"&&!allowOffhandWithTwoHanded&&hasProperty(row,"2H")&&v==="main"));
   }
   if(index>=0){
     const row=rows[index],slots=row.equipped_slots;
@@ -590,13 +595,13 @@ export function equipSlot(inventory,slot,index){
     row.equipped_slots=slots;
   }
   const main=rows.find(row=>row.equipped_slots.includes("main"));
-  if(main&&hasProperty(main,"2H"))
+  if(main&&hasProperty(main,"2H")&&!allowOffhandWithTwoHanded)
     for(const row of rows)row.equipped_slots=row.equipped_slots.filter(v=>v!=="off");
   return rows;
 }
 
 /** One equipment state shared by the inventory and the corresponding item trait. */
-export function setItemEquipped(inventory,index,enabled){
+export function setItemEquipped(inventory,index,enabled,{allowOffhandWithTwoHanded=false}={}){
   const rows=structuredClone(Array.isArray(inventory)?inventory:[]);
   const item=rows[index];
   if(!item)throw Error("Oggetto non trovato.");
@@ -609,7 +614,7 @@ export function setItemEquipped(inventory,index,enabled){
   }
   if(["weapon","shield","armor"].includes(kind)){
     const slot=kind==="armor"?"body":kind==="shield"?"off":"main";
-    return equipSlot(rows,slot,index);
+    return equipSlot(rows,slot,index,{allowOffhandWithTwoHanded});
   }
   item.equipped=true;
   return rows;
