@@ -552,7 +552,7 @@ function paintLibraryMiniatures(){
  const previousScroll=area?.scrollTop||0;
  if(area)area.innerHTML=matches.length?matches.map(m=>
   '<button type="button" data-act="library-miniature-select" data-miniature-id="'+esc(m.id)+
-  '" class="library-miniature-option" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
+  '" class="library-miniature-option vtt-selectable" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
   actionGlyph('proficiency')+'<span>'+esc(m.name)+'</span></button>').join(''):
   '<p class="hint">Nessuna miniatura trovata.</p>';
  if(area)area.scrollTop=previousScroll;
@@ -710,7 +710,7 @@ function renderCatalogRows() {
     .filter(({row})=>matchesSearch(state.catalogQuery,row.name,row.source));
   const {items,shown,total}=pageResults(matches,state.catalogResultLimit);
   return (items.length?items.map(({row,i})=>
-    '<button type="button" class="btn full catalog-entry" data-act="catalog-open" data-index="'+i+'">'+
+    '<button type="button" class="btn full catalog-entry vtt-selectable" data-act="catalog-open" data-index="'+i+'">'+
     '<span>'+esc(row.name||"Senza nome")+'</span><span class="tag">'+esc(row.source||row._category||"")+'</span></button>').join("") :
     '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>')+
     resultsFooter('catalog-more',shown,total,90);
@@ -800,7 +800,7 @@ async function activateClassAbility(c,calculated,ability){
  const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
- dialog.innerHTML='<h2>'+esc(ability.name)+'</h2><p class="trait-description">'+esc(ability.description)+'</p>'+
+ dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+esc(ability.name)+'</h2>'+dialogCloseButton('feature-close','Chiudi','')+'</header><p class="trait-description">'+esc(ability.description)+'</p>'+
   (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
@@ -810,7 +810,7 @@ async function activateClassAbility(c,calculated,ability){
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
- dialog.querySelector('[data-feature-cancel]').addEventListener('click',()=>dialog.close());
+ dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
   const button=event.currentTarget;button.disabled=true;
@@ -849,8 +849,8 @@ async function applyFormPatch(c,changes){
 function promptVariantOverflow(creatureId,formId,overflow){
  document.querySelector('#form-depleted-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='form-depleted-dialog';
- dialog.innerHTML='<h2>Punti ferita della variante esauriti</h2><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
- dialog.querySelector('[data-form-keep]').addEventListener('click',()=>dialog.close());
+ dialog.innerHTML='<header class="vtt-popup-heading"><h2>Punti ferita della variante esauriti</h2>'+dialogCloseButton('form-keep-close','Chiudi','')+'</header><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
+ dialog.querySelectorAll('[data-form-keep],[data-act="form-keep-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-form-restore]').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
@@ -1633,7 +1633,7 @@ function scrollSpellLevelOptions(spell){
 function scrollSpellCreatorView(){
   const ready=Array.isArray(state.spellCatalog)&&state.spellCatalog.length>0;
   return '<div class="scroll-creator-fields">'+
-    '<label>Incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Cerca incantesimo…" value="'+esc(state.scrollSpellQuery)+'"></label>'+
+    '<label class="vtt-list-search">Incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Cerca incantesimo…" value="'+esc(state.scrollSpellQuery)+'"></label>'+
     '<label>Selezione<select id="scroll-spell-select" aria-label="Incantesimo per la pergamena"'+(ready?'':' disabled')+'>'+
       scrollSpellSelectOptions(state.scrollSpellQuery)+'</select></label>'+
     '<label>Livello pergamena<select id="scroll-spell-level" aria-label="Livello della pergamena">'+scrollSpellLevelOptions(null)+'</select></label>'+
@@ -1821,7 +1821,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         '<span class="inventory-col-quantity">'+controls+'</span>',
         '<span class="inventory-col-source">'+esc(item.source||'')+'</span>',
         '<span class="inventory-col-property" title="'+esc(inventoryProperties(item))+'">'+esc(inventoryProperties(item))+'</span>',nameCell];
-      return '<div class="inventory-table-row'+(index===selectedIndex?' selected':'')+
+      return '<div class="inventory-table-row vtt-selectable'+(index===selectedIndex?' selected is-selected':'')+
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
 }
@@ -2359,13 +2359,13 @@ function renderSpellResults(){
       '>'+ (already?'× Rimuovi preparazione':'+ Prepara')+'</button>';
     if(preparing){
       const isKnown=known.has(spell.id);
-      return '<div class="magic-catalog-row"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
+      return '<div class="magic-catalog-row vtt-selectable'+(already?' is-selected':'')+'"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
         (isKnown?command:'<span class="hint">Non conosciuto</span>')+
         ('<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
         ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
         (isKnown?'Dimentica':'+ Conosci')+'</button>')+'</div>';
     }
-    return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="'+
+    return '<button class="btn full catalog-entry magic-catalog-entry vtt-selectable" type="button" aria-pressed="'+already+'" data-act="'+
       action+'" data-index="'+actionIndex+'"'+
       (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       '><span>'+esc(info.name)+'</span>'+
@@ -2517,22 +2517,22 @@ function sessionView() {
         return '<div class="row between session-applied-spell"><span>'+esc(definition?.name||id)+'</span>'+
           '<button type="button" class="btn small" data-act="remove-token-spell" data-spell-id="'+esc(id)+'">✕</button></div>';
       }).join('');
-      html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><h2>⚙ '+esc(edited.name)+'</h2>'+
+      html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><header class="vtt-popup-heading"><h2>⚙ '+esc(edited.name)+'</h2>'+dialogCloseButton('close-token-dialog','Chiudi','')+'</header>'+
         '<h3>Condizioni</h3>'+conditionGrid(edited.conditions,'data-token-condition',edited.rules_version||linked?.rules_version)+
         '<h3>Incantesimi applicati</h3>'+ (active||'<p class="hint">Nessun incantesimo attivo.</p>')+
-        '<label>Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
+        '<label class="vtt-list-search">Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
         '<label>Incantesimo<select id="token-spell-select"></select></label>'+
         '<button type="button" class="btn small" data-act="apply-token-spell">＋ Applica incantesimo</button>'+
         '<h3>Miniatura</h3>'+
         (linked?''+
-          '<label>Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
+          '<label class="vtt-list-search">Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
           '<label>Miniatura<select id="token-mini-select"></select></label>'+
           '<button type="button" class="btn small" data-act="apply-token-appearance">Applica miniatura</button>':
           '<p class="hint">La miniatura può essere cambiata dal dispositivo che controlla la scheda collegata.</p>')+
         '<div class="session-dialog-footer"><button type="button" class="btn" data-act="close-token-dialog">Chiudi</button></div></dialog>';
     }
   }
-  html+='<dialog id="session-place-dialog" class="session-dialog" aria-label="Aggiungi token"><h2>Aggiungi token</h2>'+
+  html+='<dialog id="session-place-dialog" class="session-dialog" aria-label="Aggiungi token"><header class="vtt-popup-heading"><h2>Aggiungi token</h2>'+dialogCloseButton('close-place-dialog','Chiudi','')+'</header>'+
     '<label>La tua scheda<select id="place-creature">'+(state.cachedCreatures||[]).map(c=>
       '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label>'+
     '<label>Accanto al token<select id="place-reference">'+entries.map(t=>
@@ -3670,17 +3670,17 @@ function openPendingChoiceDialog(choice){
    const mixed=choice.proficiency_kind==='mixed',at=mixed?key.indexOf(':'):-1;
    const kind=mixed?key.slice(0,at):'',item=mixed?key.slice(at+1):key;
    const label=(kind==='skill'?'Abilità · ':kind==='tool'?'Strumento · ':'')+(labels[item]||item);
-   return '<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
+   return '<label class="pending-choice-option vtt-selectable'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
      '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
-     '><span>'+esc(label)+'</span>'+
+     '><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+'</span>'+
      (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
      '</label>';
  }).join('');
  const customValues=choice.custom_values||[];
  const customRow=choice.custom_allowed?
-   '<div class="pending-choice-option pending-choice-custom'+(choice.count===1?' pending-choice-option--single':'')+'">'+
+   '<div class="pending-choice-option pending-choice-custom vtt-selectable'+(choice.count===1?' pending-choice-option--single':'')+'">'+
      '<label class="pending-choice-custom-label"><input type="checkbox" name="pending-options" value="__custom__"'+
-     (customValues.length?' checked':'')+'><span>＋ Personalizzata…</span></label>'+
+     (customValues.length?' checked':'')+'><span class="vtt-choice-check" aria-hidden="true">✓</span><span>＋ Personalizzata…</span></label>'+
      '<input type="text" data-pending-custom-value maxlength="250" autocomplete="off" '+
      'placeholder="'+(choice.proficiency_kind==='mixed'?'Nome dello strumento personalizzato':'Nome dello strumento o della lingua')+'" value="'+esc(customValues.join(', '))+'"'+
      (customValues.length?'':' disabled')+' aria-label="Nomi personalizzati, separati da virgole">'+
@@ -4071,23 +4071,27 @@ async function handleAction(target){
     let selectedProfile=null;
     const dialog=document.createElement('dialog');
     dialog.className='sheet-roll-dialog miniature-dialog';
-    dialog.innerHTML='<h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
+    dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+dialogCloseButton('miniature-close','Chiudi','')+'</header>'+
       (wildShape?'<p>Scegli l’aspetto rispettando i limiti del tratto. Un utilizzo verrà consumato alla conferma.</p><label>PF personalizzati della variante (0 per condividere i PF)<input data-form-hp type="number" min="0" max="99999" value="0"></label><p data-form-selection role="status">Nessuna forma selezionata.</p>':'')+
-      '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
-      '<div class="miniature-results" role="list"></div>'+
+      '<label class="vtt-list-search">Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
+      '<div class="miniature-results vtt-selection-list" role="list"></div>'+
       '<div class="actions">'+(wildShape?'<button type="button" class="btn primary" data-form-confirm disabled>Trasformati</button>':'')+'<button type="button" class="btn" data-miniature-close>Annulla</button></div>';
     const results=dialog.querySelector('.miniature-results');
     const search=dialog.querySelector('[data-miniature-search]');
+    let miniatureLimit=60;
     const paint=()=>{
-      const query=search.value.trim().toLocaleLowerCase('it');
-      const matches=choices.filter(row=>(row.name+' '+row.id).toLocaleLowerCase('it').includes(query)).slice(0,60);
-      results.innerHTML=matches.length?matches.map(row=>
-        '<button type="button" class="btn miniature-choice" data-miniature-id="'+esc(row.id)+'">'+
+      const filtered=choices.filter(row=>matchesSearch(search.value,row.name,row.id));
+      const {items,shown,total}=pageResults(filtered,miniatureLimit);
+      results.innerHTML=(items.length?items.map(row=>
+        '<button type="button" class="btn miniature-choice vtt-selectable'+(selectedProfile?.id===row.id?' is-selected':'')+'" aria-pressed="'+(selectedProfile?.id===row.id)+'" data-miniature-id="'+esc(row.id)+'">'+
         '<strong>'+esc(row.name)+'</strong><small>'+esc(row.size_name||'Medium')+' · '+esc(row.id)+'</small></button>').join(''):
-        '<p class="hint">Nessuna miniatura trovata.</p>';
+        '<p class="hint">Nessuna miniatura trovata.</p>')+resultsFooter('miniature-more',shown,total,60);
     };
-    search.addEventListener('input',paint);
-    dialog.querySelector('[data-miniature-close]').addEventListener('click',()=>dialog.close());
+    search.addEventListener('input',()=>{miniatureLimit=60;paint();});
+    results.addEventListener('click',event=>{
+      if(event.target.closest('[data-act="miniature-more"]')){event.stopPropagation();miniatureLimit+=60;paint();}
+    });
+    dialog.querySelectorAll('[data-miniature-close],[data-act="miniature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
     if(wildShape)dialog.querySelector('[data-form-confirm]').addEventListener('click',async event=>{
       const button=event.currentTarget;if(button.disabled||!selectedProfile)return;button.disabled=true;
       try{
@@ -4104,8 +4108,14 @@ async function handleAction(target){
       const profile=choices.find(row=>row.id===id);
       if(!profile||state.creatureId!==creatureId||!state.editor)return;
       if(wildShape){
-        selectedProfile=profile;dialog.querySelector('[data-form-selection]').textContent=profile.name;
-        dialog.querySelector('[data-form-confirm]').disabled=false;return;
+        selectedProfile=selectedProfile?.id===profile.id?null:profile;
+        dialog.querySelector('[data-form-selection]').textContent=selectedProfile?.name||'Nessuna forma selezionata.';
+        dialog.querySelector('[data-form-confirm]').disabled=!selectedProfile;
+        for(const button of results.querySelectorAll('[data-miniature-id]')){
+          const active=button.dataset.miniatureId===selectedProfile?.id;
+          button.setAttribute('aria-pressed',String(active));button.classList.toggle('is-selected',active);
+        }
+        return;
       }
       choice.disabled=true;
       try{
@@ -4165,11 +4175,12 @@ async function handleAction(target){
     }
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog action-variants-dialog';
     const enabled=readActionVariants();
-    dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
-    dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!row.textContent.toLocaleLowerCase('it').includes(e.target.value.toLocaleLowerCase('it'));});
+    dialog.innerHTML='<header class="vtt-popup-heading"><h2>Regole varianti · 2014</h2>'+dialogCloseButton('action-variants-close','Chiudi','')+'</header><label class="vtt-list-search">Cerca una regola<input type="search" data-variant-search></label><div class="variant-list vtt-selection-list">'+actionVariants().map(row=>'<label class="check pending-choice-option vtt-selectable" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
+    dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!matchesSearch(e.target.value,row.textContent);});
     dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{const selected=[...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value);await patch({action_variants_2014:selected});dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
-    dialog.querySelector('[data-close-variants]').addEventListener('click',()=>dialog.remove());
-    dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return;
+    dialog.querySelector('[data-close-variants]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
+    dialog.querySelector('[data-act="action-variants-close"]').addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});});
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);openDialog(dialog);return;
   }
   if(act==='action-open-spells'){
     state.sheet='magic';await render();return;
