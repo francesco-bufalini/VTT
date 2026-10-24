@@ -10,6 +10,15 @@ export async function browserFixture({live=false}={}){
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({protocol:1,desktop_online:false}));return;}
+  if(path==='/catalog/spells/selected'&&req.method==='POST'){
+   const chunks=[];for await(const chunk of req)chunks.push(chunk);
+   const {ids=[],classes=[]}=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+   const idsSet=new Set(ids);
+   const selected=spells.spells.filter(spell=>idsSet.has(spell.id)||classes.some(entry=>
+     spell.level<=entry.max_level&&spell.classes.some(name=>name.toLowerCase()===entry.name.toLowerCase())));
+   res.setHeader('Content-Type','application/json');
+   res.end(JSON.stringify({version:1,spells:selected}));return;
+  }
   if(path==='/catalog/spells.json'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(spells));return;}
   const route=routes.get(path);if(!route){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',route[1]);res.end(await readFile(new URL(route[0],root)));
