@@ -43,6 +43,8 @@ test('class and subclass catalogs grant typed attack counts on their specific tr
  const selected=evaluate(withInvocation);
  assert.equal(selected.count,3);
  assert(selected.benefits[0].origin_id.includes('optional|xphb|devouring blade'));
+ assert.equal(selected.features[0].key,'optional|xphb|devouring blade|0|devouring blade');
+ assert.equal(evaluate({...withInvocation,trait_enabled:{[selected.features[0].key]:false}}).count,1);
  assert.equal(evaluate({...withInvocation,optional_features_catalog:[{name:'Devouring Blade',source:'XPHB',disabled:true}]}).count,1);
 });
 
