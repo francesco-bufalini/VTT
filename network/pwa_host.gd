@@ -116,6 +116,7 @@ var _short_code := ""
 var _short_code_expiry := 0
 var _short_code_attempts := 0
 var _public_spells_payload := PackedByteArray()
+var _public_spell_entries: Array[Dictionary] = []
 
 # PWA HTTP runs only while the native 3D board is open. A permanently
 # installed autoload tracks the scene, but does not keep a listening socket
@@ -374,6 +375,7 @@ func public_spells_json() -> PackedByteArray:
 				"requires_concentration": ActiveSpells.requires_concentration(entry),
 				"description": String(entry.get("description", ""))
 			})
+		_public_spell_entries = spells
 		_public_spells_payload = JSON.stringify({"version": 1, "spells": spells}).to_utf8_buffer()
 	return _public_spells_payload
 
@@ -526,6 +528,57 @@ func _handle_http(client: Dictionary, method: String, path: String,
 	# This payload is also used to package the standalone offline prototype.
 	if path == "/catalog/spells.json" and method == "GET":
 		_respond(client, 200, "application/json; charset=utf-8", public_spells_json())
+		return
+	# Serve only the spell definitions a character actually needs. The full
+	# compendium is still exposed separately for discovery and offline prefetch.
+	if path == "/catalog/spells/selected" and method == "POST":
+		if body.size() > 32768:
+			_answer(client, 413, {"error": "too_many_spell_references"})
+			return
+		var selection: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if not selection is Dictionary:
+			_answer(client, 400, {"error": "invalid_spell_selection"})
+			return
+		var requested: Variant = selection.get("ids", [])
+		var classes: Variant = selection.get("classes", [])
+		if not requested is Array or not classes is Array or requested.size() > 250 or classes.size() > 16:
+			_answer(client, 400, {"error": "invalid_spell_selection"})
+			return
+		var requested_ids: Dictionary = {}
+		for spell_id: Variant in requested:
+			if not spell_id is String or (spell_id as String).length() > 180:
+				_answer(client, 400, {"error": "invalid_spell_id"})
+				return
+			requested_ids[spell_id] = true
+		var filters: Array[Dictionary] = []
+		for candidate: Variant in classes:
+			if not candidate is Dictionary:
+				_answer(client, 400, {"error": "invalid_class_selection"})
+				return
+			var class_name: String = String(candidate.get("name", "")).strip_edges().to_lower()
+			var max_level: int = int(candidate.get("max_level", -1))
+			if class_name.is_empty() or class_name.length() > 100 or max_level < 0 or max_level > 9:
+				_answer(client, 400, {"error": "invalid_class_selection"})
+				return
+			filters.append({"name": class_name, "max_level": max_level})
+		# Initialization and serialization are cached on the desktop, not the phone.
+		public_spells_json()
+		var selected: Array[Dictionary] = []
+		for spell: Dictionary in _public_spell_entries:
+			var include_spell: bool = requested_ids.has(spell.get("id", ""))
+			if not include_spell:
+				for filter: Dictionary in filters:
+					if int(spell.get("level", 0)) > int(filter["max_level"]):
+						continue
+					for class_name: Variant in spell.get("classes", []):
+						if String(class_name).to_lower() == String(filter["name"]):
+							include_spell = true
+							break
+					if include_spell:
+						break
+			if include_spell:
+				selected.append(spell)
+		_answer(client, 200, {"version": 1, "spells": selected})
 		return
 	# One-time pairing endpoint. No authentication is needed for this narrow
 	# exchange; wrong guesses are limited globally per displayed code.
