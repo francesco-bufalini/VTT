@@ -4177,6 +4177,8 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 #sheet-context-dialog[data-context^="item:"] .inventory-equip-action:focus-visible{
   outline:2px solid #f4d29b;outline-offset:2px;
 }
+/* Matches the unboxed equipment checkboxes; the shorter caption stays inline. */
 #sheet-context-dialog[data-context="equipment"] .equipment-offhand-override{
-  padding:9px 10px;border:1px solid #a783524d;border-radius:9px;
+  padding:0;border:0;background:none;box-shadow:none;
+  font-size:11px;white-space:nowrap;
 }
