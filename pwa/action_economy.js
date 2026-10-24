@@ -442,17 +442,13 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   if(modifier!==null)rolls.push({target,label,kind,modifier});
  };
  const choices=[...attacksById.values()];
- // An opportunity attack uses a melee weapon: prefer the one in the main hand.
- const opportunityWeapon=item.id==='opportunity'?
-  choices.find(row=>row.melee&&row.slot==='main')||
-  choices.find(row=>row.melee&&!row.offhand_bonus)||
-  choices.find(row=>row.melee):null;
+ // Opportunity Attack is a rules action, not an automatically selected main-hand hit.
+ const opportunityWeapon=null;
  const offhandWeapon=item.id==='two_weapon'?
   choices.find(row=>row.slot==='off'&&!String(row.id||'').startsWith('unarmed'))||
   choices.find(row=>row.slot==='shield'&&row.hand==='off'):null;
  const selectedAttack=attack||opportunityWeapon||offhandWeapon;
- const actionName=opportunityWeapon?
-  String(opportunityWeapon.name||'Arma')+' · '+item.name:item.name;
+ const actionName=item.name;
  if(item.check_target){
   const key=String(item.check_target),stat=key.split(':')[1];
   const bonus=key.startsWith('skill:')?calculated.skills?.[key.slice(6)]:
@@ -470,9 +466,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
     calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
   }
  }
- if(!attack&&!item.skill_ids?.length&&(WEAPON_ROLL_ACTION_IDS.has(item.id)||item.id==='two_weapon')){
-  const weapon=item.id==='opportunity'?opportunityWeapon:
-   item.id==='two_weapon'?offhandWeapon:choices.find(row=>row.slot==='main')||choices[0];
+ if(!attack&&!item.skill_ids?.length&&(item.id==='two_weapon'||item.id==='disarm')){
+  const weapon=item.id==='two_weapon'?offhandWeapon:choices.find(row=>row.slot==='main')||choices[0];
   if(weapon)addRoll('attack_hit:'+weapon.id,'Tiro per colpire · '+actionName,
    weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
  }
@@ -490,20 +485,25 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   '" aria-label="Mostra la gittata di '+esc(actionName)+' sulla mappa" title="Gittata sulla mappa">'+actionGlyph('map')+'</button>':'';
  const icon=actionGlyph(item.check_target?(item.skill_code?skillGlyphKey(item.skill_code):'proficiency'):actionGlyphKey(item));
  const source=item.source_url?'<a href="'+esc(item.source_url)+'" target="_blank" rel="noopener">'+esc(item.source_label||'Fonte')+'</a>':'';
- const target=item.id==='spell_cast'?'<button type="button" class="btn small" data-act="action-open-spells">Incantesimi</button>':
-  item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
+ const target=item.action_id?'<button type="button" class="btn small" data-act="combat-action" data-mode="'+esc(item.action_id)+'">Seleziona bersaglio</button>':'';
  const tracker=(calculated.trackers||[]).find(row=>String(row.id)===String(item.tracker_id||'')&&item.tracker_id);
  const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
  const resources=tracker?'<div class="action-resource-control"><button type="button" class="btn small" data-act="tracker-more" data-tracker-id="'+esc(tracker.id)+'"'+(remaining<=0||tracker.disabled?' disabled':'')+'>−</button><span>'+remaining+' / '+esc(tracker.max)+'</span><button type="button" class="btn small" data-act="tracker-less" data-tracker-id="'+esc(tracker.id)+'"'+(Number(tracker.spent||0)<=0||tracker.disabled?' disabled':'')+'>+</button></div>':
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
- return '<article class="play-battle-attack-entry" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
+ if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
+  '<button type="button" class="play-battle-attack-direct-button" data-act="action-open-spells">'+icon+
+  '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong>'+
+  '<small>Apre la scheda Poteri</small></span></button></article>';
+ return '<article class="play-battle-attack-entry'+(item.available===false?' play-battle-attack-unavailable':'')+
+  '" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
   '<div class="play-battle-attack-line">'+
   (item.check_target?
    '<div class="play-battle-attack-details"><div class="play-battle-check-heading">'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></div></div>':
    '<details class="play-battle-attack-details"><summary>'+icon+
    '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong>'+
-    (rangeLabel?'<small class="play-battle-attack-range">'+esc(rangeLabel)+'</small>':'')+'</span>'+
+    (rangeLabel?'<small class="play-battle-attack-range">'+esc(rangeLabel)+'</small>':'')+
+    (item.available===false&&item.unavailable_reason?'<small class="play-battle-unavailable-reason">'+esc(item.unavailable_reason)+'</small>':'')+'</span>'+
    (Number(item.attack_count)>1?'<span class="play-battle-attacks-per-action" title="Attacchi per azione" aria-label="'+esc(item.attack_count)+' attacchi per azione">×'+esc(item.attack_count)+'</span>':'')+
    (item.alternate_action?'<span class="action-alternate" title="Utilizzabile anche con un’azione">A</span>':'')+
    '</summary><div class="play-battle-attack-expanded"><p>'+esc(description||'Dettagli non disponibili.')+'</p>'+
