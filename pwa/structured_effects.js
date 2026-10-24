@@ -319,8 +319,9 @@ export function collectStructuredFeatures(record,catalogs={}){
     const amount=Number(optional.attacks_per_action||rule?.attacks_per_action);
     if(!Number.isSafeInteger(amount)||amount<2)continue;
     const origin=optional.origin_id||'optional|'+norm(optional.source)+'|'+norm(optional.name);
-    append({...optional,attacks_per_action:amount},origin,0,'character','','',
-      optional.disabled===true);
+    // Use the same stable key as the optional-trait card in trait_projection.
+    append({...optional,id:'0|'+norm(optional.name),attacks_per_action:amount},
+      origin,0,'character','','',optional.disabled===true);
   }
   return results;
 }
