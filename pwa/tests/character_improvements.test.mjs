@@ -93,20 +93,17 @@ test('portable character transfers retain per-player variant rules and multiple 
  assert.deepEqual(copy.backgrounds_catalog,c.backgrounds_catalog);
 });
 
-test('class-only action panels hide D&D generic options but preserve equipped attacks',()=>{
+test('battle always shows standard actions and available physical attacks without a class filter',()=>{
  const c={...base(),rules_version:'2014'};
  const general=[{id:'dash',edition:'2014',name:'Scattare',timings:['movement'],
   description:'Raddoppia il movimento',source:'PHB'}];
  const projected={attacks:[{id:'item:sword',name:'Spada',slot:'main',hit:4,damage:'1d8',melee:true,range_feet:5}],skills:{}};
- const all=battleActionPanels(c,projected,[],[],general,[],[],false);
- const personal=battleActionPanels(c,projected,[],[],general,[],[],true);
+ const all=battleActionPanels(c,projected,[],[],general);
  assert.match(all.others,/Scattare/);
- assert(!personal.others.includes('Scattare'));
- assert(personal.others.includes('Attaccare'));
+ assert.match(all.others,/Attaccare/);
+ assert.match(all.attacks,/Spada/);
  assert.equal(all.movement,'');
- assert.equal(personal.movement,'');
- assert.match(personal.attacks,/Spada/);
- assert.equal(personal.checks,'');
+ assert.match(all.checks,/Forza/);
 });
 
 test('rest calculations can preview and accept exact manual Hit Dice results without mutating character',()=>{
