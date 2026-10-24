@@ -31,3 +31,29 @@ test('character references are loaded by ID/class without requesting the full ca
     globalThis.fetch=originalFetch;
   }
 });
+
+test('numeric sheet rules never request the full spell compendium',async()=>{
+  const {loadRuleCatalogs,clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+  const originalFetch=globalThis.fetch;
+  const calls=[];
+  clearLocalRuleCatalogCache();
+  globalThis.fetch=async path=>{
+    calls.push(path);
+    assert.notEqual(path,'/catalog/spells.json',
+      'Opening a creature must not fetch the complete spell catalog through sheet rules');
+    const data=path==='/catalog/class_mechanics.json'?{legacy_spells:[]}:
+      path==='/catalog/classes.json'?{version:1,class_features:[],subclass_features:[]}:
+      path==='/catalog/feature_timing_recovery_rules.json'?{version:1,actions:[],recoveries:[]}:
+      path==='/catalog/trait_states.json'?{version:1,states:[]}:{};
+    return new Response(JSON.stringify(data),{status:200});
+  };
+  try{
+    const result=await loadRuleCatalogs();
+    assert.ok(result.classMechanics&&result.abilityGrants);
+    assert.ok(calls.includes('/catalog/class_mechanics.json'));
+    assert.ok(!calls.includes('/catalog/spells.json'));
+  }finally{
+    clearLocalRuleCatalogCache();
+    globalThis.fetch=originalFetch;
+  }
+});
