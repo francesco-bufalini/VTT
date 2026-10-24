@@ -1,7 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pending_choices.js';
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions} from '../pending_choices.js';
+import {nativeSection} from '../native_sheet.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
 const catalogs={proficiencyGrants:index,abilityGrants:abilities};
@@ -115,4 +116,72 @@ test('single-choice options retain the radio styling and checkbox deselection',(
    'the selected state should use the circular radio indicator');
  assert.match(css,/\.pending-choice-option--single input\[type="checkbox"\]\{[\s\S]*?border-radius:50%/,
    'the single-choice control must look circular');
+});
+
+test('already owned proficiencies are flagged for skills, expertise, tools, and languages',()=>{
+ const c=artificer();
+ const skill=choices(c).find(x=>x.label==='Abilità');
+ const known=knownProficiencyOptions(c,{
+  proficiencies:['skill:history','expertise:arcana','tool:smith\'s tools','language:elvish']},skill);
+ assert(known.has('history'),'already trained skill');
+ assert(known.has('arcana'),'existing expertise implies skill proficiency');
+ assert(!known.has('nature'),'untrained skill must not be flagged');
+ const indexWithChoice={...index,background:[...index.background,
+  {name:'Local Tester',source:'TST',
+   toolProficiencies:[{any:1}],languageProficiencies:[{any:1}]}]};
+ const rec={...c,background:'Local Tester',background_source:'TST'};
+ const all=pendingCharacterChoices(rec,{}, {proficiencyGrants:indexWithChoice});
+ for(const [kind,key] of [['tool','smith\'s tools'],['language','elvish']]){
+  const choice=all.find(row=>row.proficiency_kind===kind);
+  assert(choice);
+  assert(knownProficiencyOptions(rec,{proficiencies:[kind+':'+key]},choice).has(key));
+ }
+});
+
+test('custom language and tool choices persist as structured grants, can be edited and removed',()=>{
+ const c={...artificer(),background:'Local Tester',background_source:'TST'};
+ const customCatalogs={proficiencyGrants:{...index,background:[...index.background,
+  {name:'Local Tester',source:'TST',toolProficiencies:[{any:2}],
+   languageProficiencies:[{any:2}]}]}};
+ const find=(record,kind)=>pendingCharacterChoices(record,{},customCatalogs)
+   .find(row=>row.proficiency_kind===kind&&row.name==='Local Tester');
+ const language=find(c,'language'),tool=find(c,'tool');
+ assert(language.custom_allowed&&tool.custom_allowed);
+ assert(!find(c,'skill')?.custom_allowed);
+ const first=savePendingChoice(c,language,['elvish','__custom__:Lingua del Crepuscolo']);
+ const updated={...c,...first};
+ assert(first.proficiency_choices.some(row=>row.custom&&row.key==='lingua del crepuscolo'));
+ const resumed=find(updated,'language');
+ assert(resumed.selected.includes('lingua del crepuscolo'));
+ assert.deepEqual(resumed.custom_values,['lingua del crepuscolo']);
+ assert(!resumed.options.includes('lingua del crepuscolo'),'manual values are edited separately');
+ assert.equal(resumed.remaining,0);
+ const second=savePendingChoice(updated,tool,['__custom__:Strumenti dell\'alchimista celeste']);
+ const withTools={...updated,...second};
+ assert(find(withTools,'tool').selected.includes('strumenti dell\'alchimista celeste'));
+ assert.equal(find(withTools,'language').remaining,0);
+ const cleared=savePendingChoice(withTools,find(withTools,'language'),[]);
+ const withoutLanguage={...withTools,...cleared};
+ assert.equal(find(withoutLanguage,'language').remaining,2);
+ assert(find(withoutLanguage,'tool').selected.includes('strumenti dell\'alchimista celeste'));
+ assert.throws(()=>savePendingChoice(c,language,['__custom__:']),/Selezione/);
+ assert.throws(()=>savePendingChoice(c,language,['__custom__:'+('a'.repeat(81))]),/Selezione/);
+ assert.throws(()=>savePendingChoice(c,language,['elvish','__custom__:dragonborn','__custom__:drow']),/Selezione/);
+ assert.throws(()=>savePendingChoice(c,language,['__custom__:elvish']),/Selezione/);
+ const skill=find(c,'skill')||choices(c).find(row=>row.label==='Abilità');
+ assert.throws(()=>savePendingChoice(c,skill,['__custom__:my skill']),/Selezione/);
+});
+
+test('Other Proficiencies summarizes trained skills and expertise as well as tools and languages',()=>{
+ const html=nativeSection({...artificer(),name:'Tester'},'info',{
+  field:()=>'',area:()=>'',panel:(title,body)=>'<section data-summary="'+title+'">'+body+'</section>',
+  calculated:{proficiencies:['skill:history','expertise:arcana',
+    'tool:smith\'s tools','language:elvish'],values:{}}
+ });
+ const panel=html.match(/<section data-summary="Altre competenze">([\s\S]*?)<\/section>/)?.[1];
+ assert(panel,'the Other Proficiencies panel must be present');
+ assert.match(panel,/<dt>Abilità<\/dt><dd>Arcano, Storia<\/dd>/);
+ assert.match(panel,/<dt>Maestrie<\/dt><dd>Arcano<\/dd>/);
+ assert.match(panel,/<dt>Strumenti<\/dt><dd>smith&#39;s tools<\/dd>/);
+ assert.match(panel,/<dt>Linguaggi<\/dt><dd>elvish<\/dd>/);
 });

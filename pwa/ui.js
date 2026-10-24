@@ -29,7 +29,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions} from "./pending_choices.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -3409,9 +3409,21 @@ function openPendingChoiceDialog(choice){
  const inputType='checkbox';
  const labels=Object.fromEntries(SKILLS.map(([id,name])=>[id,name]));
  Object.assign(labels,abilities);
+ const known=knownProficiencyOptions(state.editor?.read()||{},state.calculated||{},choice);
  const rows=choice.options.map(key=>'<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
    '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
-   '><span>'+esc(labels[key]||key)+'</span></label>').join('');
+   '><span>'+esc(labels[key]||key)+'</span>'+
+   (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
+   '</label>').join('');
+ const customValues=choice.custom_values||[];
+ const customRow=choice.custom_allowed?
+   '<div class="pending-choice-option pending-choice-custom'+(choice.count===1?' pending-choice-option--single':'')+'">'+
+     '<label class="pending-choice-custom-label"><input type="checkbox" name="pending-options" value="__custom__"'+
+     (customValues.length?' checked':'')+'><span>＋ Personalizzata…</span></label>'+
+     '<input type="text" data-pending-custom-value maxlength="250" autocomplete="off" '+
+     'placeholder="Nome dello strumento o della lingua" value="'+esc(customValues.join(', '))+'"'+
+     (customValues.length?'':' disabled')+' aria-label="Nomi personalizzati, separati da virgole">'+
+   '</div>':'';
  dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
    '<h2>'+esc(choice.label)+'</h2></div>'+
    '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
@@ -3419,19 +3431,30 @@ function openPendingChoiceDialog(choice){
    'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
    ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
-   (rows?'<div class="pending-choice-options">'+rows+'</div>':
+   (rows||customRow?'<div class="pending-choice-options">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
    '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
-   '<button type="button" data-act="pending-choice-save"'+(rows?'':' disabled')+'>Applica</button></footer>';
+   '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
  const update=()=>{
    const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
+   const custom=dialog.querySelector('[data-pending-custom-value]');
+   const customChecked=checked.some(row=>row.value==='__custom__');
+   const customNames=customChecked?(custom?.value||'').split(',').map(x=>x.trim()).filter(Boolean):[];
+   if(custom)custom.disabled=!customChecked;
+   const total=checked.filter(row=>row.value!=='__custom__').length+customNames.length;
+   const invalid=(customChecked&&(!customNames.length||customNames.some(name=>name.length>80)))||
+     total>choice.count||new Set(customNames.map(x=>x.toLowerCase())).size!==customNames.length;
    const progress=dialog.querySelector('.pending-choice-progress');
-   if(progress)progress.textContent=checked.length+' / '+choice.count+' selezionate';
+   if(progress)progress.textContent=total+' / '+choice.count+' selezionate'+
+     (invalid?' · Controlla i nomi personalizzati':'');
    for(const input of dialog.querySelectorAll('[name="pending-options"]')){
-     input.disabled=!input.checked&&checked.length>=choice.count;
+     input.disabled=!input.checked&&total>=choice.count;
    }
+   const save=dialog.querySelector('[data-act="pending-choice-save"]');
+   if(save)save.disabled=invalid;
  };
  dialog.addEventListener('change',update);
+ dialog.querySelector('[data-pending-custom-value]')?.addEventListener('input',update);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);
  update();
@@ -3467,7 +3490,10 @@ async function handleAction(target){
     const dialog=app.querySelector('#pending-choice-dialog');
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===dialog?.dataset.choiceId);
     if(!choice)throw Error('La scelta è cambiata: riapri il selettore.');
-    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].map(row=>row.value);
+    const customField=dialog.querySelector('[data-pending-custom-value]');
+    const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].flatMap(row=>
+      row.value==='__custom__'?(customField?.value||'').split(',').map(v=>v.trim())
+        .filter(Boolean).map(value=>'__custom__:'+value):[row.value]);
     const current=state.editor.read();
     // Validate once again against freshly derived grants before persisting.
     const fresh=await computeLocalData(current);

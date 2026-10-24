@@ -3684,6 +3684,23 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
 }
 .pending-choice-option:has(input:checked){background:#b68a4c21;border-color:#b68a4c7d;color:#ffe4bc}
 .pending-choice-option input{accent-color:#d5aa72;width:16px;height:16px;margin:0;flex:none}
+.pending-choice-known{
+ margin-left:auto;flex:none;display:inline-grid;place-items:center;
+ width:18px;height:18px;border:1px solid #9e865f6b;border-radius:50%;
+ color:#e1c28f;background:#87654129;font:700 12px/1 system-ui,sans-serif
+}
+.pending-choice-custom{grid-column:1/-1;flex-direction:column;align-items:stretch;gap:8px}
+.pending-choice-custom-label{display:flex;align-items:center;gap:9px;cursor:pointer}
+.pending-choice-custom input[data-pending-custom-value]{
+ box-sizing:border-box;width:100%;height:auto;min-height:36px;margin:0;
+ padding:7px 10px;border:1px solid #a9855c74;border-radius:7px;
+ font:500 12px/1.4 system-ui,sans-serif;background:#231d1c;color:#eedbc1;
+}
+.pending-choice-custom input[data-pending-custom-value]:disabled{opacity:.55;cursor:default}
+.pending-choice-custom input[data-pending-custom-value]:focus-visible{
+ outline:2px solid #e0b57b;outline-offset:2px
+}
+
 /* The single-choice selector used to look like a radio. Keep its circular
    indicator while retaining a real checkbox so tapping it again deselects. */
 .pending-choice-option--single input[type="checkbox"]{
