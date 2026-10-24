@@ -799,7 +799,7 @@ async function activateClassAbility(c,calculated,ability){
  const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
- dialog.innerHTML='<h2>'+esc(ability.name)+'</h2><p class="trait-description">'+esc(ability.description)+'</p>'+
+ dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+esc(ability.name)+'</h2>'+dialogCloseButton('feature-close','Chiudi','')+'</header><p class="trait-description">'+esc(ability.description)+'</p>'+
   (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
@@ -809,7 +809,7 @@ async function activateClassAbility(c,calculated,ability){
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
   '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
- dialog.querySelector('[data-feature-cancel]').addEventListener('click',()=>dialog.close());
+ dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
   const button=event.currentTarget;button.disabled=true;
@@ -848,8 +848,8 @@ async function applyFormPatch(c,changes){
 function promptVariantOverflow(creatureId,formId,overflow){
  document.querySelector('#form-depleted-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='form-depleted-dialog';
- dialog.innerHTML='<h2>Punti ferita della variante esauriti</h2><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
- dialog.querySelector('[data-form-keep]').addEventListener('click',()=>dialog.close());
+ dialog.innerHTML='<header class="vtt-popup-heading"><h2>Punti ferita della variante esauriti</h2>'+dialogCloseButton('form-keep-close','Chiudi','')+'</header><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
+ dialog.querySelectorAll('[data-form-keep],[data-act="form-keep-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
  dialog.querySelector('[data-form-restore]').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{
@@ -3946,23 +3946,27 @@ async function handleAction(target){
     let selectedProfile=null;
     const dialog=document.createElement('dialog');
     dialog.className='sheet-roll-dialog miniature-dialog';
-    dialog.innerHTML='<h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
+    dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+dialogCloseButton('miniature-close','Chiudi','')+'</header>'+
       (wildShape?'<p>Scegli l’aspetto rispettando i limiti del tratto. Un utilizzo verrà consumato alla conferma.</p><label>PF personalizzati della variante (0 per condividere i PF)<input data-form-hp type="number" min="0" max="99999" value="0"></label><p data-form-selection role="status">Nessuna forma selezionata.</p>':'')+
-      '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
-      '<div class="miniature-results" role="list"></div>'+
+      '<label class="vtt-list-search">Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
+      '<div class="miniature-results vtt-selection-list" role="list"></div>'+
       '<div class="actions">'+(wildShape?'<button type="button" class="btn primary" data-form-confirm disabled>Trasformati</button>':'')+'<button type="button" class="btn" data-miniature-close>Annulla</button></div>';
     const results=dialog.querySelector('.miniature-results');
     const search=dialog.querySelector('[data-miniature-search]');
+    let miniatureLimit=60;
     const paint=()=>{
-      const query=search.value.trim().toLocaleLowerCase('it');
-      const matches=choices.filter(row=>(row.name+' '+row.id).toLocaleLowerCase('it').includes(query)).slice(0,60);
-      results.innerHTML=matches.length?matches.map(row=>
-        '<button type="button" class="btn miniature-choice" data-miniature-id="'+esc(row.id)+'">'+
+      const filtered=choices.filter(row=>matchesSearch(search.value,row.name,row.id));
+      const {items,shown,total}=pageResults(filtered,miniatureLimit);
+      results.innerHTML=(items.length?items.map(row=>
+        '<button type="button" class="btn miniature-choice vtt-selectable'+(selectedProfile?.id===row.id?' is-selected':'')+'" aria-pressed="'+(selectedProfile?.id===row.id)+'" data-miniature-id="'+esc(row.id)+'">'+
         '<strong>'+esc(row.name)+'</strong><small>'+esc(row.size_name||'Medium')+' · '+esc(row.id)+'</small></button>').join(''):
-        '<p class="hint">Nessuna miniatura trovata.</p>';
+        '<p class="hint">Nessuna miniatura trovata.</p>')+resultsFooter('miniature-more',shown,total,60);
     };
-    search.addEventListener('input',paint);
-    dialog.querySelector('[data-miniature-close]').addEventListener('click',()=>dialog.close());
+    search.addEventListener('input',()=>{miniatureLimit=60;paint();});
+    results.addEventListener('click',event=>{
+      if(event.target.closest('[data-act="miniature-more"]')){miniatureLimit+=60;paint();}
+    });
+    dialog.querySelectorAll('[data-miniature-close],[data-act="miniature-close"]').forEach(button=>button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
     if(wildShape)dialog.querySelector('[data-form-confirm]').addEventListener('click',async event=>{
       const button=event.currentTarget;if(button.disabled||!selectedProfile)return;button.disabled=true;
       try{
@@ -3979,8 +3983,14 @@ async function handleAction(target){
       const profile=choices.find(row=>row.id===id);
       if(!profile||state.creatureId!==creatureId||!state.editor)return;
       if(wildShape){
-        selectedProfile=profile;dialog.querySelector('[data-form-selection]').textContent=profile.name;
-        dialog.querySelector('[data-form-confirm]').disabled=false;return;
+        selectedProfile=selectedProfile?.id===profile.id?null:profile;
+        dialog.querySelector('[data-form-selection]').textContent=selectedProfile?.name||'Nessuna forma selezionata.';
+        dialog.querySelector('[data-form-confirm]').disabled=!selectedProfile;
+        for(const button of results.querySelectorAll('[data-miniature-id]')){
+          const active=button.dataset.miniatureId===selectedProfile?.id;
+          button.setAttribute('aria-pressed',String(active));button.classList.toggle('is-selected',active);
+        }
+        return;
       }
       choice.disabled=true;
       try{
