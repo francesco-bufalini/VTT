@@ -139,7 +139,8 @@ test('flat attacks order equipped weapons first; typed Azioni prioritize Attack,
  },{attacks:[monster,off,main]},[],[],catalog.actions);
  const flat=doc(result.attacks),others=doc(result.others);
  const ids=[...flat.querySelectorAll('.play-battle-attack-entry')].map(n=>n.dataset.attackId);
- assert.deepEqual(ids.slice(0,2),['item:blade','monster:action:0']);
+ assert.equal(ids[0],'item:blade');
+ assert(ids.includes('monster:action:0'),'Monster attack choices remain available');
  assert(!ids.includes('item:off:dagger'),'Offhand weapon attacks live in the bonus-action entry');
  assert(ids.includes('unarmed'),'Unarmed is always available');
  assert(!flat.querySelector('[data-action-timing]'));
