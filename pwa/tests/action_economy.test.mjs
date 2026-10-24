@@ -75,7 +75,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
  const actionGroup=movement.querySelector('[data-action-timing="action"]');
  assert.equal(actionGroup.tagName,'DETAILS');
- assert.equal(actionGroup.open,false,'Timing groups start collapsed');
+ assert.equal(actionGroup.open,true,'Azioni timing groups start expanded');
  assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
  assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
  const rollLine=sword.querySelector('.play-battle-attack-roll-line');
