@@ -4211,3 +4211,84 @@ dialog.variants-dialog{width:min(650px,calc(100vw - 24px));max-width:calc(100vw 
 .vtt-results-footer .btn{min-height:38px;border:1px solid #b58d5866;border-radius:9px;
  padding:7px 12px;color:#f1d0a0;background:#64493242;box-shadow:none;font-size:12px}
 .vtt-results-footer .btn:focus-visible{outline:2px solid #eac187;outline-offset:2px}
+
+
+/* PWA-wide dialog chrome. Even highly specific legacy dialog selectors must
+   never reintroduce a boxed X. Keep a generous invisible touch target. */
+dialog button.vtt-popup-close,
+dialog button.vtt-popup-close:hover,
+dialog button.vtt-popup-close:active,
+dialog button.vtt-popup-close:focus-visible{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 40px;min-width:40px;width:40px;height:40px;min-height:40px;
+  padding:0;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+  text-shadow:none!important;color:#efd1a8;
+  font:400 27px/1 system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+dialog button.vtt-popup-close:hover{color:#ffe6be;filter:brightness(1.1)}
+dialog button.vtt-popup-close:active{color:#fff1d6;opacity:.75}
+dialog button.vtt-popup-close:focus-visible{
+  outline:2px solid #f1ca8b;outline-offset:-2px;
+}
+/* All list selection surfaces follow the creature roster: subdued metal
+   rows, warm highlight for the active choice, and a visible keyboard focus. */
+.vtt-selectable{transition:border-color .14s,background-color .14s,box-shadow .14s}
+.vtt-selectable:is(button,label,article):hover:not(:disabled){
+  border-color:#c9a073;
+}
+.vtt-selectable:is(button,label,article):focus-visible,
+.vtt-selectable:focus-within{outline:2px solid #ffdea5;outline-offset:2px}
+.vtt-selectable:is(.is-selected,.is-current,[aria-pressed="true"]),
+.vtt-selectable:has(input[type="checkbox"]:checked),
+.is-selected > .vtt-selectable{
+  border-color:#e6b97e;
+  background:linear-gradient(115deg,#75513778,#3b2b25)!important;
+  box-shadow:inset 0 0 0 1px #e7c08b27,0 3px 9px #0005;
+}
+.vtt-selectable[aria-pressed="true"]{color:#ffe4bc}
+.vtt-selectable[aria-pressed="true"]:disabled{opacity:1}
+/* Same square, gold-accented checked control as "Le tue creature".
+   Labels remain full-width tappable targets (including the custom option). */
+.pending-choice-option.vtt-selectable{position:relative;min-height:44px;gap:9px}
+.pending-choice-option.vtt-selectable input[name="pending-options"]{
+  -webkit-appearance:none;appearance:none;
+  box-sizing:border-box;flex:0 0 27px;width:27px;height:27px;
+  margin:0;border:1px solid #b28d5f;border-radius:8px;
+  background:linear-gradient(#332924,#211c1b);
+  box-shadow:inset 0 1px 3px #0008;cursor:pointer;
+}
+.pending-choice-option.vtt-selectable input[name="pending-options"]:checked{
+  border-color:#e5bc82;border-radius:8px;
+  background:linear-gradient(#90663e,#68472e);
+  box-shadow:inset 0 1px #ffe1aa60,0 0 0 1px #e9bd8330;
+}
+.pending-choice-option.vtt-selectable input[name="pending-options"]:focus-visible{
+  outline:2px solid #ffe2aa;outline-offset:3px;
+}
+.pending-choice-option.vtt-selectable .vtt-choice-check{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;pointer-events:none;
+  width:27px;height:27px;font:700 17px/1 system-ui,sans-serif;
+  color:transparent;
+}
+.pending-choice-option.vtt-selectable input:checked + .vtt-choice-check{
+  color:#ffe9c7;text-shadow:0 1px 1px #362416;
+}
+.pending-choice-option.vtt-selectable:has(input:disabled:not(:checked)){opacity:.52}
+.pending-choice-option.vtt-selectable.pending-choice-custom .vtt-choice-check{
+  top:18px;
+}
+.pending-choice-option.vtt-selectable.pending-choice-custom .pending-choice-custom-label{
+  position:relative;
+}
+.pending-choice-option.vtt-selectable.pending-choice-custom .pending-choice-custom-label .vtt-choice-check{
+  left:0;top:50%;
+}
+/* Preserve compact existing controls and desktop/mobile layouts. */
+.vtt-selection-list{scrollbar-gutter:stable}
+.miniature-results.vtt-selection-list{max-height:min(48dvh,430px);overflow-y:auto}
+.miniature-results .miniature-choice[aria-pressed="true"]{
+  border-color:#e6b97e;background:linear-gradient(115deg,#75513778,#3b2b25)!important
+}
