@@ -174,6 +174,37 @@ func run() -> void:
 	var spells := await http("GET", "/catalog/spells.json")
 	assert(spells.begins_with("HTTP/1.1 200"))
 	assert(spells.contains("spells"), "Built-in spell catalog must be available offline")
+	# Scoped queries must return only requested spells, not the whole compendium.
+	var payload: Variant = JSON.parse_string(spells.split("\r\n\r\n", true, 1)[1])
+	assert(payload is Dictionary and payload.get("spells", []) is Array)
+	var reference_spell: Dictionary = payload["spells"][0]
+	var scoped_reply := await http("POST", "/catalog/spells/selected",
+		JSON.stringify({"ids": [reference_spell.id], "classes": []}))
+	assert(scoped_reply.begins_with("HTTP/1.1 200"))
+	var scoped: Dictionary = JSON.parse_string(scoped_reply.split("\r\n\r\n", true, 1)[1])
+	assert(scoped.spells.size() == 1 and scoped.spells[0].id == reference_spell.id,
+		"Selected spell must retain its structured definition without all catalog entries")
+	var unknown_reply := await http("POST", "/catalog/spells/selected",
+		JSON.stringify({"ids": ["missing-spell-id"], "classes": []}))
+	assert(unknown_reply.begins_with("HTTP/1.1 200"))
+	var missing: Dictionary = JSON.parse_string(unknown_reply.split("\r\n\r\n", true, 1)[1])
+	assert(missing.spells.is_empty(), "Unknown IDs must not make the server return every spell")
+	var class_spell: Dictionary = {}
+	for candidate: Dictionary in payload.spells:
+		if not candidate.get("classes", []).is_empty() and int(candidate.level) <= 1:
+			class_spell = candidate
+			break
+	assert(not class_spell.is_empty(), "Need a low-level class spell for selection regression")
+	var class_reply := await http("POST", "/catalog/spells/selected",
+		JSON.stringify({"ids": [], "classes": [{"name": class_spell.classes[0],
+			"max_level": 1}]}))
+	assert(class_reply.begins_with("HTTP/1.1 200"))
+	var class_payload: Dictionary = JSON.parse_string(class_reply.split("\r\n\r\n", true, 1)[1])
+	assert(class_payload.spells.any(func(row: Dictionary) -> bool:
+		return row.id == class_spell.id), "Preparation must receive known class spells")
+	assert((await http("POST", "/catalog/spells/selected",
+		JSON.stringify({"ids": [], "classes": [{"name": "Wizard", "max_level": 10}]}))).begins_with("HTTP/1.1 400"),
+		"Invalid scoped requests must be rejected")
 	var status := await http("GET", "/api/status")
 	assert(status.begins_with("HTTP/1.1 200"))
 	assert(status.contains("\"pairing_required\":true"))
