@@ -256,19 +256,19 @@ test('feat deletion X belongs to the dedicated Talenti panel, never to Tratti',(
   field:()=>'',area:()=>'',panel:(name,body)=>'<section data-panel="'+name+'">'+body+'</section>',
   calculated:{proficiencies:[],values:{}}
  });
- const talents=html.match(/<section data-panel="Talenti">([\\s\\S]*?)<\\/section>/)?.[1];
+ const talents=html.split('<section data-panel="Talenti">')[1]?.split('</section>')[0];
  assert(talents,'dedicated Talenti panel exists');
- assert.equal((talents.match(/data-act="feat-remove"/g)||[]).length,2);
- assert.match(talents,/data-feat-key="feat\\|skilled\\|xphb"/);
- assert.match(talents,/data-feat-key="feat\\|id-speciale"/);
- assert.match(talents,/Aggiungi talento/);
- assert.match(talents,/info-owned-feat-remove/);
+ assert.equal(talents.split('data-act="feat-remove"').length-1,2);
+ assert(talents.includes('data-feat-key="feat|skilled|xphb"'));
+ assert(talents.includes('data-feat-key="feat|id-speciale"'));
+ assert(talents.includes('Aggiungi talento'));
+ assert(talents.includes('info-owned-feat-remove'));
  const traitCards=ui.slice(ui.indexOf('const renderCard=trait=>'),ui.indexOf('const originTitle='));
- assert.doesNotMatch(traitCards,/feat-remove|trait-feat-remove/);
- assert.match(ui,/data-act="feat-remove-confirm"/);
- assert.match(ui,/removeOwnedFeatPatch\\(state\\.editor\\.read\\(\\),key\\)/);
- assert.match(css,/\\.info-owned-feat-remove/);
- assert.doesNotMatch(css,/\\.trait-feat-remove/);
+ assert(!traitCards.includes('feat-remove'),'Tratti cannot remove owned feats');
+ assert(ui.includes('data-act="feat-remove-confirm"'));
+ assert(ui.includes('removeOwnedFeatPatch(state.editor.read(),key)'));
+ assert(css.includes('.info-owned-feat-remove'));
+ assert(!css.includes('.trait-feat-remove'));
 });
 
 test('legacy name-only feat entries can be removed from the owned list',()=>{
@@ -278,9 +278,8 @@ test('legacy name-only feat entries can be removed from the owned list',()=>{
   field:()=>'',area:()=>'',panel:(name,body)=>'<section data-panel="'+name+'">'+body+'</section>',
   calculated:{proficiencies:[],values:{}}
  });
- assert.match(html,/data-feat-key="feat\\|skilled\\|"/);
+ assert(html.includes('data-feat-key="feat|skilled|"'));
  const removed=removeOwnedFeatPatch(c,'feat|skilled|');
  assert.deepEqual(removed.feats_catalog,[{name:'Musician',source:'XPHB'}]);
  assert.deepEqual(removed.proficiency_choices,c.proficiency_choices);
 });
-
