@@ -70,16 +70,64 @@ async function speciesTypeLookup(){
  return speciesTypePromise;
 }
 let packagedSpells=null;
+let packagedSpellsPromise=null;
+// A single full-catalog transfer is shared by background prefetch and any
+// foreground search. Never download the whole compendium per character render.
 async function spellCatalog(){
   if(packagedSpells)return packagedSpells;
-  const response=await fetch("/catalog/spells.json",{cache:"no-store"});
-  if(!response.ok)throw new Error("Catalogo incantesimi non disponibile offline.");
-  const data=await response.json();
-  if(data?.version!==1||!Array.isArray(data.spells))throw new Error("Catalogo incantesimi non valido.");
-  let legacy=[];
-  try{const {loadRuleCatalogs}=await import('./sheet_rules.js');legacy=(await loadRuleCatalogs()).classMechanics?.legacy_spells||[];}catch{ /* The current catalog remains available independently of numeric indexes. */ }
-  packagedSpells=[...new Map([...data.spells,...legacy].map(s=>[s.id,s])).values()];
-  return packagedSpells;
+  if(!packagedSpellsPromise)packagedSpellsPromise=(async()=>{
+    const response=await fetch("/catalog/spells.json",{cache:"no-store"});
+    if(!response.ok)throw new Error("Catalogo incantesimi non disponibile offline.");
+    const data=await response.json();
+    if(data?.version!==1||!Array.isArray(data.spells))throw new Error("Catalogo incantesimi non valido.");
+    let legacy=[];
+    try{const {loadRuleCatalogs}=await import('./sheet_rules.js');legacy=(await loadRuleCatalogs()).classMechanics?.legacy_spells||[];}
+    catch{ /* The current catalog remains available independently of numeric indexes. */ }
+    packagedSpells=[...new Map([...data.spells,...legacy].map(s=>[s.id,s])).values()];
+    return packagedSpells;
+  })().catch(error=>{packagedSpellsPromise=null;throw error;});
+  return packagedSpellsPromise;
+}
+
+const scopedSpells=new Map();
+const scopedRequests=new Map();
+// Request the spell records currently visible on a character sheet. Class
+// filters are only sent by the preparation popup, not the normal sheet.
+export async function selectedSpellEntries(ids=[],classes=[]){
+  const wanted=[...new Set(ids.map(id=>String(id||'')).filter(Boolean))].sort();
+  const scopes=classes.filter(row=>row?.name).map(row=>({
+    name:String(row.name),max_level:Math.max(0,Math.min(9,Number(row.max_level)||0))
+  })).sort((a,b)=>a.name.localeCompare(b.name)||a.max_level-b.max_level);
+  if(packagedSpells){
+    const identifiers=new Set(wanted);
+    return packagedSpells.filter(row=>identifiers.has(row.id)||scopes.some(scope=>
+      Number(row.level)<=scope.max_level&&
+      (row.classes||[]).some(name=>String(name).toLowerCase()===scope.name.toLowerCase())));
+  }
+  const key=JSON.stringify([wanted,scopes]);
+  if(!scopedRequests.has(key)){
+    const request=(async()=>{
+      const response=await fetch("/catalog/spells/selected",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ids:wanted,classes:scopes})
+      });
+      if(!response.ok)throw new Error("Riferimenti incantesimi non disponibili.");
+      const data=await response.json();
+      if(data?.version!==1||!Array.isArray(data.spells))
+        throw new Error("Riferimenti incantesimi non validi.");
+      for(const spell of data.spells)if(spell?.id)scopedSpells.set(spell.id,spell);
+      const homebrew=await listRecords("global","homebrew");
+      for(const record of homebrew){
+        if(record.id?.split(":")[2]!=="spells")continue;
+        const spell={...record.data.data,...record.data,_category:"spells",_homebrew:true};
+        if(spell.id)scopedSpells.set(spell.id,spell);
+      }
+      return [...scopedSpells.values()];
+    })();
+    scopedRequests.set(key,request);
+    request.catch(()=>scopedRequests.delete(key));
+  }
+  return scopedRequests.get(key);
 }
 export async function catalogEntries(category) {
   if(category==="spells"){
