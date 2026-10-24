@@ -66,7 +66,7 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
  const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
- assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
+ assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
  assert(!opportunity.querySelector('[data-act="battle-damage-roll"]'),
   'Opportunity shows the generic action, not the main-hand weapon roll');
  assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
@@ -189,41 +189,29 @@ test('combat spells are sorted by level within action, bonus and reaction and op
   {id:'spellslow',spell_id:'slow',payment_mode:'free'},
   {id:'spelllong',spell_id:'long',payment_mode:'free'}
  ],trackers:[{id:'mana',name:'Mana',max:2,spent:0}]};
- const html=doc(battleActionPanels(record,calc,spells,[],[]).spells);
- const entries=time=>[...html.querySelectorAll('[data-action-timing="'+time+'"] .play-battle-spell-entry')];
- assert.deepEqual(entries('action').map(el=>el.dataset.spellId),['action0','action1','action3']);
- assert.deepEqual(entries('bonus').map(el=>el.dataset.spellId),['bonus2']);
- assert.deepEqual(entries('reaction').map(el=>el.dataset.spellId),['reaction1']);
- assert.equal(html.querySelector('[data-spell-id="slow"]'),null);
- assert.equal(html.querySelector('[data-spell-id="long"]'),null);
- for(const row of html.querySelectorAll('.play-battle-spell-entry')){
-  assert(!row.textContent.includes('SECRET DESCRIPTION'),'Descriptions belong in the Magia popup');
-  const button=row.querySelector('button');
-  assert.equal(button.dataset.act,'action-cast-spell');
-  assert.equal(button.dataset.spellId,row.dataset.spellId);
-  const cast=row.querySelector('.play-battle-spell-cast');
-  assert(cast,'Every action spell needs its own Cast control');
-  assert.equal(cast.textContent,'Lancia');
-  assert.equal(cast.dataset.spellId,row.dataset.spellId);
-  const direct=cast.dataset.grantId&&['bonus2','reaction1'].includes(row.dataset.spellId);
-  assert.equal(cast.dataset.act,direct?'battle-cast-resource-spell':'action-cast-spell');
-  assert(!row.querySelector('details'),'A spell row should not expand its description inline');
- }
- assert.equal(entries('action')[0].querySelector('small').textContent.includes('Trucchetto'),true);
- assert.equal(entries('bonus')[0].querySelector('button').dataset.grantId,'spellbonus');
- assert.equal(entries('reaction')[0].querySelector('button').dataset.grantId,'spellreact');
- assert.match(entries('bonus')[0].textContent,/Capacità/);
- assert.match(entries('action')[2].textContent,/Slot incantesimo/);
+ const rows=spellActionEntries(record,calc,spells);
+ const entries=time=>rows.filter(row=>row.time===time)
+  .sort((a,b)=>(a.level??99)-(b.level??99));
+ assert.deepEqual(entries('action').map(row=>row.spell_id),['action0','action1','action3']);
+ assert.deepEqual(entries('bonus').map(row=>row.spell_id),['bonus2']);
+ assert.deepEqual(entries('reaction').map(row=>row.spell_id),['reaction1']);
+ assert(!rows.some(row=>['slow','long'].includes(row.spell_id)));
+ assert.equal(entries('bonus')[0].grant_id,'spellbonus');
+ assert.equal(entries('reaction')[0].grant_id,'spellreact');
+ assert.equal(entries('bonus')[0].spell_mode,'tracker');
+ assert.equal(entries('reaction')[0].spell_mode,'free');
+ assert.equal(battleActionPanels(record,calc,spells,[],[]).spells,'',
+  'Spellcasting has moved entirely to Powers');
+
 });
 
 test('catalog casting time wins over stale saved spell data (Absorb Elements is a reaction)',()=>{
  const spell={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
  const creature={prepared_spells:[{id:spell.id,name:spell.name,level:1,time:[{number:1,unit:'action'}]}]};
- const panel=doc(battleActionPanels(creature,{casting_classes:[],origin_spells:[]},[spell],[],[]).spells);
- assert.equal(panel.querySelector('[data-action-timing="action"] [data-spell-id="'+spell.id+'"]'),null);
- const reaction=panel.querySelector('[data-action-timing="reaction"] [data-spell-id="'+spell.id+'"]');
- assert(reaction,'Absorb Elements must be a reaction even if the stored copy has old metadata');
- assert.equal(reaction.dataset.actionTimingSpell,'reaction');
+ const rows=spellActionEntries(creature,{casting_classes:[],origin_spells:[]},[spell]);
+ assert(!rows.some(row=>row.time==='action'&&row.spell_id===spell.id));
+ const reaction=rows.find(row=>row.time==='reaction'&&row.spell_id===spell.id);
+ assert(reaction,'Absorb Elements must still use its current catalog time in Powers');
 });
 
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
@@ -559,7 +547,7 @@ test('Battle nests general free actions under Other Actions, without duplicate r
  const others=doc(data.others);
  const free=others.querySelector('[data-action-timing="free"]');
  assert(free,'Free general actions have a dedicated timing group in Other Actions');
- assert(!free.hasAttribute('open'),'Timing subsections initially stay collapsed');
+ assert(free.hasAttribute('open'),'Azioni timing subsections start expanded');
  const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
  assert(ids.length>0,'At least one free general action is offered');
  assert.equal(new Set(ids).size,ids.length,'Free general actions cannot be duplicated');
