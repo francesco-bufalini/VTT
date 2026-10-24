@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {sessionSpellEntries} from '../spell_selection.js';
 import {collectStructuredFeatures} from '../structured_effects.js';
 import {battleResourcePowers,persistentBattleAbility,spellCastingTimeLabel} from '../sheet_rules_view.js';
-import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
+import {actionEntries as project,actionEconomyView as view,battleActionPanels,groupActionEntries,topSkillEntries,spellActionEntries,attacksPerAction,offhandActionAvailable,nativeClassFeatureActions,loadGeneralActionSupplements,actionVariants} from '../action_economy.js';
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
@@ -570,4 +570,59 @@ test('Resource-granted spells carry the casting time from actual spell metadata'
   {id:'normal_spell',name:'Luce',time:[{unit:'action',number:1}]}]);
  assert.equal(data.find(x=>x.id==='quick').timing,'bonus');
  assert.equal(data.find(x=>x.id==='ordinary').timing,'action');
+});
+
+test('basic action availability derives from melee, spell slots and a real dual-wield loadout',()=>{
+ const unarmed={id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true};
+ const main={id:'item:sword',name:'Spada',slot:'main',melee:true};
+ const off={id:'item:off:dagger',name:'Pugnale',slot:'off',melee:true,offhand_bonus:true};
+ const base={rules_version:'2014',inventory:[
+  {id:'sword',name:'Spada',type:'M',properties:['L'],equipped_slots:['main']},
+  {id:'dagger',name:'Pugnale',type:'M',properties:['L'],equipped_slots:['off']} ]};
+ const calc={attacks:[unarmed,main,off],spell_slots:[{level:1,total:2}],trackers:[]};
+ assert(offhandActionAvailable(base,calc),'Two equipped light weapons grant bonus attack');
+ const result=battleActionPanels(base,calc,[],[],catalog.actions,[],[],true);
+ assert.equal(result.basicActions.find(a=>a.id==='opportunity').available,true);
+ assert.equal(result.basicActions.find(a=>a.id==='two_weapon').available,true);
+ assert.equal(result.basicActions.find(a=>a.id==='spell_cast').available,true);
+ const actions=doc(result.others);
+ assert.equal(actions.querySelector('[data-action-timing="action"] .play-battle-attack-entry').dataset.attackId,'attack');
+ assert.equal(actions.querySelector('[data-action-timing="bonus"] .play-battle-attack-entry').dataset.attackId,'two_weapon');
+ assert.equal(actions.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
+ const naked=battleActionPanels(base,{attacks:[unarmed],spell_slots:[]},[],[],catalog.actions);
+ assert.equal(naked.basicActions.find(a=>a.id==='two_weapon').available,false);
+ assert.equal(naked.basicActions.find(a=>a.id==='spell_cast').available,false);
+ const withShield={...base,inventory:[
+  {...base.inventory[0],properties:[]},
+  {id:'shield',name:'Scudo',type:'S',equipped_slots:['off']}]};
+ const shieldCalc={attacks:[unarmed,main,{id:'shield:improvised:off:shield',slot:'shield',hand:'off',melee:true}]};
+ assert.equal(offhandActionAvailable(withShield,shieldCalc),false);
+ assert.equal(offhandActionAvailable({...withShield,feats_catalog:[{name:'Dual Wielder'}]},shieldCalc),true,
+  'Dual Wielder 2014 makes an equipped improvised shield eligible');
+ assert.equal(offhandActionAvailable({...base,rules_version:'2024'},calc),true);
+});
+
+test('Cunning Action keeps its owning trait and changed timing for resource grouping',()=>{
+ const record={rules_version:'2014',class:'Rogue',class_source:'PHB',level:2,
+  classes:[{name:'Rogue',source:'PHB',level:2}]};
+ const feature={name:'Cunning Action',origin_key:'class|phb|rogue',
+  origin_id:'feature:class|phb|rogue|cunning-action'};
+ const projected={features:[feature],feature_rules:featureRules};
+ const result=battleActionPanels(record,projected,[],[],catalog.actions,[],[],false);
+ assert(result.overriddenActions.some(a=>a.id==='dash'&&a.time==='bonus'&&
+  a.action_change_origin===feature.origin_id&&a.original_time==='action'));
+ const bonus=doc(result.others).querySelector('[data-action-timing="bonus"]');
+ assert(bonus.querySelector('[data-attack-id="dash"]'),'Cunning Action Dash belongs to bonus actions');
+});
+
+test('extra attack stays next to the Attack row; the flat list never repeats it',()=>{
+ const calculated={features:[
+  {name:'Extra Attack',attacks_per_action:2,origin_id:'feature:one'},
+  {name:'Extra Attack (2)',attacks_per_action:3,origin_id:'feature:two'}]};
+ const result=battleActionPanels({},calculated,[],[],catalog.actions,[],[],true);
+ const actions=doc(result.others),attack=actions.querySelector('[data-attack-id="attack"]');
+ assert.equal(attack.querySelector('.play-battle-attacks-per-action').textContent,'×3');
+ assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
+ assert(!result.attacks.includes('play-battle-attacks-per-action'));
+ assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));
 });
