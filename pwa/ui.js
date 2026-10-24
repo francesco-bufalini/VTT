@@ -3434,7 +3434,7 @@ function openPendingChoiceDialog(choice){
    (rows||customRow?'<div class="pending-choice-options">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
    '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
-   '<button type="button" data-act="pending-choice-save"'+(rows?'':' disabled')+'>Applica</button></footer>';
+   '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
  const update=()=>{
    const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
    const custom=dialog.querySelector('[data-pending-custom-value]');
