@@ -1,3 +1,4 @@
+import {calculateSheet} from '../sheet_rules.js';
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -73,4 +74,25 @@ test('editor persists each section owner, survives reopen and portable import wi
  const portable=JSON.parse(await (await exportCreature(saved.id,scope)).text());
  const imported=await importCreatureExport(portable,scope);assert.equal(resolveVariant(imported.creature).name,'Secret');
  await editor.update({current_form_id:''});assert.equal(editor.read().name,'Base');
+});
+
+test('appearance-only changes preserve species mechanics; movement imports override racial speed only when selected',()=>{
+ let c={...base(),species:'Elf',species_source:'PHB',species_speed:30};
+ let v=createVariant(c,{id:'look',preset:'disguise'});
+ v=importVariantSections(c,v,bestiarySheet({name:'Wolf',source:'MM',hp:{average:11},speed:{walk:40,swim:20},type:'beast'}),['appearance']);
+ c={...c,variants:[v],current_form_id:'look'};
+ assert.equal(resolveVariant(c).species,'Elf');assert.equal(calculateSheet(resolveVariant(c)).values.speed,30);
+ v=configureVariant(c,v,{sections:['appearance','movement']});
+ v=importVariantSections(c,v,bestiarySheet({name:'Wolf',source:'MM',speed:{walk:40,swim:20}}),['movement']);
+ c.variants=[v];
+ const catalogs={classMechanics:{races:[{name:'Elf',source:'PHB',speed:30}]}};
+ const out=calculateSheet(resolveVariant(c),catalogs);
+ assert.equal(out.values.speed,40);assert.equal(out.values['speed:swim'],20);
+ assert.equal(calculateSheet(resolveVariant(c,''),catalogs).values.speed,30);
+});
+test('inline capability presets are serializable and use the same section/filter contract',()=>{
+ const preset={id:'moon-mask',sections:['name','appearance'],creature_filter:{type:['humanoid'],sources:['MM']}};
+ const v=createVariant(base(),{id:'mask',preset});assert.equal(v.preset,'moon-mask');
+ assert.deepEqual(v.sections,preset.sections);assert.deepEqual(v.creature_filter,preset.creature_filter);
+ assert.deepEqual(JSON.parse(JSON.stringify(v)),v);
 });

@@ -64,6 +64,11 @@ func run() -> void:
 	var restored: Dictionary = await board.board_sync._handle_mobile_action("set_appearance", {"token_id": token_id, "owner_id": "foreign-mobile-owner", "miniature_id": "test-mobile-base"})
 	assert(restored.ok and hero.get_token_pack_id() == "test-mobile-base")
 	assert(hero.get_reach_feet() == 10, "Appearance must preserve combat properties")
+	var alias_result: Dictionary = await board.board_sync._handle_mobile_action("set_appearance", {"token_id": token_id, "owner_id": "foreign-mobile-owner", "miniature_id": "test-mobile-base", "display_name": "Alias della creatura"})
+	assert(alias_result.ok and hero.get_display_name() == "Alias della creatura")
+	assert(hero.get_meta("creature_id") == "remote-character" and hero.get_meta("creature_owner_id") == "foreign-mobile-owner")
+	assert(hero.get_reach_feet() == 10)
+
 	sheet._sync_mobile_map_status(board.board_sync.get_tactical_map_data())
 	assert(archive.records[0].current_miniature_id == "test-mobile-base")
 	hero.set_token_pack_id("test-mobile-form")

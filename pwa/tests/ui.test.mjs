@@ -1016,7 +1016,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  const saved=await createCreature('character','Verifica parità PWA');
  await saveCreature({...saved.data,class:'Bard',class_source:'PHB',level:5,
    classes:[{name:'Bard',source:'PHB',level:5}],abilities:{str:10,dex:14,con:12,int:10,wis:10,cha:16},
-   max_hp_base:20,current_hp:20,temporary_hp:3,second_form_hp:4,second_form_max_hp:8,
+   max_hp_base:20,current_hp:20,temporary_hp:3,
    spell_slots_automatic:true,spell_slots_spent:[0,1],
    inventory:[{id:'local_sword',name:'Shortsword',custom_item_type:'weapon',type:'M',weapon_category:'simple',damage:'1d6',properties:['F','L'],quantity:1,equipped_slots:['main']}],
    proficiency_choices:[{kind:'weapon',key:'simple'}]},'default',saved.revision);
@@ -1032,13 +1032,13 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   'CA follows HP before resource trackers and attacks');
  assert.equal(document.querySelectorAll('[data-field="death_save_successes"],[data-field="death_save_failures"]').length,0,
   'The death-save section is absent');
- assert.equal(document.querySelectorAll('.battle-root [data-calculated="second_max"]').length,1,
-  'Second form has one computed maximum and one separately named base editor');
+ assert.equal(document.querySelectorAll('.battle-root [data-calculated="second_max"]').length,0,
+  'The old second-form reservoir is removed');
  assert.equal(document.querySelectorAll('[data-field="second_form_max_hp"],[data-field="max_hp_base"]').length,0,
    'The old HP maximum editors are no longer shown');
  assert.equal(document.querySelectorAll('.battle-hp-settings').length,0);
- assert.ok(document.querySelector('.battle-second-form'),
-   'The second form is always displayed');
+ assert.equal(document.querySelector('.battle-second-form'),null,
+   'Variants use the ordinary current-form HP controls');
  assert.ok(document.querySelector('.battle-defense-settings [data-equip-slot="body"]'),
   'Worn armor is editable without expanding an accordion');
  assert.ok(document.querySelector('.battle-ac-formula output'),
@@ -1075,18 +1075,16 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
  document.querySelector('#hp-adjust-amount').value='10';
  document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
- await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='17');
+ await until(()=>document.querySelector('[data-field="current_hp"]')?.value==='13');
  let record=(await loadCreature(saved.data.id)).data;
- assert.deepEqual([record.temporary_hp,record.second_form_hp,record.current_hp],[0,0,17]);
+ assert.deepEqual([record.temporary_hp,record.current_hp],[0,13]);
  assert.ok(!document.querySelector('#hp-adjust-dialog[open]'),'Dialog closes after confirming damage');
- click('[data-act="hp-restore-second"]');
- await until(async()=>(await loadCreature(saved.data.id)).data.second_form_hp===8);
  click('[data-act="hp-heal"]');
  await until(()=>document.querySelector('#hp-adjust-dialog[open]'));
  assert.equal(document.querySelector('#hp-adjust-title').textContent,'Cura punti ferita');
  document.querySelector('#hp-adjust-amount').value='2';
  document.querySelector('#hp-adjust-form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
- await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===19);
+ await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===15);
  click('[data-act="hp-restore"]');
  await until(async()=>(await loadCreature(saved.data.id)).data.current_hp===20);
  const tracker='class:bard:phb:bardic_inspiration';

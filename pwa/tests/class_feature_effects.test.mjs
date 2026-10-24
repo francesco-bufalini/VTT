@@ -1,3 +1,4 @@
+import {resolveVariant,applyVariantEdit,variantDamage} from '../creature_variants.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -88,12 +89,13 @@ test('Wild Shape changes appearance, uses one charge, preserves base HP and rest
  const original=structuredClone(druid),out=calculateSheet(druid,catalogs);
  const changes=wildShapePatch(druid,out,{id:'wolf'},11),transformed={...druid,...changes};
  assert.deepEqual(druid,original);assert.equal(transformed.current_hp,druid.current_hp);
- assert.equal(changes.current_miniature_id,'wolf');assert.equal(changes.second_form_hp,11);
+ assert.equal(resolveVariant(transformed).current_miniature_id,'wolf');assert.equal(resolveVariant(transformed).current_hp,11);
+ assert.equal(changes.second_form_hp,undefined);
  assert.equal(Object.values(changes.resource_tracker_spent)[0],1);
  assert.throws(()=>wildShapePatch(transformed,calculateSheet(transformed,catalogs),{id:'bear'},12),/già attiva/);
- const damaged={...transformed,...hitPointPatch(transformed,-16,calculateSheet(transformed,catalogs))};
- assert.equal(damaged.second_form_hp,0);assert.equal(damaged.current_hp,8);
- const ended=endWildShapePatch(damaged);assert.equal(ended.current_miniature_id,'elf');assert.equal(ended.second_form_max_hp,0);
+ const hit=variantDamage(transformed,16),damaged=applyVariantEdit(transformed,hit.patch);
+ assert.equal(resolveVariant(damaged).current_hp,0);assert.equal(damaged.current_hp,10);assert.equal(hit.overflow,5);
+ const ended=endWildShapePatch(damaged);assert.equal(resolveVariant({...damaged,...ended}).current_miniature_id,'elf');assert.equal(ended.current_form_id,'');
  assert.equal(ended.resource_tracker_spent,undefined,'ending a transformation must not change uses');
  assert.throws(()=>wildShapePatch({...druid,default_miniature_id:'',current_miniature_id:''},out,{id:'wolf'},11),/miniatura di base/);
  assert(classFeatureEntries(druid,out).every(a=>a.origin_id?.startsWith('feature:')));

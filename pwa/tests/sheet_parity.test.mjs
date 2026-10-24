@@ -31,12 +31,12 @@ test('miniature choices mirror native base/current identity and size rules',()=>
  assert.throws(()=>miniaturePatch({}, {id:''}, 'base'));
 });
 
-test('damage consumes temporary, transformed and normal HP in native order; healing respects effective maximum',()=>{
+test('damage consumes temporary and current-form HP; healing respects effective maximum',()=>{
  const c={temporary_hp:4,second_form_hp:8,current_hp:20,max_hp_base:25,formula_bonuses:[{target:'hp',expression:'5'}]};
  const out=calculateSheet(c);
- assert.deepEqual(hitPointPatch(c,-15,out),{temporary_hp:0,second_form_hp:0,current_hp:17});
+ assert.deepEqual(hitPointPatch(c,-15,out),{temporary_hp:0,current_hp:9});
  assert.deepEqual(hitPointPatch(c,50,out),{current_hp:30});
- assert.deepEqual(hitPointPatch(c,-100,out),{temporary_hp:0,second_form_hp:0,current_hp:0});
+ assert.deepEqual(hitPointPatch(c,-100,out),{temporary_hp:0,current_hp:0});
  assert.equal(c.current_hp,20);
  assert.throws(()=>hitPointPatch(c,NaN,out));
 });

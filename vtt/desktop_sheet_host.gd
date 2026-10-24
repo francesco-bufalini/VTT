@@ -37,6 +37,9 @@ func _handle_http(client: Dictionary, method: String, path: String, _headers: Di
 	if path == "/api/status":
 		_answer(client, 200, {"protocol": 1, "desktop_online": false})
 		return
+	if path == "/catalog/bestiary.json" or path.begins_with("/catalog/bestiary/"):
+		_serve_bestiary(client, path)
+		return
 	if path == "/catalog/spells.json":
 		_respond(client, 200, "application/json", public_spells_json())
 		return

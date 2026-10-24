@@ -1,3 +1,4 @@
+import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
@@ -565,6 +566,7 @@ export function spellProgression(record,classes){
     pact_level:warlock?Math.min(5,Math.ceil(warlock/2)):1,caster_level:caster,warnings};
 }
 export function calculateSheet(record={},catalogs={}){
+  if(record.variant_rules_kind==='monster')record={...record,kind:'monster'};
   const suppressed=removedBenefitIds(record);
   // Suppress legacy/manual grants in the calculation as well as in the popup.
   // The original catalog grants remain untouched and recoverable.
@@ -580,7 +582,7 @@ export function calculateSheet(record={},catalogs={}){
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
-  if(kind==='character'){
+  if(kind==='character'&&!variantOwns(record,'movement')){
     const races=arr(classesCatalog?.races);
     const race=races.find(row=>record.species_id&&row.id===record.species_id)||races.find(row=>same(row.name,record.species)&&same(row.source,record.species_source));
     const flattened=record.subrace?races.find(row=>same(row.name,record.species+' ('+record.subrace+')')&&same(row.source,record.subrace_source)):null;

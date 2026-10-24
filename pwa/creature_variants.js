@@ -4,14 +4,15 @@ const copy=v=>structuredClone(v);
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 export const VARIANT_SECTIONS=[
  {id:'name',label:'Nome',paths:['name']},
- {id:'appearance',label:'Aspetto e miniatura',paths:['default_miniature_id','current_miniature_id','size_name','footprint','visual_front_quarter_turns','appearance','species','species_id','species_source','subrace','subrace_id','subrace_source','subtype','subtype_is_custom','type','stat_block.size','stat_block.type']},
+ {id:'appearance',label:'Aspetto e miniatura',paths:['default_miniature_id','current_miniature_id','size_name','footprint','visual_front_quarter_turns','appearance','stat_block.size']},
+ {id:'ancestry',label:'Specie e tipo',paths:['species','species_id','species_source','subrace','subrace_id','subrace_source','subtype','subtype_is_custom','type','stat_block.type']},
  {id:'hp',label:'Punti ferita',paths:['current_hp','max_hp','max_hp_base','temporary_hp','death_save_successes','death_save_failures','stat_block.hp']},
  ...['str','dex','con','int','wis','cha'].map(id=>({id,label:'Caratteristica '+id.toUpperCase(),paths:['abilities.'+id,'stat_block.'+id]})),
  {id:'defense',label:'Classe armatura e difese',paths:['armor_class','armor_class_base','armor_natural_formula','temporary_ac','damage_defense_entries','damage_defense_overrides','condition_immunity_overrides','stat_block.ac','stat_block.resist','stat_block.immune','stat_block.vulnerable','stat_block.conditionImmune']},
  {id:'movement',label:'Movimento e sensi',paths:['speed','speed_base','speed_is_custom','movement_speeds','species_speed','darkvision','reach_feet','stat_block.speed','stat_block.senses']},
  {id:'proficiencies',label:'Competenze',paths:['proficiency_choices','skill_proficiencies','skill_expertise','saving_throw_proficiencies','armor_proficiencies','weapon_proficiencies','tool_proficiencies','languages','tools_catalog','languages_catalog','skill_ranks_custom','stat_block.skill','stat_block.save','stat_block.languages']},
  {id:'progression',label:'Classi e progressione',paths:['classes','class','class_id','class_source','subclass','subclass_id','subclass_source','level','xp','proficiency_bonus','hit_dice','hit_dice_spent']},
- {id:'traits',label:'Tratti, privilegi e attacchi',paths:['feats','feats_catalog','class_features','class_features_catalog','species_traits_catalog','optional_features_catalog','racial_background_traits','additional_traits','limited_features','attacks','attack_ability','attack_overrides','stat_block.trait','stat_block.action','stat_block.bonus','stat_block.reaction','stat_block.legendary','stat_block.mythic','stat_block.cr','stat_block.name','stat_block.source']},
+ {id:'traits',label:'Tratti, privilegi e attacchi',paths:['variant_rules_kind','feats','feats_catalog','class_features','class_features_catalog','species_traits_catalog','optional_features_catalog','racial_background_traits','additional_traits','limited_features','attacks','attack_ability','attack_overrides','stat_block.trait','stat_block.action','stat_block.bonus','stat_block.reaction','stat_block.legendary','stat_block.mythic','stat_block.cr','stat_block.name','stat_block.source']},
  {id:'bonuses',label:'Bonus e regole personalizzate',paths:['formula_bonuses','dice_bonuses','trait_benefits','trait_benefit_overrides','origin_enabled','benefit_overrides']},
  {id:'resources',label:'Risorse e tracker',paths:['resource_trackers','resource_tracker_spent','resource_recovery_ready','resource_recovery_used']},
  {id:'magic',label:'Magia e incantesimi',paths:['spells','prepared_spells','spellbook_spells','spell_slots_total','spell_slots_spent','pact_slots_total','pact_slots_spent','pact_slot_level','spell_slots_visible','spell_slots_manual','spell_slots_automatic','pact_slots_visible','spellcasting_class','spellcasting_ability','spellcasting_calculation','spellcasting_section_abilities','spell_save_dc','spell_attack_bonus','origin_spell_grants','origin_spell_configs','created_spell_slots','known_spell_lists']},
@@ -19,13 +20,13 @@ export const VARIANT_SECTIONS=[
  {id:'conditions',label:'Condizioni e concentrazione',paths:['conditions','exhaustion','exhaustion_level','concentrating_spell_id','active_spell_context']},
  {id:'biography',label:'Identità e note',paths:['alignment','sex','player_name','background','background_source','backgrounds_catalog','background_personality','notes','personality_traits','ideals','bonds','flaws','faction','symbol','enemies','age','height','weight','eyes','skin','hair','inspiration']}
 ];
-const protectedFields=new Set(['id','owner_id','kind','transfer_revision','linked_token_sync_id','linked_token_name','variants','current_form_id','variant_schema_version','active_class_features','second_form_hp','second_form_max_hp']);
+const protectedFields=new Set(['id','owner_id','kind','transfer_revision','linked_token_sync_id','linked_token_name','variants','current_form_id','variant_schema_version','active_class_features','second_form_hp','second_form_max_hp','__proto__','constructor','prototype']);
 const sectionById=new Map(VARIANT_SECTIONS.map(s=>[s.id,s]));
 export const VARIANT_PRESETS=[
  {id:'alias',label:'Alias',sections:['name'],creature_filter:{}},
  {id:'disguise',label:'Mascheramento',sections:['name','appearance'],creature_filter:{}},
  {id:'appearance',label:'Solo aspetto',sections:['appearance'],creature_filter:{}},
- {id:'wild_shape',label:'Forma selvatica · personalizzabile',sections:['appearance','hp','str','dex','con','defense','movement','traits'],creature_filter:{type:['beast']}},
+ {id:'wild_shape',label:'Forma selvatica · personalizzabile',sections:['appearance','ancestry','hp','str','dex','con','defense','movement','traits'],creature_filter:{type:['beast']}},
  {id:'polymorph',label:'Polymorph · personalizzabile',sections:['*'],creature_filter:{type:['beast']}},
  {id:'custom',label:'Personalizzata',sections:[],creature_filter:{}}
 ];
@@ -42,7 +43,8 @@ export function resolveVariant(record,id=record.current_form_id){
  return out;
 }
 export function validateVariants(record){
- if(record.variants===undefined)return record;
+ if(record.variant_schema_version!==undefined&&record.variant_schema_version!==1)throw Error('Versione varianti non supportata.');
+ if(record.variants===undefined){if(record.current_form_id)throw Error('Forma attuale non disponibile.');return record;}
  if(!Array.isArray(record.variants)||record.variants.length>100)throw Error('Elenco varianti non valido (massimo 100).');
  const ids=new Set();
  for(const v of record.variants){
@@ -54,8 +56,8 @@ export function validateVariants(record){
  return record;
 }
 export function createVariant(record,{id=crypto.randomUUID(),name='Nuova variante',preset='custom',sections,creature_filter}={}){
- const template=VARIANT_PRESETS.find(p=>p.id===preset)||VARIANT_PRESETS.at(-1);
- const v={id,name,preset,sections:copy(sections||template.sections),creature_filter:copy(creature_filter||template.creature_filter),sources:{},values:{}};
+ const template=object(preset)?preset:VARIANT_PRESETS.find(p=>p.id===preset)||VARIANT_PRESETS.at(-1);
+ const v={id,name,preset:template.id||'custom',sections:copy(sections||template.sections||[]),creature_filter:copy(creature_filter||template.creature_filter||{}),sources:{},values:{}};
  for(const path of ownedPaths(v,record))set(v.values,path,get(record,path));
  validateVariants({...record,variants:[...(record.variants||[]),v]});return v;
 }
@@ -120,7 +122,7 @@ export function creatureMatchesFilter(creature,filter={}){
 export function bestiarySheet(stat,miniature){
  const hp=Number(stat.hp?.average??stat.hp)||1,ac=Array.isArray(stat.ac)?stat.ac.find(v=>typeof v==='number'||v?.ac!==undefined):stat.ac;
  const size=({T:'Tiny',S:'Small',M:'Medium',L:'Large',H:'Huge',G:'Gargantuan'})[stat.size?.[0]]||'Medium';
- const out={name:stat.name,species:stat.name,species_source:stat.source,stat_block:copy(stat),abilities:Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(stat[k])||10])),current_hp:hp,max_hp:hp,max_hp_base:hp,temporary_hp:0,death_save_successes:0,death_save_failures:0,armor_class_base:Number(ac?.ac??ac)||10,armor_natural_formula:String(Number(ac?.ac??ac)||10),speed_base:Number(stat.speed?.walk??stat.speed)||0,speed_is_custom:true,movement_speeds:copy(object(stat.speed)?stat.speed:{}),size_name:miniature?.size_name||size,footprint:miniature?.footprint||({Large:2,Huge:3,Gargantuan:4}[size]||1),reach_feet:5,inventory:[],classes:[],class:'',class_source:'',level:0,formula_bonuses:[],dice_bonuses:[],proficiency_choices:[],feats_catalog:[],class_features_catalog:[],species_traits_catalog:[],optional_features_catalog:[],spells:[],prepared_spells:[],spellbook_spells:[],resource_trackers:[],resource_tracker_spent:{},notes:''};
+ const out={variant_rules_kind:'monster',name:stat.name,species:stat.name,species_source:stat.source,stat_block:copy(stat),abilities:Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(stat[k])||10])),current_hp:hp,max_hp:hp,max_hp_base:hp,temporary_hp:0,death_save_successes:0,death_save_failures:0,armor_class_base:Number(ac?.ac??ac)||10,armor_natural_formula:String(Number(ac?.ac??ac)||10),speed_base:Number(stat.speed?.walk??stat.speed)||0,speed_is_custom:true,species_speed:copy(stat.speed||0),movement_speeds:copy(object(stat.speed)?stat.speed:{}),size_name:miniature?.size_name||size,footprint:miniature?.footprint||({Large:2,Huge:3,Gargantuan:4}[size]||1),reach_feet:5,inventory:[],classes:[],class:'',class_source:'',level:0,formula_bonuses:[],dice_bonuses:[],proficiency_choices:[],feats_catalog:[],class_features_catalog:[],species_traits_catalog:[],optional_features_catalog:[],spells:[],prepared_spells:[],spellbook_spells:[],resource_trackers:[],resource_tracker_spent:{},notes:''};
  if(miniature?.id)out.current_miniature_id=out.default_miniature_id=miniature.id;
  return out;
 }

@@ -6,6 +6,7 @@ extends Node
 const MapDataController = preload("res://vtt/map_data_controller.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
+const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PORT := 8765
 const HEADER_LIMIT := 16384
@@ -22,6 +23,8 @@ const SHORT_CODE_LIFETIME_MS := 300000
 const MAX_PAIRING_ATTEMPTS := 8
 const QrEncoder = preload("res://vtt/qr/qr_code.gd")
 const FILES := {
+	"/creature_variants.js": ["res://pwa/creature_variants.js", "text/javascript; charset=utf-8"],
+	"/creature_variants_view.js": ["res://pwa/creature_variants_view.js", "text/javascript; charset=utf-8"],
 	"/": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
@@ -506,6 +509,9 @@ func _handle_http(client: Dictionary, method: String, path: String,
 			"module_events": _module_diag_events.duplicate(true)
 		})
 		return
+	if method == "GET" and (path == "/catalog/bestiary.json" or path.begins_with("/catalog/bestiary/")):
+		_serve_bestiary(client, path)
+		return
 	if method == "GET" and FILES.has(path):
 		if path.ends_with(".js"):
 			client["module_path"] = path
@@ -658,3 +664,33 @@ func _drop(index: int, reason: String = "closed") -> void:
 
 func _exit_tree() -> void:
 	_stop_listener()
+
+
+# Public catalog only: the existing bestiary client owns fetching, cache, homebrew
+# and _copy resolution. No local creature archive is exposed over HTTP.
+func _serve_bestiary(client: Dictionary, path: String) -> void:
+	client["deadline"] = Time.get_ticks_msec() + 90000
+	var bestiary := BestiaryClient.new()
+	add_child(bestiary)
+	var fail := func(_key: String, message: String) -> void:
+		_answer(client, 503, {"error": message})
+		bestiary.queue_free()
+	bestiary.creature_failed.connect(fail, CONNECT_ONE_SHOT)
+	if path == "/catalog/bestiary.json":
+		bestiary.catalog_ready.connect(func(entries: Array[Dictionary]) -> void:
+			_answer(client, 200, {"version": 1, "monsters": entries})
+			bestiary.queue_free()
+		, CONNECT_ONE_SHOT)
+		bestiary.catalog_failed.connect(func(message: String) -> void: fail.call("", message), CONNECT_ONE_SHOT)
+		bestiary.load_catalog()
+		return
+	var parts := path.trim_prefix("/catalog/bestiary/").trim_suffix(".json").split("/")
+	if parts.size() != 2 or parts[0].length() > 512 or parts[1].length() > 128:
+		_answer(client, 400, {"error": "invalid_bestiary_reference"})
+		bestiary.queue_free()
+		return
+	bestiary.creature_ready.connect(func(_key: String, stat: Dictionary) -> void:
+		_answer(client, 200, stat)
+		bestiary.queue_free()
+	, CONNECT_ONE_SHOT)
+	bestiary.request_creature(parts[0].uri_decode(), parts[1].uri_decode(), "pwa-variant")

@@ -1,5 +1,6 @@
 extends Node
 ## Owns only desktop presentation and the lifetime of its private IPC bridge.
+const Archive = preload("res://vtt/creature_archive.gd")
 const Host = preload("res://vtt/desktop_sheet_host.gd")
 const Bridge = preload("res://vtt/desktop_sheet_archive.gd")
 const SheetWindow = preload("res://vtt/desktop_sheet_window.gd")
@@ -24,8 +25,10 @@ func open(sheet: Node) -> bool:
 		# The web library can edit a different creature from the old native form.
 		if String(record.get("id", "")) == area._selected_id:
 			area._replace_current_record(record)
-		area._sync_token_health(record)
-		area._apply_sheet_properties(record)
+		var effective: Dictionary = Archive.resolve_form(record)
+		area._sync_token_health(effective)
+		area._apply_sheet_properties(effective)
+		area._apply_current_appearance(effective)
 	if host == null:
 		host = Host.new()
 		add_child(host)

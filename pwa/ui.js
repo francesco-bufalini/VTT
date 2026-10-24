@@ -1,3 +1,5 @@
+import {resolveVariant,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
+import {variantBar,openVariantsDialog,variantSources} from './creature_variants_view.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
@@ -714,21 +716,31 @@ async function activateClassAbility(c,calculated,ability){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
 }
-async function applyFormPatch(c,changes){
+async function syncFormPresentation(c){
  if(c.linked_token_sync_id&&state.paired&&state.online){
-  const result=await action('set_appearance',{token_id:c.linked_token_sync_id,owner_id:await ownerId(),miniature_id:changes.current_miniature_id});
-  if(!result.ok)throw Error(result.error||'Aspetto non applicato sul desktop.');
+  const result=await action('set_appearance',{token_id:c.linked_token_sync_id,owner_id:await ownerId(),
+   miniature_id:c.current_miniature_id||c.default_miniature_id||'',display_name:c.name,size_name:c.size_name,footprint:c.footprint});
+  if(!result.ok)throw Error(result.error||'Forma salvata in locale; aspetto non applicato sul desktop.');
  }
- await patch(changes);if(state.saveError)throw Error(state.saveError);await state.editor.flush();
 }
-function promptEndWildShape(creatureId){
+async function applyFormPatch(c,changes){
+ await patch(changes);await state.editor.flush();await syncFormPresentation(state.editor.read());
+}
+function promptVariantOverflow(creatureId,formId,overflow){
+ document.querySelector('#form-depleted-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog';dialog.id='form-depleted-dialog';
- dialog.innerHTML='<h2>Seconda forma esaurita</h2><p>I PF della seconda forma sono a 0. Ripristinare l’aspetto originale?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Ripristina aspetto</button><button type="button" class="btn" data-form-keep>Mantieni aspetto</button></div>';
+ dialog.innerHTML='<h2>Punti ferita della variante esauriti</h2><p>Restano '+esc(overflow)+' danni in eccesso. Applicarli alla scheda base e tornare alla forma base?</p><div class="actions"><button type="button" class="btn primary" data-form-restore>Applica danni e torna alla base</button><button type="button" class="btn" data-form-keep>Resta nella variante</button></div>';
  dialog.querySelector('[data-form-keep]').addEventListener('click',()=>dialog.close());
  dialog.querySelector('[data-form-restore]').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
-  try{const c=state.editor?.read();if(c?.id!==creatureId)throw Error('La creatura è cambiata.');
-   await applyFormPatch(c,endWildShapePatch(c));dialog.close();await render();
+  try{
+   const current=state.editor?.readBase();
+   if(current?.id!==creatureId||current.current_form_id!==formId||resolveVariant(current).current_hp>0)throw Error('La forma attuale è cambiata.');
+   const proposed=revertVariantDamage(current,overflow);
+   // First switch within one editor update; base HP are then edited while the
+   // base is active. One transaction stores both decisions atomically.
+   await state.editor.replaceBase(proposed);await state.editor.flush();await syncFormPresentation(state.editor.read());
+   dialog.close();await render();
   }catch(error){button.disabled=false;message(errorMessage(error),true);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
@@ -2867,6 +2879,10 @@ async function handleField(target) {
       if(!Number.isFinite(value)) throw new Error("Inserisci un numero valido.");
     }
     if(target.validity&&!target.validity.valid)throw Error("Valore fuori intervallo");
+    if(key==='current_hp'&&value<0&&variantOwns(state.editor.readBase(),'hp')){
+      await patch({current_hp:0});await render();
+      promptVariantOverflow(creature.id,creature.current_form_id,-value);return;
+    }
     if(key==='hand_grip_two_handed'){
       const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
       const usable=main&&itemKind(main)==='weapon'&&hasProperty(resolveOwnedItem(main),'V');
@@ -3032,6 +3048,7 @@ function organizeSheetPanels(){
   ...(state.calculated.features||[]).map(feature=>({name:feature.name||'',origin_id:feature.origin_id||'',origin_key:feature.origin_key||'',feature_key:feature.key||'',
     description:flattenDescription(feature)})),
   ...(state.battleOptionalTraits||[])]:[]},icon:actionGlyph,conditionLabel,conditionCatalog:state.conditionCatalog,inventoryProperties,isSpellScroll,spells:spellsForEdition(state.spellCatalog||[],state.editor.read().rules_version),classActions:nativeClassFeatureActions(state.editor.read(),state.calculated)});
+  app.querySelector('#sheet-play-view')?.insertAdjacentHTML('afterbegin',variantBar(state.editor.read()));
   if(state.sheet==='info'){
     const root=app.querySelector('#sheet-play-view');
     const choices=state.calculated.pending_choices||[];
@@ -3611,6 +3628,15 @@ async function handleAction(target){
     await refreshMapOnce();
     return;
   }
+  if(act==='creature-variants'){
+    await flushPendingFields();
+    const editor=state.editor,creatureId=state.creatureId;
+    const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
+    openVariantsDialog({read:check,notify:message,save:async changes=>{check();await patch(changes);await render();},
+      switchForm:async id=>{check();await applyFormPatch(editor.read(),{current_form_id:id});await render();},
+      sources:async()=>variantSources((await listCreatures()).map(r=>r.creature),await (await import('./storage.js')).listRecords('global','homebrew'))});
+    return;
+  }
   if(act==='miniature-pick'){
     if(!state.editor)throw Error('Apri prima una scheda.');
     const kind=target.dataset.miniatureKind;
@@ -3627,7 +3653,7 @@ async function handleAction(target){
     const dialog=document.createElement('dialog');
     dialog.className='sheet-roll-dialog miniature-dialog';
     dialog.innerHTML='<h2>'+(wildShape?'Forma selvatica':kind==='base'?'Miniatura di base':'Forma attuale')+'</h2>'+
-      (wildShape?'<p>Scegli l’aspetto rispettando i limiti del tratto. Un utilizzo verrà consumato alla conferma.</p><label>PF della seconda forma (0 per nessuna riserva)<input data-form-hp type="number" min="0" max="99999" value="0"></label><p data-form-selection role="status">Nessuna forma selezionata.</p>':'')+
+      (wildShape?'<p>Scegli l’aspetto rispettando i limiti del tratto. Un utilizzo verrà consumato alla conferma.</p><label>PF personalizzati della variante (0 per condividere i PF)<input data-form-hp type="number" min="0" max="99999" value="0"></label><p data-form-selection role="status">Nessuna forma selezionata.</p>':'')+
       '<label>Cerca miniatura<input type="search" data-miniature-search autocomplete="off"></label>'+
       '<div class="miniature-results" role="list"></div>'+
       '<div class="actions">'+(wildShape?'<button type="button" class="btn primary" data-form-confirm disabled>Trasformati</button>':'')+'<button type="button" class="btn" data-miniature-close>Annulla</button></div>';
@@ -4262,17 +4288,13 @@ async function handleAction(target){
     closeSessionDialog(app.querySelector('#hp-adjust-dialog'));
     return;
   }
-  if(['hp-restore','hp-restore-second','hp-automatic'].includes(act)){
+  if(['hp-restore','hp-automatic'].includes(act)){
     const c=state.editor.read(),calculated=await computeLocalData(c);
     if(act==='hp-automatic'){
       if(!calculated.stats.automatic_hp.available)throw Error('PF automatici non disponibili');
       await patch({max_hp_base:calculated.stats.automatic_hp.value});
     }else if(act==='hp-restore')await patch({current_hp:Math.max(0,calculated.stats.max_hp)});
-    else if(act==='hp-restore-second'){
-      const maximum=Number(calculated.values?.second_max??c.second_form_max_hp??0);
-      if(!Number.isFinite(maximum)||maximum<=0)throw Error('Imposta prima il massimo della seconda forma.');
-      await patch({second_form_hp:Math.max(0,maximum)});
-    }
+
     await render();return;
   }
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
@@ -5088,7 +5110,7 @@ async function handleAction(target){
     if(act==="claim-creature"&&!selectedToken.free)throw new Error("Il token non è più libero.");
     const stored=await loadCreature(selectedId);
     if(!stored)throw new Error("Scheda non trovata in locale.");
-    const sheet=stored.data;
+    const sheet=resolveVariant(stored.data);
     // Do NOT upload the private character sheet. This is the Android tactical
     // identity projection, with no inventory, HP, biography or known spells.
     const visible={id:sheet.id,owner_id:sheet.owner_id,name:sheet.name,
@@ -5197,12 +5219,12 @@ async function handleSubmit(form){
     if(!Number.isSafeInteger(amount)||amount<1||amount>99999)throw Error('Inserisci un valore di PF tra 1 e 99999.');
     if(!state.editor)throw Error('Apri prima una scheda.');
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
-    const changes=hitPointPatch(creature,mode==='damage'?-amount:amount,calculated);
+    const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
+    const changes=damage?.patch||hitPointPatch(creature,amount,calculated);
     await patch(changes);
     closeSessionDialog(dialog);
     await render();
-    if(mode==='damage'&&creature.active_class_features?.wild_shape&&creature.second_form_hp>0&&changes.second_form_hp===0)
-      promptEndWildShape(creature.id);
+    if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
     return;
   }
   if(form.id==="pair-form"){

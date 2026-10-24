@@ -203,11 +203,12 @@ export async function openCreatureEditor(id, scope = "default") {
     stored=await saveCreature(migrated,scope,stored.revision);
   let pending = Promise.resolve(), blocked = null;
   let latest = structuredClone(stored.data);
-  return {
+  const editor = {
     read: () => resolveVariant(latest),
     readBase: () => structuredClone(latest),
     get revision() { return stored.revision; },
-    update(patch) {
+    replaceBase(record) { return editor.update(record,true); },
+    update(patch, replaceBase=false) {
       if (blocked) return Promise.reject(blocked);
       // Evaluate read-modify-write edits at submission against the current
       // optimistic state, before any asynchronous persistence can interleave.
@@ -217,11 +218,12 @@ export async function openCreatureEditor(id, scope = "default") {
       }
       if (!patch || typeof patch !== "object" || Array.isArray(patch))
         return Promise.reject(new TypeError("Creature update must be an object"));
-      const proposed = validateCreature(applyVariantEdit(latest,structuredClone(patch)));
+      const proposed = validateCreature(replaceBase?structuredClone(patch):applyVariantEdit(latest,structuredClone(patch)));
       if (Array.isArray(proposed.inventory))
         proposed.inventory = consolidateOwnedItems(proposed.inventory);
       if (proposed.id !== stored.data.id ||
           proposed.owner_id !== stored.data.owner_id ||
+          proposed.kind !== stored.data.kind ||
           Number(proposed.transfer_revision ?? 0) !==
             Number(stored.data.transfer_revision ?? 0)) {
         return Promise.reject(new Error("Cannot change creature identity through an edit"));
@@ -241,6 +243,7 @@ export async function openCreatureEditor(id, scope = "default") {
     flush: () => pending,
     get error() { return blocked; }
   };
+  return editor;
 }
 
 // Android CreatureArea._copy_public_token_status parity: a token's public

@@ -2642,14 +2642,21 @@ func _handle_mobile_action(action: String, payload: Dictionary) -> Dictionary:
 		var wanted := String(payload.get("miniature_id", ""))
 		if owner.is_empty() or owner != String(target.get_meta("creature_owner_id", "")) or wanted.length() > 256:
 			return {"ok": false, "error": "Questa creatura non è controllata dal telefono."}
+		var display_name := String(payload.get("display_name", target.call("get_display_name"))).strip_edges()
+		if payload.has("display_name") and (display_name.is_empty() or display_name.length() > 160):
+			return {"ok": false, "error": "Nome della forma non valido."}
 		var profile: Dictionary = board_root.call("_identity_profile_by_id", wanted)
-		if profile.is_empty():
+		if profile.is_empty() and not wanted.is_empty():
 			return {"ok": false, "error": "Miniatura non disponibile sul desktop."}
 		var undo: Dictionary = board_root.call("begin_undo_transaction")
 		var record := {"id": String(target.get_meta("creature_id", "")), "current_miniature_id": wanted}
-		if not bool(board_root.call("apply_creature_sheet_appearance", target, record, false)):
+		if not wanted.is_empty() and not bool(board_root.call("apply_creature_sheet_appearance", target, record, false)):
 			return {"ok": false, "error": "La miniatura deve essere disponibile sul desktop prima di applicarla."}
-		target.call("set_size_category", String(profile.get("size_name", "Medium")), float(profile.get("footprint", 1.0)), false)
+		if payload.has("display_name"):
+			target.call("set_display_name", display_name)
+		var size_name := String(payload.get("size_name", profile.get("size_name", "Medium")))
+		var footprint := clampf(float(payload.get("footprint", profile.get("footprint", 1.0))), 0.5, 100.0)
+		target.call("set_size_category", size_name, footprint, false)
 		board_root.call("commit_undo_transaction", undo)
 		mark_token_appearance_locally_edited(target)
 		board_root.call_deferred("_sync_explicit_token_change", target)

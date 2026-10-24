@@ -26,7 +26,7 @@ export const DETAILS = [["overview","Panoramica"],["proficiency_choices","Compet
  ["feats_catalog","Talenti"],["formula_bonuses","Bonus"],["resources","Tracker"],
  ["damage_defense_entries","Resistenze, immunità e vulnerabilità"],["origin_spell_grants","Incantesimi da origini"]];
 export const SKILLS = [["acrobatics","Acrobazia","dex"],["animal handling","Addestrare Animali","wis"],["arcana","Arcano","int"],["athletics","Atletica","str"],["deception","Inganno","cha"],["history","Storia","int"],["insight","Intuizione","wis"],["intimidation","Intimidire","cha"],["investigation","Indagare","int"],["medicine","Medicina","wis"],["nature","Natura","int"],["perception","Percezione","wis"],["performance","Intrattenere","cha"],["persuasion","Persuasione","cha"],["religion","Religione","int"],["sleight of hand","Rapidità di Mano","dex"],["stealth","Furtività","dex"],["survival","Sopravvivenza","wis"]];
-export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (incl. iniziativa)'],['saving_throw','Tutti i tiri salvezza'],['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['second_max','Massimi seconda forma'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
+export const BONUS_TARGETS=[['ability_check','Tutte le prove di caratteristica (incl. iniziativa)'],['saving_throw','Tutti i tiri salvezza'],['ac','CA'],['initiative','Iniziativa'],['hp','PF massimi'],['speed','Camminata'],['proficiency','Competenza'],['passive_perception','Percezione passiva'],['pact_slot','Slot del Patto'],['spell_dc','CD incantesimi'],['spell_attack','Attacco incantesimi'],
  ...['str','dex','con','int','wis','cha'].flatMap(a=>[['ability:'+a,'Punteggio '+a.toUpperCase()],['ability_mod:'+a,'Modificatore '+a.toUpperCase()],['save:'+a,'TS '+a.toUpperCase()]]),
  ...SKILLS.map(([id,label])=>['skill:'+id,label]),...['climb','swim','fly','burrow'].map((id,i)=>['speed:'+id,['Scalata','Nuoto','Volo','Scavo'][i]]),
  ...Array.from({length:9},(_,i)=>['slot:'+(i+1),'Slot livello '+(i+1)])];
@@ -74,8 +74,8 @@ export function hitPointPatch(c,delta,calculated){
  if(delta>=0)return {current_hp:Math.min(Math.max(0,calculated.stats.max_hp),Number(c.current_hp||0)+delta)};
  let remaining=-delta;
  const absorb=value=>{const hp=Math.max(0,Number(value)||0),used=Math.min(hp,remaining);remaining-=used;return hp-used;};
- const temporary_hp=absorb(c.temporary_hp),second_form_hp=absorb(c.second_form_hp);
- return {temporary_hp,second_form_hp,current_hp:absorb(c.current_hp)};
+ const temporary_hp=absorb(c.temporary_hp);
+ return {temporary_hp,current_hp:absorb(c.current_hp)};
 }
 export function slotUsePatch(c,level,delta,calculated){
  if(!Number.isInteger(level)||level<0||level>9||!Number.isInteger(delta))throw Error('Slot non valido');
@@ -518,8 +518,6 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    statsIntro()+
    skillPanels();
  if(section==='battle'){
-  const secondMax=Number(calculated.values?.second_max??c.second_form_max_hp??0);
-  const hasSecondForm=secondMax>0||Number(c.second_form_hp||0)>0;
   // Preserve legacy standalone native-section callers; PWA uses the shared
   // equipment view whenever one was passed.
   const inventory=list(c.inventory).map(resolveOwnedItem);
@@ -563,14 +561,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
           '<button type="submit" class="btn primary" id="hp-adjust-confirm">Applica</button>'+
         '</div>'+
       '</form>'+
-    '</dialog>'+
-    '<section class="battle-second-form"><h3>Seconda forma'+(hasSecondForm?' · '+esc(c.second_form_hp??0)+' PF':'')+'</h3>'+
-      '<div class="battle-hp-grid battle-form-stats">'+
-        '<label class="battle-stat">PF attuali<input data-field="second_form_hp" type="number" min="0" max="99999" value="'+esc(c.second_form_hp??0)+'"></label>'+
-        '<div class="battle-stat battle-derived-hp"><span>PF massimi</span>'+read('second_max','Massimi seconda forma')+'</div>'+
-      '</div>'+
-      '<button type="button" class="btn small" data-act="hp-restore-second">↺ Ripristina seconda forma</button>'+
-    '</section>',
+    '</dialog>',
     'battle-hp-panel')+
    panel('Classe armatura',
     equipment?'<div class="battle-defense-settings">'+equipment+'</div>':legacyDefense,

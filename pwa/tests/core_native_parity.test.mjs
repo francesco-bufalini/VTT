@@ -111,7 +111,7 @@ test("native-style Info keeps derived identity and health editors without option
  assert.doesNotMatch(battle,/data-field="death_save_successes"/);
  assert.doesNotMatch(battle,/data-field="death_save_failures"/);
  assert.match(battle,/class="battle-hp-grid"/);
- assert.match(battle,/data-act="hp-restore-second"/);
+ assert.doesNotMatch(battle,/data-act="hp-restore-second"/);
  assert.ok(battle.indexOf('battle-hp-controls')<battle.indexOf('battle-defense-values'),
    'The armor class is displayed immediately after hit points');
  const spells=actionEntries({spells:[{id:"spell_1"}]},

@@ -1,3 +1,4 @@
+import {createVariant} from './creature_variants.js';
 // Offline structured class-feature mechanics shared by the PWA sheet and actions.
 // No regex matching feature prose; no network access in the evaluation path.
 import {resolveOwnedItem} from './item_controls.js';
@@ -352,7 +353,12 @@ export function wildShapePatch(record,calculated,profile,maximum=0){
  const original=record.current_miniature_id||record.default_miniature_id;
  if(!original)throw Error('Scegli prima la miniatura di base della creatura.');
  if(!profile?.id||!Number.isSafeInteger(Number(maximum))||Number(maximum)<0||Number(maximum)>99999)throw Error('Forma o punti ferita non validi.');
- return {current_miniature_id:profile.id,second_form_hp:Number(maximum),second_form_max_hp:Number(maximum),
+ const id='wild-shape:'+profile.id,sections=['appearance',...(Number(maximum)>0?['hp']:[])];
+ const variant=createVariant({...record,variants:(record.variants||[]).filter(v=>v.id!==id)},
+  {id,name:profile.name||'Forma selvatica',preset:'wild_shape',sections});
+ variant.values.current_miniature_id=profile.id;
+ if(Number(maximum)>0)Object.assign(variant.values,{current_hp:Number(maximum),max_hp_base:Number(maximum),max_hp:Number(maximum),temporary_hp:0});
+ return {variants:[...(record.variants||[]).filter(v=>v.id!==id),variant],current_form_id:id,variant_schema_version:1,
   resource_tracker_spent:{...(record.resource_tracker_spent||{}),[tracker.id]:Number(record.resource_tracker_spent?.[tracker.id]||0)+1},
   active_class_features:{...(record.active_class_features||{}),wild_shape:{name:'Forma selvatica',origin_id:feature.origin_id,
    previous_miniature_id:original,rules_version:record.rules_version||'2014'}}};
@@ -363,7 +369,7 @@ export function endWildShapePatch(record){
  const original=form.previous_miniature_id||record.default_miniature_id;
  if(!original)throw Error('Aspetto originale non disponibile.');
  delete active.wild_shape;
- return {current_miniature_id:original,second_form_hp:0,second_form_max_hp:0,active_class_features:active};
+ return {current_form_id:'',active_class_features:active};
 }
 export function featureMember(record,rule){
  const edition=record?.rules_version==='2024'?'XPHB':'PHB';

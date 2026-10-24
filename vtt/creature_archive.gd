@@ -66,6 +66,9 @@ func _normalize(record: Dictionary) -> Dictionary:
 		else _characters.normalize_character(record)
 	)
 	result["kind"] = String(record.get("kind", ""))
+	for key: String in ["variants", "current_form_id", "variant_schema_version"]:
+		if record.has(key):
+			result[key] = record[key].duplicate(true) if record[key] is Array or record[key] is Dictionary else record[key]
 	return result
 
 
@@ -214,3 +217,38 @@ func import_export_copy(payload: Dictionary) -> Error:
 	record["transfer_revision"] = 0
 	record["linked_token_sync_id"] = ""
 	return save(record)
+
+
+# The base stays canonical on disk. Only presentation/game consumers resolve the
+# current form; public token polling writes back to the section's actual owner.
+static func resolve_form(record: Dictionary) -> Dictionary:
+	var result := record.duplicate(true)
+	for form: Dictionary in record.get("variants", []):
+		if String(form.get("id", "")) != String(record.get("current_form_id", "")):
+			continue
+		_merge_form_values(result, form.get("values", {}))
+		break
+	return result
+
+static func _merge_form_values(target: Dictionary, values: Dictionary) -> void:
+	for key: String in values:
+		if key in ["id", "owner_id", "kind", "transfer_revision", "linked_token_sync_id", "linked_token_name", "variants", "current_form_id", "variant_schema_version"]:
+			continue
+		if values[key] is Dictionary and target.get(key) is Dictionary:
+			_merge_form_values(target[key], values[key])
+		else:
+			target[key] = values[key].duplicate(true) if values[key] is Dictionary or values[key] is Array else values[key]
+
+static func apply_public_form_patch(record: Dictionary, patch: Dictionary) -> Dictionary:
+	var result := record.duplicate(true)
+	var active: Dictionary = {}
+	for form: Dictionary in result.get("variants", []):
+		if String(form.get("id", "")) == String(result.get("current_form_id", "")):
+			active = form
+			break
+	for key: String in patch:
+		var section := "conditions" if key in ["conditions", "concentrating_spell_id"] else "name" if key == "name" else "appearance" if key in ["current_miniature_id", "default_miniature_id", "size_name", "footprint", "visual_front_quarter_turns"] else ""
+		var sections: Array = active.get("sections", [])
+		var destination: Dictionary = active.get("values", {}) if "*" in sections or section in sections else result
+		destination[key] = patch[key].duplicate(true) if patch[key] is Array or patch[key] is Dictionary else patch[key]
+	return result

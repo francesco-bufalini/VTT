@@ -425,6 +425,8 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 	for record: Dictionary in _archive.list_owned():
 		if String(record.get("id", "")) != wanted_id:
 			continue
+		var canonical := record.duplicate(true)
+		record = Archive.resolve_form(record)
 		if token.has_method("get_conditions"):
 			record["conditions"] = token.call("get_conditions")
 		if token.has_method("get_display_name"):
@@ -446,6 +448,10 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
 			record["party_id"] = token.call("get_party_id")
+		var public_patch := {}
+		for key: String in ["name", "conditions", "current_miniature_id", "size_name", "footprint", "visual_front_quarter_turns", "party_id"]:
+			if record.has(key): public_patch[key] = record[key]
+		record = Archive.apply_public_form_patch(canonical, public_patch)
 		if _archive.save(record) == OK:
 			_replace_current_record(record)
 			if _panel.visible and _selected_id == wanted_id:
@@ -7952,7 +7958,7 @@ func _sync_mobile_map_status(data: Dictionary) -> void:
 			for field: String in ["current_miniature_id", "default_miniature_id"]:
 				var value := String(public_by_id[id].get(field, ""))
 				if not value.is_empty():
-					record[field] = value
+					record = Archive.apply_public_form_patch(record, {field: value})
 		if record == owned:
 			continue
 		_recalculate_bonus_mirrors(record)
