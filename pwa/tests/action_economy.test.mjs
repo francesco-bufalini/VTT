@@ -9,7 +9,7 @@ import {actionEntries as project,actionEconomyView as view,battleActionPanels,gr
 const catalog=JSON.parse(readFileSync(new URL('../../vtt/data/combat_actions_5etools.json',import.meta.url),'utf8'));
 const featureRules=JSON.parse(readFileSync(new URL('../../vtt/data/feature_timing_recovery_rules.json',import.meta.url),'utf8'));
 const classFeatures=JSON.parse(readFileSync(new URL('../catalog/classes.json',import.meta.url),'utf8'));
-const projection=record=>({feature_rules:featureRules,features:collectStructuredFeatures(record,{classFeatures})});
+const projection=record=>({feature_rules:featureRules,features:collectStructuredFeatures(record,{classFeatures,featureRules})});
 const actionEntries=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>project(record,{...projection(record),...calculated},spells,overrides,rules,enabled);
 const actionEconomyView=(record={},calculated={},spells=[],overrides=[],rules=catalog.actions,enabled=[])=>view(record,{...projection(record),...calculated},spells,overrides,rules,enabled);
 const find=(rows,id)=>rows.find(row=>row.id===id);
@@ -92,7 +92,7 @@ test('class-only attacks keep both the offhand bonus and opportunity reaction',(
   slot:'shield',hand:'off',offhand_bonus:true,melee:true,range_feet:5,hit:3,damage:'1d4 + 3'};
  const render=(attacks,features=[],onlyClass=true)=>doc(battleActionPanels(
   {rules_version:'2014'}, {attacks,features},[],[],catalog.actions,[],[],onlyClass).attacks);
- const plain=render([unarmed,off],[{name:'Extra Attack'}]);
+ const plain=render([unarmed,off],[{name:'Extra Attack',attacks_per_action:2}]);
  assert(plain.querySelector('[data-action-timing="action"] [data-attack-id="unarmed"]'));
  assert(plain.querySelector('[data-action-timing="bonus"] [data-attack-id="unarmed:off"]'));
  assert(plain.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
@@ -107,20 +107,22 @@ test('class-only attacks keep both the offhand bonus and opportunity reaction',(
  const unloaded=doc(battleActionPanels({}, {attacks:[unarmed,off]},[],[],[],[],[],true).attacks);
  assert(unloaded.querySelector('[data-attack-id="opportunity"]'),
   'Offline fallback still exposes an opportunity attack');
- assert(!render([unarmed,off],[{name:'Extra Attack',disabled:true}])
+ assert(!render([unarmed,off],[{name:'Extra Attack',attacks_per_action:2,disabled:true}])
   .querySelector('.play-battle-attacks-per-action'));
 });
 
 test('multiattack counter uses active structured features or a monster multiattack',()=>{
- assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (2)'}]}),3);
- assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (3)',inactive:true}]}),1);
+ assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (2)',attacks_per_action:3}]}),3);
+ assert.equal(attacksPerAction({}, {features:[{name:'Extra Attack (3)',attacks_per_action:4,inactive:true}]}),1);
  const monster={stat_block:{action:[{name:'Multiattack',entries:[
   'The creature makes three attacks: one with its bite and two with its claws.'
  ]}]}};
- assert.equal(attacksPerAction(monster,{}),3);
- assert.equal(attacksPerAction({stat_block:{action:[{name:'Multiattack',attack_count:4}]}},{}),4);
+ const projectedMonster=collectStructuredFeatures({...monster,kind:'monster'});
+ assert.equal(attacksPerAction(monster,{features:projectedMonster}),3);
+ const typedMonster={kind:'monster',stat_block:{action:[{name:'Multiattack',attacks_per_action:4}]}};
+ assert.equal(attacksPerAction(typedMonster,{features:collectStructuredFeatures(typedMonster)}),4);
  const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
- const html=doc(battleActionPanels(monster,{attacks:[attack]},[],[],catalog.actions,[],[],true).attacks);
+ const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).attacks);
  assert.equal(html.querySelector('[data-action-timing="action"] .play-battle-attacks-per-action').textContent,'×3');
 });
 
@@ -415,7 +417,7 @@ test('native class activations use eligible collected features, edition and loca
  const make=(name,owner)=>({name,origin_key:'class|phb|'+owner.toLowerCase(),
   requirements:{class_name:owner},entries:[name+' description']});
  const rage=make('Rage','Barbarian');
- const calc={features:[rage,make('Extra Attack','Fighter')],trackers:[{id:'rage-1',name:'Rages',max:3,spent:1,origin_class:'Barbarian'}]};
+ const calc={features:[rage,{...make('Extra Attack','Fighter'),attacks_per_action:2}],trackers:[{id:'rage-1',name:'Rages',max:3,spent:1,origin_class:'Barbarian'}]};
  const barbarian={class:'Barbarian',class_source:'PHB',level:5};
  let actions=nativeClassFeatureActions(barbarian,calc);
  assert.equal(actions.length,1);assert.equal(actions[0].name,'Ira');
@@ -440,7 +442,7 @@ test('variant healing surge bonus timing mirrors desktop and picker is visible',
  assert(document.querySelector('[data-act="action-variants"]').textContent.includes('Regole varianti'));
  assert(document.querySelector('[data-act="action-expand-all"]'));
  const fighter=doc(actionEconomyView({class:'Fighter',level:5},{features:[
-  {name:'Extra Attack',origin_key:'class|phb|fighter',requirements:{class_name:'Fighter'}}]}));
+  {name:'Extra Attack',origin_key:'class|phb|fighter',attacks_per_action:2,requirements:{class_name:'Fighter'}}]}));
  assert(fighter.querySelector('[data-timing="action"] .action-economy-count').textContent.length>0);
 });
 
