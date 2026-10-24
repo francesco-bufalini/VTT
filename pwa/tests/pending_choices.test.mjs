@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions} from '../pending_choices.js';
+import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from '../pending_choices.js';
 import {nativeSection} from '../native_sheet.js';
 const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url),'utf8'));
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
@@ -184,4 +184,73 @@ test('Other Proficiencies summarizes trained skills and expertise as well as too
  assert.match(panel,/<dt>Maestrie<\/dt><dd>Arcano<\/dd>/);
  assert.match(panel,/<dt>Strumenti<\/dt><dd>smith&#39;s tools<\/dd>/);
  assert.match(panel,/<dt>Linguaggi<\/dt><dd>elvish<\/dd>/);
+});
+
+test('Skilled 2014 and 2024 share one three-choice skill/tool budget',()=>{
+ for(const source of ['PHB','XPHB']){
+  const feat=index.feat.find(row=>row.name==='Skilled'&&row.source===source);
+  assert.deepEqual(feat?.proficiencyChoices?.[0]?.choose?.fromKinds,['skill','tool']);
+  const c={...artificer(),feats_catalog:[{name:'Skilled',source}]};
+  const picks=choices(c).filter(row=>row.origin_id==='feat|'+source.toLowerCase()+'|skilled');
+  assert.equal(picks.length,1);
+  const choice=picks[0];
+  assert.equal(choice.proficiency_kind,'mixed');
+  assert.equal(choice.count,3);
+  assert(choice.options.includes('skill:arcana'));
+  assert(choice.options.includes("tool:smith's tools"));
+  assert.throws(()=>savePendingChoice(c,choice,[
+   'skill:arcana','skill:history','tool:smith\'s tools','tool:thieves\' tools']),/Selezione/);
+  const patch=savePendingChoice(c,choice,['skill:arcana','tool:smith\'s tools','tool:thieves\' tools']);
+  assert.deepEqual(patch.proficiency_choices.map(row=>row.kind),['skill','tool','tool']);
+  assert.equal(choices({...c,...patch}).find(row=>row.id===choice.id).remaining,0);
+  const changed=savePendingChoice({...c,...patch},choice,['skill:perception','skill:history']);
+  assert.deepEqual(changed.proficiency_choices.map(row=>row.kind),['skill','skill']);
+  assert(!changed.proficiency_choices.some(row=>row.key==="smith's tools"));
+  assert.equal(choices({...c,...changed}).find(row=>row.id===choice.id).remaining,1);
+ }
+});
+
+test('Skilled mixed picker supports custom tools, known badges and origin-safe removal',()=>{
+ const c={...artificer(),feats_catalog:[{name:'Skilled',source:'XPHB'},{name:'Skill Expert',source:'TCE'}],
+  proficiency_choices:[{kind:'skill',key:'arcana',origin_id:'manual',origin_name:'Classe'}],
+  origin_enabled:{'feat|xphb|skilled':true,manual:true}};
+ const choice=choices(c).find(row=>row.proficiency_kind==='mixed');
+ assert(choice.custom_allowed);
+ const known=knownProficiencyOptions(c,{proficiencies:['skill:arcana',"tool:smith's tools"]},choice);
+ assert(known.has('skill:arcana')&&known.has("tool:smith's tools"));
+ const patch=savePendingChoice(c,choice,['skill:history','__custom__:Strumenti arcani']);
+ const owned={...c,...patch};
+ assert(patch.proficiency_choices.some(row=>row.kind==='tool'&&row.custom&&row.key==='strumenti arcani'));
+ assert(choices(owned).find(row=>row.id===choice.id).selected.includes('tool:strumenti arcani'));
+ assert.throws(()=>savePendingChoice(c,choice,['__custom__:arcana<unsafe>']),/Selezione/);
+ const removed=removeOwnedFeatPatch(owned,'feat|skilled|xphb');
+ assert.deepEqual(removed.feats_catalog.map(row=>row.name),['Skill Expert']);
+ assert.deepEqual(removed.proficiency_choices,[{kind:'skill',key:'arcana',origin_id:'manual',origin_name:'Classe'}]);
+ assert(!Object.hasOwn(removed.origin_enabled,'feat|xphb|skilled'));
+ assert(!choices({...owned,...removed}).some(row=>row.origin_id==='feat|xphb|skilled'));
+ assert.throws(()=>removeOwnedFeatPatch(owned,'feat|missing|xphb'),/Talento/);
+});
+
+test('Crafter and Musician 2024 use structured restricted tool selections',()=>{
+ for(const [name,options] of [['Crafter',["smith's tools","carpenter's tools"]],
+   ['Musician',['lute','flute']]]){
+  const c={...artificer(),feats_catalog:[{name,source:'XPHB'}]};
+  const featChoice=choices(c).find(row=>row.origin_id==='feat|xphb|'+name.toLowerCase());
+  assert(featChoice,name+' must offer proficiency choices');
+  assert.equal(featChoice.proficiency_kind,'tool');
+  assert.equal(featChoice.count,3);
+  assert(options.every(key=>featChoice.options.includes(key)));
+  assert(!featChoice.options.includes(name==='Crafter'?'lute':"smith's tools"));
+  assert.throws(()=>savePendingChoice(c,featChoice,['wrong category']),/Selezione/);
+ }
+});
+
+test('owned feat cards expose an independent remove button and confirmed modal',()=>{
+ const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
+ assert.match(ui,/trait\.category==='talenti'&&trait\.rank===0/);
+ assert.match(ui,/data-act="feat-remove"/);
+ assert.match(ui,/data-act="feat-remove-confirm"/);
+ assert.match(ui,/removeOwnedFeatPatch\(state\.editor\.read\(\),key\)/);
+ assert.match(css,/\.trait-feat-remove/);
 });
