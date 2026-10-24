@@ -137,6 +137,63 @@ export function removeSelectedSpell(creature,target,index,{classId,classes=[],ca
   return target==="prepared_spells"?{prepared_spells:rows,spells:rows}:{spellbook_spells:rows};
 }
 
+
+// Subclass spell tables are structured 5etools data (not description prose).
+// Each grant retains the *feature* identity so it can appear under its trait.
+export function featureTableSpellGrants(record={},features=[],catalog=[],castingClasses=[]){
+ const grants=[],seen=new Set(),edition=record.rules_version||'2014';
+ const members=arr(record.classes).length?record.classes:
+   record.class?[{name:record.class,source:record.class_source,level:record.level}]:[];
+ const levels=feature=>members.filter(member=>
+   norm(member.name)===norm(feature.requirements?.class_name||feature.class_name||String(feature.origin_key||'').split('|')[2])&&
+   (!feature.requirements?.class_source&&!feature.class_source||
+     norm(member.source)===norm(feature.requirements?.class_source||feature.class_source)))
+   .reduce((max,member)=>Math.max(max,Number(member.level)||0),0);
+ const walk=(parts,visit)=>{
+   for(const part of arr(parts)){
+     if(!part||typeof part!=='object')continue;
+     visit(part);
+     walk(part.entries,visit);
+   }
+ };
+ for(const feature of arr(features)){
+   if(!feature?.origin_id||feature.inactive||
+      !String(feature.origin_key||'').startsWith('class|')||
+      !String(feature.origin_key||'').includes('|subclass|'))continue;
+   const current=levels(feature);
+   if(current<=0)continue;
+   // An expanded-list feature is not a permanently prepared entitlement.
+   if(/expanded spell list|additional spell list/i.test(feature.name||''))continue;
+   const owner=String(feature.requirements?.class_name||feature.class_name||String(feature.origin_key).split('|')[2]);
+   const ability=castingClasses.find(member=>norm(member.name)===norm(owner))?.ability||'int';
+   walk(feature.entries,table=>{
+     if(table.type!=='table'||!Array.isArray(table.rows))return;
+     const labels=arr(table.colLabels).map(label=>String(label||''));
+     const spellColumns=labels.flatMap((name,index)=>
+       /^(?:spells?|always prepared(?: spells?)?)$/i.test(name.trim())?[index]:[]);
+     if(!spellColumns.length||!labels.some(label=>/level/i.test(label)))return;
+     for(const row of table.rows){
+       if(!Array.isArray(row))continue;
+       const requirement=Number(String(row[0]??'').match(/^\s*(\d{1,2})/)?.[1]);
+       if(!Number.isInteger(requirement)||requirement<1||requirement>current)continue;
+       for(const column of spellColumns){
+         for(const match of String(row[column]||'').matchAll(/\{@spell\s+([^}]+)\}/gi)){
+           const id=originSpellId(match[1],edition,catalog);
+           if(!id||seen.has(feature.origin_id+'|'+id))continue;
+           seen.add(feature.origin_id+'|'+id);
+           grants.push({id:'feature-spell:'+feature.origin_id+'|'+id,
+             origin_id:feature.origin_id,origin_name:feature.name,
+             parent_origin:feature.origin_key,spell_id:id,mode:'prepared',
+             spellcasting_ability:ability,automatic:true,
+             mechanic_source:'5etools.feature.spell_table'});
+         }
+       }
+     }
+   });
+ }
+ return grants;
+}
+
 // StructuredOriginSpells5e: only explicit additionalSpells usages create
 // entitlements. Expanded/prepared lists never become free casts by inference.
 export function originSpellId(token,edition,spells){
