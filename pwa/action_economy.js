@@ -642,7 +642,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  // Their action economy is defined in "Azioni", not repeated here.
  const weapon=entries.filter(row=>row.type==='Attacco'&&
   !['attack','opportunity','two_weapon'].includes(row.id)&&
-  row.id!=='unarmed:off');
+  row.parent_action!=='two_weapon'&&row.id!=='unarmed:off');
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
   const known=attacksById.get('unarmed');
