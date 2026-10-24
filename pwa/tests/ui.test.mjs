@@ -401,7 +401,9 @@ test("importing multiple creatures stays in library and exposes only selected bu
   checkbox.checked=true;
   checkbox.dispatchEvent(new dom.window.Event("change",{bubbles:true}));
   assert.ok(document.querySelector('[data-act="library-delete"]'));
-  assert.match(document.querySelector('[data-act="library-export"]').textContent,/1/);
+  assert.equal(document.querySelector('[data-act="library-export"]').textContent.trim(),'Esporta');
+  assert.equal(document.querySelector('.library-selection-count'),null,
+    'Bulk toolbar no longer displays the number of selected creatures');
   const selectAll=document.querySelector('[data-library-select-all]');
   selectAll.checked=true;selectAll.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
   assert.equal(document.querySelectorAll('[data-library-select]:checked').length,
