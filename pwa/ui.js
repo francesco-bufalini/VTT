@@ -551,7 +551,7 @@ function paintLibraryMiniatures(){
  const previousScroll=area?.scrollTop||0;
  if(area)area.innerHTML=matches.length?matches.map(m=>
   '<button type="button" data-act="library-miniature-select" data-miniature-id="'+esc(m.id)+
-  '" class="library-miniature-option" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
+  '" class="library-miniature-option vtt-selectable" aria-pressed="'+(m.id===state.libraryMiniatureId)+'">'+
   actionGlyph('proficiency')+'<span>'+esc(m.name)+'</span></button>').join(''):
   '<p class="hint">Nessuna miniatura trovata.</p>';
  if(area)area.scrollTop=previousScroll;
@@ -709,7 +709,7 @@ function renderCatalogRows() {
     .filter(({row})=>matchesSearch(state.catalogQuery,row.name,row.source));
   const {items,shown,total}=pageResults(matches,state.catalogResultLimit);
   return (items.length?items.map(({row,i})=>
-    '<button type="button" class="btn full catalog-entry" data-act="catalog-open" data-index="'+i+'">'+
+    '<button type="button" class="btn full catalog-entry vtt-selectable" data-act="catalog-open" data-index="'+i+'">'+
     '<span>'+esc(row.name||"Senza nome")+'</span><span class="tag">'+esc(row.source||row._category||"")+'</span></button>').join("") :
     '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>')+
     resultsFooter('catalog-more',shown,total,90);
@@ -1565,7 +1565,7 @@ function scrollSpellLevelOptions(spell){
 function scrollSpellCreatorView(){
   const ready=Array.isArray(state.spellCatalog)&&state.spellCatalog.length>0;
   return '<div class="scroll-creator-fields">'+
-    '<label>Incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Cerca incantesimo…" value="'+esc(state.scrollSpellQuery)+'"></label>'+
+    '<label class="vtt-list-search">Incantesimo<input id="scroll-spell-query" type="search" autocomplete="off" placeholder="Cerca incantesimo…" value="'+esc(state.scrollSpellQuery)+'"></label>'+
     '<label>Selezione<select id="scroll-spell-select" aria-label="Incantesimo per la pergamena"'+(ready?'':' disabled')+'>'+
       scrollSpellSelectOptions(state.scrollSpellQuery)+'</select></label>'+
     '<label>Livello pergamena<select id="scroll-spell-level" aria-label="Livello della pergamena">'+scrollSpellLevelOptions(null)+'</select></label>'+
@@ -1753,7 +1753,7 @@ function inventoryTable(entries,scrolls,selectedIndex,menuIndex,containers=[]){
         '<span class="inventory-col-quantity">'+controls+'</span>',
         '<span class="inventory-col-source">'+esc(item.source||'')+'</span>',
         '<span class="inventory-col-property" title="'+esc(inventoryProperties(item))+'">'+esc(inventoryProperties(item))+'</span>',nameCell];
-      return '<div class="inventory-table-row'+(index===selectedIndex?' selected':'')+
+      return '<div class="inventory-table-row vtt-selectable'+(index===selectedIndex?' selected is-selected':'')+
         (item.attuned?' attuned':'')+'" role="row" data-inventory-row="'+index+'">'+cells.join('')+'</div>';
     }).join('')+'</div>';
 }
@@ -2291,13 +2291,13 @@ function renderSpellResults(){
       '>'+ (already?'× Rimuovi preparazione':'+ Prepara')+'</button>';
     if(preparing){
       const isKnown=known.has(spell.id);
-      return '<div class="magic-catalog-row"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
+      return '<div class="magic-catalog-row vtt-selectable'+(already?' is-selected':'')+'"><span class="magic-catalog-name">'+esc(info.name)+'</span>'+
         (isKnown?command:'<span class="hint">Non conosciuto</span>')+
         ('<button class="btn magic-known-toggle" type="button" data-act="spell-known-toggle"'+
         ' data-spell-index="'+rows.indexOf(spell)+'" data-known="'+isKnown+'" data-class-id="'+esc(member.id)+'">'+
         (isKnown?'Dimentica':'+ Conosci')+'</button>')+'</div>';
     }
-    return '<button class="btn full catalog-entry magic-catalog-entry" type="button" data-act="'+
+    return '<button class="btn full catalog-entry magic-catalog-entry vtt-selectable" type="button" aria-pressed="'+already+'" data-act="'+
       action+'" data-index="'+actionIndex+'"'+
       (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       '><span>'+esc(info.name)+'</span>'+
@@ -3601,17 +3601,17 @@ function openPendingChoiceDialog(choice){
    const mixed=choice.proficiency_kind==='mixed',at=mixed?key.indexOf(':'):-1;
    const kind=mixed?key.slice(0,at):'',item=mixed?key.slice(at+1):key;
    const label=(kind==='skill'?'Abilità · ':kind==='tool'?'Strumento · ':'')+(labels[item]||item);
-   return '<label class="pending-choice-option'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
+   return '<label class="pending-choice-option vtt-selectable'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
      '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
-     '><span>'+esc(label)+'</span>'+
+     '><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+'</span>'+
      (known.has(key)?'<span class="pending-choice-known" title="Competenza già posseduta" aria-label="Competenza già posseduta">✓</span>':'')+
      '</label>';
  }).join('');
  const customValues=choice.custom_values||[];
  const customRow=choice.custom_allowed?
-   '<div class="pending-choice-option pending-choice-custom'+(choice.count===1?' pending-choice-option--single':'')+'">'+
+   '<div class="pending-choice-option pending-choice-custom vtt-selectable'+(choice.count===1?' pending-choice-option--single':'')+'">'+
      '<label class="pending-choice-custom-label"><input type="checkbox" name="pending-options" value="__custom__"'+
-     (customValues.length?' checked':'')+'><span>＋ Personalizzata…</span></label>'+
+     (customValues.length?' checked':'')+'><span class="vtt-choice-check" aria-hidden="true">✓</span><span>＋ Personalizzata…</span></label>'+
      '<input type="text" data-pending-custom-value maxlength="250" autocomplete="off" '+
      'placeholder="'+(choice.proficiency_kind==='mixed'?'Nome dello strumento personalizzato':'Nome dello strumento o della lingua')+'" value="'+esc(customValues.join(', '))+'"'+
      (customValues.length?'':' disabled')+' aria-label="Nomi personalizzati, separati da virgole">'+
