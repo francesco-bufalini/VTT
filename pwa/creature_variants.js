@@ -3,6 +3,8 @@ import {initialCreature} from './character_core.js';
 // sections; live counters are ordinary values in those sections, never a second HP pool.
 const copy=v=>structuredClone(v);
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+const finiteNumber=(value,fallback)=>
+ (typeof value==='number'||typeof value==='string'&&value.trim()!=='')&&Number.isFinite(Number(value))?Number(value):fallback;
 export const VARIANT_SECTIONS=[
  {id:'name',label:'Nome',paths:['name']},
  {id:'appearance',label:'Aspetto e miniatura',paths:['default_miniature_id','current_miniature_id','size_name','footprint','visual_front_quarter_turns','appearance','stat_block.size']},
@@ -129,9 +131,9 @@ export function creatureMatchesFilter(creature,filter={}){
 }
 // Explicit conversion at the catalog boundary; unknown rules stay in stat_block.
 export function bestiarySheet(stat,miniature){
- const hp=Number(stat.hp?.average??stat.hp)||1,ac=Array.isArray(stat.ac)?stat.ac.find(v=>typeof v==='number'||v?.ac!==undefined):stat.ac;
+ const hp=finiteNumber(stat.hp?.average??stat.hp,1),ac=Array.isArray(stat.ac)?stat.ac.find(v=>typeof v==='number'||v?.ac!==undefined):stat.ac;
  const size=({T:'Tiny',S:'Small',M:'Medium',L:'Large',H:'Huge',G:'Gargantuan'})[stat.size?.[0]]||'Medium';
- const out={...initialCreature('monster',String(stat.name||'Creatura'),'variant-source','variant-source'),variant_rules_kind:'monster',name:stat.name,species:stat.name,species_source:stat.source,stat_block:copy(stat),abilities:Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,Number(stat[k])||10])),current_hp:hp,max_hp:hp,max_hp_base:hp,temporary_hp:0,death_save_successes:0,death_save_failures:0,armor_class_base:Number(ac?.ac??ac)||10,armor_natural_formula:String(Number(ac?.ac??ac)||10),speed_base:Number(stat.speed?.walk??stat.speed)||0,speed_is_custom:true,species_speed:copy(stat.speed||0),movement_speeds:copy(object(stat.speed)?stat.speed:{}),size_name:miniature?.size_name||size,footprint:miniature?.footprint||({Large:2,Huge:3,Gargantuan:4}[size]||1),reach_feet:5,inventory:[],classes:[],class:'',class_source:'',level:0,formula_bonuses:[],dice_bonuses:[],proficiency_choices:[],feats_catalog:[],class_features_catalog:[],species_traits_catalog:[],optional_features_catalog:[],spells:[],prepared_spells:[],spellbook_spells:[],resource_trackers:[],resource_tracker_spent:{},notes:''};
+ const out={...initialCreature('monster',String(stat.name||'Creatura'),'variant-source','variant-source'),variant_rules_kind:'monster',name:stat.name,species:stat.name,species_source:stat.source,stat_block:copy(stat),abilities:Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,finiteNumber(stat[k],10)])),current_hp:hp,max_hp:hp,max_hp_base:hp,temporary_hp:0,death_save_successes:0,death_save_failures:0,armor_class_base:finiteNumber(ac?.ac??ac,10),armor_natural_formula:String(finiteNumber(ac?.ac??ac,10)),speed_base:Number(stat.speed?.walk??stat.speed)||0,speed_is_custom:true,species_speed:copy(stat.speed||0),movement_speeds:copy(object(stat.speed)?stat.speed:{}),size_name:miniature?.size_name||size,footprint:miniature?.footprint||({Large:2,Huge:3,Gargantuan:4}[size]||1),reach_feet:5,inventory:[],classes:[],class:'',class_source:'',level:0,formula_bonuses:[],dice_bonuses:[],proficiency_choices:[],feats_catalog:[],class_features_catalog:[],species_traits_catalog:[],optional_features_catalog:[],spells:[],prepared_spells:[],spellbook_spells:[],resource_trackers:[],resource_tracker_spent:{},notes:''};
  if(miniature?.id)out.current_miniature_id=out.default_miniature_id=miniature.id;
  return out;
 }
