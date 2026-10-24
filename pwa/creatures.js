@@ -1,3 +1,4 @@
+import {resolveVariant, applyVariantEdit, migrateSecondForm} from './creature_variants.js';
 // Local character/monster archive using the *same* portable JSON schema as
 // Godot's CreatureArchive, without copying Godot gameplay calculations.
 import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecords,
@@ -197,22 +198,26 @@ export async function openCreatureEditor(id, scope = "default") {
     if (JSON.stringify(inventory) !== JSON.stringify(stored.data.inventory))
       stored = await saveCreature({...stored.data,inventory},scope,stored.revision);
   }
+  const migrated=migrateSecondForm(stored.data);
+  if(JSON.stringify(migrated)!==JSON.stringify(stored.data))
+    stored=await saveCreature(migrated,scope,stored.revision);
   let pending = Promise.resolve(), blocked = null;
   let latest = structuredClone(stored.data);
   return {
-    read: () => structuredClone(latest),
+    read: () => resolveVariant(latest),
+    readBase: () => structuredClone(latest),
     get revision() { return stored.revision; },
     update(patch) {
       if (blocked) return Promise.reject(blocked);
       // Evaluate read-modify-write edits at submission against the current
       // optimistic state, before any asynchronous persistence can interleave.
       if (typeof patch === "function") {
-        try { patch = patch(structuredClone(latest)); }
+        try { patch = patch(resolveVariant(latest)); }
         catch (error) { return Promise.reject(error); }
       }
       if (!patch || typeof patch !== "object" || Array.isArray(patch))
         return Promise.reject(new TypeError("Creature update must be an object"));
-      const proposed = validateCreature({ ...latest, ...structuredClone(patch) });
+      const proposed = validateCreature(applyVariantEdit(latest,structuredClone(patch)));
       if (Array.isArray(proposed.inventory))
         proposed.inventory = consolidateOwnedItems(proposed.inventory);
       if (proposed.id !== stored.data.id ||

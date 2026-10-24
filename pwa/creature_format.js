@@ -1,3 +1,4 @@
+import {validateVariants} from './creature_variants.js';
 // Portable creature schema shared with Godot's CreatureArea/_save_exported_creature.
 // The complete record remains opaque JSON: do not drop unfamiliar game fields.
 export const CREATURE_FORMAT = "vtt_creature_export_v1";
@@ -29,6 +30,7 @@ export function validateCreature(value) {
       (value.owner_id !== undefined && typeof value.owner_id !== "string")) {
     throw new TypeError("Invalid VTT creature record");
   }
+  validateVariants(value);
   // JSON-compatible records only. Explicitly enforce the native 16 MiB limit.
   if (textBytes(value) > MAX_CREATURE_BYTES) throw new Error("Creature exceeds 16 MiB");
   return clone(value);
