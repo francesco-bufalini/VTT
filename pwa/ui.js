@@ -33,6 +33,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -85,7 +86,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(), battleOnlyClass:true,
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -454,12 +455,12 @@ function paintLibraryMiniatures(){
  const dialog=app.querySelector('#library-create-dialog');if(!dialog)return;
  const query=(dialog.querySelector('#library-miniature-search')?.value||'').toLocaleLowerCase('it').trim();
  const profiles=libraryMiniatureOptions();
- const filtered=profiles.filter(m=>(m.name+' '+m.id).toLocaleLowerCase('it').includes(query));
+ const filtered=profiles.filter(m=>matchesSearch(query,m.name,m.id));
  // The selected miniature must remain visible even in a large alphabetic
  // catalog where the first page would otherwise push it out of view.
  const selected=filtered.find(m=>m.id===state.libraryMiniatureId);
  const ordered=selected?[selected,...filtered.filter(m=>m.id!==selected.id)]:filtered;
- const matches=ordered.slice(0,state.libraryMiniatureLimit);
+ const matches=pageResults(ordered,state.libraryMiniatureLimit).items;
  const area=dialog.querySelector('.library-miniature-choices');
  const previousScroll=area?.scrollTop||0;
  if(area)area.innerHTML=matches.length?matches.map(m=>
@@ -599,7 +600,7 @@ async function libraryView(){
    '<div class="library-backup-content"><div class="library-backup-actions">'+
     btn('backup','Esporta backup')+btn('restore-backup','Ripristina backup')+'</div></div></details>'+
   '<dialog id="library-create-dialog" class="library-create-dialog" aria-labelledby="library-create-title">'+
-   '<div class="library-create-body"><button type="button" class="library-create-close" data-act="library-create-close" aria-label="Chiudi">×</button>'+
+   '<div class="library-create-body">'+dialogCloseButton('library-create-close','Chiudi','library-create-close')+
     '<h2 id="library-create-title">Nuova creatura</h2>'+
     '<div class="library-create-types" role="group" aria-label="Tipo di creatura">'+
      '<button type="button" class="library-create-type is-active" aria-pressed="true">'+actionGlyph('proficiency')+'Personaggio</button>'+
@@ -607,9 +608,9 @@ async function libraryView(){
     '<label class="library-create-field" for="library-create-name">Nome'+
      '<input id="library-create-name" type="text" maxlength="120" placeholder="Nuova creatura" autocomplete="off"></label>'+
     '<div class="library-create-miniature-title"><strong>Miniatura di base</strong><small class="library-miniature-current" role="status">Selezionata: Sariel</small></div>'+
-    '<label class="library-miniature-search" for="library-miniature-search">'+actionGlyph('search')+
+    '<label class="library-miniature-search vtt-list-search" for="library-miniature-search">'+actionGlyph('search')+
      '<input id="library-miniature-search" type="search" placeholder="Cerca miniatura" autocomplete="off"></label>'+
-    '<div class="library-miniature-choices" role="group" aria-label="Scegli miniatura"></div>'+
+    '<div class="library-miniature-choices vtt-selection-list" role="group" aria-label="Scegli miniatura"></div>'+
     '<div class="library-miniature-pagination"><span class="library-miniature-progress" aria-live="polite"></span>'+
      '<button type="button" class="library-miniature-more" data-act="library-miniature-more" hidden>Mostra altre</button></div>'+
     '<div class="library-create-actions">'+
@@ -618,15 +619,14 @@ async function libraryView(){
    '</div></dialog>';
 }
 function renderCatalogRows() {
-  const filter=state.catalogQuery.trim().toLocaleLowerCase();
-  const matches=state.catalogRows.map((row,i)=>({row,i})).filter(({row})=>{
-    const string=String(row.name||"")+" "+String(row.source||"");
-    return !filter || string.toLocaleLowerCase().includes(filter);
-  }).slice(0,90);
-  return matches.length?matches.map(({row,i})=>
+  const matches=state.catalogRows.map((row,i)=>({row,i}))
+    .filter(({row})=>matchesSearch(state.catalogQuery,row.name,row.source));
+  const {items,shown,total}=pageResults(matches,state.catalogResultLimit);
+  return (items.length?items.map(({row,i})=>
     '<button type="button" class="btn full catalog-entry" data-act="catalog-open" data-index="'+i+'">'+
     '<span>'+esc(row.name||"Senza nome")+'</span><span class="tag">'+esc(row.source||row._category||"")+'</span></button>').join("") :
-    '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>';
+    '<p class="hint">Nessun risultato. Prova un altro termine o una categoria.</p>')+
+    resultsFooter('catalog-more',shown,total,90);
 }
 async function catalogView() {
   state.catalogRows=await catalogEntries(state.catalogCategory);
@@ -663,10 +663,10 @@ async function catalogView() {
     (chosen?detail:panel("Esplora",'<div class="columns"><label>Sezione<select id="catalog-category">'+
       CATALOG_CATEGORIES.map(([id,label])=>
       '<option value="'+id+'" '+(state.catalogCategory===id?'selected':'')+'>'+label+'</option>').join("")+
-      '</select></label><label>Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
+      '</select></label><label class="vtt-list-search">Ricerca<input id="catalog-search" type="search" value="'+esc(state.catalogQuery)+
       '" placeholder="Nome o fonte"></label></div><p class="hint">'+
-      state.catalogRows.length+' voci nel catalogo · fino a 90 risultati per pagina</p>'+
-      '<div id="catalog-results" class="catalog-results">'+renderCatalogRows()+'</div>')+
+      state.catalogRows.length+' voci nel catalogo · risultati caricati progressivamente</p>'+
+      '<div id="catalog-results" class="catalog-results vtt-selection-list">'+renderCatalogRows()+'</div>')+
     (quickPanel?'<details class="archive-tools catalog-create"><summary>Crea contenuto personalizzato</summary>'+quickPanel+'</details>':''));
 }
 
@@ -736,7 +736,7 @@ async function activateClassAbility(c,calculated,ability){
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 async function syncFormPresentation(c){
  if(c.linked_token_sync_id&&state.paired&&state.online){
@@ -769,7 +769,7 @@ function promptVariantOverflow(creatureId,formId,overflow){
   }catch(error){button.disabled=false;message(errorMessage(error),true);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 async function editorView() {
   const creatureId=state.creatureId;
@@ -1303,7 +1303,7 @@ function mountTraitBenefitDialog(){
  dialog.innerHTML='<header class="trait-benefits-dialog-head">'+
   '<h2 id="trait-benefits-title">Benefici · '+esc(trait.name)+
    (attunedItem||itemQuantity>1?'<span class="trait-item-quantity">×'+itemQuantity+'</span>':'')+'</h2>'+
-  '<button type="button" class="trait-benefits-close" data-act="trait-benefits-close" aria-label="Chiudi">×</button></header>'+
+  dialogCloseButton('trait-benefits-close','Chiudi','trait-benefits-close')+'</header>'+
   '<div class="trait-benefits-dialog-body">'+
    (passiveItem?'<div class="trait-activation-control trait-automatic-item">'+
      '<div class="trait-activation-copy"><span class="trait-activation-heading">Benefici automatici</span>'+
@@ -1341,7 +1341,7 @@ function mountTraitBenefitDialog(){
   if(event.clientX<rect.left||event.clientX>rect.right||
      event.clientY<rect.top||event.clientY>rect.bottom)dismissTraitBenefitDialog();
  });
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 function documentRow(item,index,stored){
   const {title,body,style,addedAt}=documentInfo(item,stored?.data);
@@ -1450,7 +1450,7 @@ function scrollSpellCandidates(query=''){
       (String(spell.name).toLocaleLowerCase('it').includes(value)||
        String(spell.source||'').toLocaleLowerCase('it').includes(value)))
     .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it')||
-      String(a.source||'').localeCompare(String(b.source||''),'it')).slice(0,80);
+      String(a.source||'').localeCompare(String(b.source||''),'it'));
 }
 function scrollSpellSelectOptions(query=''){
   const candidates=scrollSpellCandidates(query);
@@ -1708,7 +1708,7 @@ function openInventoryContainerDelete(id){
   });
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   document.body.append(dialog);
-  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+  openDialog(dialog);
   (destination||cancel).focus();
 }
 function inventoryContainerSections(record,entries,containers,selectedIndex,menuIndex,key){
@@ -1888,9 +1888,9 @@ function magicToolsDialog(c,calculated){
      spellSelectionWarning(selectedMember,classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[])):'')+
    '<section class="magic-selection-current"><h3>'+esc(selectedTarget==='spellbook_spells'?'Nel libro':selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
    spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,{includeSlots:false})+'</section>'+
-   '<label>Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
+   '<label class="vtt-list-search">Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
-   '<div id="spell-results" class="catalog-results">'+renderSpellResults()+'</div>';
+   '<div id="spell-results" class="catalog-results vtt-selection-list">'+renderSpellResults()+'</div>';
  const chosenLevel=Number(state.magicSlotLevel);
  const chosenPact=Boolean(state.magicSlotPact);
  const chosenSlot=chosenPact?calculated.pact_slots:
@@ -1937,7 +1937,7 @@ function magicToolsDialog(c,calculated){
  const [title,content]=views[kind];
  return '<dialog id="magic-tools-dialog" class="sheet-roll-dialog magic-tools-dialog" aria-label="'+esc(title)+'">'+
    '<div class="magic-tools-head"><h2>'+esc(title)+'</h2>'+
-   '<button type="button" class="magic-tool-close" data-act="magic-tool-close" aria-label="Chiudi '+esc(title)+'">×</button></div>'+
+   dialogCloseButton('magic-tool-close','Chiudi '+title,'magic-tool-close')+'</div>'+
    '<div class="magic-tools-body">'+content+'</div></dialog>';
 }
 function magicSpellInfo(row){
@@ -2154,7 +2154,7 @@ function spellSelectionWarning(member,count){
 function renderSpellResults(){
   const rows=state.spellCatalog||[],record=state.editor?.read()||{};
   if(!rows.length)return '<p class="hint">Catalogo non disponibile. Gli incantesimi già salvati restano utilizzabili.</p>';
-  const query=state.spellQuery.trim().toLocaleLowerCase('it');
+  const query=state.spellQuery.trim();
   const classes=state.calculated?.casting_classes||[];
   const member=classes.find(row=>row.id===state.spellClass);
   const target=(!member||member.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
@@ -2167,17 +2167,18 @@ function renderSpellResults(){
     new Set(prepared.filter(row=>!member||castingSources(row,classes,rows).includes(member.id)).map(spellId));
   const selectedRows=target==='spellbook_spells'?(record.spellbook_spells||[]):prepared;
   const allowed=new Set(spellsForEdition(rows,record.rules_version||'2014'));
-  const found=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
+  const filtered=rows.filter(spell=>allowed.has(spell)&&!spell.internal_grant&&
     (preparing?(Number(spell.level)<=member.max_level&&
       (state.spellKnownView!=='known'||known.has(spell.id))):
       member?.mode==='Preparati'&&target==='spellbook_spells'?
         spellEligible(spell,member):
         !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0)&&
-    (!query||(String(spell.name||'')+' '+String(spell.source||'')).toLocaleLowerCase('it').includes(query)))
+    matchesSearch(query,spell.name,spell.source))
     .sort((a,b)=>Number(a.level||0)-Number(b.level||0)||
       String(a.name||'').localeCompare(String(b.name||''),'it',{sensitivity:'base'}))
-    .slice(0,60);
+    ;
+  const {items:found,shown,total}=pageResults(filtered,state.spellResultLimit);
   if(!found.length)return '<p class="hint">'+
     (preparing&&state.spellKnownView==='known'?
       'Nessun incantesimo conosciuto corrispondente. Passa alla lista completa per aggiungerne altri.':
@@ -2204,7 +2205,7 @@ function renderSpellResults(){
       (already?' data-key="'+esc(target)+'" data-class-id="'+esc(member?.id||'manual')+'"':'')+
       '><span>'+esc(info.name)+'</span>'+
       '<span class="magic-selection-status">'+(already?'× Rimuovi':'+ Aggiungi')+'</span></button>';
-  });
+  })+resultsFooter('spell-results-more',shown,total,60);
 }
 function diceResult(){
   if(!state.roll)return '';
@@ -2230,7 +2231,7 @@ function openDiceDialog(){
   dlg.id="chat-dice-dialog";dlg.className="sheet-roll-dialog chat-dice-dialog";
   dlg.setAttribute("aria-labelledby","chat-dice-title");dlg.innerHTML=diceView();
   dlg.addEventListener("close",()=>dlg.remove(),{once:true});document.body.append(dlg);
-  if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
+  openDialog(dlg);
 }
 function chatView(){
   return panel("Chat della partita",
@@ -2377,16 +2378,8 @@ function sessionView() {
   return sessionLayout(html,desktop);
 }
 
-function openSessionDialog(dialog) {
-  if(!dialog)return;
-  if(typeof dialog.showModal==="function")dialog.showModal();
-  else dialog.setAttribute("open","");
-}
-function closeSessionDialog(dialog) {
-  if(!dialog)return;
-  if(typeof dialog.close==="function")dialog.close();
-  else dialog.removeAttribute("open");
-}
+function openSessionDialog(dialog) { openDialog(dialog); }
+function closeSessionDialog(dialog) { closeDialog(dialog); }
 function renderSessionIfIdle() {
   if(state.page!=="session")return;
   // A live poll must not close a modal or destroy a focused mobile editor.
@@ -3220,14 +3213,14 @@ function organizeSheetPanels(){
   const dialog=document.createElement('dialog');dialog.id='sheet-context-dialog';dialog.className='sheet-context-dialog';dialog.dataset.context=state.sheetPopup;
   const title=state.sheetPopupTitle||source.querySelector('h2,h3,summary,strong')?.textContent.trim()||source.getAttribute('aria-label')||'Dettagli e modifica';
   dialog.setAttribute('aria-labelledby','sheet-context-title');
-  dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2><button type="button" class="play-button" data-act="sheet-context-close" aria-label="Chiudi dettagli">'+actionGlyph('cross')+'</button></header><div class="sheet-context-body"></div>';
+  dialog.innerHTML='<header class="sheet-context-head"><h2 id="sheet-context-title">'+esc(title)+'</h2>'+dialogCloseButton('sheet-context-close','Chiudi dettagli','play-button')+'</header><div class="sheet-context-body"></div>';
   dialog.querySelector('.sheet-context-body').append(source);
   if(source.tagName==='DETAILS')source.open=true;
   for(const details of source.querySelectorAll(':scope > .action-economy-main > details.action-economy-entry,:scope > details.action-tree'))details.open=true;
   app.append(dialog);
   dialog.addEventListener('cancel',event=>{event.preventDefault();void closeSheetContext().catch(error=>message(errorMessage(error),true));});
   dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientY<rect.top||event.clientY>rect.bottom||event.clientX<rect.left||event.clientX>rect.right)void closeSheetContext().catch(error=>message(errorMessage(error),true));});
-  if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+  openDialog(dialog);
 }
 async function closeSheetContext(){
   const key=state.sheetPopup;
@@ -3245,7 +3238,7 @@ function fillAppliedSpellOptions(query=''){
  const select=app.querySelector('#condition-spell-picker');if(!select)return;
  const rules=state.editor?.read()?.rules_version||'2014';
  const matches=spellsForEdition(state.spellCatalog||[],rules).filter(isPersistentSpell)
-   .filter(row=>row?.id&&row?.name&&String(row.name).toLocaleLowerCase('it').includes(String(query).trim().toLocaleLowerCase('it'))).slice(0,120);
+   .filter(row=>row?.id&&row?.name&&matchesSearch(query,row.name,row.source));
  select.innerHTML=matches.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('');
 }
 // D20 checks and weapon damage use one sheet-roll popup structure.
@@ -3322,7 +3315,7 @@ async function openRollTraitPicker(kind='bonus',target=''){
  const picker=document.createElement('dialog');picker.id='roll-trait-picker';picker.className='trait-benefits-dialog';
  picker.dataset.benefitKind=kind;picker.dataset.benefitTarget=target;
  picker.innerHTML='<header class="trait-benefits-dialog-head"><h2>Seleziona il tratto che concede il bonus</h2>'+
-  '<button type="button" class="trait-benefits-close" data-act="roll-trait-cancel" aria-label="Chiudi">×</button></header>'+
+  dialogCloseButton('roll-trait-cancel','Chiudi','trait-benefits-close')+'</header>'+
   '<div class="trait-benefits-dialog-body"><label>Tratto<select data-roll-trait-key>'+
   traits.map(row=>'<option value="'+esc(row.key)+'">'+esc(row.origin+' · '+row.name)+'</option>').join('')+
   '</select></label><div class="actions"><button type="button" class="btn primary" data-act="roll-trait-pick">Continua</button></div></div>';
@@ -3392,7 +3385,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
          '</div></div>';
      }).join('')+'</div>':'')+'</section>';
  dialog.innerHTML='<h2>'+esc(heading)+
-   '<button type="button" class="sheet-roll-close" data-act="close-sheet-roll" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-sheet-roll','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-roll-math"><span>Modificatore totale</span><strong>'+esc((modifier>=0?'+':'')+modifier)+'</strong></div>'+
    '<div class="sheet-roll-math"><span>Tipo di tiro</span><strong>'+esc(rollType)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del tiro</span>'+
@@ -3403,7 +3396,7 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
      btn('roll-sheet-confirm',kind==='damage'?'Tira danni':'Tira 1d20','primary')+'</div>';
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
  return dialog;
 }
 const editableScoreBaseTarget=target=>
@@ -3429,7 +3422,7 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
  dialog.dataset.scoreTarget=target;
  dialog.dataset.returnFormulaTitle=returnTitle;
  dialog.innerHTML='<h2>Modifica valore base'+
-   '<button type="button" class="sheet-roll-close" data-act="close-score" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-score','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-base-editor-body">'+
      '<p class="sheet-base-editor-eyebrow">'+esc(title)+'</p>'+
      '<label class="sheet-base-editor-field" for="sheet-score-input">Valore base'+
@@ -3447,7 +3440,7 @@ function openSheetBaseEditor(record,calculated,target,{returnTitle=''}={}){
      '</div></div>';
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
  dialog.querySelector('input')?.focus();
  dialog.querySelector('input')?.select();
  return dialog;
@@ -3466,7 +3459,7 @@ function openSheetScoreFormula(record,calculated,target,label){
  const terms=sheetScoreOriginSegments(record,calculated,target).map(row=>
    row.kind==='base'&&editableScoreBaseTarget(target)?{...row,editBaseTarget:target}:row);
  dialog.innerHTML='<h2>'+esc(title)+
-   '<button type="button" class="sheet-roll-close" data-act="close-score-formula" aria-label="Chiudi" title="Chiudi">×</button></h2>'+
+   dialogCloseButton('close-score-formula','Chiudi','sheet-roll-close')+'</h2>'+
    '<div class="sheet-roll-math"><span>Valore calcolato</span><strong>'+esc(value)+'</strong></div>'+
    '<div class="sheet-roll-math sheet-roll-formula"><span>Formula del valore</span>'+
    '<div class="sheet-roll-formula-line"><div data-score-formula>'+
@@ -3475,7 +3468,7 @@ function openSheetScoreFormula(record,calculated,target,label){
  document.body.append(dialog);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close?.();});
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
  return dialog;
 }
 function openPendingChoicesIndex(){
@@ -3486,7 +3479,7 @@ function openPendingChoicesIndex(){
  dialog.id='pending-choice-dialog';
  dialog.className='sheet-context-dialog pending-choice-dialog pending-choice-index';
  dialog.innerHTML='<header class="sheet-context-head"><h2>Scelte dei privilegi</h2>'+
-   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   dialogCloseButton('pending-choice-close','Chiudi','play-button')+'</header>'+
    '<div class="pending-choice-dialog-body pending-choices-notice-list">'+
    choices.map(choice=>'<button type="button" data-act="pending-choice-open" data-choice-id="'+esc(choice.id)+'">'+
      '<span>'+esc(choice.name)+' <small>· '+esc(choice.label)+'</small></span>'+
@@ -3494,7 +3487,7 @@ function openPendingChoicesIndex(){
    '</div>';
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 function openPendingChoiceDialog(choice){
  app.querySelector('#pending-choice-dialog')?.remove();
@@ -3528,12 +3521,12 @@ function openPendingChoiceDialog(choice){
    '</div>':'';
  dialog.innerHTML='<header class="sheet-context-head"><div><small>'+esc(choice.name)+'</small>'+
    '<h2>'+esc(choice.label)+'</h2></div>'+
-   '<button type="button" class="play-button" data-act="pending-choice-close" aria-label="Chiudi">×</button></header>'+
+   dialogCloseButton('pending-choice-close','Chiudi','play-button')+'</header>'+
    '<div class="pending-choice-dialog-body"><p class="pending-choice-instruction">'+
    'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
    ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
-   (rows||customRow?'<div class="pending-choice-options">'+rows+customRow+'</div>':
+   (rows||customRow?'<div class="pending-choice-options vtt-selection-list">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
    '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
    '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
@@ -3560,7 +3553,7 @@ function openPendingChoiceDialog(choice){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);
  update();
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 function openRemoveFeatDialog(originKey){
  const record=state.editor?.read();
@@ -3574,23 +3567,43 @@ function openRemoveFeatDialog(originKey){
  dialog.id='feat-remove-dialog';dialog.className='sheet-context-dialog feat-remove-dialog';
  dialog.dataset.featKey=originKey;
  dialog.innerHTML='<header class="sheet-context-head"><h2>Rimuovere talento?</h2>'+
-   '<button type="button" class="play-button" data-act="feat-remove-cancel" aria-label="Chiudi">×</button></header>'+
+   dialogCloseButton('feat-remove-cancel','Chiudi','play-button')+'</header>'+
    '<div class="sheet-context-body"><p>Vuoi rimuovere <strong>'+esc(feat.name)+'</strong> dai talenti posseduti? '+
    'Le competenze scelte tramite questo talento non saranno più concesse.</p></div>'+
    '<footer class="pending-choice-actions"><button type="button" data-act="feat-remove-cancel">Annulla</button>'+
    '<button type="button" data-act="feat-remove-confirm">Rimuovi talento</button></footer>';
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);
- if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+ openDialog(dialog);
 }
 async function handleAction(target){
   const act=target.dataset.act;
+  if(act==='catalog-more'){
+    state.catalogResultLimit+=90;
+    const results=app.querySelector('#catalog-results');
+    if(results){
+      const previousScroll=results.scrollTop;
+      results.innerHTML=renderCatalogRows();
+      results.scrollTop=previousScroll;
+    }
+    return;
+  }
+  if(act==='spell-results-more'){
+    state.spellResultLimit+=60;
+    const results=app.querySelector('#spell-results');
+    if(results){
+      const previousScroll=results.scrollTop;
+      results.innerHTML=renderSpellResults();
+      results.scrollTop=previousScroll;
+    }
+    return;
+  }
   if(act==='feat-remove'){
     openRemoveFeatDialog(target.dataset.featKey||'');return;
   }
   if(act==='feat-remove-cancel'){
     const dialog=app.querySelector('#feat-remove-dialog');
-    if(dialog?.close)dialog.close();else dialog?.remove();
+    closeDialog(dialog,{remove:true});
     return;
   }
   if(act==='feat-remove-confirm'){
@@ -3621,7 +3634,7 @@ async function handleAction(target){
   }
   if(act==='pending-choice-close'){
     const dialog=app.querySelector('#pending-choice-dialog');
-    if(dialog?.close)dialog.close();else dialog?.remove();
+    closeDialog(dialog,{remove:true});
     return;
   }
   if(act==='pending-choice-save'){
@@ -3884,7 +3897,7 @@ async function handleAction(target){
     dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     document.body.append(dialog);
     paint();
-    if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    openDialog(dialog);
     search.focus();
     return;
   }
@@ -3910,7 +3923,7 @@ async function handleAction(target){
     if(act==='magic-select-spells'){
       state.spellClass=target.dataset.magicClass||'manual';
       state.spellTarget=target.dataset.magicTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
-      state.spellQuery='';
+      state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=state.calculated?.casting_classes?.find(row=>row.id===state.spellClass)?.mode==='Preparati'?
         'known':'all';
     }
@@ -3919,7 +3932,7 @@ async function handleAction(target){
   if(act==='magic-tool-close'){
     state.magicPopup="";
     const dialog=app.querySelector('#magic-tools-dialog');
-    if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.remove();}
+    closeDialog(dialog,{remove:true});
     return;
   }
   if(act==='action-variants'){
@@ -4039,12 +4052,12 @@ async function handleAction(target){
       (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
     app.appendChild(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-    if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+    openDialog(dialog);
     return;
   }
   if(act==='action-cast-cancel'){
     const dialog=app.querySelector('#action-cast-dialog');
-    if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.remove();}
+    closeDialog(dialog,{remove:true});
     return;
   }
   if(act==='action-cast-confirm'){
@@ -4817,7 +4830,7 @@ async function handleAction(target){
     const dialog=app.querySelector('#library-create-dialog');
     if(dialog){
       paintLibraryMiniatures();
-      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+      openDialog(dialog);
       void loadLibraryMiniatures();
     }
     return;
@@ -4840,7 +4853,7 @@ async function handleAction(target){
   }
   if(act==="library-create-close"){
     const dialog=app.querySelector('#library-create-dialog');
-    if(dialog){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
+    closeDialog(dialog);
     return;
   }
   if(act==="create"){
@@ -4851,14 +4864,14 @@ async function handleAction(target){
     if(!miniature)throw Error("Seleziona una miniatura di base.");
     state.magicPopup="";
     const row=await createCreature("character",name,"default",miniature);
-    if(dialog.open&&dialog.close)dialog.close();
+    closeDialog(dialog);
     state.creatureId=row.id;state.libraryMode=false;state.editor=null;state.sheet="info";
     state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
     await render();return;
   }
   if(act==="import"||act==="library-quick-import"){
     const dialog=app.querySelector('#library-create-dialog');
-    if(dialog?.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');}
+    closeDialog(dialog);
     creatureInput.click();return;
   }
   if(act==="restore-backup"){backupInput.click();return;}
@@ -5430,7 +5443,7 @@ async function handleAction(target){
     return;
   }
   if(act==="open-chat-dice"){openDiceDialog();return;}
-  if(act==="close-chat-dice"){const dlg=document.querySelector("#chat-dice-dialog");if(dlg){if(typeof dlg.close==="function")dlg.close();else dlg.remove();}return;}
+  if(act==="close-chat-dice"){closeDialog(document.querySelector("#chat-dice-dialog"),{remove:true});return;}
   if(act==="select-die"){
     state.diceSides=Number(target.dataset.sides);
     const dlg=document.querySelector("#chat-dice-dialog");
@@ -5568,24 +5581,24 @@ function listen(){
     }
     if(closeAction==='roll-trait-cancel'){
       const dialog=document.querySelector('#roll-trait-picker');
-      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      closeDialog(dialog,{remove:true});
       return;
     }
     if(closeAction==='close-score-formula'){
       const dialog=document.querySelector('#sheet-score-formula-dialog');
-      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      closeDialog(dialog,{remove:true});
       return;
     }
     if(closeAction==='close-sheet-roll'){
       const dialog=document.querySelector('#sheet-roll-dialog');
-      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      closeDialog(dialog,{remove:true});
       return;
     }
     if(closeAction==='action-cast-cancel'||closeAction==='magic-tool-close'){
       if(closeAction==='magic-tool-close')state.magicPopup='';
       const dialog=document.querySelector(closeAction==='action-cast-cancel'?
        '#action-cast-dialog':'#magic-tools-dialog');
-      if(dialog){if(dialog.open&&dialog.close)dialog.close();dialog.remove();}
+      closeDialog(dialog,{remove:true});
       return;
     }
     if(button.disabled)return;
@@ -5637,13 +5650,13 @@ function listen(){
     if(target?.id==="token-spell-query"){fillSessionSpells(target.value);return;}
     if(target?.id==="token-mini-query"){fillSessionMiniatures(target.value);return;}
     if(target?.id==="spell-search"){
-      state.spellQuery=target.value;
+      state.spellQuery=target.value;state.spellResultLimit=60;
       const matches=document.querySelector("#spell-results");
       if(matches)matches.innerHTML=renderSpellResults();
       return;
     }
     if(target?.id==="catalog-search"){
-      state.catalogQuery=target.value;
+      state.catalogQuery=target.value;state.catalogResultLimit=90;
       const results=document.querySelector("#catalog-results");
       if(results)results.innerHTML=renderCatalogRows();
       return;
@@ -5682,7 +5695,7 @@ function listen(){
     if(target?.id==='spell-class'){
       state.spellClass=target.value;
       state.spellTarget='prepared_spells';
-      state.spellQuery='';
+      state.spellQuery='';state.spellResultLimit=60;
       state.spellKnownView=state.calculated?.casting_classes?.find(row=>row.id===state.spellClass)?.mode==='Preparati'?
         'known':'all';
       render().catch(error=>message(errorMessage(error),true));return;
@@ -5693,7 +5706,7 @@ function listen(){
         .catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="catalog-category"){
-      state.catalogCategory=target.value;state.catalogSelected=-1;
+      state.catalogCategory=target.value;state.catalogSelected=-1;state.catalogResultLimit=90;
       render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==="cast-creature"){
