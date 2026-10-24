@@ -1400,6 +1400,7 @@ function mountTraitBenefitDialog(){
    choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
  const trackerOptions=[['','Nessuno'],...(state.calculated?.trackers||[]).map(t=>[t.id,t.name])];
  const fields=[
+  ['attack_count',formInput('Numero totale di attacchi con Azione','attacks_per_action','Es. 2','number')],
   ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
      formInput('Bonus (numero, formula o dadi)','expression','Es. +2, proficiency, 1d4')+
      '<details class="trait-bonus-extra"><summary>Opzioni per dadi nei tiri</summary>'+
