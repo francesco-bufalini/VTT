@@ -6,6 +6,7 @@ import {removedBenefitIds} from './trait_benefit_editor.js';
 import {itemKind,requiresAttunement,itemAttunementCount,inventoryAttunementCounts,itemBenefitCopies,hasProperty,resolveOwnedItem,infusionNumericBonuses,infusionInstanceOrigin} from "./item_controls.js";
 import {automaticId,numericGrant,collectStructuredFeatures,structuredFeatureGrants,fixedProficiencies,effectiveBackgrounds,proficiencyGrantOrigins} from "./structured_effects.js";
 import {structuredSpellGrants,featureTableSpellGrants,supplementalFeatureSpellGrants} from './spell_selection.js';
+import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplements.js';
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects} from './trait_state_rules.js';
@@ -1035,17 +1036,13 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.states)?data.states:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
-    fetch('/catalog/feature_spell_grants.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.subclasses)?data.subclasses:[]).catch(()=>[]),
-    fetch('/catalog/item_numeric_grants.json').then(r=>r.ok?r.json():{}).then(data=>
-      data?.version===1&&Array.isArray(data.items)?data.items:[]).catch(()=>[]),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,classFeatures,featureSpellGrants,itemGrants,originDetails])=>({
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,classFeatures,originDetails])=>({
     abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,classFeatures,
-    featureSpellGrants,itemGrants,originDetails,
+    featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
   return catalogPromise;
