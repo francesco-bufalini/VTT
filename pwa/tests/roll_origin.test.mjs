@@ -240,19 +240,22 @@ test('mixed typed damages show only verifiable source-derived characteristic and
  assert.equal(damageRollSegments(roll,'slashing;fire',incorrect)[0].formula,
    '1d6 + Modificatore','Inconsistent sources must not claim an ability modifier');
 });
-test('fixed proficiency provenance has its own navigable class trait when no feature owns it',async()=>{
+test('fixed proficiency provenance opens the existing class overview, never a fabricated trait',async()=>{
  const record=character(),calculated=calculateSheet(record);
  const source='class|phb|barbarian';
  const training=sheetRollOriginSegments(record,calculated,'skill:athletics')
    .find(row=>row.kind==='training');
  assert.equal(training?.originId,source);
- const rows=await collectTraitRows(record,calculated,{entries:async()=>[]});
- const trait=rows.find(row=>row.proficiency_origin===source);
- assert.equal(trait?.category,'classi');
- assert.equal(trait?.name,'Competenze');
- assert.match(String(trait?.entries),/Atletica/);
- assert.equal(trait?.origin_key,source);
- assert.equal(rows.filter(row=>row.proficiency_origin===source).length,1);
+ const rows=await collectTraitRows(record,calculated,{entries:async category=>
+   category==='classes'?[{name:'Barbarian',source:'PHB',entries:['Descrizione della classe']}]:[]});
+ const trait=rows.find(row=>row.category==='classi'&&row.rank===0&&
+   row.origin_key===source);
+ assert(trait,'Original class overview should own fixed proficiencies');
+ assert(!rows.some(row=>row.name==='Competenze'||row.key.startsWith('proficiency:')),
+   'Never add a duplicated generated proficiency trait');
+ assert(traitBenefitSources(trait,record).has(source));
+ assert(traitBenefitGroups(trait,record,calculated).some(group=>
+   group.type==='proficiency'&&group.items.some(item=>item.value==='Atletica')));
 });
 
 test('Lightning Launcher abbreviation renders as full Lightning damage and optional bonus links its tracker',()=>{
@@ -343,23 +346,26 @@ test('HP maximum and ability score formula tiles preserve explicit origin bonuse
  assert.match(html,/data-origin-id="feature:hp"/);
  assert.doesNotMatch(html,/1d20|data-roll-mode/);
 });
-test('unattributed proficiency navigates to a real Competenze trait, never an add-bonus picker',async()=>{
+test('unattributed proficiency stays in the Info summary without a fabricated trait',async()=>{
  const c={...character(),proficiency_choices:[{kind:'skill',key:'athletics',origin_id:''}]};
  const calc=calculateSheet(c),training=sheetRollOriginSegments(c,calc,'skill:athletics')
    .find(row=>row.kind==='training');
  assert.equal(training?.originId,'proficiency:unattributed');
+ assert(calc.proficiencies.includes('skill:athletics'));
  const traits=await collectTraitRows(c,calc,{entries:async()=>[]});
- const owned=traits.find(row=>row.proficiency_origin===training.originId);
- assert.equal(owned?.name,'Competenze');
- assert.match(owned?.entries||'',/Atletica/);
- assert(traitBenefitSources(owned,c).has('proficiency:unattributed'));
+ assert(!traits.some(row=>row.name==='Competenze'||row.proficiency_origin===
+   'proficiency:unattributed'),'Unattributed proficiency is a character fact, not a trait');
 });
-test('concrete proficiency IDs belong to the granting Competenze trait',async()=>{
+test('concrete proficiency IDs belong to their original grant, not a cloned Competenze trait',async()=>{
  const c=character(),calc=calculateSheet(c);
- const rows=await collectTraitRows(c,calc,{entries:async()=>[]});
- const source='class|phb|barbarian',trait=rows.find(row=>row.proficiency_origin===source);
+ const source='class|phb|barbarian';
+ const rows=await collectTraitRows(c,calc,{entries:async category=>
+   category==='classes'?[{name:'Barbarian',source:'PHB',entries:['Origine della classe']}]:[]});
+ const trait=rows.find(row=>row.rank===0&&row.origin_key===source);
+ assert(trait,'Must locate original class');
  assert(traitBenefitSources(trait,c).has(source));
  assert(traitBenefitGroups(trait,c,calc).some(group=>group.type==='proficiency'));
+ assert(!rows.some(row=>row.key==='proficiency:'+source));
 });
 
 test('only explicitly owned base score terms gain a base-edit control',()=>{

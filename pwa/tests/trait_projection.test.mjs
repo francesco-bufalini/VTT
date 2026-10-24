@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {collectTraitRows,groupTraitRows,withGrantedSpellPreviews} from '../trait_projection.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
 
 const entry=(name,level=1,extra={})=>({name,level,entries:['Descrizione di '+name],...extra});
 const catalogs={
@@ -221,15 +222,54 @@ test('projected calculated disabled flag never marks unmodified traits off by de
  assert.equal(on.find(r=>r.name==='Arcane Recovery').inactive,false);
 });
 
-test('a disabled proficiency trait stays visible after its calculated grants vanish',async()=>{
+test('proficiency grants stay on the original trait without fabricated Competenze cards',async()=>{
+ const computed={features:[
+  {name:'Arcane Recovery',level:1,origin_key:'class|phb|wizard',origin_id:'feature:recovery'},
+  {name:'Researcher',level:1,origin_key:'background|phb|sage',origin_id:'feature:researcher'}
+ ],proficiency_sources:{
+  'skill:perception':[{id:'race|phb|elf',name:'Elf'}],
+  'save:int':[{id:'class|phb|wizard',name:'Wizard'}],
+  'skill:arcana':[{id:'feature:recovery',name:'Arcane Recovery'}],
+  'expertise:history':[{id:'feature:researcher',name:'Researcher'}],
+  'tool:herbalism kit':[{id:'background|phb|sage',name:'Sage'}],
+  'language:draconic':[{id:'feat|phb|magic initiate',name:'Magic Initiate'}],
+  'weapon:longsword':[]
+ },proficiencies:['skill:perception','save:int','skill:arcana',
+  'expertise:history','tool:herbalism kit','language:draconic','weapon:longsword']};
+ const rows=await collectTraitRows(creature,computed,provider);
+ assert(!rows.some(row=>row.name==='Competenze'||row.key.startsWith('proficiency:')),
+  'A grant must not create an additional trait with generated description');
+ const cases=[
+  ['Descrizione · Elf','Percezione'],
+  ['Descrizione · Wizard','Intelligenza'],
+  ['Arcane Recovery','Arcano'],
+  ['Researcher','Storia'],
+  ['Descrizione · Sage','herbalism kit'],
+  ['Magic Initiate','draconic']
+ ];
+ for(const [owner,value] of cases){
+  const trait=rows.find(row=>row.name===owner);
+  assert(trait,'Missing original owner '+owner);
+  const sections=traitBenefitGroups(trait,creature,computed);
+  const values=sections.find(section=>section.type==='proficiency')?.items.map(item=>item.value)||[];
+  assert(values.includes(value),owner+' should own proficiency '+value);
+ }
+ const unrelated=rows.find(row=>row.name==='Sculpt Spells');
+ assert(!traitBenefitGroups(unrelated,creature,computed).some(section=>section.type==='proficiency'),
+  'Unrelated feature must not inherit origin-level grants');
+});
+
+test('legacy disabled proficiency traits are not resurrected after recalculation',async()=>{
  const key='proficiency:class|phb|wizard';
  const record={kind:'character',classes:[{name:'Wizard',source:'PHB',level:3}],
   trait_enabled:{[key]:false},origin_enabled:{'class|phb|wizard':false}};
  const rows=await collectTraitRows(record,{proficiency_sources:{}},{
-  entries:async()=>[],detail:async(_category,row)=>row});
- const trait=rows.find(row=>row.key===key);
- assert.ok(trait,'A user must be able to recover a disabled proficiency after reload');
- assert.equal(trait.inactive,true);
- assert.equal(trait.proficiency_origin,'class|phb|wizard');
- assert.equal(trait.category,'classi');
+  entries:async category=>category==='classes'?
+   [{name:'Wizard',source:'PHB',entries:['Wizard lore']}]:[],
+  detail:async(_category,row)=>row});
+ assert.equal(rows.some(row=>row.key===key||row.name==='Competenze'),false,
+  'Historical toggles must not recreate synthetic proficiency traits');
+ const owner=rows.find(row=>row.name==='Descrizione · Wizard');
+ assert(owner,'The original class trait remains accessible instead');
+ assert(owner.inactive,'Origin-level disabled state is retained on its original owner');
 });
