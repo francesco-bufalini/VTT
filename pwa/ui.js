@@ -1515,7 +1515,8 @@ function inventoryEquipmentView(c,calculated={}){
   const mainRow=inventory.find(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes("main"));
   const main=mainRow?resolveOwnedItem(mainRow):null;
   const versatile=main&&itemKind(main)==="weapon"&&hasProperty(main,"V");
-  const blocked=Boolean(main&&(hasProperty(main,"2H")||(versatile&&c.hand_grip_two_handed)));
+  const blocked=Boolean(main&&(hasProperty(main,"2H")||(versatile&&c.hand_grip_two_handed))&&
+    c.hand_off_with_two_handed!==true);
   const rows=labels.map(([slot,label])=>{
     const selected=blocked&&slot==="off"?-1:
       inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
@@ -1567,6 +1568,9 @@ function inventoryEquipmentView(c,calculated={}){
       (c.attack_ability_finesse_only!==false?' checked':'')+'>Usa solo per armi accurate</label>'+
     (versatile?'<label class="check"><input type="checkbox" data-field="hand_grip_two_handed"'+
       (c.hand_grip_two_handed?' checked':'')+'>Due mani (Versatile)</label>':'')+
+    '<label class="check equipment-offhand-override"><input type="checkbox" data-field="hand_off_with_two_handed"'+
+      (c.hand_off_with_two_handed===true?' checked':'')+
+      '>Consenti la mano secondaria anche con un’arma a due mani</label>'+
     '</div>';
   const defense='<div class="equipment-defense">'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
@@ -2837,18 +2841,19 @@ async function handleField(target) {
     const occupied=Boolean(mainResolved&&(
       hasProperty(mainResolved,'2H')||
       creature.hand_grip_two_handed&&hasProperty(mainResolved,'V')));
-    if(slot==='off'&&occupied&&target.value!=='-1')
+    if(slot==='off'&&occupied&&creature.hand_off_with_two_handed!==true&&target.value!=='-1')
       throw Error('Mano secondaria occupata.');
-    const inventory=equipSlot(creature.inventory||[],slot,special!=='none'?-1:index);
+    const inventory=equipSlot(creature.inventory||[],slot,special!=='none'?-1:index,
+       {allowOffhandWithTwoHanded:creature.hand_off_with_two_handed===true});
     const nextMain=inventory.find(item=>item.equipped_slots?.includes('main'));
     const nextResolved=nextMain?resolveOwnedItem(nextMain):null;
     const nextVersatile=nextResolved&&itemKind(nextResolved)==='weapon'&&hasProperty(nextResolved,'V');
     const grip=Boolean(creature.hand_grip_two_handed&&nextVersatile);
-    if(slot==='main'&&grip)for(const item of inventory)
+    if(slot==='main'&&grip&&creature.hand_off_with_two_handed!==true)for(const item of inventory)
       item.equipped_slots=(item.equipped_slots||[]).filter(v=>v!=='off');
     await patch({inventory,...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
       ...(slot==='main'?{hand_grip_two_handed:grip,
-        ...(grip?{hand_off_special:'none'}:{})}:{})});
+        ...(grip&&creature.hand_off_with_two_handed!==true?{hand_off_special:'none'}:{})}:{})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -2966,11 +2971,26 @@ async function handleField(target) {
       const usable=main&&itemKind(main)==='weapon'&&hasProperty(resolveOwnedItem(main),'V');
       if(!usable)throw Error('Nessuna arma versatile nella mano principale.');
       const inventory=structuredClone(creature.inventory||[]);
-      if(value)for(const item of inventory)item.equipped_slots=(item.equipped_slots||[]).filter(slot=>slot!=='off');
-      await patch({hand_grip_two_handed:value,...(value?{inventory,hand_off_special:'none'}:{})});
+      if(value&&creature.hand_off_with_two_handed!==true)for(const item of inventory)
+         item.equipped_slots=(item.equipped_slots||[]).filter(slot=>slot!=='off');
+      await patch({hand_grip_two_handed:value,...(value&&creature.hand_off_with_two_handed!==true?
+         {inventory,hand_off_special:'none'}:{})});
       await render();return;
     }
-    if(key==='attack_ability'&&!['str','dex','con','int','wis','cha'].includes(value))
+    if(key==='hand_off_with_two_handed'){
+       const inventory=structuredClone(creature.inventory||[]);
+       const main=inventory.find(item=>item.equipped_slots?.includes('main'));
+       const mainResolved=main?resolveOwnedItem(main):null;
+       const occupied=Boolean(mainResolved&&(
+         hasProperty(mainResolved,'2H')||
+         creature.hand_grip_two_handed&&hasProperty(mainResolved,'V')));
+       if(!value&&occupied)for(const item of inventory)
+         item.equipped_slots=(item.equipped_slots||[]).filter(slot=>slot!=='off');
+       await patch({hand_off_with_two_handed:Boolean(value),...(!value&&occupied?
+         {inventory,hand_off_special:'none'}:{})});
+       await render();return;
+     }
+     if(key==='attack_ability'&&!['str','dex','con','int','wis','cha'].includes(value))
       throw Error('Caratteristica attacchi non valida.');
     if(key==='attack_ability_finesse_only'&&typeof value!=='boolean')
       throw Error('Ambito caratteristica attacchi non valido.');
@@ -5174,13 +5194,43 @@ async function handleAction(target){
     state.catalogCategory="items";state.catalogQuery=String(item.name||"");
     state.catalogSelected=-1;await navigate("catalog");return;
   }
-  if(act==="inventory-equip"){
+  if(act==="inventory-equip-slot"){
+     const record=state.editor.read(),index=Number(target.dataset.index),slot=target.dataset.slot;
+     const owned=record.inventory?.[index];
+     if(!owned||!['main','off','body'].includes(slot)||!validSlot(owned,slot)||
+       slot==='main'&&itemKind(owned)==='shield')throw Error('Slot equipaggiamento non valido.');
+     const main=record.inventory.find(item=>item.equipped_slots?.includes('main'));
+     const resolved=main?resolveOwnedItem(main):null;
+     if(slot==='off'&&record.hand_off_with_two_handed!==true&&resolved&&
+       (hasProperty(resolved,'2H')||
+        record.hand_grip_two_handed&&hasProperty(resolved,'V')))
+       throw Error('Mano secondaria occupata. Puoi sbloccarla dal popup Equipaggiamento.');
+     const inventory=equipSlot(record.inventory,slot,index,
+       {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
+     const nextMain=inventory.find(item=>item.equipped_slots?.includes('main'));
+     const nextResolved=nextMain?resolveOwnedItem(nextMain):null;
+     const grip=Boolean(nextResolved&&hasProperty(nextResolved,'V')&&record.hand_grip_two_handed);
+     if(slot==='main'&&grip&&record.hand_off_with_two_handed!==true)
+       for(const item of inventory)item.equipped_slots=(item.equipped_slots||[]).filter(s=>s!=='off');
+     const trait=(state.traitRows||[]).find(row=>row.origin_key==='item:'+String(owned.id||''));
+     const overrides=trait?traitActivationPatch(record,trait,true):{};
+     await patch({...overrides,inventory,
+       ...(slot==='main'?{hand_main_special:'none',hand_grip_two_handed:grip,
+         ...((nextResolved&&hasProperty(nextResolved,'2H')||grip)&&
+           record.hand_off_with_two_handed!==true?{hand_off_special:'none'}:{})}:{}),
+       ...(slot==='off'?{hand_off_special:'none'}:{})});
+     state.inventorySelectedIndex=index;
+     state.sheetPopup='equipment';state.sheetPopupTitle='Equipaggiamento';
+     await render();return;
+   }
+   if(act==="inventory-equip"){
     const record=state.editor.read(),index=Number(target.dataset.index);
     const owned=record.inventory?.[index];
     if(!owned)throw Error("Oggetto non trovato.");
     if(!['weapon','armor','shield'].includes(itemKind(owned)))throw Error("Questo oggetto è sempre attivo; non richiede equipaggiamento.");
     const enabled=!(owned.equipped===true||(owned.equipped_slots||[]).length>0);
-    const inventory=setItemEquipped(record.inventory,index,enabled);
+    const inventory=setItemEquipped(record.inventory,index,enabled,
+       {allowOffhandWithTwoHanded:record.hand_off_with_two_handed===true});
     const itemKey='item:'+String(owned.id||'');
     const trait=(state.traitRows||[]).find(row=>row.origin_key===itemKey);
     const overrides=trait?traitActivationPatch(record,trait,true):{};
@@ -5574,7 +5624,7 @@ function listen(){
     try{await handleSubmit(e.target);}catch(error){message(errorMessage(error),true);}
     finally{if(button&&button.isConnected)button.disabled=false;}
   });
-  const editable = "[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
+  const editable = "[data-item-container],[data-coin-code],[data-slot-weapon-size],[data-inventory-attunement-max],[data-requirement],[data-origin-config],[data-tracker-field],[data-origin-enabled],[data-auto-bonus],[data-native-pick],[data-casting-section],[data-slot-total],[data-pact-total],[data-document-index],[data-equip-slot],[data-reference],[data-native-list],[data-native-cr],[data-field],[data-ability],[data-slot],[data-item-index],[data-item-override],[data-condition],[data-token-condition]";
   app.addEventListener("input",e=>{
     const target=e.target;
     if(target?.id==='library-miniature-search'){
