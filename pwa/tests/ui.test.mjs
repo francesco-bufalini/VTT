@@ -256,7 +256,7 @@ test("pairing connects tactical tokens and shared chat through desktop API",asyn
   const calls=[];
   globalThis.fetch=async (url,options={})=>{
     calls.push({url,options});
-    if(url.startsWith('/catalog/'))return referenceCatalogFetch(url,options);
+    if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
     if(url==="/api/status")return new Response(JSON.stringify({protocol:1,desktop_online:true}),{status:200});
     if(url==="/api/pair")return new Response(JSON.stringify({token:"a".repeat(64)}),{status:200});
     if(url==="/api/session")return new Response(JSON.stringify({protocol:1,session:"3",mobile_protocol:3}),{status:200});
@@ -434,7 +434,7 @@ test("successful one-time pairing survives an initial transient map error",async
   await until(()=>document.querySelector("#pair-form"));
   let mapRequests=0, pairRequests=0;
   globalThis.fetch=async(url,options={})=>{
-    if(url.startsWith('/catalog/'))return referenceCatalogFetch(url,options);
+    if(url==='/catalog/spells.json'||url==='/catalog/spells/selected')return referenceCatalogFetch(url,options);
     if(url==="/api/pair"){
       pairRequests++;
       return new Response(JSON.stringify({token:"b".repeat(64)}),{status:200});
