@@ -2449,22 +2449,22 @@ function sessionView() {
         return '<div class="row between session-applied-spell"><span>'+esc(definition?.name||id)+'</span>'+
           '<button type="button" class="btn small" data-act="remove-token-spell" data-spell-id="'+esc(id)+'">✕</button></div>';
       }).join('');
-      html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><h2>⚙ '+esc(edited.name)+'</h2>'+
+      html+='<dialog id="session-token-dialog" class="session-dialog" aria-label="Modifica token"><header class="vtt-popup-heading"><h2>⚙ '+esc(edited.name)+'</h2>'+dialogCloseButton('close-token-dialog','Chiudi','')+'</header>'+
         '<h3>Condizioni</h3>'+conditionGrid(edited.conditions,'data-token-condition',edited.rules_version||linked?.rules_version)+
         '<h3>Incantesimi applicati</h3>'+ (active||'<p class="hint">Nessun incantesimo attivo.</p>')+
-        '<label>Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
+        '<label class="vtt-list-search">Cerca incantesimo<input id="token-spell-query" type="search" placeholder="Nome incantesimo"></label>'+
         '<label>Incantesimo<select id="token-spell-select"></select></label>'+
         '<button type="button" class="btn small" data-act="apply-token-spell">＋ Applica incantesimo</button>'+
         '<h3>Miniatura</h3>'+
         (linked?''+
-          '<label>Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
+          '<label class="vtt-list-search">Cerca miniatura<input id="token-mini-query" type="search" placeholder="Nome miniatura"></label>'+
           '<label>Miniatura<select id="token-mini-select"></select></label>'+
           '<button type="button" class="btn small" data-act="apply-token-appearance">Applica miniatura</button>':
           '<p class="hint">La miniatura può essere cambiata dal dispositivo che controlla la scheda collegata.</p>')+
         '<div class="session-dialog-footer"><button type="button" class="btn" data-act="close-token-dialog">Chiudi</button></div></dialog>';
     }
   }
-  html+='<dialog id="session-place-dialog" class="session-dialog" aria-label="Aggiungi token"><h2>Aggiungi token</h2>'+
+  html+='<dialog id="session-place-dialog" class="session-dialog" aria-label="Aggiungi token"><header class="vtt-popup-heading"><h2>Aggiungi token</h2>'+dialogCloseButton('close-place-dialog','Chiudi','')+'</header>'+
     '<label>La tua scheda<select id="place-creature">'+(state.cachedCreatures||[]).map(c=>
       '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label>'+
     '<label>Accanto al token<select id="place-reference">'+entries.map(t=>
@@ -4050,11 +4050,12 @@ async function handleAction(target){
     }
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog action-variants-dialog';
     const enabled=readActionVariants();
-    dialog.innerHTML='<h2>Regole varianti · 2014</h2><label>Cerca una regola<input type="search" data-variant-search></label><div class="variant-list">'+actionVariants().map(row=>'<label class="check" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
-    dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!row.textContent.toLocaleLowerCase('it').includes(e.target.value.toLocaleLowerCase('it'));});
+    dialog.innerHTML='<header class="vtt-popup-heading"><h2>Regole varianti · 2014</h2>'+dialogCloseButton('action-variants-close','Chiudi','')+'</header><label class="vtt-list-search">Cerca una regola<input type="search" data-variant-search></label><div class="variant-list vtt-selection-list">'+actionVariants().map(row=>'<label class="check pending-choice-option vtt-selectable" data-variant-row><input type="checkbox" value="'+esc(row.id)+'" '+(enabled.includes(row.id)?'checked':'')+'><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(row.name)+' <a target="_blank" rel="noopener" href="'+esc(row.source_url)+'">'+esc(row.source)+', p. '+esc(row.page)+'</a></span></label>').join('')+'</div><div class="actions"><button type="button" class="btn primary" data-save-variants>Applica</button><button type="button" class="btn" data-close-variants>Chiudi</button></div>';
+    dialog.querySelector('[data-variant-search]').addEventListener('input',e=>{for(const row of dialog.querySelectorAll('[data-variant-row]'))row.hidden=!matchesSearch(e.target.value,row.textContent);});
     dialog.querySelector('[data-save-variants]').addEventListener('click',async()=>{try{const selected=[...dialog.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value);await patch({action_variants_2014:selected});dialog.remove();await render();}catch{message('Impossibile salvare le varianti sul dispositivo');}});
-    dialog.querySelector('[data-close-variants]').addEventListener('click',()=>dialog.remove());
-    dialog.addEventListener('cancel',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return;
+    dialog.querySelector('[data-close-variants]').addEventListener('click',()=>closeDialog(dialog,{remove:true}));
+    dialog.querySelector('[data-act="action-variants-close"]').addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});});
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);openDialog(dialog);return;
   }
   if(act==='action-open-spells'){
     state.sheet='magic';await render();return;
