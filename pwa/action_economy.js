@@ -658,7 +658,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   !['attack','opportunity','two_weapon'].includes(row.id)&&
   (row.parent_action!=='two_weapon'||String(row.attack_id||row.id||'').startsWith('shield:improvised:')||
    String(row.attack_id||row.id||'').startsWith('item:improvised:')||
-   attacksById.get(String(row.attack_id||row.id||''))?.improvised===true)&&row.id!=='unarmed:off');
+   attacksById.get(String(row.attack_id||row.id||''))?.improvised===true||
+   /\b(?:improvvisat|improvised)/i.test(String(row.name||'')))&&row.id!=='unarmed:off');
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
   const known=attacksById.get('unarmed');
