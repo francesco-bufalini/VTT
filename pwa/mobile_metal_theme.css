@@ -2068,6 +2068,27 @@ button.trait-benefit-entry:hover{border-color:#d4aa70;background-color:#45342b}
  cursor:pointer;font:23px/1 system-ui;
 }
 .trait-benefits-trigger .vtt-action-glyph{width:21px;height:21px}
+/* Feat ownership control: a discreet, independent tap target. */
+.play-info-traits .trait-row:has(>.trait-feat-remove){grid-template-columns:40px minmax(0,1fr) 38px}
+.play-info-traits .trait-feat-remove{
+ align-self:start;display:grid;place-items:center;width:34px;height:42px;
+ border:0;border-radius:8px;background:transparent;color:#bba791;
+ font:21px/1 system-ui;cursor:pointer;
+}
+.play-info-traits .trait-feat-remove:hover,.play-info-traits .trait-feat-remove:focus-visible{
+ color:#ffdbb4;background:#ad86502b;outline-offset:2px;
+}
+.feat-remove-dialog.sheet-context-dialog{
+ width:min(460px,calc(100vw - 28px));max-height:85dvh;
+ border:1px solid #a782537a;border-radius:13px;background:#211b19;
+ color:#ebdbc6;padding:0;
+}
+.feat-remove-dialog .sheet-context-head{padding:14px 17px;border-bottom:1px solid #b68a4c35}
+.feat-remove-dialog .sheet-context-head h2{margin:0;font-size:17px}
+.feat-remove-dialog .sheet-context-body{padding:14px 17px}
+.feat-remove-dialog .sheet-context-body p{margin:0;font-size:13px;line-height:1.6}
+.feat-remove-dialog .pending-choice-actions{padding:9px 17px 16px}
+
 .trait-benefits-trigger:hover,.trait-benefits-trigger:focus-visible{background:#ad86502b;color:#f3d29d}
 .trait-benefits-dialog{
  position:fixed;inset:0;width:min(94vw,560px);
