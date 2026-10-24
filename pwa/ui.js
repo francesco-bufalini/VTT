@@ -1,4 +1,4 @@
-import {resolveVariant,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
+import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {variantBar,openVariantsDialog,variantSources} from './creature_variants_view.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
@@ -361,7 +361,7 @@ async function navigate(page){
     state.creatureId=null;
     state.inventorySelectedTabs=['items'];state.inventorySubtab='items';
   }
-  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
   if(page==="session")state.chatAuthor=state.cachedCreatures.find(creature=>creature.id===openedCreatureId)?.name||"";
   await render();
 }
@@ -381,7 +381,7 @@ async function render() {
     if (state.page === "library") html = await libraryView();
     else if (state.page === "catalog") html = await catalogView();
     else if (state.page === "session") {
-      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
       if(!state.spellCatalog)try{state.spellCatalog=await catalogEntries('spells');}catch{}
       state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async creature=>[creature.id,await computeLocalData(creature)])));
       html=sessionView();
@@ -733,11 +733,14 @@ async function syncFormPresentation(c){
  if(c.linked_token_sync_id&&state.paired&&state.online){
   const result=await action('set_appearance',{token_id:c.linked_token_sync_id,owner_id:await ownerId(),
    miniature_id:c.current_miniature_id||c.default_miniature_id||'',display_name:c.name,size_name:c.size_name,footprint:c.footprint});
-  if(!result.ok)throw Error(result.error||'Forma salvata in locale; aspetto non applicato sul desktop.');
+  if(!result.ok)throw Error(result.error||'Forma non applicata sul desktop.');
  }
 }
 async function applyFormPatch(c,changes){
- await patch(changes);await state.editor.flush();await syncFormPresentation(state.editor.read());
+ const proposed=resolveVariant(applyVariantEdit(state.editor.readBase(),changes));
+ await syncFormPresentation(proposed);
+ try{await patch(changes,{syncPresentation:false});await state.editor.flush();}
+ catch(error){try{await syncFormPresentation(c);}catch{}throw error;}
 }
 function promptVariantOverflow(creatureId,formId,overflow){
  document.querySelector('#form-depleted-dialog')?.remove();
@@ -2501,7 +2504,7 @@ function startMap() {
         tokenStatusFingerprint=fingerprint;
         if(changed.length){
           if(state.page==='session'){
-            state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+            state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
             state.castSheets=new Map(await Promise.all(state.cachedCreatures.map(async c=>[c.id,await computeLocalData(c)])));
           }else if(state.page==='library'&&!state.libraryMode&&
             changed.includes(state.creatureId)){
@@ -2639,8 +2642,9 @@ async function shareRoll({quiet=false}={}) {
   if(!result.ok) throw new Error(result.error||"Tiro non inviato");
   if(!quiet)message("Tiro condiviso nella chat.");
 }
-async function patch(patchValue) {
+async function patch(patchValue,{syncPresentation=true}={}) {
   if(!state.editor) return;
+  const before=state.editor.read();
   const status=document.querySelector("#save-state");
   if(status){ status.textContent="Salvataggio…"; status.classList.remove("error"); }
   try {
@@ -2657,6 +2661,9 @@ async function patch(patchValue) {
       if(note)note.outerHTML=calculationNote(calculated,calculated.loadError);
     }
     state.saveError="";
+    const current=editor.read();
+    if(syncPresentation&&['name','current_miniature_id','size_name','footprint'].some(k=>before[k]!==current[k]))
+      try{await syncFormPresentation(current);}catch(error){message('Scheda salvata. '+errorMessage(error),true);}
     if(status){ status.textContent="✓ Salvato in locale"; status.classList.remove("error"); }
   }catch(error) {
     state.saveError=errorMessage(error);
@@ -2996,8 +3003,8 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     const editor=state.editor&&state.creatureId===casterId?state.editor:await openCreatureEditor(casterId);
     await editor.update({linked_token_sync_id:tokenId,linked_token_name:token.name||stored.data.name});
   }
-  const calculated=await computeLocalData(stored.data);
-  const plan=spellCastPlan(stored.data,selection,requestedLevel,calculated,payment);
+  const creature=resolveVariant(stored.data),calculated=await computeLocalData(creature);
+  const plan=spellCastPlan(creature,selection,requestedLevel,calculated,payment);
   if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
   let charged=false;
   tacticalViewer.onCastAccepted=async()=>{
@@ -3009,7 +3016,7 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
     charged=true;
     if(state.page==='session'){
-      state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+      state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
       state.castSheets?.set(casterId,await computeLocalData(editor.read()));
     }else if(state.editor===editor)state.calculated=await computeLocalData(editor.read());
   };
@@ -4595,7 +4602,7 @@ async function handleAction(target){
     }else if(category==="races"){
       await editor.update({species:entry.name,species_source:entry.source||""});
     }else throw new Error("Categoria non assegnabile alla scheda.");
-    state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
     if(state.pendingItemOwner&&category!=='feats'){
        state.page='library';state.libraryMode=false;state.creatureId=cId;state.editor=editor;
        state.sheet='inventory';
@@ -5153,7 +5160,7 @@ async function handleAction(target){
     if(!result.ok)throw new Error(result.error||"Impossibile piazzare la creatura.");
     const editor=await openCreatureEditor(selectedId);
     await editor.update({linked_token_sync_id:result.token_id,linked_token_name:result.name||sheet.name});
-    state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+    state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
     tokenStatusFingerprint="";
     message("Token aggiornato: "+(result.name||sheet.name));
     closeSessionDialog(app.querySelector("#session-place-dialog"));
@@ -5613,7 +5620,7 @@ export async function mount(){
   // IndexedDB creatures FIRST: an offline desktop must never gate the editor.
   state.paired=await hasPairingCredential();
   if(qrCode){state.page="session";state.sessionPane="connection";}
-  state.cachedCreatures=(await listCreatures()).map(row=>row.creature);
+  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
   await render();
   void loadBundledConditionCatalog();
   if(qrCode){

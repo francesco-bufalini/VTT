@@ -93,7 +93,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    }
   });
  };
- if(record.kind==='monster'){
+ if(record.kind==='monster'||record.variant_rules_kind==='monster'){
   const sectionNames={trait:'Tratti',action:'Azioni',bonus:'Azioni bonus',
    reaction:'Reazioni',legendary:'Azioni leggendarie',mythic:'Azioni mitiche',
    lairActions:'Azioni della tana'};

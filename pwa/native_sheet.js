@@ -492,7 +492,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
       c.alignment||'Completamente neutrale')) )+
    panel('Aspetto',
     '<p class="sheet-section-description">Specie, sottorazza, taglia, tipo e miniature della creatura.</p>'+
-    (c.kind==='monster'?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
+    ((c.kind==='monster'||c.variant_rules_kind==='monster')?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
       cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
       summary([['Tipo',speciesType]]))+
@@ -530,7 +530,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const armorDex=type==='HA'&&Number(wornArmor?.dexterity_max)===0?0:Math.min(dex,dexCap);
   const rawMonsterAc=Array.isArray(c.stat_block?.ac)?c.stat_block.ac.find(row=>typeof row==='number'||row?.ac!==undefined):c.stat_block?.ac;
   const monsterAc=typeof rawMonsterAc==='object'?rawMonsterAc?.ac:rawMonsterAc;
-  const naturalBase=c.kind==='monster'?(monsterAc??10):(c.armor_class_base??10);
+  const naturalBase=(c.kind==='monster'||c.variant_rules_kind==='monster')?(monsterAc??10):(c.armor_class_base??10);
   const naturalFormula=String(c.armor_natural_formula||((c.kind==='character'&&Number(naturalBase)===10)?'10 + dex_mod':String(naturalBase)));
   const acFormula=wornArmor?String(Number(wornArmor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+(shieldBonus?' + '+shieldBonus+' scudo':''):naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const legacyDefense='<div class="battle-defense-values"><div class="battle-stat"><span>CA</span>'+
@@ -570,7 +570,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    panel('Movimento',
     '<h3>Velocità</h3><div class="derived-metrics">'+[['speed','Camminata'],['speed:climb','Scalata'],['speed:swim','Nuoto'],['speed:fly','Volo'],['speed:burrow','Scavo']].map(([key,label])=>'<div><span>'+label+'</span>'+read(key,label,false,' ft')+'</div>').join('')+'</div>'+
     '<h3>Salti · distanze massime</h3>'+summary([['In lungo · con rincorsa',(calculated.stats?.jumps?.long??0)+' ft'],['In lungo · da fermo',(calculated.stats?.jumps?.long??0)/2+' ft'],['In alto · con rincorsa',(calculated.stats?.jumps?.high??0)+' ft'],['In alto · da fermo',(calculated.stats?.jumps?.high??0)/2+' ft']])+
-    (c.kind==='monster'?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):''),
+    ((c.kind==='monster'||c.variant_rules_kind==='monster')?number('Camminata base (ft)','speed_base',c.speed_base??c.speed??30):''),
     'battle-movement-panel')+
    resources+
    panel('Attacchi disponibili',attacks,'battle-attacks-panel')+

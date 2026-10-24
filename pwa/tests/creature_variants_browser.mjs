@@ -51,6 +51,22 @@ try{
   const small=await page.locator('#creature-variants-dialog button').evaluateAll(ns=>ns.filter(n=>n.getBoundingClientRect().height>0&&n.getBoundingClientRect().height<47).map(n=>n.textContent));assert.deepEqual(small,[]);
  }
  await page.setViewportSize({width:390,height:950});await shot('creature-variants');
+ await closeForms();
+ await page.evaluate(async()=>{
+  const {listCreatures,openCreatureEditor}=await import('/creatures.js');
+  const c=(await listCreatures()).find(r=>r.creature.kind==='character').creature,editor=await openCreatureEditor(c.id);
+  await editor.update({current_form_id:''});
+  await editor.update({class:'Druid',class_source:'PHB',level:5,classes:[{name:'Druid',source:'PHB',level:5}],resource_tracker_spent:{},current_hp:22});await editor.flush();
+ });
+ await page.reload();await page.getByRole('button',{name:'Apri scheda di Lyria base',exact:true}).click();await sheet('battle');
+ const resources=page.locator('[data-battle-action="resources"]');if(!await resources.evaluate(n=>n.open))await resources.locator(':scope > summary.play-battle-summary').click();
+ await page.locator('[data-act="battle-use-ability"]').filter({hasText:/Attiva/}).first().click();
+ await page.locator('[data-miniature-search]').fill('wolf');await page.locator('[data-miniature-id="wolf"]').click();
+ assert.deepEqual((await record()).resource_tracker_spent,{});
+ await page.locator('[data-form-hp]').fill('11');await page.locator('[data-form-confirm]').click();await page.locator('.miniature-dialog').waitFor({state:'detached'});
+ c=await record();assert.equal(c.current_hp,22);assert.equal(c.variants.find(v=>v.id===c.current_form_id).values.current_hp,11);assert.equal(Object.values(c.resource_tracker_spent)[0],1);
+ await page.locator('#sheet-play-view [data-act="hp-damage"]').click();await page.locator('#hp-adjust-amount').fill('15');await page.locator('#hp-adjust-confirm').click();await page.locator('#form-depleted-dialog[open]').waitFor();
+ assert.equal((await record()).current_hp,22);await page.locator('[data-form-restore]').click();await waitForm('');assert.equal((await record()).current_hp,18);assert.equal(Object.values((await record()).resource_tracker_spent)[0],1);
  assert.deepEqual(f.errors,[]);assert.equal(f.writes.length,0);
  console.log('PASS: Chrome variants, normal alias editing, shared damage, bestiary section import, independent HP, both overflow decisions, reload and responsive 360/390/768/1440 layouts.');
 }finally{await f.close();}

@@ -357,6 +357,8 @@ export function wildShapePatch(record,calculated,profile,maximum=0){
  const variant=createVariant({...record,variants:(record.variants||[]).filter(v=>v.id!==id)},
   {id,name:profile.name||'Forma selvatica',preset:'wild_shape',sections});
  variant.values.current_miniature_id=profile.id;
+ if(profile.size_name)variant.values.size_name=profile.size_name;
+ if(profile.footprint)variant.values.footprint=profile.footprint;
  if(Number(maximum)>0)Object.assign(variant.values,{current_hp:Number(maximum),max_hp_base:Number(maximum),max_hp:Number(maximum),temporary_hp:0});
  return {variants:[...(record.variants||[]).filter(v=>v.id!==id),variant],current_form_id:id,variant_schema_version:1,
   resource_tracker_spent:{...(record.resource_tracker_spent||{}),[tracker.id]:Number(record.resource_tracker_spent?.[tracker.id]||0)+1},

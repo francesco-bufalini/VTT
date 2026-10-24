@@ -29,12 +29,15 @@ automatici dal testo delle descrizioni.
   dell'incantesimo sono verificati insieme. Le opzioni dopo il tiro producono
   nuovi dadi tramite una conferma separata. Le scelte di bersagli/danni previste
   dai tratti richiedono una dichiarazione esplicita, come sul desktop.
-- Forma selvatica apre la selezione dal catalogo miniature. La conferma salva
-  aspetto, PF opzionali della seconda forma, identità originale e un consumo.
-  I danni attraversano PF temporanei, seconda forma e PF base. All'esaurimento
-  viene proposto il ripristino dell'aspetto. Terminare non rimborsa né consuma
-  altri utilizzi. Con una partita collegata usa `set_appearance` con controllo
-  del proprietario; un rifiuto del desktop non consuma la risorsa locale.
+- Forma selvatica usa una variante con aspetto e PF opzionalmente propri.
+  La conferma consuma un utilizzo dopo l'accettazione della presentazione da
+  parte del desktop collegato. Annullare la selezione non consuma risorse.
+  La variante resta disponibile nella scheda base e conserva i dati dopo
+  riapertura. Terminare torna alla base senza rimborsare né consumare utilizzi.
+  I danni in eccesso dai PF personalizzati richiedono una conferma prima di
+  essere applicati alla base. Vedi [Varianti](CREATURE_VARIANTS.md) per schema,
+  sezioni personalizzate, preset e importazioni dal bestiario.
+
 
 Il catalogo PWA viene rigenerato da `tools/sync_native_catalogs.mjs`. Include
 anche le risorse XPHB aggiunte dalla normalizzazione desktop, con progressioni

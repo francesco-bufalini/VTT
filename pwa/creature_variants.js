@@ -33,7 +33,7 @@ export const VARIANT_PRESETS=[
 function get(value,path){return path.split('.').reduce((v,k)=>v?.[k],value);}
 function set(value,path,data){const parts=path.split('.');let target=value;for(const key of parts.slice(0,-1)){if(!object(target[key]))target[key]={};target=target[key];}if(data===undefined)delete target[parts.at(-1)];else target[parts.at(-1)]=copy(data);}
 function ownedPaths(variant,base={}){
- return variant.sections.includes('*')?[...new Set([...Object.keys(base).filter(k=>!protectedFields.has(k)),...VARIANT_SECTIONS.flatMap(s=>s.paths)])]:variant.sections.flatMap(id=>sectionById.get(id)?.paths||[]);
+ return variant.sections.includes('*')?[...new Set([...Object.keys({...base,...variant.values}).filter(k=>!protectedFields.has(k)),...VARIANT_SECTIONS.flatMap(s=>s.paths)])]:variant.sections.flatMap(id=>sectionById.get(id)?.paths||[]);
 }
 export function activeVariant(record){return (record.variants||[]).find(v=>v.id===record.current_form_id)||null;}
 export function variantOwns(record,section){const v=activeVariant(record);return !!v&&(v.sections.includes('*')||v.sections.includes(section));}
@@ -77,7 +77,7 @@ export function applyVariantEdit(record,patch){
  const assign=(path,before,after)=>{
   if(JSON.stringify(before)===JSON.stringify(after))return;
   if(object(before)&&object(after)){for(const key of new Set([...Object.keys(before),...Object.keys(after)]))assign(path+'.'+key,before[key],after[key]);return;}
-  const local=paths.some(p=>path===p||path.startsWith(p+'.'));
+  const local=!!v&&(v.sections.includes('*')&&!protectedFields.has(path.split('.')[0])||paths.some(p=>path===p||path.startsWith(p+'.')));
   set(local?v.values:next,path,after);
  };
  for(const [key,value] of Object.entries(patch)){

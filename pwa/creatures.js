@@ -218,6 +218,7 @@ export async function openCreatureEditor(id, scope = "default") {
       }
       if (!patch || typeof patch !== "object" || Array.isArray(patch))
         return Promise.reject(new TypeError("Creature update must be an object"));
+      if(Array.isArray(patch.inventory))patch={...patch,inventory:consolidateOwnedItems(patch.inventory)};
       const proposed = validateCreature(replaceBase?structuredClone(patch):applyVariantEdit(latest,structuredClone(patch)));
       if (Array.isArray(proposed.inventory))
         proposed.inventory = consolidateOwnedItems(proposed.inventory);

@@ -46,7 +46,8 @@ test('mixed bestiary sources populate only chosen sections and preserve their li
 });
 test('full-sheet transformations isolate all fields but never IDs, owner or token links',()=>{
  let c=add({...base(),custom_future:{value:3}},{id:'all',sections:['*']});c.current_form_id='all';
- c=applyVariantEdit(c,{custom_future:{value:9},name:'Other',current_hp:5});
+ c=applyVariantEdit(c,{custom_future:{value:9},new_future_field:{value:99},name:'Other',current_hp:5});
+ assert.equal(c.new_future_field,undefined);assert.equal(resolveVariant(c).new_future_field.value,99);
  assert.equal(c.custom_future.value,3);assert.equal(resolveVariant(c).custom_future.value,9);
  assert.equal(resolveVariant(c).id,'hero');assert.equal(resolveVariant(c).kind,'character');
  assert.throws(()=>validateVariants({...c,variants:[{...c.variants[0],values:{id:'other'}}]}),/identità/);
@@ -95,4 +96,16 @@ test('inline capability presets are serializable and use the same section/filter
  const v=createVariant(base(),{id:'mask',preset});assert.equal(v.preset,'moon-mask');
  assert.deepEqual(v.sections,preset.sections);assert.deepEqual(v.creature_filter,preset.creature_filter);
  assert.deepEqual(JSON.parse(JSON.stringify(v)),v);
+});
+
+test('portable full transformations expose monster traits and stats while preserving the archive identity',async()=>{
+ const {collectTraitRows}=await import('../trait_projection.js');
+ const stat={name:'Wolf',source:'MM',type:'beast',cr:'1/4',hp:{average:11},ac:[13],speed:{walk:40},str:12,dex:15,con:12,int:3,wis:12,cha:6,trait:[{name:'Keen Hearing',entries:['A published trait.']}],action:[{name:'Bite',entries:['Melee Weapon Attack: +4 to hit, reach 5 ft. Hit: 2d4 + 2 piercing damage.']}]};
+ let c=base(),v=createVariant(c,{id:'wolf',preset:'polymorph'});
+ v=importVariantSections(c,v,bestiarySheet(stat,{id:'wolf'}));c={...c,variants:[v],current_form_id:'wolf'};
+ const effective=resolveVariant(c),out=calculateSheet(effective);
+ assert.equal(effective.kind,'character');assert.equal(effective.id,'hero');assert.equal(effective.name,'Wolf');
+ assert.equal(out.values.hp,11);assert.equal(out.values.ac,13);assert.equal(out.values.speed,40);assert.equal(out.abilities.int.score,3);
+ assert(out.features.some(f=>f.name==='Keen Hearing'));
+ const traits=await collectTraitRows(effective,out);assert(traits.some(t=>t.name==='Keen Hearing'&&t.category==='mostro'));
 });
