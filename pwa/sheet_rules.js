@@ -478,8 +478,9 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  const occupied=slot=>inventory.find(row=>int(row?.quantity,1)>0&&arr(row?.equipped_slots).includes(slot));
  const main=occupied('main'),physicalOff=occupied('off');
  // Preserve the one-handed damage until the stored offhand is actually clear.
- const off=main&&(hasProperty(main,'2H')||record.hand_grip_two_handed&&hasProperty(main,'V'))?
-   null:physicalOff;
+ const offBlocked=Boolean(main&&(hasProperty(main,'2H')||
+   record.hand_grip_two_handed&&hasProperty(main,'V'))&&record.hand_off_with_two_handed!==true);
+ const off=offBlocked?null:physicalOff;
  const dual=arr(record.feats_catalog).some(f=>!f?.disabled&&same(f.name,'Dual Wielder'));
  const offAllowed=main&&off&&itemKind(main)==='weapon'&&itemKind(off)==='weapon'&&
    (String(record.rules_version)==='2024'?hasProperty(main,'L')&&(hasProperty(off,'L')||dual&&String(off.type).split('|')[0]!=='R'):
@@ -507,7 +508,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
     damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
-    offhand_bonus:attack.slot==='off'&&!!offAllowed});
+    offhand_bonus:attack.slot==='off'||attack.slot==='shield'&&attack.hand==='off'});
  };
  for(const weapon of traitStateAttacks(record,featureContext.features,featureContext.traitStates))append(weapon,weapon.ability,true,weapon.damage);
  for(const section of ['action','bonus','reaction','legendary','mythic'])arr(record.stat_block?.[section]).forEach((action,i)=>{
@@ -543,15 +544,28 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const shield=slot==='off'?off:main;
   if(!shield||itemKind(shield)!=='shield')continue;
   append({id:'shield:improvised:'+slot+':'+shield.id,
-    name:(shield.name||'Scudo')+' · arma improvvisata',slot:'shield',
+    name:(shield.name||'Scudo')+' · arma improvvisata'+(slot==='off'?' · secondaria':''),slot:'shield',hand:slot,
     melee:true,range_feet:5,long_range_feet:0,damage_type:'contundente'},
     'str',trained.has('weapon:improvised'),'1d4');
  }
- const hands=[record.hand_main_special,record.hand_off_special];
- for(const [key,name] of [['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']])if(hands.includes(key)){
-  const proficient=key==='unarmed'||trained.has('weapon:improvised');
-  append({id:key,name,melee:true,range_feet:5,long_range_feet:0},'str',proficient,key==='unarmed'?'1':'1d4');
-  if(key==='unarmed')out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+bonus('attack_damage:unarmed')+classFeatureDamage(record,featureContext,{},'str')));
+ // Unarmed strikes are always possible: never require a fictitious equipped weapon.
+ // The off hand adds a separate bonus-action row only while free and unlocked.
+ const unarmed=(slot)=>{
+  const id=slot==='off'?'unarmed:off':'unarmed';
+  append({id,name:"Colpo senz’armi"+(slot==='off'?' · secondaria':''),slot,
+    melee:true,range_feet:5,long_range_feet:0,damage_type:'contundente'},'str',true,'1');
+  out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+
+    bonus('attack_damage:'+id)+classFeatureDamage(record,featureContext,{},'str')));
+ };
+ unarmed('main');
+ if(!off&&!offBlocked)unarmed('off');
+ // Explicit improvised attacks remain selectable without affecting unarmed strikes.
+ for(const slot of ['main','off']){
+  if(record['hand_'+slot+'_special']!=='improvised'||slot==='off'&&(off||offBlocked))continue;
+  const id=slot==='off'?'improvised:off':'improvised';
+  append({id,name:'Arma improvvisata'+(slot==='off'?' · secondaria':''),slot,
+    melee:true,range_feet:5,long_range_feet:0,damage_type:'contundente'},
+    'str',trained.has('weapon:improvised'),'1d4');
  }
  return out;
 }
