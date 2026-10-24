@@ -5453,18 +5453,6 @@ function listen(){
     if(e.target!==card||!['Enter',' '].includes(e.key))return;
     e.preventDefault();card.click();
   });
-  // Right-click (and touch long-press where the browser emits contextmenu)
-  // opens the same per-item actions as the explicit touch-friendly ⋯ button.
-  app.addEventListener("contextmenu",e=>{
-    const row=e.target?.closest?.("[data-inventory-row]");
-    if(!row||state.sheet!=="inventory"||!state.editor)return;
-    e.preventDefault();
-    const index=Number(row.dataset.inventoryRow);
-    if(!Number.isInteger(index))return;
-    state.inventoryMenuIndex=index;
-    state.inventorySelectedIndex=index;
-    render().catch(error=>message(errorMessage(error),true));
-  });
   app.addEventListener("submit",async e=>{
     if(!(e.target instanceof HTMLFormElement))return;
     e.preventDefault();
