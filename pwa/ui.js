@@ -2734,7 +2734,12 @@ async function handleField(target) {
     await render();return;
   }
   if(target.dataset.itemContainer!==undefined){
-    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),target.value));
+    const destination=target.value;
+    await patch(moveInventoryItem(creature,Number(target.dataset.itemContainer),destination));
+    // Moving an item into a previously hidden section must not close its
+    // editor or make the chosen item disappear after the rerender.
+    focusInventorySection(state.editor.read(),destination===DEFAULT_INVENTORY_CONTAINER?
+      'items':'container:'+destination);
     state.inventoryMenuIndex=-1;await render();return;
   }
   if(target.dataset.itemOverride){
@@ -5032,6 +5037,20 @@ async function handleAction(target){
     }
     state.sheetPopup="";state.inventoryMenuIndex=-1;
     await render();return;
+  }
+  if(act==="inventory-open-trait"){
+    const index=Number(target.dataset.index),item=state.editor?.read()?.inventory?.[index];
+    if(!item?.id||isDocument(item))throw Error('Tratto dell’oggetto non disponibile.');
+    state.sheetPopup='';state.sheet='info';await render();
+    const trait=(state.traitRows||[]).find(row=>row.category==='oggetti'&&row.rank===0&&
+      row.origin_key==='item:'+item.id);
+    if(!trait){message('Il tratto dell’oggetto non è disponibile in questa scheda.',true);return;}
+    const card=[...app.querySelectorAll('.trait-row [data-trait-key]')]
+      .find(row=>row.dataset.traitKey===trait.key);
+    card?.scrollIntoView?.({block:'center',behavior:'instant'});
+    state.traitPopupDraftKind='';state.traitPopupDraftTarget='';
+    state.traitPopupKey=trait.key;state.traitPopupConfirm='';state.traitPopupTrait=trait;
+    mountTraitBenefitDialog();return;
   }
   if(act==="inventory-select"){
     state.inventorySelectedIndex=Number(target.dataset.index);
