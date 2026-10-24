@@ -119,3 +119,19 @@ test('renaming any active variant isolates its visible name from the base and ar
  const edited=configureVariant(c,c.variants[0],{name:'Viandante'});
  assert.equal(edited.values.name,'Viandante');assert.equal(resolveVariant({...c,variants:[edited]}).name,'Viandante');assert.equal(c.name,'Lyria');
 });
+
+
+test('bestiary conversion preserves explicit zero statistics and defaults missing numbers',()=>{
+ const zero=bestiarySheet({name:'Zero',str:0,dex:0,con:0,int:0,wis:0,cha:0,hp:{average:0},ac:[{ac:0}]});
+ assert.deepEqual(zero.abilities,{str:0,dex:0,con:0,int:0,wis:0,cha:0});
+ assert.equal(zero.current_hp,0);assert.equal(zero.max_hp_base,0);
+ assert.equal(zero.armor_class_base,0);assert.equal(zero.armor_natural_formula,'0');
+ const missing=bestiarySheet({name:'Missing',str:null,dex:'',con:'unknown',int:Infinity});
+ assert.deepEqual(missing.abilities,{str:10,dex:10,con:10,int:10,wis:10,cha:10});
+ assert.equal(missing.current_hp,1);assert.equal(missing.armor_class_base,10);
+ const c=base(),v=createVariant(c,{id:'zero',preset:'polymorph'});
+ const imported=importVariantSections(c,v,zero);
+ const resolved=resolveVariant({...c,variants:[imported],current_form_id:'zero'});
+ assert.equal(resolved.abilities.str,0);assert.equal(resolved.current_hp,0);
+ assert.equal(resolved.armor_class_base,0);
+});

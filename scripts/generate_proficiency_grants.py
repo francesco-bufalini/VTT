@@ -21,6 +21,23 @@ FIELDS = (
 )
 IGNORED_SOURCES = {"XDMG", "EFA"}
 
+# Typed fallback definitions for feats whose choice mechanics are omitted by
+# upstream 5etools proficiency fields. Shared pick groups use a *single* pool.
+FEAT_PROFICIENCY_OVERRIDES = {
+    ("Skilled", "PHB"): {"proficiencyChoices": [
+        {"choose": {"fromKinds": ["skill", "tool"], "count": 3}}]},
+    ("Skilled", "XPHB"): {"proficiencyChoices": [
+        {"choose": {"fromKinds": ["skill", "tool"], "count": 3}}]},
+    ("Crafter", "XPHB"): {"toolProficiencies": [
+        {"choose": {"from": [
+            "carpenter's tools", "leatherworker's tools", "mason's tools",
+            "potter's tools", "smith's tools", "tinker's tools",
+            "weaver's tools", "woodcarver's tools"], "count": 3}}]},
+    ("Musician", "XPHB"): {"toolProficiencies": [
+        {"anyMusicalInstrument": 3}]},
+}
+
+
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -40,6 +57,10 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
         for field in FIELDS:
             if field in record:
                 row[field] = record[field]
+        if kind == "feat":
+            # Preserve upstream structured values when present.
+            for key, value in FEAT_PROFICIENCY_OVERRIDES.get((record["name"], record["source"]), {}).items():
+                row.setdefault(key, value)
         # Some 5etools-src mirrors omit the MPMM Languages trait entirely,
         # although the structured full race data grants Common + one language
         # agreed with the DM. Retain this rule across index regenerations.
@@ -64,7 +85,7 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
                 "gold": equipment.get("goldAlternative", ""),
             }
         if any(key in row for key in FIELDS + (
-            "savingThrows", "startingProficiencies", "multiclassProficiencies"
+            "savingThrows", "startingProficiencies", "multiclassProficiencies", "proficiencyChoices"
         )):
             output.append(row)
     return output
@@ -149,6 +170,10 @@ def main() -> None:
     }
     for category, entries in sources.items():
         out[category] = convert(category, entries)
+    for (name, source), fields in FEAT_PROFICIENCY_OVERRIDES.items():
+        if not any(row["name"] == name and row["source"] == source for row in out["feat"]):
+            out["feat"].append({"name": name, "source": source, **fields})
+    out["feat"].sort(key=lambda row: (row["name"].casefold(), row["source"]))
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))
