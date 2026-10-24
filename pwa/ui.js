@@ -2860,7 +2860,7 @@ async function handleField(target) {
       item.equipped_slots=(item.equipped_slots||[]).filter(v=>v!=='off');
     await patch({inventory,...(slot==='body'?{}:{['hand_'+slot+'_special']:special}),
       ...(slot==='main'?{hand_grip_two_handed:grip,
-        ...(grip?{hand_off_special:'none'}:{})}:{})});
+        ...(grip&&creature.hand_off_with_two_handed!==true?{hand_off_special:'none'}:{})}:{})});
     await render();return;
   }
   if(target.dataset.reference){
@@ -5202,7 +5202,9 @@ async function handleAction(target){
      const trait=(state.traitRows||[]).find(row=>row.origin_key==='item:'+String(owned.id||''));
      const overrides=trait?traitActivationPatch(record,trait,true):{};
      await patch({...overrides,inventory,
-       ...(slot==='main'?{hand_main_special:'none',hand_grip_two_handed:grip}:{}),
+       ...(slot==='main'?{hand_main_special:'none',hand_grip_two_handed:grip,
+         ...((nextResolved&&hasProperty(nextResolved,'2H')||grip)&&
+           record.hand_off_with_two_handed!==true?{hand_off_special:'none'}:{})}:{}),
        ...(slot==='off'?{hand_off_special:'none'}:{})});
      state.inventorySelectedIndex=index;
      state.sheetPopup='equipment';state.sheetPopupTitle='Equipaggiamento';
