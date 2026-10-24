@@ -54,11 +54,8 @@ try{
    await section(key);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+width);
    if(key==='battle'){
-    const classFilter=page.locator('[data-act="battle-toggle-class-only"]');
-    assert.equal(await classFilter.count(),1,'Class-only filter should always be available');
-    if(width===360)assert.equal(await classFilter.getAttribute('aria-pressed'),'true',
-      'The initial filter shows character privileges only');
-    if(await classFilter.getAttribute('aria-pressed')==='true')await classFilter.click();
+    assert.equal(await page.locator('[data-act="battle-toggle-class-only"]').count(),0,
+      'Class-only filtering was removed');
     const checks=page.locator('[data-battle-action="checks"]');
     assert.equal(await checks.count(),1);
     assert.equal(await checks.locator('[data-action-ability]').count(),6);
@@ -83,6 +80,10 @@ try{
      assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
      assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
+     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"]').count(),1,
+      'Secondary attack always remains in Azioni');
+     assert.equal(await actionSection.locator('[data-attack-id="two_weapon"] .play-battle-unavailable-reason').count(),1,
+      'Unavailable secondary attacks explain their unmet requirement');
      const movement=page.locator('[data-battle-action="others"]');
      await movement.locator('summary.play-battle-summary').click();
      const groups=movement.locator('.play-battle-action-group[data-action-timing]');
@@ -111,36 +112,14 @@ try{
     const rangedAttack=page.locator('[data-battle-action="attacks"] [data-act="battle-attack-map"]').first();
     assert(await rangedAttack.count(),'Each computed weapon has a map range action');
     assert(await rangedAttack.getAttribute('aria-label'),'Map range action has an accessible label');
-    // Cast stays at the far right of the spell row, not underneath its title.
-    await page.locator('.play-battle-disclosure[data-battle-action="spells"]').evaluate(node=>{node.open=true;});
-    await page.locator('[data-battle-action="spells"] .play-battle-action-group').evaluateAll(groups=>groups.forEach(node=>{node.open=true;}));
-    const spellRows=await page.locator('[data-battle-action="spells"] .play-battle-spell-entry').evaluateAll(rows=>rows.map(row=>{
-     const label=row.querySelector('.play-battle-spell-open').getBoundingClientRect();
-     const cast=row.querySelector('.play-battle-spell-cast').getBoundingClientRect();
-     const bounds=row.getBoundingClientRect();
-     return {direction:getComputedStyle(row).flexDirection,height:bounds.height,
-      labelCenter:label.top+label.height/2,castCenter:cast.top+cast.height/2,
-      labelRight:label.right,castLeft:cast.left,castRight:cast.right,rowRight:bounds.right};
-    }));
-    assert.equal(spellRows.length,3,'The action, bonus and reaction spell rows must render');
-    for(const row of spellRows){
-     assert.equal(row.direction,'row','Spell buttons must share one horizontal line');
-     assert(row.castLeft>=row.labelRight-1,'Cast control must sit to the right of the spell name');
-     assert(Math.abs(row.castCenter-row.labelCenter)<=8,'Cast must be vertically centered with the spell');
-     assert(row.castRight<=row.rowRight+1,'Cast must fit inside the spell box');
-     assert(row.height<=56,'Spell row must remain compact (max 56px)');
-    }
+    assert.equal(await page.locator('[data-battle-action="spells"]').count(),0,
+      'Battle no longer renders a second spell list');
     if(width===390||width===1440)await page.screenshot({path:fileURLToPath(new URL('actions-'+width+'.png',artifacts))});
    }
    if(width===390&&['info','inventory'].includes(key))await page.screenshot({path:fileURLToPath(new URL('sheet-'+key+'-390.png',artifacts))});
   }
  }
  await page.setViewportSize({width:390,height:900});await section('battle');
- const showGeneral=async()=>{
-  const filter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
-  if(await filter.getAttribute('aria-pressed')==='true')await filter.click();
-  await page.locator('#sheet-play-view [data-battle-action="checks"]').waitFor();
- };
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
  await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
@@ -152,10 +131,8 @@ try{
  const {action_variants_2014:chosen,...afterRest}=JSON.parse(after);
  assert(chosen.includes('disarm_dmg'),'Variant selection is saved to this character');
  assert.deepEqual(afterRest,beforeRest,'Variant preferences do not change unrelated creature properties');
- await showGeneral();
  assert((await page.locator('#app').textContent()).includes('Disarmare'));
  await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
- await showGeneral();
  assert((await page.locator('#app').textContent()).includes('Disarmare'),'Variant choice persists on reload');
  await page.locator('.play-battle-disclosure[data-battle-action="others"] > summary').click();
  assert.equal(await page.locator('[data-battle-action="others"] .play-battle-action-group:has([data-attack-id="stealth_movement"])').getAttribute('open'),'',
@@ -165,8 +142,7 @@ try{
  await page.locator('[data-act="close-sheet-roll"]').click();
  await page.waitForFunction(()=> !!navigator.serviceWorker.controller);
  await context.setOffline(true);await page.reload();await page.locator('[data-act="open"]').click();await section('battle');
- await showGeneral();
  assert((await page.locator('#app').textContent()).includes('Movimento furtivo'));
  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);assert.deepEqual(writes,[]);
- console.log('PASS: 6 styled PWA sections at 360/390/768/1440px, compact groups without tree rails, three spell groups, native routes, stealth dice, persistent variants and offline reload');
+ console.log('PASS: PWA battle layout at 360/390/768/1440px, always-visible actions, no duplicate spells, variants, stealth dice and offline reload');
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
