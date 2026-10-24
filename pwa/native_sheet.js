@@ -466,9 +466,12 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const level=Number(entry.level??entry.acquired_level??entry.origin_level);
   const levelText=Number.isInteger(level)&&level>=1&&level<=20?'Livello del privilegio: '+level:'Livello del privilegio: non specificato';
   const description=String(detail.description||entry.description||'').trim();
-  return '<details class="trait-card info-feat-entry"><summary><strong>'+esc(entry.name||'Talento')+'</strong><span class="info-feat-level">'+esc(levelText)+'</span>'+(entry.disabled?' · disattivato':'')+'</summary>'+
+  const ownedKey='feat|'+(entry.id||String(entry.name||'').trim().toLowerCase()+'|'+String(entry.source||'').trim().toLowerCase());
+  return '<div class="info-owned-feat-row"><details class="trait-card info-feat-entry"><summary><strong>'+esc(entry.name||'Talento')+'</strong><span class="info-feat-level">'+esc(levelText)+'</span>'+(entry.disabled?' · disattivato':'')+'</summary>'+
    (description?'<p class="trait-description">'+esc(description)+'</p>':'<p class="feat-source">'+esc(entry.source||'Descrizione non disponibile')+'</p>')+
-   '</details>';
+   '</details>'+
+   (entry.name?'<button type="button" class="info-owned-feat-remove" data-act="feat-remove" data-feat-key="'+esc(ownedKey)+'" title="Rimuovi talento" aria-label="Rimuovi il talento '+esc(entry.name)+'">×</button>':'')+
+   '</div>';
  }).join('')||'<p class="play-empty">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
  const nativeNote='';

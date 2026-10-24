@@ -1160,10 +1160,7 @@ async function traitsView(c){
     '<div class="trait-content">'+
       (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
-    '</div></details>'+
-    (trait.category==='talenti'&&trait.rank===0?
-      '<button type="button" class="trait-feat-remove" data-act="feat-remove" data-feat-key="'+esc(trait.origin_key)+'" title="Rimuovi talento" aria-label="Rimuovi il talento '+esc(trait.name)+'">×</button>':'')+
-    '</div>';
+    '</div></details></div>';
  };
  const originTitle=title=>String(title||'').replace(/^(?:Specie|Sottorazza|Classe|Sottoclasse|Background|Talento|Oggetto)\s*·\s*/i,'');
  const originKind=(category,origin)=>{
@@ -3549,7 +3546,7 @@ function openRemoveFeatDialog(originKey){
  const record=state.editor?.read();
  if(!record)throw Error('Apri una creatura prima di rimuovere talenti.');
  removeOwnedFeatPatch(record,originKey);
- const feat=(record.feats_catalog||[]).find(row=>row?.name&&
+ const feat=(record.feats_catalog||[]).map(row=>typeof row==='string'?{name:row}:row).find(row=>row?.name&&
    'feat|'+(row.id||String(row.name).trim().toLowerCase()+'|'+String(row.source||'').trim().toLowerCase())===originKey);
  if(!feat)throw Error('Talento non più disponibile.');
  app.querySelector('#feat-remove-dialog')?.remove();

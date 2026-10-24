@@ -245,12 +245,41 @@ test('Crafter and Musician 2024 use structured restricted tool selections',()=>{
  }
 });
 
-test('owned feat cards expose an independent remove button and confirmed modal',()=>{
+test('feat deletion X belongs to the dedicated Talenti panel, never to Tratti',()=>{
  const ui=readFileSync(new URL('../ui.js',import.meta.url),'utf8');
  const css=readFileSync(new URL('../mobile_metal_theme.css',import.meta.url),'utf8');
- assert.match(ui,/trait\.category==='talenti'&&trait\.rank===0/);
- assert.match(ui,/data-act="feat-remove"/);
- assert.match(ui,/data-act="feat-remove-confirm"/);
- assert.match(ui,/removeOwnedFeatPatch\(state\.editor\.read\(\),key\)/);
- assert.match(css,/\.trait-feat-remove/);
+ const c={...artificer(),name:'Tester',feats_catalog:[
+  {name:'Skilled',source:'XPHB'},
+  {name:'Musician',source:'XPHB',id:'id-speciale'}
+ ]};
+ const html=nativeSection(c,'info',{
+  field:()=>'',area:()=>'',panel:(name,body)=>'<section data-panel="'+name+'">'+body+'</section>',
+  calculated:{proficiencies:[],values:{}}
+ });
+ const talents=html.split('<section data-panel="Talenti">')[1]?.split('</section>')[0];
+ assert(talents,'dedicated Talenti panel exists');
+ assert.equal(talents.split('data-act="feat-remove"').length-1,2);
+ assert(talents.includes('data-feat-key="feat|skilled|xphb"'));
+ assert(talents.includes('data-feat-key="feat|id-speciale"'));
+ assert(talents.includes('Aggiungi talento'));
+ assert(talents.includes('info-owned-feat-remove'));
+ const traitCards=ui.slice(ui.indexOf('const renderCard=trait=>'),ui.indexOf('const originTitle='));
+ assert(!traitCards.includes('feat-remove'),'Tratti cannot remove owned feats');
+ assert(ui.includes('data-act="feat-remove-confirm"'));
+ assert(ui.includes('removeOwnedFeatPatch(state.editor.read(),key)'));
+ assert(css.includes('.info-owned-feat-remove'));
+ assert(!css.includes('.trait-feat-remove'));
+});
+
+test('legacy name-only feat entries can be removed from the owned list',()=>{
+ const c={...artificer(),feats_catalog:['Skilled',{name:'Musician',source:'XPHB'}],
+  proficiency_choices:[{kind:'skill',key:'arcana',origin_id:'manual'}]};
+ const html=nativeSection(c,'info',{
+  field:()=>'',area:()=>'',panel:(name,body)=>'<section data-panel="'+name+'">'+body+'</section>',
+  calculated:{proficiencies:[],values:{}}
+ });
+ assert(html.includes('data-feat-key="feat|skilled|"'));
+ const removed=removeOwnedFeatPatch(c,'feat|skilled|');
+ assert.deepEqual(removed.feats_catalog,[{name:'Musician',source:'XPHB'}]);
+ assert.deepEqual(removed.proficiency_choices,c.proficiency_choices);
 });
