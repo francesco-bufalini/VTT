@@ -66,16 +66,16 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
  assert(movement.querySelector('[data-action-timing="reaction"]').textContent.includes('Attacco di opportunità'));
  const opportunity=movement.querySelector('[data-attack-id="opportunity"]');
  assert(opportunity,'The opportunity reaction is available');
- assert.match(opportunity.querySelector('.play-battle-attack-copy strong').textContent,/Spada · Attacco di opportunità/);
- assert.equal(opportunity.querySelector('[data-act="battle-damage-roll"]').dataset.damageFormula,'1d8');
- assert.equal(opportunity.querySelector('.play-battle-attack-roll').dataset.target,'attack_hit:item:sword');
- assert.equal(opportunity.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:sword');
+ assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
+ assert(!opportunity.querySelector('[data-act="battle-damage-roll"]'),
+  'Opportunity shows the generic action, not the main-hand weapon roll');
+ assert.equal(opportunity.querySelector('.play-battle-attack-copy strong').textContent,'Attacco di opportunità');
  const shove=attacks.querySelector('[data-attack-id="shove"]');
  assert.match(shove.querySelector('.play-battle-effect').textContent,/Spinto di 5 ft/);
  assert(!shove.querySelector('.play-battle-effect').textContent.includes('Prono'));
  const actionGroup=movement.querySelector('[data-action-timing="action"]');
  assert.equal(actionGroup.tagName,'DETAILS');
- assert.equal(actionGroup.open,false,'Timing groups start collapsed');
+ assert.equal(actionGroup.open,true,'Azioni timing groups start expanded');
  assert.equal(actionGroup.querySelector('.play-battle-action-heading').tagName,'SUMMARY');
  assert(!actionGroup.querySelector('.play-battle-action-heading .play-chevron'));
  const rollLine=sword.querySelector('.play-battle-attack-roll-line');
@@ -106,7 +106,9 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
  assert(others.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
  assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×2');
  assert.equal(projected.basicActions.find(row=>row.id==='two_weapon').available,false);
- assert(!others.querySelector('[data-attack-id="two_weapon"]'));
+ assert(others.querySelector('[data-attack-id="two_weapon"]'),
+  'Offhand action stays visible even when unavailable');
+ assert.match(others.querySelector('[data-attack-id="two_weapon"]').textContent,/Equipaggia/);
  assert(!doc(battleActionPanels(record,{attacks:[unarmed,off],features:[
   {name:'Extra Attack',attacks_per_action:2,disabled:true}]},[],[],catalog.actions).others)
   .querySelector('.play-battle-attacks-per-action'));
@@ -187,41 +189,29 @@ test('combat spells are sorted by level within action, bonus and reaction and op
   {id:'spellslow',spell_id:'slow',payment_mode:'free'},
   {id:'spelllong',spell_id:'long',payment_mode:'free'}
  ],trackers:[{id:'mana',name:'Mana',max:2,spent:0}]};
- const html=doc(battleActionPanels(record,calc,spells,[],[]).spells);
- const entries=time=>[...html.querySelectorAll('[data-action-timing="'+time+'"] .play-battle-spell-entry')];
- assert.deepEqual(entries('action').map(el=>el.dataset.spellId),['action0','action1','action3']);
- assert.deepEqual(entries('bonus').map(el=>el.dataset.spellId),['bonus2']);
- assert.deepEqual(entries('reaction').map(el=>el.dataset.spellId),['reaction1']);
- assert.equal(html.querySelector('[data-spell-id="slow"]'),null);
- assert.equal(html.querySelector('[data-spell-id="long"]'),null);
- for(const row of html.querySelectorAll('.play-battle-spell-entry')){
-  assert(!row.textContent.includes('SECRET DESCRIPTION'),'Descriptions belong in the Magia popup');
-  const button=row.querySelector('button');
-  assert.equal(button.dataset.act,'action-cast-spell');
-  assert.equal(button.dataset.spellId,row.dataset.spellId);
-  const cast=row.querySelector('.play-battle-spell-cast');
-  assert(cast,'Every action spell needs its own Cast control');
-  assert.equal(cast.textContent,'Lancia');
-  assert.equal(cast.dataset.spellId,row.dataset.spellId);
-  const direct=cast.dataset.grantId&&['bonus2','reaction1'].includes(row.dataset.spellId);
-  assert.equal(cast.dataset.act,direct?'battle-cast-resource-spell':'action-cast-spell');
-  assert(!row.querySelector('details'),'A spell row should not expand its description inline');
- }
- assert.equal(entries('action')[0].querySelector('small').textContent.includes('Trucchetto'),true);
- assert.equal(entries('bonus')[0].querySelector('button').dataset.grantId,'spellbonus');
- assert.equal(entries('reaction')[0].querySelector('button').dataset.grantId,'spellreact');
- assert.match(entries('bonus')[0].textContent,/Capacità/);
- assert.match(entries('action')[2].textContent,/Slot incantesimo/);
+ const rows=spellActionEntries(record,calc,spells);
+ const entries=time=>rows.filter(row=>row.time===time)
+  .sort((a,b)=>(a.level??99)-(b.level??99));
+ assert.deepEqual(entries('action').map(row=>row.spell_id),['action0','action1','action3']);
+ assert.deepEqual(entries('bonus').map(row=>row.spell_id),['bonus2']);
+ assert.deepEqual(entries('reaction').map(row=>row.spell_id),['reaction1']);
+ assert(!rows.some(row=>['slow','long'].includes(row.spell_id)));
+ assert.equal(entries('bonus')[0].grant_id,'spellbonus');
+ assert.equal(entries('reaction')[0].grant_id,'spellreact');
+ assert.equal(entries('bonus')[0].spell_mode,'tracker');
+ assert.equal(entries('reaction')[0].spell_mode,'free');
+ assert.equal(battleActionPanels(record,calc,spells,[],[]).spells,'',
+  'Spellcasting has moved entirely to Powers');
+
 });
 
 test('catalog casting time wins over stale saved spell data (Absorb Elements is a reaction)',()=>{
  const spell={id:'phb2014_absorb_elements',name:'Absorb Elements',level:1,time:[{number:1,unit:'reaction'}]};
  const creature={prepared_spells:[{id:spell.id,name:spell.name,level:1,time:[{number:1,unit:'action'}]}]};
- const panel=doc(battleActionPanels(creature,{casting_classes:[],origin_spells:[]},[spell],[],[]).spells);
- assert.equal(panel.querySelector('[data-action-timing="action"] [data-spell-id="'+spell.id+'"]'),null);
- const reaction=panel.querySelector('[data-action-timing="reaction"] [data-spell-id="'+spell.id+'"]');
- assert(reaction,'Absorb Elements must be a reaction even if the stored copy has old metadata');
- assert.equal(reaction.dataset.actionTimingSpell,'reaction');
+ const rows=spellActionEntries(creature,{casting_classes:[],origin_spells:[]},[spell]);
+ assert(!rows.some(row=>row.time==='action'&&row.spell_id===spell.id));
+ const reaction=rows.find(row=>row.time==='reaction'&&row.spell_id===spell.id);
+ assert(reaction,'Absorb Elements must still use its current catalog time in Powers');
 });
 
 test('unified battle shows every canonical skill and pure ability check grouped by ability',()=>{
@@ -557,7 +547,7 @@ test('Battle nests general free actions under Other Actions, without duplicate r
  const others=doc(data.others);
  const free=others.querySelector('[data-action-timing="free"]');
  assert(free,'Free general actions have a dedicated timing group in Other Actions');
- assert(!free.hasAttribute('open'),'Timing subsections initially stay collapsed');
+ assert(free.hasAttribute('open'),'Azioni timing subsections start expanded');
  const ids=[...free.querySelectorAll('[data-attack-id]')].map(node=>node.dataset.attackId);
  assert(ids.length>0,'At least one free general action is offered');
  assert.equal(new Set(ids).size,ids.length,'Free general actions cannot be duplicated');
@@ -603,6 +593,7 @@ test('basic action availability derives from melee, spell slots and a real dual-
  assert.equal(actions.querySelector('[data-action-timing="reaction"] .play-battle-attack-entry').dataset.attackId,'opportunity');
  const naked=battleActionPanels(base,{attacks:[unarmed],spell_slots:[]},[],[],catalog.actions);
  assert.equal(naked.basicActions.find(a=>a.id==='two_weapon').available,false);
+ assert(doc(naked.others).querySelector('[data-attack-id="two_weapon"]'));
  assert.equal(naked.basicActions.find(a=>a.id==='spell_cast').available,false);
  const withShield={...base,inventory:[
   {...base.inventory[0],properties:[]},
@@ -637,4 +628,28 @@ test('extra attack stays next to the Attack row; the flat list never repeats it'
  assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
  assert(!result.attacks.includes('play-battle-attacks-per-action'));
  assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));
+});
+
+test('improvised shield strike remains among Attacchi while the offhand action is separate',()=>{
+ const shield={id:'shield:improvised:off:shield',name:'Scudo · arma improvvisata',
+  slot:'shield',hand:'off',melee:true,hit:3,damage:'1d4'};
+ const result=battleActionPanels({rules_version:'2014'},
+  {attacks:[shield,{id:'unarmed',name:'Colpo senz’armi',melee:true,hit:2,damage:'1'}]},[],[],catalog.actions);
+ const attacks=doc(result.attacks),actions=doc(result.others);
+ assert(attacks.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert(actions.querySelector('[data-attack-id="two_weapon"]'));
+ assert(!actions.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert.match(actions.querySelector('[data-attack-id="two_weapon"]').textContent,/Equipaggia/);
+ assert(!actions.querySelector('[data-attack-id="opportunity"] .play-battle-attack-roll'));
+});
+
+test('spellcasting action opens Powers directly without an intermediary dialog',()=>{
+ const record={rules_version:'2014'};
+ const result=battleActionPanels(record,{spell_slots:[{level:1,total:2}]},[],[],catalog.actions);
+ const dom=doc(result.others);
+ const cast=dom.querySelector('[data-attack-id="spell_cast"]');
+ assert(cast);
+ assert.equal(cast.querySelector('[data-act="action-open-spells"]').tagName,'BUTTON');
+ assert(!cast.querySelector('details'),'No intermediate disclosure is required');
+ assert.equal(result.spells,'','The separate battle spell section has been removed');
 });

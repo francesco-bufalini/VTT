@@ -602,7 +602,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const caption=row.kind==='spell'?row.casting_time_label:
      (timeLabels[row.timing]||row.timing||'Secondo il privilegio');
    const note=row.kind==='spell'?(row.cost>1?' · Costo '+row.cost:''):
-     ' · '+(row.cost?'Costo '+row.cost:'Nessun costo');
+     (row.cost?' · Costo '+row.cost:'');
    if(row.kind==='spell')return '<div class="play-resource-power-row" data-power-spell-id="'+esc(row.id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="power-spell" data-spell-key="origin" data-grant-id="'+esc(row.id)+'"'+
     ' aria-label="Dettagli '+esc(row.name)+'">'+glyph+'<span><strong>'+esc(row.name)+'</strong><small>'+esc(caption+note)+'</small></span></button>'+
@@ -621,7 +621,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<dl class="power-privilege-facts">'+
      '<div><dt>Origine</dt><dd>'+esc(originLabel||'Non specificata')+'</dd></div>'+
      '<div><dt>Attivazione</dt><dd>'+esc(caption)+'</dd></div>'+
-     '<div><dt>Costo</dt><dd>'+esc(row.cost?row.cost+' utilizzi'+(tracker?' · '+tracker.name:''):'Nessun costo')+'</dd></div></dl>'+
+     (row.cost?'<div><dt>Costo</dt><dd>'+esc(row.cost+' utilizzi'+(tracker?' · '+tracker.name:''))+'</dd></div>':'')+'</dl>'+
     (description?'<div class="power-privilege-description"><h3>Descrizione del tratto</h3><p class="trait-description">'+esc(description)+'</p></div>':'')+
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
@@ -675,13 +675,21 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const freePrivileges=[...freeByTrait.values()].map(group=>
    privilegeGroup(group.id,group.name,abilityButtons('free',group.rows),
     group.id.startsWith('unattributed:')?'':group.id));
-  const actionLink=(id,name,time,available=true,extra='')=>
-   '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+'" data-rule-action="'+esc(id)+'">'+
-    '<button type="button" class="play-resource-power-open" data-act="battle-action-jump" data-action-id="'+esc(id)+'"'+
-    (available?'':' disabled')+' aria-label="'+esc(name)+'">'+icon(actionGlyphKey({id,name,time}))+
+  // Basic-rule and trait-granted rows share the same clear action style.
+  // Unavailable rules stay clickable so their matching action and explanation
+  // can still be inspected. Spellcasting jumps straight to the Powers tab.
+  const actionLink=(id,name,time,available=true,extra='',count=0)=>
+   '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+
+    (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
+    '<button type="button" class="play-resource-power-open" data-act="'+
+    (id==='spell_cast'?'action-open-spells':'battle-action-jump')+'" data-action-id="'+esc(id)+'"'+
+    ' aria-label="'+esc(name)+'">'+icon(actionGlyphKey({id,name,time}))+
     '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
-     available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):'Requisiti non soddisfatti'))+
-    '</small></span></button></div>';
+     available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
+     'Non disponibile'))+
+    '</small></span>'+
+    (count>1?'<span class="play-battle-attacks-per-action" aria-label="'+count+' attacchi per azione">×'+count+'</span>':'')+
+    '</button></div>';
   // A rule is always listed here but is enabled only if its requirements are
   // met. These are *not* consumable trackers or synthetic class privileges.
   const basic=view.battleActions?.basicActions||[];
@@ -692,7 +700,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    ['two_weapon','Attacco con arma secondaria','bonus']
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
-   rulesOfBase.map(([id,name,time])=>actionLink(id,name,time,!!base(id).available)).join(''),
+   rulesOfBase.map(([id,name,time])=>actionLink(id,name,time,!!base(id).available,
+    !base(id).available?(base(id).unavailable_reason||
+     (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
+      id==='spell_cast'?'Non sono disponibili slot incantesimo.':'Manca l’equipaggiamento richiesto.')):'' )).join(''),
    '','Azioni disponibili in base ai requisiti');
   // The highest active Extra Attack grant controls the Attack action, not the
   // sum of all class bonuses. Its owner receives a visible no-cost group.
@@ -702,7 +713,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const multiattackPrivileges=governing.map(grant=>{
    const trait=featureFor([grant.origin_id],grant.origin_name);
    return privilegeGroup('multiattack:'+grant.id,trait?.name||grant.origin_name||'Multiattacco',
-    actionLink('attack','Attaccare','action',true,'×'+bestCount+' attacchi per azione'),
+    actionLink('attack','Attaccare','action',true,'Azione',bestCount),
     trait?.origin_id||grant.origin_id,'Multiattacco · '+bestCount+' attacchi');
   });
   // Trait-specific timing overrides (for example Cunning Action) are
@@ -738,23 +749,18 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<summary class="play-battle-summary">'+icon(glyph)+'<h2>'+esc(title)+'</h2></summary>'+body+'</details>'+
    (tools?'<div class="play-battle-heading-tools">'+tools+'</div>':'')+'</section>';
 
-  const onlyClass=view.battleOnlyClass!==false;
-  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione e filtro delle azioni">'+
+  html+='<div class="play-battle-expansion-tools" role="group" aria-label="Espansione delle azioni">'+
    btn('Espandi tutto','increase','data-act="battle-expand-all"')+
-   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+
-   btn('Mostra solo privilegi di classe','proficiency','data-act="battle-toggle-class-only" aria-pressed="'+onlyClass+'"','<span>Solo privilegi</span>')+'</div>';
-  if(resources+untracked||!onlyClass)html+=disclosure('resources','Risorse','reset',
+   btn('Collassa tutto','decrease','data-act="battle-collapse-all"')+'</div>';
+  if(resources+untracked)html+=disclosure('resources','Risorse','reset',
    resources+untracked||'<p class="play-empty">Nessuna risorsa o capacità disponibile.</p>');
-  if(view.battleActions?.attacks||!onlyClass)html+=disclosure('attacks','Attacchi','weapon',
+  if(view.battleActions?.attacks)html+=disclosure('attacks','Attacchi','weapon',
    view.battleActions?.attacks||'<p class="play-empty">Nessuna opzione di attacco.</p>',true,
    btn('Equipaggiamento','weapon','data-act="sheet-context" data-sheet-context="equipment"','<span>Equipaggiamento</span>'));
-  if(view.battleActions?.others||!onlyClass)html+=disclosure('others','Azioni','hand',
+  if(view.battleActions?.others)html+=disclosure('others','Azioni','hand',
    view.battleActions?.others||'<p class="play-empty">Nessun’altra azione disponibile.</p>');
-  if(view.battleActions?.checks||!onlyClass)html+=disclosure('checks','Prove abilità','skill',
+  if(view.battleActions?.checks)html+=disclosure('checks','Prove abilità','skill',
    view.battleActions?.checks||'<p class="play-empty">Nessuna prova disponibile.</p>');
-  if(view.battleActions?.spells||!onlyClass)html+=disclosure('spells','Incantesimi','spell_cast',
-   view.battleActions?.spells||'<p class="play-empty">Nessun incantesimo disponibile.</p>',false,
-   btn('Gestisci incantesimi','spell_cast','data-act="action-open-spells"','<span>Gestisci</span>'));
  }
  if(sheet==='info'){
   const identity=panelNamed('Identità');bind('identity',identity);

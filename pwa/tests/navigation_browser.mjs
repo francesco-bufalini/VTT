@@ -111,11 +111,22 @@ try{
  await page.goBack();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='battle');
  await page.goForward();await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
  await sheet('battle');await shot('actions');
- const classFilter=page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]');
- assert.equal(await classFilter.getAttribute('aria-pressed'),'true');
- assert.equal(await page.locator('#sheet-play-view [data-battle-action="checks"]').count(),0,
-  'Generic ability checks are initially hidden by the new filter');
- await classFilter.click();
+ const resources=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ await resources.locator(':scope > summary.play-battle-summary').click();
+ const offhandResource=resources.locator('[data-rule-action="two_weapon"] [data-act="battle-action-jump"]');
+ assert.equal(await offhandResource.count(),1,'Secondary attack is always in base rules');
+ assert.equal(await offhandResource.isEnabled(),true,'Blocked secondary attack still links to Azioni');
+ await offhandResource.click();
+ const secondary=page.locator('#sheet-play-view [data-battle-action="others"] [data-attack-id="two_weapon"]');
+ assert.equal(await secondary.count(),1);
+ assert.equal(await page.locator('[data-battle-action="others"]').getAttribute('open'),'',
+  'Selecting offhand base rule reveals its matching action');
+ await resources.locator('[data-rule-action="spell_cast"] [data-act="action-open-spells"]').click();
+ await page.waitForFunction(()=>document.querySelector('#app').dataset.renderedSheet==='magic');
+ await sheet('battle');
+ assert.equal(await page.locator('#sheet-play-view [data-battle-action="spells"]').count(),0);
+ assert.equal(await page.locator('#sheet-play-view [data-act="battle-toggle-class-only"]').count(),0,
+  'Class-only filtering no longer exists');
  const checks=page.locator('#sheet-play-view [data-battle-action="checks"]');
  assert.equal(await checks.count(),1,'Generic ability checks belong in the unified Actions tab');
  await checks.locator('summary.play-battle-summary').click();
