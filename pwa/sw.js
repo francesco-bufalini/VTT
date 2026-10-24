@@ -8,8 +8,8 @@ const SHELL = ["/creature_variants.js", "/creature_variants_view.js", "/", "/ind
 // Catalog JSONs can be very large and the Godot host has limited concurrent
 // connections. Downloading everything with cache.addAll() during install can
 // starve the actual UI requests and fail the whole worker on one bad response.
-// Prioritize code needed for offline startup. Decorative icons and large
-// catalogs are cached on demand instead of competing with module downloads.
+// Prioritize executable code, essential rules, icon atlases and the miniature
+// index. Only bulky supplementary compendia download after activation.
 // Installation is atomic for executable code and essential character rules:
 // a partial cache must NEVER replace a previously working offline version.
 const CORE_SHELL = SHELL.filter(path =>
