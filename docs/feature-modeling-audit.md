@@ -4,6 +4,8 @@ Questa lista avanza per identità **nome + fonte + classe/specie + livello**.
 Una descrizione leggibile non equivale a un effetto automatico. Le progressioni
 consumabili si aggiungono ai dati solo quando limiti e recupero sono verificati;
 scelte, condizioni e bersagli restano espliciti finché il modello non li supporta.
+I casi aperti dei lotti controllati sono raccolti anche nella
+[lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
 ## Lotto 2026-10-23: Fighter e Dwarf
 
@@ -201,7 +203,7 @@ Own Luck, l'attacco specifico annullato da Illusory Self e la scelta fra le
 quattro modalità temporanee di The Third Eye. I nomi corretti non trasformano
 questi effetti contestuali in bonus passivi.
 
-Dopo la correzione e i lotti Rogue/Ranger, tutte le **57 definizioni di contatore** nel supplemento
+Dopo la correzione e i lotti Rogue/Ranger/Barbarian/Monk/Warlock, tutte le **60 definizioni di contatore** nel supplemento
 si collegano per classe, fonte, sottoclasse e nome d'origine a un `classFeature`
 o `subclassFeature` del catalogo 5etools locale. Questa verifica riguarda
 l'identità del tratto; non prova da sola ogni limite numerico o l'effetto
@@ -493,3 +495,58 @@ creature, invisibilità/oscuramento per Hide, oggetti Tinker, e soprattutto la
 scelta Gnomish Lineage con incantesimi e numero di lanci Forest dipendente da
 competenza. Nessuno di questi effetti è stato inventato come bonus fisso di
 specie o privilegio senza il suo tratto concedente.
+
+## Lotto 2026-10-24: Bard XPHB
+
+Verificate tutte le **18 voci** `class_features` (13 nomi distinti). Il
+supplemento esistente attribuisce gli usi di `Bardic Inspiration` al tratto
+omonimo con valore `cha_mod`: recupero lungo ai livelli 1–4 e breve dal
+livello 5, coerente con `Font of Inspiration`. Nessun'altra voce di classe
+richiede un contatore indipendente sicuro.
+
+| Privilegio XPHB (livello) | Esito |
+| --- | --- |
+| Bardic Inspiration (1) | Pool già strutturato, dado progressivo e bersaglio che custodisce il dado; non un bonus permanente al destinatario. |
+| Spellcasting (1) | Preparazione e slot nel modello incantesimi. |
+| Expertise (2, 9) | Due abilità già competenti scelte a ciascuna soglia; le raccomandazioni non sono scelte automatiche. |
+| Jack of All Trades (2) | Metà competenza, arrotondata in basso, solo alle prove con abilità prive di competenza e senza altro bonus di competenza. |
+| Bard Subclass (3) | Segnaposto della sottoclasse scelta. |
+| Ability Score Improvement (4, 8, 12, 16) | Scelta di talento/incremento. |
+| Font of Inspiration (5) | Cambia recupero del pool Bardic Inspiration; conversione di uno slot in un uso solo quando esiste uno slot speso. |
+| Subclass Feature (6, 14) | Segnaposto dei tratti di sottoclasse. |
+| Countercharm (7) | Reazione a TS fallito contro Charmed/Frightened; nuovo tiro con vantaggio, nessun uso giornaliero. |
+| Magical Secrets (10) | Allarga le liste ammesse per nuove preparazioni quando cresce la capacità; scelta dell'incantesimo reale. |
+| Superior Inspiration (18) | All'iniziativa porta Bardic Inspiration a due usi disponibili se ne restano meno; non crea un pool aggiuntivo. |
+| Epic Boon (19) | Scelta del talento. |
+| Words of Creation (20) | `Power Word Heal` e `Power Word Kill` sempre preparati e secondo bersaglio a distanza vincolata; effetto del lancio. |
+
+Restano separati: assegnazione e consumo del dado a un altro personaggio,
+conversione slot→uso di Font of Inspiration, recupero parziale condizionato
+di Superior Inspiration, scelte Expertise/Magical Secrets e secondo bersaglio
+di Words of Creation.
+
+## Lotto 2026-10-24: Human e Orc XPHB
+
+Controllati i tre tratti Human XPHB e i tre tratti Orc XPHB; controllata
+anche la base Human PHB (Age, Size, Languages). La base Human PHB non ha
+una voce in `structured_ability_grants_5etools.json`: la progressione delle
+caratteristiche 2014 va verificata e attribuita alla fonte PHB senza copiarla
+su XPHB. Le due specie XPHB hanno identità e fonte distinte nel catalogo
+5etools.
+
+| Tratto 5etools | Esito |
+| --- | --- |
+| Human PHB: Age, Size, Languages | Medium, Common più una lingua scelta; provenienza PHB. |
+| Human XPHB: Resourceful | Heroic Inspiration a ogni riposo lungo, da integrare con lo stato reale dell'ispirazione, non un tracker numerico senza semantica. |
+| Human XPHB: Skillful | Una competenza in abilità scelta dal personaggio; mantenere tratto e scelta. |
+| Human XPHB: Versatile | Un talento Origin scelto; non assegnare tutti i talenti del filtro. |
+| Orc XPHB: Adrenaline Rush | Usi pari alla competenza, recupero al riposo breve o lungo; Dash come azione bonus e PF temporanei pari alla competenza **quando usato**. Richiede contatore con origine `Adrenaline Rush` e attivazione contestuale. |
+| Orc XPHB: Darkvision | 120 piedi, fonte XPHB. |
+| Orc XPHB: Relentless Endurance | Una volta per riposo lungo, da 0 a 1 PF solo se non si muore sul colpo; richiede il trigger effettivo del danno. |
+
+`Adrenaline Rush` e `Relentless Endurance` non sono stati inseriti nel
+supplemento dei **contatori di classe**: assegnarli a Orc come classe o a un
+tracker generico perderebbe il tratto concedente e le condizioni di
+attivazione. Restano esplicitamente in attesa di una rappresentazione dei
+contatori di specie collegata al tratto, insieme alle scelte di Skillful e
+Versatile e allo stato Heroic Inspiration di Resourceful.
