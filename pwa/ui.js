@@ -1264,8 +1264,8 @@ function equipmentView(c,slots=['main','off','body'],boxed=true){
       const index=rows.findIndex(item=>Array.isArray(item?.equipped_slots)&&item.equipped_slots.includes(slot));
       const eligible=rows.map((item,i)=>({item,i})).filter(({item})=>validSlot(item,slot));
       return '<label>'+label+'<select data-equip-slot="'+slot+'">'+
-        '<option value="-1"'+(index<0&&(!c['hand_'+slot+'_special']||c['hand_'+slot+'_special']==='none')?' selected':'')+'>'+(slot==='body'?'Naturale':'Nessuno')+'</option>'+
-        (slot!=='body'?[['unarmed',"Colpo senz’armi"],['improvised','Arma improvvisata']].map(([id,name])=>'<option value="'+id+'" '+(index<0&&c['hand_'+slot+'_special']===id?'selected':'')+'>'+name+'</option>').join(''):'')+
+        '<option value="-1"'+(index<0&&(!c['hand_'+slot+'_special']||['none','unarmed'].includes(c['hand_'+slot+'_special']))?' selected':'')+'>'+(slot==='body'?'Naturale':'Nessuno')+'</option>'+
+        (slot!=='body'?[['improvised','Arma improvvisata']].map(([id,name])=>'<option value="'+id+'" '+(index<0&&c['hand_'+slot+'_special']===id?'selected':'')+'>'+name+'</option>').join(''):'')+
         eligible.map(({item,i})=>'<option value="'+i+'"'+(i===index?' selected':'')+'>'+
           esc(item.name||"Oggetto")+'</option>').join('')+'</select></label>';
     }).join('')+'</div>';
@@ -1684,9 +1684,9 @@ function inventoryEquipmentView(c,calculated={}){
     const selected=blocked&&slot==="off"?-1:
       inventory.findIndex(item=>Array.isArray(item.equipped_slots)&&item.equipped_slots.includes(slot));
     const special=blocked&&slot==="off"?"none":
-      slot==="body"?"none":String(c["hand_"+slot+"_special"]||"none");
+      slot==="body"?"none":c["hand_"+slot+"_special"]==="improvised"?"improvised":"none";
     const options=[[-1,slot==="body"?"Nessuna armatura":"Nessuno"],
-      ...(slot==="body"?[]:[["unarmed","Colpo senz’armi"],["improvised","Arma improvvisata"]]),
+      ...(slot==="body"?[]:[["improvised","Arma improvvisata"]]),
       ...inventory.map((item,index)=>validSlot(item,slot)&&!(slot==="main"&&itemKind(item)==="shield")?
         [index,item.name||"Oggetto"]:null).filter(Boolean)];
     const selector='<select aria-label="'+esc(label)+'" data-equip-slot="'+slot+'"'+
@@ -3018,7 +3018,7 @@ async function handleField(target) {
   }
   if(target.dataset.equipSlot){
     const slot=target.dataset.equipSlot,index=Number(target.value);
-    const special=['unarmed','improvised'].includes(target.value)?target.value:'none';
+    const special=target.value==='improvised'?'improvised':'none';
     const main=(creature.inventory||[]).find(item=>item.equipped_slots?.includes('main'));
     const mainResolved=main?resolveOwnedItem(main):null;
     const occupied=Boolean(mainResolved&&(
