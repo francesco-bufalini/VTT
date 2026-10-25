@@ -37,8 +37,16 @@ try{
   for(const key of ['info','battle','magic','inventory','conditions']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]):visible,#sheet-play-view select:visible,#sheet-play-view textarea:visible');
-   assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
-     'Only the five coin amounts are editable inline: '+key);
+   assert.equal(await inlineEditors.count(),key==='inventory'?5:key==='magic'?1:0,
+     'Only coin amounts and the spellcasting ability are editable inline: '+key);
+   if(key==='magic'){
+    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting select[data-casting-section]').count(),1,
+      'The spellcasting ability is editable inside its class card');
+    assert.equal(await page.locator('#sheet-play-view [data-sheet-context^="casting:"]').count(),0,
+      'No casting settings gear remains');
+    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .sheet-result').count(),2,
+      'Both DC and spell attack retain interactive origin-calculation buttons');
+   }
    if(key==='inventory')assert.equal(await page.locator('#sheet-play-view .inventory-play-coins input[data-coin-code]').count(),5,
      'Visible direct inventory editors must be the five currency inputs');
    if(viewport.width===390)await shot(key);

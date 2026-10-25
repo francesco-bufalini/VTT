@@ -4676,6 +4676,52 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 .play-status-section-content .play-effect-row{padding-inline:4px}
 .play-status-section-content .play-effect-row:last-child{border-bottom:0}
 
+/* Poteri: editable spellcasting details live in the class card, not a gear popup. */
+#sheet-play-view .play-magic-class-card .play-magic-inline-casting{
+  padding:10px 12px 9px;
+  border-bottom:1px solid #a37b473b;
+}
+#sheet-play-view .play-magic-inline-casting .magic-source-overview{
+  margin:0;padding:10px 11px;gap:9px;
+  border:1px solid #b18c5855;border-radius:12px;
+  background:linear-gradient(145deg,#9c73472b,#25212856 78%);
+}
+#sheet-play-view .play-magic-inline-casting .casting-statistics{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+#sheet-play-view .play-magic-inline-casting .casting-statistics>label{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  grid-column:1/-1;min-width:0;margin:0;
+  color:#e2c9a5;font-size:12px;font-weight:600;
+}
+#sheet-play-view .play-magic-inline-casting .casting-statistics select{
+  flex:1;min-width:0;max-width:190px;min-height:36px;
+  border-radius:8px;color:#f0d4ac;
+}
+#sheet-play-view .play-magic-inline-casting .casting-statistics>span{
+  display:flex;align-items:center;justify-content:space-between;
+  min-width:0;gap:5px;padding:9px 10px;margin:0;
+  border:1px solid #c39b604b;border-radius:9px;
+  background:#1716195c;color:#edceaa;font-size:12px;
+}
+#sheet-play-view .play-magic-inline-casting .casting-statistics button{
+  min-width:0;max-width:100%;white-space:nowrap;
+}
+#sheet-play-view .play-magic-inline-casting .magic-source-known{
+  margin:0;border-top:1px solid #b1906546;min-width:0;
+}
+.magic-tools-dialog .magic-learn-filter{
+  display:flex;flex-wrap:nowrap;align-items:center;
+  gap:10px;min-width:0;margin:9px 0 12px;
+}
+.magic-tools-dialog .magic-learn-filter>span{
+  white-space:nowrap;flex:0 0 auto;
+}
+.magic-tools-dialog .magic-learn-filter select{
+  flex:1 1 0;min-width:0;max-width:none;margin:0;
+  padding:7px 9px;
+}
 
 /* Experimental flat-black presentation for the Azioni category only.
    Keep the existing typography, gold borders, icons and focus states.
