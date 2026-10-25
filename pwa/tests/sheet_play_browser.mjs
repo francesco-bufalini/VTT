@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 import {browserFixture,seedPlayCreature} from './browser_fixture.mjs';
 const f=await browserFixture({live:true});const {page,context,origin,errors,missing,writes,sheet,popup,dismiss,shot}=f;
-const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature;});
+let seededCreatureId='';
+const record=()=>page.evaluate(async id=>{
+ const {loadCreature}=await import('/creatures.js');
+ return (await loadCreature(id)).data;
+},seededCreatureId);
 try{
  await seedPlayCreature(page,origin);
+ seededCreatureId=await page.evaluate(async()=>{
+  const {listCreatures}=await import('/creatures.js');
+  return (await listCreatures()).find(row=>row.creature.name==='Lyria delle Stelle')?.creature.id||'';
+ });
+ assert.ok(seededCreatureId,'Fixture character ID required for stable tests');
  // The same optional maneuver used by Poteri must now appear only in battle resources.
  await page.evaluate(async()=>{
   const {listCreatures,saveCreature}=await import('/creatures.js');
