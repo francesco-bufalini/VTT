@@ -70,6 +70,28 @@ test('selected natural weapon belongs to its source, including non-Strength Dham
  assert.equal(natural(calculated('EEPC')).name,'Talons');
 });
 
+test('winged species with fly:true use walking speed; armor gating stays source-qualified',()=>{
+ const races=['EEPC','MPMM'].map(book=>({
+   id:'5etools:races:'+book.toLowerCase()+':aarakocra',
+   name:'Aarakocra',source:book,speed:{walk:book==='EEPC'?25:30,fly:book==='MPMM'?true:50}
+ }));
+ const rules={speciesAttacks:catalog,classMechanics:{races}};
+ const unarmored=calculateSheet(record('MPMM'),rules);
+ assert.equal(unarmored.stats.speeds.walk,30);
+ assert.equal(unarmored.stats.speeds.fly,30);
+ assert.equal(calculateSheet(record('EEPC'),rules).stats.speeds.fly,50);
+ const armor={id:'test-chain',name:'Chain Shirt',type:'MA',ac:13,
+   quantity:1,equipped_slots:['body']};
+ assert.equal(calculateSheet({...record('MPMM'),inventory:[armor]},rules).stats.speeds.fly,0);
+ assert.equal(calculateSheet({...record('EEPC'),inventory:[armor]},rules).stats.speeds.fly,0);
+ const dmgRules={speciesAttacks:catalog,classMechanics:{races:[
+   {id:'5etools:races:dmg:aarakocra',name:'Aarakocra',source:'DMG',
+    speed:{walk:20,fly:50}}
+ ]}};
+ assert.equal(calculateSheet({...record('DMG'),inventory:[armor]},dmgRules).stats.speeds.fly,50,
+   'an edition without an armor restriction must not inherit it from another book');
+});
+
 test('one-stat origin choice uses existing picker, provenance and disabling gates',()=>{
  const index={race:[{name:'Birdfolk',source:'BOOK',
    ability_choices:[{choose:{from:['dex','wis'],count:1,amount:2}}]}]};
