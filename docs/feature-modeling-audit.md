@@ -34,9 +34,19 @@ trasferito automaticamente a una specie XPHB.
 Il generatore delle competenze omette i tre pacchetti Half-Elf che una
 versione alternativa annulla; quello degli incantesimi omette Drow Descent e
 Moon/Sun Descent. Le identità delle sottorazze rimangono selezionabili nel
-catalogo. Le opzioni effettivamente scelte, l'origine del singolo tratto e il
-vincolo dell'armatura pesante rimangono nella lista separata; nessuna scelta è
-stata simulata con dati fittizi.
+catalogo. **Resta una concessione ereditata dalla razza Half-Elf PHB**:
+`Skill Versatility` con due abilità compare ancora come scelta anche quando
+una discendenza SCAG dovrebbe sostituirla. Questa correzione elimina solo le
+concessioni spurie della sottorazza; non conclude il modello delle scelte.
+Le opzioni effettivamente scelte, l'origine del singolo tratto, la sostituzione
+della concessione PHB e il vincolo dell'armatura pesante rimangono nella lista
+separata; nessuna scelta è stata simulata con dati fittizi.
+
+Anche il pacchetto `Infernal Legacy` della razza Tiefling PHB è ancora
+proiettato insieme ai blocchi magici delle varianti SCAG: l'indice conserva
+i blocchi distinti, ma il risolutore non attua la sostituzione. Le varianti
+Devil's Tongue, Hellfire e Winged non sono quindi ancora automatizzate
+fedelmente. Il caso è registrato nella lista separata.
 
 **Copertura XPHB 2024 verificata:** tutte le 283 voci `class_features` delle
 12 classi (210 coppie classe/tratto distinte) e tutti i 38 tratti delle 10
