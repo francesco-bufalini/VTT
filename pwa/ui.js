@@ -481,6 +481,7 @@ async function render() {
   const previousMagic=app.querySelector('#magic-tools-dialog[open]');
   const magicScroll=previousMagic?{
     kind:previousMagic.querySelector('.magic-tools-head h2')?.textContent,
+    dialog:previousMagic.scrollTop,
     body:previousMagic.querySelector('.magic-tools-body')?.scrollTop||0,
     results:previousMagic.querySelector('#spell-results')?.scrollTop||0
   }:null;
@@ -541,10 +542,18 @@ async function render() {
       magicDialog.addEventListener('close',()=>{state.magicPopup="";},{once:true});
       if(typeof magicDialog.showModal==='function')magicDialog.showModal();else magicDialog.setAttribute('open','');
       if(magicScroll&&magicScroll.kind===magicDialog.querySelector('.magic-tools-head h2')?.textContent){
-        const body=magicDialog.querySelector('.magic-tools-body');
-        const results=magicDialog.querySelector('#spell-results');
-        if(body)body.scrollTop=magicScroll.body;
-        if(results)results.scrollTop=magicScroll.results;
+        // The modal itself scrolls, not only its result list. Restoring just
+        // .magic-tools-body used to silently reset the real scroll position.
+        const restore=()=>{
+          if(!magicDialog.isConnected)return;
+          magicDialog.scrollTop=magicScroll.dialog;
+          const body=magicDialog.querySelector('.magic-tools-body');
+          const results=magicDialog.querySelector('#spell-results');
+          if(body)body.scrollTop=magicScroll.body;
+          if(results)results.scrollTop=magicScroll.results;
+        };
+        restore();
+        if(typeof requestAnimationFrame==='function')requestAnimationFrame(restore);
       }
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
