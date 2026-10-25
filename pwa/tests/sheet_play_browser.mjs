@@ -55,6 +55,18 @@ try{
       'No casting settings gear remains');
     assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .sheet-result').count(),2,
       'Both DC and spell attack retain interactive origin-calculation buttons');
+    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .magic-source-known,.play-magic-inline-casting .magic-source-overview').count(),0,
+      'No redundant known-spells summary or nested casting box');
+    const castingRow=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
+    const controls=castingRow.locator(':scope > label,:scope > span');
+    assert.equal(await controls.count(),3,'Characteristic, DC and attack share one row');
+    const tops=await controls.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
+    assert.equal(new Set(tops).size,1,'Casting controls do not wrap to a second row at '+viewport.width+'px');
+    const actionButtons=page.locator('#sheet-play-view .play-magic-class-card .play-magic-selection>.play-button');
+    if(await actionButtons.count()===2){
+      const ys=await actionButtons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
+      assert.equal(ys[0],ys[1],'Prepare and learn buttons share the same row at '+viewport.width+'px');
+    }
    }
    if(key==='inventory')assert.equal(await page.locator('#sheet-play-view .inventory-play-coins input[data-coin-code]').count(),5,
      'Visible direct inventory editors must be the five currency inputs');
