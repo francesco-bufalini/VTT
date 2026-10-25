@@ -32,7 +32,7 @@ export function exhaustionConditionRows(edition="2014",source=null){
   return Array.from({length:6},(_,index)=>{
     const level=index+1;
     return {id:"exhaustion:"+level,name:"Exhaustion "+level,
-      label:"Indebolimento · livello "+level,category:EXHAUSTION_CONDITION_CATEGORY,
+      label:"Indebolimento · Livello "+level,category:EXHAUSTION_CONDITION_CATEGORY,
       source:source?.source||"D&D "+version,page:source?.page,
       entries:[
         "Indebolimento di livello "+level+". Gli effetti del livello seguono le regole "+version+".",
@@ -159,7 +159,8 @@ function renderEntry(value,depth=0){
   return name+contents.map(item=>renderEntry(item,depth+1)).join("");
 }
 export function conditionDescriptionHtml(row){
-  const category=CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
+  const category=row?.category===EXHAUSTION_CONDITION_CATEGORY?"Indebolimento":
+    CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
   const source=String(row?.source||row?.origin||"");
   const metadata=[category,source&&(source==="VTT"?"VTT":source),
     row?.page!=null?"pag. "+row.page:""].filter(Boolean);
