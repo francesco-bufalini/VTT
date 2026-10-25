@@ -95,35 +95,20 @@ try{
       'Unlimited abilities are not placed in a fake free tracker');
      const actionSection=page.locator('[data-battle-action="others"]');
      assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
-     const sheetBackdrops=await page.locator('#sheet-play-view[data-sheet="battle"]').evaluate(sheet=>{
-      const selectors=[
-       '[data-battle-action="resources"]',
-       '[data-battle-action="resources"] .play-resource-power-row',
-       '[data-battle-action="attacks"]',
-       '[data-battle-action="attacks"] .play-battle-attack-entry',
-       '[data-battle-action="others"]',
-       '[data-battle-action="others"] .play-battle-action-heading',
-       '[data-battle-action="others"] .play-battle-attack-entry',
-       '[data-battle-action="checks"]',
-       '[data-battle-action="checks"] .play-battle-attack-entry'
-      ];
-      return {
-       bodyBackground:getComputedStyle(document.body).backgroundImage,
-       surfaces:selectors.map(selector=>{
-        const element=sheet.querySelector(selector);
-        return {selector,background:element&&getComputedStyle(element).backgroundColor,
-         image:element&&getComputedStyle(element).backgroundImage};
-       })
-      };
+     // The standard theme has nested, tinted panels. Keep the original
+     // background gradients on table shells and rows instead of flattening them.
+     const naturalSurfaces=await actionSection.evaluate(panel=>{
+      const card=panel.closest('.play-card'),heading=panel.querySelector('.play-battle-action-heading'),
+       entry=panel.querySelector('.play-battle-attack-entry');
+      return [card,heading,entry].map(node=>({
+       color:getComputedStyle(node).backgroundColor,
+       image:getComputedStyle(node).backgroundImage
+      }));
      });
-     assert.match(sheetBackdrops.bodyBackground,/gradient/,
-      'Battle panels show the existing sheet background gradient');
-     for(const surface of sheetBackdrops.surfaces){
-      assert.equal(surface.background,'rgba(0, 0, 0, 0)',
-       surface.selector+' must reveal the sheet backdrop instead of using black or a tinted box');
-      assert.equal(surface.image,'none',
-       surface.selector+' must not overlay a separate gradient on the sheet');
-     }
+     assert(naturalSurfaces.every(surface=>surface.image!=='none'),
+      'Original panel, heading and action-row gradients must be restored');
+     assert(naturalSurfaces.every(surface=>surface.color!=='rgb(0, 0, 0)'),
+      'The old flat-black experiment must remain disabled');
      assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
      assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
