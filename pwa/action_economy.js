@@ -646,7 +646,9 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
    description:descriptions.off,available:offhandEligibility.base_available,
    unavailable_reason:offhandEligibility.base_reason},
   {id:'spell_cast',name:'Lanciare un incantesimo',time:'action',type:'Generale',
-   description:'Lancia un incantesimo attraverso uno slot disponibile.',available:hasSlots}
+   description:'Lancia un incantesimo attraverso uno slot disponibile.',available:hasSlots},
+  {id:'ability_checks',name:'Prova abilità',time:'action',type:'Generale',
+   description:'Effettuare una prova di caratteristica o di abilità.',available:true}
  ];
  const baseById=new Map(baseRules.map(row=>[row.id,row]));
  const opportunity=entries.find(row=>row.id==='opportunity');
