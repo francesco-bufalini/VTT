@@ -737,6 +737,10 @@ function calculateSheetValues(record={},catalogs={}){
   const equipped=slot=>inventory.find(it=>int(it?.quantity,1)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
   const armor=currentArmor&&itemKind(currentArmor)==="armor"?currentArmor:null;
+  const speciesRule=arr(catalogs.speciesAttacks?.races).find(row=>
+    record.species_id&&row.id===record.species_id)||
+    arr(catalogs.speciesAttacks?.races).find(row=>same(row.name,record.species)&&
+      record.species_source&&same(row.source,record.species_source));
   const shield=[equipped("main"),equipped("off")].filter(it=>it&&itemKind(it)==="shield");
   const shieldBonus=shield.reduce((max,it)=>Math.max(max,Math.max(0,int(it.ac,2))),0);
   const simpleSpeed=()=>typeof record.species_speed==="number"?Math.max(0,int(record.species_speed)):
@@ -797,8 +801,15 @@ function calculateSheetValues(record={},catalogs={}){
       const from=kind==="monster"?record.stat_block?.speed:record.species_speed;
       const source=record.movement_speeds?.[key]??from?.[key];
       const raw=typeof source==="object"&&source!==null?source.number??source.value:source;
-      const base=Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
-      return base>0&&String(record.rules_version)==="2024"?base+sumGrants("speed",stack):base;
+      // A typed 5etools speed of true means "equal to walking speed",
+      // not a speed of 1 foot (e.g. MPMM Aarakocra flight).
+      const copiesWalk=raw===true&&key==="fly";
+      const base=copiesWalk?resolve("speed",stack):
+        Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
+      if(key==="fly"&&speciesRule?.flight_no_medium_heavy_armor&&armor&&
+        ['MA','HA'].includes(String(armor.type||"").split('|')[0].toUpperCase()))return 0;
+      return base>0&&String(record.rules_version)==="2024"&&!copiesWalk?
+        base+sumGrants("speed",stack):base;
     }
     if(target==="hp")return int(record.max_hp_base??record.max_hp,1);
     if(target==="second_max")return int(record.second_form_max_hp);
