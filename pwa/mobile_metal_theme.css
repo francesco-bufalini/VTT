@@ -4672,36 +4672,6 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
   padding:7px 9px;
 }
 
-/* Battle / Azioni: every table and its rows reveal the very same backdrop
-   as the creature sheet. Transparent surfaces follow the page background
-   exactly, including its subtle gradient, instead of painting a second
-   dark layer. Gold dividers and actionable dice/buttons retain their theme. */
-#sheet-play-view[data-sheet="battle"] > .play-card.play-battle-shell,
-#sheet-play-view[data-sheet="battle"] .play-battle-disclosure,
-#sheet-play-view[data-sheet="battle"] .play-battle-disclosure > .play-battle-summary,
-#sheet-play-view[data-sheet="battle"] .play-battle-action-group,
-#sheet-play-view[data-sheet="battle"] .play-battle-action-heading,
-#sheet-play-view[data-sheet="battle"] .play-battle-action-rows,
-#sheet-play-view[data-sheet="battle"] .play-battle-action-rows > .action-economy-row,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-entry,
-#sheet-play-view[data-sheet="battle"] .play-battle-ability-entry,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-line,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-details,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-details > summary,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-expanded,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-rolls,
-#sheet-play-view[data-sheet="battle"] .play-battle-check-heading,
-#sheet-play-view[data-sheet="battle"] .play-battle-effect,
-#sheet-play-view[data-sheet="battle"] .play-battle-attack-direct-button,
-#sheet-play-view[data-sheet="battle"] .play-resource-group,
-#sheet-play-view[data-sheet="battle"] .play-resource-group > .play-resource,
-#sheet-play-view[data-sheet="battle"] .play-resource-ungrouped,
-#sheet-play-view[data-sheet="battle"] .play-resource-ungrouped > .play-resource,
-#sheet-play-view[data-sheet="battle"] .play-resource-power-row,
-#sheet-play-view[data-sheet="battle"] .play-resource-rule--attack > .play-resource-power-open {
- background:transparent;
-}
-
 /* Active status names navigate to their read-only trait; ending the state
    remains a separate button on the same row. */
 .play-status-trait-link{
