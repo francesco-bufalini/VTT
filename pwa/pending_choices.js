@@ -1,7 +1,7 @@
 // Structured, still-unresolved character choices. Mirrors the native
 // creature_pending_choices.gd and creature_proficiency_rules.gd contracts.
 // Never infer a choice from prose or assign a privilege automatically.
-import {selectedSources,grantedFields,fixedProficiencies} from './structured_effects.js';
+import {selectedSources,grantedFields,fixedProficiencies,effectiveBackgrounds} from './structured_effects.js';
 import {SKILLS} from './sheet_rules.js';
 import {traitBenefitSources} from './trait_benefits.js';
 
@@ -159,6 +159,31 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     label:'Caratteristica (+'+Number(choice.amount??1)+')',count:1,
     selected,options,remaining:selected.length?0:1});
  }
+ // Source-qualified, one-stat choices on 5etools species, subraces and backgrounds.
+ for(const [group,name,source] of [
+   ['race',record.species,record.species_source],
+   ...(record.subrace?[['subrace',record.subrace,record.subrace_source]]:[]),
+   ...effectiveBackgrounds(record).map(row=>['background',row.name,row.source])
+ ]){
+   if(!name||!source)continue;
+   for(const row of arr(catalogs.abilityGrants?.[group]).filter(row=>
+     norm(row.name)===norm(name)&&norm(row.source)===norm(source)&&
+     (group!=='subrace'||norm(row.raceName)===norm(record.species)&&
+       (!row.raceSource||norm(row.raceSource)===norm(record.species_source)))){
+     const sid=group+'|'+norm(row.source)+'|'+norm(row.name);
+     if(!enabled(record,sid))continue;
+     const variants=arr(row.ability_choices);
+     if(variants.length!==1||!variants[0]?.choose)continue;
+     const choice=variants[0].choose,amount=Number(choice.amount??1);
+     const options=unique(arr(choice.from).map(norm).filter(x=>abilities.includes(x)));
+     if(Number(choice.count??1)!==1||!options.length||!Number.isFinite(amount)||amount<=0)continue;
+     const selected=arr(record.origin_ability_choices).filter(x=>x?.origin_id===sid)
+       .map(x=>norm(x.ability)).filter(x=>options.includes(x));
+     result.push({id:'ability:'+sid,kind:'ability',origin_id:sid,name:row.name,
+       label:'Caratteristica (+'+amount+')',count:1,selected,options,
+       remaining:selected.length?0:1});
+   }
+ }
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
   const feature=arr(calculated.features).find(row=>row.origin_id===choice.origin_id);
@@ -205,6 +230,12 @@ export function savePendingChoice(record,choice,values=[]){
    throw Error('Selezione non consentita dal privilegio.');
  if(choice.kind==='ability'){
   if(selected.length>1)throw Error('Puoi scegliere una sola caratteristica.');
+  if(!choice.origin_id.startsWith('feat|')){
+    if(!/^(race|subrace|background)\|/.test(choice.origin_id))throw Error('Origine non valida.');
+    const rows=arr(record.origin_ability_choices).filter(row=>row?.origin_id!==choice.origin_id);
+    if(selected.length)rows.push({origin_id:choice.origin_id,ability:selected[0]});
+    return {origin_ability_choices:rows};
+  }
   let updated=false;
   const feats=arr(record.feats_catalog).map(feat=>{
    const sid='feat|'+norm(feat?.source)+'|'+norm(feat?.name);
