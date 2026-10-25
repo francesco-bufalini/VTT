@@ -60,8 +60,13 @@ try{
     const castingRow=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
     const controls=castingRow.locator(':scope > label,:scope > span');
     assert.equal(await controls.count(),3,'Characteristic, DC and attack share one row');
-    const tops=await controls.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
-    assert.equal(new Set(tops).size,1,'Casting controls do not wrap to a second row at '+viewport.width+'px');
+    const boxes=await controls.evaluateAll(nodes=>nodes.map(node=>{
+      const r=node.getBoundingClientRect();return {left:r.left,right:r.right,cy:r.top+r.height/2};
+    }));
+    assert(boxes[0].right<=boxes[1].left+1 && boxes[1].right<=boxes[2].left+1,
+      'Casting controls are arranged horizontally at '+viewport.width+'px');
+    assert(Math.max(...boxes.map(b=>b.cy))-Math.min(...boxes.map(b=>b.cy))<8,
+      'Casting controls share a vertical centerline at '+viewport.width+'px');
     const actionButtons=page.locator('#sheet-play-view .play-magic-class-card .play-magic-selection>.play-button');
     if(await actionButtons.count()===2){
       const ys=await actionButtons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
