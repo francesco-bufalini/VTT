@@ -4847,13 +4847,26 @@ async function handleAction(target){
       const result=dialog.querySelector('[data-roll-result]');
       if(dialog.dataset.rollKind==='damage'){
         const chosen=chosenRollBonuses(dialog);
-        const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>'+'+row.dice).join('');
+        const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
+          Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
         const outcome=rollBattleDamage(fullFormula,randomDie);
         state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
           (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName()};
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
+        // A paid class-feature modifier applies to one damage roll only.
+        // Keep the existing optional weapon dice behavior unchanged.
+        const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
+        if(oneShot.size){
+          dialog.usedRollBonuses=dialog.usedRollBonuses.filter(row=>!oneShot.has(row.selectionId));
+          for(const useButton of dialog.querySelectorAll('[data-roll-use]')){
+            const item=dialog.rollBonuses[Number(useButton.dataset.rollUse)];
+            if(oneShot.has(item?.selectionId)){
+              useButton.disabled=false;useButton.dataset.rollUsed='false';useButton.textContent='Usa';
+            }
+          }
+        }
         // Usage was spent by the explicit Usa action. Rerolling in this dialog
         // must not silently consume the same tracker again.
         dialog.renderRollFormula?.();
