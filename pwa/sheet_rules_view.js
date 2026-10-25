@@ -171,8 +171,8 @@ export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
    const flat=Number(bonus.flat_bonus);
    if(!Number.isSafeInteger(flat)||Math.abs(flat)>10000)
     throw Error('Bonus fisso non valido');
-   parts.push({name:String(bonus.origin_name||'Bonus'),notation:String(flat),
-    rolls:[],subtotal:flat,flat});
+   parts.push({name:String(bonus.origin_name||'Bonus'),notation:(flat>=0?'+':'')+flat,
+    rolls:[],subtotal:flat,flat,kind:'flat'});
    continue;
   }
   const notation=String(bonus.dice||'').replaceAll(' ','');
@@ -189,7 +189,9 @@ export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
  }
  const total=parts.reduce((sum,row)=>sum+row.subtotal,base);
  const notation=sheetRollFormula(base,bonuses,mode);
- const detail=parts.map(row=>row.name+' ['+row.rolls.join(', ')+']'+(row.flat?(row.flat>0?' + ':' − ')+Math.abs(row.flat):'')+' = '+row.subtotal).join(' · ')+
+ const detail=parts.map(row=>row.kind==='flat'?
+   row.name+' [bonus fisso '+row.notation+'] = '+row.subtotal:
+   row.name+' ['+row.rolls.join(', ')+']'+(row.flat?(row.flat>0?' + ':' − ')+Math.abs(row.flat):'')+' = '+row.subtotal).join(' · ')+
   ' · modificatore '+(base>=0?'+':'')+base+' · totale '+total;
  return {sides:20,count:rolls.length,modifier:base,rolls,total,notation,detail,parts};
 }
