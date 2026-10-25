@@ -4746,3 +4746,20 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
  background:#000;
  background-image:none;
 }
+
+/* Active status names navigate to their read-only trait; ending the state
+   remains a separate button on the same row. */
+.play-status-trait-link{
+ display:flex;align-items:center;gap:9px;flex:1 1 auto;min-width:0;min-height:44px;
+ padding:7px 3px;border:0;border-radius:6px;background:transparent;
+ color:inherit;text-align:left;font:inherit;cursor:pointer;
+}
+.play-status-trait-link>.vtt-action-glyph{width:18px;height:18px;flex:0 0 18px}
+.play-status-trait-link>span{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.play-status-trait-link strong{font-weight:550;font-size:13px}
+.play-status-trait-link small{display:block}
+.play-status-trait-link:hover{color:#f1d09d}
+.play-status-trait-link:focus-visible{outline:2px solid #e5b979;outline-offset:1px}
+.trait-state-description.condition-description{margin:0}
+.trait-state-description .condition-description-source{margin-bottom:8px}
+.trait-state-description .condition-table-scroll{max-width:100%;overflow-x:auto}
