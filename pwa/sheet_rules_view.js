@@ -704,11 +704,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const maxGrantOrigin=maxTrait?.origin_id||mainGrant?.origin_id||'';
   const baseRuleNames={
    attack:'Azione di attacco',opportunity:'Attacco di opportunità',
-   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria'
+   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria',
+   ability_checks:'Prova abilità'
   };
   const rulesOfBase=[
    ['attack','action'],['opportunity','reaction'],
-   ['spell_cast','action'],['two_weapon','bonus']
+   ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action']
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
    rulesOfBase.map(([id,time])=>{
