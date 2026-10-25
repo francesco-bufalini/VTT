@@ -72,7 +72,13 @@ try{
      assert.equal(await physical.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is always available');
      const resources=page.locator('[data-battle-action="resources"]');
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),4);
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),5);
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] .play-resource-power-open strong').textContent(),'Prova abilità');
+     const attackGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .vtt-action-glyph').first();
+     const otherGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] .vtt-action-glyph').first();
+     const x=await attackGlyph.evaluate(node=>node.getBoundingClientRect().left);
+     const otherX=await otherGlyph.evaluate(node=>node.getBoundingClientRect().left);
+     assert(Math.abs(x-otherX)<2,'Multiattack action icon aligns with neighboring resource rows');
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .play-resource-power-open strong').textContent(),'Azione di attacco');
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] small').textContent(),'Slot');
      assert.equal(await resources.locator('[data-ability-resource="free"]').count(),0,
@@ -122,6 +128,17 @@ try{
   }
  }
  await page.setViewportSize({width:390,height:900});await section('battle');
+ const resourcesPanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
+ if(await resourcesPanel.getAttribute('open')===null)
+  await resourcesPanel.locator(':scope > summary.play-battle-summary').click();
+ const checksLink=resourcesPanel.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] button');
+ await checksLink.click();
+ const checksSection=page.locator('#sheet-play-view [data-battle-action="checks"]');
+ assert.equal(await checksSection.getAttribute('open'),'','Checks jump expands its destination section');
+ assert.equal(await checksSection.locator('[data-action-ability][open]').count(),6,
+  'Checks jump expands all six ability groups');
+ await section('magic');await section('battle');
+ assert.equal(await checksSection.getAttribute('open'),'','Expanded checks survive sheet rerender');
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return JSON.stringify((await listCreatures())[0].creature);});
  await page.getByRole('button',{name:'Varianti alle regole',exact:true}).click();
  assert.equal(await page.locator('.variant-list input[type=checkbox]').count(),78);
