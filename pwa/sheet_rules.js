@@ -169,6 +169,16 @@ function fixedAbilities(row){
   }
   return intersection;
 }
+// Source-qualified selectable score increases. Do not assign a choice silently.
+function selectedAbilityChoice(record,row,sid){
+ const variants=arr(row.ability_choices);
+ if(variants.length!==1||!variants[0]?.choose)return null;
+ const choose=variants[0].choose,amount=Number(choose.amount??1);
+ if(Number(choose.count??1)!==1||!Number.isFinite(amount)||amount<=0)return null;
+ const ability=String(arr(record.origin_ability_choices).find(x=>x?.origin_id===sid)?.ability||'').toLowerCase();
+ return ABILITIES.includes(ability)&&arr(choose.from).some(x=>same(x,ability))?
+   {ability,amount}:null;
+}
 function indexRows(record,index,warnings){
   const rows=[];
   const append=(sid,name,amounts)=>{
@@ -187,22 +197,35 @@ function indexRows(record,index,warnings){
       warnings.add("Specifica la fonte di "+value+" per i bonus razziali");
       continue;
     }
-    for(const row of options)append(group+"|"+String(row.source||"").toLowerCase()+"|"+
-      String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
+    for(const row of options){
+      const sid=group+"|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
+      append(sid,row.name,fixedAbilities(row));
+      const choice=selectedAbilityChoice(record,row,sid);
+      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
+    }
   }
   for(const background of effectiveBackgrounds(record)){
     const options=arr(index.background).filter(row=>same(row.name,background.name)&&
       (!background.source||same(row.source,background.source)));
     if(!options.length){warnings.add("Bonus background non presenti nell’indice offline");continue;}
-    for(const row of options)append("background|"+String(row.source||"").toLowerCase()+"|"+
-      String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
+    for(const row of options){
+      const sid="background|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
+      append(sid,row.name,fixedAbilities(row));
+      const choice=selectedAbilityChoice(record,row,sid);
+      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
+    }
   }
   if(record.subrace){
     const matches=arr(index.subrace).filter(r=>same(r.name,record.subrace)&&same(r.raceName,record.species)&&
       (!record.subrace_source||same(r.source,record.subrace_source)));
     if(matches.length===1){
-      const r=matches[0];append("subrace|"+String(r.source).toLowerCase()+"|"+
-        String(r.name).toLowerCase(),r.name,fixedAbilities(r));
+      const r=matches[0],sid="subrace|"+String(r.source).toLowerCase()+"|"+String(r.name).toLowerCase();
+      append(sid,r.name,fixedAbilities(r));
+      const choice=selectedAbilityChoice(record,r,sid);
+      if(choice){const grant=numericGrant(sid,r.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
     }else warnings.add("La sottorazza richiede un riferimento di fonte univoco");
   }
   for(const feat of arr(record.feats_catalog)){
@@ -498,7 +521,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const settings=record.attack_overrides?.[attack.id]||{};
   const modifier=abilities[ability]?.modifier??0;
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
-  let damageMod=baseHit!==null?0:modifier;
+  let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
   const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
@@ -562,6 +585,35 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  };
  unarmed('main');
  if(!off&&!offBlocked)unarmed('off');
+ // Natural strikes are typed, source-qualified 5etools mechanics generated at
+ // catalog sync time. A natural weapon requires no equipped item or free hand.
+ // Their own trait remains the origin for disabling and inspecting benefits.
+ const naturalCatalog=arr(featureContext.speciesAttacks?.races);
+ const ownRace=naturalCatalog.find(row=>record.species_id&&row.id===record.species_id)||
+   naturalCatalog.find(row=>same(row.name,record.species)&&
+     record.species_source&&same(row.source,record.species_source));
+ if(record.kind!=='monster'&&ownRace){
+   const origin='species|'+(record.species_id||String(record.species||'').toLowerCase())+
+     '|'+String(ownRace.source||'').toLowerCase();
+   const legacy='race|'+String(ownRace.source||'').toLowerCase()+'|'+
+     String(ownRace.name||'').toLowerCase();
+   const paused=id=>record.origin_enabled?.[id]===false||
+     arr(record.proficiency_origins).some(r=>r?.id===id&&r.disabled);
+   if(!paused(origin)&&!paused(legacy))for(const natural of arr(ownRace.attacks)){
+     const trait=arr(featureContext.features).find(row=>same(row.name,natural.trait)&&
+       row.origin_key===origin);
+     const traitId=trait?.origin_id||'feature:'+origin+'|1|'+String(natural.trait).toLowerCase();
+     if(trait?.disabled||trait?.inactive||paused(traitId))continue;
+     const id='natural:'+String(ownRace.id||ownRace.name).toLowerCase()+':'+
+       String(natural.trait).toLowerCase().replace(/[^a-z0-9]+/g,'-');
+     const type=({slashing:'taglienti',piercing:'perforanti',bludgeoning:'contundenti'})[natural.damage_type]||natural.damage_type;
+     append({id,name:natural.trait,slot:'natural',melee:true,range_feet:5,long_range_feet:0,
+       damage_type:type,damage_ability_modifier:natural.damage_ability_modifier!==false,
+       origin_id:traitId,origin_name:'Tratto · '+natural.trait,
+       description:'Attacco naturale concesso dal tratto '+natural.trait+'.'},
+       natural.ability||'str',true,natural.damage);
+   }
+ }
  // Explicit improvised attacks remain selectable without affecting unarmed strikes.
  for(const slot of ['main','off']){
   if(record['hand_'+slot+'_special']!=='improvised'||slot==='off'&&(off||offBlocked))continue;
@@ -685,6 +737,10 @@ function calculateSheetValues(record={},catalogs={}){
   const equipped=slot=>inventory.find(it=>int(it?.quantity,1)>0&&arr(it?.equipped_slots).includes(slot));
   const currentArmor=equipped("body");
   const armor=currentArmor&&itemKind(currentArmor)==="armor"?currentArmor:null;
+  const speciesRule=arr(catalogs.speciesAttacks?.races).find(row=>
+    record.species_id&&row.id===record.species_id)||
+    arr(catalogs.speciesAttacks?.races).find(row=>same(row.name,record.species)&&
+      record.species_source&&same(row.source,record.species_source));
   const shield=[equipped("main"),equipped("off")].filter(it=>it&&itemKind(it)==="shield");
   const shieldBonus=shield.reduce((max,it)=>Math.max(max,Math.max(0,int(it.ac,2))),0);
   const simpleSpeed=()=>typeof record.species_speed==="number"?Math.max(0,int(record.species_speed)):
@@ -745,8 +801,15 @@ function calculateSheetValues(record={},catalogs={}){
       const from=kind==="monster"?record.stat_block?.speed:record.species_speed;
       const source=record.movement_speeds?.[key]??from?.[key];
       const raw=typeof source==="object"&&source!==null?source.number??source.value:source;
-      const base=Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
-      return base>0&&String(record.rules_version)==="2024"?base+sumGrants("speed",stack):base;
+      // A typed 5etools speed of true means "equal to walking speed",
+      // not a speed of 1 foot (e.g. MPMM Aarakocra flight).
+      const copiesWalk=raw===true&&key==="fly";
+      const base=copiesWalk?resolve("speed",stack):
+        Math.max(0,int(typeof raw==="string"?raw.split(" ")[0]:raw));
+      if(key==="fly"&&speciesRule?.flight_no_medium_heavy_armor&&armor&&
+        ['MA','HA'].includes(String(armor.type||"").split('|')[0].toUpperCase()))return 0;
+      return base>0&&String(record.rules_version)==="2024"&&!copiesWalk?
+        base+sumGrants("speed",stack):base;
     }
     if(target==="hp")return int(record.max_hp_base??record.max_hp,1);
     if(target==="second_max")return int(record.second_form_max_hp);
@@ -975,7 +1038,7 @@ function calculateSheetValues(record={},catalogs={}){
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
-  const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+  const featureContext={speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const originMap=new Map();
@@ -1064,12 +1127,14 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
+    fetch('/catalog/species_attacks.json').then(r=>{if(!r.ok)throw Error('Attacchi naturali non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))

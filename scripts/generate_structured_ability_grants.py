@@ -53,8 +53,10 @@ def build(root):
             ability = raw.get("ability")
             fixed = fixed_ability(ability)
             variants = ability if isinstance(ability, list) else [ability]
-            choices = (any(isinstance(option, dict) and isinstance(option.get("choose"), dict)
-                           for option in variants) if category == "feat" else False)
+            # 5etools grants can expose a score choice on species or backgrounds, too.
+            # Preserve the data rather than silently discarding non-feat choices.
+            choices = any(isinstance(option, dict) and isinstance(option.get("choose"), dict)
+                          for option in variants)
             if not fixed and not choices:
                 continue
             entry = {"name": raw["name"], "source": raw["source"]}

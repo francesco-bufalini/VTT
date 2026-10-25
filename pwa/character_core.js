@@ -30,7 +30,7 @@ export function initialCreature(kind,name,id,owner_id){
     attacks:"",attack_ability:"str",attack_overrides:{},equipped_attack_id:"",
     equipped_inventory_index:-1,hand_main_special:"none",hand_off_special:"none",
     hand_grip_two_handed:false,two_weapon_fighting:false,fighting_styles:[],
-    proficiency_choices:[],formula_bonuses:[],dice_bonuses:[],
+    proficiency_choices:[],origin_ability_choices:[],formula_bonuses:[],dice_bonuses:[],
     resource_trackers:[],resource_tracker_spent:{},
     resource_recovery_ready:{},resource_recovery_used:{},origin_spell_grants:[],
     origin_spell_configs:{},spellcasting_section_abilities:{},

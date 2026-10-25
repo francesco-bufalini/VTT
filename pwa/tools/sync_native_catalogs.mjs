@@ -1,6 +1,7 @@
 // Regenerate the browser's existing catalog URLs from native structured data.
 // No native files are changed; no catalog output is edited by hand.
 import {readFile,writeFile} from 'node:fs/promises';
+import {projectSpeciesAttacks} from './species_mechanics.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 // Project typed TCE infusion data to a URL already served by PwaHost.
 // Older native snapshots lack selectors: use source-qualified structured
@@ -211,6 +212,8 @@ const references=await read('../../vtt/data/creature_references_5etools.json');
 
 // These structured race rows are also the native speed source. Keep only
 // mechanics/identity here; the existing features URL owns descriptions.
+await writeFile(new URL('../catalog/species_attacks.json',import.meta.url),
+ JSON.stringify(projectSpeciesAttacks(references.races),null,2)+'\n');
 mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})=>({id,name,source,speed,size,creatureTypes}));
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const browserProficiencies=await read('../catalog/proficiency_grants.json');
