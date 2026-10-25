@@ -35,7 +35,7 @@ try{
  assert.equal(await flashResource.locator('[data-act="battle-use-ability"]').count(),0,
   'roll bonuses are listed under trackers instead of duplicated as ability buttons');
  const lightningResource=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
- assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\+1d6.*Danni/);
+ assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\+1d6[\s\S]*Danni/);
  await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
  const modelDialog=page.locator('#class-feature-dialog');
  await modelDialog.locator('[data-feature-confirm]').waitFor();
