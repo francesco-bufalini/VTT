@@ -318,7 +318,7 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   ].filter(row=>row?.id).map(row=>[String(row.id),row]));
  for(const origin of appliedSpells){
   const id=String(origin.id),spellId=id.slice(6),spell=effectiveSpells.get(spellId);
-  stateTrait(id,String(spell?.name||origin.name||spellId).replace(/^Incantesimo · /,''),
+  stateTrait(id,String(spell?.name||origin.name||spellId),
    spell?.entries??spell?.entry??spell?.description??
     origin.description??'Descrizione dell’incantesimo non disponibile nel catalogo locale.',{
     origin_id:id,spell_id:spellId,state_key:id,source:spell?.source||''});
