@@ -35,7 +35,14 @@
       ],
       "granted_features": [
         "Defensive Field"
-      ]
+      ],
+      "activation_tracker": {
+        "id": "feature:armor_model:activation",
+        "name": "Modello armatura",
+        "max": 1,
+        "recharge": "short_rest",
+        "cost": 1
+      }
     },
     {
       "id": "armor_model:infiltrator",
@@ -85,7 +92,14 @@
           "target": "speed",
           "amount": 5
         }
-      ]
+      ],
+      "activation_tracker": {
+        "id": "feature:armor_model:activation",
+        "name": "Modello armatura",
+        "max": 1,
+        "recharge": "short_rest",
+        "cost": 1
+      }
     }
   ]
 }
