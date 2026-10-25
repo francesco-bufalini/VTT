@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "source": "vtt/data/creature_references_5etools.json",
+  "races": [
+    {
+      "id": "5etools:races:dmg:aarakocra",
+      "name": "Aarakocra",
+      "source": "DMG",
+      "attacks": [
+        {
+          "trait": "Talons",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": false
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:eepc:aarakocra",
+      "name": "Aarakocra",
+      "source": "EEPC",
+      "attacks": [
+        {
+          "trait": "Talons",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:aarakocra",
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Talons",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ggr:centaur",
+      "name": "Centaur",
+      "source": "GGR",
+      "attacks": [
+        {
+          "trait": "Hooves",
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:centaur",
+      "name": "Centaur",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Hooves",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:rhw:dhampir",
+      "name": "Dhampir",
+      "source": "RHW",
+      "attacks": [
+        {
+          "trait": "Vampiric Bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "con",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vrgr:dhampir",
+      "name": "Dhampir",
+      "source": "VRGR",
+      "attacks": [
+        {
+          "trait": "Vampiric Bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "con",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:dmg:gnoll",
+      "name": "Gnoll",
+      "source": "DMG",
+      "attacks": [
+        {
+          "trait": "Bite",
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mot:leonin",
+      "name": "Leonin",
+      "source": "MOT",
+      "attacks": [
+        {
+          "trait": "Claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:lizardfolk",
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Bite",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:lizardfolk",
+      "name": "Lizardfolk",
+      "source": "VGM",
+      "attacks": [
+        {
+          "trait": "Bite",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ggr:minotaur",
+      "name": "Minotaur",
+      "source": "GGR",
+      "attacks": [
+        {
+          "trait": "Horns",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:minotaur",
+      "name": "Minotaur",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Horns",
+          "damage": "1d6",
+          "damage_type": "piercing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:psa:minotaur%20%28amonkhet%29",
+      "name": "Minotaur (Amonkhet)",
+      "source": "PSA",
+      "attacks": [
+        {
+          "trait": "Natural Weapon",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mot:satyr",
+      "name": "Satyr",
+      "source": "MOT",
+      "attacks": [
+        {
+          "trait": "Ram",
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:satyr",
+      "name": "Satyr",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Ram",
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:tabaxi",
+      "name": "Tabaxi",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Cat's Claws",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:vgm:tabaxi",
+      "name": "Tabaxi",
+      "source": "VGM",
+      "attacks": [
+        {
+          "trait": "Cat's Claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:mpmm:tortle",
+      "name": "Tortle",
+      "source": "MPMM",
+      "attacks": [
+        {
+          "trait": "Claws",
+          "damage": "1d6",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    },
+    {
+      "id": "5etools:races:ttp:tortle",
+      "name": "Tortle",
+      "source": "TTP",
+      "attacks": [
+        {
+          "trait": "Claws",
+          "damage": "1d4",
+          "damage_type": "slashing",
+          "ability": "str",
+          "damage_ability_modifier": true
+        }
+      ]
+    }
+  ]
+}
