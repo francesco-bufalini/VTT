@@ -516,13 +516,13 @@ test("grouped smartphone navigation retains every editable sheet section",async(
     return c?.abilities?.str===14 && c.conditions?.includes("poisoned");
   });
   assert.equal(document.querySelector('[data-condition-count]').textContent,'1');
-  const activeStatus=await until(()=>document.querySelector('#sheet-play-view [data-sheet-context="condition:poisoned"]'));
-  assert.ok(activeStatus,"Active status must have its own description popup");
-  click('#sheet-play-view [data-sheet-context="condition:poisoned"]');
-  await until(()=>document.querySelector('#sheet-context-dialog[open] [data-condition-detail="poisoned"]'));
-  assert.ok(document.querySelector('#sheet-context-dialog .condition-description-source'));
-  click('[data-act="sheet-context-close"]');
-  await until(()=>!document.querySelector('#sheet-context-dialog'));
+  const activeStatus=await until(()=>document.querySelector('#sheet-play-view [data-state-trait="state|condition:poisoned"]'));
+  assert.ok(activeStatus,"The condition must link to its corresponding state trait");
+  click('#sheet-play-view [data-state-trait="state|condition:poisoned"]');
+  await until(()=>document.querySelector('.play-info-traits .trait-card[data-trait-key="state|condition:poisoned"][open]'));
+  assert.ok(document.querySelector('.play-info-traits .trait-card[data-trait-key="state|condition:poisoned"] .condition-description-source'),
+   "The expanded trait reuses the full 5etools condition description");
+  assert.equal(document.querySelector('#sheet-context-dialog'),null);
   assert.equal(document.querySelector('[data-sheet="origins"]'),null);
   // Trait benefits have their own modal instead of a general character editor.
   click('[data-nav="library"]');
