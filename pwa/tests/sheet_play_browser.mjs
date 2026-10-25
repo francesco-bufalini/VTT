@@ -719,7 +719,7 @@ try{
  assert.deepEqual(await page.locator('#sheet-play-view .play-status-section-head h3').allTextContents(),['Condizioni','Incantesimi','Capacità']);
  assert.equal(await page.locator('#sheet-play-view .play-status-add').count(),3);
  await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="poisoned"]').uncheck();await dismiss();assert.equal((await record()).conditions.includes('poisoned'),false);
- await popup('conditions');assert.match(await page.locator('#sheet-context-dialog .condition-category:last-child summary').textContent(),/Indebolimento/);
+ await popup('conditions');assert.match(await page.locator('#sheet-context-dialog [data-condition-category="exhaustion_levels"] summary').textContent(),/Indebolimento/);
  await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').check();await dismiss();
  assert.equal((await record()).exhaustion,4);
  assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 4/);
