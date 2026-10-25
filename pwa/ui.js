@@ -3939,6 +3939,19 @@ async function handleAction(target){
   }
   if(act==='battle-action-jump'){
     const actionId=String(target.dataset.actionId||'');
+    if(actionId==='ability_checks'){
+      const checks=app.querySelector('#sheet-play-view [data-battle-action="checks"]');
+      if(!checks)return;
+      checks.open=true;
+      state.disclosureState.set('battle-disclosure:checks',true);
+      for(const group of checks.querySelectorAll('.play-battle-action-group[data-action-ability]')){
+        group.open=true;
+        state.disclosureState.set('battle-ability:'+group.dataset.actionAbility,true);
+      }
+      checks.scrollIntoView({behavior:'smooth',block:'start'});
+      checks.querySelector(':scope > summary')?.focus({preventScroll:true});
+      return;
+    }
     const panel=app.querySelector('#sheet-play-view [data-battle-action="others"]');
     const action=[...panel?.querySelectorAll('[data-attack-id]')||[]]
       .find(node=>node.dataset.attackId===actionId);
