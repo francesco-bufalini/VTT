@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
-import {classFeatureActivationPatch,classFeatureEntries} from '../feature_mechanics.js';
+import {classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses} from '../feature_mechanics.js';
 import {traitStateActivationPatch} from '../trait_state_rules.js';
 import {recoveryPatch} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
@@ -125,4 +125,23 @@ test('Armor Model supports the explicit no-tracker option without charging on de
  const deactivate=traitStateActivationPatch(active,fresh.features,catalog,'armor_model:infiltrator',fresh.trackers);
  assert.equal(deactivate.resource_tracker_spent,undefined);
  assert.throws(()=>traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:'other'}),/non collegato/);
+});
+
+test('Lampo di genio is an optional flat INT bonus only on checks and saves',()=>{
+ const r=sheet('Artificer',7,'TCE','Armorer'),c=calculateSheet(r,catalogs);
+ const expected=c.trackers.find(row=>row.name==='Flash of Genius');
+ for(const target of ['skill:athletics','ability_check:int','ability_mod:str','initiative','save:dex','save:con']){
+  const [bonus]=classFeatureRollBonuses(r,c,target);
+  assert.equal(bonus.flat_bonus,4,target);
+  assert.equal(bonus.origin_id,expected.origin_id,target);
+  assert.equal(bonus.tracker_id,expected.id,target);
+  assert.equal(bonus.class_feature_id,'flash_of_genius',target);
+ }
+ for(const target of ['attack_hit:unarmed','casting_hit:int','attack_damage:unarmed','spell_damage','hp','passive_perception']){
+  assert.deepEqual(classFeatureRollBonuses(r,c,target),[],target);
+ }
+ const disabled={...r,origin_enabled:{[expected.origin_id]:false}};
+ assert.deepEqual(classFeatureRollBonuses(disabled,calculateSheet(disabled,catalogs),'save:dex'),[]);
+ const lowInt={...r,abilities:{...r.abilities,int:6}};
+ assert.equal(classFeatureRollBonuses(lowInt,calculateSheet(lowInt,catalogs),'save:wis')[0].flat_bonus,1);
 });
