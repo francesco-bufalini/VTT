@@ -4768,6 +4768,8 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 .magic-source .casting-stat--ability,
 #sheet-play-view .play-magic-inline-casting .casting-stat--ability{
   min-width:0;
+  flex-direction:row; /* Global label styles use column; casting must not. */
+  align-items:center;
   justify-content:space-between;
 }
 .magic-source .casting-stat--ability select,
