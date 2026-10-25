@@ -28,6 +28,22 @@ test('published source data generates deterministic typed natural strikes (never
    'complex multi-damage attacks need explicit modeling, not guesswork');
 });
 
+test('EEPC and DMG racial ability increments remain source-correct and conditional on origin',()=>{
+ const abilityGrants=json('../catalog/ability_grants.json');
+ const eepc=calculateSheet(record('EEPC'),{abilityGrants});
+ const dmg=calculateSheet(record('DMG'),{abilityGrants});
+ assert.equal(eepc.abilities.dex.score,14);
+ assert.equal(eepc.abilities.wis.score,11);
+ assert.equal(dmg.abilities.dex.score,14);
+ assert.equal(dmg.abilities.wis.score,12);
+ const disabled=calculateSheet({...record('EEPC'),
+   origin_enabled:{'race|eepc|aarakocra':false}},{abilityGrants});
+ assert.equal(disabled.abilities.dex.score,12);
+ const mpmm=calculateSheet(record('MPMM'),{abilityGrants});
+ assert.equal(mpmm.abilities.dex.score,12,
+   'do not invent a fixed increase for a book with user-selected scores');
+});
+
 test('Aarakocra source variants grant correctly typed strikes, without using a hand',()=>{
  for(const [source,base,damage] of [
   ['DMG','1d4','1d4'],['EEPC','1d4','1d4 + 3'],['MPMM','1d6','1d6 + 3']]){
