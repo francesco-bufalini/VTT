@@ -273,3 +273,34 @@ test('legacy disabled proficiency traits are not resurrected after recalculation
  assert(owner,'The original class trait remains accessible instead');
  assert(owner.inactive,'Origin-level disabled state is retained on its original owner');
 });
+
+test('active states resolve to descriptive traits using the same condition text and one exhaustion level',async()=>{
+ const record={kind:'character',rules_version:'2014',conditions:['stunned'],exhaustion:3,
+  proficiency_origins:[{id:'spell:light',group:'spell',name:'Incantesimo · Light',applied:true}],
+  active_class_features:{rage:{name:'Ira',origin_id:'feature:rage'}}};
+ const conditionCatalog={editions:{'2014':[
+  {id:'stunned',name:'Stunned',category:'conditions',entries:['Non può agire.']},
+  {id:'exhaustion',name:'Exhaustion',category:'conditions',
+   entries:[{type:'table',colLabels:['Level','Effect'],rows:[['3','Disadvantage on attack rolls']]}]}
+ ]}};
+ const result=await collectTraitRows(record,{
+  features:[{name:'Ira',origin_id:'feature:rage',entries:['Descrizione completa dell’ira']}]
+ },{entries:async()=>[],conditionLabel:id=>id==='stunned'?'Stordito':id,
+  conditionCatalog,spells:[{id:'light',name:'Light',entries:['La luce illumina un oggetto.']}]});
+ const states=result.filter(row=>row.category==='stati');
+ assert.deepEqual(states.map(row=>row.key).sort(),[
+  'state|condition:stunned','state|condition:exhaustion:3','state|spell:light','state|rage'
+ ].sort());
+ const stunned=states.find(row=>row.key==='state|condition:stunned');
+ assert.match(stunned.description_html,/Non può agire/);
+ assert.match(stunned.description_html,/condition-description/);
+ const exhaustion=states.find(row=>row.key==='state|condition:exhaustion:3');
+ assert.match(exhaustion.description_html,/<table>/);
+ assert.match(exhaustion.description_html,/Disadvantage on attack rolls/);
+ assert.match(exhaustion.name,/Livello 3/);
+ assert.deepEqual(states.find(row=>row.key==='state|spell:light').entries,['La luce illumina un oggetto.']);
+ assert.deepEqual(states.find(row=>row.key==='state|rage').entries,['Descrizione completa dell’ira']);
+ const restored=await collectTraitRows({...record,exhaustion:0,conditions:[]},{},
+  {entries:async()=>[],conditionCatalog});
+ assert.ok(!restored.some(row=>row.key.startsWith('state|condition:')));
+});
