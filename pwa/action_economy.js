@@ -692,7 +692,16 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   if(attack?.slot==='off'||attack?.slot==='shield')return 1;
   return 2;
  };
- weapon.sort((a,b)=>weaponPriority(a)-weaponPriority(b));
+ // Damaging attacks lead the list, even when a non-damaging maneuver or
+ // weapon uses the main hand. Preserve the usual equipment order within
+ // each group. Never infer damage from an action's prose alone.
+ const dealsDamage=row=>{
+  const attack=attacksById.get(String(row.attack_id||row.id||''));
+  const formula=String(attack?.damage||row.damage||'').trim();
+  return /\d+(?:d\d+)?/i.test(formula)||/\b(?:danni|damage)\s*:/i.test(String(row.description||''));
+ };
+ weapon.sort((a,b)=>Number(dealsDamage(b))-Number(dealsDamage(a))||
+  weaponPriority(a)-weaponPriority(b));
  const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&
    row.type!=='Attacco'&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
