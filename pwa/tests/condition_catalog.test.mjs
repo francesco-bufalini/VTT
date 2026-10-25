@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
-import {CORE_CONDITIONS, conditionOptions, conditionLabel, conditionCatalogFrom5etools, mergeConditionCatalog, conditionDescriptionHtml} from "../condition_catalog.js";
+import {CORE_CONDITIONS, conditionOptions, conditionLabel, conditionCatalogFrom5etools, mergeConditionCatalog, conditionDescriptionHtml, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, EXHAUSTION_CONDITION_CATEGORY} from "../condition_catalog.js";
 
 const nativeFile=path=>readFileSync(fileURLToPath(new URL(path,import.meta.url)),"utf8");
 
@@ -83,4 +83,25 @@ test("5etools status popup safely escapes homebrew content and renders exhaustio
   const exhaustion=conditionOptions(bundled,"2014").find(row=>row.id==="exhaustion");
   assert.match(conditionDescriptionHtml(exhaustion),/<table>/);
   assert.match(conditionDescriptionHtml(exhaustion),/Speed halved/);
+});
+
+test("six exhaustion levels share the condition selector without breaking saved sheets",()=>{
+ const source=conditionOptions(conditionCatalogFrom5etools(
+   JSON.parse(nativeFile("../../vtt/data/effects_5etools.json"))),"2014")
+   .find(row=>row.id==="exhaustion");
+ const rows=exhaustionConditionRows("2014",source);
+ assert.deepEqual(rows.map(row=>row.id),["exhaustion:1","exhaustion:2","exhaustion:3","exhaustion:4","exhaustion:5","exhaustion:6"]);
+ assert.ok(rows.every(row=>row.category===EXHAUSTION_CONDITION_CATEGORY));
+ assert.match(conditionDescriptionHtml(rows[1]),/Speed halved/);
+ assert.equal(exhaustionLevel({exhaustion:2}),2);
+ assert.equal(exhaustionLevel({exhaustion:20}),6);
+ assert.equal(exhaustionLevel({exhaustion:-2}),0);
+ const original={conditions:["poisoned","exhaustion"],exhaustion:2};
+ const raised=exhaustionSelectionPatch(original,"exhaustion:4",true);
+ assert.equal(raised.exhaustion,4);
+ assert.deepEqual(raised.conditions,["poisoned"]);
+ assert.equal(exhaustionSelectionPatch({...original,...raised},"exhaustion:4",false).exhaustion,0);
+ assert.equal(exhaustionSelectionPatch({...original,...raised},"exhaustion:2",false).exhaustion,4);
+ assert.equal(exhaustionSelectionPatch(original,"stunned",true),null);
+ assert.equal(original.exhaustion,2);
 });
