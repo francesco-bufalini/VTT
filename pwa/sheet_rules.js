@@ -169,6 +169,16 @@ function fixedAbilities(row){
   }
   return intersection;
 }
+// Source-qualified selectable score increases. Do not assign a choice silently.
+function selectedAbilityChoice(record,row,sid){
+ const variants=arr(row.ability_choices);
+ if(variants.length!==1||!variants[0]?.choose)return null;
+ const choose=variants[0].choose,amount=Number(choose.amount??1);
+ if(Number(choose.count??1)!==1||!Number.isFinite(amount)||amount<=0)return null;
+ const ability=String(arr(record.origin_ability_choices).find(x=>x?.origin_id===sid)?.ability||'').toLowerCase();
+ return ABILITIES.includes(ability)&&arr(choose.from).some(x=>same(x,ability))?
+   {ability,amount}:null;
+}
 function indexRows(record,index,warnings){
   const rows=[];
   const append=(sid,name,amounts)=>{
@@ -187,22 +197,35 @@ function indexRows(record,index,warnings){
       warnings.add("Specifica la fonte di "+value+" per i bonus razziali");
       continue;
     }
-    for(const row of options)append(group+"|"+String(row.source||"").toLowerCase()+"|"+
-      String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
+    for(const row of options){
+      const sid=group+"|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
+      append(sid,row.name,fixedAbilities(row));
+      const choice=selectedAbilityChoice(record,row,sid);
+      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
+    }
   }
   for(const background of effectiveBackgrounds(record)){
     const options=arr(index.background).filter(row=>same(row.name,background.name)&&
       (!background.source||same(row.source,background.source)));
     if(!options.length){warnings.add("Bonus background non presenti nell’indice offline");continue;}
-    for(const row of options)append("background|"+String(row.source||"").toLowerCase()+"|"+
-      String(row.name||"").toLowerCase(),row.name,fixedAbilities(row));
+    for(const row of options){
+      const sid="background|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
+      append(sid,row.name,fixedAbilities(row));
+      const choice=selectedAbilityChoice(record,row,sid);
+      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
+    }
   }
   if(record.subrace){
     const matches=arr(index.subrace).filter(r=>same(r.name,record.subrace)&&same(r.raceName,record.species)&&
       (!record.subrace_source||same(r.source,record.subrace_source)));
     if(matches.length===1){
-      const r=matches[0];append("subrace|"+String(r.source).toLowerCase()+"|"+
-        String(r.name).toLowerCase(),r.name,fixedAbilities(r));
+      const r=matches[0],sid="subrace|"+String(r.source).toLowerCase()+"|"+String(r.name).toLowerCase();
+      append(sid,r.name,fixedAbilities(r));
+      const choice=selectedAbilityChoice(record,r,sid);
+      if(choice){const grant=numericGrant(sid,r.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);}
     }else warnings.add("La sottorazza richiede un riferimento di fonte univoco");
   }
   for(const feat of arr(record.feats_catalog)){
