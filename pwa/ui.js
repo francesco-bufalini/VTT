@@ -128,14 +128,24 @@ function acceptSession(info){
   state.session=info;
 }
 const pendingFieldTimers = new Map();
+// Input/change handlers may already be writing when a popup closes. Include
+// those commits in the flush so Escape cannot discard the last edited field.
+const pendingFieldWrites = new Set();
+function trackFieldWrite(target) {
+  const write=handleField(target);
+  pendingFieldWrites.add(write);
+  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
+  return write;
+}
 let pendingDocumentWrites=Promise.resolve();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
   for (const target of targets) {
     clearTimeout(pendingFieldTimers.get(target));
     pendingFieldTimers.delete(target);
-    if (target.isConnected && state.editor) await handleField(target);
+    if (target.isConnected && state.editor) await trackFieldWrite(target);
   }
+  await Promise.all([...pendingFieldWrites]);
   await pendingDocumentWrites;
   if (state.editor) await state.editor.flush();
 }
@@ -6017,7 +6027,7 @@ function listen(){
     pendingFieldTimers.set(target,setTimeout(()=>{
       pendingFieldTimers.delete(target);
       if(target.isConnected && state.editor===editor)
-        handleField(target).catch(error=>message(errorMessage(error),true));
+        trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
     },400));
   });
   app.addEventListener("change",e=>{
@@ -6091,7 +6101,7 @@ function listen(){
     if(!e.target?.matches(editable))return;
     clearTimeout(pendingFieldTimers.get(e.target));
     pendingFieldTimers.delete(e.target);
-    handleField(e.target).catch(error=>message(errorMessage(error),true));
+    trackFieldWrite(e.target).catch(error=>message(errorMessage(error),true));
   });
   creatureInput.addEventListener("change",async()=>{
     const file=creatureInput.files?.[0];if(!file)return;
