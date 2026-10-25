@@ -11,6 +11,7 @@ import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedS
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_CONDITION_CATEGORY, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
+import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
@@ -4132,6 +4133,13 @@ async function handleAction(target){
   }
   if(act==='sheet-context'){if(target.dataset.sheetContext==='scroll-create')state.scrollSpellQuery='';state.sheetPopupTitle=target.title||target.querySelector('.play-row-copy strong')?.textContent||target.getAttribute('aria-label')||'Dettagli';state.sheetPopup=target.dataset.sheetContext;if(state.sheetPopup.startsWith('item:'))state.inventorySelectedIndex=Number(state.sheetPopup.slice(5));await render();return;}
   if(act==='sheet-context-close'){await closeSheetContext();return;}
+  if(act==='condition-remove'){
+    const c=state.editor?.read(),id=String(target.dataset.conditionId||'');
+    if(!c)throw Error('Creatura non disponibile.');
+    const changes=exhaustionRemovablePatch(c,id);
+    if(!changes)throw Error('Condizione non più attiva.');
+    await patch(changes);await render();return;
+  }
   if(act==='condition-add-spell'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
     const id=app.querySelector('#condition-spell-picker')?.value||'';
@@ -4807,6 +4815,20 @@ async function handleAction(target){
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro';
+    // The 2024 Exhaustion penalty is mandatory: it modifies the actual d20
+    // result and formula, never a selectable/spendable bonus or ability score.
+    const exhaustionPenalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
+    const effectiveModifier=modifier+exhaustionPenalty;
+    const exhaustionLevel=Number(creature.exhaustion??creature.exhaustion_level??0);
+    const formulaData=exhaustionPenalty?{...calculated,
+      values:{...calculated.values,[key]:effectiveModifier},
+      roll_components:{...calculated.roll_components,
+       [key]:[...(calculated.roll_components?.[key]||[]),{
+        id:'exhaustion:roll:'+exhaustionLevel,
+        origin_id:'state|condition:exhaustion:'+exhaustionLevel,
+        origin_name:'Indebolimento · Livello '+exhaustionLevel,
+        expression:String(exhaustionPenalty),value:exhaustionPenalty
+       }]}}:calculated;
     const bonuses=rollOptionalDice(creature,calculated,[
        ...applicableDiceBonuses(creature,key,state.spellCatalog||[],calculated),
        ...classFeatureRollBonuses(creature,calculated,key)
@@ -4815,14 +4837,14 @@ async function handleAction(target){
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
       const resolved=resolveClassRollMode(autoSources,choice);
-      return sheetRollOriginHtml(sheetRollOriginSegments(creature,calculated,key,
+      return sheetRollOriginHtml(sheetRollOriginSegments(creature,formulaData,key,
         {mode:resolved.mode,modeSources:resolved.sources,cancelled:resolved.cancelled,
           diceBonuses:chosen}),esc);
     };
     const autoLabel=automatic.cancelled?' · vantaggio e svantaggio annullati':
       automatic.mode==='advantage'?' · vantaggio':
       automatic.mode==='disadvantage'?' · svantaggio':'';
-    const dialog=openUnifiedRollDialog({kind:'d20',heading:rollHeading(label,key),rollLabel:label,modifier,
+    const dialog=openUnifiedRollDialog({kind:'d20',heading:rollHeading(label,key),rollLabel:label,modifier:effectiveModifier,
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
     dialog.renderRollFormula=()=>{
@@ -4877,7 +4899,8 @@ async function handleAction(target){
         const chosen=chosenRollBonuses(dialog);
         const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
         const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
-        const outcome=rollSheetDice(modifier,chosen,randomDie,resolved.mode);
+        const penalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
+        const outcome=rollSheetDice(modifier+penalty,chosen,randomDie,resolved.mode);
         state.roll={...outcome,label,author:selectedName()};
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
@@ -5082,8 +5105,8 @@ async function handleAction(target){
     if(!trait?.readonly||!trait.state_key)throw Error('Stato non disponibile');
     const c=state.editor.read();
     if(trait.condition_id){
-      const changes={conditions:(c.conditions||[]).filter(id=>id!==trait.condition_id)};
-      if(trait.condition_id==='concentrating')changes.concentrating_spell_id='';
+      const changes=exhaustionRemovablePatch(c,trait.condition_id);
+      if(!changes)throw Error('Condizione non più attiva.');
       await patch(changes);
       dismissTraitBenefitDialog();await render();return;
     }
