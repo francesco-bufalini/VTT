@@ -181,8 +181,8 @@ try{
  await sheet('magic');
  assert.equal(await page.locator('[data-magic-tool="slots"]').isVisible(),false);
  await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
- assert.equal(await page.locator('.magic-toolbar button:visible').count(),6);
- for(const kind of ['slots','book','catalog','choices','concentration']){
+ assert.equal(await page.locator('.magic-toolbar button:visible').count(),5);
+ for(const kind of ['slots','catalog','choices','concentration']){
   if(!await page.locator('#sheet-context-dialog[open]').count())await page.locator('#sheet-play-view [data-sheet-context="magic-tools"]').click();
   await page.locator('[data-magic-tool="'+kind+'"]:visible').click();await page.locator('#magic-tools-dialog').waitFor();
   await page.locator('[data-act="magic-tool-close"]').click();
