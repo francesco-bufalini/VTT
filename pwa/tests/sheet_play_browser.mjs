@@ -67,6 +67,23 @@ try{
       'Casting controls are arranged horizontally at '+viewport.width+'px');
     assert(Math.max(...boxes.map(b=>b.cy))-Math.min(...boxes.map(b=>b.cy))<8,
       'Casting controls share a vertical centerline at '+viewport.width+'px');
+    const style=await castingRow.evaluate(row=>{
+      const select=row.querySelector('select');
+      const metric=row.querySelector('.casting-stat--dc .sheet-result');
+      return {
+        height:select?.getBoundingClientRect().height,
+        selected:select?.selectedOptions?.[0]?.textContent,
+        textSize:parseFloat(getComputedStyle(metric).fontSize),
+        border:getComputedStyle(row).borderTopWidth,
+        background:getComputedStyle(row).backgroundColor,
+        labels:[...row.querySelectorAll('.casting-stat-label')].map(e=>e.textContent.trim())
+      };
+    });
+    assert(style.height>=34&&style.height<=40,'Native ability selector is compact, not the 48px global field');
+    assert.match(style.selected||'',/^(STR|DEX|CON|INT|WIS|CHA)$/);
+    assert(style.textSize>=14,'Spell DC must be comfortably readable');
+    assert.equal(style.border,'0px','No separate bordered casting box');
+    assert.deepEqual(style.labels,['Caratt.','CD','Att.']);
     const actionButtons=page.locator('#sheet-play-view .play-magic-class-card .play-magic-selection>.play-button');
     if(await actionButtons.count()===2){
       const ys=await actionButtons.evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
