@@ -4664,9 +4664,10 @@ async function handleAction(target){
     const attackOrigin=attackGrantOrigin(calculated,attackId);
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
-    const bonuses=rollOptionalDice(creature,calculated,
-      applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],state.calculated),
-      {kind:'damage',attackId});
+    const bonuses=rollOptionalDice(creature,calculated,[
+      ...applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],calculated),
+      ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId)
+     ],{kind:'damage',attackId});
     const dialog=openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
@@ -4745,7 +4746,8 @@ async function handleAction(target){
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.class_feature_id){
       // Uses the same feature confirmation and payment plan as Battle.
-      const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollTarget;
+      const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollKind==='damage'?
+        'attack_damage:'+String(dialog.dataset.damageAttackId||''):dialog.dataset.rollTarget;
       const valid=classFeatureRollBonuses(creature,fresh,rollTarget).find(item=>
         item.id===row.id&&item.origin_id===row.origin_id);
       const action=classFeatureEntries(creature,fresh).find(item=>
