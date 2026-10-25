@@ -444,10 +444,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const choices=[...attacksById.values()];
  // Opportunity Attack is a rules action, not an automatically selected main-hand hit.
  const opportunityWeapon=null;
- const offhandWeapon=item.id==='two_weapon'?
-  choices.find(row=>row.slot==='off'&&!String(row.id||'').startsWith('unarmed'))||
-  choices.find(row=>row.slot==='shield'&&row.hand==='off'):null;
- const selectedAttack=attack||opportunityWeapon||offhandWeapon;
+ // Treat the offhand choice as a generic action, not a separate weapon strike.
+ const selectedAttack=attack||opportunityWeapon;
  const actionName=item.name;
  if(item.check_target){
   const key=String(item.check_target),stat=key.split(':')[1];
@@ -466,8 +464,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
     calculated.values?.['skill:'+skill]??calculated.skills?.[skill]);
   }
  }
- if(!attack&&!item.skill_ids?.length&&(item.id==='two_weapon'||item.id==='disarm')){
-  const weapon=item.id==='two_weapon'?offhandWeapon:choices.find(row=>row.slot==='main')||choices[0];
+ if(!attack&&!item.skill_ids?.length&&item.id==='disarm'){
+  const weapon=choices.find(row=>row.slot==='main')||choices[0];
   if(weapon)addRoll('attack_hit:'+weapon.id,'Tiro per colpire · '+actionName,
    weapon.melee?'Mischia':'Distanza',calculated.values?.['attack_hit:'+weapon.id]??weapon.hit);
  }
@@ -492,10 +490,9 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
   item.tracker?'<span class="action-economy-tracker">'+esc(item.tracker)+'</span>':'';
  if(item.id==='spell_cast')return '<article class="play-battle-attack-entry play-battle-action-direct" data-attack-id="spell_cast">'+
   '<button type="button" class="play-battle-attack-direct-button" data-act="action-open-spells">'+icon+
-  '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong>'+
-  '<small>Apre la scheda Poteri</small></span></button></article>';
+  '<span class="play-battle-attack-copy"><strong>'+esc(actionName)+'</strong></span></button></article>';
  return '<article class="play-battle-attack-entry'+(item.available===false?' play-battle-attack-unavailable':'')+
-  '" data-attack-id="'+esc(item.attack_id||item.id||'')+'">'+
+  '" data-attack-id="'+esc(item.id==='improvised'?'improvised':item.attack_id||item.id||'')+'">'+
   '<div class="play-battle-attack-line">'+
   (item.check_target?
    '<div class="play-battle-attack-details"><div class="play-battle-check-heading">'+icon+
@@ -640,12 +637,13 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const hasSlots=arr(calculated.spell_slots).some(s=>Number(s.total)>0)||
    Number(calculated.pact_slots?.total)>0;
  const baseRules=[
-  {id:'attack',name:'Attaccare',time:'action',type:'Generale',
+  {id:'attack',name:'Azione di attacco',time:'action',type:'Generale',
    description:descriptions.main,attack_count:count},
   {id:'opportunity',name:'Attacco di opportunità',time:'reaction',type:'Generale',
    description:'Attacco in mischia effettuato come reazione.',available:haveMelee},
   {id:'two_weapon',name:'Attacco con arma secondaria',time:'bonus',type:'Generale',
-   description:descriptions.off,available:haveOffhand,unavailable_reason:offhandEligibility.reason},
+   description:descriptions.off,available:offhandEligibility.base_available,
+   unavailable_reason:offhandEligibility.base_reason},
   {id:'spell_cast',name:'Lanciare un incantesimo',time:'action',type:'Generale',
    description:'Lancia un incantesimo attraverso uno slot disponibile.',available:hasSlots}
  ];
@@ -657,14 +655,28 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const normalAttack=entries.find(row=>row.id==='attack');
  if(normalAttack)baseById.set('attack',{...normalAttack,...baseById.get('attack')});
  const allBase=[...baseById.values()];
+ const actionsBase=allBase.map(row=>row.id==='two_weapon'?
+  {...row,available:haveOffhand,unavailable_reason:offhandEligibility.reason}:
+  row.id==='attack'?{...row,attack_count:1}:row);
  // All physical attack choices are a flat list, irrespective of action cost.
  // Their action economy is defined in "Azioni", not repeated here.
+ // Combine all actually available improvised attacks into one generic choice.
+ // Keep the underlying computed attack for its exact dice and modifiers.
+ const improvised=attack=>{
+  const id=String(attack?.id||'');
+  return id==='improvised'||id.startsWith('improvised:')||
+   id.startsWith('shield:improvised:')||attack?.improvised===true||
+   /\b(?:improvvisat|improvised)/i.test(String(attack?.name||''));
+ };
+ const realImprovised=[...attacksById.values()].filter(improvised);
  const weapon=entries.filter(row=>row.type==='Attacco'&&
-  !['attack','opportunity','two_weapon'].includes(row.id)&&
-  (row.parent_action!=='two_weapon'||String(row.attack_id||row.id||'').startsWith('shield:improvised:')||
-   String(row.attack_id||row.id||'').startsWith('item:improvised:')||
-   attacksById.get(String(row.attack_id||row.id||''))?.improvised===true||
-   /\b(?:improvvisat|improvised)/i.test(String(row.name||'')))&&row.id!=='unarmed:off');
+  !['attack','opportunity','two_weapon','unarmed:off'].includes(row.id)&&
+  row.parent_action!=='two_weapon'&&
+  !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
+ if(realImprovised.length){
+  weapon.push({id:'improvised',attack_id:realImprovised[0].id,name:'Arma improvvisata',
+   time:'action',type:'Attacco',origin:'general',parent_action:'attack'});
+ }
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
   const known=attacksById.get('unarmed');
@@ -682,7 +694,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
  const specials=entries.filter(row=>!classIds.has(row)&&row.type!=='Incantesimo'&&
    row.type!=='Attacco'&&
    !['attack','two_weapon','opportunity','spell_cast','cast_spell'].includes(row.id));
- const basicInActions=allBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
+ const basicInActions=actionsBase.filter(row=>row.id==='attack'||row.id==='two_weapon'||
   row.id==='opportunity'&&row.available||row.id==='spell_cast'&&row.available);
  const other=[...basicInActions,...specials];
  const ordering=(a,b,time)=>{
@@ -710,6 +722,7 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   spells:'',
   abilityEntries:classAbilities,
   basicActions:allBase,
+  offhandEligibility,
   overriddenActions:entries.filter(row=>row.action_change_origin&&
     row.time!==row.original_time)
  };
