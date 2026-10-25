@@ -719,3 +719,30 @@ test('improvised shield offhand is usable through feat only in 2014 rules',()=>{
  assert.equal(battleActionPanels({...record,rules_version:'2024'},
   {attacks:[main,shield]},[],[],catalog.actions).offhandEligibility.feat_available,false);
 });
+
+test('damaging physical attacks precede non-damaging main-hand moves without changing the priority within groups',()=>{
+ const computed={attacks:[
+  {id:'item:empty',name:'Arma senza danni',slot:'main',melee:true,range_feet:5,hit:3},
+  {id:'monster:action:0',name:'Morso',melee:true,range_feet:5,hit:4,damage:'2d6 + 1'},
+  {id:'item:blade',name:'Lama',slot:'main',melee:true,range_feet:5,hit:5,damage:'1d8 + 3'},
+  {id:'unarmed',name:'Colpo senz’armi',slot:'main',melee:true,range_feet:5,hit:3,damage:'4'}
+ ]};
+ const rows=doc(battleActionPanels({},computed,[],[],catalog.actions).attacks);
+ const ids=[...rows.querySelectorAll('.play-battle-attack-entry')].map(row=>row.dataset.attackId);
+ assert(ids.indexOf('item:blade')<ids.indexOf('monster:action:0'),
+  'Damaging main-hand weapon keeps precedence among damaging attacks');
+ assert(ids.indexOf('monster:action:0')<ids.indexOf('item:empty'),
+  'A damaging monster attack precedes a non-damaging main-hand weapon');
+ assert(ids.indexOf('unarmed')<ids.indexOf('item:empty'),
+  'Unarmed damage precedes non-damaging entries');
+ assert(ids.indexOf('item:empty')<ids.indexOf('grapple'),
+  'The existing equipment order stays stable inside the non-damaging group');
+});
+test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
+ const panels=battleActionPanels({}, {attacks:[]},[],[],catalog.actions);
+ const checks=panels.basicActions.find(row=>row.id==='ability_checks');
+ assert.equal(checks.name,'Prova abilità');
+ assert.equal(checks.available,true);
+ assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
+ assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
+});
