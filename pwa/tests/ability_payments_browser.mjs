@@ -24,10 +24,26 @@ try{
  for(const id of ['first','second'])
   assert(await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]:visible').count());
  const before=await page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].revision;});
- await page.evaluate(()=>{
-  for(const id of ['first','second'])document.querySelector('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]').click();
- });
- await waitFor(async base=>{const {listCreatures}=await import('/creatures.js');const row=(await listCreatures())[0];return row.revision===base+2&&row.creature.resource_tracker_spent.focus===4;},before);
+ // The popup opens without charging the tracker and each confirmed use
+ // commits its own atomic payment, even when two abilities share one pool.
+ for(const [index,id] of ['first','second'].entries()){
+  await page.locator('#sheet-play-view [data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]').click();
+  const dialog=page.locator('#other-ability-dialog');
+  await dialog.locator('[data-ability-confirm]').waitFor();
+  assert.equal(await dialog.locator('[data-ability-payment] option').count(),2);
+  const spent=await page.evaluate(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent.focus||0;
+  });
+  assert.equal(spent,index*2);
+  await dialog.locator('[data-ability-confirm]').click();
+  await dialog.waitFor({state:'detached'});
+  await waitFor(async amount=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0].creature.resource_tracker_spent.focus===amount;
+  },2*(index+1));
+ }
+ await waitFor(async base=>{const {listCreatures}=await import('/creatures.js');const row=(await listCreatures())[0];return row.revision>=base+2&&row.creature.resource_tracker_spent.focus===4;},before);
  await waitFor(async()=> (await navigator.serviceWorker.getRegistration())?.active?.state==='activated',null,30000);
  await context.setOffline(true);await page.reload();
  await page.locator('[data-act="open"]').click();await page.locator('#sheet-play-view').waitFor();
