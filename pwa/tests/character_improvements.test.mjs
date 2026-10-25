@@ -100,7 +100,7 @@ test('battle always shows standard actions and available physical attacks withou
  const projected={attacks:[{id:'item:sword',name:'Spada',slot:'main',hit:4,damage:'1d8',melee:true,range_feet:5}],skills:{}};
  const all=battleActionPanels(c,projected,[],[],general);
  assert.match(all.others,/Scattare/);
- assert.match(all.others,/Attaccare/);
+ assert.match(all.others,/Azione di attacco/);
  assert.match(all.attacks,/Spada/);
  assert.equal(all.movement,'');
  assert.match(all.checks,/Forza/);
