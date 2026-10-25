@@ -2,6 +2,7 @@ import {createVariant} from './creature_variants.js';
 // Offline structured class-feature mechanics shared by the PWA sheet and actions.
 // No regex matching feature prose; no network access in the evaluation path.
 import {resolveOwnedItem} from './item_controls.js';
+import {exhaustionRollModes} from './exhaustion_rules.js';
 const rows=value=>Array.isArray(value)?value:[];
 const low=value=>String(value||'').trim().toLowerCase();
 const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school of )/,'').replace(/^the /,'');
@@ -236,6 +237,8 @@ export function classFeatureRollSources(record,calculated,target){
  fromCondition('restrained','disadvantage','Trattenuto',attack||target==='save:dex');
  fromCondition('prone','disadvantage','Prono',attack);
  fromCondition('invisible','advantage','Invisibile',attack);
+ for(const row of exhaustionRollModes(calculated?.exhaustion_effects,target))
+   add(row.mode,row.origin_id,row.origin_name,'condition',row.condition_id);
  return result;
 }
 export function resolveClassRollMode(sources=[],selection='auto'){
