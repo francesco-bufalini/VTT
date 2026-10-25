@@ -691,7 +691,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="'+
     (id==='spell_cast'?'action-open-spells':'battle-action-jump')+'" data-action-id="'+esc(id)+'"'+
-    ' aria-label="'+esc(name)+'">'+icon(actionGlyphKey({id,name,time}))+
+    ' aria-label="'+esc(name)+'">'+icon(id==='ability_checks'?'skill':actionGlyphKey({id,name,time}))+
     '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
      'Non disponibile'))+'</small></span></button>'+

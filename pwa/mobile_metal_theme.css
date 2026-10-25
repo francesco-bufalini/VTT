@@ -4722,3 +4722,27 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
   flex:1 1 0;min-width:0;max-width:none;margin:0;
   padding:7px 9px;
 }
+
+/* Experimental flat-black presentation for the Azioni category only.
+   Keep the existing typography, gold borders, icons and focus states.
+   Neither Risorse, Attacchi nor Prove abilità changes its background. */
+#sheet-play-view .play-card.play-battle-shell:has(> .play-battle-disclosure[data-battle-action="others"]),
+#sheet-play-view .play-battle-disclosure[data-battle-action="others"],
+#sheet-play-view [data-battle-action="others"] .play-battle-summary,
+#sheet-play-view [data-battle-action="others"] .play-battle-action-group,
+#sheet-play-view [data-battle-action="others"] .play-battle-action-heading,
+#sheet-play-view [data-battle-action="others"] .play-battle-action-rows,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-entry,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-line,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-details,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-details>summary,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-expanded,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-rolls,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-roll,
+#sheet-play-view [data-battle-action="others"] .play-battle-effect,
+#sheet-play-view [data-battle-action="others"] .play-battle-effect-roll,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-map,
+#sheet-play-view [data-battle-action="others"] .play-battle-attack-direct-button {
+ background:#000;
+ background-image:none;
+}
