@@ -472,7 +472,8 @@ function battleAttackRow(item,calculated,attacksById,descriptions){
  const offhand=attack&&(attack.slot==='off'||String(attack.id).startsWith('shield:improvised:off:'));
  const isHandAttack=attack&&(attack.slot==='main'||attack.slot==='off'||
    attack.slot==='shield'||['unarmed','improvised'].includes(attack.id));
- const description=isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
+ const description=item.id==='improvised'?item.description||'Attacco con un oggetto equipaggiato impugnato come arma improvvisata.':
+  isHandAttack?(offhand?descriptions.off:descriptions.main):item.description||'';
  const rangeFeet=Number(selectedAttack?.range_feet);
  const longRangeFeet=Number(selectedAttack?.long_range_feet);
  const rangeLabel=Number.isFinite(rangeFeet)&&rangeFeet>0?
@@ -599,7 +600,7 @@ export function offhandActionEligibility(record={},calculated={}){
  const feat=arr(record.feats_catalog).find(row=>!row?.disabled&&
   /^(dual wielder|combattente con due armi)$/i.test(String(row?.name||row?.id||'')));
  const hasBoth=Boolean(main&&(off||shield));
- const light=Boolean(mainItem&&offItem&&itemKind(offItem)==='weapon'&&
+ const light=Boolean(hasBoth&&mainItem&&offItem&&itemKind(offItem)==='weapon'&&
    hasProperty(mainItem,'L')&&hasProperty(offItem,'L'));
  const oneHanded=item=>item&&!hasProperty(item,'2H')&&
   String(item.type||'').split('|')[0].toUpperCase()!=='R';
@@ -675,7 +676,8 @@ export function battleActionPanels(record,calculated,spells=[],featureOverrides=
   !realImprovised.some(attack=>String(row.attack_id||row.id)===String(attack.id)));
  if(realImprovised.length){
   weapon.push({id:'improvised',attack_id:realImprovised[0].id,name:'Arma improvvisata',
-   time:'action',type:'Attacco',origin:'general',parent_action:'attack'});
+   time:'action',type:'Attacco',origin:'general',parent_action:'attack',
+   description:'Utilizza uno scudo o un oggetto impugnato come arma improvvisata.'});
  }
  const shownWeapon=new Set(weapon.map(row=>String(row.attack_id||row.id||'')));
  if(!shownWeapon.has('unarmed')){
