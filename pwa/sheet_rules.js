@@ -373,7 +373,7 @@ export function castingClasses(record,catalog,abilityModifiers={}){
   const progression=spellProgression(record,[member]);
   const maxLevel=Math.max(progression.pact_total?progression.pact_level:0,...progression.slots.map((n,i)=>n>0?i:0));
   if(!maxLevel)limit=0;
-  return [{id,name:member.name,source,mode,limit,cantrips:int(data.cantripProgression?.[level-1]),max_level:maxLevel,book:same(member.name,'wizard'),ability}];
+  return [{id,name:member.name,source,level,mode,limit,cantrips:int(data.cantripProgression?.[level-1]),max_level:maxLevel,book:same(member.name,'wizard'),ability}];
  });
 }
 function subclassKey(value){

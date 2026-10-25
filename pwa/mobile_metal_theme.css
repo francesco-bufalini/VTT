@@ -4549,6 +4549,36 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 }
 
 
+/* Unified spell knowledge and preparation */
+.magic-source-overview{
+  display:grid;gap:8px;margin:8px 0 10px;padding:12px;
+  border:1px solid #a07d5059;border-radius:12px;
+  background:linear-gradient(125deg,#b3885130,#3f425021 80%);
+}
+.magic-source-overview .casting-statistics{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.magic-source-overview .casting-statistics>label{flex:1 1 175px;min-width:0}
+.magic-source-overview .casting-statistics>span{
+  flex:1 1 110px;display:flex;align-items:center;justify-content:space-between;gap:7px;
+  min-width:0;padding:6px 9px;border:1px solid #a07d503c;border-radius:8px;
+  background:#14182334;font-weight:600
+}
+.magic-source-overview .casting-statistics select{max-width:100%;min-height:35px}
+.magic-source-known{display:flex;justify-content:space-between;gap:12px;align-items:center;
+  margin:0;padding:7px 10px;border-top:1px solid #b190654d;color:#dbc39f;font-size:12px}
+.magic-source-known strong{font-size:13px;color:#f5d7a6;white-space:nowrap}
+.magic-selection-progress{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
+.magic-selection-progress>span{display:inline-flex;gap:7px;align-items:center;
+  padding:6px 9px;border-radius:8px;border:1px solid #af885246;
+  background:#99744924;color:#ead8bb;font-size:12px}
+.magic-selection-progress strong{color:#f6d4a2}
+.magic-learn-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:12px 0;color:#e9d3b0;font-size:12px;font-weight:650}
+.magic-learn-filter select{flex:1 1 150px;max-width:100%;min-height:36px;border-radius:9px}
+.magic-granted-spell{background:linear-gradient(90deg,#7b5f3430,transparent)}
+.magic-granted-label{margin-left:auto;max-width:60%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:#e5c695;font-size:11px;font-weight:650}
+
+
 /* Action timing labels are clear section headings, not ordinary action rows. */
 #sheet-play-view [data-battle-action="others"] .play-battle-action-heading {
  min-height:49px;margin:7px 8px 4px;padding:10px 12px;

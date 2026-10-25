@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {knownClassSpellIds,knownClassCantripIds,sessionSpellEntries,classSelectionCount,
+import {knownClassSpellIds,knownClassCantripIds,knownSpellProgress,sessionSpellEntries,classSelectionCount,
   changeKnownClassSpell,addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
 
 const cleric={id:'class|phb|cleric',name:'Cleric',mode:'Preparati',max_level:3,book:false};
@@ -99,3 +99,29 @@ test('cantrips already saved by old preparation remain ready, without duplicate 
 function availableCount(record,member){
  return classSelectionCount(record,member,[member],catalog).cantrips;
 }
+
+test('known-spell limits appear for spontaneous casters; wizard book is the known list',()=>{
+ const sorcerer={id:'class|phb|sorcerer',name:'Sorcerer',mode:'Conosciuti',
+  limit:4,level:5,max_level:3,cantrips:4};
+ const sorcery={id:'chaos',name:'Chaos Bolt',source:'PHB',level:1,classes:['Sorcerer']};
+ const sc={prepared_spells:[{...sorcery,casting_classes:[sorcerer.id]}]};
+ assert.deepEqual(knownSpellProgress(sc,sorcerer,[sorcerer],[sorcery]),{known:1,minimum:4});
+ const wc={spellbook_spells:[catalog[1]],prepared_spells:[]};
+ assert.deepEqual(knownSpellProgress(wc,{...wizard,level:4},[wizard],catalog),{known:1,minimum:12});
+});
+test('preparing a spell granted by another origin cannot duplicate it',()=>{
+ const c={prepared_spells:[],spells:[]};
+ assert.throws(()=>addSelectedSpell(c,catalog[0],'prepared_spells',
+  {member:cleric,classes:[cleric],catalog,grantedSpells:[{spell_id:'cure',origin_name:'Divine Domain'}]}),
+  /sempre disponibile/);
+ assert.equal(c.prepared_spells.length,0);
+});
+test('unfiltered learning may add off-class spells without changing normal class eligibility',()=>{
+ const sc={id:'class|phb|sorcerer',name:'Sorcerer',mode:'Conosciuti',max_level:3};
+ const rogueSpell=catalog[0];
+ assert.throws(()=>addSelectedSpell({},rogueSpell,'prepared_spells',
+   {member:sc,classes:[sc],catalog}),/non conosciuto/);
+ const r=addSelectedSpell({},rogueSpell,'prepared_spells',
+   {member:sc,classes:[sc],catalog,allowNonClass:true});
+ assert.equal(r.prepared_spells[0].id,'cure');
+});

@@ -608,27 +608,10 @@ test("inline spell catalog adds available and spellbook choices without divergin
   assert.match(document.querySelector('#action-cast-dialog').textContent,/Shield/);
   click('[data-act="action-cast-cancel"]');
   await until(()=>!document.querySelector('#action-cast-dialog'));
-  click('[data-act="magic-tool-open"][data-magic-tool="book"]');
-  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="magic-select-spells"][data-magic-target="spellbook_spells"]'));
-  assert.equal(document.querySelector('#spell-target'),null,'Destination selector is no longer needed');
-  click('#magic-tools-dialog [data-act="magic-select-spells"][data-magic-target="spellbook_spells"]');
-  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-search'));
-  const bookSearch=document.querySelector('#spell-search');
-  bookSearch.value="Shield";
-  bookSearch.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
-  await until(()=>document.querySelector('#magic-tools-dialog[open] [data-act="spell-pick"]'));
-  click('[data-act="spell-pick"]');
-  await until(async()=>{
-    const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
-    return current?.spellbook_spells?.[0]?.id==="spell:shield|phb";
-  });
-  click('[data-act="magic-tool-close"]');
-  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   click('[data-act="remove-spell"][data-key="prepared_spells"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
-    return current?.prepared_spells?.length===0 && current?.spells?.length===0 &&
-      current?.spellbook_spells?.length===1;
+    return current?.prepared_spells?.length===0 && current?.spells?.length===0;
   });
   click('[data-nav="library"]');
   await until(()=>document.querySelector('[data-act="create"]'));
@@ -1241,7 +1224,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('#magic-tools-dialog [data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
- assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara/i,
+ assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara|impara/i,
    'Class spell selection is directly accessible in the mobile play card');
  click('.play-magic-selection [data-act="sheet-proxy"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-class'));
@@ -1250,15 +1233,13 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-known-filter"]'),null);
  assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
   'Incomplete selections show a warning without blocking choices');
- await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-pick"]'));
- click('#magic-tools-dialog [data-act="spell-pick"]');
- await until(()=>document.querySelector('#magic-tools-dialog .magic-selection-current [data-act="remove-spell"]'));
- assert.equal(document.querySelector('#magic-tools-dialog .magic-catalog-action[data-act="remove-spell"]')?.disabled,false,
-  'Already known spells can be unselected directly in the catalog');
+ await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
+ click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]');
+ await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]'));
  const savedKnown=(await loadCreature(saved.data.id)).data;
  assert.equal(savedKnown.prepared_spells?.length,1);
  assert.equal(savedKnown.spells?.length,1);
- click('#magic-tools-dialog .magic-selection-current [data-act="remove-spell"]');
+ click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]');
  await until(async()=>{
   const current=(await loadCreature(saved.data.id)).data;
   return current.prepared_spells?.length===0&&current.spells?.length===0;
