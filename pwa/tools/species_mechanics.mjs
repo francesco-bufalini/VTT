@@ -5,10 +5,13 @@ export function projectSpeciesAttacks(races=[]) {
  const projected=[];
  for(const race of races){
   const attacks=[];
+  let flight_no_medium_heavy_armor=false;
   for(const trait of race.entries||[]){
    if(!trait||typeof trait!=='object'||!trait.name)continue;
    const description=JSON.stringify(trait.entries||[]).replace(/\\n/g,' ');
    const low=description.toLowerCase();
+   if(/flying speed/.test(low)&&/medium or heavy armor/.test(low)&&/can't|cannot/.test(low))
+    flight_no_medium_heavy_armor=true;
    if(!/unarmed strike|natural (?:melee )?weapon/.test(low))continue;
    // Active transformations cannot grant a permanent strike.
    if(/while shifted|while you are shifted|when you shift|when shifted/.test(low))continue;
@@ -26,7 +29,8 @@ export function projectSpeciesAttacks(races=[]) {
    const damage_ability_modifier=/(?:\+\s*your\s+(?:strength|constitution)\s+modifier|plus your (?:strength|constitution) modifier|add your (?:strength|constitution) modifier)/i.test(description);
    attacks.push({trait:trait.name,damage:damages[0][1],damage_type,ability,damage_ability_modifier});
   }
-  if(attacks.length)projected.push({id:race.id,name:race.name,source:race.source,attacks});
+  if(attacks.length||flight_no_medium_heavy_armor)projected.push({id:race.id,name:race.name,source:race.source,attacks,
+    ...(flight_no_medium_heavy_armor?{flight_no_medium_heavy_armor:true}:{})});
  }
  return {version:1,source:'vtt/data/creature_references_5etools.json',races:projected};
 }
