@@ -4,7 +4,7 @@ const f=await browserFixture(),{page,origin,sheet,popup,dismiss,shot}=f;
 const record=()=>page.evaluate(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures()).find(r=>r.creature.kind==='character').creature;});
 const waitForm=id=>page.waitForFunction(async id=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures()).find(r=>r.creature.kind==='character').creature.current_form_id===id;},id);
 const forms=async()=>{await page.locator('[data-act="creature-variants"]').click();await page.locator('#creature-variants-dialog[open]').waitFor();};
-const closeForms=async()=>{await page.locator('[data-variant-close]').click();await page.locator('#creature-variants-dialog').waitFor({state:'detached'});};
+const closeForms=async()=>{await page.locator('[data-act="variant-close"]').click();await page.locator('#creature-variants-dialog').waitFor({state:'detached'});};
 const create=async(name,preset)=>{await page.locator('[data-variant-new]').click();await page.locator('[data-variant-name]').fill(name);await page.locator('[data-variant-preset]').selectOption(preset);};
 try{
  await page.route('**/catalog/bestiary.json',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({version:1,monsters:[]})}));
