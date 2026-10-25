@@ -2125,7 +2125,7 @@ function castingStatistics(c,section,ability){
      '<select aria-label="Caratteristica degli incantesimi" title="Caratteristica degli incantesimi" data-casting-section="'+esc(section)+'">'+
        Object.entries(abilities).map(([id,label])=>
          '<option value="'+esc(id)+'" aria-label="'+esc(label)+'" title="'+esc(label)+'" '+
-         (selected===id?'selected':'')+'>'+esc(id.toUpperCase())+'</option>').join('')+
+         (selected===id?'selected':'')+'>'+esc(({str:'FOR',dex:'DES',con:'COS',int:'INT',wis:'SAG',cha:'CAR'})[id]||id.toUpperCase())+'</option>').join('')+
      '</select></label>'+
    '<span class="casting-stat casting-stat--dc"><span class="casting-stat-label">CD</span>'+
      formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span>'+
