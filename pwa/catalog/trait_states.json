@@ -1,5 +1,114 @@
 {
   "version": 1,
+  "exhaustion": {
+    "2014": [
+      {
+        "min_level": 1,
+        "type": "roll_mode",
+        "target": "ability_check",
+        "mode": "disadvantage",
+        "label": "Prove di caratteristica",
+        "detail": "Svantaggio"
+      },
+      {
+        "min_level": 2,
+        "type": "value",
+        "targets": [
+          "speed",
+          "speed:climb",
+          "speed:swim",
+          "speed:fly",
+          "speed:burrow"
+        ],
+        "operation": "multiply",
+        "factor": 0.5,
+        "label": "Velocità",
+        "detail": "Dimezzata"
+      },
+      {
+        "min_level": 3,
+        "type": "roll_mode",
+        "target": "attack_roll",
+        "mode": "disadvantage",
+        "label": "Tiri per colpire",
+        "detail": "Svantaggio"
+      },
+      {
+        "min_level": 3,
+        "type": "roll_mode",
+        "target": "saving_throw",
+        "mode": "disadvantage",
+        "label": "Tiri salvezza",
+        "detail": "Svantaggio"
+      },
+      {
+        "min_level": 4,
+        "type": "value",
+        "targets": [
+          "hp"
+        ],
+        "operation": "multiply",
+        "factor": 0.5,
+        "label": "PF massimi",
+        "detail": "Dimezzati"
+      },
+      {
+        "min_level": 5,
+        "type": "value",
+        "targets": [
+          "speed",
+          "speed:climb",
+          "speed:swim",
+          "speed:fly",
+          "speed:burrow"
+        ],
+        "operation": "set",
+        "value": 0,
+        "label": "Velocità",
+        "detail": "Ridotta a 0"
+      },
+      {
+        "min_level": 6,
+        "type": "condition",
+        "condition": "dead",
+        "label": "Stato",
+        "detail": "Morte"
+      }
+    ],
+    "2024": [
+      {
+        "min_level": 1,
+        "type": "roll_modifier",
+        "target": "any_d20",
+        "per_level": -2,
+        "label": "Prove d20",
+        "detail": "−2 per livello"
+      },
+      {
+        "min_level": 1,
+        "type": "value",
+        "targets": [
+          "speed",
+          "speed:climb",
+          "speed:swim",
+          "speed:fly",
+          "speed:burrow"
+        ],
+        "operation": "add",
+        "per_level": -5,
+        "minimum": 0,
+        "label": "Velocità",
+        "detail": "−5 ft per livello"
+      },
+      {
+        "min_level": 6,
+        "type": "condition",
+        "condition": "dead",
+        "label": "Stato",
+        "detail": "Morte"
+      }
+    ]
+  },
   "states": [
     {
       "id": "armor_model:guardian",
