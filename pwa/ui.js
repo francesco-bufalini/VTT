@@ -3600,8 +3600,10 @@ function rollDieResultMarkup(outcome){
   '<div class="sheet-roll-dice-groups" aria-label="Risultati dei singoli dadi">'+
   (outcome.parts||[]).map(part=>
    '<div class="sheet-roll-dice-group"><span class="sheet-roll-dice-label">'+esc(part.notation)+'</span>'+
-   '<div class="sheet-roll-dice-values">'+(part.rolls||[]).map(n=>
-     '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join('')+'</div></div>').join('')+'</div>';
+   '<div class="sheet-roll-dice-values">'+(part.kind==='flat'?
+     '<span class="sheet-roll-die-value">'+esc(part.notation)+'</span>':
+     (part.rolls||[]).map(n=>
+       '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join(''))+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
