@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureActivationPatch,classFeatureEntries} from '../feature_mechanics.js';
 import {traitStateActivationPatch} from '../trait_state_rules.js';
+import {recoveryPatch} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
@@ -29,8 +30,14 @@ test('all four artificer specialists have source-backed Flash of Genius and exac
   const tracker=c.trackers.find(t=>t.name==='Flash of Genius');assert.equal(tracker?.max,4);
   assert.ok(tracker.origin_id.startsWith('feature:'));
   const patch=classFeatureActivationPatch(r,c,'flash_of_genius');
-  assert.equal(patch.resource_tracker_spent[tracker.id],1);
-  assert.equal(c.values.attunement_max,5);
+   assert.equal(patch.resource_tracker_spent[tracker.id],1);
+   assert.equal(patch.active_class_features,undefined,'Lampo di genio must be a use, not a toggle');
+   const waived=classFeatureActivationPatch(r,c,'flash_of_genius',{tracker_id:''});
+   assert.equal(waived.resource_tracker_spent,undefined);
+   assert.equal(waived.active_class_features,undefined);
+   const stale={...r,active_class_features:{flash_of_genius:{name:'Lampo di genio'}}};
+   assert.equal(classFeatureActivationPatch(stale,c,'flash_of_genius').active_class_features.flash_of_genius,undefined);
+   assert.equal(c.values.attunement_max,5);
  }
 });
 test('PHB Fight Club counter aliases open the actual granting subclass trait',()=>{
@@ -75,7 +82,12 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  const catalog=catalogs.traitStates;
  let calculated=calculateSheet(r,catalogs);
  assert.ok(calculated.state_actions.some(row=>row.state_id==='armor_model:guardian'));
- let next={...r,...traitStateActivationPatch(r,calculated.features,catalog,'armor_model:infiltrator')};
+ const tracker=calculated.trackers.find(row=>row.id==='feature:armor_model:activation');
+ assert.equal(tracker?.max,1);
+ assert.equal(tracker?.recharge,'short_rest');
+ assert.ok(tracker.origin_id.startsWith('feature:'));
+ let next={...r,...traitStateActivationPatch(r,calculated.features,catalog,'armor_model:infiltrator',calculated.trackers)};
+ assert.equal(next.resource_tracker_spent[tracker.id],1);
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:lightning_launcher');
  assert.equal(calculated.values.speed,35);
@@ -88,11 +100,29 @@ test('Armor Model is a source-bound, reversible and exclusive state privilege',(
  assert.equal(suppressed.trackers.some(row=>row.id==='feature:lightning_launcher:extra_damage'),false);
  assert.equal(calculated.trackers.find(row=>row.id==='feature:lightning_launcher:extra_damage')?.max,1);
  assert.equal(calculated.active_feature_effects.filter(row=>row.category==='stato').length,1);
- next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian')};
+ assert.throws(()=>traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers),/Utilizzi insufficienti/);
+ const rested=recoveryPatch(next,'short_rest',calculated.trackers);
+ assert.equal(rested.resource_tracker_spent[tracker.id],undefined);
+ next={...next,...rested};
+ calculated=calculateSheet(next,catalogs);
+ next={...next,...traitStateActivationPatch(next,calculated.features,catalog,'armor_model:guardian',calculated.trackers)};
+ assert.equal(next.resource_tracker_spent[tracker.id],1);
  calculated=calculateSheet(next,catalogs);
  assert.equal(calculated.attacks[0].id,'class_feature:thunder_gauntlets');
  assert.equal(calculated.trait_state_optional_dice.length,0);
  assert.equal(calculated.active_trait_state_ids.length,1);
  const disabled={...next,inventory:[]};
  assert.equal(calculateSheet(disabled,catalogs).attacks.some(row=>row.id==='class_feature:thunder_gauntlets'),false);
+});
+
+test('Armor Model supports the explicit no-tracker option without charging on deactivation',()=>{
+ const r=sheet('Artificer',8,'TCE','Armorer');
+ r.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
+ const c=calculateSheet(r,catalogs),catalog=catalogs.traitStates;
+ const selection=traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:''});
+ assert.equal(selection.resource_tracker_spent,undefined);
+ const active={...r,...selection},fresh=calculateSheet(active,catalogs);
+ const deactivate=traitStateActivationPatch(active,fresh.features,catalog,'armor_model:infiltrator',fresh.trackers);
+ assert.equal(deactivate.resource_tracker_spent,undefined);
+ assert.throws(()=>traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:'other'}),/non collegato/);
 });
