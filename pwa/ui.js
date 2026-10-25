@@ -798,26 +798,44 @@ async function computeLocalData(record){
     infusion_mechanics:catalogs.classMechanics||{}};
 }
 
+// Spells and nonspell powers share their popup header, facts and description.
+function actionDialogIntro(name,facts=[],description='',meta='',closeAction=''){
+ return '<header class="vtt-popup-heading"><h2>'+esc(name)+'</h2>'+
+  (closeAction?dialogCloseButton(closeAction,'Chiudi',''):'')+'</header>'+
+  (meta?'<p class="hint magic-spell-metadata">'+esc(meta)+'</p>':'')+
+  (facts.length?'<dl class="magic-spell-facts">'+facts.map(({label,value})=>
+   '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>':'')+
+  '<div class="magic-spell-description">'+esc(description||'Descrizione non disponibile.')+'</div>';
+}
+function abilityPaymentField(ability,calculated){
+ const cost=Math.max(0,Number(ability.cost??ability.resource_cost??0)||0),id=String(ability.tracker_id||'');
+ if(!id||cost<=0&&ability.mode!=='toggle')return '';
+ const tracker=(calculated.trackers||[]).find(row=>row.id===id&&!row.disabled);
+ const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ return '<label>Tracker da consumare<select data-ability-payment>'+
+  '<option value="'+esc(id)+'">'+esc(tracker?.name||ability.tracker||ability.resource_name||'Tracker associato')+
+  ' · '+remaining+' disponibili</option>'+
+  '<option value="">Nessun tracker</option></select></label>';
+}
+function abilityPaymentChoice(dialog){return dialog.querySelector('[data-ability-payment]')?.value;}
+
 function classAbilityActivationPatch(c,calculated,ability,options={}){
  return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
 async function activateClassAbility(c,calculated,ability){
- if(ability.mode==='trait_state'){
-   await patch(traitStateActivationPatch(c,calculated.features,calculated.trait_state_catalog,ability.state_id));
-   await render();return;
- }
  if(ability.mode==='metamagic'){
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
- if(ability.mode==='toggle'&&!enhanced){
-  await patch(classAbilityActivationPatch(c,calculated,ability));await render();return;
- }
  document.querySelector('#class-feature-dialog')?.remove();
- const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog';
+ const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
- dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+esc(ability.name)+'</h2>'+dialogCloseButton('feature-close','Chiudi','')+'</header><p class="trait-description">'+esc(ability.description)+'</p>'+
+ dialog.innerHTML=actionDialogIntro(ability.name,[
+  {label:'Azione',value:ability.time||ability.action_type||'Secondo il privilegio'},
+  {label:'Origine',value:ability.origin_name||'Tratto di classe'}
+ ],ability.description||'',ability.active?'Capacità attiva':'Capacità disponibile','feature-close')+
+  abilityPaymentField(ability,calculated)+
   (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
@@ -826,7 +844,7 @@ async function activateClassAbility(c,calculated,ability){
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
-  '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
+  '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
@@ -837,9 +855,12 @@ async function activateClassAbility(c,calculated,ability){
     level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
     apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
     count:Number(dialog.querySelector('[data-feature-count]')?.value||1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
-    levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value))};
+    levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
+    tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
-   const changes=classAbilityActivationPatch(current,fresh,ability,options);
+   const changes=ability.mode==='trait_state'?
+    traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
+    classAbilityActivationPatch(current,fresh,ability,options);
    const reroll=ability.mode==='metamagic_roll'?rollBattleDamage(ability.name==='Seeking Spell'?'1d20':options.count+'d'+options.sides,randomDie):null;
    await patch(changes);if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();dialog.close();await render();
