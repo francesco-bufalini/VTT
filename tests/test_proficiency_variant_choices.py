@@ -3,6 +3,7 @@ import importlib.util
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
@@ -10,6 +11,12 @@ spec = importlib.util.spec_from_file_location(
 assert spec and spec.loader
 generator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(generator)
+
+spell_spec = importlib.util.spec_from_file_location(
+    "additional_spell_generator", ROOT / "scripts/generate_additional_spells_5etools.py")
+assert spell_spec and spell_spec.loader
+spell_generator = importlib.util.module_from_spec(spell_spec)
+spell_spec.loader.exec_module(spell_generator)
 
 
 class VariantProficiencyTests(unittest.TestCase):
@@ -43,6 +50,20 @@ class VariantProficiencyTests(unittest.TestCase):
         selectable = {row["name"] for row in mechanics["subraces"]
                       if row.get("raceName") == "Half-Elf" and row.get("source") == "SCAG"}
         self.assertTrue(variants.issubset(selectable))
+
+    def test_exclusive_spell_option_is_not_an_unconditional_grant(self) -> None:
+        races = {"subrace": [
+            {"name": "Drow Descent", "source": "SCAG", "raceName": "Half-Elf",
+             "raceSource": "PHB", "additionalSpells": [{"known": {"1": ["dancing lights#c"]}}],
+             "_versions": [{"name": "Drow Magic"},
+                           {"name": "Skill Versatility", "additionalSpells": None}]},
+            {"name": "Devil's Tongue", "source": "SCAG", "raceName": "Tiefling",
+             "raceSource": "PHB", "additionalSpells": [{"known": {"1": ["vicious mockery#c"]}}]},
+        ]}
+        with patch.object(spell_generator, "SOURCES", {"data/races.json": ["subrace"]}), \
+             patch.object(Path, "read_text", return_value=json.dumps(races)):
+            rows = spell_generator.gather(ROOT)["entries"]
+        self.assertEqual([row["name"] for row in rows], ["Devil's Tongue"])
 
 
 if __name__ == "__main__":

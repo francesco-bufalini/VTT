@@ -7,6 +7,37 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-25: sottorazze SCAG del 2014 senza ristampa
+
+Verificate una per una le **9** voci `subrace` SCAG di Half-Elf (4),
+Halfling (1) e Tiefling (4) in
+[5etools `data/races.json`](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/races.json)
+(snapshot `cefd817691d5ace9adebb5521811943efc378bf0`): nessuna ha
+`reprintedAs`. Confronto con [FightClub5eXML `races-scag.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/races-scag.xml)
+(`3b44ff074706efa6e6f912e4cc1d1b2f17a8baa4`). L'XML espone i tratti
+alternativi nello stesso blocco razza; il campo `_versions` di 5etools
+specifica invece le scelte **mutuamente esclusive**. Nessun tratto SCAG va
+trasferito automaticamente a una specie XPHB.
+
+| Sottorazza SCAG e tratti | Esito |
+| --- | --- |
+| Half-Elf, Aquatic Elf Descent: Skill Versatility **oppure** Swim Speed | Due scelte esclusive; la velocità di nuoto non è una concessione a tutti gli Half-Elf. |
+| Half-Elf, Drow Descent: Drow Magic **oppure** Skill Versatility | La magia (Dancing Lights; Faerie Fire dal 3; Darkness dal 5) e due abilità sono alternative. Il blocco di incantesimi e le abilità della sottorazza non vengono più esportati come concessioni incondizionate. |
+| Half-Elf, Moon Elf or Sun Elf Descent: Cantrip **oppure** Elf Weapon Training **oppure** Skill Versatility | Trucchetto Wizard scelto, quattro competenze nelle armi o due abilità: esattamente una opzione. Rimossi i blocchi incondizionati di magia, armi e abilità. |
+| Half-Elf, Wood Elf Descent: Elf Weapon Training **oppure** Fleet of Foot **oppure** Mask of the Wild **oppure** Skill Versatility | Quattro alternative; rimosse le competenze incondizionate nelle armi e nelle abilità. Velocità e Hide contestuale richiedono la scelta registrata. |
+| Halfling, Ghostwise: Silent Speech | Telepatia a una creatura entro 30 piedi che condivide una lingua; nessuna competenza o magia automatica aggiunta. |
+| Tiefling, Devil's Tongue: Appearance, Devil's Tongue | Sostituisce Infernal Legacy; il blocco magico specifico (Vicious Mockery, Charm Person di 2° livello, Enthrall) resta distinto e strutturato. Appearance è descrittivo. |
+| Tiefling, Hellfire: Appearance, Hellfire | Sostituisce Hellish Rebuke con Burning Hands di 2° livello; mantiene Thaumaturgy e Darkness. Blocco magico SCAG distinto. |
+| Tiefling, Infernal Legacy: Appearance | Conserva il pacchetto Infernal Legacy del Tiefling PHB; non è un nuovo potere da sommare. |
+| Tiefling, Winged: Appearance, Winged | Volo 30 piedi solo senza armatura pesante, in sostituzione di Infernal Legacy. La velocità grezza presente nel catalogo non rappresenta ancora il vincolo contestuale. |
+
+Il generatore delle competenze omette i tre pacchetti Half-Elf che una
+versione alternativa annulla; quello degli incantesimi omette Drow Descent e
+Moon/Sun Descent. Le identità delle sottorazze rimangono selezionabili nel
+catalogo. Le opzioni effettivamente scelte, l'origine del singolo tratto e il
+vincolo dell'armatura pesante rimangono nella lista separata; nessuna scelta è
+stata simulata con dati fittizi.
+
 **Copertura XPHB 2024 verificata:** tutte le 283 voci `class_features` delle
 12 classi (210 coppie classe/tratto distinte) e tutti i 38 tratti delle 10
 specie presenti nello snapshot locale 5etools. Questa è una revisione dei
