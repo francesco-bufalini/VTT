@@ -30,6 +30,12 @@ try{
 
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
+ const flashResource=page.locator('#sheet-play-view [data-resource-tracker="class:artificer:tce:flash_of_genius"]');
+ assert.match(await flashResource.locator('.play-resource-bonus-row').innerText(),/\\+4.*Lampo di genio[\\s\\S]*Prove di caratteristica.*Tiri salvezza/);
+ assert.equal(await flashResource.locator('[data-act="battle-use-ability"]').count(),0,
+  'roll bonuses are listed under trackers instead of duplicated as ability buttons');
+ const lightningResource=page.locator('#sheet-play-view [data-resource-tracker="feature:lightning_launcher:extra_damage"]');
+ assert.match(await lightningResource.locator('.play-resource-bonus-row').innerText(),/\\+1d6.*Danni/);
  await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
  const modelDialog=page.locator('#class-feature-dialog');
  await modelDialog.locator('[data-feature-confirm]').waitFor();
