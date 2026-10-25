@@ -40,9 +40,10 @@ test('battle panels reuse calculated attacks, optional manoeuvres and timed move
 
  assert(sword.querySelector('.play-battle-attack-expanded').textContent.includes('The most common action'));
  const dagger=movement.querySelector('[data-attack-id="two_weapon"]');
- assert.match(dagger.querySelector('.play-battle-roll-formula').textContent,/Distanza/);
- assert.equal(dagger.querySelector('.play-battle-attack-range').textContent,'Gittata 20/60 ft');
- assert.equal(dagger.querySelector('[data-act="battle-attack-map"]').dataset.mapAttackId,'item:off:dagger');
+ assert.equal(dagger.querySelector('.play-battle-attack-roll'),null,
+  'Azione secondaria is a generic action, not a weapon attack');
+ assert.equal(dagger.querySelector('.play-battle-attack-range'),null);
+ assert.equal(dagger.querySelector('[data-act="battle-attack-map"]'),null);
  assert.equal(dagger.closest('[data-action-timing]').dataset.actionTiming,'bonus',
   'The secondary-hand strike is in bonus actions');
  assert.match(dagger.querySelector('.play-battle-attack-expanded').textContent,/When you take the Attack action/);
@@ -104,7 +105,10 @@ test('flat Attacks retain unarmed and equipped weapons; the basic actions are ti
  assert(!attacks.querySelector('[data-attack-id="unarmed:off"]'));
  assert(others.querySelector('[data-action-timing="action"] [data-attack-id="attack"]'));
  assert(others.querySelector('[data-action-timing="reaction"] [data-attack-id="opportunity"]'));
- assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×2');
+ assert.equal(others.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action'),null,
+  'Only basic rules show the linked multiattack multiplier');
+ assert.equal(projected.basicActions.find(row=>row.id==='attack').name,'Azione di attacco');
+ assert.equal(projected.basicActions.find(row=>row.id==='attack').attack_count,2);
  assert.equal(projected.basicActions.find(row=>row.id==='two_weapon').available,false);
  assert(others.querySelector('[data-attack-id="two_weapon"]'),
   'Offhand action stays visible even when unavailable');
@@ -127,7 +131,8 @@ test('multiattack counter uses active structured features or a monster multiatta
  assert.equal(attacksPerAction(typedMonster,{features:collectStructuredFeatures(typedMonster)}),4);
  const attack={id:'monster:action:0',name:'Bite',melee:true,hit:6,damage:'1d8'};
  const html=doc(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions,[],[],true).others);
- assert.equal(html.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action').textContent,'×3');
+ assert.equal(html.querySelector('[data-attack-id="attack"] .play-battle-attacks-per-action'),null);
+ assert.equal(battleActionPanels(monster,{attacks:[attack],features:projectedMonster},[],[],catalog.actions).basicActions.find(row=>row.id==='attack').attack_count,3);
 });
 
 test('flat attacks order equipped weapons first; typed Azioni prioritize Attack, offhand and opportunity',()=>{
@@ -482,7 +487,7 @@ test('battle projects all unported actions without duplicating weapons, movement
  assert(others.body.textContent.includes('Cercare'));
  assert(others.body.textContent.includes('Schivare'));
  assert(others.body.textContent.includes('Talento personalizzato'));
- assert(others.body.textContent.includes('Attaccare'));
+ assert(others.body.textContent.includes('Azione di attacco'));
  assert(others.body.textContent.includes('Scattare'));
  assert(!others.body.textContent.includes('Impeto di battaglia'));
  const search=others.querySelector('[data-attack-id="search"]');
@@ -624,7 +629,8 @@ test('extra attack stays next to the Attack row; the flat list never repeats it'
   {name:'Extra Attack (2)',attacks_per_action:3,origin_id:'feature:two'}]};
  const result=battleActionPanels({},calculated,[],[],catalog.actions,[],[],true);
  const actions=doc(result.others),attack=actions.querySelector('[data-attack-id="attack"]');
- assert.equal(attack.querySelector('.play-battle-attacks-per-action').textContent,'×3');
+ assert.equal(attack.querySelector('.play-battle-attacks-per-action'),null);
+ assert.match(attack.textContent,/Azione di attacco/);
  assert.equal(result.basicActions.find(row=>row.id==='attack').attack_count,3);
  assert(!result.attacks.includes('play-battle-attacks-per-action'));
  assert(doc(result.attacks).querySelector('[data-attack-id="unarmed"]'));
@@ -636,9 +642,10 @@ test('improvised shield strike remains among Attacchi while the offhand action i
  const result=battleActionPanels({rules_version:'2014'},
   {attacks:[shield,{id:'unarmed',name:'Colpo senz’armi',melee:true,hit:2,damage:'1'}]},[],[],catalog.actions);
  const attacks=doc(result.attacks),actions=doc(result.others);
- assert(attacks.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert.equal(attacks.querySelectorAll('[data-attack-id="improvised"]').length,1);
+ assert.match(attacks.querySelector('[data-attack-id="improvised"] .play-battle-attack-copy strong').textContent,/^Arma improvvisata$/);
  assert(actions.querySelector('[data-attack-id="two_weapon"]'));
- assert(!actions.querySelector('[data-attack-id="shield:improvised:off:shield"]'));
+ assert(!actions.querySelector('[data-attack-id="improvised"]'));
  assert.match(actions.querySelector('[data-attack-id="two_weapon"]').textContent,/Equipaggia/);
  assert(!actions.querySelector('[data-attack-id="opportunity"] .play-battle-attack-roll'));
 });
@@ -652,4 +659,63 @@ test('spellcasting action opens Powers directly without an intermediary dialog',
  assert.equal(cast.querySelector('[data-act="action-open-spells"]').tagName,'BUTTON');
  assert(!cast.querySelector('details'),'No intermediate disclosure is required');
  assert.equal(result.spells,'','The separate battle spell section has been removed');
+});
+
+test('all equipped improvised strikes collapse into one hand-neutral attack',()=>{
+ const shieldMain={id:'shield:improvised:main:s1',name:'Scudo · arma improvvisata',slot:'shield',
+  hand:'main',melee:true,hit:3,damage:'1d4'};
+ const shieldOff={id:'shield:improvised:off:s2',name:'Scudo · arma improvvisata · secondaria',
+  slot:'shield',hand:'off',melee:true,hit:3,damage:'1d4'};
+ const handOff={id:'improvised:off',name:'Arma improvvisata · secondaria',slot:'off',
+  melee:true,hit:3,damage:'1d4'};
+ for(const real of [[shieldOff],[shieldMain],[handOff],[shieldMain,shieldOff,handOff]]){
+  const panels=battleActionPanels({}, {attacks:real},[],[],catalog.actions);
+  const root=doc(panels.attacks);
+  assert.equal(root.querySelectorAll('[data-attack-id="improvised"]').length,1);
+  assert.equal(root.querySelectorAll('[data-attack-id^="shield:improvised"]').length,0);
+  const strike=root.querySelector('[data-attack-id="improvised"]');
+  assert.equal(strike.querySelector('.play-battle-attack-copy strong').textContent,'Arma improvvisata');
+  assert(strike.querySelector('[data-target^="attack_hit:"]'));
+ }
+ assert.equal(doc(battleActionPanels({}, {attacks:[]},[],[],catalog.actions).attacks)
+  .querySelector('[data-attack-id="improvised"]'),null,
+  'Do not offer an improvised attack without an equipped source');
+});
+
+test('Dual Wielder grants a separate capacity without unlocking the base Light rule',()=>{
+ const main={id:'item:main',slot:'main',melee:true,hit:5},off={id:'item:off:second',slot:'off',melee:true,hit:4};
+ const record={rules_version:'2014',inventory:[
+  {id:'main',name:'Spada',type:'M',properties:[],equipped_slots:['main']},
+  {id:'second',name:'Mazza',type:'M',properties:[],equipped_slots:['off']}
+ ],feats_catalog:[{id:'dual-wielder',name:'Dual Wielder',origin_id:'feat|phb|dual-wielder'}]};
+ const before=battleActionPanels({...record,feats_catalog:[]},{attacks:[main,off]},[],[],catalog.actions);
+ assert.equal(before.offhandEligibility.base_available,false);
+ assert.equal(before.offhandEligibility.feat_available,false);
+ const result=battleActionPanels(record,{attacks:[main,off]},[],[],catalog.actions);
+ assert.equal(result.offhandEligibility.available,true);
+ assert.equal(result.offhandEligibility.base_available,false);
+ assert.equal(result.offhandEligibility.feat_available,true);
+ assert.equal(result.basicActions.find(row=>row.id==='two_weapon').available,false,
+  'Base-rule row must stay blocked despite the feat');
+ const action=doc(result.others).querySelector('[data-attack-id="two_weapon"]');
+ assert(action&&!action.classList.contains('play-battle-attack-unavailable'));
+ assert.equal(action.querySelector('.play-battle-attack-roll'),null);
+ assert.equal(action.querySelector('.play-battle-attack-range'),null);
+ const light={...record,inventory:record.inventory.map(row=>({...row,properties:['L']}))};
+ assert.equal(battleActionPanels(light,{attacks:[main,off]},[],[],catalog.actions)
+  .basicActions.find(row=>row.id==='two_weapon').available,true);
+});
+
+test('improvised shield offhand is usable through feat only in 2014 rules',()=>{
+ const main={id:'item:main',slot:'main',melee:true,hit:4};
+ const shield={id:'shield:improvised:off:shield',slot:'shield',hand:'off',melee:true,hit:3};
+ const record={rules_version:'2014',inventory:[
+  {id:'main',name:'Spada',type:'M',properties:[],equipped_slots:['main']},
+  {id:'shield',name:'Scudo',type:'S',equipped_slots:['off']}
+ ],feats_catalog:[{name:'Dual Wielder'}]};
+ const result=battleActionPanels(record,{attacks:[main,shield]},[],[],catalog.actions);
+ assert.equal(result.basicActions.find(row=>row.id==='two_weapon').available,false);
+ assert.equal(result.offhandEligibility.feat_available,true);
+ assert.equal(battleActionPanels({...record,rules_version:'2024'},
+  {attacks:[main,shield]},[],[],catalog.actions).offhandEligibility.feat_available,false);
 });
