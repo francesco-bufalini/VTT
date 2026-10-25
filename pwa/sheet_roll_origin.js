@@ -150,11 +150,14 @@ export function sheetRollOriginSegments(record,calculated,target,{mode='normal',
  // The result is not thrown during a preview: show the symbolic die on
  // both rows until the user actually rolls it.
  for(const [i,row] of list(diceBonuses).entries()){
-   const dice=String(row?.dice||'').replace(/\s+/g,'');
-   if(!validBonusDice(dice))continue;
-   result.push({kind:'dice',formula:'+'+dice,expanded:'+'+dice,value:0,
-     originId:String(row.origin_id||''),originName:row.origin_name||'Dado bonus',
-     section:row.origin_id?'':'formula_bonuses',key:'dice:'+i});
+  const flat=Number(row?.flat_bonus);
+  const hasFlat=Object.hasOwn(row||{},'flat_bonus')&&Number.isSafeInteger(flat);
+  const dice=String(row?.dice||'').replace(/\s+/g,'');
+  if(!hasFlat&&!validBonusDice(dice))continue;
+  const expression=hasFlat?(flat>=0?'+':'')+flat:'+'+dice;
+  result.push({kind:hasFlat?'bonus':'dice',formula:expression,expanded:expression,value:0,
+   originId:String(row.origin_id||''),originName:row.origin_name||'Bonus',
+   section:row.origin_id?'':'formula_bonuses',key:'bonus:'+i});
  }
  // One source gets one segment even if it grants training and multiple
  // flat/dice bonuses. Keep separate terms within that origin's two rows.

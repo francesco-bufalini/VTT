@@ -1436,7 +1436,7 @@ for(const action of ['tracker-reset','tracker-recharge']){
 }
 
 for(const maximum of [3,5]){
- test('ability costs compose rapid activations with capacity '+maximum,async()=>{
+ test('ability uses await popup confirmation with capacity '+maximum,async()=>{
   const {createCreature}=await import('../creatures.js');
   const saved=await createCreature('character','Capacità a costo multiplo');
   const configured=await saveCreature({...saved.data,
@@ -1451,19 +1451,22 @@ for(const maximum of [3,5]){
   click('[data-act="open"][data-id="'+saved.data.id+'"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   click('[data-sheet="battle"]');
-  const selector='[data-act="battle-use-ability"][data-ability-id="activated:test_pulse"]';
-  await until(()=>document.querySelector(selector));
-  const button=document.querySelector(selector);
-  const second=document.querySelector('[data-act="battle-use-ability"][data-ability-id="activated:second_pulse"]');
-  assert.ok(second);button.click();second.click();
-  await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+(maximum===3?1:2));
-  await until(()=>!button.isConnected);
-  assert.equal((await loadCreature(saved.data.id)).data.resource_tracker_spent.focus,maximum===3?2:4);
-  if(maximum===3){
-   await pause(100);
-   assert.equal((await loadCreature(saved.data.id)).revision,configured.revision+1,
-    'The second activation must not spend a resource that is no longer available');
+  for(const [index,id] of ['test_pulse','second_pulse'].entries()){
+   const selector='[data-act="battle-use-ability"][data-ability-id="activated:'+id+'"]';
+   const button=await until(()=>document.querySelector(selector));
+   button.click();
+   const confirm=await until(()=>document.querySelector('#other-ability-dialog [data-ability-confirm]'));
+   assert.equal((await loadCreature(saved.data.id)).data.resource_tracker_spent.focus||0,index*2,
+    'Opening the use popup does not consume resources');
+   const picker=document.querySelector('#other-ability-dialog [data-ability-payment]');
+   assert.equal(picker?.options.length,2);
+   if(index===1&&maximum===3)picker.value=''; // explicit free alternative
+   confirm.click();
+   await until(async()=>(await loadCreature(saved.data.id)).revision>=configured.revision+index+1);
+   await until(()=>!document.querySelector('#other-ability-dialog[open]'));
   }
+  assert.equal((await loadCreature(saved.data.id)).data.resource_tracker_spent.focus,
+   maximum===3?2:4);
   click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
  });
 }

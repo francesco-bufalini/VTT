@@ -94,6 +94,25 @@ export function classFeatureEntries(record={},calculated={}){
  }
  return output;
 }
+// Optional class-feature bonuses are offered only to eligible rolls. The
+// feature's use is paid by the same classFeatureActivationPatch as its battle
+// button; merely listing it never modifies scores or spends a tracker.
+export function classFeatureRollBonuses(record={},calculated={},target=''){
+ const isCheck=target==='initiative'||/^(?:skill:|ability_check:|ability_mod:)/.test(target);
+ const isSave=target.startsWith('save:');
+ if(!isCheck&&!isSave)return [];
+ const ability=classFeatureEntries(record,calculated).find(row=>
+   row.class_feature_id==='flash_of_genius');
+ if(!ability)return [];
+ const intelligence=Number(calculated.values?.['ability_mod:int']);
+ const amount=Math.max(1,Number.isFinite(intelligence)?intelligence:
+   Math.floor((Number(record.abilities?.int??10)-10)/2));
+ return [{id:ability.id,class_feature_id:ability.class_feature_id,
+   origin_id:ability.origin_id,origin_name:'Tratto · '+ability.feature_name,
+   description:ability.description,flat_bonus:amount,target,
+   tracker_id:ability.tracker_id,tracker_cost:Math.max(0,Number(ability.cost)||0),
+   optional:true}];
+}
 export function classFeatureLevel(record,name){
  const member=rows(record.classes).find(c=>low(c.name)===low(name));
  return Math.max(0,Number(member?.level??(low(record.class)===low(name)?record.level:0))||0);
@@ -227,6 +246,9 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
  if(key==='rage'&&!classFeatureActive({...record,active_class_features:{...active,rage:{}}},calculated,key))
   throw Error('Ira non disponibile con armatura pesante o incapacità.');
  const tracker=rows(calculated.trackers).find(t=>t.id===action.tracker_id&&!t.disabled);
+ // Only the associated tracker or no tracker can be chosen at confirmation.
+ const paymentId=options.tracker_id===undefined?action.tracker_id:String(options.tracker_id);
+ if(paymentId!==''&&paymentId!==action.tracker_id)throw Error('Tracker non collegato alla capacità.');
  const spent={...(record.resource_tracker_spent||{})};
  const remaining=tracker?Math.max(0,tracker.max-Number(spent[tracker.id]||0)):0;
  let cost=action.cost,patch={};
@@ -272,13 +294,17 @@ export function classFeatureActivationPatch(record,calculated,id,options={}){
   patch.spell_slots_spent=slots;
  }
  if(record.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(key))cost=options.enhanced?1:0;
- if(action.resource_name&&cost>0){
+ if(action.resource_name&&cost>0&&paymentId){
   if(!tracker||remaining<cost)throw Error('Risorsa insufficiente.');
   spent[tracker.id]=Number(spent[tracker.id]||0)+cost;patch.resource_tracker_spent=spent;
  }
- if(!['temporary_hp','heal_pool','heal_roll','conversion','recovery','metamagic_roll'].includes(action.mode)){
+ // Contextual/one-shot abilities are uses, not persistent active effects.
+ if(action.mode==='toggle'){
   active[key]={name:action.name,origin_id:action.origin_id,rules_version:record.rules_version||'2014',enhanced:!!options.enhanced};
   patch.active_class_features=active;
+ }else if(active[key]){
+  // Clean older saves with a one-shot feature incorrectly marked active.
+  delete active[key];patch.active_class_features=active;
  }
  if(key==='rage'){patch.conditions=rows(record.conditions).filter(c=>c!=='concentrating');patch.concentrating_spell_id='';}
  return patch;

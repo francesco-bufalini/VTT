@@ -30,7 +30,7 @@ import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from 
 import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch} from './trait_state_rules.js';
-import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
+import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
@@ -842,26 +842,44 @@ async function computeLocalData(record){
     infusion_mechanics:catalogs.classMechanics||{}};
 }
 
+// Spells and nonspell powers share their popup header, facts and description.
+function actionDialogIntro(name,facts=[],description='',meta='',closeAction=''){
+ return '<header class="vtt-popup-heading"><h2>'+esc(name)+'</h2>'+
+  (closeAction?dialogCloseButton(closeAction,'Chiudi',''):'')+'</header>'+
+  (meta?'<p class="hint magic-spell-metadata">'+esc(meta)+'</p>':'')+
+  (facts.length?'<dl class="magic-spell-facts">'+facts.map(({label,value})=>
+   '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>':'')+
+  '<div class="magic-spell-description">'+esc(description||'Descrizione non disponibile.')+'</div>';
+}
+function abilityPaymentField(ability,calculated){
+ const cost=Math.max(0,Number(ability.cost??ability.resource_cost??0)||0),id=String(ability.tracker_id||'');
+ if(!id||cost<=0&&ability.mode!=='toggle')return '';
+ const tracker=(calculated.trackers||[]).find(row=>row.id===id&&!row.disabled);
+ const remaining=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
+ return '<label>Tracker da consumare<select data-ability-payment>'+
+  '<option value="'+esc(id)+'">'+esc(tracker?.name||ability.tracker||ability.resource_name||'Tracker associato')+
+  ' · '+remaining+' disponibili</option>'+
+  '<option value="">Nessun tracker</option></select></label>';
+}
+function abilityPaymentChoice(dialog){return dialog.querySelector('[data-ability-payment]')?.value;}
+
 function classAbilityActivationPatch(c,calculated,ability,options={}){
  return classFeatureActivationPatch(c,calculated,ability.id,options);
 }
-async function activateClassAbility(c,calculated,ability){
- if(ability.mode==='trait_state'){
-   await patch(traitStateActivationPatch(c,calculated.features,calculated.trait_state_catalog,ability.state_id));
-   await render();return;
- }
+async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClosed=null}={}){
  if(ability.mode==='metamagic'){
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
- if(ability.mode==='toggle'&&!enhanced){
-  await patch(classAbilityActivationPatch(c,calculated,ability));await render();return;
- }
  document.querySelector('#class-feature-dialog')?.remove();
- const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog';
+ const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
- dialog.innerHTML='<header class="vtt-popup-heading"><h2>'+esc(ability.name)+'</h2>'+dialogCloseButton('feature-close','Chiudi','')+'</header><p class="trait-description">'+esc(ability.description)+'</p>'+
+ dialog.innerHTML=actionDialogIntro(ability.name,[
+  {label:'Azione',value:ability.time||ability.action_type||'Secondo il privilegio'},
+  {label:'Origine',value:ability.origin_name||'Tratto di classe'}
+ ],ability.description||'',ability.active?'Capacità attiva':'Capacità disponibile','feature-close')+
+  abilityPaymentField(ability,calculated)+
   (pool?'<label>Punti ferita<input data-feature-amount type="number" min="1" max="'+esc(Math.max(1,(calculated.trackers||[]).find(t=>t.id===ability.tracker_id)?.max||1))+'" value="1"></label><label class="check"><input data-feature-self type="checkbox" checked>Applica la cura a te stesso</label>':'')+
   (ability.mode==='heal_roll'?'<p>Tira 1d10 e aggiungi il livello da Guerriero. La cura si applica a te stesso.</p>':'')+
   (conversion?'<label>Livello slot<select data-feature-level>'+[1,2,3,4,5].map(n=>'<option>'+n+'</option>').join('')+'</select></label><label class="check"><input data-feature-create type="checkbox" checked>Crea uno slot (disattiva per convertire uno slot in punti)</label>':'')+
@@ -870,7 +888,7 @@ async function activateClassAbility(c,calculated,ability){
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
-  '<p data-feature-result role="status"></p><div class="actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
+  '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
@@ -881,18 +899,80 @@ async function activateClassAbility(c,calculated,ability){
     level:dialog.querySelector('[data-feature-level]')?.value,create_slot:dialog.querySelector('[data-feature-create]')?.checked,
     apply_to_self:dialog.querySelector('[data-feature-self]')?.checked,enhanced:!!dialog.querySelector('[data-feature-enhanced]')?.checked,
     count:Number(dialog.querySelector('[data-feature-count]')?.value||1),sides:Number(dialog.querySelector('[data-feature-sides]')?.value||20),
-    levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value))};
+    levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
+    tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
-   const changes=classAbilityActivationPatch(current,fresh,ability,options);
+   const changes=ability.mode==='trait_state'?
+    traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
+    classAbilityActivationPatch(current,fresh,ability,options);
    const reroll=ability.mode==='metamagic_roll'?rollBattleDamage(ability.name==='Seeking Spell'?'1d20':options.count+'d'+options.sides,randomDie):null;
    await patch(changes);if(state.saveError)throw Error(state.saveError);
-   await state.editor.flush();dialog.close();await render();
+   await state.editor.flush();dialog.dataset.confirmed='true';dialog.close();await render();
+   if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-feature-result]').textContent=errorMessage(error);}
  });
- dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
+ dialog.addEventListener('close',()=>{
+  if(dialog.dataset.confirmed!=='true'&&onClosed)onClosed();
+  dialog.remove();
+ },{once:true});document.body.append(dialog);
  openDialog(dialog);
+}
+async function activateOtherAbility(c,ability,persistentKey,requested){
+ document.querySelector('#other-ability-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
+ const calculated=await computeLocalData(c);
+ dialog.innerHTML=actionDialogIntro(ability.name,[
+  {label:'Azione',value:ability.time||'Secondo il privilegio'},
+  {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
+  {label:'Consumo',value:Number(ability.cost)>0?ability.cost+' utilizzi':'Nessun consumo'}
+ ],ability.description||'', '', 'other-ability-close')+
+  abilityPaymentField(ability,calculated)+
+  '<p data-ability-result role="status"></p>'+
+  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
+  '<button type="button" class="btn" data-ability-cancel>Annulla</button></div>';
+ dialog.querySelectorAll('[data-ability-cancel],[data-act="other-ability-close"]').forEach(button=>
+  button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-ability-confirm]').addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   const fresh=await computeLocalData(current);
+   const panels=battleActionPanels(current,fresh,state.spellCatalog||[],state.featureActionOverrides||[],
+    state.generalActionSupplements||[],readActionVariants(),
+    abilitiesForCreature(current,state.abilityCatalog||[],fresh));
+   const power=requested.startsWith('activated:')?
+    abilitiesForCreature(current,state.abilityCatalog||[],fresh)
+     .find(row=>String(row.id)===requested.slice('activated:'.length)):null;
+   const currentAbility=panels.abilityEntries.find(row=>
+     String(row.id||row.ability_id||row.name)===requested)||
+    (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
+   if(!currentAbility)throw Error('Capacità non più disponibile.');
+   const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
+    throw Error('Tracker non collegato alla capacità.');
+   const spend=choice===undefined||choice!=='';
+   await patch(record=>{
+    const changes=cost&&spend?spendTrackerUses(record,currentAbility.tracker_id,cost,fresh.trackers):{};
+    if(persistentKey){
+     if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+     changes.active_class_features={...(record.active_class_features||{}),
+      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.origin_id||currentAbility.feature_id||requested,
+       rules_version:record.rules_version||'2014',enhanced:false}};
+    }
+    return changes;
+   });
+   if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();closeDialog(dialog,{remove:true});await render();
+   message(cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
+    currentAbility.name+': utilizzo confermato senza consumo.');
+  }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
 }
 async function syncFormPresentation(c){
  if(c.linked_token_sync_id&&state.paired&&state.online){
@@ -3589,15 +3669,18 @@ function rollDieResultMarkup(outcome){
   '<div class="sheet-roll-dice-groups" aria-label="Risultati dei singoli dadi">'+
   (outcome.parts||[]).map(part=>
    '<div class="sheet-roll-dice-group"><span class="sheet-roll-dice-label">'+esc(part.notation)+'</span>'+
-   '<div class="sheet-roll-dice-values">'+(part.rolls||[]).map(n=>
-     '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join('')+'</div></div>').join('')+'</div>';
+   '<div class="sheet-roll-dice-values">'+(part.kind==='flat'?
+     '<span class="sheet-roll-die-value">'+esc(part.notation)+'</span>':
+     (part.rolls||[]).map(n=>
+       '<span class="sheet-roll-die-value">'+esc(n)+'</span>').join(''))+'</div></div>').join('')+'</div>';
 }
 function chosenRollBonuses(dialog){
  return [...(dialog.usedRollBonuses||[])];
 }
 function rollBonusTerm(row){
- return {key:'roll-extra:'+String(row.selectionId||row.id),kind:'dice',
-  formula:'+'+row.dice,expanded:'',...(row.damage_type?{damageType:rollDamageName(row.damage_type)}:{}),
+ const flat=Object.hasOwn(row,'flat_bonus');
+ return {key:'roll-extra:'+String(row.selectionId||row.id),kind:flat?'bonus':'dice',
+  formula:flat?(row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice,expanded:'',...(row.damage_type?{damageType:rollDamageName(row.damage_type)}:{}),
   originId:row.origin_id||'',originName:row.origin_name||'Bonus',
   section:row.origin_id?'':'formula_bonuses'};
 }
@@ -3672,7 +3755,8 @@ function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,form
        const trackerLabel=row.tracker_id?(row.tracker_name||'Tracker')+' · '+(row.remaining??0)+' rim.':'Nessun tracker associato';
        return '<div class="sheet-roll-bonus-item">'+
          '<button type="button" class="sheet-roll-origin-term sheet-roll-bonus-term is-link" data-act="roll-origin-open" data-origin-id="'+esc(row.origin_id||'')+'" title="Apri tratto">'+
-           '<span class="sheet-roll-origin-symbol">+'+esc(row.dice)+'</span>'+
+           '<span class="sheet-roll-origin-symbol">'+esc(Object.hasOwn(row,'flat_bonus')?
+              (row.flat_bonus>=0?'+':'')+row.flat_bonus:'+'+row.dice)+'</span>'+
            (row.damage_type?'<span class="sheet-roll-origin-damage-type">'+esc(rollDamageName(row.damage_type))+'</span>':'')+
            '<span class="sheet-roll-origin-name">'+esc(row.origin_name||'Bonus')+'</span></button>'+
          '<div class="sheet-roll-bonus-controls">'+
@@ -4102,26 +4186,7 @@ async function handleAction(target){
     if(ability.class_feature_id){
       await activateClassAbility(c,calculated,ability);return;
     }
-    const cost=Math.max(0,Number(ability.cost)||0);
-    const persistentKey=String(target.dataset.persistentKey||'');
-    if(persistentKey){
-      await patch(current=>{
-        if(current.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
-        const changes=cost?spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers):{};
-        changes.active_class_features={...(current.active_class_features||{}),
-          [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
-            rules_version:current.rules_version||'2014',enhanced:false}};
-        return changes;
-      });
-      await render();
-      return;
-    }
-    if(cost){
-      await patch(current=>spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers));
-    }
-    await render();
-    message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':
-      ability.name+': consulta la descrizione per applicarne gli effetti.');
+    await activateOtherAbility(c,ability,String(target.dataset.persistentKey||''),requested);
     return;
   }
   if(act==='tracker-reset'){
@@ -4431,12 +4496,9 @@ async function handleAction(target){
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
-    dialog.innerHTML='<h2>'+esc(spell.name||id)+'</h2>'+
-      '<p class="hint magic-spell-metadata">'+(level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
-      (detailed.school?' · '+esc(detailed.school):'')+(detailed.source?' · '+esc(detailed.source):'')+'</p>'+
-      '<dl class="magic-spell-facts">'+spellFacts(detailed).map(({label,value})=>
-         '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+ 
-       '<div class="magic-spell-description">'+esc(description)+'</div>'+
+    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts(detailed),description,
+      (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
+      (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
@@ -4682,6 +4744,26 @@ async function handleAction(target){
     if(!row||chosenRollBonuses(dialog).some(b=>b.selectionId===row.selectionId))return;
     const creature=state.editor?.read();
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
+    if(row.class_feature_id){
+      // Uses the same feature confirmation and payment plan as Battle.
+      const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollTarget;
+      const valid=classFeatureRollBonuses(creature,fresh,rollTarget).find(item=>
+        item.id===row.id&&item.origin_id===row.origin_id);
+      const action=classFeatureEntries(creature,fresh).find(item=>
+        item.class_feature_id===row.class_feature_id);
+      if(!valid||!action)throw Error('Privilegio non più disponibile per questo tiro.');
+      target.disabled=true;
+      await activateClassAbility(creature,fresh,action,{
+        onClosed:()=>{if(target.isConnected&&target.dataset.rollUsed!=='true')target.disabled=false;},
+        onConfirmed:()=>{
+          if(!dialog.isConnected||dialog.dataset.rolling==='true')return;
+          dialog.usedRollBonuses.push({...row,flat_bonus:valid.flat_bonus});
+          target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
+          dialog.renderRollFormula?.();
+        }
+      });
+      return;
+    }
     if(row.tracker_id){
       const fresh=await computeLocalData(creature);
       const tracker=(fresh.trackers||[]).find(t=>t.id===row.tracker_id&&!t.disabled);
@@ -4724,9 +4806,11 @@ async function handleAction(target){
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
     const label=target.dataset.label||'Tiro';
-    const bonuses=rollOptionalDice(creature,calculated,
-      applicableDiceBonuses(creature,key,state.spellCatalog||[],state.calculated),{kind:'d20'});
-    const autoSources=classFeatureRollSources(creature,calculated,key);
+    const bonuses=rollOptionalDice(creature,calculated,[
+       ...applicableDiceBonuses(creature,key,state.spellCatalog||[],calculated),
+       ...classFeatureRollBonuses(creature,calculated,key)
+      ],{kind:'d20'});
+     const autoSources=classFeatureRollSources(creature,calculated,key);
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
       const resolved=resolveClassRollMode(autoSources,choice);
@@ -4785,7 +4869,18 @@ async function handleAction(target){
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
         // Tracker uses were spent at selection time, never again on rerolls.
-        const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
+        // A reaction modifies one roll only, even when the same dialog rerolls.
+         const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
+         if(oneShot.size){
+           dialog.usedRollBonuses=dialog.usedRollBonuses.filter(row=>!oneShot.has(row.selectionId));
+           for(const useButton of dialog.querySelectorAll('[data-roll-use]')){
+             const item=dialog.rollBonuses[Number(useButton.dataset.rollUse)];
+             if(oneShot.has(item?.selectionId)){
+               useButton.disabled=false;useButton.dataset.rollUsed='false';useButton.textContent='Usa';
+             }
+           }
+         }
+         const consumed=new Set(chosen.filter(row=>row.consumes_spell).map(row=>row.consumes_spell));
         if(consumed.size){
           // The next throw is independent. Previously consumed spell bonuses
           // must not be selectable or silently re-applied on a second click.

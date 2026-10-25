@@ -45,8 +45,10 @@ export function traitStateActions(record={},features=[],catalog=[]) {
     return [{id:'trait_state:'+rule.id,class_feature_id:'trait_state:'+rule.id,
       name:rule.name,origin:'personal',origin_id:trait.origin_id,feature_id:trait.origin_id,
       mode:'trait_state',state_id:rule.id,active:selection(record,rule)===rule.id,
-      time:'free',type:'Capacità',cost:0,
-      description:rule.summary||'',category:rule.category||'stato'}];
+      time:'free',type:'Capacità',
+       tracker_id:rule.activation_tracker?.id||'',tracker:rule.activation_tracker?.name||'',
+       cost:selection(record,rule)===rule.id?0:Math.max(0,Number(rule.activation_tracker?.cost||0)),
+       description:rule.summary||'',category:rule.category||'stato'}];
   });
 }
 export function activeTraitStates(record={},features=[],catalog=[]) {
@@ -55,7 +57,7 @@ export function activeTraitStates(record={},features=[],catalog=[]) {
     return trait&&selection(record,rule)===rule.id?[{...rule,source_trait:trait}]:[];
   });
 }
-export function traitStateActivationPatch(record={},features=[],catalog=[],id='') {
+export function traitStateActivationPatch(record={},features=[],catalog=[],id='',trackers=[],options={}) {
   const rule=arr(catalog).find(row=>row.id===id);
   if(!rule||!eligible(record,features,rule))throw Error('Privilegio o armatura non disponibili.');
   const current=selection(record,rule)===rule.id;
@@ -66,6 +68,21 @@ export function traitStateActivationPatch(record={},features=[],catalog=[],id=''
   if(!current)active['trait_state:'+rule.id]={
     name:rule.name,origin_id:owningTrait(record,features,rule)?.origin_id||'',category:rule.category||'stato'};
   const changes={trait_state_selection:selected,active_class_features:active};
+  // This cost is bound to the originating trait and only paid on activation.
+  // Deselecting an active state is free, and payment is atomic with selection.
+  const payment=rule.activation_tracker;
+  if(!current&&payment&&Number(payment.cost)>0){
+    const chosen=options.tracker_id===undefined?payment.id:String(options.tracker_id);
+    if(chosen!==''&&chosen!==payment.id)throw Error('Tracker non collegato alla capacità.');
+    if(chosen){
+      const tracker=arr(trackers).find(row=>row.id===payment.id&&!row.disabled);
+      if(!tracker)throw Error('Tracker della capacità non disponibile.');
+      const cost=Math.max(0,Number(payment.cost));
+      const spent=Number(record.resource_tracker_spent?.[tracker.id]||0);
+      if(spent+cost>Number(tracker.max||0))throw Error('Utilizzi insufficienti per attivare il modello.');
+      changes.resource_tracker_spent={...(record.resource_tracker_spent||{}),[tracker.id]:spent+cost};
+    }
+  }
   if(rule.legacy_field)changes[rule.legacy_field]=rule.legacy_value;
   return changes;
 }
@@ -98,13 +115,24 @@ export function traitStateNumericGrants(record={},features=[],catalog=[]) {
  }));
 }
 export function traitStateTrackers(record={},features=[],catalog=[]) {
- return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
+  // Payment trackers must exist while the model is inactive; sibling modes
+  // share one counter rather than each receiving an independent pool.
+  const available=[],seen=new Set();
+  for(const rule of arr(catalog)){
+    const payment=rule.activation_tracker,feature=payment&&eligible(record,features,rule);
+    if(!feature||!payment?.id||seen.has(payment.id))continue;
+    seen.add(payment.id);
+    available.push({id:payment.id,name:payment.name,max:Math.max(0,Number(payment.max)||0),
+      recharge:payment.recharge||'manual',automatic:true,
+      origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name});
+  }
+  return [...available,...activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
    const feature=source(record,features,rule,attack.trait),bonus=attack.bonus_die;
    return feature&&bonus?[{
      id:bonus.tracker_id,name:bonus.name,max:bonus.max||1,recharge:bonus.recharge||'turn',
      automatic:true,origin_id:feature.origin_id,origin_name:'Tratto · '+feature.name
    }]:[];
- }));
+  }))];
 }
 export function traitStateOptionalDice(record={},features=[],catalog=[]) {
  return activeTraitStates(record,features,catalog).flatMap(rule=>arr(rule.attacks).flatMap(attack=>{
