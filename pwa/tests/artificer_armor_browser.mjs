@@ -31,7 +31,14 @@ try{
  const resources=page.locator('[data-battle-action="resources"]');
  if(!await resources.evaluate(n=>n.open))await resources.locator('summary.play-battle-summary').click();
  await page.getByRole('button',{name:'Attiva Modello armatura · Guardiano',exact:true}).click();
+ const modelDialog=page.locator('#class-feature-dialog');
+ await modelDialog.locator('[data-feature-confirm]').waitFor();
+ assert.equal((await record()).artificer_armor_model,'infiltrator','no switch before confirmation');
+ assert.equal(await modelDialog.locator('[data-ability-payment] option').count(),2);
+ assert.equal(await modelDialog.locator('[data-ability-payment] option').last().innerText(),'Nessun tracker');
+ await modelDialog.locator('[data-feature-confirm]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.artificer_armor_model==='guardian';});
+ assert.equal((await record()).resource_tracker_spent['feature:armor_model:activation'],1);
  await page.locator('#sheet-play-view [data-attack-id="class_feature:thunder_gauntlets"]').waitFor({state:"attached"});
  assert.equal(await page.locator('#sheet-play-view [data-attack-id="class_feature:lightning_launcher"]').count(),0);
 
