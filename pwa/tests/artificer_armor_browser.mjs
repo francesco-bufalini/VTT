@@ -47,6 +47,41 @@ try{
  await page.locator('[data-feature-confirm]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.temporary_hp===8;});
  assert.equal((await record()).resource_tracker_spent['class:artificer:tce:defensive_field'],1);
+ // Flash of Genius appears only as an optional bonus on the eligible roll.
+ await sheet('info');
+ const saveButton=page.locator('#sheet-play-view [data-act="sheet-roll"][data-target="save:dex"]').first();
+ await saveButton.click();
+ const rollDialog=page.locator('#sheet-roll-dialog');
+ const flashRow=rollDialog.locator('.sheet-roll-bonus-item').filter({hasText:'Flash of Genius'});
+ await flashRow.locator('[data-act="sheet-roll-use-bonus"]').waitFor();
+ assert.match(await flashRow.innerText(),/\+4/);
+ const flashTracker='class:artificer:tce:flash_of_genius',beforeFlash=(await record()).resource_tracker_spent?.[flashTracker]||0;
+ await flashRow.locator('[data-act="sheet-roll-use-bonus"]').click();
+ const flashDialog=page.locator('#class-feature-dialog');
+ await flashDialog.locator('[data-feature-confirm]').waitFor();
+ assert.equal((await record()).resource_tracker_spent?.[flashTracker]||0,beforeFlash);
+ assert.equal(await flashDialog.locator('[data-ability-payment] option').count(),2);
+ await flashDialog.locator('[data-feature-confirm]').click();
+ await page.waitForFunction(async id=>{
+  const {listCreatures}=await import('/creatures.js');
+  return ((await listCreatures())[0].creature.resource_tracker_spent?.[id]||0)===1;
+ },flashTracker);
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/);
+ const modifier=Number((await rollDialog.locator('.sheet-roll-math strong').first().textContent()).trim());
+ await rollDialog.locator('[data-act="roll-sheet-confirm"]').click();
+ const total=Number(await rollDialog.locator('.dice-result').textContent());
+ const firstD20=Number(await rollDialog.locator('.sheet-roll-dice-group').first().locator('.sheet-roll-die-value').first().textContent());
+ assert.equal(total,firstD20+modifier+4,'Flash of Genius applies its flat Intelligence modifier');
+ assert.equal(await flashRow.locator('[data-act="sheet-roll-use-bonus"]').textContent(),'Usa',
+  'each reaction applies to one roll only');
+ // The no-tracker choice must still apply the bonus without spending another use.
+ await flashRow.locator('[data-act="sheet-roll-use-bonus"]').click();
+ await flashDialog.locator('[data-ability-payment]').selectOption('');
+ await flashDialog.locator('[data-feature-confirm]').click();
+ assert.equal((await record()).resource_tracker_spent?.[flashTracker]||0,1);
+ assert.match(await rollDialog.locator('[data-roll-formula]').textContent(),/\+4/);
+ await rollDialog.locator('[data-act="close-sheet-roll"]').click();
+ await sheet('battle');
  await shot('ore-armorer-390');
  await page.setViewportSize({width:1440,height:1000});await shot('ore-armorer-1440');
  assert.deepEqual(f.errors,[]);console.log('PASS: real Chrome model switch, Defensive Field payment and temporary HP at 390/1440px');
