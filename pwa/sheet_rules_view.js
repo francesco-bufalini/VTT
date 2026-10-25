@@ -879,8 +879,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    }).join('');
    // The actual selector, save controls and formula buttons used to live in a
    // separate settings popup. Expose their exact interactive markup inline.
-   const castingDetails=source.querySelector('.magic-source-overview')?.outerHTML||
-     source.querySelector('.casting-statistics')?.outerHTML||'';
+   const castingDetails=source.querySelector('.casting-statistics')?.outerHTML||'';
    // Reuse the class selector in the native mobile sheet rather than hiding it
    // inside the source bank or inventing another spell-selection state.
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]

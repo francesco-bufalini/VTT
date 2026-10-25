@@ -1290,13 +1290,9 @@ async function editorView() {
     body=magicToolbar(calculated)+
       panel("Incantesimi disponibili",
         calculated.casting_classes.map(member=>{
-          const count=classSelectionCount(c,member,calculated.casting_classes,state.spellCatalog||[]);
-          const knowledge=knownSpellProgress(c,member,calculated.casting_classes,state.spellCatalog||[]);
           return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
             '<span class="hint">'+esc(member.source||'')+'</span></header>'+
-            '<div class="magic-source-overview">'+castingStatistics(c,member.id,member.ability)+
-            (knowledge?'<p class="magic-source-known">Incantesimi conosciuti <strong>'+knowledge.known+
-              (knowledge.minimum===null?'':' / minimo '+knowledge.minimum)+'</strong></p>':'')+'</div>'+
+            castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
               '<button type="button" class="btn small magic-selection-button" data-act="magic-select-spells" data-magic-class="'+esc(member.id)+'" data-magic-target="prepared_spells">Prepara incantesimi</button>':'')+
@@ -2121,7 +2117,7 @@ function listField(label,index,key,value,type="text") {
 }
 function castingStatistics(c,section,ability){
  const selected=c.spellcasting_section_abilities?.[section]||ability;
- return '<div class="casting-statistics"><label>Caratteristica degli incantesimi<select data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
+ return '<div class="casting-statistics"><label><span class="casting-ability-label">Caratteristica</span><select aria-label="Caratteristica degli incantesimi" data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
 }
 function slotCounter(level,total,spent){
  const key=level===0?'pact_slot':'slot:'+level;
