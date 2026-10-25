@@ -168,6 +168,8 @@ const infusionSelectors={
   }
 };
 const abilityIndex=await read('../../vtt/data/structured_ability_grants_5etools.json');
+const choicePolicies=await read('../../vtt/data/ability_choice_policies_5etools.json');
+Object.assign(abilityIndex,choicePolicies);
 const infusionNative=await read('../../vtt/data/artificer_infusions_5etools.json');
 abilityIndex.artificer_infusions=infusionNative.infusions.map(row=>{
   const typed=infusionSelectors[row.id]||{};
