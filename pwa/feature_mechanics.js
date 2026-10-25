@@ -125,7 +125,7 @@ export function classFeatureRollResourceBonuses(record={},calculated={}){
   const value=modifier?Number(calculated.values?.['ability_mod:'+modifier]):Number(bonus.flat_bonus);
   const flat=Number.isFinite(value)?Math.max(Number(bonus.minimum??-Infinity),value):NaN;
   const dice=String(bonus.dice||'').trim();
-  if(!Number.isFinite(flat)&&!/^[1-9]\\d*d(?:4|6|8|10|12|20|100)(?:[+-]\\d+)?$/.test(dice))return [];
+  if(!Number.isFinite(flat)&&!/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))return [];
   return [{id:ability.id,class_feature_id:ability.class_feature_id,
    origin_id:ability.origin_id,origin_name:ability.origin_name,
    name:bonus.name||ability.name,description:ability.description,
