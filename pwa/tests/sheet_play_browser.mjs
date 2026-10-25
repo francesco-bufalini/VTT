@@ -46,6 +46,12 @@ try{
  }
  await page.setViewportSize({width:390,height:844});
  await sheet('info');await popup('identity');await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria, guardiana della Luna');
+ // Commit on blur before closing the modal, avoiding an input/change/Escape race.
+ await page.locator('#sheet-context-dialog [data-field="name"]').press('Tab');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
+ });
  await page.keyboard.press('Escape');await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
  // Persistence and rerender finish asynchronously after the dialog dismisses.
  await page.waitForFunction(async()=>{
