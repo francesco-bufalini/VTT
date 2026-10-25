@@ -47,6 +47,11 @@ try{
  await page.setViewportSize({width:390,height:844});
  await sheet('info');await popup('identity');await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria, guardiana della Luna');
  await page.keyboard.press('Escape');await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
+ // Persistence and rerender finish asynchronously after the dialog dismisses.
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
+ });
  assert.equal((await record()).name,'Lyria, guardiana della Luna');assert.match(await page.locator('.play-identity h2').textContent(),/guardiana/);
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
