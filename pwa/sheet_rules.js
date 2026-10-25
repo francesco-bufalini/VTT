@@ -1030,6 +1030,7 @@ function calculateSheetValues(record={},catalogs={}){
     state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
     trait_state_optional_dice:traitStateOptionalDice(record,features,catalogs.traitStates||[]),
     trait_state_catalog:catalogs.traitStates||[],
+    roll_bonus_rules:catalogs.rollBonusRules||[],
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
     origins:[...originMap.values()],origin_spells:originSpells,origin_choices:originChoices,
@@ -1055,14 +1056,16 @@ export function loadRuleCatalogs(){
     fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.states)?data.states:[]),
+    fetch('/catalog/roll_bonus_rules.json').then(r=>{if(!r.ok)throw Error('Regole dei bonus ai tiri non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,classFeatures,
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,rollBonusRules,classFeatures,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
