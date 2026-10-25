@@ -4,6 +4,7 @@
 import {selectedSources,grantedFields,fixedProficiencies,effectiveBackgrounds} from './structured_effects.js';
 import {SKILLS} from './sheet_rules.js';
 import {traitBenefitSources} from './trait_benefits.js';
+import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 
 const arr=x=>Array.isArray(x)?x:[];
 const norm=x=>String(x??'').trim().toLowerCase();
@@ -138,51 +139,82 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
      remaining:Math.max(0,total-selected.length)});
   }
  }
- // The native code recognizes exactly one 5etools one-score choice per feat.
+ // Owned feats receive their own origin-level choices; single-stat legacy
+ // selections remain editable and keep the old persisted feat field.
  const seen=new Set();
  for(const feat of arr(record.feats_catalog)){
-  if(!feat||feat.disabled||!feat.name)continue;
+  if(!feat?.name||feat.disabled)continue;
   const sid='feat|'+norm(feat.source)+'|'+norm(feat.name);
   if(seen.has(sid)||!enabled(record,sid))continue;
-  const indexed=arr(catalogs.abilityGrants?.feat).find(row=>
-    norm(row.name)===norm(feat.name)&&String(row.source||'')===String(feat.source||''));
-  const variants=arr(indexed?.ability_choices);
-  if(variants.length!==1||!variants[0]?.choose)continue;
-  const choice=variants[0].choose;
-  const options=unique(arr(choice.from).map(norm).filter(x=>abilities.includes(x)));
-  if((Number(choice.count)||1)!==1||!options.length||Number(choice.amount??1)<=0)continue;
   seen.add(sid);
-  const selected=unique(arr(record.feats_catalog).filter(row=>
-    norm(row?.name)===norm(feat.name)&&norm(row?.source)===norm(feat.source))
-    .map(row=>norm(row.ability_choice)).filter(x=>options.includes(x)));
-  result.push({id:'ability:'+sid,kind:'ability',origin_id:sid,name:feat.name,
-    label:'Caratteristica (+'+Number(choice.amount??1)+')',count:1,
-    selected,options,remaining:selected.length?0:1});
+  const row=arr(catalogs.abilityGrants?.feat).find(x=>norm(x.name)===norm(feat.name)&&
+    norm(x.source)===norm(feat.source));
+  const variants=originVariants(catalogs.abilityGrants,'feat',row,feat.source);
+  if(!variants.length)continue;
+  const legacy=variants.length===1&&variants[0].parts.length===1?feat.ability_choice:'';
+  result.push(...allocationChoiceRows(record,sid,feat.name,variants,legacy));
  }
- // Source-qualified, one-stat choices on 5etools species, subraces and backgrounds.
+ // Race, subrace and background score choices can be fixed or source-wide.
  for(const [group,name,source] of [
    ['race',record.species,record.species_source],
    ...(record.subrace?[['subrace',record.subrace,record.subrace_source]]:[]),
    ...effectiveBackgrounds(record).map(row=>['background',row.name,row.source])
  ]){
-   if(!name||!source)continue;
-   for(const row of arr(catalogs.abilityGrants?.[group]).filter(row=>
-     norm(row.name)===norm(name)&&norm(row.source)===norm(source)&&
-     (group!=='subrace'||norm(row.raceName)===norm(record.species)&&
-       (!row.raceSource||norm(row.raceSource)===norm(record.species_source))))){
-     const sid=group+'|'+norm(row.source)+'|'+norm(row.name);
-     if(!enabled(record,sid))continue;
-     const variants=arr(row.ability_choices);
-     if(variants.length!==1||!variants[0]?.choose)continue;
-     const choice=variants[0].choose,amount=Number(choice.amount??1);
-     const options=unique(arr(choice.from).map(norm).filter(x=>abilities.includes(x)));
-     if(Number(choice.count??1)!==1||!options.length||!Number.isFinite(amount)||amount<=0)continue;
-     const selected=arr(record.origin_ability_choices).filter(x=>x?.origin_id===sid)
-       .map(x=>norm(x.ability)).filter(x=>options.includes(x));
-     result.push({id:'ability:'+sid,kind:'ability',origin_id:sid,name:row.name,
-       label:'Caratteristica (+'+amount+')',count:1,selected,options,
-       remaining:selected.length?0:1});
-   }
+  if(!name||!source)continue;
+  const matching=arr(catalogs.abilityGrants?.[group]).filter(row=>
+    norm(row.name)===norm(name)&&norm(row.source)===norm(source)&&
+    (group!=='subrace'||norm(row.raceName)===norm(record.species)&&
+     (!row.raceSource||norm(row.raceSource)===norm(record.species_source))));
+  // Source policies also apply when upstream omits an explicit race ability row.
+  if(group==='race'&&!matching.length)matching.push({name,source});
+  for(const row of matching){
+   const sid=group+'|'+norm(row.source)+'|'+norm(row.name);
+   if(!enabled(record,sid))continue;
+   const fixed=row.ability&&typeof row.ability==='object'&&!Array.isArray(row.ability)?
+     Object.entries(row.ability).filter(([key,val])=>abilities.includes(key)&&Number(val)>0):[];
+   if(fixed.length)result.push({id:'ability-fixed:'+sid,kind:'ability_fixed',
+     origin_id:sid,name:row.name,label:'Incrementi automatici',
+     count:fixed.length,selected:fixed.map(([key])=>key),
+     options:fixed.map(([key])=>key),amounts:Object.fromEntries(fixed),
+     remaining:0});
+   const variants=originVariants(catalogs.abilityGrants,group,row,source);
+   result.push(...allocationChoiceRows(record,sid,row.name,variants));
+  }
+ }
+ // Class-level Ability Score Improvement has an explicit 5etools feature ID.
+ // Each occurrence can grant score allocation OR an individually owned feat.
+ for(const feature of arr(calculated.features)){
+  if(!feature?.origin_id||feature.disabled||feature.inactive||!enabled(record,feature.origin_id))continue;
+  const rule=arr(catalogs.abilityGrants?.advancement_rules).find(r=>
+    norm(r.feature_name)===norm(feature.name)&&arr(r.sources).some(source=>
+    norm(source)===norm(feature.class_source||String(feature.origin_key||'').split('|')[1])));
+  if(!rule)continue;
+  const sid=feature.origin_id,owned=arr(record.advancement_choices).find(x=>x.origin_id===sid);
+  const mode=owned?.mode;
+  result.push({id:'advancement-mode:'+sid,kind:'advancement_mode',origin_id:sid,
+    name:feature.name+' · livello '+feature.level,
+    label:'Incremento caratteristiche o talento',count:1,
+    selected:mode?[mode]:[],options:rule.feat_alternative?['ability','feat']:['ability'],
+    option_labels:{ability:'Incrementa le caratteristiche',feat:'Scegli un talento'+(rule.feat_optional?' (regola opzionale)':'')},
+    remaining:mode?0:1});
+  if(mode==='ability')result.push(...allocationChoiceRows(record,sid,feature.name,
+    allocationVariants(rule.ability_choices)));
+  if(mode==='feat'){
+   const available=Object.entries(catalogs.originDetails?.feats||{}).map(([key])=>{
+    const cut=key.lastIndexOf('|');return cut<0?null:
+      {value:key.slice(cut+1)+'|'+key.slice(0,cut),name:key.slice(0,cut),source:key.slice(cut+1)};
+   }).filter(Boolean).filter(f=>String(record.rules_version||'2014')==='2024'?
+      f.source==='xphb'||f.source==='efa':true)
+     .sort((a,b)=>a.name.localeCompare(b.name));
+   const ownedFeat=arr(record.feats_catalog).find(f=>f?.granted_by===sid);
+   const value=ownedFeat?norm(ownedFeat.source)+'|'+norm(ownedFeat.name):'';
+   result.push({id:'advancement-feat:'+sid,kind:'advancement_feat',origin_id:sid,
+    name:feature.name+' · livello '+feature.level,label:'Talento concesso',
+    count:1,selected:value?[value]:[],
+    options:available.map(f=>f.value),option_labels:Object.fromEntries(available.map(f=>
+      [f.value,f.name+' ('+f.source.toUpperCase()+')'])),
+    remaining:value?0:1});
+  }
  }
  for(const choice of arr(calculated.origin_choices)){
   if(!choice?.id||!enabled(record,choice.origin_id))continue;
@@ -214,7 +246,8 @@ export function choicesForTrait(trait,record,choices=[]){
  return arr(choices).filter(choice=>origins.has(choice.origin_id));
 }
 export function savePendingChoice(record,choice,values=[]){
- if(!choice||!['ability','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(!choice||!['ability','ability_mode','ability_fixed','advancement_mode','advancement_feat','proficiency'].includes(choice.kind))throw Error('Scelta non valida.');
+ if(choice.kind==='ability_fixed')throw Error('Gli incrementi fissi sono automatici.');
  const raw=unique(arr(values).map(strip));
  const prefix='__custom__:';
  const mixed=choice.proficiency_kind==='mixed';
@@ -228,7 +261,33 @@ export function savePendingChoice(record,choice,values=[]){
     custom.some(key=>!(mixed?key.slice(5):key)||(mixed?key.slice(5):key).length>80||
        /[<>{}\x00-\x1f]/.test(key)||choice.options.includes(key)||regular.includes(key)))
    throw Error('Selezione non consentita dal privilegio.');
+ if(['advancement_mode','advancement_feat'].includes(choice.kind)){
+  const previous=arr(record.advancement_choices).find(row=>row.origin_id===choice.origin_id);
+  const advancements=arr(record.advancement_choices).filter(row=>row.origin_id!==choice.origin_id);
+  const otherFeats=arr(record.feats_catalog).filter(row=>row?.granted_by!==choice.origin_id);
+  if(choice.kind==='advancement_mode'){
+   const mode=selected[0]||'';
+   if(mode)advancements.push({origin_id:choice.origin_id,mode});
+   return {advancement_choices:advancements,feats_catalog:mode==='feat'&&previous?.mode==='feat'?
+     arr(record.feats_catalog):otherFeats,
+     origin_ability_choices:arr(record.origin_ability_choices).filter(row=>row.origin_id!==choice.origin_id)};
+  }
+  if(selected.length){
+   const [source,...nameParts]=selected[0].split('|'),name=nameParts.join('|');
+   if(!name||!source)throw Error('Talento non disponibile.');
+   advancements.push({origin_id:choice.origin_id,mode:'feat'});
+   otherFeats.push({id:'advancement:'+choice.origin_id,name,source:source.toUpperCase(),
+     granted_by:choice.origin_id});
+  }else advancements.push({origin_id:choice.origin_id,mode:'feat'});
+  return {advancement_choices:advancements,feats_catalog:otherFeats};
+ }
+ if(choice.kind==='ability_mode')return saveAllocationChoice(record,choice,selected);
  if(choice.kind==='ability'){
+  if(choice.part!==undefined&&choice.variant!==undefined){
+   if(choice.exclusive&&selected.some(ability=>arr(choice.used_elsewhere).includes(ability)))
+    throw Error('Ogni incremento deve scegliere una caratteristica differente.');
+   return saveAllocationChoice(record,choice,selected);
+  }
   if(selected.length>1)throw Error('Puoi scegliere una sola caratteristica.');
   if(!choice.origin_id.startsWith('feat|')){
     if(!/^(race|subrace|background)\|/.test(choice.origin_id))throw Error('Origine non valida.');
