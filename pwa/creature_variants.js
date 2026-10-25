@@ -125,9 +125,10 @@ export function revertVariantDamage(record,overflow){
 }
 export function creatureMatchesFilter(creature,filter={}){
  const stat=creature.stat_block||creature,type=typeof stat.type==='object'?stat.type?.type:stat.type;
- const cr=Number(typeof stat.cr==='object'?stat.cr.cr:stat.cr),fraction=String(typeof stat.cr==='object'?stat.cr.cr:stat.cr).split('/');
- const challenge=fraction.length===2?Number(fraction[0])/Number(fraction[1]):cr;
- return (!filter.ids?.length||filter.ids.includes(creature.id))&&(!filter.type?.length||filter.type.includes(type))&&(!filter.sources?.length||filter.sources.includes(stat.source))&&(filter.max_cr===undefined||Number.isFinite(challenge)&&challenge<=Number(filter.max_cr))&&(!filter.no_fly||!stat.speed?.fly)&&(!filter.no_swim||!stat.speed?.swim);
+ const raw=object(stat.cr)?stat.cr.cr:stat.cr;
+ const fraction=typeof raw==='string'?raw.trim().match(/^(\d+)\s*\/\s*(\d+)$/):null;
+ const challenge=fraction&&Number(fraction[2])>0?Number(fraction[1])/Number(fraction[2]):finiteNumber(raw,NaN);
+ return (!filter.ids?.length||filter.ids.includes(creature.id))&&(!filter.type?.length||filter.type.includes(type))&&(!filter.sources?.length||filter.sources.includes(stat.source))&&(filter.max_cr===undefined||Number.isFinite(challenge)&&challenge>=0&&challenge<=Number(filter.max_cr))&&(!filter.no_fly||!stat.speed?.fly)&&(!filter.no_swim||!stat.speed?.swim);
 }
 // Explicit conversion at the catalog boundary; unknown rules stay in stat_block.
 export function bestiarySheet(stat,miniature){

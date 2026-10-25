@@ -135,3 +135,16 @@ test('bestiary conversion preserves explicit zero statistics and defaults missin
  assert.equal(resolved.abilities.str,0);assert.equal(resolved.current_hp,0);
  assert.equal(resolved.armor_class_base,0);
 });
+
+
+test('variant filters tolerate unknown CR without accepting it as zero',()=>{
+ for(const cr of [null,undefined,'',' ',{}, {cr:null},false,'/2','1/',-1,'-1/2','1/0','unknown']){
+  const source={name:'Incomplete',type:'beast',cr};
+  assert.equal(creatureMatchesFilter(source,{type:['beast']}),true,'No CR restriction: '+JSON.stringify(cr));
+  assert.equal(creatureMatchesFilter(source,{max_cr:1}),false,'Unknown or invalid CR: '+JSON.stringify(cr));
+ }
+ for(const cr of [0,'0',{cr:'0'},'1/2',{cr:'1/2'},' 1 / 2 ',0.5]){
+  assert.equal(creatureMatchesFilter({cr},{max_cr:0.5}),true,JSON.stringify(cr));
+ }
+ assert.equal(creatureMatchesFilter({cr:{cr:'2'}},{max_cr:1}),false);
+});
