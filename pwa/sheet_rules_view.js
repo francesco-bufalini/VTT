@@ -1175,7 +1175,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<header class="play-status-section-head"><h3>'+esc(title)+'</h3>'+plus(key,'Aggiungi '+title.toLowerCase())+'</header>'+
     '<div class="play-status-section-content">'+body+'</div></section>';
   const conditionRows=activeConditions.map(({id,label})=>
-    '<button type="button" class="play-condition" data-act="state-trait-jump" data-state-trait="'+esc('state|condition:'+id)+'" aria-label="Apri tratto '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('');
+    '<span class="play-condition-wrap" data-active-condition="'+esc(id)+'">'+
+    '<button type="button" class="play-condition" data-act="state-trait-jump" data-state-trait="'+esc('state|condition:'+id)+'" aria-label="Apri tratto '+esc(label)+'">'+icon('condition')+esc(label)+'</button>'+
+    '<button type="button" class="play-condition-remove" data-act="condition-remove" data-condition-id="'+esc(id)+'" aria-label="Rimuovi '+esc(label)+'" title="Rimuovi '+esc(label)+'"><span aria-hidden="true">×</span></button></span>').join('');
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeLink=(key,glyph,label,detail='')=>'<button type="button" class="play-status-trait-link" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" aria-label="Apri tratto '+esc(label)+'">'+icon(glyph)+'<span><strong>'+esc(label)+'</strong>'+
    (detail?'<small class="feature-effect-summary">'+esc(detail)+'</small>':'')+'</span></button>';

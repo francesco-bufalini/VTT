@@ -55,6 +55,7 @@ const FILES := {
 	"/trait_projection.js": ["res://pwa/trait_projection.js", "text/javascript; charset=utf-8"],
 	"/spell_metadata.js": ["res://pwa/spell_metadata.js", "text/javascript; charset=utf-8"],
 	"/condition_catalog.js": ["res://pwa/condition_catalog.js", "text/javascript; charset=utf-8"],
+	"/exhaustion_rules.js": ["res://pwa/exhaustion_rules.js", "text/javascript; charset=utf-8"],
 	"/catalog/effects_5etools.json": ["res://vtt/data/effects_5etools.json", "application/json; charset=utf-8"],
 	"/chat_notifications.js": ["res://pwa/chat_notifications.js", "text/javascript; charset=utf-8"],
 	"/feature_mechanics.js": ["res://pwa/feature_mechanics.js", "text/javascript; charset=utf-8"],

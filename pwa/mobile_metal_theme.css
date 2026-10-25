@@ -4880,3 +4880,25 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
   .magic-source .casting-stat .sheet-result,
   #sheet-play-view .play-magic-inline-casting .casting-stat .sheet-result{font-size:15px;padding-inline:2px}
 }
+
+/* Active condition tags: the dismiss control sits above the tag, not within
+   its navigation button. Both stay independently accessible by touch/keyboard. */
+.play-status-section-content .play-condition-wrap{
+ position:relative;display:inline-flex;vertical-align:middle;
+ margin:5px 9px 8px 0;min-width:0;max-width:100%;
+}
+.play-status-section-content .play-condition-wrap>.play-condition{
+ margin:0;max-width:100%;padding-right:25px;min-height:44px;
+ white-space:normal;text-align:left;
+}
+.play-status-section-content .play-condition-remove{
+ position:absolute;z-index:1;top:-9px;right:-9px;display:grid;
+ place-items:center;width:27px;height:27px;padding:0;
+ border:0;border-radius:50%;background:#221d1c;
+ box-shadow:0 0 0 1px #b9996a88;color:#e9cda9;
+ cursor:pointer;font:500 20px/1 inherit;
+}
+.play-status-section-content .play-condition-remove:hover{color:#fff0d6;background:#423027}
+.play-status-section-content .play-condition-remove:focus-visible{
+ outline:2px solid #f8dc9f;outline-offset:2px;
+}

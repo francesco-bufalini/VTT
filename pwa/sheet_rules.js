@@ -11,6 +11,7 @@ import {supplementalClassSpells,supplementalItemBonuses} from './rule_supplement
 import {modifyFeatureTrackers,classFeatureDamage,classFeatureEffects,classFeatureActive,featureEnabled} from './feature_mechanics.js';
 
 import {traitStateActions,activeTraitStates,traitStateAttacks,traitStateTrackers,traitStateNumericGrants,traitStateOptionalDice,traitStateEffects} from './trait_state_rules.js';
+import {activeExhaustionEffects,exhaustionAdjustedValue,exhaustionIsDead} from './exhaustion_rules.js';
 
 export const ABILITIES=["str","dex","con","int","wis","cha"];
 export const SKILLS=[
@@ -628,6 +629,7 @@ function calculateSheetValues(record={},catalogs={}){
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
+  const exhaustion_effects=activeExhaustionEffects(record,catalogs.exhaustionRules||{});
   if(kind==='character'&&!variantOwns(record,'movement')){
     const races=arr(classesCatalog?.races);
     const race=races.find(row=>record.species_id&&row.id===record.species_id)||races.find(row=>same(row.name,record.species)&&same(row.source,record.species_source));
@@ -889,7 +891,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(memo.has(target))return memo.get(target);
     const next=new Set(stack);next.add(target);
     const base=targetBase(target,resolve,next);
-    const total=base+sumGrants(target,next);
+    const total=exhaustionAdjustedValue(base+sumGrants(target,next),target,exhaustion_effects);
     if(!Number.isFinite(total))throw Error("Valore non finito per "+target);
     memo.set(target,total);return total;
   }
@@ -1030,6 +1032,7 @@ function calculateSheetValues(record={},catalogs={}){
     state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
     trait_state_optional_dice:traitStateOptionalDice(record,features,catalogs.traitStates||[]),
     trait_state_catalog:catalogs.traitStates||[],
+    exhaustion_effects,exhaustion_dead:exhaustionIsDead(exhaustion_effects),
     roll_bonus_rules:catalogs.rollBonusRules||[],
     feature_damage_resistances:classFeatureActive(record,featureContext,'rage')?['bludgeoning','piercing','slashing']:[],
     features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),
@@ -1055,7 +1058,8 @@ export function loadRuleCatalogs(){
     Promise.resolve([]),
     fetch('/catalog/feature_timing_recovery_rules.json').then(r=>{if(!r.ok)throw Error('Regole privilegi non disponibili');return r.json();}).then(data=>data?.version===1&&Array.isArray(data.actions)&&Array.isArray(data.recoveries)?data:null),
     fetch('/catalog/trait_states.json').then(r=>{if(!r.ok)throw Error('Privilegi di stato non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.states)?data.states:[]),
+      .then(data=>data?.version===1&&Array.isArray(data.states)?
+       {states:data.states,exhaustion:data.exhaustion||{}}:{states:[],exhaustion:{}}),
     fetch('/catalog/roll_bonus_rules.json').then(r=>{if(!r.ok)throw Error('Regole dei bonus ai tiri non disponibili');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
@@ -1065,7 +1069,8 @@ export function loadRuleCatalogs(){
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
   ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},traitStates,rollBonusRules,classFeatures,
+    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},
+    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});

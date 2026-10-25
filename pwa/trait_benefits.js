@@ -127,6 +127,27 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   add('attack_count','Attacchi per azione','Attacchi disponibili',
    '×'+grant.attacks_per_action,'attack_count:'+grant.id);
  }
+ // Exhaustion has one virtual state trait, backed by structured rules rather
+ // than a generated prose-only entry. All cumulative tier effects belong here.
+ const exhaustionLevel=Number(String(trait.condition_id||'').match(/^exhaustion:([1-6])$/)?.[1]||0);
+ if(exhaustionLevel)for(const rule of rows(calculated.exhaustion_effects)){
+  if(Number(rule.level)!==exhaustionLevel)continue;
+  const label=rule.label||traitBenefitTargetLabel(rule.target||rule.targets?.[0]||'');
+  const source='exhaustion:'+exhaustionLevel+':'+rule.type+':'+rule.min_level+':'+(rule.target||rule.operation||'');
+  if(rule.type==='roll_mode')
+   add('roll_modes','Vantaggi e svantaggi',label,
+    rule.mode==='advantage'?'Vantaggio':'Svantaggio',source);
+  else if(rule.type==='roll_modifier'){
+   const amount=(Number(rule.per_level)||0)*exhaustionLevel;
+   add('bonus','Bonus',label,(amount>=0?'+':'')+amount,source);
+  }else if(rule.type==='value'){
+   const amount=Number(rule.per_level)*exhaustionLevel;
+   const value=rule.operation==='add'&&Number.isFinite(amount)?
+     (amount>=0?'+':'')+amount+' ft':String(rule.detail||'Effetto attivo');
+   add('effects','Effetti e limitazioni',label,value,source);
+  }else if(rule.type==='condition')
+   add('effects','Effetti e limitazioni',label,rule.detail||'Condizione attiva',source);
+ }
  const bonusSeen=new Set();
  const multipliers=new Map(Object.values(calculated.roll_components||{}).flat().map(row=>[row.id,row.multiplier]));
  for(const row of [...rows(calculated.bonuses),...rows(calculated.automatic_bonuses)]){
@@ -185,6 +206,7 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  for(const target of [...new Set(rollTargets)]){
   for(const source of classFeatureRollSources(record,calculated,target)){
    if(String(source.origin_id||'').startsWith('feature:trait:'))continue;
+   if(exhaustionLevel&&source.condition_id===trait.condition_id)continue; // One rule row per scope
    if(!(source.origin_id&&ids.has(source.origin_id))&&
     !(source.kind==='condition'&&trait.condition_id===source.condition_id))continue;
    // A structured roll-mode benefit already describes this scope once.
