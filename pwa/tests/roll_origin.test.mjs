@@ -383,3 +383,20 @@ test('only explicitly owned base score terms gain a base-edit control',()=>{
    assert.doesNotMatch(html,/data-act="sheet-score-edit-base"/);
  }
 });
+
+test('confirmed flat roll benefits add a constant, not a die or a permanent score modifier',()=>{
+ const c=character(),calculated=calculateSheet(c);
+ const bonus={id:'class_feature:flash_of_genius',selectionId:'reaction:flash',
+  flat_bonus:4,origin_id:'feature:artificer:flash',origin_name:'Tratto · Flash of Genius'};
+ const before=calculated.values['save:dex'];
+ const segments=sheetRollOriginSegments(c,calculated,'save:dex',{diceBonuses:[bonus]});
+ assert(segments.some(row=>row.originId===bonus.origin_id&&row.formula==='+4'));
+ const result=rollSheetDice(before,[bonus],()=>12);
+ assert.equal(result.total,12+before+4);
+ assert.deepEqual(result.rolls,[12]);
+ assert.equal(result.parts.length,2);
+ assert.equal(result.parts[1].subtotal,4);
+ assert.equal(calculated.values['save:dex'],before,'roll bonus does not mutate base calculation');
+ const withDice=rollSheetDice(0,[bonus,{dice:'1d4',origin_name:'Benedizione'}],()=>3);
+ assert.equal(withDice.total,3+4+3);
+});
