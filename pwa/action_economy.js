@@ -587,34 +587,39 @@ function battleSpellRow(item){
 
 // The bonus attack is available only for a real two-weapon loadout.
 // An empty off hand (including an unarmed off-hand entry) does not qualify.
+// Light-weapon eligibility is independent of Dual Wielder: the feat grants
+// its own privilege, while the basic-rule row stays locked if not Light.
 export function offhandActionEligibility(record={},calculated={}){
  const attacks=arr(calculated.attacks);
  const main=attacks.find(a=>a.slot==='main'&&String(a.id||'').startsWith('item:'));
  const off=attacks.find(a=>a.slot==='off'&&String(a.id||'').startsWith('item:off:'));
  const shield=attacks.find(a=>a.slot==='shield'&&a.hand==='off');
- const unavailable=reason=>({available:false,reason});
- if(!main)return unavailable('Equipaggia un’arma nella mano principale.');
- if(!off&&!shield)return unavailable('Equipaggia un’arma o uno scudo nella mano secondaria.');
  const equipped=arr(record.inventory).map(resolveOwnedItem);
  const mainItem=equipped.find(item=>arr(item.equipped_slots).includes('main')&&itemKind(item)==='weapon');
  const offItem=equipped.find(item=>arr(item.equipped_slots).includes('off')&&
   ['weapon','shield'].includes(itemKind(item)));
- const feat=arr(record.feats_catalog).some(row=>!row?.disabled&&
-  /^dual wielder$/i.test(String(row?.name||'')));
- if(shield&&!off)
-  return record.rules_version!=='2024'&&feat?{available:true,reason:''}:
-   unavailable(record.rules_version==='2024'?
-    'Lo scudo non è un’arma Leggera idonea per l’attacco secondario (regole 2024).':
-    'Per colpire con lo scudo come arma improvvisata serve il talento Combattere con Due Armi (Dual Wielder).');
- if(!mainItem||!offItem)return off&&!shield?{available:true,reason:''}:
-  unavailable('Equipaggia due armi idonee, una per mano.');
- if(itemKind(offItem)!=='weapon')return unavailable('L’oggetto nella mano secondaria non è un’arma idonea.');
- if(record.rules_version==='2024')
-  return hasProperty(mainItem,'L')?{available:true,reason:''}:
-   unavailable('L’arma nella mano principale deve avere la proprietà Leggera (2024).');
- if(hasProperty(mainItem,'L')&&hasProperty(offItem,'L')||feat)return {available:true,reason:''};
- return unavailable('Servono due armi Leggere o il talento Dual Wielder (2014).');
+ const edition=String(record.rules_version||'2014');
+ const feat=arr(record.feats_catalog).find(row=>!row?.disabled&&
+  /^(dual wielder|combattente con due armi)$/i.test(String(row?.name||row?.id||'')));
+ const hasBoth=Boolean(main&&(off||shield));
+ const light=Boolean(mainItem&&offItem&&itemKind(offItem)==='weapon'&&
+   hasProperty(mainItem,'L')&&hasProperty(offItem,'L'));
+ const oneHanded=item=>item&&!hasProperty(item,'2H')&&
+  String(item.type||'').split('|')[0].toUpperCase()!=='R';
+ const featAvailable=Boolean(edition==='2014'&&feat&&hasBoth&&
+  oneHanded(mainItem)&&offItem&&
+  (itemKind(offItem)==='shield'||itemKind(offItem)==='weapon'&&oneHanded(offItem)));
+ const baseReason=!main?'Equipaggia un’arma nella mano principale.':
+  !off&&!shield?'Equipaggia un’arma nella mano secondaria.':
+  !mainItem||!offItem?'Equipaggia due armi, una per mano.':
+  itemKind(offItem)==='shield'?'Uno scudo non è un’arma Leggera per le regole base.':
+  'Per le regole base servono due armi Leggere.';
+ return {available:light||featAvailable,base_available:light,feat_available:featAvailable,
+  reason:light||featAvailable?'':baseReason,base_reason:light?'':baseReason,
+  feat_reason:featAvailable?'':'Per il talento servono due armi a una mano, anche non Leggere, oppure uno scudo utilizzato come arma improvvisata.',
+  feat:feat||null};
 }
+
 export function offhandActionAvailable(record={},calculated={}){
  return offhandActionEligibility(record,calculated).available;
 }
