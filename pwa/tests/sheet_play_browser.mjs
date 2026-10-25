@@ -46,7 +46,18 @@ try{
  }
  await page.setViewportSize({width:390,height:844});
  await sheet('info');await popup('identity');await page.locator('#sheet-context-dialog [data-field="name"]').fill('Lyria, guardiana della Luna');
+ // Commit on blur before closing the modal, avoiding an input/change/Escape race.
+ await page.locator('#sheet-context-dialog [data-field="name"]').press('Tab');
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
+ });
  await page.keyboard.press('Escape');await page.locator('#sheet-context-dialog').waitFor({state:'detached'});
+ // Persistence and rerender finish asynchronously after the dialog dismisses.
+ await page.waitForFunction(async()=>{
+   const {listCreatures}=await import('/creatures.js');
+   return (await listCreatures())[0]?.creature?.name==='Lyria, guardiana della Luna';
+ });
  assert.equal((await record()).name,'Lyria, guardiana della Luna');assert.match(await page.locator('.play-identity h2').textContent(),/guardiana/);
  await sheet('info');
  assert.equal(await page.locator('[data-act="edit-bonus"], .formula-bonus').count(),0,
@@ -714,11 +725,21 @@ try{
  assert.equal(await page.locator('#sheet-play-view [data-sheet-context="item:1"]').count(),0,'Objects must not leak into Documents');
  await popup('inventory-add');await page.locator('#sheet-context-dialog [data-act="document-add"]').click();await page.locator('#sheet-context-dialog .document-edit > summary').click();await page.locator('#sheet-context-dialog [data-document-part="title"]').fill('Lettera della Luna');await page.locator('#sheet-context-dialog [data-document-part="body"]').fill('Raggiungete il tempio al tramonto.');await dismiss();
  assert(await page.locator('#sheet-play-view').textContent().then(t=>t.includes('Lettera della Luna')));
- await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="poisoned"]').uncheck();await dismiss();assert.equal((await record()).conditions.includes('poisoned'),false);
+ await sheet('conditions');assert.match(await page.locator('#sheet-play-view').textContent(),/Avvelenato/);assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 2/);
+ assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
+ assert.deepEqual(await page.locator('#sheet-play-view .play-status-section-head h3').allTextContents(),['Condizioni','Incantesimi','Capacità']);
+ assert.equal(await page.locator('#sheet-play-view .play-status-add').count(),3);
+ await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="poisoned"]').uncheck();await dismiss();assert.equal((await record()).conditions.includes('poisoned'),false);
+ await popup('conditions');assert.match(await page.locator('#sheet-context-dialog [data-condition-category="exhaustion_levels"] summary').textContent(),/Indebolimento/);
+ await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').check();await dismiss();
+ assert.equal((await record()).exhaustion,4);
+ assert.match(await page.locator('#sheet-play-view').textContent(),/Livello 4/);
+ await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').uncheck();await dismiss();
+ assert.equal((await record()).exhaustion,0);
  await popup('apply-spell');await page.locator('#condition-spell-picker').selectOption('phb2014_light');await page.locator('#sheet-context-dialog [data-act="condition-add-spell"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light'&&r.applied===true);});
- await page.waitForFunction(()=>/Incantesimi applicati[\s\S]*Light/.test(document.querySelector('#sheet-play-view')?.textContent||''));
- assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi applicati[\s\S]*Light/);
+ await page.waitForFunction(()=>/Incantesimi[\s\S]*Light/.test(document.querySelector('#sheet-play-view')?.textContent||''));
+ assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi[\s\S]*Light/);
  await sheet('battle');assert.match(await page.locator('.play-status-strip').textContent(),/Light/);
  await sheet('conditions');await page.locator('[data-act="condition-remove-spell"][data-spell-id="phb2014_light"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light');});

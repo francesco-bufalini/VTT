@@ -18,6 +18,39 @@ const ITALIAN_NAMES = Object.freeze({
 export const CONDITION_CATEGORIES = Object.freeze([
   ["conditions","Condizioni"],["diseases","Malattie"],["effects","Effetti"]
 ]);
+ 
+// Exhaustion uses the existing numeric field on the creature, also read by
+// desktop rules and rest recovery. Virtual condition IDs expose each level
+// through the same selector without altering native condition identifiers.
+export const EXHAUSTION_CONDITION_CATEGORY = "exhaustion_levels";
+export function exhaustionLevel(record={}){
+  const value=Number(record.exhaustion??record.exhaustion_level??0);
+  return Number.isFinite(value)?Math.max(0,Math.min(6,Math.trunc(value))):0;
+}
+export function exhaustionConditionRows(edition="2014",source=null){
+  const version=edition==="2024"?"2024":"2014";
+  return Array.from({length:6},(_,index)=>{
+    const level=index+1;
+    return {id:"exhaustion:"+level,name:"Exhaustion "+level,
+      label:"Indebolimento · Livello "+level,category:EXHAUSTION_CONDITION_CATEGORY,
+      source:source?.source||"D&D "+version,page:source?.page,
+      entries:[
+        "Indebolimento di livello "+level+". Gli effetti del livello seguono le regole "+version+".",
+        ...(source?.entries==null?[]:[source.entries])
+      ]};
+  });
+}
+export function exhaustionSelectionPatch(record,id,checked){
+  const match=/^exhaustion:([1-6])$/.exec(String(id||""));
+  if(!match)return null;
+  const previous=exhaustionLevel(record),selected=Number(match[1]);
+  const next=checked?selected:previous===selected?0:previous;
+  // Clean up stale legacy marker(s), but leave all other conditions intact.
+  const conditions=(Array.isArray(record.conditions)?record.conditions:[])
+    .filter(value=>value!=="exhaustion"&&!/^exhaustion:[1-6]$/.test(String(value)));
+  return {exhaustion:next,conditions};
+}
+
 const compareItalian = new Intl.Collator("it",{sensitivity:"base"}).compare;
 export function conditionLabel(id,nativeName=""){
   return ITALIAN_NAMES[id] || nativeName || id;
@@ -126,7 +159,8 @@ function renderEntry(value,depth=0){
   return name+contents.map(item=>renderEntry(item,depth+1)).join("");
 }
 export function conditionDescriptionHtml(row){
-  const category=CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
+  const category=row?.category===EXHAUSTION_CONDITION_CATEGORY?"Indebolimento":
+    CONDITION_CATEGORIES.find(([id])=>id===row?.category)?.[1]||"Stato";
   const source=String(row?.source||row?.origin||"");
   const metadata=[category,source&&(source==="VTT"?"VTT":source),
     row?.page!=null?"pag. "+row.page:""].filter(Boolean);

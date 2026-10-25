@@ -10,7 +10,7 @@ import {structuredItemFacts} from "./item_detail_facts.js";
 import { sessionSpellEntries, availableSpells, addSelectedSpell, removeSelectedSpell, spellId, spellEligible, spellsForEdition, castingSources, classSelectionCount, classSelectionWarnings, knownSpellProgress, knownClassSpellIds, knownClassCantripIds, changeKnownClassSpell, originChoiceMatches, applyOriginSpellChoice } from "./spell_selection.js";
 import { loadActivatedAbilities, abilitiesForCreature } from "./activated_abilities.js";
 import { status, session, pair, unpair, hasPairingCredential, map, action, subscribeMap, takeQrPairCode, conditionDefinitions } from "./client.js";
-import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
+import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_CONDITION_CATEGORY, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
@@ -128,14 +128,24 @@ function acceptSession(info){
   state.session=info;
 }
 const pendingFieldTimers = new Map();
+// Input/change handlers may already be writing when a popup closes. Include
+// those commits in the flush so Escape cannot discard the last edited field.
+const pendingFieldWrites = new Set();
+function trackFieldWrite(target) {
+  const write=handleField(target);
+  pendingFieldWrites.add(write);
+  void write.finally(()=>pendingFieldWrites.delete(write)).catch(()=>{});
+  return write;
+}
 let pendingDocumentWrites=Promise.resolve();
 async function flushPendingFields() {
   const targets = [...pendingFieldTimers.keys()];
   for (const target of targets) {
     clearTimeout(pendingFieldTimers.get(target));
     pendingFieldTimers.delete(target);
-    if (target.isConnected && state.editor) await handleField(target);
+    if (target.isConnected && state.editor) await trackFieldWrite(target);
   }
+  await Promise.all([...pendingFieldWrites]);
   await pendingDocumentWrites;
   if (state.editor) await state.editor.flush();
 }
@@ -1193,10 +1203,10 @@ async function editorView() {
   case "conditions":
     body=panel('Condizioni',
       '<div class="condition-sheet-header"><span class="condition-count"><strong data-condition-count>'+
-        (c.conditions||[]).length+
-        '</strong> attive</span>'+
-        field('Indebolimento · livello','exhaustion',c.exhaustion??0,'number','min="0" max="6"')+
-      '</div>'+conditionGrid(c.conditions,'data-condition',c.rules_version),'condition-sheet-panel');
+        ((c.conditions||[]).filter(id=>id!=='exhaustion').length+(exhaustionLevel(c)>0?1:0))+
+        '</strong> attive</span></div>'+
+        conditionGrid(c.conditions,'data-condition',c.rules_version,exhaustionLevel(c)),
+      'condition-sheet-panel');
     break;
   case "json":
     body = panel("Editor avanzato",'<p class="warning">Modifica JSON per campi non ancora presenti nella GUI. La scheda viene validata prima del salvataggio; ID e proprietario non possono cambiare.</p>'+
@@ -1255,10 +1265,22 @@ function resourceView(c,configure=false,compact=false){
  return panel('Risorse','<p class="hint">I valori massimi includono formule e bonus attivi. Il riposo breve ripristina le risorse previste e gli slot del Patto; quello lungo ripristina anche gli slot di classe. All’inizio del turno si recuperano solo le risorse previste.</p>'+(body||'<p class="hint">Nessuna risorsa disponibile.</p>')+'<div class="actions">'+btn('tracker-short','Riposo breve')+btn('tracker-long','Riposo lungo')+btn('tracker-turn','Inizio turno')+'</div>')+(configure?panel('Aggiungi tracker','<div class="columns"><label>Nome<input id="tracker-name" maxlength="120"></label><label>Utilizzi massimi<input type="number" id="tracker-max" min="0" max="99999" value="1"></label><label>Formula del massimo (opzionale)<input id="tracker-formula" placeholder="Es. 1 + cha_mod"></label><label>Origine<select id="tracker-origin">'+options([['','Senza origine'],...origins.map(o=>[o.id,o.name])],'')+'</select></label><label>Recupero<select id="tracker-recharge">'+options(modes.filter(([id])=>id!=='d6'),'manual')+'</select></label></div>'+btn('tracker-add','Aggiungi risorsa','primary')):'');
 }
 
-function conditionGrid(active,attribute,edition="2014"){
+function conditionGrid(active,attribute,edition="2014",exhaustion=0){
+ const sheet=attribute==='data-condition';
  const applied=new Set(Array.isArray(active)?active:[]);
- const options=conditionOptions(state.conditionCatalog,edition,active);
- const knownCategories=CONDITION_CATEGORIES.map(([category,title])=>({category,title}));
+ const nativeOptions=conditionOptions(state.conditionCatalog,edition,active);
+ const source=nativeOptions.find(row=>row.id==='exhaustion');
+ // Numeric exhaustion becomes one selected virtual condition; session token
+ // condition editors retain their existing native condition identifiers.
+ const options=sheet?[
+   ...nativeOptions.filter(row=>row.id!=='exhaustion'&&!/^exhaustion:[1-6]$/.test(row.id)),
+   ...exhaustionConditionRows(edition,source)
+ ]:nativeOptions;
+ if(sheet&&exhaustion>0)applied.add('exhaustion:'+exhaustion);
+ const knownCategories=[
+   ...CONDITION_CATEGORIES.map(([category,title])=>({category,title})),
+   ...(sheet?[{category:EXHAUSTION_CONDITION_CATEGORY,title:'Indebolimento'}]:[])
+ ];
  const unknown=[...new Set(options.map(row=>row.category))]
    .filter(category=>!knownCategories.some(group=>group.category===category))
    .map(category=>({category,title:category}));
@@ -1267,7 +1289,7 @@ function conditionGrid(active,attribute,edition="2014"){
    const rows=options.filter(row=>row.category===category);
    if(!rows.length)return "";
    const expanded=category==="conditions"||rows.some(row=>applied.has(row.id));
-   return '<details class="condition-category" '+(expanded?'open':'')+'>'+
+   return '<details class="condition-category" data-condition-category="'+esc(category)+'" '+(expanded?'open':'')+'>'+
      '<summary>'+esc(title)+' <span class="condition-category-count">'+rows.length+'</span></summary>'+
      '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="'+esc(title)+'">'+
      rows.map(({id,label})=>'<label class="check condition-toggle">'+
@@ -3275,10 +3297,15 @@ async function handleField(target) {
       }else await render();
     }
   } else if(target.dataset.condition){
-    const entries=new Set(creature.conditions||[]);
-    if(target.checked) entries.add(target.dataset.condition);
-    else entries.delete(target.dataset.condition);
-    await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
+    const exhaustionPatch=exhaustionSelectionPatch(creature,target.dataset.condition,target.checked);
+    if(exhaustionPatch){
+      await patch(exhaustionPatch);
+    }else{
+      const entries=new Set(creature.conditions||[]);
+      if(target.checked) entries.add(target.dataset.condition);
+      else entries.delete(target.dataset.condition);
+      await patch({conditions:[...entries],...(target.dataset.condition==='concentrating'&&!target.checked?{concentrating_spell_id:''}:{})});
+    }
     // Update active status chips and their description sources on every edit.
     await render();
   }
@@ -6000,7 +6027,7 @@ function listen(){
     pendingFieldTimers.set(target,setTimeout(()=>{
       pendingFieldTimers.delete(target);
       if(target.isConnected && state.editor===editor)
-        handleField(target).catch(error=>message(errorMessage(error),true));
+        trackFieldWrite(target).catch(error=>message(errorMessage(error),true));
     },400));
   });
   app.addEventListener("change",e=>{
@@ -6074,7 +6101,7 @@ function listen(){
     if(!e.target?.matches(editable))return;
     clearTimeout(pendingFieldTimers.get(e.target));
     pendingFieldTimers.delete(e.target);
-    handleField(e.target).catch(error=>message(errorMessage(error),true));
+    trackFieldWrite(e.target).catch(error=>message(errorMessage(error),true));
   });
   creatureInput.addEventListener("change",async()=>{
     const file=creatureInput.files?.[0];if(!file)return;

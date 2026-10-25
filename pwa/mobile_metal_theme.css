@@ -4648,3 +4648,29 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 #sheet-play-view .play-resource-rule--inactive .play-resource-power-open small{
  color:#d3a882
 }
+
+/* Condizioni: una sola scheda con tre sezioni e aggiunta discreta nel titolo. */
+.play-status-card .play-status-section{min-width:0}
+.play-status-card .play-status-section+.play-status-section{
+ border-top:1px solid #a37b4745;
+}
+.play-status-section-head{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ min-height:48px;padding:5px 10px 5px 14px;
+}
+.play-status-section-head h3{
+ min-width:0;margin:0;color:#efd4ac;
+ font:650 13px/1.35 system-ui,sans-serif;letter-spacing:.025em;
+}
+.play-status-add{
+ display:grid;place-items:center;flex:none;width:44px;height:44px;
+ padding:0;border:0;border-radius:8px;background:transparent;
+ color:#e6c392;font:400 29px/1 system-ui,sans-serif;cursor:pointer;
+}
+.play-status-add:hover{background:#a07b5030;color:#f6dba9}
+.play-status-add:focus-visible{outline:2px solid #f3cd91;outline-offset:-3px}
+.play-status-section-content{min-width:0;padding:0 10px 7px}
+.play-status-section-content .play-condition{margin:4px 5px 6px 0}
+.play-status-section-content .play-empty{margin:0;padding:8px 4px 13px;font-size:12px}
+.play-status-section-content .play-effect-row{padding-inline:4px}
+.play-status-section-content .play-effect-row:last-child{border-bottom:0}
