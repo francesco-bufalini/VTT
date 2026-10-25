@@ -871,6 +871,61 @@ async function activateClassAbility(c,calculated,ability){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);
  openDialog(dialog);
 }
+async function activateOtherAbility(c,ability,persistentKey,requested){
+ document.querySelector('#other-ability-dialog')?.remove();
+ const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
+ dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
+ const calculated=await computeLocalData(c);
+ dialog.innerHTML=actionDialogIntro(ability.name,[
+  {label:'Azione',value:ability.time||'Secondo il privilegio'},
+  {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
+  {label:'Consumo',value:Number(ability.cost)>0?ability.cost+' utilizzi':'Nessun consumo'}
+ ],ability.description||'', '', 'other-ability-close')+
+  abilityPaymentField(ability,calculated)+
+  '<p data-ability-result role="status"></p>'+
+  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
+  '<button type="button" class="btn" data-ability-cancel>Annulla</button></div>';
+ dialog.querySelectorAll('[data-ability-cancel],[data-act="other-ability-close"]').forEach(button=>
+  button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+ dialog.querySelector('[data-ability-confirm]').addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   const fresh=await computeLocalData(current);
+   const panels=battleActionPanels(current,fresh,state.spellCatalog||[],state.featureActionOverrides||[],
+    state.generalActionSupplements||[],readActionVariants(),
+    abilitiesForCreature(current,state.abilityCatalog||[],fresh));
+   const power=requested.startsWith('activated:')?
+    abilitiesForCreature(current,state.abilityCatalog||[],fresh)
+     .find(row=>String(row.id)===requested.slice('activated:'.length)):null;
+   const currentAbility=panels.abilityEntries.find(row=>
+     String(row.id||row.ability_id||row.name)===requested)||
+    (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
+   if(!currentAbility)throw Error('Capacità non più disponibile.');
+   const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
+    throw Error('Tracker non collegato alla capacità.');
+   const spend=choice===undefined||choice!=='';
+   await patch(record=>{
+    const changes=cost&&spend?spendTrackerUses(record,currentAbility.tracker_id,cost,fresh.trackers):{};
+    if(persistentKey){
+     if(record.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
+     changes.active_class_features={...(record.active_class_features||{}),
+      [persistentKey]:{name:currentAbility.name,origin_id:currentAbility.origin_id||currentAbility.feature_id||requested,
+       rules_version:record.rules_version||'2014',enhanced:false}};
+    }
+    return changes;
+   });
+   if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();closeDialog(dialog,{remove:true});await render();
+   message(cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
+    currentAbility.name+': utilizzo confermato senza consumo.');
+  }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
+}
 async function syncFormPresentation(c){
  if(c.linked_token_sync_id&&state.paired&&state.online){
   const result=await action('set_appearance',{token_id:c.linked_token_sync_id,owner_id:await ownerId(),
@@ -4041,26 +4096,7 @@ async function handleAction(target){
     if(ability.class_feature_id){
       await activateClassAbility(c,calculated,ability);return;
     }
-    const cost=Math.max(0,Number(ability.cost)||0);
-    const persistentKey=String(target.dataset.persistentKey||'');
-    if(persistentKey){
-      await patch(current=>{
-        if(current.active_class_features?.[persistentKey])throw Error('Capacità già attiva.');
-        const changes=cost?spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers):{};
-        changes.active_class_features={...(current.active_class_features||{}),
-          [persistentKey]:{name:ability.name,origin_id:ability.origin_id||ability.feature_id||requested,
-            rules_version:current.rules_version||'2014',enhanced:false}};
-        return changes;
-      });
-      await render();
-      return;
-    }
-    if(cost){
-      await patch(current=>spendTrackerUses(current,ability.tracker_id,cost,calculated.trackers));
-    }
-    await render();
-    message(cost?'Uso di '+ability.name+' registrato · '+cost+' utilizzi consumati.':
-      ability.name+': consulta la descrizione per applicarne gli effetti.');
+    await activateOtherAbility(c,ability,String(target.dataset.persistentKey||''),requested);
     return;
   }
   if(act==='tracker-reset'){
@@ -4370,12 +4406,9 @@ async function handleAction(target){
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
-    dialog.innerHTML='<h2>'+esc(spell.name||id)+'</h2>'+
-      '<p class="hint magic-spell-metadata">'+(level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
-      (detailed.school?' · '+esc(detailed.school):'')+(detailed.source?' · '+esc(detailed.source):'')+'</p>'+
-      '<dl class="magic-spell-facts">'+spellFacts(detailed).map(({label,value})=>
-         '<div class="magic-spell-fact"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+ 
-       '<div class="magic-spell-description">'+esc(description)+'</div>'+
+    dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts(detailed),description,
+      (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
+      (detailed.school?' · '+detailed.school:'')+(detailed.source?' · '+detailed.source:''),'action-cast-cancel')+
       (detailed._description_warning?'<p class="hint">'+esc(detailed._description_warning)+'</p>':'')+
       (entry&&options.length?
         '<label>Livello di lancio / risorsa<select id="action-cast-choice">'+options.map(([value,label])=>'<option value="'+esc(value)+'"'+(value===clickedSlot?' selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>':
