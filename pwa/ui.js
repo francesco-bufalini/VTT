@@ -4664,9 +4664,10 @@ async function handleAction(target){
     const attackOrigin=attackGrantOrigin(calculated,attackId);
     const sourceAttack=attack?{...attack,origin_id:attackOrigin}:null;
     const preview=damageRollTerms(formula,type,sourceAttack);
-    const bonuses=rollOptionalDice(creature,calculated,
-      applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],state.calculated),
-      {kind:'damage',attackId});
+    const bonuses=rollOptionalDice(creature,calculated,[
+      ...applicableDiceBonuses(creature,'attack_damage:'+attackId,state.spellCatalog||[],calculated),
+      ...classFeatureRollBonuses(creature,calculated,'attack_damage:'+attackId)
+     ],{kind:'damage',attackId});
     const dialog=openUnifiedRollDialog({kind:'damage',heading:label,modifier:preview.modifier,
       rollType:'Tiro per danni',formula:sheetRollOriginHtml(preview.segments,esc),
       bonuses,creatureId:creature.id||'',damageFormula:formula,damageLabel:label,damageType:type});
@@ -4745,7 +4746,8 @@ async function handleAction(target){
     if(!creature||creature.id!==dialog.dataset.creatureId)throw Error('La creatura del tiro è cambiata');
     if(row.class_feature_id){
       // Uses the same feature confirmation and payment plan as Battle.
-      const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollTarget;
+      const fresh=await computeLocalData(creature),rollTarget=dialog.dataset.rollKind==='damage'?
+        'attack_damage:'+String(dialog.dataset.damageAttackId||''):dialog.dataset.rollTarget;
       const valid=classFeatureRollBonuses(creature,fresh,rollTarget).find(item=>
         item.id===row.id&&item.origin_id===row.origin_id);
       const action=classFeatureEntries(creature,fresh).find(item=>
@@ -4756,7 +4758,7 @@ async function handleAction(target){
         onClosed:()=>{if(target.isConnected&&target.dataset.rollUsed!=='true')target.disabled=false;},
         onConfirmed:()=>{
           if(!dialog.isConnected||dialog.dataset.rolling==='true')return;
-          dialog.usedRollBonuses.push({...row,flat_bonus:valid.flat_bonus});
+          dialog.usedRollBonuses.push({...row,...(Object.hasOwn(valid,'flat_bonus')?{flat_bonus:valid.flat_bonus}:{dice:valid.dice})});
           target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
           dialog.renderRollFormula?.();
         }
@@ -4845,13 +4847,26 @@ async function handleAction(target){
       const result=dialog.querySelector('[data-roll-result]');
       if(dialog.dataset.rollKind==='damage'){
         const chosen=chosenRollBonuses(dialog);
-        const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>'+'+row.dice).join('');
+        const fullFormula=dialog.dataset.damageFormula+chosen.map(row=>
+          Object.hasOwn(row,'flat_bonus')?(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice).join('');
         const outcome=rollBattleDamage(fullFormula,randomDie);
         state.roll={...outcome,label:'Danni · '+dialog.dataset.damageLabel+
           (dialog.dataset.damageType?' · '+dialog.dataset.damageType:''),author:selectedName()};
         state.rollHistory.unshift({...state.roll});
         result.hidden=false;
         result.innerHTML=rollDieResultMarkup(outcome);
+        // A paid class-feature modifier applies to one damage roll only.
+        // Keep the existing optional weapon dice behavior unchanged.
+        const oneShot=new Set(chosen.filter(row=>row.class_feature_id).map(row=>row.selectionId));
+        if(oneShot.size){
+          dialog.usedRollBonuses=dialog.usedRollBonuses.filter(row=>!oneShot.has(row.selectionId));
+          for(const useButton of dialog.querySelectorAll('[data-roll-use]')){
+            const item=dialog.rollBonuses[Number(useButton.dataset.rollUse)];
+            if(oneShot.has(item?.selectionId)){
+              useButton.disabled=false;useButton.dataset.rollUsed='false';useButton.textContent='Usa';
+            }
+          }
+        }
         // Usage was spent by the explicit Usa action. Rerolling in this dialog
         // must not silently consume the same tracker again.
         dialog.renderRollFormula?.();

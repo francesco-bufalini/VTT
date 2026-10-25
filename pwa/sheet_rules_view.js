@@ -1,4 +1,5 @@
 import {hitDicePools} from './character_core.js';
+import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
 import {actionGlyphKey,actionGlyph} from "./action_economy.js";
@@ -424,6 +425,59 @@ const spellActionTime=spell=>{
  return ({action:'action',bonus:'bonus','bonus action':'bonus',reaction:'reaction',free:'free',
   azione:'action','azione bonus':'bonus',reazione:'reaction'})[unit]||'contextual';
 };
+
+// Every tracker-linked bonus uses one projection in the Resources tab, whether
+// it is a flat modifier, a bonus die, or an attack-specific extra damage die.
+// Sources must still be enabled and their tracker must exist.
+export function trackerRollBonusRows(record={},calculated={}){
+ const trackers=new Set((calculated.trackers||[]).filter(t=>!t.disabled).map(t=>t.id));
+ const enabled=row=>!row.disabled&&record.origin_enabled?.[row.origin_id]!==false&&
+  !(record.proficiency_origins||[]).some(origin=>origin?.id===row.origin_id&&origin.disabled);
+ const classes=classFeatureRollResourceBonuses(record,calculated);
+ const attacks=(calculated.trait_state_optional_dice||[]).map(row=>({
+  ...row,name:row.name||row.origin_name||'Danno aggiuntivo',
+  targets:['attack_damage:'+row.attack_id]}));
+ const user=[...(record.dice_bonuses||[]),...(record.formula_bonuses||[])]
+  .filter(row=>row?.tracker_id&&enabled(row))
+  .flatMap(row=>{
+   const dice=String(row.dice||'').trim(),flat=Number(row.flat_bonus??row.expression);
+   if(!dice&&!Number.isFinite(flat))return [];
+   return [{...row,name:row.name||row.origin_name||'Bonus',
+    targets:Array.isArray(row.targets)?row.targets:[row.target],
+    ...(dice?{dice}:{flat_bonus:flat})}];
+  });
+ const seen=new Set();
+ return [...classes,...attacks,...user].filter(row=>{
+  if(!row.tracker_id||!trackers.has(row.tracker_id)||!enabled(row))return false;
+  const key=[row.tracker_id,row.id||row.name,row.dice||row.flat_bonus,(row.targets||[]).join('|')].join('::');
+  if(seen.has(key))return false;
+  seen.add(key);return true;
+ });
+}
+export function trackerRollBonusTargets(row={},calculated={}){
+ const labels={
+  ability_check:'Prove di caratteristica',saving_throw:'Tiri salvezza',
+  attack_roll:'Tiri per colpire',damage_roll:'Tiri per i danni',
+  any_d20:'Tiri d20',initiative:'Iniziativa',
+  spell_attack:'Attacchi con incantesimi',spell_damage:'Danni degli incantesimi'
+ };
+ const values=(Array.isArray(row.targets)?row.targets:[row.target]).filter(Boolean);
+ const display=target=>{
+  if(labels[target])return labels[target];
+  if(target.startsWith('attack_damage:')||target.startsWith('attack_hit:')){
+   const attack=(calculated.attacks||[]).find(a=>a.id===target.split(':').slice(1).join(':'));
+   return (target.startsWith('attack_damage:')?'Danni':'Tiri per colpire')+
+    (attack?' · '+attack.name:' · attacco');
+  }
+  if(target.startsWith('save:'))return 'TS '+target.slice(5).toUpperCase();
+  if(target.startsWith('skill:'))return 'Prova · '+target.slice(6);
+  if(target.startsWith('ability_check:')||target.startsWith('ability_mod:'))
+   return 'Prova '+target.split(':')[1].toUpperCase();
+  return target.replaceAll('_',' ');
+ };
+ return [...new Set(values.map(display))].join(' · ')||'Tiro specificato dal tratto';
+}
+
 export function battleResourcePowers(calculated={},classAbilities=[],activated=[],spells=[]){
  const trackers=(calculated.trackers||[]).filter(row=>!row.disabled);
  const keyFor=(cost,trackerId)=>{
@@ -581,6 +635,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    powerGroups.set(key,abilities);
   }
   const powerRows=battleResourcePowers(d,view.battleActions?.abilityEntries||[],view.battleAbilities||[],view.battleSpells||spells);
+  const rollBonuses=trackerRollBonusRows(c,d);
+  const bonusRows=trackerId=>rollBonuses.filter(row=>row.tracker_id===trackerId).map(row=>{
+   const value=Object.hasOwn(row,'flat_bonus')?String(Number(row.flat_bonus)>=0?'+':'')+row.flat_bonus:'+'+row.dice;
+   const originId=row.origin_id||'';
+   const content='<span><strong>'+esc(value+' · '+(row.name||'Bonus'))+'</strong><small>'+esc(trackerRollBonusTargets(row,d))+'</small></span>';
+   return '<div class="play-resource-power-row play-resource-bonus-row" data-roll-bonus-id="'+esc(row.id||row.name||'')+'">'+
+    (originId?'<button type="button" class="play-resource-power-open" data-act="power-trait" data-origin-id="'+esc(originId)+'" aria-label="Apri il tratto di origine del bonus">'+icon('proficiency')+content+'</button>':
+      '<span class="play-resource-power-open">'+icon('proficiency')+content+'</span>')+'</div>';
+  }).join('');
   const traits=view.battleTraits||[];
   const cleanOrigin=id=>String(id||'').replace(/^feature:/,'');
   const featureFor=(ids=[],name='')=>{
@@ -614,9 +677,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
      (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'')+
      '<button type="button" class="play-resource-reset" data-act="tracker-reset" data-tracker-id="'+esc(tracker.id)+'"'+
      (Number(tracker.spent||0)===0?' disabled':'')+'>Ripristina tutti gli utilizzi</button></section>';
-   source.insertAdjacentHTML('beforeend',detail);
+   source.insertAdjacentHTML('beforeend',bonusRows(tracker.id)+detail);
   }
-  const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key)).map(row=>{
+  const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key))
+   .filter(row=>!row.classAction?.roll_bonus).map(row=>{
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
    // Abilities can confirm "Nessun tracker" even if their resource is spent.
@@ -652,7 +716,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
-   const persistent=action.class_feature_id==='flash_of_genius'?false:persistentBattleAbility(row);
+   const persistent=persistentBattleAbility(row);
    const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':action.class_feature_id||'battle:'+String(id);
    const active=persistent&&(
     !!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true);
@@ -676,7 +740,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
     '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
     '<span class="play-resource-count">'+left+' <small>/ '+esc(t.max)+'</small></span></button>'+
-    '</div>'+abilityButtons(key)+'</div>';
+    '</div>'+bonusRows(t.id)+abilityButtons(key)+'</div>';
   }).join('');
   // Unlimited abilities belong to their granting trait rather than to a
   // fictitious free-use tracker. Keep paid powers under their real trackers.

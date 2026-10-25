@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses} from '../feature_mechanics.js';
+import {trackerRollBonusRows,trackerRollBonusTargets} from '../sheet_rules_view.js';
 import {traitStateActivationPatch} from '../trait_state_rules.js';
 import {recoveryPatch} from '../native_sheet.js';
 const read=name=>JSON.parse(readFileSync(new URL('../catalog/'+name+'.json',import.meta.url),'utf8'));
 const catalogs={classMechanics:read('class_mechanics'),classFeatures:read('classes'),
  abilityGrants:read('ability_grants'),proficiencyGrants:read('proficiency_grants'),
- traitStates:read('trait_states').states};
+ traitStates:read('trait_states').states,rollBonusRules:read('roll_bonus_rules').features};
 const sheet=(name,level=5,source='PHB',subclass='')=>({kind:'character',rules_version:source==='XPHB'?'2024':'2014',level,
  classes:[{name,level,source,subclass,subclass_source:source}],abilities:{str:10,dex:14,con:18,int:18,wis:18,cha:18},
  inventory:[],armor_natural_formula:'10 + dex_mod'});
@@ -125,6 +126,34 @@ test('Armor Model supports the explicit no-tracker option without charging on de
  const deactivate=traitStateActivationPatch(active,fresh.features,catalog,'armor_model:infiltrator',fresh.trackers);
  assert.equal(deactivate.resource_tracker_spent,undefined);
  assert.throws(()=>traitStateActivationPatch(r,c.features,catalog,'armor_model:infiltrator',c.trackers,{tracker_id:'other'}),/non collegato/);
+});
+
+test('tracker resources describe both structured flat and attack-specific dice bonuses',()=>{
+ const artificer=sheet('Artificer',8,'TCE','Armorer');
+ artificer.inventory=[{id:'armor',type:'HA',ac:18,quantity:1,equipped_slots:['body']}];
+ const record={...artificer,artificer_armor_model:'infiltrator'};
+ const calculated=calculateSheet(record,catalogs);
+ const rows=trackerRollBonusRows(record,calculated);
+ const flash=rows.find(row=>row.class_feature_id==='flash_of_genius');
+ assert.equal(flash.flat_bonus,4);
+ assert.equal(flash.tracker_id,'class:artificer:tce:flash_of_genius');
+ assert.equal(trackerRollBonusTargets(flash,calculated),'Prove di caratteristica · Tiri salvezza');
+ const lightning=rows.find(row=>row.tracker_id==='feature:lightning_launcher:extra_damage');
+ assert.equal(lightning.dice,'1d6');
+ assert.match(trackerRollBonusTargets(lightning,calculated),/Danni · Lightning Launcher/);
+ // The engine must also display a new data-defined bonus without bespoke JS.
+ const custom={...catalogs,rollBonusRules:[...catalogs.rollBonusRules,{
+  id:'test_check_bonus',class_name:'Artificer',class_source:'TCE',
+  feature_name:'Flash of Genius',label:'Bonus sintetico',
+  mode:'context',resource_name:'Flash of Genius',cost:1,
+  bonus:{name:'Bonus sintetico',targets:['saving_throw'],dice:'1d4'}
+ }]};
+ const expanded=calculateSheet(record,custom);
+ const extra=trackerRollBonusRows(record,expanded).find(row=>row.id==='class_feature:test_check_bonus');
+ assert.equal(extra?.dice,'1d4');
+ assert.equal(trackerRollBonusTargets(extra,expanded),'Tiri salvezza');
+ assert.equal(classFeatureRollBonuses(record,expanded,'save:wis').some(row=>row.id===extra.id),true);
+ assert.equal(classFeatureRollBonuses(record,expanded,'skill:arcana').some(row=>row.id===extra.id),false);
 });
 
 test('Lampo di genio is an optional flat INT bonus only on checks and saves',()=>{

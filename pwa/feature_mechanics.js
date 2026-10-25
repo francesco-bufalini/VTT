@@ -9,7 +9,6 @@ const subclass=value=>low(value).replace(/^(?:circle of |way of |oath of |school
 // never determine effects, payments or eligibility.
 export const CLASS_FEATURE_RULES=[
  ["magical_tinkering", "Artificer", "Magical Tinkering", "Congegni magici", "", "action", "context"],
- ["flash_of_genius", "Artificer", "Flash of Genius", "Lampo di genio", "Flash of Genius", "reaction", "context"],
  ["defensive_field", "Artificer", "Defensive Field", "Campo difensivo", "Defensive Field", "bonus", "temporary_hp"],
  ["experimental_elixir", "Artificer", "Experimental Elixir", "Elisir sperimentale", "Experimental Elixir", "action", "context"],
  ["eldritch_cannon", "Artificer", "Eldritch Cannon", "Cannone arcano", "Eldritch Cannon", "action", "context"],
@@ -84,6 +83,28 @@ export function classFeatureEntries(record={},calculated={}){
    feature_name:feature.name,origin_name:'Tratto · '+feature.name,
    active:mode==='toggle'&&!!record.active_class_features?.[key]});
  }
+ // A trait-sourced roll bonus is an ordinary contextual class action. Its
+ // mechanics, supported rolls and resource are all declared in the catalog.
+ for(const rule of rows(calculated.roll_bonus_rules)){
+  if(!rule?.id||!rule.feature_name||!rule.bonus)continue;
+  const feature=rows(calculated.features).find(f=>featureEnabled(record,f)&&
+   low(f.name).replaceAll("'",'’')===low(rule.feature_name).replaceAll("'",'’')&&
+   String(f.origin_key||'').startsWith('class|')&&
+   low(f.requirements?.class_name||f.class_name||String(f.origin_key).split('|')[2])===low(rule.class_name)&&
+   (!rule.class_source||low(f.class_source||String(f.origin_key).split('|')[1])===low(rule.class_source)));
+  if(!feature)continue;
+  const tracker=rows(calculated.trackers).find(t=>!t.disabled&&
+   low(t.name)===low(rule.resource_name)&&
+   (!t.origin_class||low(t.origin_class)===low(rule.class_name)));
+  output.push({id:'class_feature:'+rule.id,class_feature_id:rule.id,name:rule.label||feature.name,
+   time:rule.time||'contextual',type:'Capacità',mode:rule.mode||'context',
+   description:feature.entries??feature.description??'',class_name:rule.class_name,
+   resource_name:rule.resource_name||'',tracker:tracker?.name||rule.resource_name||'',
+   tracker_id:tracker?.id||'',cost:Math.max(0,Number(rule.cost)||0),
+   origin:'personal',origin_id:feature.origin_id,feature_id:feature.origin_id,
+   feature_name:feature.name,origin_name:'Tratto · '+feature.name,
+   roll_bonus:rule.bonus});
+ }
  for(const option of metamagicOptions(record)){
   const tracker=rows(calculated.trackers).find(t=>!t.disabled&&low(t.name)==='sorcery points'&&low(t.origin_class)==='sorcerer');
   output.push({id:'metamagic:'+option.name,class_feature_id:'metamagic:'+option.name,name:option.name,
@@ -94,24 +115,34 @@ export function classFeatureEntries(record={},calculated={}){
  }
  return output;
 }
-// Optional class-feature bonuses are offered only to eligible rolls. The
-// feature's use is paid by the same classFeatureActivationPatch as its battle
-// button; merely listing it never modifies scores or spends a tracker.
+// Generic optional bonuses: neither feature identities nor formulae are
+// interpreted from prose. This also provides the resource-sheet projections.
+export function classFeatureRollResourceBonuses(record={},calculated={}){
+ return classFeatureEntries(record,calculated).flatMap(ability=>{
+  const bonus=ability.roll_bonus;
+  if(!bonus||!rows(bonus.targets).length)return [];
+  const modifier=String(bonus.ability_modifier||'');
+  const value=modifier?Number(calculated.values?.['ability_mod:'+modifier]):Number(bonus.flat_bonus);
+  const flat=Number.isFinite(value)?Math.max(Number(bonus.minimum??-Infinity),value):NaN;
+  const dice=String(bonus.dice||'').trim();
+  if(!Number.isFinite(flat)&&!/^[1-9]\d*d(?:4|6|8|10|12|20|100)(?:[+-]\d+)?$/.test(dice))return [];
+  return [{id:ability.id,class_feature_id:ability.class_feature_id,
+   origin_id:ability.origin_id,origin_name:ability.origin_name,
+   name:bonus.name||ability.name,description:ability.description,
+   ...(Number.isFinite(flat)?{flat_bonus:flat}:{dice}),
+   targets:bonus.targets,tracker_id:ability.tracker_id,
+   tracker_cost:Math.max(0,Number(ability.cost)||0),optional:true}];
+ });
+}
 export function classFeatureRollBonuses(record={},calculated={},target=''){
- const isCheck=target==='initiative'||/^(?:skill:|ability_check:|ability_mod:)/.test(target);
- const isSave=target.startsWith('save:');
- if(!isCheck&&!isSave)return [];
- const ability=classFeatureEntries(record,calculated).find(row=>
-   row.class_feature_id==='flash_of_genius');
- if(!ability)return [];
- const intelligence=Number(calculated.values?.['ability_mod:int']);
- const amount=Math.max(1,Number.isFinite(intelligence)?intelligence:
-   Math.floor((Number(record.abilities?.int??10)-10)/2));
- return [{id:ability.id,class_feature_id:ability.class_feature_id,
-   origin_id:ability.origin_id,origin_name:'Tratto · '+ability.feature_name,
-   description:ability.description,flat_bonus:amount,target,
-   tracker_id:ability.tracker_id,tracker_cost:Math.max(0,Number(ability.cost)||0),
-   optional:true}];
+ const applicable=targets=>rows(targets).some(value=>value===target||
+  value==='ability_check'&&(target==='initiative'||/^(?:skill:|ability_check:|ability_mod:)/.test(target))||
+  value==='saving_throw'&&target.startsWith('save:')||
+  value==='attack_roll'&&/^(?:attack_hit:|casting_hit:)/.test(target)||
+  value==='damage_roll'&&/^(?:attack_damage:|spell_damage)/.test(target)||
+  value==='any_d20'&&(target==='initiative'||/^(?:skill:|ability_check:|ability_mod:|save:|attack_hit:|casting_hit:)/.test(target)));
+ return classFeatureRollResourceBonuses(record,calculated).filter(row=>applicable(row.targets))
+  .map(row=>({...row,target}));
 }
 export function classFeatureLevel(record,name){
  const member=rows(record.classes).find(c=>low(c.name)===low(name));
