@@ -680,6 +680,7 @@ function calculateSheetValues(record={},catalogs={}){
   const warnings=new Set(),index=catalogs.abilityGrants,classesCatalog=catalogs.classMechanics;
   if(!index)warnings.add("Indice delle origini non caricato: i bonus automatici sono incompleti");
   if(!classesCatalog)warnings.add("Catalogo classi non caricato: dadi vita automatici non disponibili");
+  if(catalogs.speciesAttacks?.load_error)warnings.add("Catalogo attacchi naturali non disponibile: gli attacchi della specie sono incompleti");
   const classes=localClasses(record),kind=record.kind==="monster"?"monster":"character";
   const exhaustion_effects=activeExhaustionEffects(record,catalogs.exhaustionRules||{});
   if(kind==='character'&&!variantOwns(record,'movement')){
@@ -1127,8 +1128,11 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
-    fetch('/catalog/species_attacks.json').then(r=>{if(!r.ok)throw Error('Attacchi naturali non disponibili');return r.json();})
-      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}),
+    // This catalog is supplemental. A missing/stale native host must not also
+    // suppress all fixed racial ability and proficiency grants in the sheet.
+    fetch('/catalog/species_attacks.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[],load_error:true})
+      .catch(error=>{console.warn('VTT: catalogo attacchi delle specie non disponibile',error);return {races:[],load_error:true};}),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
