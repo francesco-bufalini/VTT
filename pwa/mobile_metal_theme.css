@@ -4672,28 +4672,34 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
   padding:7px 9px;
 }
 
-/* Experimental flat-black presentation for the Azioni category only.
-   Keep the existing typography, gold borders, icons and focus states.
-   Neither Risorse, Attacchi nor Prove abilità changes its background. */
-#sheet-play-view .play-card.play-battle-shell:has(> .play-battle-disclosure[data-battle-action="others"]),
-#sheet-play-view .play-battle-disclosure[data-battle-action="others"],
-#sheet-play-view [data-battle-action="others"] .play-battle-summary,
-#sheet-play-view [data-battle-action="others"] .play-battle-action-group,
-#sheet-play-view [data-battle-action="others"] .play-battle-action-heading,
-#sheet-play-view [data-battle-action="others"] .play-battle-action-rows,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-entry,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-line,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-details,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-details>summary,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-expanded,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-rolls,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-roll,
-#sheet-play-view [data-battle-action="others"] .play-battle-effect,
-#sheet-play-view [data-battle-action="others"] .play-battle-effect-roll,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-map,
-#sheet-play-view [data-battle-action="others"] .play-battle-attack-direct-button {
- background:#000;
- background-image:none;
+/* Battle / Azioni: every table and its rows reveal the very same backdrop
+   as the creature sheet. Transparent surfaces follow the page background
+   exactly, including its subtle gradient, instead of painting a second
+   dark layer. Gold dividers and actionable dice/buttons retain their theme. */
+#sheet-play-view[data-sheet="battle"] > .play-card.play-battle-shell,
+#sheet-play-view[data-sheet="battle"] .play-battle-disclosure,
+#sheet-play-view[data-sheet="battle"] .play-battle-disclosure > .play-battle-summary,
+#sheet-play-view[data-sheet="battle"] .play-battle-action-group,
+#sheet-play-view[data-sheet="battle"] .play-battle-action-heading,
+#sheet-play-view[data-sheet="battle"] .play-battle-action-rows,
+#sheet-play-view[data-sheet="battle"] .play-battle-action-rows > .action-economy-row,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-entry,
+#sheet-play-view[data-sheet="battle"] .play-battle-ability-entry,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-line,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-details,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-details > summary,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-expanded,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-rolls,
+#sheet-play-view[data-sheet="battle"] .play-battle-check-heading,
+#sheet-play-view[data-sheet="battle"] .play-battle-effect,
+#sheet-play-view[data-sheet="battle"] .play-battle-attack-direct-button,
+#sheet-play-view[data-sheet="battle"] .play-resource-group,
+#sheet-play-view[data-sheet="battle"] .play-resource-group > .play-resource,
+#sheet-play-view[data-sheet="battle"] .play-resource-ungrouped,
+#sheet-play-view[data-sheet="battle"] .play-resource-ungrouped > .play-resource,
+#sheet-play-view[data-sheet="battle"] .play-resource-power-row,
+#sheet-play-view[data-sheet="battle"] .play-resource-rule--attack > .play-resource-power-open {
+ background:transparent;
 }
 
 /* Active status names navigate to their read-only trait; ending the state
