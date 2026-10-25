@@ -4503,5 +4503,134 @@
       },
       "application_kind": "enhancement"
     }
+  ],
+  "source_ability_choices": {
+    "MPMM": [
+      {
+        "parts": [
+          {
+            "choose": {
+              "from": [
+                "str",
+                "dex",
+                "con",
+                "int",
+                "wis",
+                "cha"
+              ],
+              "amount": 2
+            }
+          },
+          {
+            "choose": {
+              "from": [
+                "str",
+                "dex",
+                "con",
+                "int",
+                "wis",
+                "cha"
+              ],
+              "amount": 1
+            }
+          }
+        ],
+        "distinct": true
+      },
+      {
+        "choose": {
+          "from": [
+            "str",
+            "dex",
+            "con",
+            "int",
+            "wis",
+            "cha"
+          ],
+          "count": 3,
+          "amount": 1
+        }
+      }
+    ]
+  },
+  "advancement_rules": [
+    {
+      "id": "asi_2014",
+      "feature_name": "Ability Score Improvement",
+      "sources": [
+        "PHB",
+        "TCE"
+      ],
+      "feat_alternative": true,
+      "feat_optional": true,
+      "ability_choices": [
+        {
+          "choose": {
+            "from": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis",
+              "cha"
+            ],
+            "amount": 2
+          }
+        },
+        {
+          "choose": {
+            "from": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis",
+              "cha"
+            ],
+            "count": 2,
+            "amount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "asi_2024",
+      "feature_name": "Ability Score Improvement",
+      "sources": [
+        "XPHB",
+        "EFA"
+      ],
+      "feat_alternative": true,
+      "feat_optional": false,
+      "ability_choices": [
+        {
+          "choose": {
+            "from": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis",
+              "cha"
+            ],
+            "amount": 2
+          }
+        },
+        {
+          "choose": {
+            "from": [
+              "str",
+              "dex",
+              "con",
+              "int",
+              "wis",
+              "cha"
+            ],
+            "count": 2,
+            "amount": 1
+          }
+        }
+      ]
+    }
   ]
 }
