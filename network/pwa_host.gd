@@ -77,6 +77,7 @@ const FILES := {
 	"/catalog/trait_states.json": ["res://pwa/catalog/trait_states.json", "application/json; charset=utf-8"],
 	"/catalog/roll_bonus_rules.json": ["res://pwa/catalog/roll_bonus_rules.json", "application/json; charset=utf-8"],
 	"/catalog/species_types.json": ["res://pwa/catalog/species_types.json", "application/json; charset=utf-8"],
+	"/catalog/species_attacks.json": ["res://pwa/catalog/species_attacks.json", "application/json; charset=utf-8"],
 	"/catalog/proficiency_grants.json": ["res://pwa/catalog/proficiency_grants.json", "application/json; charset=utf-8"],
 	"/catalog/player.json": ["res://vtt/data/player_5etools_catalog.json", "application/json; charset=utf-8"],
 	"/catalog/backgrounds.json": ["res://vtt/data/compendium_backgrounds_5etools.json", "application/json; charset=utf-8"],
