@@ -4756,7 +4756,7 @@ async function handleAction(target){
         onClosed:()=>{if(target.isConnected&&target.dataset.rollUsed!=='true')target.disabled=false;},
         onConfirmed:()=>{
           if(!dialog.isConnected||dialog.dataset.rolling==='true')return;
-          dialog.usedRollBonuses.push({...row,flat_bonus:valid.flat_bonus});
+          dialog.usedRollBonuses.push({...row,...(Object.hasOwn(valid,'flat_bonus')?{flat_bonus:valid.flat_bonus}:{dice:valid.dice})});
           target.textContent='Usato';target.dataset.rollUsed='true';target.disabled=true;
           dialog.renderRollFormula?.();
         }
