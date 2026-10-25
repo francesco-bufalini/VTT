@@ -79,7 +79,7 @@ try {
     const paths = ["/", "/index.html", "/main.js", "/ui.js", "/storage.js",
       "/creatures.js", "/styles.css", "/catalog/class_mechanics.json",
       "/catalog/ability_grants.json", "/catalog/spells.json", "/catalog/player.json",
-      "/catalog/miniatures.json", "/catalog/combat_action_supplements_5etools.json",
+      "/catalog/miniatures.json", "/catalog/species_attacks.json", "/catalog/combat_action_supplements_5etools.json",
       "/icons/action_controls.svg", "/icons/gold_generated/gold_2.svg",
       "/icons/info/identity.svg", "/icon-192.png"];
     return (await Promise.all(paths.map(path => cache.match(path)))).every(Boolean);
