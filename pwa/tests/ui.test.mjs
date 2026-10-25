@@ -499,13 +499,16 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
-  assert.equal(sheetChoices.length,20);
-  assert.ok(sheetChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
-    .compare(sheetChoices[index-1].textContent,row.textContent)<=0));
+  assert.equal(sheetChoices.length,25,"19 standard conditions and six exhaustion levels");
+  const coreChoices=[...document.querySelectorAll('[data-condition-category="conditions"] .condition-toggle')];
+  assert.equal(coreChoices.length,19);
+  assert.ok(coreChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
+    .compare(coreChoices[index-1].textContent,row.textContent)<=0));
+  assert.equal(document.querySelectorAll('[data-condition-category="exhaustion_levels"] [data-condition^="exhaustion:"]').length,6);
   assert.equal(document.querySelector('[data-condition="grappled"]').closest('label').textContent.trim(),'Afferrato');
   assert.equal(document.querySelector('[data-condition="restrained"]').closest('label').textContent.trim(),'Trattenuto');
   assert.equal(document.querySelector('[data-condition="prone"]').closest('label').textContent.trim(),'Prono');
-  assert.ok(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'));
+  assert.equal(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'),null);
   assert.equal(document.querySelector('[data-condition-count]').textContent,'0');
   document.querySelector('[data-condition="poisoned"]').click();
   await until(async()=>{
