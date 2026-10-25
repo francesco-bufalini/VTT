@@ -95,14 +95,35 @@ try{
       'Unlimited abilities are not placed in a fake free tracker');
      const actionSection=page.locator('[data-battle-action="others"]');
      assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
-     const blackSurfaces=await actionSection.evaluate(panel=>[
-      panel.closest('.play-card'),panel,
-      panel.querySelector('.play-battle-action-heading'),
-      panel.querySelector('.play-battle-attack-entry')
-     ].map(node=>getComputedStyle(node).backgroundColor));
-     assert.deepEqual(blackSurfaces,['rgb(0, 0, 0)','rgb(0, 0, 0)',
-      'rgb(0, 0, 0)','rgb(0, 0, 0)'],
-      'Azioni panel, timing box and entry surfaces are consistently black');
+     const sheetBackdrops=await page.locator('#sheet-play-view[data-sheet="battle"]').evaluate(sheet=>{
+      const selectors=[
+       '[data-battle-action="resources"]',
+       '[data-battle-action="resources"] .play-resource-power-row',
+       '[data-battle-action="attacks"]',
+       '[data-battle-action="attacks"] .play-battle-attack-entry',
+       '[data-battle-action="others"]',
+       '[data-battle-action="others"] .play-battle-action-heading',
+       '[data-battle-action="others"] .play-battle-attack-entry',
+       '[data-battle-action="checks"]',
+       '[data-battle-action="checks"] .play-battle-attack-entry'
+      ];
+      return {
+       bodyBackground:getComputedStyle(document.body).backgroundImage,
+       surfaces:selectors.map(selector=>{
+        const element=sheet.querySelector(selector);
+        return {selector,background:element&&getComputedStyle(element).backgroundColor,
+         image:element&&getComputedStyle(element).backgroundImage};
+       })
+      };
+     });
+     assert.match(sheetBackdrops.bodyBackground,/gradient/,
+      'Battle panels show the existing sheet background gradient');
+     for(const surface of sheetBackdrops.surfaces){
+      assert.equal(surface.background,'rgba(0, 0, 0, 0)',
+       surface.selector+' must reveal the sheet backdrop instead of using black or a tinted box');
+      assert.equal(surface.image,'none',
+       surface.selector+' must not overlay a separate gradient on the sheet');
+     }
      assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
      assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
