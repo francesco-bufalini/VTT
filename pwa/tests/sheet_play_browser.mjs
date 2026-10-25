@@ -737,6 +737,11 @@ try{
  assert.equal(await page.locator('#sheet-play-view .play-status-card').count(),1);
  assert.deepEqual(await page.locator('#sheet-play-view .play-status-section-head h3').allTextContents(),['Condizioni','Incantesimi','Capacità']);
  assert.equal(await page.locator('#sheet-play-view .play-status-add').count(),3);
+ await page.locator('#sheet-play-view [data-state-trait="state|condition:exhaustion:2"]').click();
+ await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"][open]').waitFor();
+ assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|condition:exhaustion:2"]').textContent(),/Livello 2/);
+ assert.equal(await page.locator('#sheet-context-dialog').count(),0);
+ await sheet('conditions');
  await popup('conditions');await page.locator('#sheet-context-dialog [data-condition="poisoned"]').uncheck();await dismiss();assert.equal((await record()).conditions.includes('poisoned'),false);
  await popup('conditions');assert.match(await page.locator('#sheet-context-dialog [data-condition-category="exhaustion_levels"] summary').textContent(),/Indebolimento/);
  await page.locator('#sheet-context-dialog [data-condition="exhaustion:4"]').check();await dismiss();
@@ -748,6 +753,9 @@ try{
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return (await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light'&&r.applied===true);});
  await page.waitForFunction(()=>/Incantesimi[\s\S]*Light/.test(document.querySelector('#sheet-play-view')?.textContent||''));
  assert.match(await page.locator('#sheet-play-view').textContent(),/Incantesimi[\s\S]*Light/);
+ await page.locator('[data-state-trait="state|spell:phb2014_light"]').click();
+ await page.locator('.play-info-traits .trait-card[data-trait-key="state|spell:phb2014_light"][open]').waitFor();
+ assert.match(await page.locator('.play-info-traits .trait-card[data-trait-key="state|spell:phb2014_light"]').textContent(),/Light/);
  await sheet('battle');assert.match(await page.locator('.play-status-strip').textContent(),/Light/);
  await sheet('conditions');await page.locator('[data-act="condition-remove-spell"][data-spell-id="phb2014_light"]').click();
  await page.waitForFunction(async()=>{const {listCreatures}=await import('/creatures.js');return !(await listCreatures())[0].creature.proficiency_origins?.some(r=>r.id==='spell:phb2014_light');});
@@ -936,7 +944,10 @@ try{
    classes:[{name:'Barbarian',source:'PHB',level:5}],level:5,
    active_class_features:{rage:{name:'Ira',origin_id:'class_feature:rage',rules_version:'2014'}}},'default',row.revision);
  });
- await page.reload();await page.locator('[data-act="open"]').click();await sheet('battle');
+ await page.reload();await page.locator('[data-act="open"]').click();await sheet('conditions');
+ await page.locator('[data-state-trait="state|rage"]').click();
+ await page.locator('.play-info-traits .trait-card[data-trait-key="state|rage"][open]').waitFor();
+ await sheet('battle');
  const ragePanel=page.locator('#sheet-play-view [data-battle-action="resources"]');
  await ragePanel.locator('summary.play-battle-summary').click();
  const rage=ragePanel.locator('.play-resource-power-row').filter({has:page.locator('[data-act="condition-remove-ability"][data-ability-key="rage"]')});
