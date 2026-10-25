@@ -1252,7 +1252,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.equal(document.querySelector('#magic-tools-dialog .magic-selection-progress'),null);
  assert.equal(document.querySelector('#spell-learn-filter')?.value,'all');
  assert.equal(document.querySelector('#spell-learn-filter')?.selectedOptions[0]?.textContent,'Tutte');
- assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:\\s*0\\s*\\/\\s*\\d+/,
+ assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:\s*0\s*\/\s*\d+/,
   'Learning only shows known-spell counts without missing/excess commentary');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
  click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]');
