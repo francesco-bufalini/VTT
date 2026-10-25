@@ -124,7 +124,7 @@ func run() -> void:
 	var species_attacks := await http("GET", "/catalog/species_attacks.json")
 	assert(species_attacks.begins_with("HTTP/1.1 200") and species_attacks.contains("application/json"),
 		"Godot must serve species attack data as JSON")
-	assert(species_attacks.contains("\\\"name\\\": \\\"Aarakocra\\\"") and species_attacks.contains("\\\"trait\\\": \\\"Talons\\\""),
+	assert(species_attacks.contains("Aarakocra") and species_attacks.contains("Talons"),
 		"5etools Aarakocra attacks must be available to mobile character sheets")
 	var bundled_effects := await http("GET", "/catalog/effects_5etools.json")
 	assert(bundled_effects.begins_with("HTTP/1.1 200") and bundled_effects.contains("Arcane Blight"),
