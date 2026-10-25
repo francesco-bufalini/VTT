@@ -94,6 +94,25 @@ export function classFeatureEntries(record={},calculated={}){
  }
  return output;
 }
+// Optional class-feature bonuses are offered only to eligible rolls. The
+// feature's use is paid by the same classFeatureActivationPatch as its battle
+// button; merely listing it never modifies scores or spends a tracker.
+export function classFeatureRollBonuses(record={},calculated={},target=''){
+ const isCheck=target==='initiative'||/^(?:skill:|ability_check:|ability_mod:)/.test(target);
+ const isSave=target.startsWith('save:');
+ if(!isCheck&&!isSave)return [];
+ const ability=classFeatureEntries(record,calculated).find(row=>
+   row.class_feature_id==='flash_of_genius');
+ if(!ability)return [];
+ const intelligence=Number(calculated.values?.['ability_mod:int']);
+ const amount=Math.max(1,Number.isFinite(intelligence)?intelligence:
+   Math.floor((Number(record.abilities?.int??10)-10)/2));
+ return [{id:ability.id,class_feature_id:ability.class_feature_id,
+   origin_id:ability.origin_id,origin_name:'Tratto · '+ability.feature_name,
+   description:ability.description,flat_bonus:amount,target,
+   tracker_id:ability.tracker_id,tracker_cost:Math.max(0,Number(ability.cost)||0),
+   optional:true}];
+}
 export function classFeatureLevel(record,name){
  const member=rows(record.classes).find(c=>low(c.name)===low(name));
  return Math.max(0,Number(member?.level??(low(record.class)===low(name)?record.level:0))||0);
