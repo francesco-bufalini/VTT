@@ -119,6 +119,21 @@ export function changeKnownClassSpell(creature,member,spell,known,catalog=[]){
  map[member.id]={added:[...added],removed:[...removed]};
  return {known_spell_overrides:map};
 }
+// For spells-known casters the progression gives the expected minimum learned
+// spells; a wizard's starting spellbook has six spells and gains two per level.
+// Knowledge is separate from preparation: only learned (book) spells count.
+export function knownSpellProgress(creature={},member,classes=[],catalog=[]){
+ if(!member)return null;
+ const known=member.book?new Set(arr(creature.spellbook_spells).filter(row=>
+     Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0)>0).map(spellId)).size:
+   member.mode==='Conosciuti'?availableSpells(creature).filter(row=>
+     Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0)>0&&
+     castingSources(row,classes,catalog).includes(member.id)).length:null;
+ if(known===null)return null;
+ const minimum=member.book?6+2*(Math.max(1,Number(member.level)||1)-1):
+   Number.isInteger(member.limit)&&member.limit>=0?member.limit:null;
+ return {known,minimum};
+}
 export function classSelectionCount(creature,member,classes,catalog=[]){
  const selected=availableSpells(creature).filter(row=>castingSources(row,classes,catalog).includes(member.id));
  const level=row=>Number(row?.level??catalog.find(s=>spellId(s)===spellId(row))?.level??0);
@@ -136,15 +151,19 @@ export function classSelectionWarnings(member,count){
   .map(([label,actual,max])=>label+': '+actual+' / '+max+
    ' ('+(actual<max?'ne mancano '+(max-actual):(actual-max)+' in eccesso')+')');
 }
-export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[]}={}){
+export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[],grantedSpells=[],allowNonClass=false}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
+  if(target==='prepared_spells'&&member&&arr(grantedSpells).some(grant=>
+    String(grant.spell_id||grant.id||'')===spell.id))
+    throw Error('Incantesimo sempre disponibile da un’altra origine: non serve prepararlo.');
   if(member?.mode==='Preparati'&&spell.level===0&&target==='prepared_spells')
     throw Error('I trucchetti si imparano e sono sempre pronti: non si preparano.');
   if(member){
     if(!spellEligible(entry,member)&&!(member.mode==='Preparati'&&!entry.internal_grant&&spell.level<=member.max_level&&
-      (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id))))
+      (target==='spellbook_spells'||knownClassSpellIds(creature,member,catalog).has(spell.id)))&&
+      !(allowNonClass&&!entry.internal_grant&&spell.level<=member.max_level))
       throw Error('Incantesimo non conosciuto o non disponibile per questo livello.');
     if(target==='spellbook_spells'&&!member.book)throw Error('Questa classe non usa il libro degli incantesimi.');
     if(target==='prepared_spells'){
