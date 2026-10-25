@@ -87,7 +87,7 @@ const state = { page:"library", libraryMode:true, creatureId:null, editor:null, 
   tokenId:"", editTokenId:"", liveSnapshot:null, snapshotObjectUrl:"", snapshotKey:"", snapshotPending:false, online:false, paired:false, session:null, errors:[], messages:[],
   after:"", rollHistory:[], roll:null, diceSides:20, chatAuthor:"", stopMap:null, pollChat:null, renderTicket:0,
   sheetSearch:new Map(), sheetPopup:"", sheetPopupTitle:"", traitPopupKey:"", traitPopupConfirm:"", traitPopupDraftKind:"", traitPopupDraftTarget:"", traitRows:[], sheetSources:new Map(), librarySelectedIds:new Set(), libraryFilter:'all', libraryMiniatureId:'sariel', libraryMiniatures:[], libraryMiniatureLimit:36, sessionPane:"", disclosureState:new Map(),
-  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'class',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
+  hostReachable:false, sheetNeedsRefresh:false, conditionCatalog:null, offlineConditionCatalog:null, desktopConditionCatalog:null, catalogCategory:"items", catalogQuery:"", catalogRows:[], catalogSelected:-1, catalogResultLimit:90, spellCatalog:null, spellCatalogComplete:false, spellDemandKey:"", spellScopedLoading:false, abilityCatalog:null, spellQuery:"", spellResultLimit:60, spellTarget:"prepared_spells", spellClass:'manual',spellKnownView:'all',spellLearnFilter:'all',magicSlotLevel:1,magicSlotPact:false,infusionPending:-1,spellCatalogError:"", magicPopup:"", openDocumentInstance:"",
   castCreatureId:"", castSpellIndex:0, castLevel:1,
   attackRange:30, attackLongRange:0, attackMelee:false,
   inventorySelectedIndex:0, inventoryMenuIndex:-1, inventorySubtab:'items', inventorySelectedTabs:['items'], inventoryHighlightedIndices:[],inventorySearchLimit:75,inventorySearchMatches:[],inventorySearchCatalogError:'', scrollSpellQuery:'', pendingItemOwner:'', pendingItemContainer:'', pendingSpellChoiceId:'',
@@ -213,10 +213,35 @@ function loadFullSpellCatalog(){
   }).finally(()=>{fullSpellCatalogRequest=null;});
   return fullSpellCatalogRequest;
 }
+function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
+  // The full catalogue loads lazily. Offer the ordinary class lists immediately
+  // and add any other class names discovered when the catalogue finishes loading.
+  const names=new Set(['Artificer','Bard','Cleric','Druid','Paladin',
+    'Ranger','Sorcerer','Warlock','Wizard']);
+  for(const member of castingClasses)if(member.name)names.add(String(member.name));
+  for(const spell of state.spellCatalog||[]){
+    for(const value of Array.isArray(spell.classes)?spell.classes:[]){
+      const name=typeof value==='string'?value:value?.name;
+      if(name)names.add(String(name));
+    }
+  }
+  return [...names].sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+}
+function spellLearningFilterOptions(){
+  return '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte</option>'+
+    spellLearningClassNames().map(name=>'<option value="'+esc(name)+'"'+
+      (state.spellLearnFilter===name?' selected':'')+'>'+esc(name)+'</option>').join('');
+}
 function refreshSpellPickers(){
   // Do not recreate the modal: the player may be typing in its search field.
   const results=app.querySelector('#magic-tools-dialog[open] #spell-results');
   if(results&&['catalog','learn'].includes(state.magicPopup))results.innerHTML=renderSpellResults();
+  const classFilter=app.querySelector('#magic-tools-dialog[open] #spell-learn-filter');
+  if(classFilter){
+    const selected=classFilter.value;
+    classFilter.innerHTML=spellLearningFilterOptions();
+    classFilter.value=selected;
+  }
   const scroll=app.querySelector('#sheet-context-dialog[open] #scroll-spell-select');
   if(scroll){
     const selected=scroll.value;
@@ -481,6 +506,7 @@ async function render() {
   const previousMagic=app.querySelector('#magic-tools-dialog[open]');
   const magicScroll=previousMagic?{
     kind:previousMagic.querySelector('.magic-tools-head h2')?.textContent,
+    dialog:previousMagic.scrollTop,
     body:previousMagic.querySelector('.magic-tools-body')?.scrollTop||0,
     results:previousMagic.querySelector('#spell-results')?.scrollTop||0
   }:null;
@@ -541,10 +567,18 @@ async function render() {
       magicDialog.addEventListener('close',()=>{state.magicPopup="";},{once:true});
       if(typeof magicDialog.showModal==='function')magicDialog.showModal();else magicDialog.setAttribute('open','');
       if(magicScroll&&magicScroll.kind===magicDialog.querySelector('.magic-tools-head h2')?.textContent){
-        const body=magicDialog.querySelector('.magic-tools-body');
-        const results=magicDialog.querySelector('#spell-results');
-        if(body)body.scrollTop=magicScroll.body;
-        if(results)results.scrollTop=magicScroll.results;
+        // The modal itself scrolls, not only its result list. Restoring just
+        // .magic-tools-body used to silently reset the real scroll position.
+        const restore=()=>{
+          if(!magicDialog.isConnected)return;
+          magicDialog.scrollTop=magicScroll.dialog;
+          const body=magicDialog.querySelector('.magic-tools-body');
+          const results=magicDialog.querySelector('#spell-results');
+          if(body)body.scrollTop=magicScroll.body;
+          if(results)results.scrollTop=magicScroll.results;
+        };
+        restore();
+        if(typeof requestAnimationFrame==='function')requestAnimationFrame(restore);
       }
     }
     if(state.page==="session" && state.map) void refreshSessionSnapshot();
@@ -2077,14 +2111,24 @@ function magicToolsDialog(c,calculated){
    calculated.casting_classes.map(member=>'<option value="'+esc(member.id)+'" '+(member.id===state.spellClass?'selected':'')+'>'+esc(member.name)+'</option>').join('')+'</select></label>';
  const counts=selectedMember?classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;
  const knownProgress=selectedMember?knownSpellProgress(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;
- const selectionSummary=selectedMember?'<div class="magic-selection-progress">'+
-   (selectedMember.mode==='Preparati'?'<span>Preparati <strong>'+counts.leveled+
-     (selectedMember.limit<0?'':' / '+selectedMember.limit)+'</strong></span>':'')+
-   '<span>Trucchetti conosciuti <strong>'+counts.cantrips+
-     (Number.isInteger(selectedMember.cantrips)?' / '+selectedMember.cantrips:'')+'</strong></span>'+
-   (knownProgress?'<span>Incantesimi conosciuti <strong>'+knownProgress.known+
-     (knownProgress.minimum===null?'':' / minimo '+knownProgress.minimum)+'</strong></span>':'')+
-   '</div>'+spellSelectionWarning(selectedMember,counts):'';
+ const preparationWarning=selectedMember?.mode==='Preparati'&&
+   Number.isInteger(selectedMember.limit)&&selectedMember.limit>=0&&
+   counts.leveled!==selectedMember.limit?
+     '<p class="magic-selection-warning" role="status">Preparati: '+
+     counts.leveled+' / '+selectedMember.limit+'</p>':'';
+ const knownLevels=knownProgress&&Number.isInteger(knownProgress.minimum)&&knownProgress.minimum>=0?
+   {current:knownProgress.known,expected:knownProgress.minimum}:null;
+ const knownCantrips=selectedMember&&Number.isInteger(selectedMember.cantrips)&&selectedMember.cantrips>=0?
+   {current:counts.cantrips,expected:selectedMember.cantrips}:null;
+ const learningWarn=Boolean((knownLevels&&knownLevels.current!==knownLevels.expected)||
+   (knownCantrips&&knownCantrips.current!==knownCantrips.expected));
+ const learningWarning=selectedMember&&learningWarn?'<p class="magic-selection-warning" role="status">'+
+   [knownLevels?'Conosciuti: '+knownLevels.current+' / '+knownLevels.expected:'',
+    knownCantrips?'Trucchetti conosciuti: '+knownCantrips.current+' / '+knownCantrips.expected:'']
+    .filter(Boolean).join(' · ')+'</p>':'';
+ const learnClassFilter='<label class="magic-learn-filter"><span>Filtra per classe</span>'+
+   '<select id="spell-learn-filter" aria-label="Filtra per classe">'+
+   spellLearningFilterOptions()+'</select></label>';
  const searchField='<label class="vtt-list-search magic-editor-search">Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
    '<div id="spell-results" class="catalog-results vtt-selection-list magic-editor-results">'+renderSpellResults()+'</div>';
@@ -2092,18 +2136,14 @@ function magicToolsDialog(c,calculated){
    (selectedMember?
      '<button type="button" class="magic-learn-link" data-act="magic-learn-open">'+
      actionGlyph('book')+'<span>Impara / dimentica incantesimi</span><span aria-hidden="true">›</span></button>':'')+
-   selectionSummary+
+   preparationWarning+
    '<section class="magic-selection-current"><h3>'+esc(selectedMember?.mode==='Preparati'?'Preparati':'Conosciuti / disponibili')+'</h3>'+
    spellList(c,selectedTarget,selectedMember?.id||null,calculated.casting_classes,
      {includeSlots:false,minLevel:selectedMember?.mode==='Preparati'?1:0})+'</section>'+
    searchField;
  const learning='<button type="button" class="magic-learn-back" data-act="magic-learn-back">'+
    '‹ Torna alla lista</button>'+classPicker+
-   selectionSummary+
-   '<label class="magic-learn-filter">Mostra incantesimi <select id="spell-learn-filter">'+
-   '<option value="class"'+(state.spellLearnFilter==='class'?' selected':'')+'>Della classe</option>'+
-   '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutti gli incantesimi</option></select></label>'+
-   '<p class="magic-editor-help">Impara o dimentica incantesimi. Quelli conosciuti sono evidenziati; i trucchetti sono sempre pronti.</p>'+
+   learningWarning+learnClassFilter+
    searchField;
  const catalog=kind==='learn'?learning:preparation;
  const chosenLevel=Number(state.magicSlotLevel);
@@ -2410,7 +2450,9 @@ function renderSpellResults(){
     (preparing?Number(spell.level)>0&&Number(spell.level)<=member.max_level&&
         (known.has(spell.id)||granted.has(spell.id)):
       learning?Number(spell.level)<=member.max_level&&
-        (state.spellLearnFilter==='all'||spellEligible(spell,member)):
+        (state.spellLearnFilter==='all'||(Array.isArray(spell.classes)&&
+          spell.classes.some(name=>String(typeof name==='string'?name:name?.name).toLowerCase()===
+            state.spellLearnFilter.toLowerCase()))):
       !member||spellEligible(spell,member))&&
     (target!=='spellbook_spells'||Number(spell.level)>0||learning)&&
     matchesSearch(query,spell.name,spell.source))
@@ -4259,7 +4301,7 @@ async function handleAction(target){
     if(state.sheet!=='magic')return;
     state.spellClass=target.dataset.magicClass||'manual';
     state.spellTarget='prepared_spells';
-    state.magicPopup='learn';state.spellLearnFilter='class';
+    state.magicPopup='learn';state.spellLearnFilter='all';
     state.spellQuery='';state.spellResultLimit=60;
     requireFullSpellsForPicker();await render();return;
   }
@@ -4267,7 +4309,7 @@ async function handleAction(target){
     state.magicPopup=act==='magic-learn-open'?'learn':'catalog';
     state.spellTarget='prepared_spells';
     state.spellQuery='';state.spellResultLimit=60;
-    if(state.magicPopup==='learn'){state.spellLearnFilter='class';requireFullSpellsForPicker();}
+    if(state.magicPopup==='learn'){state.spellLearnFilter='all';requireFullSpellsForPicker();}
     await render();return;
   }
   if(act==='magic-tool-open'||act==='magic-select-spells'){
@@ -5668,14 +5710,14 @@ async function handleAction(target){
       const index=(creature.spellbook_spells||[]).findIndex(row=>spellId(row)===spell.id);
       change=wasKnown?removeSelectedSpell(creature,'spellbook_spells',index):
         addSelectedSpell(creature,spell,'spellbook_spells',
-          {member,classes,catalog:state.spellCatalog||[],allowNonClass:state.spellLearnFilter==='all'});
+          {member,classes,catalog:state.spellCatalog||[],allowNonClass:!spellEligible(spell,member)});
     }else if(member.mode==='Conosciuti'){
       const index=availableSpells(creature).findIndex(row=>spellId(row)===spell.id&&
         castingSources(row,classes,state.spellCatalog||[]).includes(member.id));
       change=wasKnown?removeSelectedSpell(creature,'prepared_spells',index,
         {classId:member.id,classes,catalog:state.spellCatalog||[]}):
         addSelectedSpell(creature,spell,'prepared_spells',
-          {member,classes,catalog:state.spellCatalog||[],allowNonClass:state.spellLearnFilter==='all'});
+          {member,classes,catalog:state.spellCatalog||[],allowNonClass:!spellEligible(spell,member)});
     }else{
       change=changeKnownClassSpell(creature,member,spell,!wasKnown,state.spellCatalog||[]);
     }
@@ -6065,7 +6107,7 @@ function listen(){
       render().catch(error=>message(errorMessage(error),true));return;
     }
     if(target?.id==='spell-learn-filter'){
-      state.spellLearnFilter=target.value==='all'?'all':'class';
+      state.spellLearnFilter=target.value||'all';
       const results=app.querySelector('#magic-tools-dialog #spell-results');
       if(results)results.innerHTML=renderSpellResults();
       return;

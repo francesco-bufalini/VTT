@@ -851,21 +851,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   if(slots.length)html+=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>proxy(node,node.getAttribute('aria-label')||'Consuma slot','', '<small>'+esc(node.dataset.level==='0'?'Patto':node.dataset.level+'°')+'</small><b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',proxy(bank.querySelector('[data-magic-tool="slots"]'),'Gestisci slot','reset'));
   for(const source of bank.querySelectorAll('.magic-source')){
    const title=source.querySelector('h3')?.textContent||'Poteri';
-   const titleKey='casting:'+sources.size;bind(titleKey,source.querySelector('.casting-statistics'));
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
     const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
     const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
     return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span><small class="play-spell-level">'+esc(level==='0'?'Trucchetto':level?level+'°':'')+'</small>')+'</div>';
    }).join('');
-   const casting=source.querySelector('.casting-statistics'),ability=casting?.querySelector('select')?.value||'int';
-   const stats='CD '+(d.values?.['casting_dc:'+ability]??'—')+' · Attacco '+signed(d.values?.['casting_hit:'+ability]);
+   // The actual selector, save controls and formula buttons used to live in a
+   // separate settings popup. Expose their exact interactive markup inline.
+   const castingDetails=source.querySelector('.magic-source-overview')?.outerHTML||
+     source.querySelector('.casting-statistics')?.outerHTML||'';
    // Reuse the class selector in the native mobile sheet rather than hiding it
    // inside the source bank or inventing another spell-selection state.
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
      .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
-   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+
+   html+=card(title,'<div class="play-magic-inline-casting">'+castingDetails+'</div>'+
      (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
-     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
+     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),'','play-magic-class-card');
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
