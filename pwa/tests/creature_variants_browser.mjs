@@ -37,7 +37,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-read-field="current_hp"]')?.textContent==='25');assert.equal((await record()).current_hp,25);
  await forms();await create('Lupo','custom');
  await page.locator('[data-variant-section="hp"]').check();await page.locator('[data-variant-section="str"]').check();
- await page.locator('[data-variant-load]').click();await page.locator('[data-variant-source]').selectOption({label:'Lupo di prova · Archivio locale'});
+ await page.locator('[data-variant-load]').click();await page.locator('[data-variant-source-key]').filter({hasText:'Lupo di prova'}).click();
  await page.locator('[data-variant-import]').click();await page.locator('[data-variant-save]').click();
  await page.locator('.variant-list article').filter({hasText:'Lupo'}).getByRole('button',{name:'Usa forma'}).click();await closeForms();
  const wolfId=(await record()).current_form_id;
