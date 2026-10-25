@@ -150,7 +150,9 @@ export function sheetRollFormula(modifier,bonuses=[],mode='normal'){
  // highest/lowest selection remain handled by rollSheetDice, not this caption.
  const fixed=(mode==='advantage'?'ADV · ':mode==='disadvantage'?'DIS · ':'')+
    '1d20'+(number<0?' − '+Math.abs(number):' + '+number);
- return fixed+bonuses.map(row=>' + '+String(row.dice)).join('');
+ return fixed+bonuses.map(row=>Number.isSafeInteger(row.flat_bonus)?
+   (row.flat_bonus<0?' − ':' + ')+Math.abs(row.flat_bonus):
+   ' + '+String(row.dice)).join('');
 }
 export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
  if(typeof die!=='function')throw Error('Generatore dadi non disponibile');
@@ -165,6 +167,14 @@ export function rollSheetDice(modifier,bonuses=[],die,mode='normal'){
  const kept=mode==='advantage'?Math.max(...rolls):mode==='disadvantage'?Math.min(...rolls):d20;
  const parts=[{name:mode==='advantage'?'d20 · vantaggio':mode==='disadvantage'?'d20 · svantaggio':'d20',notation:sheetRollFormula(0,[],mode).split(' + ')[0],rolls,subtotal:kept}];
  for(const bonus of bonuses){
+  if(Object.hasOwn(bonus,'flat_bonus')){
+   const flat=Number(bonus.flat_bonus);
+   if(!Number.isSafeInteger(flat)||Math.abs(flat)>10000)
+    throw Error('Bonus fisso non valido');
+   parts.push({name:String(bonus.origin_name||'Bonus'),notation:String(flat),
+    rolls:[],subtotal:flat,flat});
+   continue;
+  }
   const notation=String(bonus.dice||'').replaceAll(' ','');
   const match=notation.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(!match||Number(match[1])>100)throw Error('Dadi bonus non validi');
@@ -596,7 +606,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const abilityButtons=(key,filtered=null)=>(filtered||powerRows.filter(row=>row.key===key)).map(row=>{
    const tracker=(d.trackers||[]).find(t=>String(t.id)===String(row.tracker_id));
    const available=tracker?Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0)):0;
-   const disabled=row.cost>0&&(!tracker||tracker.disabled||available<row.cost);
+   // Abilities can confirm "Nessun tracker" even if their resource is spent.
+   // Spells still require the normal resource check.
+   const disabled=row.kind==='spell'&&row.cost>0&&
+    (!tracker||tracker.disabled||available<row.cost);
    const glyph=icon(row.kind==='spell'?'spell_cast':
      actionGlyphKey({...row.classAction,...row.power,name:row.name,type:'Capacità'}));
    const caption=row.kind==='spell'?row.casting_time_label:
@@ -626,9 +639,10 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     (originId?'<button type="button" class="play-button power-origin-link" data-act="power-trait" data-origin-id="'+esc(originId)+'">'+icon('proficiency')+'<span>Apri il tratto di origine</span></button>':'');
    const powerDetail=(powerGroups.get(key)||[]).find(ability=>row.power&&String(ability.id)===String(power.id));
    const context=bind(powerDetail?.key||'battle-power:'+id,detail);
-   const persistent=persistentBattleAbility(row);
+   const persistent=action.class_feature_id==='flash_of_genius'?false:persistentBattleAbility(row);
    const statusKey=power.id==='vtt_wild_shape'||action.rule_action_id==='wild_shape'?'wild_shape':action.class_feature_id||'battle:'+String(id);
-   const active=!!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true;
+   const active=persistent&&(
+    !!c.active_class_features?.[statusKey]||action.mode==='trait_state'&&action.active===true);
    const use=persistent?'Attiva':'Usa';
    const useId=persistent&&action.class_feature_id&&action.id?action.id:id;
    return '<div class="play-resource-power-row" data-ability-id="'+esc(id)+'">'+
