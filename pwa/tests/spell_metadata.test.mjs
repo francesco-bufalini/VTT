@@ -20,3 +20,23 @@ test('homebrew and raw 5etools component shapes fall back safely',()=>{
  assert.equal(facts[2].value,'Instantaneous');
  assert.deepEqual(spellFacts({description:'Only prose'}),[]);
 });
+
+test('casting popup includes school, spell lists and additional structured metadata',()=>{
+ const facts=spellFacts({name:'Magic Missile',school:'V',source:'PHB',
+  classes:['Wizard','Sorcerer'],damageInflict:['force'],savingThrow:['dex'],
+  area:{type:'sphere',radius:20},castCondition:'special',components:{v:true,s:true}});
+ const value=label=>facts.find(row=>row.label===label)?.value;
+ assert.equal(value('Scuola'),'Invocazione');
+ assert.equal(value('Classi'),'Wizard, Sorcerer');
+ assert.equal(value('Fonte'),'PHB');
+ assert.equal(value('Tipi di danno'),'force');
+ assert.equal(value('Tiro salvezza'),'dex');
+ assert.match(value('Area'),/sphere/);
+ assert.equal(value('cast Condition'),'special','future structured fields remain visible');
+});
+test('5etools class-list shapes remain readable',()=>{
+ const f=spellFacts({classes:{fromClassList:[{name:'Wizard',source:'PHB'},
+   {name:'Cleric',source:'XPHB'}],fromSubclass:[{class:{name:'Fighter'},subclass:{name:'Eldritch Knight'}}]}});
+ assert.match(f.find(x=>x.label==='Classi').value,/Wizard/);
+ assert.match(f.find(x=>x.label==='Classi').value,/Eldritch Knight/);
+});
