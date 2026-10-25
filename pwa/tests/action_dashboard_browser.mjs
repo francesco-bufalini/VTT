@@ -74,6 +74,14 @@ try{
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),5);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] .play-resource-power-open strong').textContent(),'Prova abilità');
+     const expectedSkillGlyph=await page.evaluate(async()=>{
+      const {actionGlyph}=await import('/action_economy.js');
+      const node=document.createElement('div');node.innerHTML=actionGlyph('skill');
+      return node.firstElementChild?.className;
+     });
+     const resourceSkillGlyph=resources.locator('[data-rule-action="ability_checks"] .vtt-action-glyph').first();
+     assert.equal(await resourceSkillGlyph.getAttribute('class'),expectedSkillGlyph,
+      'Prova abilità uses the exact same skill icon as Info → Competenze → Abilità');
      if(await resources.getAttribute('open')===null)
       await resources.locator(':scope > summary.play-battle-summary').click();
      const attackGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .vtt-action-glyph').first();
@@ -87,6 +95,14 @@ try{
       'Unlimited abilities are not placed in a fake free tracker');
      const actionSection=page.locator('[data-battle-action="others"]');
      assert.match(await actionSection.locator('summary.play-battle-summary').textContent(),/^Azioni$/);
+     const blackSurfaces=await actionSection.evaluate(panel=>[
+      panel.closest('.play-card'),panel,
+      panel.querySelector('.play-battle-action-heading'),
+      panel.querySelector('.play-battle-attack-entry')
+     ].map(node=>getComputedStyle(node).backgroundColor));
+     assert.deepEqual(blackSurfaces,['rgb(0, 0, 0)','rgb(0, 0, 0)',
+      'rgb(0, 0, 0)','rgb(0, 0, 0)'],
+      'Azioni panel, timing box and entry surfaces are consistently black');
      assert.equal(await actionSection.locator('[data-action-timing="action"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'attack');
      assert.equal(await actionSection.locator('[data-action-timing="reaction"] .play-battle-attack-entry').first().getAttribute('data-attack-id'),'opportunity');
      assert.equal(await page.locator('[data-battle-action="movement"]').count(),0);
