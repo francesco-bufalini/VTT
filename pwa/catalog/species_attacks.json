@@ -28,7 +28,8 @@
           "ability": "str",
           "damage_ability_modifier": true
         }
-      ]
+      ],
+      "flight_no_medium_heavy_armor": true
     },
     {
       "id": "5etools:races:mpmm:aarakocra",
@@ -42,7 +43,22 @@
           "ability": "str",
           "damage_ability_modifier": true
         }
-      ]
+      ],
+      "flight_no_medium_heavy_armor": true
+    },
+    {
+      "id": "5etools:races:psa:aven",
+      "name": "Aven",
+      "source": "PSA",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
+    },
+    {
+      "id": "5etools:races:psd:aven",
+      "name": "Aven",
+      "source": "PSD",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
     },
     {
       "id": "5etools:races:ggr:centaur",
@@ -99,6 +115,20 @@
           "damage_ability_modifier": true
         }
       ]
+    },
+    {
+      "id": "5etools:races:mpmm:fairy",
+      "name": "Fairy",
+      "source": "MPMM",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
+    },
+    {
+      "id": "5etools:races:wbtw:fairy",
+      "name": "Fairy",
+      "source": "WBtW",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
     },
     {
       "id": "5etools:races:dmg:gnoll",
@@ -199,6 +229,13 @@
       ]
     },
     {
+      "id": "5etools:races:scc:owlin",
+      "name": "Owlin",
+      "source": "SCC",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
+    },
+    {
       "id": "5etools:races:mot:satyr",
       "name": "Satyr",
       "source": "MOT",
@@ -225,6 +262,13 @@
           "damage_ability_modifier": true
         }
       ]
+    },
+    {
+      "id": "5etools:races:psx:siren",
+      "name": "Siren",
+      "source": "PSX",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
     },
     {
       "id": "5etools:races:mpmm:tabaxi",
@@ -281,6 +325,20 @@
           "damage_ability_modifier": true
         }
       ]
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28hawk-headed%29",
+      "name": "Aven (Hawk-Headed)",
+      "source": "PSA",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
+    },
+    {
+      "id": "5etools:races:psa:aven%20%28ibis-headed%29",
+      "name": "Aven (Ibis-Headed)",
+      "source": "PSA",
+      "attacks": [],
+      "flight_no_medium_heavy_armor": true
     }
   ]
 }
