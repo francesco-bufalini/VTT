@@ -169,7 +169,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
    for(const row of arr(catalogs.abilityGrants?.[group]).filter(row=>
      norm(row.name)===norm(name)&&norm(row.source)===norm(source)&&
      (group!=='subrace'||norm(row.raceName)===norm(record.species)&&
-       (!row.raceSource||norm(row.raceSource)===norm(record.species_source)))){
+       (!row.raceSource||norm(row.raceSource)===norm(record.species_source))))){
      const sid=group+'|'+norm(row.source)+'|'+norm(row.name);
      if(!enabled(record,sid))continue;
      const variants=arr(row.ability_choices);
