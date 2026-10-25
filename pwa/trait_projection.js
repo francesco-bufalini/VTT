@@ -5,6 +5,7 @@ import {effectiveBackgrounds} from './structured_effects.js';
 import {localClasses} from './sheet_rules.js';
 import {activeInfusions,itemKind,requiresAttunement,resolveOwnedItem,inventoryAttunementCounts} from './item_controls.js';
 import {traitIsActive} from './trait_benefit_editor.js';
+import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from './condition_catalog.js';
 
 const arr=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
@@ -36,7 +37,7 @@ function sourceDisabled(record,id){
 // Dependency injection keeps the rules testable without IndexedDB, HTTP or Godot.
 export async function collectTraitRows(record={},calculated={},providers={}){
  const {entries=async()=>[],detail=async(_category,row)=>row,isDocument=()=>false,
-  conditionLabel=id=>String(id).replaceAll('_',' ')}=providers;
+  conditionLabel=id=>String(id).replaceAll('_',' '),conditionCatalog=null,spells=[]}=providers;
  const rows=[],loaded=new Map(),used=new Set();
  const load=async category=>{
   if(!loaded.has(category))loaded.set(category,Promise.resolve().then(()=>entries(category)).catch(()=>[]));
@@ -264,27 +265,82 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   }
  }
  // Only an equipped, eligible infusion produces a visible subordinate trait.
+ const infusionStates=[];
  const effectiveInventory=arr(record.inventory).map((item,i)=>requiresAttunement(resolveOwnedItem(item))?
   {...item,attuned_count:attunements[i]||0,attuned:attunements[i]>0}:item);
  for(const applied of activeInfusions({...record,inventory:effectiveInventory},calculated.infusion_catalog||[],calculated.features||[])){
    const detail=await lookup('optional_features',applied.name,'TCE')||applied.definition;
+   const description=detail.entries??detail.description??applied.definition.item_prerequisite??'';
    add({name:'Infusione · '+applied.name,
-     entries:detail.entries??detail.description??applied.definition.item_prerequisite??'',
-     source:'TCE',feature_origin:applied.id},
+     entries:description,source:'TCE',feature_origin:applied.id},
      {category:'oggetti',origin:'Oggetto · '+(applied.item.name||applied.item.id),
       origin_key:applied.id,level:0,rank:2});
+   infusionStates.push({id:'infusion:'+applied.id,name:applied.name,
+     description:description||'Infusione attiva su '+(applied.item.name||applied.item.id),
+     origin_id:applied.origin_id,infusion_id:applied.id});
  }
- // Persistent effects are actual state traits, not duplicated class
- // features. They retain a stable source identity and disappear on removal.
+ // Persistent effects share stable state-trait keys with the States cards.
+ // These are read-only projections: native numeric/mechanical state is unchanged.
  const stateTrait=(id,name,description,extra={})=>{
   if(!id||rows.some(row=>row.key==='state|'+id))return;
-  rows.push({name:String(name||id),entries:description||'',source:'',
-   category:'stati',origin:'Stato · '+String(name||id),
+  rows.push({name:String(name||id),entries:description||'',
+   ...(extra.description_html?{description_html:extra.description_html}:{}),
+   source:extra.source||'',category:'stati',origin:'Stato · '+String(name||id),
    origin_key:'state|'+id,key:'state|'+id,level:0,rank:0,
    feature_origin:String(extra.origin_id||''),state_id:extra.state_id||'',
    state_key:extra.state_key||'',condition_id:extra.condition_id||'',
-   spell_id:extra.spell_id||'',inactive:false,readonly:true});
+   spell_id:extra.spell_id||'',infusion_id:extra.infusion_id||'',
+   inactive:false,readonly:true});
  };
+ const availableConditions=conditionOptions(conditionCatalog,record.rules_version,record.conditions||[]);
+ const definitions=new Map(availableConditions.map(row=>[row.id,row]));
+ for(const condition of arr(record.conditions)){
+  if(!condition||condition==='exhaustion'||/^exhaustion:[1-6]$/.test(condition))continue;
+  const definition=definitions.get(String(condition))||
+    {id:String(condition),name:conditionLabel(condition),category:'conditions'};
+  stateTrait('condition:'+condition,definition.label||conditionLabel(condition),
+   definition.entries??definition.description??'Descrizione non disponibile nel catalogo locale.',{
+    condition_id:String(condition),state_key:'condition:'+condition,
+    description_html:conditionDescriptionHtml(definition)});
+ }
+ const exhaustion=exhaustionLevel(record);
+ if(exhaustion){
+  const row=exhaustionConditionRows(record.rules_version,definitions.get('exhaustion'))[exhaustion-1];
+  stateTrait('condition:'+row.id,row.label,row.entries,{
+   condition_id:row.id,state_key:'condition:'+row.id,
+   description_html:conditionDescriptionHtml(row)});
+ }
+ const appliedSpells=arr(record.proficiency_origins).filter(origin=>
+  origin?.group==='spell'&&String(origin.id||'').startsWith('spell:')&&
+  !origin.disabled&&record.origin_enabled?.[origin.id]!==false);
+ const effectiveSpells=new Map([
+   ...arr(spells),...(appliedSpells.length?arr(await load('spells')):[])
+  ].filter(row=>row?.id).map(row=>[String(row.id),row]));
+ for(const origin of appliedSpells){
+  const id=String(origin.id),spellId=id.slice(6),spell=effectiveSpells.get(spellId);
+  stateTrait(id,String(spell?.name||origin.name||spellId).replace(/^Incantesimo · /,''),
+   spell?.entries??spell?.entry??spell?.description??
+    origin.description??'Descrizione dell’incantesimo non disponibile nel catalogo locale.',{
+    origin_id:id,spell_id:spellId,state_key:id,source:spell?.source||''});
+ }
+ const activeFeatures=record.active_class_features||{};
+ const effects=new Map(arr(calculated.active_feature_effects).filter(effect=>effect?.key)
+  .map(effect=>[String(effect.key),effect]));
+ for(const [key,active] of Object.entries(activeFeatures)){
+  if(!active)continue;
+  const effect=effects.get(key);
+  const originId=String(active.origin_id||effect?.origin_id||'');
+  const backing=rows.find(row=>row.category!=='stati'&&(
+    originId&&row.feature_origin===originId||row.name===active.name));
+  const feature=arr(calculated.features).find(row=>
+    originId&&String(row.origin_id||'')===originId||row.name===active.name);
+  const description=backing?.entries||feature?.entries||feature?.description||
+    active.description||effect?.summary||'Descrizione della capacità non disponibile.';
+  stateTrait(key,active.name||effect?.name||key,description,{
+   origin_id:originId,state_key:key,
+   state_id:key.startsWith('trait_state:')?key.slice('trait_state:'.length):''});
+ }
+ // Projected persistent effects may exist without a saved class-ability toggle.
  for(const effect of arr(calculated.active_feature_effects)){
   if(!effect?.effective)continue;
   const key=String(effect.key||effect.origin_id||'');
@@ -292,17 +348,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    origin_id:effect.origin_id,state_key:key,
    state_id:key.startsWith('trait_state:')?key.slice('trait_state:'.length):''});
  }
- for(const spell of arr(record.proficiency_origins)){
-  if(spell?.group!=='spell'||!spell.applied||spell.disabled)continue;
-  const origin=String(spell.id||'');
-  stateTrait(origin,spell.name||origin,'Incantesimo attivo',{
-   origin_id:origin,spell_id:origin.startsWith('spell:')?origin.slice(6):'',state_key:origin});
- }
- for(const condition of arr(record.conditions)){
-  if(!condition)continue;
-  stateTrait('condition:'+condition,conditionLabel(condition),'Condizione attiva',{
-   condition_id:String(condition),state_key:'condition:'+condition});
- }
+ for(const infused of infusionStates)
+  stateTrait(infused.id,infused.name,infused.description,{
+   origin_id:infused.origin_id,state_key:infused.id,infusion_id:infused.infusion_id});
  // Keep explicitly calculated traits if a catalog is unavailable offline, and
  // cover portable grants absent from a descriptive index without duplicating.
  for(const feature of arr(calculated.features)){
