@@ -498,7 +498,7 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const settings=record.attack_overrides?.[attack.id]||{};
   const modifier=abilities[ability]?.modifier??0;
   const hit=(baseHit??(modifier+(proficient?proficiency:0)))+bonus('attack_hit:'+attack.id);
-  let damageMod=baseHit!==null?0:modifier;
+  let damageMod=baseHit!==null||attack.damage_ability_modifier===false?0:modifier;
   if(attack.slot==='off'&&offAllowed&&!style)damageMod=Math.min(0,damageMod);
   const damageAbilityModifier=damageMod;
   const featureDamage=classFeatureDamage(record,featureContext,attack,ability);
@@ -562,6 +562,35 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
  };
  unarmed('main');
  if(!off&&!offBlocked)unarmed('off');
+ // Natural strikes are typed, source-qualified 5etools mechanics generated at
+ // catalog sync time. A natural weapon requires no equipped item or free hand.
+ // Their own trait remains the origin for disabling and inspecting benefits.
+ const naturalCatalog=arr(featureContext.speciesAttacks?.races);
+ const ownRace=naturalCatalog.find(row=>record.species_id&&row.id===record.species_id)||
+   naturalCatalog.find(row=>same(row.name,record.species)&&
+     record.species_source&&same(row.source,record.species_source));
+ if(record.kind!=='monster'&&ownRace){
+   const origin='species|'+(record.species_id||String(record.species||'').toLowerCase())+
+     '|'+String(ownRace.source||'').toLowerCase();
+   const legacy='race|'+String(ownRace.source||'').toLowerCase()+'|'+
+     String(ownRace.name||'').toLowerCase();
+   const paused=id=>record.origin_enabled?.[id]===false||
+     arr(record.proficiency_origins).some(r=>r?.id===id&&r.disabled);
+   if(!paused(origin)&&!paused(legacy))for(const natural of arr(ownRace.attacks)){
+     const trait=arr(featureContext.features).find(row=>same(row.name,natural.trait)&&
+       row.origin_key===origin);
+     const traitId=trait?.origin_id||'feature:'+origin+'|1|'+String(natural.trait).toLowerCase();
+     if(trait?.disabled||trait?.inactive||paused(traitId))continue;
+     const id='natural:'+String(ownRace.id||ownRace.name).toLowerCase()+':'+
+       String(natural.trait).toLowerCase().replace(/[^a-z0-9]+/g,'-');
+     const type=({slashing:'taglienti',piercing:'perforanti',bludgeoning:'contundenti'})[natural.damage_type]||natural.damage_type;
+     append({id,name:natural.trait,slot:'natural',melee:true,range_feet:5,long_range_feet:0,
+       damage_type:type,damage_ability_modifier:natural.damage_ability_modifier!==false,
+       origin_id:traitId,origin_name:'Tratto · '+natural.trait,
+       description:'Attacco naturale concesso dal tratto '+natural.trait+'.'},
+       natural.ability||'str',true,natural.damage);
+   }
+ }
  // Explicit improvised attacks remain selectable without affecting unarmed strikes.
  for(const slot of ['main','off']){
   if(record['hand_'+slot+'_special']!=='improvised'||slot==='off'&&(off||offBlocked))continue;
@@ -975,7 +1004,7 @@ function calculateSheetValues(record={},catalogs={}){
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
-  const featureContext={features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+  const featureContext={speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const originMap=new Map();
@@ -1064,12 +1093,14 @@ export function loadRuleCatalogs(){
       .then(data=>data?.version===1&&Array.isArray(data.features)?data.features:[]),
     fetch('/catalog/classes.json').then(r=>{if(!r.ok)throw Error('Indice privilegi non disponibile');return r.json();})
       .then(data=>data?.version===1&&Array.isArray(data.class_features)&&Array.isArray(data.subclass_features)?data:null).catch(()=>null),
+    fetch('/catalog/species_attacks.json').then(r=>{if(!r.ok)throw Error('Attacchi naturali non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.races)?data:{races:[]}),
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
       }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,originDetails])=>({
-    abilityGrants,classMechanics,proficiencyGrants,featureRules:featureRules||{},
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails])=>({
+    abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,featureRules:featureRules||{},
     traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
