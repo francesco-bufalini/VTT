@@ -1452,7 +1452,9 @@ async function traitsView(c){
   return state.referenceCatalogs[category];
  };
  const rows=withGrantedSpellPreviews(await collectTraitRows(c,state.calculated||{},
-  {entries,detail:detailedEntry,isDocument,conditionLabel}),state.calculated?.origin_spells||[],state.spellCatalog||[]);
+  {entries,detail:detailedEntry,isDocument,conditionLabel,
+   conditionCatalog:state.conditionCatalog,spells:state.spellCatalog||[]}),
+  state.calculated?.origin_spells||[],state.spellCatalog||[]);
  const groups=groupTraitRows(rows);
  const benefitProjection={...(state.calculated||{}),
   activatable_abilities:abilitiesForCreature(c,state.abilityCatalog||[],state.calculated||{},
@@ -1475,7 +1477,8 @@ async function traitsView(c){
         '<span class="trait-item-quantity" aria-label="'+(trait.item_requires_attunement?'Sintonie attive ':'Quantità ')+itemQuantity+'">×'+itemQuantity+'</span>':'')+
       '<span class="trait-chevron" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15" fill="none"><path d="M3 6 L12 11 L21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>'+
     '<div class="trait-content">'+
-      (description?'<p class="trait-description">'+esc(description)+'</p>':'')+
+      (trait.description_html?'<div class="trait-description trait-state-description">'+trait.description_html+'</div>':
+       description?'<p class="trait-description">'+esc(description)+'</p>':'')+
       (trait.source?'<span class="trait-book">'+esc(trait.source)+'</span>':'')+
     '</div></details></div>';
  };
@@ -4986,6 +4989,19 @@ async function handleAction(target){
     }else if(act==='hp-restore')await patch({current_hp:Math.max(0,calculated.stats.max_hp)});
 
     await render();return;
+  }
+  if(act==='state-trait-jump'){
+    const key=String(target.dataset.stateTrait||'');
+    if(!key.startsWith('state|'))throw Error('Stato non riconosciuto.');
+    state.sheet='info';state.sheetPopup='';state.sheetPopupTitle='';
+    await render();
+    const cards=[...app.querySelectorAll('.play-info-traits .trait-card')];
+    const match=cards.find(card=>card.dataset.traitKey===key);
+    if(!match){message('Tratto dello stato non disponibile.',true);return;}
+    const disclosure=match.closest('.play-traits-disclosure');
+    if(disclosure)disclosure.open=true;
+    match.open=true;match.scrollIntoView?.({block:'center'});
+    return;
   }
   if(act==="tracker-powers"){state.magicPopup="";state.sheet="magic";await render();return;}
   if(act==="power-trait"){
