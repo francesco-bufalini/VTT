@@ -72,6 +72,8 @@ try{
       const metric=row.querySelector('.casting-stat--dc .sheet-result');
       return {
         height:select?.getBoundingClientRect().height,
+        minHeight:getComputedStyle(select).minHeight,
+        computedHeight:getComputedStyle(select).height,
         selected:select?.selectedOptions?.[0]?.textContent,
         textSize:parseFloat(getComputedStyle(metric).fontSize),
         border:getComputedStyle(row).borderTopWidth,
@@ -79,7 +81,7 @@ try{
         labels:[...row.querySelectorAll('.casting-stat-label')].map(e=>e.textContent.trim())
       };
     });
-    assert(style.height>=34&&style.height<=40,'Native ability selector is compact, not the 48px global field');
+    assert(style.height>=34&&style.height<=40,'Native ability selector is compact: '+JSON.stringify(style));
     assert.match(style.selected||'',/^(FOR|DES|COS|INT|SAG|CAR)$/);
     assert(style.textSize>=14,'Spell DC must be comfortably readable');
     assert.equal(style.border,'0px','No separate bordered casting box');
