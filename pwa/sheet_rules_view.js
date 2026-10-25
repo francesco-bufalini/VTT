@@ -554,7 +554,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     vital('movement','Movimento e velocità','dash',fastest.label,fastest.key,' ft',true)+'</div>';
   const appliedSpells=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const activeAbilities=Object.entries(c.active_class_features||{});
-  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+activeConditions.map(({id,label})=>'<button type="button" class="play-status-tag" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" title="'+esc(label)+'">'+esc(label)+'</button>').join('')+appliedSpells.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</button>').join('')+activeAbilities.map(([key,value])=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✧ '+esc(value?.name||key)+'</button>').join('')+infused.map(row=>'<button type="button" class="play-status-tag" data-act="sheet" data-sheet="conditions">✦ '+esc(row.name)+'</button>').join('')+'</div>';
+  const statusTag=(key,label,glyph='')=>'<button type="button" class="play-status-tag" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" title="'+esc(label)+'">'+glyph+esc(label)+'</button>';
+  html+='<div class="play-status-strip">'+btn('Condizioni, incantesimi e capacità','condition','data-act="sheet" data-sheet="conditions"','<span>Stati</span>')+
+   activeConditions.map(({id,label})=>statusTag('condition:'+id,label)).join('')+
+   appliedSpells.map(row=>statusTag(String(row.id),String(row.name||row.id).replace(/^Incantesimo · /,''),'✦ ')).join('')+
+   activeAbilities.map(([key,value])=>statusTag(key,value?.name||key,'✧ ')).join('')+
+   infused.map(row=>statusTag('infusion:'+row.id,row.name,'✦ ')).join('')+'</div>';
   const rest=document.createElement('div');
   rest.innerHTML='<div class="play-rest-choices">'+
     [['tracker-short','rest_short','Riposo breve'],['tracker-long','rest_long','Riposo lungo'],['tracker-turn','reset','Inizio turno']].map(([a,g,l])=>btn(l,g,'data-act="'+a+'"')).join('')+
@@ -1107,9 +1112,13 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     '<header class="play-status-section-head"><h3>'+esc(title)+'</h3>'+plus(key,'Aggiungi '+title.toLowerCase())+'</header>'+
     '<div class="play-status-section-content">'+body+'</div></section>';
   const conditionRows=activeConditions.map(({id,label})=>
-    '<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('');
+    '<button type="button" class="play-condition" data-act="state-trait-jump" data-state-trait="'+esc('state|condition:'+id)+'" aria-label="Apri tratto '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('');
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
-  const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
+  const activeLink=(key,glyph,label,detail='')=>'<button type="button" class="play-status-trait-link" data-act="state-trait-jump" data-state-trait="'+esc('state|'+key)+'" aria-label="Apri tratto '+esc(label)+'">'+icon(glyph)+'<span><strong>'+esc(label)+'</strong>'+
+   (detail?'<small class="feature-effect-summary">'+esc(detail)+'</small>':'')+'</span></button>';
+  const spellRows=applied.map(row=>'<div class="play-effect-row">'+
+   activeLink(String(row.id),'spark',String(row.name||row.id).replace(/^Incantesimo · /,''))+
+   btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
   const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name);
   const picker='<div class="play-effect-add"><label class="vtt-list-search">Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
@@ -1118,20 +1127,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const effect=(d.active_feature_effects||[]).find(e=>e.key===key);
    const detail=key==='wild_shape'?'Aspetto attuale: '+(c.current_miniature_id||''):
     effect?.effective?effect.summary:'Benefici sospesi: il tratto o le condizioni richieste non sono disponibili.';
-   return '<div class="play-effect-row"><span>'+icon('buff')+'<span><strong>'+esc(row?.name||key)+'</strong><small class="feature-effect-summary">'+esc(detail)+'</small></span></span>'+btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>';
+   return '<div class="play-effect-row">'+activeLink(key,'buff',row?.name||key,detail)+
+    btn('Termina capacità','cross','data-act="condition-remove-ability" data-ability-key="'+esc(key)+'"','<span class="sr-only">Termina</span>')+'</div>';
   }).join('');
   const toggleKeys=new Set(['rage','reckless_attack','innate_sorcery','patient_defense','step_of_the_wind']);
   const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
   const infusionRows=infused.map(row=>
-   '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>'+esc(row.name)+
-   '</strong><small class="feature-effect-summary">'+esc(row.item.name||row.item.id)+
-   ' · Infusione equipaggiata</small></span></span>'+
+   '<div class="play-effect-row">'+activeLink('infusion:'+row.id,'spark',row.name,
+    (row.item.name||row.item.id)+' · Infusione equipaggiata')+
    btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.index+'"','<span class="sr-only">Termina</span>')+
    '</div>').join('');
   const concentrationRow=(c.conditions||[]).includes('concentrating')?
-   '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>Concentrazione</strong><small class="feature-effect-summary">'+esc(c.concentrating_spell_id||'Attiva')+'</small></span></span>'+
+   '<div class="play-effect-row">'+activeLink('condition:concentrating','spark','Concentrazione',c.concentrating_spell_id||'Attiva')+
    btn('Interrompi concentrazione','cross','data-act="stop-concentration"','<span class="sr-only">Interrompi</span>')+'</div>':'';
   html+=card('Stati attivi',
     section('Condizioni','conditions',conditionRows||'<p class="play-empty">Nessuna condizione attiva.</p>')+
