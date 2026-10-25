@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "flash_of_genius",
+      "class_name": "Artificer",
+      "class_source": "TCE",
+      "feature_name": "Flash of Genius",
+      "label": "Lampo di genio",
+      "time": "reaction",
+      "mode": "context",
+      "resource_name": "Flash of Genius",
+      "cost": 1,
+      "bonus": {
+        "name": "Lampo di genio",
+        "targets": [
+          "ability_check",
+          "saving_throw"
+        ],
+        "ability_modifier": "int",
+        "minimum": 1
+      }
+    }
+  ]
+}
