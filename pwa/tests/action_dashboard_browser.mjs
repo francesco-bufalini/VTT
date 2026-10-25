@@ -74,6 +74,8 @@ try{
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),5);
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="ability_checks"] .play-resource-power-open strong').textContent(),'Prova abilità');
+     if(await resources.getAttribute('open')===null)
+      await resources.locator(':scope > summary.play-battle-summary').click();
      const attackGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .vtt-action-glyph').first();
      const otherGlyph=resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] .vtt-action-glyph').first();
      const x=await attackGlyph.evaluate(node=>node.getBoundingClientRect().left);
