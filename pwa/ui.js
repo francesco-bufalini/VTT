@@ -213,10 +213,35 @@ function loadFullSpellCatalog(){
   }).finally(()=>{fullSpellCatalogRequest=null;});
   return fullSpellCatalogRequest;
 }
+function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
+  // The full catalogue loads lazily. Offer the ordinary class lists immediately
+  // and add any other class names discovered when the catalogue finishes loading.
+  const names=new Set(['Artificer','Bard','Cleric','Druid','Paladin',
+    'Ranger','Sorcerer','Warlock','Wizard']);
+  for(const member of castingClasses)if(member.name)names.add(String(member.name));
+  for(const spell of state.spellCatalog||[]){
+    for(const value of Array.isArray(spell.classes)?spell.classes:[]){
+      const name=typeof value==='string'?value:value?.name;
+      if(name)names.add(String(name));
+    }
+  }
+  return [...names].sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
+}
+function spellLearningFilterOptions(){
+  return '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte</option>'+
+    spellLearningClassNames().map(name=>'<option value="'+esc(name)+'"'+
+      (state.spellLearnFilter===name?' selected':'')+'>'+esc(name)+'</option>').join('');
+}
 function refreshSpellPickers(){
   // Do not recreate the modal: the player may be typing in its search field.
   const results=app.querySelector('#magic-tools-dialog[open] #spell-results');
   if(results&&['catalog','learn'].includes(state.magicPopup))results.innerHTML=renderSpellResults();
+  const classFilter=app.querySelector('#magic-tools-dialog[open] #spell-learn-filter');
+  if(classFilter){
+    const selected=classFilter.value;
+    classFilter.innerHTML=spellLearningFilterOptions();
+    classFilter.value=selected;
+  }
   const scroll=app.querySelector('#sheet-context-dialog[open] #scroll-spell-select');
   if(scroll){
     const selected=scroll.value;
@@ -2101,20 +2126,9 @@ function magicToolsDialog(c,calculated){
    [knownLevels?'Conosciuti: '+knownLevels.current+' / '+knownLevels.expected:'',
     knownCantrips?'Trucchetti conosciuti: '+knownCantrips.current+' / '+knownCantrips.expected:'']
     .filter(Boolean).join(' · ')+'</p>':'';
- const spellClasses=new Set((calculated.casting_classes||[]).map(row=>row.name).filter(Boolean));
- for(const spell of state.spellCatalog||[]){
-   for(const value of (Array.isArray(spell.classes)?spell.classes:[])){
-     const name=typeof value==='string'?value:value?.name;
-     if(name)spellClasses.add(String(name));
-   }
- }
- const filterOptions=[...spellClasses].sort((a,b)=>a.localeCompare(b,'it',{sensitivity:'base'}));
  const learnClassFilter='<label class="magic-learn-filter"><span>Filtra per classe</span>'+
    '<select id="spell-learn-filter" aria-label="Filtra per classe">'+
-   '<option value="all"'+(state.spellLearnFilter==='all'?' selected':'')+'>Tutte</option>'+
-   filterOptions.map(name=>'<option value="'+esc(name)+'"'+
-     (state.spellLearnFilter===name?' selected':'')+'>'+esc(name)+'</option>').join('')+
-   '</select></label>';
+   spellLearningFilterOptions()+'</select></label>';
  const searchField='<label class="vtt-list-search magic-editor-search">Cerca incantesimo<input id="spell-search" type="search" value="'+esc(state.spellQuery)+'" placeholder="Nome o fonte"></label>'+
    (state.spellCatalogError?'<p class="warning">'+esc(state.spellCatalogError)+'</p>':'')+
    '<div id="spell-results" class="catalog-results vtt-selection-list magic-editor-results">'+renderSpellResults()+'</div>';
