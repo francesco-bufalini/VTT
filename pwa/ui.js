@@ -1279,7 +1279,7 @@ function conditionGrid(active,attribute,edition="2014",exhaustion=0){
    const rows=options.filter(row=>row.category===category);
    if(!rows.length)return "";
    const expanded=category==="conditions"||rows.some(row=>applied.has(row.id));
-   return '<details class="condition-category" '+(expanded?'open':'')+'>'+
+   return '<details class="condition-category" data-condition-category="'+esc(category)+'" '+(expanded?'open':'')+'>'+
      '<summary>'+esc(title)+' <span class="condition-category-count">'+rows.length+'</span></summary>'+
      '<div class="session-condition-grid condition-toggle-grid" role="group" aria-label="'+esc(title)+'">'+
      rows.map(({id,label})=>'<label class="check condition-toggle">'+
