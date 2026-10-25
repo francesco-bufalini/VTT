@@ -684,7 +684,9 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   // Basic-rule and trait-granted rows share the same clear action style.
   // Unavailable rules stay clickable so their matching action and explanation
   // can still be inspected. Spellcasting jumps straight to the Powers tab.
-  const actionLink=(id,name,time,available=true,extra='',count=0)=>
+  // A feat can provide an independent second-weapon capacity without
+  // changing the basic-rule availability for two Light weapons.
+  const actionLink=(id,name,time,available=true,extra='',count=0,grantId='',grantName='')=>
    '<div class="play-resource-power-row play-resource-rule'+(available?'':' play-resource-rule--inactive')+
     (id==='attack'?' play-resource-rule--attack':'')+'" data-rule-action="'+esc(id)+'">'+
     '<button type="button" class="play-resource-power-open" data-act="'+
@@ -692,36 +694,51 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     ' aria-label="'+esc(name)+'">'+icon(actionGlyphKey({id,name,time}))+
     '<span><strong>'+esc(name)+'</strong><small>'+esc(extra||(
      available?({action:'Azione',bonus:'Azione bonus',reaction:'Reazione'}[time]||'Disponibile'):
-     'Non disponibile'))+
-    '</small></span>'+
-    (count>1?'<span class="play-battle-attacks-per-action" aria-label="'+count+' attacchi per azione">×'+count+'</span>':'')+
-    '</button></div>';
-  // A rule is always listed here but is enabled only if its requirements are
-  // met. These are *not* consumable trackers or synthetic class privileges.
+     'Non disponibile'))+'</small></span></button>'+
+    (count>1?(grantId?'<button type="button" class="play-battle-attacks-per-action" data-act="power-trait"'+
+      ' data-origin-id="'+esc(grantId)+'" title="Apri il privilegio '+esc(grantName||'Multiattacco')+'"'+
+      ' aria-label="Apri il privilegio '+esc(grantName||'Multiattacco')+', '+count+' attacchi per azione">':
+      '<span class="play-battle-attacks-per-action" aria-label="'+count+' attacchi per azione">')+
+     '×'+count+(grantId?'</button>':'</span>'):'')+'</div>';
   const basic=view.battleActions?.basicActions||[];
   const base=id=>basic.find(row=>row.id===id)||{id,available:false};
+  const grants=(d.attack_count_benefits||[]).filter(row=>Number(row.attacks_per_action)>1);
+  const maxCount=Math.max(1,Number(base('attack').attack_count)||1,
+   ...grants.map(row=>Number(row.attacks_per_action)));
+  const mainGrant=grants.find(row=>Number(row.attacks_per_action)===maxCount);
+  const maxTrait=mainGrant?featureFor([mainGrant.origin_id],mainGrant.origin_name):null;
+  const maxGrantOrigin=maxTrait?.origin_id||mainGrant?.origin_id||'';
+  const baseRuleNames={
+   attack:'Azione di attacco',opportunity:'Attacco di opportunità',
+   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria'
+  };
   const rulesOfBase=[
-   ['opportunity','Attacco di opportunità','reaction'],
-   ['spell_cast','Lanciare un incantesimo','action'],
-   ['two_weapon','Attacco con arma secondaria','bonus']
+   ['attack','action'],['opportunity','reaction'],
+   ['spell_cast','action'],['two_weapon','bonus']
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
-   rulesOfBase.map(([id,name,time])=>actionLink(id,name,time,!!base(id).available,
-    !base(id).available?(base(id).unavailable_reason||
-     (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
-      id==='spell_cast'?'Non sono disponibili slot incantesimo.':'Manca l’equipaggiamento richiesto.')):'' )).join(''),
-   '','Azioni disponibili in base ai requisiti');
-  // The highest active Extra Attack grant controls the Attack action, not the
-  // sum of all class bonuses. Its owner receives a visible no-cost group.
-  const attackGrants=(d.attack_count_benefits||[]).filter(row=>Number(row.attacks_per_action)>1);
-  const bestCount=Math.max(1,...attackGrants.map(row=>Number(row.attacks_per_action)));
-  const governing=attackGrants.filter(row=>Number(row.attacks_per_action)===bestCount);
-  const multiattackPrivileges=governing.map(grant=>{
-   const trait=featureFor([grant.origin_id],grant.origin_name);
-   return privilegeGroup('multiattack:'+grant.id,trait?.name||grant.origin_name||'Multiattacco',
-    actionLink('attack','Attaccare','action',true,'Azione',bestCount),
-    trait?.origin_id||grant.origin_id,'Multiattacco · '+bestCount+' attacchi');
-  });
+   rulesOfBase.map(([id,time])=>{
+    const row=base(id),available=row.available!==false;
+    const hint=id==='spell_cast'?'Slot':
+     id==='attack'?'Azione':
+     !available?(row.unavailable_reason||
+      (id==='opportunity'?'È necessario poter effettuare un attacco in mischia.':
+       'Manca l’equipaggiamento richiesto.')):'';
+    return actionLink(id,baseRuleNames[id],time,available,hint,
+     id==='attack'?maxCount:0,
+     id==='attack'?maxGrantOrigin:'',
+     id==='attack'?(maxTrait?.name||mainGrant?.origin_name||'Multiattacco'):'');
+   }).join(''),'','Azioni e requisiti base');
+  // Dual Wielder 2014 is displayed under its own granting feat. Its capacity
+  // may be usable while the separate base-rule offhand row stays locked.
+  const offhand=view.battleActions?.offhandEligibility||{};
+  const feat=offhand.feat;
+  const featTrait=feat?featureFor([feat.origin_id,feat.feature_id,feat.origin_key],feat.name||'Dual Wielder'):null;
+  const featId=featTrait?.origin_id||feat?.origin_id||'';
+  const featPrivileges=feat?[privilegeGroup('feat-dual-wielder',featTrait?.name||feat.name||'Dual Wielder',
+   actionLink('two_weapon','Attacco con arma secondaria','bonus',!!offhand.feat_available,
+    offhand.feat_available?'Azione bonus':offhand.feat_reason||'Equipaggiamento non idoneo'),
+   featId,'Talento · combattimento con due armi')]:[];
   // Trait-specific timing overrides (for example Cunning Action) are
   // capacities of the feature that changes the normal action economy.
   const changedByTrait=new Map();
@@ -747,7 +764,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const untracked=(missingPowers?'<div class="play-resource-ungrouped" data-ability-resource="missing">'+
    '<div class="play-resource"><span class="play-resource-heading">Tracker non disponibile</span></div>'+
     missingPowers+'</div>':'')+
-   freePrivileges.join('')+multiattackPrivileges.join('')+
+   freePrivileges.join('')+featPrivileges.join('')+
    overriddenPrivileges.join('')+basicRules;
   // Keep buttons independent from the summary to preserve their actions.
   const disclosure=(key,title,glyph,body,open=false,tools='')=>'<section class="play-card play-battle-shell">'+
