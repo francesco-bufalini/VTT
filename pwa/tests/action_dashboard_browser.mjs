@@ -72,7 +72,9 @@ try{
      assert.equal(await physical.locator('[data-attack-id="unarmed"]').count(),1,'Unarmed is always available');
      const resources=page.locator('[data-battle-action="resources"]');
      assert.equal(await resources.locator('[data-resource-privilege="basic-rules"]').count(),1);
-     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),3);
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action]').count(),4);
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="attack"] .play-resource-power-open strong').textContent(),'Azione di attacco');
+     assert.equal(await resources.locator('[data-resource-privilege="basic-rules"] [data-rule-action="spell_cast"] small').textContent(),'Slot');
      assert.equal(await resources.locator('[data-ability-resource="free"]').count(),0,
       'Unlimited abilities are not placed in a fake free tracker');
      const actionSection=page.locator('[data-battle-action="others"]');
