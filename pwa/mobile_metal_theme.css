@@ -4720,73 +4720,163 @@ dialog .vtt-popup-heading .vtt-popup-close{position:static;flex:none}
 .trait-state-description .condition-table-scroll{max-width:100%;overflow-x:auto}
 
 
-/* One horizontal row, integrated directly into the existing class spells
-   card: no nested boxes around characteristic, CD or spell attack. */
+/* A single elegant casting line, inside the existing class card.
+   No inset frames, metric tiles, abbreviations made via font-size:0, or
+   oversized native select controls. This is also used by the editor bank. */
 .magic-source>.casting-statistics,
 #sheet-play-view .play-magic-inline-casting .casting-statistics{
   display:grid;
-  grid-template-columns:minmax(0,1.4fr) minmax(0,.6fr) minmax(0,.85fr);
+  grid-template-columns:minmax(0,1fr) max-content max-content;
   align-items:center;
-  gap:8px;
+  gap:clamp(6px,2vw,14px);
   min-width:0;
+  width:100%;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
 }
 .magic-source>.casting-statistics{margin:8px 0 10px}
-.magic-source>.casting-statistics>label,
-#sheet-play-view .play-magic-inline-casting .casting-statistics>label{
-  display:flex;align-items:center;gap:5px;min-width:0;margin:0;
-  font-size:11px;font-weight:600;color:#ddc4a0;
-}
-.magic-source>.casting-statistics .casting-ability-label,
-#sheet-play-view .casting-statistics .casting-ability-label{flex:0 0 auto;white-space:nowrap}
-.magic-source>.casting-statistics select,
-#sheet-play-view .play-magic-inline-casting .casting-statistics select{
-  width:100%;flex:1 1 0;min-width:0;max-width:none;min-height:30px;
-  margin:0;padding:4px 18px 4px 5px;font-size:11px;border-radius:6px;
-}
-.magic-source>.casting-statistics>span,
-#sheet-play-view .play-magic-inline-casting .casting-statistics>span{
-  display:inline-flex;align-items:center;justify-content:space-between;
-  flex-wrap:nowrap;min-width:0;gap:3px;margin:0;padding:0;
-  border:0;border-radius:0;background:none;box-shadow:none;
-  color:#e9cfaa;font-size:11px;white-space:nowrap;
-}
-.magic-source>.casting-statistics .sheet-formula,
-#sheet-play-view .play-magic-inline-casting .sheet-formula{min-width:0}
-.magic-source>.casting-statistics .sheet-result,
-#sheet-play-view .play-magic-inline-casting .sheet-result{
-  min-width:0;max-width:100%;padding:2px;
-  font-size:12px;white-space:nowrap;
-}
 #sheet-play-view .play-magic-class-card .play-magic-inline-casting{
-  padding:8px 12px 7px;border:0;border-bottom:1px solid #a37b473b;
-  background:none;
+  padding:7px 13px 9px;
+  border:0;
+  border-bottom:1px solid #a37b4730;
+  background:transparent;
 }
-/* Keep both buttons side by side, even on narrow phones. */
+.magic-source .casting-stat,
+#sheet-play-view .play-magic-inline-casting .casting-stat{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:5px;
+  min-width:0;
+  min-height:38px;
+  margin:0;
+  padding:0;
+  color:#dac2a0;
+  white-space:nowrap;
+  font:500 11px/1.2 system-ui,sans-serif;
+}
+.magic-source .casting-stat:not(:first-child),
+#sheet-play-view .play-magic-inline-casting .casting-stat:not(:first-child){
+  padding-left:clamp(6px,2vw,12px);
+  border-left:1px solid #ab895346;
+}
+.magic-source .casting-stat-label,
+#sheet-play-view .play-magic-inline-casting .casting-stat-label{
+  flex:0 0 auto;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.01em;
+  color:#bca17d;
+}
+.magic-source .casting-stat--ability,
+#sheet-play-view .play-magic-inline-casting .casting-stat--ability{
+  min-width:0;
+  flex-direction:row; /* Global label styles use column; casting must not. */
+  align-items:center;
+  justify-content:space-between;
+}
+.magic-source .casting-stat--ability select,
+#sheet-play-view .play-magic-inline-casting .casting-stat--ability select{
+  box-sizing:border-box;
+  flex:0 1 66px;
+  width:66px;
+  min-width:52px;
+  max-width:66px;
+  min-height:36px!important; /* Overrides the global .content select at 48px */
+  height:36px;
+  margin:0;
+  padding:4px 13px 4px 5px;
+  border:0;
+  border-bottom:1px solid #b796695e;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#f4d9ab;
+  font:700 13px/1 system-ui,sans-serif;
+  text-align:center;
+  text-align-last:center;
+}
+.magic-source .casting-stat--ability select:focus-visible,
+#sheet-play-view .play-magic-inline-casting .casting-stat--ability select:focus-visible{
+  outline:2px solid #e0b97c;
+  outline-offset:2px;
+  border-radius:4px;
+}
+.magic-source .casting-stat .sheet-formula,
+#sheet-play-view .play-magic-inline-casting .casting-stat .sheet-formula{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  margin:0;
+}
+.magic-source .casting-stat .sheet-result,
+#sheet-play-view .play-magic-inline-casting .casting-stat .sheet-result{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:36px;
+  min-width:27px;
+  max-width:100%;
+  margin:0;
+  padding:2px 3px;
+  border:0;
+  border-bottom:1px dotted #bb965c7d;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#f6dbaf;
+  font:700 16px/1 system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.magic-source .casting-stat .sheet-result:focus-visible,
+#sheet-play-view .play-magic-inline-casting .casting-stat .sheet-result:focus-visible{
+  outline:2px solid #e0b97c;
+  outline-offset:2px;
+  border-radius:4px;
+}
 #sheet-play-view .play-magic-class-card .play-magic-selection{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  align-items:stretch;gap:7px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+  gap:7px;
 }
 #sheet-play-view .play-magic-class-card .play-magic-selection>.play-button{
-  min-width:0;width:100%;white-space:normal;overflow-wrap:break-word;
-  padding:7px 5px;line-height:1.22;font-size:11px;
+  min-width:0;
+  width:100%;
+  white-space:normal;
+  overflow-wrap:break-word;
+  padding:7px 5px;
+  line-height:1.22;
+  font-size:11px;
 }
-#sheet-play-view .play-magic-class-card .play-magic-selection>.play-button:only-child{
-  grid-column:1/-1;
+#sheet-play-view .play-magic-class-card .play-magic-selection>.play-button:only-child{grid-column:1/-1}
+.magic-source-controls{flex-wrap:nowrap}
+.magic-source-controls .magic-selection-button{
+  flex:1 1 0;
+  min-width:0;
+  white-space:normal;
 }
-@media(max-width:430px){
+@media(max-width:360px){
   .magic-source>.casting-statistics,
-  #sheet-play-view .play-magic-inline-casting .casting-statistics{
-    grid-template-columns:minmax(0,1.15fr) minmax(0,.55fr) minmax(0,.72fr);
-    gap:4px;
+  #sheet-play-view .play-magic-inline-casting .casting-statistics{gap:5px}
+  .magic-source .casting-stat,
+  #sheet-play-view .play-magic-inline-casting .casting-stat{gap:3px}
+  .magic-source .casting-stat:not(:first-child),
+  #sheet-play-view .play-magic-inline-casting .casting-stat:not(:first-child){padding-left:6px}
+  .magic-source .casting-stat-label,
+  #sheet-play-view .play-magic-inline-casting .casting-stat-label{font-size:10px}
+  .magic-source .casting-stat--ability select,
+  #sheet-play-view .play-magic-inline-casting .casting-stat--ability select{
+    min-width:49px;
+    width:51px;
+    padding-inline:2px 11px;
+    font-size:12px;
   }
-  .magic-source>.casting-statistics .casting-ability-label,
-  #sheet-play-view .casting-statistics .casting-ability-label{font-size:0}
-  .magic-source>.casting-statistics .casting-ability-label::after,
-  #sheet-play-view .casting-statistics .casting-ability-label::after{
-    content:"Car.";font-size:10px;
-  }
-  .magic-source>.casting-statistics>span,
-  #sheet-play-view .play-magic-inline-casting .casting-statistics>span{font-size:10px;letter-spacing:-.15px}
-  #sheet-play-view .play-magic-inline-casting .casting-statistics select{font-size:10px}
-  .magic-source-controls .magic-selection-button{font-size:11px;padding:6px 4px}
+  .magic-source .casting-stat .sheet-result,
+  #sheet-play-view .play-magic-inline-casting .casting-stat .sheet-result{font-size:15px;padding-inline:2px}
 }

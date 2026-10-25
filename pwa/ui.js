@@ -2117,7 +2117,20 @@ function listField(label,index,key,value,type="text") {
 }
 function castingStatistics(c,section,ability){
  const selected=c.spellcasting_section_abilities?.[section]||ability;
- return '<div class="casting-statistics"><label><span class="casting-ability-label">Caratteristica</span><select aria-label="Caratteristica degli incantesimi" data-casting-section="'+esc(section)+'">'+Object.entries(abilities).map(([id,label])=>'<option value="'+id+'" '+(selected===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label><span>CD '+formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span><span>Attacco '+formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
+ // A single, readable inline stat strip. Full names remain available to screen
+ // readers and via the native select, while short labels fit narrow phones.
+ return '<div class="casting-statistics" role="group" aria-label="Statistiche di lancio">'+
+   '<label class="casting-stat casting-stat--ability">'+
+     '<span class="casting-stat-label">Caratt.</span>'+
+     '<select aria-label="Caratteristica degli incantesimi" title="Caratteristica degli incantesimi" data-casting-section="'+esc(section)+'">'+
+       Object.entries(abilities).map(([id,label])=>
+         '<option value="'+esc(id)+'" aria-label="'+esc(label)+'" title="'+esc(label)+'" '+
+         (selected===id?'selected':'')+'>'+esc(({str:'FOR',dex:'DES',con:'COS',int:'INT',wis:'SAG',cha:'CAR'})[id]||id.toUpperCase())+'</option>').join('')+
+     '</select></label>'+
+   '<span class="casting-stat casting-stat--dc"><span class="casting-stat-label">CD</span>'+
+     formulaReadout(state.calculated,'casting_dc:'+selected,'CD incantesimi',{bonusTarget:'spell_dc'})+'</span>'+
+   '<span class="casting-stat casting-stat--attack"><span class="casting-stat-label">Att.</span>'+
+     formulaReadout(state.calculated,'casting_hit:'+selected,'Attacco incantesimi',{signed:true,bonusTarget:'spell_attack'})+'</span></div>';
 }
 function slotCounter(level,total,spent){
  const key=level===0?'pact_slot':'slot:'+level;
