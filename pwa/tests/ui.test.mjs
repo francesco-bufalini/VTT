@@ -499,13 +499,16 @@ test("grouped smartphone navigation retains every editable sheet section",async(
   openLegacyPanel('conditions');
   await until(()=>document.querySelector('[data-condition="poisoned"]'));
   const sheetChoices=[...document.querySelectorAll('.condition-sheet-panel .condition-toggle')];
-  assert.equal(sheetChoices.length,20);
-  assert.ok(sheetChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
-    .compare(sheetChoices[index-1].textContent,row.textContent)<=0));
+  assert.equal(sheetChoices.length,25,"19 standard conditions and six exhaustion levels");
+  const coreChoices=[...document.querySelectorAll('[data-condition-category="conditions"] .condition-toggle')];
+  assert.equal(coreChoices.length,19);
+  assert.ok(coreChoices.every((row,index)=>!index||new Intl.Collator("it",{sensitivity:"base"})
+    .compare(coreChoices[index-1].textContent,row.textContent)<=0));
+  assert.equal(document.querySelectorAll('[data-condition-category="exhaustion_levels"] [data-condition^="exhaustion:"]').length,6);
   assert.equal(document.querySelector('[data-condition="grappled"]').closest('label').textContent.trim(),'Afferrato');
   assert.equal(document.querySelector('[data-condition="restrained"]').closest('label').textContent.trim(),'Trattenuto');
   assert.equal(document.querySelector('[data-condition="prone"]').closest('label').textContent.trim(),'Prono');
-  assert.ok(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'));
+  assert.equal(document.querySelector('.condition-sheet-header [data-field="exhaustion"]'),null);
   assert.equal(document.querySelector('[data-condition-count]').textContent,'0');
   document.querySelector('[data-condition="poisoned"]').click();
   await until(async()=>{
@@ -592,12 +595,20 @@ test("inline spell catalog adds available and spellbook choices without divergin
   search.value="Shield";
   search.dispatchEvent(new dom.window.Event("input",{bubbles:true}));
   await until(()=>document.querySelector('[data-act="spell-pick"]'));
+  const beforeDialog=document.querySelector('#magic-tools-dialog[open]');
+  beforeDialog.scrollTop=84;
+  beforeDialog.querySelector('#spell-results').scrollTop=41;
   click('[data-act="spell-pick"]');
   await until(async()=>{
     const current=(await listCreatures()).find(x=>x.creature.name==="Incantatore PWA")?.creature;
     return current?.prepared_spells?.[0]?.id==="spell:shield|phb" &&
       current?.spells?.[0]?.id==="spell:shield|phb";
   });
+  await until(()=>document.querySelector('#magic-tools-dialog[open]')!==beforeDialog);
+  assert.equal(document.querySelector('#magic-tools-dialog[open]').scrollTop,84,
+    'Preparing a spell does not reset the modal scroll');
+  assert.equal(document.querySelector('#magic-tools-dialog[open] #spell-results').scrollTop,41,
+    'Preparing a spell preserves the inner results scroll');
   click('[data-act="magic-tool-close"]');
   await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
   const preparedRow=document.querySelector('.magic-spell-open[data-spell-key="prepared_spells"]');
@@ -1224,6 +1235,13 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('#magic-tools-dialog [data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.play-magic-selection [data-act="sheet-proxy"]'));
+ assert.ok(document.querySelector('#sheet-play-view .play-magic-inline-casting [data-casting-section]'),
+   'Full spellcasting ability control is inline in the class card');
+ assert.ok(document.querySelector('#sheet-play-view .play-magic-inline-casting [data-act="sheet-score-formula"]')||
+   document.querySelector('#sheet-play-view .play-magic-inline-casting [data-act="sheet-roll-formula"]'),
+   'Casting calculation controls remain interactive');
+ assert.equal(document.querySelector('#sheet-play-view [data-sheet-context^="casting:"]'),null,
+   'The redundant casting settings button is gone');
  assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara|impara/i,
    'Class spell selection is directly accessible in the mobile play card');
  click('.play-magic-selection [data-act="sheet-proxy"]');
@@ -1231,8 +1249,11 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.equal(document.querySelector('#spell-class').value,'class|phb|bard');
  assert.equal(document.querySelector('#spell-target'),null);
  assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-known-filter"]'),null);
- assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
-  'Incomplete selections show a warning without blocking choices');
+ assert.equal(document.querySelector('#magic-tools-dialog .magic-selection-progress'),null);
+ assert.equal(document.querySelector('#spell-learn-filter')?.value,'all');
+ assert.equal(document.querySelector('#spell-learn-filter')?.selectedOptions[0]?.textContent,'Tutte');
+ assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:\s*0\s*\/\s*\d+/,
+  'Learning only shows known-spell counts without missing/excess commentary');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
  click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]'));
@@ -1244,8 +1265,9 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
   const current=(await loadCreature(saved.data.id)).data;
   return current.prepared_spells?.length===0&&current.spells?.length===0;
  });
- assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/ne mancano/,
-  'Warnings refresh immediately after removing a known spell');
+ assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:/,
+  'Learning warning refreshes when a spell is forgotten');
+ assert.doesNotMatch(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/mancano|eccesso/i);
  click('[data-act="magic-tool-close"]');
  await until(()=>!document.querySelector('#magic-tools-dialog[open]'));
  await until(()=>document.querySelector('.magic-level[data-magic-level="1"] .magic-level-slot'));

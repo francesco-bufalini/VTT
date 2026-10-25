@@ -19,7 +19,7 @@ const itemContainerId=inventoryModule.itemContainerId||((item={},containers=[])=
  return containers.some(row=>row.id===id)?id:DEFAULT_INVENTORY_CONTAINER;
 });
 import {isDocument} from "./documents.js";
-import {conditionOptions,conditionDescriptionHtml} from "./condition_catalog.js";
+import {conditionOptions,conditionDescriptionHtml,exhaustionLevel,exhaustionConditionRows} from "./condition_catalog.js";
 import {matchesSearch} from './ui_primitives.js';
 
 export function inventorySectionControls(record,selected=[]){
@@ -519,8 +519,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  panels.forEach((node,i)=>bind('panel:'+i,node));
  const panelNamed=(name)=>panels.find(node=>heading(node).includes(name));
  const infused=activeInfusions(c,d.infusion_catalog||[],d.features||[]);
- const activeConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[])
-   .filter(row=>(c.conditions||[]).includes(row.id));
+ const availableConditions=conditionOptions(conditionCatalog,c.rules_version,c.conditions||[]);
+ const activeConditions=availableConditions.filter(row=>row.id!=='exhaustion'&&
+   (c.conditions||[]).includes(row.id));
+ const currentExhaustion=exhaustionLevel(c);
+ if(currentExhaustion){
+   const exhaustionSource=availableConditions.find(row=>row.id==='exhaustion');
+   activeConditions.push(exhaustionConditionRows(c.rules_version,exhaustionSource)[currentExhaustion-1]);
+ }
  for(const row of activeConditions){
   const detail=document.createElement("section");
   detail.innerHTML=conditionDescriptionHtml(row);
@@ -720,11 +726,12 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const maxGrantOrigin=maxTrait?.origin_id||mainGrant?.origin_id||'';
   const baseRuleNames={
    attack:'Azione di attacco',opportunity:'Attacco di opportunità',
-   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria'
+   spell_cast:'Lanciare un incantesimo',two_weapon:'Attacco con arma secondaria',
+   ability_checks:'Prova abilità'
   };
   const rulesOfBase=[
    ['attack','action'],['opportunity','reaction'],
-   ['spell_cast','action'],['two_weapon','bonus']
+   ['spell_cast','action'],['two_weapon','bonus'],['ability_checks','action']
   ];
   const basicRules=privilegeGroup('basic-rules','Regole di base',
    rulesOfBase.map(([id,time])=>{
@@ -860,21 +867,22 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   if(slots.length)html+=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>proxy(node,node.getAttribute('aria-label')||'Consuma slot','', '<small>'+esc(node.dataset.level==='0'?'Patto':node.dataset.level+'°')+'</small><b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',proxy(bank.querySelector('[data-magic-tool="slots"]'),'Gestisci slot','reset'));
   for(const source of bank.querySelectorAll('.magic-source')){
    const title=source.querySelector('h3')?.textContent||'Poteri';
-   const titleKey='casting:'+sources.size;bind(titleKey,source.querySelector('.casting-statistics'));
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
     const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
     const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
     return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span><small class="play-spell-level">'+esc(level==='0'?'Trucchetto':level?level+'°':'')+'</small>')+'</div>';
    }).join('');
-   const casting=source.querySelector('.casting-statistics'),ability=casting?.querySelector('select')?.value||'int';
-   const stats='CD '+(d.values?.['casting_dc:'+ability]??'—')+' · Attacco '+signed(d.values?.['casting_hit:'+ability]);
+   // The actual selector, save controls and formula buttons used to live in a
+   // separate settings popup. Expose their exact interactive markup inline.
+   const castingDetails=source.querySelector('.magic-source-overview')?.outerHTML||
+     source.querySelector('.casting-statistics')?.outerHTML||'';
    // Reuse the class selector in the native mobile sheet rather than hiding it
    // inside the source bank or inventing another spell-selection state.
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
      .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
-   html+=card(title,'<p class="play-casting-facts">'+esc(stats)+(source.querySelector('.magic-source-count')?' · '+esc(source.querySelector('.magic-source-count').textContent):'')+'</p>'+
+   html+=card(title,'<div class="play-magic-inline-casting">'+castingDetails+'</div>'+
      (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
-     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),edit(titleKey,'Caratteristica e bonus di '+title,'settings'));
+     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),'','play-magic-class-card');
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
@@ -1094,13 +1102,17 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  }
  if(sheet==='conditions'){
   target('conditions','.condition-sheet-panel');
-  html+=card('Stati attivi',activeConditions.map(({id,label})=>'<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('')||'<div class="play-calm">'+icon('shield')+'<strong>Nessuna condizione attiva</strong></div>',edit('conditions','Aggiungi o rimuovi condizioni','increase'));
+  const plus=(key,title)=>'<button type="button" class="play-status-add" data-act="sheet-context" data-sheet-context="'+esc(key)+'" aria-label="'+esc(title)+'" title="'+esc(title)+'">＋</button>';
+  const section=(title,key,body)=>'<section class="play-status-section" data-status-section="'+esc(key)+'">'+
+    '<header class="play-status-section-head"><h3>'+esc(title)+'</h3>'+plus(key,'Aggiungi '+title.toLowerCase())+'</header>'+
+    '<div class="play-status-section-content">'+body+'</div></section>';
+  const conditionRows=activeConditions.map(({id,label})=>
+    '<button type="button" class="play-condition" data-act="sheet-context" data-sheet-context="condition:'+esc(id)+'" aria-label="Descrizione '+esc(label)+'">'+icon('condition')+esc(label)+'</button>').join('');
   const applied=(c.proficiency_origins||[]).filter(row=>row?.group==='spell'&&String(row.id||'').startsWith('spell:')&&!row.disabled&&c.origin_enabled?.[row.id]!==false);
   const spellRows=applied.map(row=>'<div class="play-effect-row"><span>'+icon('spark')+'<strong>'+esc(String(row.name||row.id).replace(/^Incantesimo · /,''))+'</strong></span>'+btn('Rimuovi incantesimo','cross','data-act="condition-remove-spell" data-spell-id="'+esc(row.id.slice(6))+'"','<span class="sr-only">Rimuovi</span>')+'</div>').join('');
   const spellOptions=spells.filter(isPersistentSpell).filter(row=>row?.id&&row?.name);
   const picker='<div class="play-effect-add"><label class="vtt-list-search">Cerca incantesimo<input id="condition-spell-search" type="search" placeholder="Cerca nel catalogo"></label><label>Incantesimo<select id="condition-spell-picker">'+spellOptions.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.name)+(row.source?' · '+esc(row.source):'')+'</option>').join('')+'</select></label>'+btn('Applica incantesimo','increase','data-act="condition-add-spell"','<span>Applica</span>')+'</div>';
   const spellEditor=document.createElement('div');spellEditor.innerHTML=picker;bind('apply-spell',spellEditor.firstElementChild);
-  html+=card('Incantesimi applicati',spellRows||'<p class="play-empty">Nessun incantesimo applicato.</p>','', 'play-effect-card')+go('apply-spell','Applica un incantesimo','spark','Scegli un incantesimo con durata dal catalogo');
   const active=Object.entries(c.active_class_features||{});
   const effectRows=active.map(([key,row])=>{
    const effect=(d.active_feature_effects||[]).find(e=>e.key===key);
@@ -1112,15 +1124,20 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const eligible=classActions.filter(row=>toggleKeys.has(row.class_feature_id)&&!c.active_class_features?.[row.class_feature_id]);
   const abilityPicker=eligible.length?'<div class="play-effect-add"><label>Capacità disponibile<select id="condition-ability-picker">'+eligible.map(row=>'<option value="'+esc(row.class_feature_id)+'">'+esc(row.name)+'</option>').join('')+'</select></label>'+btn('Attiva capacità','increase','data-act="condition-add-ability"','<span>Attiva</span>')+'</div>':'<p class="play-empty">Nessun’altra capacità persistente disponibile. Le capacità si sbloccano tramite i privilegi della scheda.</p>';
   const abilityEditor=document.createElement('div');abilityEditor.innerHTML='<div class="play-effect-add">'+abilityPicker+'</div>';bind('apply-ability',abilityEditor.firstElementChild);
-  html+=card('Capacità attive',effectRows||'<p class="play-empty">Nessuna capacità attiva.</p>','', 'play-effect-card')+go('apply-ability','Applica una capacità','buff','Attiva un privilegio persistente disponibile');
-  if(infused.length)html+=card('Capacità magiche attive',infused.map(row=>
-    '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>'+esc(row.name)+
-    '</strong><small class="feature-effect-summary">'+esc(row.item.name||row.item.id)+
-    ' · Infusione equipaggiata</small></span></span>'+
-    btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.index+'"','<span class="sr-only">Termina</span>')+
-    '</div>').join(''),'','play-effect-card');
-  html+=go('conditions','Indebolimento','debuff','Livello '+(c.exhaustion_level??c.exhaustion??0));
-  if((c.conditions||[]).includes('concentrating'))html+=card('Concentrazione','<p>'+esc(c.concentrating_spell_id||'Attiva')+'</p>'+btn('Interrompi concentrazione','cross','data-act="stop-concentration"'));
+  const infusionRows=infused.map(row=>
+   '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>'+esc(row.name)+
+   '</strong><small class="feature-effect-summary">'+esc(row.item.name||row.item.id)+
+   ' · Infusione equipaggiata</small></span></span>'+
+   btn('Termina infusione','cross','data-act="infusion-clear" data-index="'+row.index+'"','<span class="sr-only">Termina</span>')+
+   '</div>').join('');
+  const concentrationRow=(c.conditions||[]).includes('concentrating')?
+   '<div class="play-effect-row"><span>'+icon('spark')+'<span><strong>Concentrazione</strong><small class="feature-effect-summary">'+esc(c.concentrating_spell_id||'Attiva')+'</small></span></span>'+
+   btn('Interrompi concentrazione','cross','data-act="stop-concentration"','<span class="sr-only">Interrompi</span>')+'</div>':'';
+  html+=card('Stati attivi',
+    section('Condizioni','conditions',conditionRows||'<p class="play-empty">Nessuna condizione attiva.</p>')+
+    section('Incantesimi','apply-spell',spellRows+concentrationRow||'<p class="play-empty">Nessun incantesimo applicato.</p>')+
+    section('Capacità','apply-ability',effectRows+infusionRows||'<p class="play-empty">Nessuna capacità attiva.</p>'),
+    '', 'play-status-card');
  }
  // The action variants shortcut belongs to the page title, not to an action group.
  // Preserve the 2014-only availability and the existing delegated popup action.
