@@ -1322,7 +1322,7 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
 
 test('ASI opens its sole next picker automatically until ability allocation is complete',async t=>{
  const {createCreature}=await import('../creatures.js');
- const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ const {clearLocalRuleCatalogCache,loadRuleCatalogs}=await import('../sheet_rules.js');
  const oldFetch=globalThis.fetch;
  const feature={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
   name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',
@@ -1342,6 +1342,8 @@ test('ASI opens its sole next picker automatically until ability allocation is c
   return oldFetch(url,options);
  };
  t.after(()=>{globalThis.fetch=oldFetch;clearLocalRuleCatalogCache();stopRealtime();});
+ const catalogs=await loadRuleCatalogs();
+ assert(catalogs.classFeatures?.class_features?.some(row=>row.name==='Ability Score Improvement'));
  const saved=await createCreature('character','ASI chaining test');
  await saveCreature({...saved.data,class:'Fighter',class_source:'PHB',level:4,
   classes:[{name:'Fighter',source:'PHB',level:4}],
@@ -1349,7 +1351,10 @@ test('ASI opens its sole next picker automatically until ability allocation is c
  click('[data-nav="library"]');
  await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
  click('[data-act="open"][data-id="'+saved.data.id+'"]');
- const mode=await until(()=>document.querySelector('[data-act="pending-choice-open"][data-choice-id^="advancement-mode:"]'));
+ const mode=await until(()=>document.querySelector('[data-act="pending-choice-open"][data-choice-id^="advancement-mode:"]'),6000).catch(error=>{
+  const visible=document.querySelector('#sheet-play-view')?.textContent?.slice(0,300)||'';
+  throw new Error('No ASI pending-choice button: '+error.message+'; sheet='+visible);
+ });
  mode.click();
  const first=await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="advancement-mode:"]'));
  const selectAndSave=async value=>{
