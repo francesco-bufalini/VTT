@@ -194,3 +194,36 @@ test("saved custom trackers coexist with typed class resources and preserve othe
  assert.equal(patch.resource_tracker_spent.custom,2);
  assert.equal(patch.resource_tracker_spent["class:druid:phb:wild_shape"],undefined);
 });
+
+
+test("College of Creation TCE counters are class-, subclass-, level- and edition-qualified",()=>{
+ const native=JSON.parse(readFileSync(new URL("../../vtt/data/class_resource_overrides.json",import.meta.url),"utf8"));
+ const nativeOverrides={classes:native.classes};
+ const at=(source,subclass,level)=>classResourceTrackers({kind:"character",level,
+  classes:[{name:"Bard",source,level,subclass}]},index,nativeOverrides,{cha:3});
+ for(const source of ["PHB","XPHB"]){
+  const prefix="class:bard:"+source.toLowerCase()+":";
+  assert(!at(source,"College of Creation",2).some(row=>row.name==="Performance of Creation"));
+  const third=at(source,"Creation",3);
+  const creation=third.find(row=>row.name==="Performance of Creation");
+  assert.equal(creation?.id,prefix+"performance_of_creation");
+  assert.equal(creation?.max,1);
+  assert.equal(creation?.recharge,"long_rest");
+  assert.equal(creation?.origin,"Performance of Creation");
+  assert.equal(creation?.origin_subclass,"College of Creation");
+  assert(!third.some(row=>row.name==="Animating Performance"));
+  const sixth=at(source,"College of Creation",6);
+  const animated=sixth.find(row=>row.name==="Animating Performance");
+  assert.equal(animated?.id,prefix+"animating_performance");
+  assert.equal(animated?.max,1);
+  assert.equal(animated?.recharge,"long_rest");
+  assert.equal(animated?.origin,"Animating Performance");
+  assert(!at(source,"College of Lore",14).some(row=>
+   ["Performance of Creation","Animating Performance"].includes(row.name)));
+  assert.equal(at(source,"College of Creation",14).filter(row=>
+   ["Performance of Creation","Animating Performance"].includes(row.name)).length,2);
+  const spent={kind:"character",level:6,resource_tracker_spent:{[animated.id]:1}};
+  const recovered=recoveryPatch(spent,"long_rest",sixth);
+  assert.equal(recovered.resource_tracker_spent[animated.id],undefined);
+ }
+});
