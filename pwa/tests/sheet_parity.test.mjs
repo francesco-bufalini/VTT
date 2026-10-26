@@ -4,7 +4,7 @@ import {calculateSheet} from '../sheet_rules.js';
 import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell,fastestMovement,trackerRecoveryText,mountPlaySheet,refreshCalculatedValues} from '../sheet_rules_view.js';
 import {JSDOM} from 'jsdom';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
-import {referencePatch,rowReferencePatch} from '../native_sheet.js';
+import {referencePatch,rowReferencePatch,availableReferenceRows,flattenedSubraceRepairPatch} from '../native_sheet.js';
 import {castingClasses,resourceTrackers} from '../sheet_rules.js';
 import {slotUsePatch,recoveryPatch} from '../native_sheet.js';
 import {addSelectedSpell,removeSelectedSpell} from '../spell_selection.js';
@@ -62,6 +62,31 @@ test('Info derives species creature type from references, including implicit Hum
  assert.equal(speciesCreatureType({kind:'character',species:'Unknown'}, {races}),'—');
  assert.equal(speciesCreatureType({kind:'monster',stat_block:{type:{type:'dragon'}}}, {races}),'dragon');
 });
+test('2014 subrace picker disambiguates duplicate flattened race IDs and repairs old saves',()=>{
+ const elf=mechanics.races.find(row=>row.name==='Elf'&&row.source==='PHB');
+ const flattened=mechanics.races.find(row=>row.name==='Elf (High)'&&row.source==='PHB');
+ const high=mechanics.subraces.find(row=>row.name==='High'&&row.raceName==='Elf'&&row.source==='PHB');
+ assert.ok(elf&&flattened&&high);
+ assert.equal(flattened.id,high.id,'5etools uses one ID for the flattened race and subrace');
+ const references={races:[...mechanics.races,...mechanics.subraces]};
+ const character={kind:'character',rules_version:'2014',species:'Elf',species_source:'PHB',species_id:elf.id};
+ const choices=availableReferenceRows(character,'subrace','races',references);
+ assert.ok(choices.length);
+ assert.equal(choices.find(row=>row.id===high.id)?.name,'High',
+   'The picker must resolve the subrace entry despite its shared ID');
+ assert.ok(!choices.some(row=>row.source==='XPHB'),
+   'Existing 2014 edition filtering remains active');
+ const saved=referencePatch(character,'subrace',choices.find(row=>row.id===high.id));
+ assert.deepEqual([saved.subrace,saved.subrace_source,saved.subrace_id],['High','PHB',high.id]);
+ const broken={...character,subrace:'Elf (High)',subrace_source:'PHB',subrace_id:high.id};
+ assert.deepEqual(flattenedSubraceRepairPatch(broken,references),
+   {subrace:'High',subrace_id:high.id,subrace_source:'PHB'});
+ assert.equal(flattenedSubraceRepairPatch({...broken,subrace:'Personalizzata'},references),null,
+   'Custom subraces must not be rewritten');
+ assert.equal(flattenedSubraceRepairPatch({...broken,subrace_id:'other'},references),null,
+   'A different reference ID must never trigger a repair');
+});
+
 test('secondary classes show only non-primary entries, with source from selected catalog',()=>{
  const c={class:'Wizard',class_source:'PHB',classes:[{name:'Wizard',source:'PHB',level:4},
   {name:'Fighter',source:'PHB',level:1,subclass:'Champion',subclass_source:'PHB'}]};
