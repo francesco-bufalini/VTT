@@ -66,7 +66,7 @@ export class TacticalViewer {
     this.send=send;this.ownerId=ownerId;this.notify=notify;this.onCastAccepted=onCastAccepted;
     this.tokenId="";this.attack={};this.image=null;this.snapshot=null;
     this.targeting={};this.preview=null;this.aimPixel=null;this.selectedId="";
-    this.basicAction=null;
+    this.basicAction=null;this.abilityTarget=null;
     this.zoom=1;this.panX=0;this.panY=0;this.pointers=new Map();
     this.touchMoved=false;this.busy=false;this.root=null;this.onResize=()=>this.draw();
     this.imgUrl="";
@@ -74,7 +74,8 @@ export class TacticalViewer {
   }
   async open(tokenId, attack={}) {
     if(!tokenId)throw new Error("Scegli prima un token.");
-    if(this.root&&this.targeting.active)throw new Error("Completa o annulla prima l’incantesimo in corso.");
+    if(this.root&&(this.targeting.active||this.abilityTarget))
+      throw new Error("Completa o annulla prima la selezione in corso.");
     this.close();
     this.tokenId=tokenId;this.attack=structuredClone(attack);this.basicAction=null;
     this.root=document.createElement("div");
@@ -127,12 +128,20 @@ export class TacticalViewer {
       'Aiutare: scegli un token per applicare soltanto Aiutato.':
       action.rule+' Tocca il bersaglio e conferma il successo dopo aver risolto il tiro.');
   }
+  setAbilityTarget({name,range_feet=0,exclude_self=false,onSelected}={}){
+    if(!this.root||!name||typeof onSelected!=='function'||this.targeting.active)
+      throw Error('Selezione bersaglio non disponibile.');
+    this.abilityTarget={name,range_feet,exclude_self,onSelected};
+    this.setStatus('Seleziona sulla mappa un token per '+name+
+      (range_feet?' (portata '+range_feet+' ft)':'')+'. Annulla chiudendo la vista.');
+    this.updateButtons();this.draw();
+  }
   close() {
     ++this.generation;clearTimeout(this.pollTimer);this.pollTimer=null;
     this.resizeObserver?.disconnect();this.resizeObserver=null;
     if(this.onKey)window.removeEventListener("keydown",this.onKey);
     window.removeEventListener("resize",this.onResize);
-    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;
+    this.root?.remove();this.root=null;this.image=null;this.snapshot=null;this.basicAction=null;this.abilityTarget=null;
     if(this.imgUrl){URL.revokeObjectURL(this.imgUrl);this.imgUrl="";}
     document.body.classList.remove("tactical-open");
     this.pointers.clear();
@@ -223,6 +232,8 @@ export class TacticalViewer {
     this.caption.textContent=String(data.title||"Mappa")+" · "+Math.round(data.field_feet||60)+" ft";
     this.setStatus(this.targeting.active ?
       (this.targeting.instruction||"Scegli un bersaglio sulla mappa.") :
+      this.abilityTarget?'Seleziona un token per '+this.abilityTarget.name+
+        (this.abilityTarget.range_feet?' · portata '+this.abilityTarget.range_feet+' ft':'') :
       this.attack?.range_feet?"Tocca un bersaglio per verificarne gittata e distanza." :
       "Tocca un token per selezionarlo. Trascina per spostarti, pizzica per ingrandire.");
     this.updateButtons();this.draw();
@@ -352,6 +363,18 @@ export class TacticalViewer {
     this.selectedId=marker?.id||"";
     const payload={token_id:this.tokenId,owner_id:await this.ownerId(),
       target_id:marker?.id||"",snapshot_id:this.snapshot.snapshot_id,pixel};
+    if(this.abilityTarget){
+      if(!marker){this.setStatus('Seleziona un token, non uno spazio vuoto.');return;}
+      const selection=this.abilityTarget;
+      if(selection.exclude_self&&marker.id===this.tokenId){
+        this.setStatus('Questa capacità richiede un bersaglio diverso dal personaggio.');return;
+      }
+      // Target selection is local and does not impersonate a spell. The
+      // resource is consumed only after the caller confirms the selected token.
+      this.abilityTarget=null;this.close();
+      await selection.onSelected({id:marker.id,name:marker.name||marker.id});
+      return;
+    }
     if(this.basicAction && marker){
       const basic=this.basicAction;
       const confirmed=basic.mode==='help'||window.confirm(basic.rule+
