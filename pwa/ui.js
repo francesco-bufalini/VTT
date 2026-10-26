@@ -1935,10 +1935,12 @@ function inventoryEquipmentView(c,calculated={}){
   const naturalBase=c.kind==="monster"?(monsterAc??10):(c.armor_class_base??10);
   const naturalFormula=String(c.armor_natural_formula||
     ((c.kind==="character"&&Number(naturalBase)===10)?"10 + dex_mod":String(naturalBase)));
+  const chosenNatural=calculated.base_override_applied?.ac_unarmored?.expression;
+  const displayedNatural=chosenNatural?String(chosenNatural):naturalFormula;
   const formula=armor?
     String(Number(armor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+
       (shieldBonus?' + '+shieldBonus+' scudo':''):
-    naturalFormula+(shieldBonus?' + '+shieldBonus+' scudo':'');
+    displayedNatural+(shieldBonus?' + '+shieldBonus+' scudo':'');
   const attackSettings='<div class="equipment-attack-options">'+
     '<label class="equipment-attack-ability">Caratteristica attacchi<select data-field="attack_ability">'+
       [['str','Forza'],['dex','Destrezza'],['con','Costituzione'],['int','Intelligenza'],['wis','Saggezza'],['cha','Carisma']].map(([value,label])=>
