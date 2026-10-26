@@ -538,7 +538,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
         [...ALIGNMENTS,[c.alignment,c.alignment+' · importato']]:ALIGNMENTS,
       c.alignment||'Completamente neutrale')) )+
    panel('Aspetto',
-    '<p class="sheet-section-description">Specie, sottorazza, taglia, tipo e miniature della creatura.</p>'+
+    '<p class="sheet-section-description">Specie e tipo della creatura.</p>'+
     ((c.kind==='monster'||c.variant_rules_kind==='monster')?summary([['Razza / Specie',c.species],['Tipo',typeof c.type==='string'?c.type:c.stat_block?.type?.type||c.stat_block?.type||'—']])+
       '<label>GS<input data-native-cr value="'+esc(typeof c.stat_block?.cr==='object'?c.stat_block.cr.cr:c.stat_block?.cr||'0')+'"></label>':
       cols(reference('Razza / Specie','species','races')+reference('Sottorazza','subrace','races'))+
@@ -552,8 +552,8 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     '')+
    panel('Background','<h3>Background principale</h3>'+reference('Background principale','background','backgrounds')+
      '<h3>Altri background</h3>'+nativeRows(c,'backgrounds_catalog',catalogs))+
-   panel('Classi e progressione',
-      '<p class="sheet-section-description">Classi, sottoclassi, livelli e punti esperienza del personaggio.</p>'+
+   panel('Classi',
+      '<p class="sheet-section-description">Classi e punti esperienza del personaggio.</p>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
       number('XP','xp')+'</div>'+
       cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
