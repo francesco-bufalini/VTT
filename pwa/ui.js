@@ -1,3 +1,4 @@
+import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
@@ -34,7 +35,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
-import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,featTraitOriginKey} from './feat_picker.js';
+import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,expandedSpellFeatOptions,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
 import {isContentAvailableForRules} from './source_edition.js';
@@ -3772,6 +3773,26 @@ async function openRollTraitOrigin(originId){
  }
  state.traitPopupKey=trait.key;mountTraitBenefitDialog();
 }
+function openConcentrationDamageDialog(check,creature,calculated){
+ if(!check||!creature||state.editor?.read()?.id!==creature.id)return;
+ document.querySelector('#concentration-damage-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='concentration-damage-dialog';
+ dialog.className='sheet-roll-dialog sheet-roll-preview concentration-damage-dialog';
+ dialog.dataset.creatureId=creature.id;
+ const modifier=Number(calculated?.values?.['save:con']);
+ const signed=Number.isFinite(modifier)?(modifier>=0?'+':'')+modifier:'—';
+ dialog.innerHTML='<header class="sheet-context-head"><div><small>CONCENTRAZIONE · DANNI SUBITI</small><h2>Verifica concentrazione</h2></div>'+dialogCloseButton('concentration-close','Chiudi')+'</header>'+
+  '<p class="concentration-damage-copy">Hai subito <strong>'+esc(check.damage)+'</strong> danni mentre mantieni la concentrazione.'+
+  (check.spell_id?'<span class="concentration-spell-label">Incantesimo: '+esc(check.spell_id)+'</span>':'')+'</p>'+
+  '<div class="concentration-damage-metrics"><div><span>CD tiro salvezza</span><strong>'+esc(check.dc)+'</strong></div>'+
+  '<div><span>TS Costituzione</span><button type="button" class="concentration-save-button" data-act="concentration-save-roll" data-creature-id="'+esc(creature.id)+'" aria-label="Apri il tiro salvezza di concentrazione">'+esc(signed)+' '+actionGlyph('dice')+'</button></div></div>'+
+  '<div class="actions concentration-damage-actions"><button type="button" class="btn small" data-act="concentration-end">Termina concentrazione</button></div>';
+ document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ openDialog(dialog);
+ return dialog;
+}
 function openUnifiedRollDialog({kind,heading,rollLabel='',modifier,rollType,formula,bonuses=[],autoLabel='',creatureId='',target='',damageFormula='',damageType='',damageLabel=''}){
  document.querySelector('#sheet-roll-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -4037,7 +4058,7 @@ async function openFeatPickerDialog(){
  const originNote=dialog.querySelector('[data-feat-origin-note]');
  const owned=()=>new Set((editor.read().feats_catalog||[]).map(x=>
   String(x?.name||x).toLowerCase()+'|'+String(x?.source||'').toLowerCase()));
- const visible=()=>candidates.filter(row=>matchesSearch(query,row.name,row.source));
+ const visible=()=>candidates.filter(row=>matchesSearch(query,row.display_name||row.name,row.source));
  const paint=()=>{
   if(!dialog.isConnected)return;
   const filtered=visible(),known=owned(),shown=filtered.slice(0,limit);
@@ -4052,7 +4073,7 @@ async function openFeatPickerDialog(){
     return '<div class="feat-picker-row'+(active?' is-selected':'')+'" role="listitem">'+
       '<button type="button" class="feat-picker-row-name" data-feat-detail-index="'+i+
       '" aria-expanded="'+active+'" aria-label="Dettagli di '+esc(row.name)+'">'+
-      '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
+      '<strong>'+esc(row.display_name||row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
       '<button type="button" class="feat-picker-add'+(has?' is-selected':'')+
       '" data-feat-add-index="'+i+'"'+(has||saving?' disabled':'')+' aria-label="'+
       (has?'Talento già posseduto: ':'Aggiungi ')+esc(row.name)+'">'+
@@ -4069,7 +4090,7 @@ async function openFeatPickerDialog(){
    const full=await detailedEntry('feats',entry);
    if(!dialog.isConnected||selected!==i)return;
    const description=flattenDescription(full)||'Descrizione non disponibile nel catalogo locale.';
-   detail.innerHTML='<header><strong>'+esc(full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small>'+
+   detail.innerHTML='<header><strong>'+esc(entry.display_name||full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small>'+
     '<button type="button" data-feat-detail-close aria-label="Chiudi dettagli">×</button></header>'+
     '<div class="feat-picker-description">'+esc(description)+'</div>';
   }catch(error){if(dialog.isConnected&&selected===i)
@@ -4132,8 +4153,8 @@ async function openFeatPickerDialog(){
  try{
   const all=await catalogEntries('feats');
   if(!dialog.isConnected)return;
-  candidates=all.filter(row=>row?.name&&row?.source&&isContentAvailableForRules(row,record.rules_version))
-    .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it',{sensitivity:'base'}));
+  candidates=expandedSpellFeatOptions(all.filter(row=>row?.name&&row?.source&&isContentAvailableForRules(row,record.rules_version)),catalogs.classMechanics?.additional_spells||[])
+    .sort((a,b)=>String(a.display_name||a.name).localeCompare(String(b.display_name||b.name),'it',{sensitivity:'base'}));
  }catch(error){failed='Impossibile caricare i talenti: '+errorMessage(error);}
  finally{loading=false;paint();}
 }
@@ -5037,12 +5058,25 @@ async function handleAction(target){
     }
     await openRollTraitPicker('bonus',fallbackTarget);return;
   }
-  if(act==='sheet-roll'){
+  if(act==='concentration-close'){
+    closeDialog(document.querySelector('#concentration-damage-dialog'),{remove:true});return;
+  }
+  if(act==='concentration-end'){
+    const dialog=document.querySelector('#concentration-damage-dialog');
+    const creature=state.editor?.read();
+    if(!creature||creature.id!==dialog?.dataset.creatureId)throw Error('La creatura è cambiata.');
+    await patch(concentrationEndPatch(creature));
+    closeDialog(dialog,{remove:true});await render();return;
+  }
+  if(act==='sheet-roll'||act==='concentration-save-roll'){
+    const concentration=act==='concentration-save-roll';
+    const rollContext=concentration?CONCENTRATION_ROLL_CONTEXT:'';
+    if(concentration)closeDialog(document.querySelector('#concentration-damage-dialog'),{remove:true});
     const creature=state.editor?.read();if(!creature)throw Error('Apri prima una creatura');
-    const key=String(target.dataset.target||'');
+    const key=concentration?'save:con':String(target.dataset.target||'');
     const calculated=await computeLocalData(creature),modifier=calculated.values[key];
     if(!Number.isFinite(modifier))throw Error('Valore del tiro non disponibile');
-    const label=target.dataset.label||'Tiro';
+    const label=concentration?'TS Costituzione · concentrazione':target.dataset.label||'Tiro';
     // The 2024 Exhaustion penalty is mandatory: it modifies the actual d20
     // result and formula, never a selectable/spendable bonus or ability score.
     const exhaustionPenalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
@@ -5061,7 +5095,7 @@ async function handleAction(target){
        ...applicableDiceBonuses(creature,key,state.spellCatalog||[],calculated),
        ...classFeatureRollBonuses(creature,calculated,key)
       ],{kind:'d20'});
-     const autoSources=classFeatureRollSources(creature,calculated,key);
+     const autoSources=classFeatureRollSources(creature,calculated,key,rollContext);
     const automatic=resolveClassRollMode(autoSources);
     const formulaMarkup=(chosen=[],choice='auto')=>{
       const resolved=resolveClassRollMode(autoSources,choice);
@@ -5075,6 +5109,7 @@ async function handleAction(target){
     const dialog=openUnifiedRollDialog({kind:'d20',heading:rollHeading(label,key),rollLabel:label,modifier:effectiveModifier,
       rollType:rollCategory(key,calculated),formula:formulaMarkup(),bonuses,autoLabel,
       creatureId:creature.id||'',target:key});
+    dialog.dataset.rollContext=rollContext;
     dialog.renderRollFormula=()=>{
       const formula=dialog.querySelector('[data-roll-formula]');
       const choice=dialog.querySelector('[data-roll-mode]').value;
@@ -5126,7 +5161,7 @@ async function handleAction(target){
         if(!Number.isFinite(modifier))throw Error('Modificatore non disponibile.');
         const chosen=chosenRollBonuses(dialog);
         const choice=dialog.querySelector('[data-roll-mode]')?.value||'auto';
-        const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key),choice);
+        const resolved=resolveClassRollMode(classFeatureRollSources(creature,calculated,key,dialog.dataset.rollContext||''),choice);
         const penalty=exhaustionRollModifier(calculated.exhaustion_effects,key);
         const outcome=rollSheetDice(modifier+penalty,chosen,randomDie,resolved.mode);
         state.roll={...outcome,label,author:selectedName()};
@@ -6246,10 +6281,16 @@ async function handleSubmit(form){
     const creature=state.editor.read(),calculated=await computeLocalData(creature);
     const damage=mode==='damage'?variantDamage(state.editor.readBase(),amount):null;
     const changes=damage?.patch||hitPointPatch(creature,amount,calculated);
+    const concentrationCheck=mode==='damage'?concentrationDamageCheck(creature,amount):null;
     await patch(changes);
     closeSessionDialog(dialog);
     await render();
-    if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
+    if(concentrationCheck){
+      const current=state.editor?.read();
+      const popup=current&&current.id===creature.id?openConcentrationDamageDialog(concentrationCheck,current,state.calculated):null;
+      if(popup&&damage?.overflow>0)popup.addEventListener('close',()=>promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow),{once:true});
+      else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
+    }else if(damage?.overflow>0)promptVariantOverflow(creature.id,creature.current_form_id,damage.overflow);
     return;
   }
   if(form.id==="pair-form"){

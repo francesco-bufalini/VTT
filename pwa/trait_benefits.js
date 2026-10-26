@@ -244,6 +244,15 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   }
  }
 
+ // Contextual, source-qualified feat advantages are separate from ordinary
+ // Constitution saving throws and stay visible on the granting feat card.
+ for(const rule of rows(calculated.feat_roll_modes)){
+  if(!belongs(rule)||!['advantage','disadvantage'].includes(rule.mode))continue;
+  const context=rule.context==='concentration_damage'?' · concentrazione':'';
+  add('roll_modes','Vantaggi e svantaggi',traitBenefitTargetLabel(rule.target)+context,
+   rule.mode==='advantage'?'Vantaggio':'Svantaggio',
+   'roll_mode:'+rule.origin_id+':'+rule.mode+':'+rule.target+':'+(rule.context||''));
+ }
  // User-authored mode grants carry the same stable source as other trait bonuses.
  for(const row of rows(record.roll_mode_grants)){
   if(row.disabled||!belongs(row)||!['advantage','disadvantage'].includes(row.mode))continue;
@@ -344,6 +353,16 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   });
   if(details.origin_id)abilitySourceIds.add(String(details.origin_id));
  };
+ // Non-class feats can declare actions via the same typed benefits schema.
+ for(const action of rows(calculated.feat_actions)){
+  if(!belongs(action))continue;
+  addAbility(action.name,{
+   origin_id:action.origin_id,status:trait.inactive?'Tratto disattivato':'Attivabile',
+   timing:actionTime(action.action_type||action.time),
+   cost:Number(action.resource_cost)>0?String(action.resource_cost)+' utilizzi':'Nessun costo',
+   description:describe(action.description),effects:[]
+  });
+ }
  for(const rule of rows(calculated.trait_state_catalog)){
   const owner=ownerFeatures.find(feature=>norm(feature.name)===norm(rule.trait)&&
    classOf(feature)===norm(rule.class_name)&&

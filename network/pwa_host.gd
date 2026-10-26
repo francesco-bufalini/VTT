@@ -40,6 +40,7 @@ const FILES := {
 	"/sheet_rules.js": ["res://pwa/sheet_rules.js", "text/javascript; charset=utf-8"],
 	"/ability_choice_rules.js": ["res://pwa/ability_choice_rules.js", "text/javascript; charset=utf-8"],
 	"/feat_picker.js": ["res://pwa/feat_picker.js", "text/javascript; charset=utf-8"],
+	"/concentration_rules.js": ["res://pwa/concentration_rules.js", "text/javascript; charset=utf-8"],
 	"/rule_supplements.js": ["res://pwa/rule_supplements.js", "text/javascript; charset=utf-8"],
 	"/character_core.js": ["res://pwa/character_core.js", "text/javascript; charset=utf-8"],
 	"/class_spells.js": ["res://pwa/class_spells.js", "text/javascript; charset=utf-8"],

@@ -388,6 +388,13 @@ export function structuredSpellGrants(record,index=[],spells=[],features=[]){
    continue;
   }
   if(blocks.length>1&&row.kind==='feat'){
+   // A feat with a saved class-specific variant grants exactly that block.
+   // Legacy unspecialized saves keep the old explicit pending choices.
+   const owned=arr(record.feats_catalog).find(f=>!f?.disabled&&
+     norm(f.name)===norm(row.name)&&norm(f.source)===norm(row.source));
+   const selected=blocks.find(block=>owned?.spell_variant&&
+     norm(block.name)===norm(owned.spell_variant));
+   if(selected){append(blockFor(origin,selected,blocks.indexOf(selected)));continue;}
    const alternatives=new Map(),fixed=new Map(),abilities=new Set(blocks.map(b=>JSON.stringify(b.ability||'')));
    blocks.forEach((block,i)=>{
     const part=blockFor(origin,block,i),counts=new Map();

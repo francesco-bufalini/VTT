@@ -192,7 +192,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
  }
  // Explicit typed grants only. Passive traits are not automatically actions.
  const abilitySeen=new Set();
- for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
+ for(const feature of [...arr(record.action_grants),...arr(calculated.actions),...arr(calculated.feat_actions),...arr(calculated.features),...arr(record.selected_features),...arr(record.feats_catalog)]){
   if(!feature||feature.disabled||feature.inactive||feature.origin_id&&record.origin_enabled?.[feature.origin_id]===false)continue;
   const activation=feature.action_type??feature.activation??feature.activation_type??feature.time;
   if(!specified(activation))continue;
@@ -274,7 +274,7 @@ export function actionEntries(record={},calculated={},spells=[],featureOverrides
 }
 // Retain the public projection API; execution and eligibility share one rule set.
 export function nativeClassFeatureActions(record={},calculated={}){
- return [...classFeatureEntries(record,calculated),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
+ return [...classFeatureEntries(record,calculated),...arr(calculated.feat_actions),...arr(calculated.state_actions)].map(row=>({...row,description:details(row.description)}));
 }
 export function spellActionEntries(record={},calculated={},spells=[]){
  const output=[];

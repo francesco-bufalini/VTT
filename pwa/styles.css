@@ -873,3 +873,22 @@ input:focus,textarea:focus,select:focus{border-color:#edbd77;}
 .inventory-coin input{min-width:0;width:100%;padding:8px 3px!important;text-align:center;font-size:14px!important;font-variant-numeric:tabular-nums}
 .inventory-coin-total{color:var(--muted);font-size:12px;margin:7px 0 0}
 @media(max-width:380px){.inventory-coin-grid{gap:3px}.inventory-coin input{padding:7px 0!important;font-size:12px!important}}
+
+
+/* Concentration on damage — compact modal using the shared sheet dialog theme. */
+.concentration-damage-dialog{width:min(460px,calc(100vw - 28px));max-width:460px;padding:20px 22px}
+.concentration-damage-dialog .sheet-context-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.concentration-damage-dialog .sheet-context-head small{display:block;font-size:.69rem;letter-spacing:.13em;opacity:.75}
+.concentration-damage-dialog .sheet-context-head h2{margin:4px 0 0;font-size:1.24rem}
+.concentration-damage-copy{margin:17px 0 14px;line-height:1.5}
+.concentration-spell-label{display:block;margin-top:6px;font-size:.82rem;opacity:.75}
+.concentration-damage-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.concentration-damage-metrics>div{display:flex;min-height:85px;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid var(--border-color,#756b5e66);border-radius:12px;background:var(--panel-alt,#17181922)}
+.concentration-damage-metrics span{font-size:.78rem;opacity:.8}
+.concentration-damage-metrics strong{font-size:1.9rem;line-height:1.2;font-weight:650}
+.concentration-save-button{appearance:none;border:0;background:transparent;color:inherit;display:inline-flex;align-items:center;gap:8px;font-size:1.7rem;font-weight:650;cursor:pointer;border-radius:8px;padding:0 8px}
+.concentration-save-button:hover,.concentration-save-button:focus-visible{outline:1px solid currentColor}
+.concentration-save-button svg{width:19px;height:19px}
+.concentration-damage-actions{display:flex;justify-content:flex-end;margin-top:17px}
+.concentration-damage-actions .btn{font-size:.85rem;min-height:34px}
+@media(max-width:360px){.concentration-damage-dialog{padding:16px}.concentration-damage-metrics{gap:7px}}
