@@ -191,3 +191,23 @@ test('manual replacement can be added, inspected, disabled, removed and restored
  assert.throws(()=>addBenefitPatch(c,trait,'base_override',
   {target:'ability:str',mode:'replace',expression:'1d4'},'trait:validkey'),/numerica/);
 });
+
+test('typed racial armor belongs to its named trait, not the species overview',()=>{
+ const race={species:'Lizardfolk',species_source:'VGM',species_id:'race-lizardfolk'};
+ const c=base(race);
+ const index={...catalogs,originDetails:{...catalogs.originDetails,
+  races:{'lizardfolk|vgm':{entries:[{name:'Natural Armor',entries:['Natural armor']}]}}}};
+ const calculated=calculateSheet(c,index);
+ const rule=calculated.base_value_overrides.find(row=>row.target==='ac_unarmored');
+ assert.equal(rule?.granting_trait,'Natural Armor');
+ assert(rule.origin_id.startsWith('feature:'));
+ assert.equal(rule.origin_parent_id,'race|vgm|lizardfolk');
+ const owner={name:'Natural Armor',origin:'Specie · Lizardfolk',
+  origin_key:'species|race-lizardfolk|vgm',feature_origin:rule.origin_id,rank:2,category:'razza'};
+ const overview={name:'Descrizione · Lizardfolk',origin:'Specie · Lizardfolk',
+  origin_key:'species|race-lizardfolk|vgm',rank:0,category:'razza'};
+ assert(traitBenefitGroups(owner,c,calculated).some(group=>group.type==='base_overrides'));
+ assert(!traitBenefitGroups(overview,c,calculated).some(group=>group.type==='base_overrides'));
+ assert.equal(calculateSheet({...c,origin_enabled:{'race|vgm|lizardfolk':false}},index)
+  .stats.armor_class,12,'disabling the race still suppresses all its child benefits');
+});

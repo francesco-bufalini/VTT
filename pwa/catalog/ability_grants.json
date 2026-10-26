@@ -5065,7 +5065,8 @@
             "mode": "alternative",
             "expression": "13 + dex_mod"
           }
-        ]
+        ],
+        "granting_trait": "Armored Casing"
       },
       {
         "name": "Thri-kreen",
@@ -5076,7 +5077,8 @@
             "mode": "alternative",
             "expression": "13 + dex_mod"
           }
-        ]
+        ],
+        "granting_trait": "Chameleon Carapace"
       },
       {
         "name": "Goblin",
@@ -5087,7 +5089,8 @@
             "mode": "alternative",
             "expression": "11 + dex_mod"
           }
-        ]
+        ],
+        "granting_trait": "Grit"
       },
       {
         "name": "Loxodon",
@@ -5099,7 +5102,8 @@
             "expression": "12 + con_mod",
             "allow_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       },
       {
         "name": "Locathah",
@@ -5111,7 +5115,8 @@
             "expression": "12 + dex_mod",
             "allow_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       },
       {
         "name": "Lizardfolk",
@@ -5123,7 +5128,8 @@
             "expression": "13 + dex_mod",
             "allow_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       },
       {
         "name": "Lizardfolk",
@@ -5135,7 +5141,8 @@
             "expression": "13 + dex_mod",
             "allow_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       },
       {
         "name": "Tortle",
@@ -5147,7 +5154,8 @@
             "expression": "17",
             "ignore_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       },
       {
         "name": "Tortle",
@@ -5159,7 +5167,8 @@
             "expression": "17",
             "ignore_armor": true
           }
-        ]
+        ],
+        "granting_trait": "Natural Armor"
       }
     ],
     "optional_features": [

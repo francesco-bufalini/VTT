@@ -1,0 +1,583 @@
+{
+  "meta": {
+    "source": "curated feature-to-spell identity bindings",
+    "notes": "Generated once from unambiguous referenced spells in 5eTools feature descriptions; reviewed as typed build input, never parsed at runtime."
+  },
+  "entries": [
+    {
+      "kind": "feat",
+      "name": "Arcane Artist",
+      "source": "AU",
+      "spell_traits": {
+        "minor illusion": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Arcane Eloquence",
+      "source": "AU",
+      "spell_traits": {
+        "vicious mockery": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Arcane Infiltrator",
+      "source": "AU",
+      "spell_traits": {
+        "friends": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Arcane Omens",
+      "source": "AU",
+      "spell_traits": {
+        "guidance": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Arcane Overload",
+      "source": "AU",
+      "spell_traits": {
+        "fire bolt": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Arcane Safeguard",
+      "source": "AU",
+      "spell_traits": {
+        "resistance": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Boon of Misty Escape",
+      "source": "ABH",
+      "spell_traits": {
+        "gaseous form": "Gaseous Form"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Boon of Siberys",
+      "source": "EFA",
+      "spell_traits": {
+        "animal shapes": "Aberrant Magic",
+        "control weather": "Aberrant Magic",
+        "demiplane": "Aberrant Magic",
+        "heroes' feast": "Aberrant Magic",
+        "maze": "Aberrant Magic",
+        "mind blank": "Aberrant Magic",
+        "plane shift": "Aberrant Magic",
+        "project image": "Aberrant Magic",
+        "regenerate": "Aberrant Magic",
+        "symbol": "Aberrant Magic",
+        "teleport": "Aberrant Magic",
+        "true seeing": "Aberrant Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Child of the Sun",
+      "source": "LFL",
+      "spell_traits": {
+        "faerie fire": "Faerie Fire"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Cold Caster",
+      "source": "FRHoF",
+      "spell_traits": {
+        "ray of frost": "Cantrip"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Emerald Enclave Fledgling",
+      "source": "FRHoF",
+      "spell_traits": {
+        "speak with animals": "Speak with Animals"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Enclave Magic",
+      "source": "FRHoF",
+      "spell_traits": {
+        "beast sense": "Two Hearts, One Mind"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Fey-Touched",
+      "source": "XPHB",
+      "spell_traits": {
+        "misty step": "Fey Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Gathered Whispers",
+      "source": "RHW",
+      "spell_traits": {
+        "message": "Spirit Whispers",
+        "augury": "Spirit Whispers"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Living Shadow",
+      "source": "RHW",
+      "spell_traits": {
+        "mage hand": "Grasping Shadow"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Detection",
+      "source": "EFA",
+      "spell_traits": {
+        "see invisibility": "Magical Detection",
+        "detect magic": "Magical Detection"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Finding",
+      "source": "EFA",
+      "spell_traits": {
+        "locate object": "Finder's Magic",
+        "hunter's mark": "Finder's Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Healing",
+      "source": "EFA",
+      "spell_traits": {
+        "lesser restoration": "Healing Touch",
+        "cure wounds": "Healing Touch"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Hospitality",
+      "source": "EFA",
+      "spell_traits": {
+        "calm emotions": "Innkeeper's Magic",
+        "purify food and drink": "Innkeeper's Magic",
+        "unseen servant": "Innkeeper's Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Making",
+      "source": "EFA",
+      "spell_traits": {
+        "mending": "Spellsmith",
+        "magic weapon": "Spellsmith"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Passage",
+      "source": "EFA",
+      "spell_traits": {
+        "misty step": "Magical Passage"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Scribing",
+      "source": "EFA",
+      "spell_traits": {
+        "message": "Scribe's Insight",
+        "magic mouth": "Scribe's Insight",
+        "comprehend languages": "Scribe's Insight"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Sentinel",
+      "source": "EFA",
+      "spell_traits": {
+        "shield": "Guardian's Shield"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Shadow",
+      "source": "EFA",
+      "spell_traits": {
+        "minor illusion": "Shape Shadows",
+        "invisibility": "Shape Shadows"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Storm",
+      "source": "EFA",
+      "spell_traits": {
+        "thunderclap": "Storm Magic",
+        "gust of wind": "Storm Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Mark of Warding",
+      "source": "EFA",
+      "spell_traits": {
+        "arcane lock": "Wards and Seals",
+        "alarm": "Wards and Seals",
+        "mage armor": "Wards and Seals"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Shadow-Touched",
+      "source": "XPHB",
+      "spell_traits": {
+        "invisibility": "Shadow Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Spellfire Spark",
+      "source": "FRHoF",
+      "spell_traits": {
+        "sacred flame": "Spellfire Flame"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Telekinetic",
+      "source": "XPHB",
+      "spell_traits": {
+        "mage hand": "Minor Telekinesis"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Telepathic",
+      "source": "XPHB",
+      "spell_traits": {
+        "detect thoughts": "Detect Thoughts"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Touch of Death",
+      "source": "RHW",
+      "spell_traits": {
+        "chill touch": "Death Touch"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Treacherous Allure",
+      "source": "ABH",
+      "spell_traits": {
+        "charm person": "Enchanting Presence"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Vampire Touched",
+      "source": "ABH",
+      "spell_traits": {
+        "spider climb": "Vampire Magic"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Warlike Familiar",
+      "source": "AU",
+      "spell_traits": {
+        "battle familiar": "Battle Familiar"
+      }
+    },
+    {
+      "kind": "feat",
+      "name": "Watchers",
+      "source": "RHW",
+      "spell_traits": {
+        "beast sense": "Borrowed Eyes",
+        "speak with animals": "Borrowed Eyes"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "MPMM",
+      "spell_traits": {
+        "gust of wind": "Wind Caller"
+      },
+      "block_overrides": {
+        "0": {
+          "innate": {
+            "3": {
+              "daily": {
+                "1": [
+                  "gust of wind"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "DMG",
+      "spell_traits": {
+        "lesser restoration": "Celestial Legacy",
+        "daylight": "Celestial Legacy",
+        "light": "Celestial Legacy"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "MPMM",
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "VGM",
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "XPHB",
+      "spell_traits": {
+        "light": "Light Bearer"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "spell_traits": {
+        "dancing lights": "Astral Fire",
+        "light": "Astral Fire",
+        "sacred flame": "Astral Fire"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Deep Gnome",
+      "source": "MPMM",
+      "spell_traits": {
+        "disguise self": "Gift of the Svirfneblin",
+        "nondetection": "Gift of the Svirfneblin"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Duergar",
+      "source": "MPMM",
+      "spell_traits": {
+        "enlarge/reduce": "Duergar Magic",
+        "invisibility": "Duergar Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Elf",
+      "source": "XPHB",
+      "spell_traits": {
+        "faerie fire": "Elven Lineage",
+        "darkness": "Elven Lineage",
+        "dancing lights": "Elven Lineage",
+        "detect magic": "Elven Lineage",
+        "misty step": "Elven Lineage",
+        "longstrider": "Elven Lineage",
+        "pass without trace": "Elven Lineage",
+        "druidcraft": "Elven Lineage"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "MPMM",
+      "spell_traits": {
+        "faerie fire": "Fairy Magic",
+        "enlarge/reduce": "Fairy Magic",
+        "druidcraft": "Fairy Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Fairy",
+      "source": "WBtW",
+      "spell_traits": {
+        "faerie fire": "Fairy Magic",
+        "enlarge/reduce": "Fairy Magic",
+        "druidcraft": "Fairy Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Firbolg",
+      "source": "MPMM",
+      "spell_traits": {
+        "detect magic": "Firbolg Magic",
+        "disguise self": "Firbolg Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Firbolg",
+      "source": "VGM",
+      "spell_traits": {
+        "detect magic": "Firbolg Magic",
+        "disguise self": "Firbolg Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "spell_traits": {
+        "jump": "Githyanki Psionics",
+        "misty step": "Githyanki Psionics",
+        "mage hand": "Githyanki Psionics"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Githzerai",
+      "source": "MPMM",
+      "spell_traits": {
+        "shield": "Githzerai Psionics",
+        "detect thoughts": "Githzerai Psionics",
+        "mage hand": "Githzerai Psionics"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Gnome (Deep)",
+      "source": "DMG",
+      "spell_traits": {
+        "nondetection": "Innate Spellcasting",
+        "blindness/deafness": "Innate Spellcasting",
+        "blur": "Innate Spellcasting",
+        "disguise self": "Innate Spellcasting"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Hexblood",
+      "source": "RHW",
+      "spell_traits": {
+        "disguise self": "Eerie Token",
+        "hex": "Eerie Token"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Hexblood",
+      "source": "VRGR",
+      "spell_traits": {
+        "disguise self": "Hex Magic",
+        "hex": "Hex Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Rimekin",
+      "source": "LFL",
+      "spell_traits": {
+        "ice knife": "Cold Fire Magic",
+        "flame blade": "Cold Fire Magic",
+        "ray of frost": "Cold Fire Magic"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Siren",
+      "source": "PSX",
+      "spell_traits": {
+        "friends": "Siren's Song"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tiefling",
+      "source": "PHB",
+      "spell_traits": {
+        "hellish rebuke": "Infernal Legacy",
+        "darkness": "Infernal Legacy",
+        "thaumaturgy": "Infernal Legacy"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tiefling",
+      "source": "XPHB",
+      "spell_traits": {
+        "ray of sickness": "Fiendish Legacy",
+        "hold person": "Fiendish Legacy",
+        "thaumaturgy": "Otherworldly Presence",
+        "poison spray": "Fiendish Legacy",
+        "false life": "Fiendish Legacy",
+        "ray of enfeeblement": "Fiendish Legacy",
+        "chill touch": "Fiendish Legacy",
+        "hellish rebuke": "Fiendish Legacy",
+        "darkness": "Fiendish Legacy",
+        "fire bolt": "Fiendish Legacy"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "MPMM",
+      "spell_traits": {
+        "fog cloud": "Control Air and Water",
+        "gust of wind": "Control Air and Water",
+        "water walk": "Control Air and Water"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "VGM",
+      "spell_traits": {
+        "fog cloud": "Control Air and Water",
+        "gust of wind": "Control Air and Water",
+        "wall of water": "Control Air and Water"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Yuan-Ti",
+      "source": "MPMM",
+      "spell_traits": {
+        "animal friendship": "Serpentine Spellcasting",
+        "suggestion": "Serpentine Spellcasting",
+        "poison spray": "Serpentine Spellcasting"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "spell_traits": {
+        "animal friendship": "Innate Spellcasting",
+        "suggestion": "Innate Spellcasting",
+        "poison spray": "Innate Spellcasting"
+      }
+    }
+  ]
+}

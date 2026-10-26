@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {structuredSpellGrants,originChoiceMatches,applyOriginSpellChoice,originSpellId,sessionSpellEntries} from '../spell_selection.js';
 import {calculateSheet} from '../sheet_rules.js';
+import {collectTraitRows,withGrantedSpellPreviews} from '../trait_projection.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
 const mechanics=JSON.parse(readFileSync(new URL('../catalog/class_mechanics.json',import.meta.url),'utf8'));
 const spells=[
  {id:'phb2014_thaumaturgy',name:'Thaumaturgy',source:'PHB',level:0,classes:['Cleric']},
@@ -106,4 +108,56 @@ test('always-prepared origin spells use ordinary slots unless a cost is explicit
  const overridden=calculateSheet({...base,origin_spell_configs:{'feature:known':{payment_mode:'free'}}},
    {classMechanics:mechanics,spells});
  assert.equal(overridden.origin_spells.find(spell=>spell.id==='feature:known').payment_mode,'free');
+});
+
+test('Aarakocra Wind Caller unlocks at level three and owns its daily Gust of Wind counter',async()=>{
+ const description=JSON.parse(readFileSync(new URL('../../vtt/data/compendium_features_5etools.json',import.meta.url),'utf8'))
+   .races['aarakocra|mpmm'];
+ const trait=description.entries.find(entry=>entry.name==='Wind Caller');
+ assert.equal(trait.level,3);
+ assert.equal(trait.requirements.min_level,3);
+ const speciesId='5etools:races:mpmm:aarakocra';
+ const creature=record({species:'Aarakocra',species_source:'MPMM',species_id:speciesId});
+ const originKey='species|'+speciesId+'|mpmm';
+ const ownerId='feature:'+originKey+'|'+originKey+'|3|wind caller';
+ const features=[{name:'Wind Caller',origin_key:originKey,origin_id:ownerId,level:3}];
+ const spell=[{id:'phb2014_gust_of_wind',name:'Gust of Wind',level:2,source:'PHB'}];
+ const project=level=>structuredSpellGrants({...creature,level},
+  mechanics.additional_spells,spell,features);
+ assert.equal(project(1).grants.length,0);
+ assert.equal(project(2).trackers.length,0);
+ const result=project(3);
+ assert.equal(result.grants.length,1);
+ assert.equal(result.grants[0].spell_id,'phb2014_gust_of_wind');
+ assert.equal(result.grants[0].origin_id,ownerId);
+ assert.equal(result.grants[0].granting_trait,'Wind Caller');
+ const tracker=result.trackers[0];
+ assert.equal(tracker.id,'5espell:race|mpmm|aarakocra|0|3|daily|1');
+ assert.equal(tracker.max,1);
+ assert.equal(tracker.recharge,'long_rest');
+ assert.equal(tracker.origin_id,ownerId);
+ assert.equal(project(3).trackers[0].id,tracker.id,'usage must keep a stable persisted ID');
+ const provider={entries:async category=>category==='races'?
+   [{id:speciesId,name:'Aarakocra',source:'MPMM',entries:description.entries}]:[],
+  detail:async(_category,row)=>row};
+ const first=await collectTraitRows({...creature,level:1},{},provider);
+ assert(!first.some(row=>row.name==='Wind Caller'));
+ const listed=await collectTraitRows({...creature,level:3},{features},provider);
+ const preview=withGrantedSpellPreviews(listed,result.grants,spell);
+ const wind=preview.find(row=>row.name==='Wind Caller');
+ assert.deepEqual(wind.granted_spells.map(item=>item.name),['Gust of Wind']);
+ assert(traitBenefitGroups(wind,creature,{trackers:result.trackers}).some(group=>
+   group.type==='resources'&&group.items.some(item=>item.label.includes('Wind Caller'))));
+ const overview=preview.find(row=>row.name==='Descrizione · Aarakocra');
+ assert(!overview.granted_spells.length);
+ assert(!traitBenefitGroups(overview,creature,{trackers:result.trackers}).some(group=>group.type==='resources'));
+});
+
+test('a separate racial casting benefit binds to its own named trait',()=>{
+ const creature=record({species:'Aasimar',species_source:'DMG'});
+ const trait={name:'Celestial Legacy',origin_key:'species|aasimar|dmg',origin_id:'feature:celestial'};
+ const out=structuredSpellGrants(creature,mechanics.additional_spells,spells,[trait]);
+ const cantrip=out.grants.find(g=>g.spell_id==='phb2014_light');
+ assert.equal(cantrip?.origin_id,'feature:celestial');
+ assert.equal(cantrip?.granting_trait,'Celestial Legacy');
 });

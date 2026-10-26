@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "vtt/data/additional_spells_5etools.json"
+OWNERSHIP = ROOT / "vtt/data/additional_spell_ownership.json"
 SOURCES = {
     "data/feats.json": ["feat"],
     "data/races.json": ["race", "subrace"],
@@ -50,6 +51,24 @@ def gather(checkout: Path) -> dict:
                     row["race_name"] = item.get("raceName", "")
                     row["race_source"] = item.get("raceSource", "")
                 entries.append(row)
+    # Typed links and audited source corrections are maintained separately
+    # from the upstream 5eTools export; regeneration must not erase them.
+    if OWNERSHIP.exists():
+        overrides = json.loads(OWNERSHIP.read_text(encoding="utf-8")).get("entries", [])
+        typed = {
+            (row["kind"], row["name"], row.get("source", "")): row
+            for row in overrides
+        }
+        for row in entries:
+            patch = typed.get((row["kind"], row["name"], row.get("source", "")))
+            if not patch:
+                continue
+            if isinstance(patch.get("spell_traits"), dict):
+                row["spell_traits"] = patch["spell_traits"]
+            for index, fields in patch.get("block_overrides", {}).items():
+                i = int(index)
+                if 0 <= i < len(row["blocks"]) and isinstance(fields, dict):
+                    row["blocks"][i].update(fields)
     return {
         "meta": {
             "source": "5etools-mirror-3/5etools-src",

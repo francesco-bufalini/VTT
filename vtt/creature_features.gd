@@ -510,6 +510,10 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 						entry_data["name"] = "Altri tratti · %d" % (index + 1)
 					entry_data["entries"] = (entry as Dictionary).get("entries", entry)
 					entry_data["source"] = wanted_source
+					# Level-gated racial traits must not be collected early merely
+					# because their descriptive entry exists in the race catalog.
+					if not BenefitRequirements.accepts(record, entry_data, "character", "", "", "level", 1):
+						continue
 					_append(output, entry_data, maxi(1, int(entry_data.get("level", 1))),
 						"Specie · " + species, species_origin_id, "", "", 1)
 				elif entry is String and not String(entry).strip_edges().is_empty():
