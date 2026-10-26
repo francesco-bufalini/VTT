@@ -2409,20 +2409,9 @@ function magicToolsDialog(c,calculated){
  const classSlots=Array.from({length:9},(_,index)=>calculated.spell_slots?.[index]||{level:index+1,total:0,spent:0,base:0});
  const pact=calculated.pact_slots||{total:0,spent:0,base:0,level:0};
  const slots='<div class="magic-slot-manager">'+
-   '<p class="hint">Consuma e ripristina gli utilizzi come negli altri tracker. I massimi si modificano separatamente.</p>'+
    classSlots.map((slot,index)=>slotTrackerRow(index+1,slot)).join('')+
    slotTrackerRow(0,pact,true)+
-   '<div class="actions"><button type="button" class="btn small" data-act="slots-restore">Ripristina tutti gli slot</button></div>'+
-   '<details class="magic-slot-settings"><summary>Massimi e progressione</summary>'+
-     '<p class="hint">'+
-       ((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?
-         'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+
-     '<div class="magic-slot-manual-grid">'+classSlots.map((slot,index)=>
-       '<label>Livello '+(index+1)+'<input type="number" min="0" max="99" data-slot-total="'+(index+1)+'" value="'+esc(slot.base)+'"></label>').join('')+'</div>'+
-     '<label>Massimo base del Patto<input type="number" min="0" max="99" data-pact-total value="'+esc(pact.base)+'"></label>'+
-     field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??pact.level,'number','min="1" max="9"')+
-     '<button type="button" class="btn small" data-act="slots-automatic">Usa progressione automatica</button>'+
-   '</details></div>';
+   '<div class="actions"><button type="button" class="btn small" data-act="slots-restore">Ripristina tutti gli slot</button></div></div>';
  const selectedMember=calculated.casting_classes.find(member=>member.id===state.spellClass);
  const selectedTarget=(!selectedMember||selectedMember.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
  const counts=selectedMember?classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;

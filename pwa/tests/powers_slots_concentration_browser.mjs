@@ -49,6 +49,14 @@ try{
  await page.locator('#magic-tools-dialog[open] .magic-slot-manager-row').first().waitFor();
  assert.equal(await page.locator('#magic-tools-dialog .magic-slot-manager-row').count(),10,
    'All nine levels plus Pact Magic have tracker rows');
+ assert.equal(await page.locator('#magic-tools-dialog .magic-slot-manager>.hint').count(),0,
+   'No explanatory helper text in Gestisci slot');
+ assert.equal(await page.locator('#magic-tools-dialog .magic-slot-settings').count(),0,
+   'Massimi e progressione controls must not appear in the popup');
+ assert.equal(await page.locator('#magic-tools-dialog [data-slot-total],#magic-tools-dialog [data-pact-total],#magic-tools-dialog [data-act="slots-automatic"]').count(),0,
+   'Manual maxima and progression actions are no longer exposed');
+ assert.equal(await page.locator('#magic-tools-dialog [data-act="slots-restore"]').count(),1,
+   'Restore all slots remains available');
  const firstMax=page.locator('#magic-tools-dialog .magic-slot-manager-row').first()
    .locator('.magic-slot-maximum');
  assert.equal(await firstMax.getAttribute('data-calculated'),'slot:1');
