@@ -321,3 +321,16 @@ test('stored proficiency choices migrate their display origin to the named trait
  assert.deepEqual(proficiencyGrantOrigins(record,index,'skill','insight'),[{id:original,name:'Half-Elf'}]);
  assert(fixedProficiencies(record,index).has('skill:insight'));
 });
+
+test('same-name traits with distinct feature IDs never share explicitly owned bonuses',()=>{
+ const trait=(id)=>({name:'Ability Score Improvement',feature_origin:id,
+  origin_key:'class|phb|fighter',origin:'Classe · Fighter',rank:2,category:'classi'});
+ const calculated={bonuses:[{id:'asi4',target:'ability:str',expression:'1',
+  origin_id:'feature:asi4',granting_trait:'Ability Score Improvement',
+  origin_parent_name:'Fighter'}]};
+ assert(traitBenefitGroups(trait('feature:asi4'),{},calculated).some(group=>group.type==='bonus'));
+ assert(!traitBenefitGroups(trait('feature:asi8'),{},calculated).some(group=>group.type==='bonus'));
+ assert(!traitBenefitGroups({name:'Descrizione · Fighter',origin:'Classe · Fighter',
+  origin_key:'class|phb|fighter',rank:0,category:'classi'}, {},calculated)
+   .some(group=>group.type==='bonus'));
+});

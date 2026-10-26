@@ -116,9 +116,15 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  // Never duplicate an explicitly owned resource on the overview card.
  const belongs=row=>{
   if(!row)return false;
-  if(row.granting_trait)return norm(trait.name)===norm(row.granting_trait)&&
-   (!row.origin_parent_name||
-    norm(String(trait.origin||'').split(' · ').pop())===norm(row.origin_parent_name));
+  if(row.granting_trait){
+   // Prefer the actual feature ID to avoid duplicate benefits on repeated
+   // same-name traits; never fall back to the broad source when it exists.
+   if(String(row.origin_id||'').startsWith('feature:'))
+    return ids.has(row.origin_id);
+   return norm(trait.name)===norm(row.granting_trait)&&
+    (!row.origin_parent_name||
+     norm(String(trait.origin||'').split(' · ').pop())===norm(row.origin_parent_name));
+  }
   return [row.origin_id,row.parent_origin].some(id=>id&&ids.has(id))||
    Boolean(stateRule&&String(row.id||'').startsWith('trait_state:'+stateRule.id+':'));
  };

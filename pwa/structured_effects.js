@@ -207,7 +207,8 @@ export function proficiencyGrantOrigins(record={},index={},kind,key,features=[])
  for(const row of array(record.proficiency_choices))
   if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
     !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id))
-    add(row.origin_id,row.origin_name||row.origin_id,byId.get(row.origin_id));
+    add(row.origin_id,row.origin_name||byId.get(row.origin_id)?.origin||row.origin_id,
+     byId.get(row.origin_id));
  for(const source of selected){
   if(muted(record,source.id)||excluded(source.id))continue;
   if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
