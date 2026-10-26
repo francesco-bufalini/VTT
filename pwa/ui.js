@@ -1588,6 +1588,20 @@ function mountTraitBenefitDialog(){
    choices.unshift([draftTarget,'Questo tiro · '+draftTarget]);
  const trackerOptions=[['','Nessuno'],...(state.calculated?.trackers||[]).map(t=>[t.id,t.name])];
  const fields=[
+  ['base_override',formSelect('Valore da sostituire','target',[
+      ...['str','dex','con','int','wis','cha'].map(key=>['ability:'+key,'Punteggio · '+abilities[key]]),
+      ['ac_unarmored','Classe armatura senza armatura'],
+      ['attack_damage_base:unarmed','Danno base · Colpo senz’armi'],
+      ...(state.calculated?.attacks||[]).filter(attack=>!String(attack.id||'').startsWith('unarmed'))
+        .map(attack=>['attack_damage_base:'+attack.id,'Danno base · '+attack.name])
+    ]).replace('name="target"','name="target" data-base-override-target')+
+    formSelect('Operazione','mode',[
+      ['replace','Sostituisce il valore base'],
+      ['minimum','Impone un valore minimo'],
+      ['alternative','Offre una formula alternativa']
+    ]).replace('name="mode"','name="mode" data-base-override-mode')+
+    formInput('Valore o formula','expression','Es. 19, 13 + dex_mod, 1d4')+
+    '<p class="hint">Danno: sostituisce il dado base. Caratteristiche: usa valore minimo per oggetti come i guanti della forza. CA alternativa: vale solo senza armatura; lo scudo resta applicabile.</p>'],
   ['attack_count',formInput('Numero totale di attacchi con Azione','attacks_per_action','Es. 2','number')],
   ['bonus',formSelect('Tiro o valore','target',targets).replace('name="target"','name="target" data-trait-target')+
      formInput('Bonus (numero, formula o dadi)','expression','Es. +2, proficiency, 1d4')+
@@ -1684,6 +1698,20 @@ function mountTraitBenefitDialog(){
   '</div>';
  app.append(dialog);
  if(draftTarget)for(const select of dialog.querySelectorAll('[data-trait-target]'))select.value=draftTarget;
+ // Do not let a mode inappropriate for the selected target be saved.
+ const baseTarget=dialog.querySelector('[data-base-override-target]');
+ const baseMode=dialog.querySelector('[data-base-override-mode]');
+ if(baseTarget&&baseMode){
+   const sync=()=>{
+     const target=baseTarget.value;
+     const requiredMode=target==='ac_unarmored'?'alternative':
+       target.startsWith('attack_damage_base:')?'replace':'';
+     for(const option of baseMode.options)option.disabled=Boolean(requiredMode)&&option.value!==requiredMode||
+       !requiredMode&&option.value==='alternative';
+     if(baseMode.selectedOptions[0]?.disabled)baseMode.value=requiredMode||'replace';
+   };
+   baseTarget.addEventListener('change',sync);sync();
+ }
  const trackerCost=dialog.querySelector('[data-trait-fields="bonus"] [name="tracker_cost"]');
  if(trackerCost)trackerCost.value='1';
  dialog.addEventListener('cancel',event=>{event.preventDefault();dismissTraitBenefitDialog();});
