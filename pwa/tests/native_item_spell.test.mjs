@@ -34,7 +34,9 @@ test("native attunement can be conditional text, but ordinary objects cannot att
 test("class available spells merge legacy duplicates and stay mirrored on add/remove",()=>{
   const a={id:"spell:a",name:"A",source:"PHB",level:1};
   const b={id:"spell:b",name:"B",source:"XPHB",level:2};
-  const old={spells:[a],prepared_spells:[a],spellbook_spells:[b]};
+  // Mixed-edition regression fixture explicitly uses 2024 rules. Unspecified
+  // sheets default to 2014 and must not offer the newer XPHB entry.
+  const old={rules_version:'2024',spells:[a],prepared_spells:[a],spellbook_spells:[b]};
   assert.deepEqual(availableSpells(old),[a]);
   const add=addSelectedSpell(old,b);
   assert.deepEqual(add.prepared_spells,[a,b]);
