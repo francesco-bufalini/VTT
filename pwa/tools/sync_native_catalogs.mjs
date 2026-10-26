@@ -170,6 +170,10 @@ const infusionSelectors={
 const abilityIndex=await read('../../vtt/data/structured_ability_grants_5etools.json');
 const choicePolicies=await read('../../vtt/data/ability_choice_policies_5etools.json');
 Object.assign(abilityIndex,choicePolicies);
+// PHB feat actions, contextual roll modes and resource trackers are maintained
+// in native typed data; the browser only projects those declarations.
+const featMechanics=await read('../../vtt/data/feat_mechanics_2014.json');
+abilityIndex.feat_mechanics=featMechanics.feats;
 const featNumeric=await read('../../vtt/data/feat_numeric_bonuses_2014.json');
 abilityIndex.feat_numeric_bonuses=featNumeric.feats;
 const infusionNative=await read('../../vtt/data/artificer_infusions_5etools.json');
