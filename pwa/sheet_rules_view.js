@@ -1,4 +1,5 @@
 import {hitDicePools} from './character_core.js';
+import {isPortraitDataUrl} from './character_portrait.js';
 import {classFeatureRollResourceBonuses} from './feature_mechanics.js';
 // Render local/offline calculations; no desktop sessions or API calls.
 import {ABILITIES,SKILLS,localClasses} from "./sheet_rules.js";
@@ -881,6 +882,15 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    '<p>'+esc([c.species,c.subrace].filter(Boolean).join(' · '))+'</p>'+
    (classMembers.length?'<p class="play-identity-classes">'+esc(classNames+' · Liv. totale '+totalClassLevel)+'</p>':'')+
    edit('identity','Modifica identità','settings')+'</section>';
+  const portrait=isPortraitDataUrl(c.sheet_portrait_data)?c.sheet_portrait_data:'';
+  html+='<section class="play-character-portrait" aria-label="Foto del personaggio">'+
+   (portrait?'<figure class="play-portrait-frame"><img src="'+esc(portrait)+'" alt="Ritratto di '+esc(c.name)+'"></figure>':'')+
+   '<div class="play-portrait-controls"><button type="button" class="play-portrait-pick" data-act="info-portrait-pick">'+
+   icon('eye')+'<span>'+(portrait?'Cambia foto':'Aggiungi foto')+'</span></button>'+
+   (portrait?'<button type="button" class="play-portrait-remove" data-act="info-portrait-remove" aria-label="Rimuovi foto del personaggio">'+
+    icon('cross')+'<span>Rimuovi</span></button>':'')+
+   '</div><input type="file" data-info-portrait-file accept="image/*" aria-label="Seleziona la foto del personaggio" hidden>'+
+   '</section>';
   html+='<div class="play-passives"><span>'+esc(c.alignment||'Completamente neutrale')+'</span><span>Regole '+esc(c.rules_version||'2014')+'</span></div>';
   for(const node of panels.filter(n=>n!==identity)){
    const title=heading(node),i=panels.indexOf(node);
