@@ -2,6 +2,7 @@ import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
 import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
+import {collectEffectExtensions} from './effect_extensions.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
 // are bundled with the PWA and loaded even when the native desktop is closed.
@@ -719,6 +720,7 @@ function calculateSheetValues(record={},catalogs={}){
    damage_defense_entries:arr(record.damage_defense_entries).filter(r=>!suppressed.has('defense:'+String(r.origin_id||'')+':'+r.rank+':'+String(r.key||'').toLowerCase())),
    resource_trackers:arr(record.resource_trackers).filter(r=>!suppressed.has('tracker:'+r.id)),
    origin_spell_grants:arr(record.origin_spell_grants).filter(r=>!suppressed.has('spell:'+r.origin_id+':'+r.spell_id)),
+   effect_extensions:arr(record.effect_extensions).filter(r=>!suppressed.has('effect_extension:'+r.id)),
    action_grants:arr(record.action_grants).filter(r=>!suppressed.has('action:'+r.id))
   };
   const warnings=new Set(),index=catalogs.abilityGrants,classesCatalog=catalogs.classMechanics;
@@ -1226,6 +1228,8 @@ function calculateSheetValues(record={},catalogs={}){
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
+  const effect_extensions=collectEffectExtensions(record,catalogs.effectExtensions||[],featureContext.features)
+    .filter(row=>sourceEnabled(row));
   const originMap=new Map();
   const addOrigin=(id,name)=>{if(id&&!originMap.has(id))originMap.set(id,{id,name,disabled:arr(record.proficiency_origins).some(o=>o?.id===id&&o.disabled)||record.origin_enabled?.[id]===false});};
   for(const cls of classes)addOrigin('class|'+String(cls.source||'').toLowerCase()+'|'+cls.name.toLowerCase(),cls.name);
@@ -1274,6 +1278,7 @@ function calculateSheetValues(record={},catalogs={}){
         proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
+    effect_extensions,
     feature_rules:catalogs.featureRules||{},
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     base_override_applied:Object.fromEntries(appliedBaseOverrides),
@@ -1325,10 +1330,12 @@ export function loadRuleCatalogs(){
     Promise.all(['/catalog/features.json','/catalog/backgrounds.json'].map(path=>
       fetch(path).then(r=>r.ok?r.json():{}).catch(()=>({})))).then(([features,backgrounds])=>({
         races:features.races||{},feats:features.feats||{},backgrounds:backgrounds.backgrounds||{}
-      }))
-  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails])=>({
+      })),
+    fetch('/catalog/effect_extensions.json').then(r=>{if(!r.ok)throw Error('Estensioni effetti non disponibili');return r.json();})
+      .then(data=>data?.version===1&&Array.isArray(data.extensions)?data.extensions:[])
+  ]).then(([abilityGrants,classMechanics,proficiencyGrants,spells,featureRules,traitStates,rollBonusRules,classFeatures,speciesAttacks,originDetails,effectExtensions])=>({
     abilityGrants,classMechanics,proficiencyGrants,speciesAttacks,featureRules:featureRules||{},
-    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,
+    traitStates:traitStates.states,exhaustionRules:traitStates.exhaustion,rollBonusRules,classFeatures,effectExtensions,
     featureSpellGrants:supplementalClassSpells,itemGrants:supplementalItemBonuses,originDetails,
     spells:[...new Map([...spells,...arr(classMechanics.legacy_spells)].map(s=>[s.id,s])).values()]}))
     .catch(error=>{catalogPromise=null;throw error;});
