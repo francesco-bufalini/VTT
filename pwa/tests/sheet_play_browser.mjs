@@ -56,15 +56,17 @@ try{
       'Only inventory coin amounts are editable outside spellcasting: '+key);
    }
    if(key==='magic'){
-    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting select[data-casting-section]').count(),1,
-      'The spellcasting ability is editable inside its class card');
+    const castingRows=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
+    assert.ok(await castingRows.count()>=1,
+      'Spellcasting editors remain available for classes and visible granting origins');
     assert.equal(await page.locator('#sheet-play-view [data-sheet-context^="casting:"]').count(),0,
       'No casting settings gear remains');
-    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .sheet-result').count(),2,
-      'Both DC and spell attack retain interactive origin-calculation buttons');
+    assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .sheet-result').count(),
+      2*await castingRows.count(),
+      'Every casting source keeps interactive DC and spell attack calculations');
     assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting .magic-source-known,.play-magic-inline-casting .magic-source-overview').count(),0,
       'No redundant known-spells summary or nested casting box');
-    const castingRow=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
+    const castingRow=castingRows.first();
     const controls=castingRow.locator(':scope > label,:scope > span');
     assert.equal(await controls.count(),3,'Characteristic, DC and attack share one row');
     const boxes=await controls.evaluateAll(nodes=>nodes.map(node=>{
