@@ -227,8 +227,11 @@ async function refreshCharacterHomebrewOptions(){
   if(state.spellCatalogComplete){
     try{state.spellCatalog=await catalogEntries('spells');refreshSpellPickers();}
     catch(error){console.warn('Impossibile aggiornare gli incantesimi homebrew locali',error);}
+  }else{
+    // Partial on-demand references belong to the previously opened sheet.
+    // Re-resolve the new character's references instead of retaining stale ones.
+    state.spellCatalog=[];
   }
-}
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
   // and add any other class names discovered when the catalogue finishes loading.
