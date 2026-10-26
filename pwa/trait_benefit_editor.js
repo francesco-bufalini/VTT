@@ -1,3 +1,4 @@
+import {normalizeEffectExtension} from './effect_extensions.js';
 // Persistence of trait-specific benefit edits. No writes before explicit Save.
 // Automatic grants are suppressed through stable identities so Restore can
 // recover them from the catalog without copying stale rulebook data.
@@ -210,7 +211,6 @@ export function addBenefitPatch(record,trait,kind,values={},id){
  }else if(kind==='actions'){
   field='action_grants';row={...common,name:required('name'),action_type:required('action_type')};
  }else if(kind==='effect_extensions'){
-  const {normalizeEffectExtension}=awaitEffectExtensionValidation();
   field='effect_extensions';row=normalizeEffectExtension({...common,trait_key:trait.key,
    parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||'',
    target_kind:values.target_kind,target_name:required('target_name'),target_id:String(values.target_id||'').trim(),
