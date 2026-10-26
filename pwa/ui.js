@@ -1052,7 +1052,8 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
- document.querySelector('#class-feature-dialog')?.remove();
+ const companion=await companionFeatureChoices(c,calculated,ability.origin_id);
+  document.querySelector('#class-feature-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
@@ -1069,7 +1070,8 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
-  '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
+  featureCompanionFields(companion)+
+   '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
@@ -1083,12 +1085,16 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
     levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
     tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
-   const changes=ability.mode==='trait_state'?
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,ability.origin_id):null;
+    if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
+    const changes=ability.mode==='trait_state'?
     traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
     classAbilityActivationPatch(current,fresh,ability,options);
    const reroll=ability.mode==='metamagic_roll'?rollBattleDamage(ability.name==='Seeking Spell'?'1d20':options.count+'d'+options.sides,randomDie):null;
    await patch(changes);if(state.saveError)throw Error(state.saveError);
-   await state.editor.flush();dialog.dataset.confirmed='true';dialog.close();await render();
+   await state.editor.flush();
+    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
+    dialog.dataset.confirmed='true';dialog.close();await render();
    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
@@ -1109,7 +1115,14 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  if(!linked||linked.origin_id!==originId||c.rules_version==='2024')
   throw Error('Capacità della sottoclasse non disponibile.');
  const available=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
- if(available<1)throw Error('Nessun utilizzo disponibile per '+linked.name+'.');
+ const companion=await companionFeatureChoices(c,calculated,originId);
+  const minSlot=Number(companion?.rule?.alternative_slot_min||0);
+  const paymentOptions=minSlot?[
+    ...(available>0?[['tracker','Uso gratuito · '+tracker.name]]:[]),
+    ...(calculated.spell_slots||[]).filter(row=>Number(row.level)>=minSlot&&Number(row.total)>Number(row.spent)).map(row=>['slot:'+row.level,'Slot di '+row.level+'° livello']),
+    ...(calculated.pact_slots?.level>=minSlot&&calculated.pact_slots?.total>calculated.pact_slots?.spent?[['pact','Slot del Patto di '+calculated.pact_slots.level+'°']]:[])
+  ]:[];
+  if(available<1&&!paymentOptions.length)throw Error('Nessun utilizzo disponibile per '+linked.name+'.');
  const feature=(calculated.features||[]).find(f=>f.origin_id===originId);
  document.querySelector('#subclass-tracker-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -1122,9 +1135,11 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  ],feature?flattenDescription(feature):'',
  'Gli utilizzi verranno registrati. Gli effetti non ancora automatizzati vanno applicati manualmente.',
  'subclass-tracker-close')+
- (available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
+ (paymentOptions.length?'<label>Risorsa da utilizzare<select data-companion-payment>'+paymentOptions.map(([id,label])=>'<option value="'+esc(id)+'">'+esc(label)+'</option>').join('')+'</select></label>':
+   available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
   esc(available)+'" step="1" value="1"></label>':'')+
- '<p data-subclass-result role="status"></p>'+
+ featureCompanionFields(companion)+
+  '<p data-subclass-result role="status"></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-subclass-confirm>Conferma utilizzo</button>'+
  '<button type="button" class="btn" data-subclass-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-subclass-cancel],[data-act="subclass-tracker-close"]').forEach(button=>
@@ -1136,13 +1151,19 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
    if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
    const raw=dialog.querySelector('[data-subclass-amount]')?.value??'1',amount=Number(raw);
    const fresh=await computeLocalData(current);
-   const changes=subclassTrackerUsePatch(current,fresh,trackerId,originId,amount);
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,originId):null;
+   if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
+   const pay=dialog.querySelector('[data-companion-payment]')?.value||'tracker';
+   if(paymentOptions.length&&!paymentOptions.some(([id])=>id===pay))throw Error('Risorsa di evocazione non valida.');
+   const changes=pay==='tracker'?subclassTrackerUsePatch(current,fresh,trackerId,originId,amount):pay==='pact'?slotUsePatch(current,0,1,fresh):pay.startsWith('slot:')?slotUsePatch(current,Number(pay.slice(5)),1,fresh):null;
+   if(!changes)throw Error('Pagamento non consentito.');
    await patch(changes);
    if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
+   if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
    closeDialog(dialog,{remove:true});await render();
-   message(linked.name+': '+amount+' '+(amount===1?'utilizzo consumato.':'utilizzi consumati.')+
-    ' Effetti da gestire manualmente.');
+   message(linked.name+': '+(pay==='tracker'?amount+' utilizzo consumato.':'slot consumato.')+
+    (liveCompanion?' Sottocreatura aggiornata.':' Effetti da gestire manualmente.'));
   }catch(error){
    button.disabled=false;
    dialog.querySelector('[data-subclass-result]').textContent=errorMessage(error);
@@ -1156,12 +1177,14 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
  const calculated=await computeLocalData(c);
+ const companion=await companionFeatureChoices(c,calculated,ability.origin_id||ability.feature_id||'');
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
   {label:'Consumo',value:Number(ability.cost)>0?ability.cost+' utilizzi':'Nessun consumo'}
  ],ability.description||'', '', 'other-ability-close')+
   abilityPaymentField(ability,calculated)+
+  featureCompanionFields(companion)+
   '<p data-ability-result role="status"></p>'+
   '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
   '<button type="button" class="btn" data-ability-cancel>Annulla</button></div>';
@@ -1183,6 +1206,8 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
      String(row.id||row.ability_id||row.name)===requested)||
     (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
    if(!currentAbility)throw Error('Capacità non più disponibile.');
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,currentAbility.origin_id||currentAbility.feature_id||''):null;
+   if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
    const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
@@ -1198,7 +1223,9 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
     return changes;
    });
    if(state.saveError)throw Error(state.saveError);
-   await state.editor.flush();closeDialog(dialog,{remove:true});await render();
+   await state.editor.flush();
+   if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
+   closeDialog(dialog,{remove:true});await render();
    message(cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
     currentAbility.name+': utilizzo confermato senza consumo.');
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
