@@ -23,7 +23,7 @@ export const VARIANT_SECTIONS=[
  {id:'conditions',label:'Condizioni e concentrazione',paths:['conditions','exhaustion','exhaustion_level','concentrating_spell_id','active_spell_context']},
  {id:'biography',label:'Identità e note',paths:['alignment','sex','player_name','background','background_source','backgrounds_catalog','background_personality','notes','personality_traits','ideals','bonds','flaws','faction','symbol','enemies','age','height','weight','eyes','skin','hair','inspiration']}
 ];
-const protectedFields=new Set(['id','owner_id','kind','transfer_revision','linked_token_sync_id','linked_token_name','variants','current_form_id','variant_schema_version','active_class_features','second_form_hp','second_form_max_hp','__proto__','constructor','prototype']);
+const protectedFields=new Set(['id','owner_id','kind','transfer_revision','linked_token_sync_id','linked_token_name','sheet_portrait_data','variants','current_form_id','variant_schema_version','active_class_features','second_form_hp','second_form_max_hp','__proto__','constructor','prototype']);
 const sectionById=new Map(VARIANT_SECTIONS.map(s=>[s.id,s]));
 export const VARIANT_PRESETS=[
  {id:'alias',label:'Alias',sections:['name'],creature_filter:{}},
