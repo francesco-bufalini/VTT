@@ -153,3 +153,20 @@ test('name-only legacy feat obtains a real navigable trait with the same stable 
  assert(rows.some(row=>row.category==='talenti'&&row.rank===0&&
    row.origin_key===featTraitOriginKey('Alert')));
 });
+
+test('feat search remains a single 42px flex row despite global stacked label styling',()=>{
+ const css=read('../mobile_metal_theme.css'),ui=read('../ui.js');
+ const search=css.match(/\\.feat-picker-search\\s*\\{([^}]+)\\}/)?.[1]||'';
+ const icon=css.match(/\\.feat-picker-search \\.vtt-action-glyph,\\.feat-picker-search svg\\s*\\{([^}]+)\\}/)?.[1]||'';
+ const input=css.match(/\\.feat-picker-search input\\[type=search\\]\\s*\\{([^}]+)\\}/)?.[1]||'';
+ assert.match(search,/display:flex/);
+ assert.match(search,/flex-direction:row/,'override global label flex-direction:column');
+ assert.match(search,/flex-wrap:nowrap/,'icon and input cannot wrap');
+ assert.match(search,/height:42px/);
+ assert.match(icon,/flex:0 0 17px/);
+ assert.match(input,/flex:1 1 0%/);
+ assert.match(input,/min-width:0/);
+ assert.match(input,/width:auto/);
+ assert.match(ui,/<label class="feat-picker-search"/);
+ assert.match(ui,/data-feat-search/);
+});
