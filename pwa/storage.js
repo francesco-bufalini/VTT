@@ -95,6 +95,32 @@ export async function insertRecords(entries) {
   }
 }
 
+// Delete a parent and its attached monsters atomically, rejecting stale revisions.
+// A failing child write must never leave an orphan or a half-deleted family.
+export async function deleteCreatureFamily(scope, entries) {
+  if (!Array.isArray(entries) || !entries.length) throw new TypeError("No creatures");
+  const db = await openStorage();
+  try {
+    const tx = db.transaction("records", "readwrite");
+    const store = tx.objectStore("records");
+    let rejected = null;
+    for (const entry of entries) {
+      const key = [requiredString(scope, "scope"), "creature", requiredString(entry.id, "id")];
+      const request = store.get(key);
+      request.onsuccess = () => {
+        if (!request.result || request.result.revision !== entry.revision) {
+          rejected = new Error("Creature changed since opening; refresh before deleting");
+          tx.abort();
+        } else {
+          store.delete(key);
+        }
+      };
+    }
+    await completed(tx).catch(error => { throw rejected || error; });
+    return true;
+  } finally { db.close(); }
+}
+
 // Permanent per-installation ID; get-and-create is a single transaction so
 // multiple tabs cannot silently assign different owners.
 export async function getOrCreateSetting(key, makeValue) {
