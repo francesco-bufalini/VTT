@@ -30,7 +30,7 @@ import { saveHomebrewDefinition, editHomebrewDefinition } from "./creatures.js";
 import { isDocument, createDocumentDefinition, createOwnedDocument, editDocumentDefinition, documentInfo, documentStyle } from "./documents.js";
 import { calculateSheet, loadRuleCatalogs, localClasses, validBonusDice, applicableDiceBonuses, SKILLS } from "./sheet_rules.js";
 import {benefitRequirements,requirementPatch,formulaPreview,spellCastPlan} from './native_sheet.js';
-import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell } from "./sheet_rules_view.js";
+import { calculationNote, refreshCalculatedValues, mountPlaySheet, refreshPlayReadouts, inventoryReadout, inventorySectionControls, formulaReadout, rollSheetDice, rollBattleDamage, sheetRollChatFields, isPersistentSpell,resourceLinkedSubclassTrait,subclassTrackerUsePatch } from "./sheet_rules_view.js";
 import {preparePortraitImage} from './character_portrait.js';
 import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,sheetRollSymbol,damageRollSegments,rollDamageName,rollOptionalDice,attackGrantOrigin} from "./sheet_roll_origin.js";
 import {traitStateActivationPatch} from './trait_state_rules.js';
@@ -1057,6 +1057,57 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   dialog.remove();
  },{once:true});document.body.append(dialog);
  openDialog(dialog);
+}
+// Fallback for a 2014 subclass ability whose tracker is modeled but its
+// effects are not yet automated. The same dialog and atomic payment rules
+// apply to every subclass, including variable-size resource pools.
+async function activateSubclassTracker(c,calculated,trackerId,originId){
+ const tracker=(calculated.trackers||[]).find(t=>t.id===trackerId&&!t.disabled);
+ const linked=tracker&&resourceLinkedSubclassTrait(tracker,calculated.features||[]);
+ if(!linked||linked.origin_id!==originId||c.rules_version==='2024')
+  throw Error('Capacità della sottoclasse non disponibile.');
+ const available=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
+ if(available<1)throw Error('Nessun utilizzo disponibile per '+linked.name+'.');
+ const feature=(calculated.features||[]).find(f=>f.origin_id===originId);
+ document.querySelector('#subclass-tracker-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='subclass-tracker-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
+ dialog.dataset.creatureId=c.id;
+ dialog.innerHTML=actionDialogIntro(linked.name,[
+  {label:'Origine',value:'Tratto · '+linked.name},
+  {label:'Risorsa',value:tracker.name},
+  {label:'Disponibili',value:available+' / '+tracker.max}
+ ],feature?flattenDescription(feature):'',
+ 'Gli utilizzi verranno registrati. Gli effetti non ancora automatizzati vanno applicati manualmente.',
+ 'subclass-tracker-close')+
+ (available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
+  esc(available)+'" step="1" value="1"></label>':'')+
+ '<p data-subclass-result role="status"></p>'+
+ '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-subclass-confirm>Conferma utilizzo</button>'+
+ '<button type="button" class="btn" data-subclass-cancel>Annulla</button></div>';
+ dialog.querySelectorAll('[data-subclass-cancel],[data-act="subclass-tracker-close"]').forEach(button=>
+  button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
+ dialog.querySelector('[data-subclass-confirm]').addEventListener('click',async event=>{
+  const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+  try{
+   const current=state.editor?.read();
+   if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
+   const raw=dialog.querySelector('[data-subclass-amount]')?.value??'1',amount=Number(raw);
+   const fresh=await computeLocalData(current);
+   const changes=subclassTrackerUsePatch(current,fresh,trackerId,originId,amount);
+   await patch(changes);
+   if(state.saveError)throw Error(state.saveError);
+   await state.editor.flush();
+   closeDialog(dialog,{remove:true});await render();
+   message(linked.name+': '+amount+' '+(amount===1?'utilizzo consumato.':'utilizzi consumati.')+
+    ' Effetti da gestire manualmente.');
+  }catch(error){
+   button.disabled=false;
+   dialog.querySelector('[data-subclass-result]').textContent=errorMessage(error);
+  }
+ });
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);openDialog(dialog);
 }
 async function activateOtherAbility(c,ability,persistentKey,requested){
  document.querySelector('#other-ability-dialog')?.remove();
@@ -4798,6 +4849,13 @@ async function handleAction(target){
     const ability=nativeClassFeatureActions(c,calculated).find(row=>row.class_feature_id===key);
     if(!ability)throw Error('Capacità non disponibile.');
     await activateClassAbility(c,calculated,ability);return;
+  }
+  if(act==='tracker-trait-use'){
+    const creature=state.editor?.read();if(!creature)throw Error('Creatura non disponibile');
+    const calculated=await computeLocalData(creature);
+    await activateSubclassTracker(creature,calculated,
+      String(target.dataset.trackerId||''),String(target.dataset.originId||''));
+    return;
   }
   if(act==='battle-use-ability'){
     const c=state.editor?.read();if(!c)throw Error('Creatura non disponibile');
