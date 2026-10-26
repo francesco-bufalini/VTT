@@ -36,7 +36,7 @@ import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
-import {isContentAvailableForRules,contentForRules} from './source_edition.js';
+import {isContentAvailableForRules} from './source_edition.js';
 
 // A service worker can briefly serve an older item_controls.js alongside a
 // newer ui.js on a slow connection. A named import added in a later release
@@ -769,7 +769,7 @@ async function libraryView(){
    '</div></dialog>';
 }
 function catalogTargetCreature(){
-  const id=state.pendingItemOwner||state.featAssignReturnId||state.catalogAssignCreatureId||state.creatureId||
+  const id=state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||
     state.cachedCreatures?.[0]?.id;
   if(!id)return null;
   const opened=state.editor?.read();
@@ -809,7 +809,7 @@ async function catalogView() {
       (full._description_warning?'<p class="warning">'+esc(full._description_warning)+'</p>':"")+
       (assignable && (state.cachedCreatures||[]).length?
       '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.featAssignReturnId||state.catalogAssignCreatureId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
+      (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
       (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
       '':"")+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
@@ -5142,7 +5142,7 @@ async function handleAction(target){
     return;
   }
   if(act==='feat-catalog'){
-    state.featAssignReturnId=state.creatureId;
+    state.featAssignReturnId=state.creatureId;state.catalogAssignCreatureId=state.creatureId;
     state.catalogCategory='feats';state.catalogSelected=-1;state.catalogQuery='';
     await navigate('catalog');return;
   }
