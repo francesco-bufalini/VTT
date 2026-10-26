@@ -209,7 +209,7 @@ export async function exportCatalogHomebrewEntry(entry) {
   if(!validDefinition(value))throw new Error("Questo contenuto non è esportabile come homebrew portabile.");
   const byId=new Map((await listRecords(HOMEBREW_SCOPE,HOMEBREW_TYPE))
     .map(row=>[row.id,row.data]));
-  const other=referencedDefinitions(value,byId);
+  const other=referencedDefinitions(value.data,byId);
   return {format:"vtt_homebrew_share_v1",version:1,definitions:[value,...other]};
 }
 
