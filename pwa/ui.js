@@ -15,7 +15,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
-import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage,
+import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -5898,7 +5898,7 @@ async function handleAction(target){
   if(act==="catalog-send"){
     const entry=state.catalogRows[state.catalogSelected];
     if(!entry?._homebrew||!entry.id)throw Error('Seleziona un contenuto homebrew da mandare.');
-    await openSendDialog('homebrew',entry.name,()=>exportHomebrewPackage(entry.id),message);return;
+    await openSendDialog('homebrew',entry.name,()=>exportCatalogHomebrewEntry(entry),message);return;
   }
   if(act==="catalog-assign"){
     const cId=state.pendingItemOwner&&state.catalogCategory==="items"?state.pendingItemOwner:document.querySelector("#catalog-creature")?.value;
