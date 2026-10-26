@@ -474,12 +474,19 @@ async function restoreBrowserScreen(screen){
   finally{if(ticket===browserHistoryRestoreTicket)restoringBrowserHistory=false;}
 }
 
-function download(blob, filename) {
+async function download(blob, filename) {
+  // The embedded desktop WebView cannot reliably fetch its own blob: URLs.
+  // Send the original Blob directly to the native save dialog instead.
+  if (typeof globalThis.vttDesktopSaveFile === "function") {
+    await globalThis.vttDesktopSaveFile(blob, filename);
+    return false; // Desktop reports its own save/cancel/error result.
+  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url; link.download = filename; link.hidden = true;
   document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return true;
 }
 function filename(value) { return text(value).replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,60) || "creatura"; }
 function selectedName() { return state.editor?.read().name || "Giocatore"; }
@@ -5917,8 +5924,9 @@ async function handleAction(target){
     if(!rows.length)throw new Error("Seleziona almeno una creatura.");
     if(act==="library-export"){
       if(rows.length>200)throw new Error("Puoi esportare fino a 200 creature in un file.");
-      download(await exportCreatureBatch(rows.map(row=>row.creature.id)),"vtt-creature-selezionate.json");
-      message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");return;
+      if(await download(await exportCreatureBatch(rows.map(row=>row.creature.id)),"vtt-creature-selezionate.json"))
+        message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");
+      return;
     }
     if(!await confirmCreatureDeletion(rows))return;
     let deleted=0;
@@ -5986,8 +5994,9 @@ async function handleAction(target){
   }
   if(act==="restore-backup"){backupInput.click();return;}
   if(act==="backup"){
-    const blob=await exportBackup();download(blob,"vtt-pwa-backup-"+new Date().toISOString().slice(0,10)+".json");
-    message("Backup esportato. Conservalo fuori dal browser.");
+    const blob=await exportBackup();
+    if(await download(blob,"vtt-pwa-backup-"+new Date().toISOString().slice(0,10)+".json"))
+      message("Backup esportato. Conservalo fuori dal browser.");
     return;
   }
   if(act==="open"){
@@ -6015,8 +6024,9 @@ async function handleAction(target){
   if(act==="export"){
     await state.editor?.flush();
     const c=state.editor.read();
-    download(await exportCreature(c.id),filename(c.name)+".json");
-    message("Scheda esportata in formato VTT.");return;
+    if(await download(await exportCreature(c.id),filename(c.name)+".json"))
+      message("Scheda esportata in formato VTT.");
+    return;
   }
   if(act==="delete"){
     const record=state.editor.read();

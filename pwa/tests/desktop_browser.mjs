@@ -75,6 +75,38 @@ try{
   const fileCalls=await page.evaluate(async()=>fetch('/__test/calls').then(r=>r.json()));
   assert(!fileCalls.calls.some(c=>['close','native'].includes(c.method)),'File operations keep WebView active');
   await page.evaluate(async()=>{const {desktopSheetSession}=await import('/ui.js');await desktopSheetSession.open('desktop_browser_fixture');});
+  // The embedded browser may reject fetch(blob:...). A character export must
+  // hand the original Blob to native IPC, not try to re-fetch a temporary URL.
+  await fileMode('success');
+  await page.evaluate(()=>{
+    const originalFetch=globalThis.fetch;
+    globalThis.__blobFetchAttempts=0;
+    globalThis.fetch=(url,...args)=>{
+      if(String(url).startsWith('blob:')){
+        ++globalThis.__blobFetchAttempts;
+        throw Error('Unexpected fetch(blob:) in desktop export');
+      }
+      return originalFetch(url,...args);
+    };
+  });
+  const downloadsBefore=await page.evaluate(async()=>{
+    const {calls}=await fetch('/__test/calls').then(r=>r.json());
+    return calls.filter(c=>c.method==='download').length;
+  });
+  await page.locator('[data-act="export"]').click();
+  await page.waitForFunction(async count=>{
+    const {calls}=await fetch('/__test/calls').then(r=>r.json());
+    return calls.filter(c=>c.method==='download').length>count;
+  },downloadsBefore);
+  await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Esportazione completata:'));
+  const exportedSingle=await page.evaluate(async()=>{
+    const {calls}=await fetch('/__test/calls').then(r=>r.json());
+    return JSON.parse(calls.filter(c=>c.method==='download').at(-1).args.text);
+  });
+  assert.equal(exportedSingle.format,'vtt_creature_export_v1');
+  assert.equal(exportedSingle.creature.id,'desktop_browser_fixture');
+  assert.equal(exportedSingle.creature.name,'Lyria modificata nel desktop');
+  assert.equal(await page.evaluate(()=>globalThis.__blobFetchAttempts),0,'Do not fetch temporary blob URLs');
   for(const sheet of ['battle','magic','inventory','info']){
     await page.locator('#sheet-navigation [data-sheet="'+sheet+'"]').click();
     await page.waitForFunction(key=>document.querySelector('#app').dataset.renderedSheet===key,sheet);

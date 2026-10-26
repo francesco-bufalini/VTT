@@ -28,7 +28,8 @@ async function fileOperation(mode,options={}){
     let result;
     if(mode==='import')result=await request('import',{}, {timeoutMs:0});
     else{
-      const blob=mode==='backup'?await desktopSheetSession.exportArchive():await fetch(options.url).then(r=>r.blob());
+      const blob=mode==='backup'?await desktopSheetSession.exportArchive():options.blob;
+      if(!(blob instanceof Blob))throw Error('Il file da esportare non è disponibile.');
       result=await request('download',{text:await blob.text(),filename:options.filename||'archivio_creature.json'},{timeoutMs:0});
     }
     if(result?.canceled)return;
@@ -41,6 +42,8 @@ async function fileOperation(mode,options={}){
   }catch(error){showError(error);}
   finally{fileBusy=false;}
 }
+// Called by the shared PWA export helper: no blob URL, temporary fetch or download interception.
+globalThis.vttDesktopSaveFile=(blob,filename)=>fileOperation('download',{blob,filename});
 // External references must never replace the privileged embedded document.
 document.addEventListener('click',event=>{
   if(event.target.closest('[data-nav="session"]')){
@@ -52,10 +55,6 @@ document.addEventListener('click',event=>{
     void fileOperation(nativeAction==='backup'?'backup':'import');return;
   }
   const link=event.target.closest('a[href]');
-  if(link?.download&&link.href.startsWith('blob:')){
-    event.preventDefault();event.stopImmediatePropagation();
-    void fileOperation('download',{url:link.href,filename:link.download});return;
-  }
   if(link&&new URL(link.href,location.href).origin!==location.origin){
     event.preventDefault(); event.stopImmediatePropagation();
   }
