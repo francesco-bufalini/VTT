@@ -812,6 +812,7 @@ function calculateSheetValues(record={},catalogs={}){
     (!row.parent_origin||sourceEnabled({origin_id:row.parent_origin})))
     .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
       String(a.id||'').localeCompare(String(b.id||'')));
+  const appliedBaseOverrides=new Map();
   const overrideNumeric=(target,base,resolve,stack,mode)=>{
     const applicable=baseFor(target).filter(row=>row.mode===mode);
     const values=[];
@@ -822,8 +823,10 @@ function calculateSheetValues(record={},catalogs={}){
       }catch(error){warnings.add('Sostituzione base ignorata per '+target+': '+error.message);}
     }
     if(!values.length)return base;
-    if(mode==='replace')return values[0].value;
-    return Math.max(base,...values.map(item=>item.value));
+    const chosen=mode==='replace'?values[0]:values.reduce((a,b)=>b.value>a.value?b:a);
+    if(mode==='replace'||chosen.value>base)
+      appliedBaseOverrides.set(target,{...chosen.row,resolved_value:chosen.value});
+    return mode==='replace'?chosen.value:Math.max(base,chosen.value);
   };
   if(arr(record.feats_catalog).length&&!index)warnings.add("Talenti strutturati non calcolati");
   if(classes.length&&!catalogs.classFeatures)warnings.add("Indice dei privilegi di classe non disponibile");
@@ -1153,6 +1156,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(!/^(?:\d+|[1-9]\d*d(?:4|6|8|10|12|20|100))(?:[+-]\d+)?$/.test(formula)){
       warnings.add('Formula del danno base ignorata: '+formula);return damage;
     }
+    appliedBaseOverrides.set('attack_damage_base:'+id,{...chosen,enabled_target:'attack_damage_base:'+id});
     return formula;
   };
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
@@ -1208,6 +1212,7 @@ function calculateSheetValues(record={},catalogs={}){
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     feature_rules:catalogs.featureRules||{},
     base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
+    base_override_applied:Object.fromEntries(appliedBaseOverrides),
     feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
