@@ -931,12 +931,14 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
  if(sheet==='magic'){
   const overview=bank.querySelector('.magic-overview');
   const slots=[...overview?.querySelectorAll('.magic-level-slot')||[]];
-  // Slot buttons remain rendered even for a creature with no remaining or
-  // granted slots; the source controls still own the actual mutations.
-  html=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>
+  // Keep the slot card even for noncasters, but show only levels with
+  // a positive maximum (spent-all slots still remain visible).
+  const slotContents=slots.map(node=>
     proxy(node,node.getAttribute('aria-label')||'Gestisci slot','',
       '<small>'+esc(node.dataset.pact==='true'?'Patto '+node.dataset.level+'°':node.dataset.level+'°')+'</small>'+
-      '<b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',
+      '<b>'+esc(node.textContent.trim())+'</b>')).join('');
+  html=card('Slot incantesimo','<div class="play-slots">'+
+    (slotContents||'<p class="play-slots-empty">Nessuno slot assegnato.</p>')+'</div>',
     proxy(overview?.querySelector('.magic-overview-manage'),'Gestisci slot','reset'));
   const concentrated=(c.conditions||[]).includes('concentrating')||Boolean(c.concentrating_spell_id);
   const concentratedId=String(c.concentrating_spell_id||'');
