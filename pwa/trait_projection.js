@@ -191,9 +191,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   const from=granting?granting.name+' (livello '+granting.level+')':
     feat.granting_origin_name||otherOrigin?.name||'';
   const owner=from?' · da '+from:'';
-  const options={category:'talenti',origin:'Talento · '+feat.name+owner,
+  const displayName=feat.name+(feat.spell_variant?' · '+String(feat.spell_variant).replace(/ Spells$/i,''):'');
+  const options={category:'talenti',origin:'Talento · '+displayName+owner,
    origin_key:'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source)),level:1,inactive:!!feat.disabled};
-  add({name:feat.name,entries:info.entries??info.description??'',source:feat.source,
+  add({name:displayName,entries:info.entries??info.description??'',source:feat.source,
    action_type:feat.action_type||info.action_type||info.activation||''},{...options,rank:0});
   const sections=arr(info.feature_sections).length?info.feature_sections:info.entries;
   arr(sections).forEach(section=>{
