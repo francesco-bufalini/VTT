@@ -232,6 +232,7 @@ async function refreshCharacterHomebrewOptions(){
     // Re-resolve the new character's references instead of retaining stale ones.
     state.spellCatalog=[];
   }
+}
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
   // and add any other class names discovered when the catalogue finishes loading.
