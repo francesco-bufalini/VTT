@@ -952,7 +952,8 @@ function calculateSheetValues(record={},catalogs={}){
     if(sid.startsWith('item:')||sid.startsWith('feature:trait:item:')){
       const owner=itemSourceOf(sid);
       if(!owner)return false;
-      if(alwaysCarriedSources.has(owner))return true;
+      if(alwaysCarriedSources.has(owner))return record.origin_enabled?.[sid]!==false&&
+        !arr(record.proficiency_origins).some(origin=>origin?.id===sid&&origin.disabled);
     }
     if(!sid)return true;
     const saved=arr(record.proficiency_origins).find(x=>x?.id===sid);
