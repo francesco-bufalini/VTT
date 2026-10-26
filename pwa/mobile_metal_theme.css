@@ -5288,3 +5288,27 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  .magic-panel .magic-source-resource{padding:4px 6px;gap:4px}
  .magic-panel .magic-source-tracker>button{width:23px}
 }
+
+
+/* Creature deletion uses the same dialog chrome as the library creation flow. */
+.library-delete-dialog .library-create-body p{margin-bottom:14px}
+.library-delete-dialog .library-delete-list{
+  list-style:none;display:grid;gap:7px;margin:0 0 18px;padding:7px;
+  max-height:min(38dvh,330px);overflow-y:auto;
+  border:1px solid #a7835960;border-radius:11px;background:#201b1b99
+}
+.library-delete-dialog .library-delete-list li{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-width:0;padding:10px 11px;border-radius:8px;background:#48372f90;
+  border:1px solid #b28b5a40
+}
+.library-delete-dialog .library-delete-list strong{
+  min-width:0;overflow-wrap:anywhere;color:#f6dbb4;font:650 14px/1.4 system-ui,sans-serif
+}
+.library-delete-dialog .library-delete-list span{
+  flex:none;color:#c5ad91;font:500 11px/1.4 system-ui,sans-serif
+}
+.library-delete-dialog .library-delete-confirm{
+  border-color:#d6a27d!important;background:linear-gradient(#895544,#613d32)!important;
+  color:#ffe2c4!important
+}
