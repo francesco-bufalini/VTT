@@ -876,9 +876,11 @@ async function catalogView() {
       (assignable && (state.cachedCreatures||[]).length?
       '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
       (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
+      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+
+      (chosen._homebrew?btn('catalog-send','Manda'):'')+'</div>'+
       '':"")+
-      (chosen._homebrew?'<div class="actions">'+btn('catalog-send','Manda')+'</div>':'')+
+      (chosen._homebrew&&!(assignable&&(state.cachedCreatures||[]).length)?
+        '<div class="actions">'+btn('catalog-send','Manda')+'</div>':'')+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
         '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
