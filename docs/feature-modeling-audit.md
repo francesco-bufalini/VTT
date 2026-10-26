@@ -7,6 +7,39 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-26: Ranger XGE Horizon Walker e Monster Slayer
+
+Esaminate tutte le **14 voci** `subclassFeature` delle due sottoclassi
+Ranger PHB con fonte XGE in
+[5etools `class-ranger.json`](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-ranger.json)
+(`e4c7e3382dd524bf4b2998cbf47d6afc3723c0dc`). Nessuna delle due
+dichiara `reprintedAs`; Gloom Stalker XGE invece rinvia a XPHB ed è esclusa
+da questo lotto. Controllo incrociato con
+[FightClub5eXML `class-ranger-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-ranger-xge.xml)
+(`fbbab93b3290fe5f3810caa75b931971ab2bb1ca`).
+
+| Sottoclasse e tratto (livello) | Esito |
+| --- | --- |
+| Horizon Walker (3) | Intestazione della sottoclasse. |
+| Detect Portal (3) | **Ora strutturati:** azione e un uso per riposo breve del tratto XGE. Portale più vicino, direzione e distanza entro un miglio restano contestuali. |
+| Horizon Walker Magic (3; 5/9/13/17) | Cinque incantesimi aggiuntivi conosciuti ai livelli da Ranger indicati; non slot o lanci gratuiti. Collegamento alla selezione effettiva della sottoclasse da verificare nel modello magico. |
+| Planar Warrior (3; migliora all'11) | **Ora strutturata:** azione bonus. Bersaglio visibile, prossimo colpo del turno, conversione del danno in forza e dado 1d8→2d8 restano contestuali. |
+| Ethereal Step (7) | **Ora strutturati:** azione bonus e un uso per riposo breve; Etherealness gratuito termina a fine turno. Lo stato planare non è simulato. |
+| Distant Strike (11) | Teletrasporto prima di ogni attacco dell'azione Attack; attacco ulteriore solo contro terza creatura distinta dopo due bersagli diversi. Nessun contatore statico. |
+| Spectral Defense (15) | **Ora strutturata:** reazione; resistenza solo ai danni dell'attacco scatenante in quel turno. |
+| Monster Slayer (3) | Intestazione della sottoclasse. |
+| Hunter's Sense (3) | **Ora strutturati:** azione e usi pari al modificatore Saggezza (minimo uno) per riposo lungo. Bersaglio, distanza e occultamento alla divinazione restano contestuali. |
+| Monster Slayer Magic (3; 5/9/13/17) | Cinque incantesimi aggiuntivi conosciuti; nessun contatore né lancio gratuito inventato. |
+| Slayer's Prey (3) | **Ora strutturata:** azione bonus senza contatore. Bersaglio designato e primo colpo con arma di ogni turno richiedono stato per bersaglio. |
+| Supernatural Defense (7) | +1d6 solo ai TS imposti dalla preda e alle prove per sfuggire alla sua presa; non bonus a tutti i TS. |
+| Magic-User's Nemesis (11) | **Ora strutturati:** reazione e un uso per riposo breve. Lancio o teletrasporto visto entro 60 piedi, TS SAG e annullamento restano contestuali. |
+| Slayer's Counter (15) | **Ora strutturata:** reazione prima del TS imposto dalla preda; successo automatico del TS soltanto se l'attacco con arma colpisce. |
+
+Tre contatori sono confermati dai `<counter>` dell'XML (Detect Portal,
+Ethereal Step, Magic-User's Nemesis); Hunter's Sense ha il limite nel testo
+concorde XML/5etools. Le otto attivazioni e i quattro contatori dipendono
+dai rispettivi tratti XGE e non passano a Ranger XPHB.
+
 ## Lotto 2026-10-26: quattro archetipi Rogue XGE senza ristampa
 
 Controllate tutte le **25 voci** `subclassFeature` di Inquisitive (7),

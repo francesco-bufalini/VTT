@@ -3,7 +3,7 @@
     "format": 1,
     "source": "FightClub5eXML + 5etools",
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
-    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-paladin-scag.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-warlock-scag.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-fighter-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-druid-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-rogue-xge.xml",
+    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-paladin-scag.xml; Sources/DND_5e/WizardsOfTheCoast/03_Campaign_Settings/Sword_Coast_Adventurers_Guide/class-warlock-scag.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-fighter-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-druid-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-rogue-xge.xml; Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-ranger-xge.xml",
     "build_only": true,
     "note": "Curated consumable class counters (2014-rule PHB, SCAG and XGE). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. 2024 Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock and Wizard definitions and TCE Artificer counters are curated from source-qualified 5etools classFeature/subclassFeature data. Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
@@ -758,7 +758,41 @@
     {
       "class": "Ranger",
       "source": "PHB",
-      "resources": []
+      "resources": [
+        {
+          "name": "Detect Portal",
+          "steps": [
+            {"level": 3, "value": "1", "reset": "short_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Horizon Walker"
+        },
+        {
+          "name": "Ethereal Step",
+          "steps": [
+            {"level": 7, "value": "1", "reset": "short_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Horizon Walker"
+        },
+        {
+          "name": "Hunter's Sense",
+          "steps": [
+            {"level": 3, "value": "wis_mod", "reset": "long_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Monster Slayer",
+          "minimum": 1
+        },
+        {
+          "name": "Magic-User's Nemesis",
+          "steps": [
+            {"level": 11, "value": "1", "reset": "short_rest"}
+          ],
+          "source": "XGE",
+          "subclass": "Monster Slayer"
+        }
+      ]
     },
     {
       "class": "Rogue",

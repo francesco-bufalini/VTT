@@ -160,6 +160,35 @@ test('non-reprinted XGE Rogue traits own their actions and limited uses',()=>{
   .some(row=>row.name==='Master Duelist'),false);
 });
 
+test('non-reprinted XGE Ranger archetypes keep separate 2014 trait resources',()=>{
+ const horizon=creature('Ranger','2014',15,'Horizon Walker');
+ const horizonTrackers=calculateSheet(horizon,catalogs).trackers;
+ const portal=horizonTrackers.find(row=>row.name==='Detect Portal');
+ const step=horizonTrackers.find(row=>row.name==='Ethereal Step');
+ assert.equal(portal?.max,1);
+ assert.equal(step?.max,1);
+ assert([portal,step].every(row=>row.recharge==='short_rest'&&row.origin_id.includes('subclass')));
+ const horizonActions=actionsFor(horizon,horizonTrackers)
+  .filter(row=>row.rule_id.startsWith('ranger_phb_xge_horizon_'));
+ assert.deepEqual(horizonActions.map(row=>row.time),['action','bonus','bonus','reaction']);
+ assert.equal(horizonActions[0].tracker_id,portal.id);
+ assert.equal(horizonActions[2].tracker_id,step.id);
+ const slayer=creature('Ranger','2014',15,'Monster Slayer');
+ const slayerTrackers=calculateSheet(slayer,catalogs).trackers;
+ const sense=slayerTrackers.find(row=>row.name==="Hunter's Sense");
+ const nemesis=slayerTrackers.find(row=>row.name==="Magic-User's Nemesis");
+ assert.equal(sense?.max,3);
+ assert.equal(sense?.recharge,'long_rest');
+ assert.equal(sense?.origin_name,"Tratto · Hunter's Sense");
+ assert.equal(nemesis?.max,1);
+ assert.equal(nemesis?.recharge,'short_rest');
+ assert.deepEqual(actionsFor(slayer,slayerTrackers)
+  .filter(row=>row.rule_id.startsWith('ranger_phb_xge_slayer_'))
+  .map(row=>row.time),['action','bonus','reaction','reaction']);
+ assert.equal(calculateSheet(creature('Ranger','2024',15,'Monster Slayer'),catalogs).trackers
+  .some(row=>row.name==="Hunter's Sense"),false);
+});
+
 test('XGE Dreams and Shepherd retain class-level pools, shared uses and trait actions',()=>{
  const dreams=creature('Druid','2014',14,'Circle of Dreams');
  const own=calculateSheet(dreams,catalogs).trackers;
