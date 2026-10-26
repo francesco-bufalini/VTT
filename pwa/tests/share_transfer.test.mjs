@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
-import {saveHomebrewDefinition,exportHomebrewPackage,importHomebrewPackage}
+import {saveHomebrewDefinition,exportHomebrewPackage,importHomebrewPackage,exportCatalogHomebrewEntry}
   from '../creatures.js';
 import {getRecord} from '../storage.js';
 import {encodeShareChunk,decodeShareChunk} from '../share_transfer.js';
@@ -46,4 +46,24 @@ test('homebrew imports reject malformed and duplicate definitions',async()=>{
  await assert.rejects(importHomebrewPackage({
    format:'vtt_homebrew_share_v1',version:1,definitions:[entry,entry]
  }),/duplicato/);
+});
+
+test('homebrew embedded in a character is converted to a portable catalog definition',async()=>{
+ const virtual={
+   id:'local_shared_items_example',name:'Pietra del vento',source:'Personalizzato',
+   _category:'items',_homebrew:true,description:'Vento magico',
+   rarity:'rare',quantity:4,attuned:true,instance_id:'personal-copy'
+ };
+ const packageValue=await exportCatalogHomebrewEntry(virtual);
+ assert.equal(packageValue.definitions.length,1);
+ const [item]=packageValue.definitions;
+ assert.match(item.id,/^homebrew:shared:items:entry_/);
+ assert.equal(item.data.description,'Vento magico');
+ assert.equal(item.data.rarity,'rare');
+ assert.equal(item.data.quantity,undefined);
+ assert.equal(item.data.attuned,undefined);
+ assert.equal(item.data.instance_id,undefined);
+ assert.equal(await importHomebrewPackage(packageValue),1);
+ assert.deepEqual((await getRecord('global','homebrew',item.id)).data,item);
+ assert.equal(virtual.quantity,4,'the source character item remains unchanged');
 });
