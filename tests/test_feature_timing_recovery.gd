@@ -26,6 +26,12 @@ func _time(record: Dictionary, action: String) -> int:
 			return int(row.get("time", -1))
 	return -1
 
+func _rule(record: Dictionary, rule_id: String) -> Dictionary:
+	for row: Dictionary in Mechanics.action_entries(record, Trackers.for_creature(record)):
+		if String(row.get("rule_id", "")) == rule_id:
+			return row
+	return {}
+
 func run() -> void:
 	var druid := _sheet("Druid", "2014", 2)
 	assert(_time(druid, "Forma selvatica") == 0)
@@ -113,6 +119,28 @@ func run() -> void:
 	var shepherd := _sheet("Druid", "2014", 14, "Circle of the Shepherd")
 	assert(String(_tracker(shepherd, "Spirit Totem").get("recharge", "")) == "short_rest")
 	assert(int(_tracker(shepherd, "Faithful Summons").get("max", 0)) == 1)
+	var inquisitive := _sheet("Rogue", "2014", 13, "Inquisitive")
+	var unerring := _tracker(inquisitive, "Unerring Eye")
+	assert(int(unerring.get("max", 0)) == 3 and String(unerring.get("recharge", "")) == "long_rest")
+	assert(String(unerring.get("origin_id", "")).begins_with("feature:"))
+	assert(String(unerring.get("origin_name", "")) == "Tratto · Unerring Eye")
+	assert(String(_rule(inquisitive, "rogue_phb_xge_inquisitive_eye_for_detail").get("activation", "")) == "bonus")
+	assert(String(_rule(inquisitive, "rogue_phb_xge_inquisitive_insightful_fighting").get("activation", "")) == "bonus")
+	assert(String(_rule(inquisitive, "rogue_phb_xge_inquisitive_unerring_eye").get("tracker_id", "")) == String(unerring.get("id", "")))
+	var low_wis := _sheet("Rogue", "2014", 13, "Inquisitive")
+	low_wis["abilities"]["wis"] = 8
+	assert(int(_tracker(low_wis, "Unerring Eye").get("max", 0)) == 1)
+	var swashbuckler := _sheet("Rogue", "2014", 17, "Swashbuckler")
+	var duelist := _tracker(swashbuckler, "Master Duelist")
+	assert(int(duelist.get("max", 0)) == 1 and String(duelist.get("recharge", "")) == "short_rest")
+	assert(String(_rule(swashbuckler, "rogue_phb_xge_swashbuckler_panache").get("activation", "")) == "action")
+	assert(String(_rule(swashbuckler, "rogue_phb_xge_swashbuckler_elegant_maneuver").get("activation", "")) == "bonus")
+	assert(String(_rule(_sheet("Rogue", "2014", 17, "Mastermind"), "rogue_phb_xge_mastermind_misdirection").get("activation", "")) == "reaction")
+	assert(String(_rule(_sheet("Rogue", "2014", 17, "Scout"), "rogue_phb_xge_scout_skirmisher").get("activation", "")) == "reaction")
+	assert(String(_rule(_sheet("Rogue", "2014", 17, "Scout"), "rogue_phb_xge_scout_sudden_strike").get("activation", "")) == "bonus")
+	assert(_tracker(_sheet("Rogue", "2014", 17, "Scout"), "Master Duelist").is_empty())
+	assert(_tracker(_sheet("Rogue", "2024", 17, "Swashbuckler"), "Master Duelist").is_empty())
+	assert(_rule(_sheet("Rogue", "2024", 17, "Inquisitive"), "rogue_phb_xge_inquisitive_unerring_eye").is_empty())
 
 	for kind: String in ["Barbarian", "Cleric", "Druid", "Fighter", "Paladin"]:
 		var level := 3

@@ -236,7 +236,7 @@ for(const row of featProficiencies.feats){
  const existing=browserProficiencies.feat.find(feat=>feat.name.toLowerCase()===row.name.toLowerCase()&&feat.source.toLowerCase()===row.source.toLowerCase());
  if(existing){
   for(const [key,items] of Object.entries(row))if(Array.isArray(items))
-   existing[key]=[...(existing[key]||[]),...items];
+   existing[key]=[...new Set([...(existing[key]||[]),...items])];
  }else browserProficiencies.feat.push(row);
 }
 await writeFile(new URL('../catalog/proficiency_grants.json',import.meta.url),JSON.stringify(browserProficiencies)+'\n');

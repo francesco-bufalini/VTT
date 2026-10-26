@@ -7,6 +7,50 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-26: quattro archetipi Rogue XGE senza ristampa
+
+Controllate tutte le **25 voci** `subclassFeature` di Inquisitive (7),
+Mastermind (6), Scout (6) e Swashbuckler (6), con `classSource=PHB` e
+`source=XGE`, in [5etools `class-rogue.json`](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-rogue.json)
+(`a449139b732c30bae4a09122796c610d2d65c964`). Nessuna delle quattro
+sottoclassi XGE dichiara `reprintedAs`. Verifica incrociata con
+[FightClub5eXML `class-rogue-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-rogue-xge.xml)
+(`42a334534d4265101b51ae74ba011b46ccdba5db`). Le voci XGE sono
+legate alla sottoclasse Rogue **PHB**, senza attribuirle a Rogue XPHB.
+
+| Archetipi e tratti (livello) | Esito |
+| --- | --- |
+| Inquisitive: Inquisitive (3) | Intestazione; non concede di per sé un'azione o un contatore. |
+| Inquisitive: Ear for Deceit (3) | Soglia del d20 a 8 sulla sola prova Intuizione per individuare una menzogna; effetto contestuale. |
+| Inquisitive: Eye for Detail (3) | **Ora strutturata:** azione bonus del tratto. Prova Percezione o Indagare scelta nell'uso. |
+| Inquisitive: Insightful Fighting (3) | **Ora strutturata:** azione bonus del tratto. Prova contrapposta, bersaglio e durata restano contestuali. |
+| Inquisitive: Steady Eye (9) | Vantaggio alle prove indicate solo se il movimento nel turno non supera metà velocità. |
+| Inquisitive: Unerring Eye (13) | **Ora strutturati:** azione e usi pari al modificatore Saggezza (minimo uno) per riposo lungo, dal tratto XGE. Rilevamento, portata e condizioni dei sensi restano contestuali. |
+| Inquisitive: Eye for Weakness (17) | +3d6 al Furtivo contro una creatura cui si applica Insightful Fighting; non danno permanente. |
+| Mastermind: Mastermind (3) | Intestazione dell'archetipo. |
+| Mastermind: Master of Intrigue (3) | Competenze nei due strumenti, un gioco scelto e due lingue scelte; imitazione dopo ascolto. Concessioni ancora da legare al tratto. |
+| Mastermind: Master of Tactics (3) | **Ora strutturata:** Help come azione bonus. Portata 30 piedi solo per aiutare un attacco e se il bersaglio può vedere o sentire. |
+| Mastermind: Insightful Manipulator (9) | Osservazione/interazione di almeno un minuto e confronto di due caratteristiche scelte; risposta del DM. |
+| Mastermind: Misdirection (13) | **Ora strutturata:** reazione del tratto. Bersaglio dell'attacco e copertura fornita da altra creatura entro 5 piedi restano contestuali. |
+| Mastermind: Soul of Deceit (17) | Protezione dei pensieri, possibile finzione e magia della verità; scelte e prove contestuali. |
+| Scout: Scout (3) | Intestazione dell'archetipo. |
+| Scout: Skirmisher (3) | **Ora strutturata:** reazione del tratto. Trigger a fine turno del nemico, distanza, metà velocità e assenza di attacchi di opportunità restano contestuali. |
+| Scout: Survivalist (3) | Nature e Survival con competenza raddoppiata; da attribuire al tratto esatto. |
+| Scout: Superior Mobility (9) | +10 piedi a velocità di cammino e alle velocità di nuoto/scalata già possedute; origine e aggiornamento dinamico ancora aperti. |
+| Scout: Ambush Master (13) | Vantaggio all'iniziativa e vantaggio agli attacchi contro il primo bersaglio colpito nel primo round fino al turno successivo; trigger contestuale. |
+| Scout: Sudden Strike (17) | **Ora strutturata:** azione bonus dopo Attack. Attacco e secondo Furtivo richiedono bersagli diversi nello stesso turno. |
+| Swashbuckler: Swashbuckler (3) | Intestazione dell'archetipo. |
+| Swashbuckler: Fancy Footwork (3) | Nega attacchi di opportunità solo alla creatura attaccata in mischia durante quel turno. |
+| Swashbuckler: Rakish Audacity (3) | Modificatore Carisma all'iniziativa e condizione alternativa per il Furtivo; il secondo beneficio resta contestuale. |
+| Swashbuckler: Panache (9) | **Ora strutturata:** azione del tratto. Prova contrapposta e risultati diversi per creatura ostile/non ostile restano contestuali. |
+| Swashbuckler: Elegant Maneuver (13) | **Ora strutturata:** azione bonus; vantaggio alla successiva prova Acrobazia o Atletica dello stesso turno. |
+| Swashbuckler: Master Duelist (17) | **Ora strutturato:** un uso per riposo breve dopo un attacco mancato; il nuovo tiro con vantaggio avviene sul tiro stesso, senza azione separata. |
+
+I nove tempi d'uso e i due contatori usano `class_source=PHB`, sottoclasse e
+nome del tratto concedente. L'XML ha un `<counter>` esplicito per Master
+Duelist; il limite di Unerring Eye è verificato dal testo concorde XML/5etools.
+Le altre condizioni sono nella lista separata e non diventano bonus statici.
+
 ## Lotto 2026-10-25: sottorazze SCAG del 2014 senza ristampa
 
 Verificate una per una le **9** voci `subrace` SCAG di Half-Elf (4),

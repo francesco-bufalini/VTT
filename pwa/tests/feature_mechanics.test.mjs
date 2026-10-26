@@ -134,6 +134,32 @@ test('XGE Samurai and Cavalier counters use their own trait and limit only the s
   .some(row=>row.name==='Fighting Spirit'),false);
 });
 
+test('non-reprinted XGE Rogue traits own their actions and limited uses',()=>{
+ const inquisitive=creature('Rogue','2014',13,'Inquisitive');
+ const inquisitiveTrackers=calculateSheet(inquisitive,catalogs).trackers;
+ const eye=inquisitiveTrackers.find(row=>row.name==='Unerring Eye');
+ assert.equal(eye?.max,3);
+ assert.equal(eye?.recharge,'long_rest');
+ assert.equal(eye?.origin_name,'Tratto · Unerring Eye');
+ const inquisitiveActions=actionsFor(inquisitive,inquisitiveTrackers)
+  .filter(row=>row.rule_id.startsWith('rogue_phb_xge_inquisitive_'));
+ assert.deepEqual(inquisitiveActions.map(row=>row.time),['bonus','bonus','action']);
+ assert.equal(inquisitiveActions[2].tracker_id,eye.id);
+ const swashbuckler=creature('Rogue','2014',17,'Swashbuckler');
+ const swashTrackers=calculateSheet(swashbuckler,catalogs).trackers;
+ const duelist=swashTrackers.find(row=>row.name==='Master Duelist');
+ assert.equal(duelist?.max,1);
+ assert.equal(duelist?.recharge,'short_rest');
+ assert.equal(duelist?.origin_name,'Tratto · Master Duelist');
+ assert.deepEqual(actionsFor(swashbuckler,swashTrackers)
+  .filter(row=>row.rule_id.startsWith('rogue_phb_xge_swashbuckler_'))
+  .map(row=>row.time),['action','bonus']);
+ assert.equal(calculateSheet(creature('Rogue','2014',17,'Scout'),catalogs).trackers
+  .some(row=>['Unerring Eye','Master Duelist'].includes(row.name)),false);
+ assert.equal(calculateSheet(creature('Rogue','2024',17,'Swashbuckler'),catalogs).trackers
+  .some(row=>row.name==='Master Duelist'),false);
+});
+
 test('XGE Dreams and Shepherd retain class-level pools, shared uses and trait actions',()=>{
  const dreams=creature('Druid','2014',14,'Circle of Dreams');
  const own=calculateSheet(dreams,catalogs).trackers;
