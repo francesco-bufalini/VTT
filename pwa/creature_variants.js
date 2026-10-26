@@ -128,7 +128,7 @@ export function creatureMatchesFilter(creature,filter={}){
  const raw=object(stat.cr)?stat.cr.cr:stat.cr;
  const fraction=typeof raw==='string'?raw.trim().match(/^(\d+)\s*\/\s*(\d+)$/):null;
  const challenge=fraction&&Number(fraction[2])>0?Number(fraction[1])/Number(fraction[2]):finiteNumber(raw,NaN);
- return (!filter.ids?.length||filter.ids.includes(creature.id))&&(!filter.type?.length||filter.type.includes(type))&&(!filter.sources?.length||filter.sources.includes(stat.source))&&(filter.max_cr===undefined||Number.isFinite(challenge)&&challenge>=0&&challenge<=Number(filter.max_cr))&&(!filter.no_fly||!stat.speed?.fly)&&(!filter.no_swim||!stat.speed?.swim);
+ return (!filter.ids?.length||filter.ids.includes(creature.id))&&(!filter.type?.length||filter.type.includes(type))&&(!filter.sources?.length||filter.sources.includes(stat.source))&&(filter.max_cr===undefined||Number.isFinite(challenge)&&challenge>=0&&challenge<=Number(filter.max_cr))&&(!filter.no_fly||!stat.speed?.fly)&&(!filter.no_swim||!stat.speed?.swim)&&(!filter.sizes?.length||filter.sizes.includes(Array.isArray(stat.size)?stat.size[0]:String(stat.size||'').slice(0,1).toUpperCase()));
 }
 // Explicit conversion at the catalog boundary; unknown rules stay in stat_block.
 export function bestiarySheet(stat,miniature){
