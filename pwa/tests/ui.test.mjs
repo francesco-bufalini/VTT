@@ -672,6 +672,9 @@ test("slot popup casts inline while compact search opens the existing spell deta
 });
 
 test("PWA granted spells group by origin while keeping shared tracker controls",async()=>{
+  // Keep this fixture independent of the preceding popup/navigation tests.
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="library-add"]'));
   click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Poteri tracker condivisi");
@@ -684,11 +687,16 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
     proficiency_origins:[{id:"custom:first",name:"Prima origine",group:"custom"},
       {id:"custom:second",name:"Seconda origine",group:"custom"}],
     resource_trackers:[{id:"shared-power-uses",name:"Cariche condivise",max:3,recharge:"long_rest"}],
+    spell_slots_manual:true,spell_slots_automatic:false,
+    spell_slots_total:[0,3,0,0,0,0,0,0,0,0],
+    spell_slots_spent:[0,1,0,0,0,0,0,0,0,0],
     origin_spell_grants:[
       {id:"grant:shield",origin_id:"custom:first",origin_name:"Prima origine",
         spell_id:"spell:shield|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"int"},
       {id:"grant:light",origin_id:"custom:second",origin_name:"Seconda origine",
-        spell_id:"spell:light|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"cha"}
+        spell_id:"spell:light|phb",tracker_id:"shared-power-uses",payment_mode:"tracker",spellcasting_ability:"cha"},
+      {id:"grant:second-shield",origin_id:"custom:second",origin_name:"Seconda origine",
+        spell_id:"spell:shield|phb",payment_mode:"slot",spellcasting_ability:"cha"}
     ]
   });
   click('[data-act="open"][data-id="'+id+'"]');
@@ -697,10 +705,19 @@ test("PWA granted spells group by origin while keeping shared tracker controls",
   try{await until(()=>document.querySelectorAll('.magic-origin-panel').length===2);}
   catch(error){throw new Error("Origin powers missing: "+document.querySelector('#app')?.textContent?.slice(0,1400),{cause:error});}
   const groups=[...document.querySelectorAll('.magic-origin-panel')];
-  assert.deepEqual(groups.map(g=>g.querySelector('h2')?.textContent).sort(),['Prima origine','Seconda origine']);
-  assert.ok(groups.every(g=>g.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length===1));
+  assert.deepEqual(groups.map(g=>g.querySelector('.magic-source-title h3')?.textContent).sort(),['Prima origine','Seconda origine']);
+  assert.ok(groups.every(g=>g.closest('.magic-panel')?.textContent.includes('Incantesimi disponibili')),
+    'Granting origins now use the same parent panel as class spell sections');
+  assert.deepEqual(groups.map(g=>g.querySelectorAll('.magic-spell-open[data-spell-key="origin"]').length).sort(),[1,2]);
   assert.ok(groups.every(g=>g.querySelectorAll('[data-casting-section]').length===1),
     "each granting origin preserves its own casting statistic");
+  assert.ok(groups.every(g=>g.querySelectorAll('.magic-level').length>0),
+    'Granted spells keep the same level-group layout as class spells');
+  const second=groups.find(g=>g.querySelector('.magic-source-title h3')?.textContent==='Seconda origine');
+  assert.match(second?.querySelector('.magic-source-resources')?.textContent||'',/Slot 1°\s*2\s*\/\s*3/,
+    'Slot-funded spells show the remaining level-specific slot pool next to their origin');
+  assert.match(second?.querySelector('.magic-source-resources')?.textContent||'',/Cariche condivise\s*3\s*\/\s*3/,
+    'Mixed source payments show both slot and tracker usage in the header');
   assert.ok(groups.every(g=>g.querySelector('[data-tracker-remaining="shared-power-uses"]')?.textContent==='3'),
     "the shared tracker is usable from both origin boxes");
   click('[data-act="tracker-more"][data-tracker-id="shared-power-uses"]');
@@ -1225,6 +1242,8 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  await until(()=>!document.querySelector('#sheet-context-dialog'));
  click('[data-sheet="magic"]');
  await until(()=>document.querySelector('.magic-level-slot[data-level="1"][data-pact="false"]'));
+ assert.match(document.querySelector('.magic-source-header .magic-source-resources')?.textContent||'',
+   /Slot 1°\s*\d+\s*\/\s*\d+/, 'Class spell sections expose slot usage beside their title');
  const spentBefore=(await loadCreature(saved.data.id)).data.spell_slots_spent[1];
  click('.magic-level-slot[data-level="1"][data-pact="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog[open] .magic-slot-spells'));
