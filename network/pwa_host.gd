@@ -35,6 +35,7 @@ const FILES := {
 	"/": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/index.html": ["res://pwa/index.html", "text/html; charset=utf-8"],
 	"/client.js": ["res://pwa/client.js", "text/javascript; charset=utf-8"],
+	"/share_transfer.js": ["res://pwa/share_transfer.js", "text/javascript; charset=utf-8"],
 	"/main.js": ["res://pwa/main.js", "text/javascript; charset=utf-8"],
 	"/native_sheet.js": ["res://pwa/native_sheet.js", "text/javascript; charset=utf-8"],
 	"/source_edition.js": ["res://pwa/source_edition.js", "text/javascript; charset=utf-8"],
