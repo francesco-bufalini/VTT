@@ -158,6 +158,34 @@ func update_owned_many(updates: Array[Dictionary]) -> Error:
 	return _write(records, undo_entries, redo_entries)
 
 
+# Validate the entire selection before one atomic archive replacement.
+func delete_owned_many(selection: Array[Dictionary]) -> Error:
+	if selection.is_empty(): return ERR_INVALID_PARAMETER
+	var loaded := _load()
+	if loaded.error != OK: return loaded.error
+	var pending: Dictionary = {}
+	for record: Dictionary in selection:
+		var id := String(record.get("id", ""))
+		if id.is_empty() or pending.has(id): return ERR_INVALID_PARAMETER
+		if not Owner.is_owner(record): return ERR_UNAUTHORIZED
+		pending[id] = record
+	var remaining: Array[Dictionary] = []
+	var undo_entries: Array = loaded.get("undo", [])
+	var redo_entries: Array = loaded.get("redo", [])
+	for old: Dictionary in loaded.records:
+		var id := String(old.get("id", ""))
+		if not pending.has(id):
+			remaining.append(old)
+			continue
+		var record: Dictionary = pending[id]
+		if record.get("kind") != old.get("kind") or not Owner.can_edit(record, old): return ERR_UNAUTHORIZED
+		undo_entries = _without_history(undo_entries, String(old.kind), id)
+		redo_entries = _without_history(redo_entries, String(old.kind), id)
+		pending.erase(id)
+	if not pending.is_empty(): return ERR_DOES_NOT_EXIST
+	return _write(remaining, undo_entries, redo_entries)
+
+
 func delete_record(record: Dictionary) -> Error:
 	var kind := String(record.get("kind", ""))
 	var id := String(record.get("id", "")).strip_edges()

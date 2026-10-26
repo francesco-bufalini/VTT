@@ -84,6 +84,27 @@ func run() -> void:
 	args.data = fresh.data.duplicate(true)
 	args.expectedRevision = "1"
 	assert(bridge.dispatch("put", args).has("error"), "Reject malformed revisions")
+	# Reject a stale child before deleting any member of the selection.
+	var child: Dictionary = archive.create_monster({"name": "Child fixture"})
+	child["parent_creature_id"] = original.id
+	assert(archive.save(child) == OK)
+	var child_row: Dictionary = bridge.dispatch("get", {"scope": "default", "type": "creature", "id": child.id}).value
+	var family := {"scope": "default", "type": "creature", "entries": [
+		{"id": original.id, "revision": fresh.revision}, {"id": child.id, "revision": child_row.revision}]}
+	child.name = "Concurrent child edit"
+	assert(archive.save(child) == OK)
+	assert(bridge.dispatch("deleteFamily", family).has("error"))
+	assert(archive.list_owned().size() == 2, "Stale child must preserve both sheets")
+	child_row = bridge.dispatch("get", {"scope": "default", "type": "creature", "id": child.id}).value
+	family.entries[1].revision = child_row.revision
+	# A missing member must also leave all sheets untouched.
+	family.entries.append({"id": "missing", "revision": 1})
+	assert(bridge.dispatch("deleteFamily", family).has("error"))
+	assert(archive.list_owned().size() == 2)
+	family.entries.pop_back()
+	assert(bridge.dispatch("deleteFamily", family).get("value", false))
+	assert(archive.list_owned().is_empty())
+	assert(archive.save(original) == OK) # Remaining shell tests use the parent.
 	bridge.settings_path = path + ".cfg"
 	assert(bridge.dispatch("setting", {"key": "desktop-test", "value": 7}).value == 7)
 	var reopened := Bridge.new()

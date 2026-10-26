@@ -125,6 +125,12 @@ func delete(record: Dictionary) -> Error:
 	return _storage.delete_record(record)
 
 
+func delete_owned_many(records: Array[Dictionary]) -> Error:
+	for record: Dictionary in records:
+		if String(record.get("_storage_origin", "")) == "scene": return ERR_UNAUTHORIZED
+	return _storage.delete_owned_many(records)
+
+
 func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
 	if not CreatureOwner.is_owner(record) or String(record.get("_storage_origin", "")) == "scene":
 		return {}

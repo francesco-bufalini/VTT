@@ -64,6 +64,29 @@ func dispatch(method: String, args: Dictionary) -> Dictionary:
 		return {"error": "Archivio non disponibile in questa modalità."}
 	var rows := _list(scope, type)
 	if method == "list": return {"value": rows}
+	if method == "deleteFamily":
+		if type != "creature" or not args.get("entries") is Array or args.entries.is_empty():
+			return {"error": "Selezione creature non valida."}
+		var by_id: Dictionary = {}
+		for row: Dictionary in rows: by_id[String(row.id)] = row
+		var selection: Array[Dictionary] = []
+		var seen: Dictionary = {}
+		for entry: Variant in args.entries:
+			if not entry is Dictionary or not entry.get("id") is String:
+				return {"error": "Selezione creature non valida."}
+			var entry_id: String = entry.id
+			var revision: Variant = entry.get("revision")
+			if seen.has(entry_id) or not by_id.has(entry_id) or not (revision is int or revision is float):
+				return {"error": "Le creature sono cambiate. Riapri l'archivio prima di eliminare."}
+			if float(revision) != floorf(float(revision)) or int(revision) != int(by_id[entry_id].revision):
+				return {"error": "Le creature sono cambiate. Riapri l'archivio prima di eliminare."}
+			seen[entry_id] = true
+			selection.append(by_id[entry_id].data)
+		if archive.delete_owned_many(selection) != OK:
+			return {"error": "Eliminazione non riuscita; nessuna creatura eliminata."}
+		for entry_id: String in seen:
+			_versions["creature:" + entry_id] = {"data": {}, "revision": int(by_id[entry_id].revision) + 1}
+		return {"value": true}
 	var id := String(args.get("id", ""))
 	var old: Dictionary = {}
 	for row: Dictionary in rows:

@@ -8,6 +8,7 @@ export const getRecord = (scope,type,id) => request('get',{scope,type,id});
 export const listRecords = (scope,type=null) => request('list',{scope,type});
 export const putRecord = (scope,type,id,data,expectedRevision=null) => request('put',{scope,type,id,data,expectedRevision});
 export const deleteRecordIfRevision = (scope,type,id,expectedRevision) => request('delete',{scope,type,id,expectedRevision});
+export const deleteCreatureFamily = (scope, entries) => request('deleteFamily',{scope,type:'creature',entries});
 export const deleteRecord = async () => { throw Error('La cancellazione richiede una revisione della scheda.'); };
 export const insertRecords = () => nativeOperation();
 export const exportBackup = () => nativeOperation();

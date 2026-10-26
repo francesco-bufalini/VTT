@@ -22,12 +22,12 @@ func _handle_http(client: Dictionary, method: String, path: String, _headers: Di
 		return
 	if path == "/" or path == "/index.html":
 		var html := FileAccess.get_file_as_string("res://pwa/index.html")
-		html = html.replace('<script type="module" src="/main.js"></script>', '<script type="module" src="/desktop/main.js"></script>')
+		html = html.replace('<script type="module" src="/main.js"></script>', '<script type="module" src="/desktop/startup.js"></script>')
 		html = html.replace("</head>", '<link rel="stylesheet" href="/desktop/desktop.css"></head>')
 		html = html.replace("<title>VTT Mobile</title>", "<title>VTT · Creature</title>")
 		_respond(client, 200, "text/html; charset=utf-8", html.to_utf8_buffer())
 		return
-	if path in ["/desktop/main.js", "/desktop/bridge.js", "/desktop/storage.js", "/desktop/desktop.css"]:
+	if path in ["/desktop/startup.js", "/desktop/main.js", "/desktop/bridge.js", "/desktop/storage.js", "/desktop/desktop.css"]:
 		var mime := "text/css" if path.ends_with(".css") else "text/javascript"
 		_respond(client, 200, mime, FileAccess.get_file_as_bytes("res://pwa" + path))
 		return
