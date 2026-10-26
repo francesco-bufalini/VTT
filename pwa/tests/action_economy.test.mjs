@@ -769,8 +769,8 @@ test('College of Creation activation supplements are trait-owned, with distinct 
  assert.equal(actions.find(a=>a.name==="Comandare l'oggetto danzante")?.time,'bonus');
  assert.equal(actions.find(a=>a.name==="Comandare l'oggetto danzante")?.cost,0);
  assert.equal(own({...selected,classes:[{...selected.classes[0],level:3}],level:3}).length,1);
- assert.equal(own({...selected,classes:[{...selected.classes[0],subclass:'College of Lore'}]}).length,3,
-  'simulated feature ownership remains decisive even if the stored subclass is inconsistent');
+ assert.equal(own({...selected,classes:[{...selected.classes[0],subclass:'College of Lore'}]}).length,0,
+  'a stale trait from another subclass must not grant College of Creation actions');
  assert.equal(own({...selected,classes:[{...selected.classes[0],source:'XPHB'}],rules_version:'2024'}).length,3);
  assert.equal(actionEntries(selected,{features:[],trackers},[],overrides,[])
   .filter(a=>a.id?.startsWith('class_override:')).length,0);
