@@ -43,6 +43,7 @@ const FILES := {
 	"/concentration_rules.js": ["res://pwa/concentration_rules.js", "text/javascript; charset=utf-8"],
 	"/rule_supplements.js": ["res://pwa/rule_supplements.js", "text/javascript; charset=utf-8"],
 	"/character_core.js": ["res://pwa/character_core.js", "text/javascript; charset=utf-8"],
+	"/character_portrait.js": ["res://pwa/character_portrait.js", "text/javascript; charset=utf-8"],
 	"/class_spells.js": ["res://pwa/class_spells.js", "text/javascript; charset=utf-8"],
 	"/class_trackers.js": ["res://pwa/class_trackers.js", "text/javascript; charset=utf-8"],
 	"/quick_homebrew.js": ["res://pwa/quick_homebrew.js", "text/javascript; charset=utf-8"],
