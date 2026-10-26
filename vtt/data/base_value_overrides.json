@@ -140,5 +140,29 @@
         }
       ]
     }
+  ],
+  "species": [
+    {
+      "name": "Lizardfolk",
+      "source": "VGM",
+      "overrides": [
+        {
+          "target": "ac_unarmored",
+          "mode": "alternative",
+          "expression": "13 + dex_mod"
+        }
+      ]
+    },
+    {
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "overrides": [
+        {
+          "target": "ac_unarmored",
+          "mode": "alternative",
+          "expression": "13 + dex_mod"
+        }
+      ]
+    }
   ]
 }
