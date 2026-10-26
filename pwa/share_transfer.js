@@ -3,6 +3,7 @@
 // bounded temporary chunks until the receiver accepts or rejects the offer.
 import {shareRequest} from './client.js';
 import {ownerId,importCreatureFile,importHomebrewPackage} from './creatures.js';
+import {getOrCreateSetting} from './storage.js';
 import {openDialog,closeDialog,dialogCloseButton} from './ui_primitives.js';
 
 const CHUNK=128*1024, MAX_BYTES=16*1024*1024;
@@ -14,13 +15,19 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,
 const errorText=error=>String(error?.message||error||'Errore di trasferimento');
 async function localDevice(){
  const id=await ownerId(),userAgent=navigator.userAgent||'';
+ const token=await getOrCreateSetting('pwa-device-share-secret',()=>
+   [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,'0')).join(''));
  const type=/iPhone|iPad/i.test(userAgent)?'iPhone / iPad':
    /Android/i.test(userAgent)?'Android':'Computer';
- return {id,name:type+' · '+id.slice(0,6)};
+ return {id,token,name:type+' · '+id.slice(0,6)};
+}
+async function authenticatedShare(route,payload={}){
+ const device=await localDevice();
+ return shareRequest(route,{...payload,device_id:device.id,device_token:device.token});
 }
 async function directory(){
  const device=await localDevice();
- return shareRequest('peers',{device_id:device.id,device_name:device.name});
+ return authenticatedShare('peers',{device_name:device.name});
 }
 export function encodeShareChunk(bytes){
  let raw='';
@@ -40,7 +47,7 @@ async function send(recipient,kind,title,payload,progress){
  const transfer_id=crypto.randomUUID().replace(/-/g,'');
  const parts=Math.ceil(bytes.length/CHUNK);
  for(let index=0;index<parts;index++){
-   await shareRequest('chunk',{
+   await authenticatedShare('chunk',{
      device_id,recipient_id:recipient,transfer_id,kind,title,index,parts,
      size:bytes.length,data:encodeShareChunk(bytes.subarray(index*CHUNK,(index+1)*CHUNK))
    });
@@ -121,7 +128,7 @@ function incomingDialog(offer,onImported,notify){
    if(busy)return;
    busy=true;buttons.forEach(b=>b.disabled=true);
    try{
-     await shareRequest('ack',{device_id:(await localDevice()).id,transfer_id:offer.id});
+     await authenticatedShare('ack',{device_id:(await localDevice()).id,transfer_id:offer.id});
      dismiss();notify('Trasferimento rifiutato.');
    }catch(error){
      dialog.querySelector('[data-share-status]').textContent=errorText(error);
@@ -142,7 +149,7 @@ function incomingDialog(offer,onImported,notify){
      let offset=0;
      for(let index=0;index<offer.parts;index++){
        status.textContent='Ricezione: '+(index+1)+' / '+offer.parts+' blocchi';
-       const part=await shareRequest('pull',{device_id,transfer_id:offer.id,index});
+       const part=await authenticatedShare('pull',{device_id,transfer_id:offer.id,index});
        const section=decodeShareChunk(part.data);
        if(section.length!==Math.min(CHUNK,offer.size-offset))
          throw Error('Blocco del trasferimento danneggiato.');
@@ -154,7 +161,7 @@ function incomingDialog(offer,onImported,notify){
      else await importHomebrewPackage(payload);
      imported=true;
      ignored.add(offer.id);
-     try{await shareRequest('ack',{device_id,transfer_id:offer.id});}
+     try{await authenticatedShare('ack',{device_id,transfer_id:offer.id});}
      catch(error){console.warn('Importazione completata ma ricevuta non confermata',error);}
      closeDialog(dialog,{remove:true});
      await onImported(offer.kind);
