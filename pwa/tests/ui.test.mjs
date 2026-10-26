@@ -1329,8 +1329,13 @@ test("Info contains scores, skills, tools, languages, weapons and armor without 
  const order=[...info.matchAll(/data-panel="([^"]+)"/g)].map(m=>m[1]);
  assert.deepEqual(order,["Identità","Aspetto","Background","Classi e progressione","Talenti","Caratteristiche","Riepilogo","Abilità","Altre competenze"]);
  assert.match(info,/Livello del privilegio: 4/);
- assert.match(info,/Il talento permette di agire rapidamente/);
- assert.match(info,/<details class="trait-card info-feat-entry">/);
+ // The Talenti panel is a navigable index; description and benefits are
+ // shown by the unique owned feat trait in Tratti, not duplicated in Info.
+ assert.match(info,/data-act="feat-open-trait"/);
+ assert.match(info,/data-feat-origin="feat\\|alert\\|phb"/);
+ assert.match(info,/Origine · Non specificata/);
+ assert.doesNotMatch(info,/Il talento permette di agire rapidamente/);
+ assert.doesNotMatch(info,/<details class="trait-card info-feat-entry">/);
  assert.doesNotMatch(info,/ft di camminata/);
  assert.equal(stats,null,'The former Abilità page must be removed');
  assert.match(info,/data-panel="Abilità"/);
