@@ -181,6 +181,22 @@ def main() -> None:
         if not any(row["name"] == name and row["source"] == source for row in out["feat"]):
             out["feat"].append({"name": name, "source": source, **fields})
     out["feat"].sort(key=lambda row: (row["name"].casefold(), row["source"]))
+    # Persist audited trait ownership across upstream index regeneration.
+    # This manifest never grants new proficiencies; it only identifies which
+    # named 5etools trait owns existing structured grants/choices.
+    ownership_path = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_feature_ownership.json"
+    if ownership_path.exists():
+        ownership = read_json(ownership_path).get("entries", [])
+        for rule in ownership:
+            group = rule.get("kind", "")
+            for row in out.get(group, []):
+                if row["name"].casefold() != rule["name"].casefold() or row["source"].casefold() != rule["source"].casefold():
+                    continue
+                if rule.get("fixed"):
+                    row["trait_proficiencies"] = rule["fixed"]
+                if rule.get("choice"):
+                    row["trait_proficiency_choices"] = rule["choice"]
+                break
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))

@@ -434,6 +434,14 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
   const originName=norm(grant.origin_name);
   const explicitTrait=norm(grant.granting_trait);
   const parentName=norm(grant.origin_parent_name);
+  // Never collapse a typed grant to a race/class overview if the named
+  // granting trait is unavailable due to level gating or lazy loading.
+  const ownedRows=explicitTrait?result.map((row,index)=>({row,index})):[];
+  const explicitOwner=explicitTrait?(originId.startsWith('feature:')?
+   ownedRows.find(({row})=>String(row.feature_origin||'')===originId):
+   ownedRows.find(({row})=>norm(row.name)===explicitTrait&&
+     (!parentName||norm(String(row.origin||'').split(' · ').pop())===parentName))):null;
+  if(explicitTrait&&!explicitOwner)continue;
   const candidates=result.map((row,index)=>({row,index})).filter(({row})=>{
    const ownedId=String(row.origin_key||'');
    const display=norm(String(row.origin||'').split(' · ').pop());
@@ -445,7 +453,7 @@ export function withGrantedSpellPreviews(rows=[],grants=[],spells=[]){
      (originName&&display===originName);
   });
   if(!candidates.length)continue;
-  const selected=candidates.find(({row})=>explicitTrait&&norm(row.name)===explicitTrait&&
+  const selected=explicitOwner||candidates.find(({row})=>explicitTrait&&norm(row.name)===explicitTrait&&
     (!parentName||norm(String(row.origin||'').split(' · ').pop())===parentName))||
    candidates.find(({row})=>originId&&String(row.feature_origin||'')===originId)||
    candidates.find(({row})=>originName&&norm(row.name)===originName)||

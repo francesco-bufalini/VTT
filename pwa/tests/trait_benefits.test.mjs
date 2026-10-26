@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {signedTraitFormula,traitBenefitGroups} from '../trait_benefits.js';
-import {fixedProficiencies,proficiencyGrantOrigins} from '../structured_effects.js';
+import {fixedProficiencies,proficiencyGrantOrigins,collectStructuredFeatures} from '../structured_effects.js';
+import {readFileSync} from 'node:fs';
 
 test('signed formulas preserve negative signs and show a single positive prefix',()=>{
  assert.equal(signedTraitFormula('1 + proficiency'),'+1 + proficiency');
@@ -256,4 +257,80 @@ test('manifest ability previews are source scoped, disabled visibly, and preserv
  assert.equal(group.items[0].timing,'Reazione');
  assert.equal(group.items[0].cost,'1 utilizzo · Superiority Die');
  assert.equal(group.items[0].description,'Reduce damage.');
+});
+
+test('typed racial proficiencies are owned by Menacing and Keen Senses, not generic species',()=>{
+ const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url)));
+ const native=JSON.parse(readFileSync(new URL('../../vtt/data/proficiency_grants_5etools.json',import.meta.url)));
+ for(const [race,source,skill,featureName] of [
+   ['Half-Orc','PHB','intimidation','Menacing'],['Elf','PHB','perception','Keen Senses'],
+   ['Locathah','LR','athletics','Observant & Athletic']]){
+  const row=index.race.find(r=>r.name===race&&r.source===source);
+  assert.equal(row.trait_proficiencies['skill:'+skill],featureName);
+  assert.deepEqual(row.trait_proficiencies,
+    native.race.find(r=>r.name===race&&r.source===source).trait_proficiencies);
+  const record={kind:'character',species:race,species_source:source,species_id:'test-'+race.toLowerCase(),
+    level:4,abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}};
+  const features=collectStructuredFeatures(record,{originDetails:{races:{
+    [race.toLowerCase()+'|'+source.toLowerCase()]:{
+     entries:[{name:featureName,entries:['A typed feature']},{name:'Languages',entries:['A typed language trait']}]}
+  }}});
+  const owner=features.find(f=>f.name===featureName);
+  assert(owner?.origin_id);
+  assert(fixedProficiencies(record,index,features).has('skill:'+skill));
+  assert.deepEqual(proficiencyGrantOrigins(record,index,'skill',skill,features).map(o=>o.id),[owner.origin_id]);
+  const overview={name:'Descrizione · '+race,origin:'Specie · '+race,
+    origin_key:owner.origin_key,category:'razza',rank:0};
+  const named={name:featureName,origin:'Specie · '+race,
+    origin_key:owner.origin_key,feature_origin:owner.origin_id,category:'razza',rank:1};
+  const calculated={proficiency_sources:{['skill:'+skill]:
+    proficiencyGrantOrigins(record,index,'skill',skill,features)}};
+  assert(!traitBenefitGroups(overview,record,calculated).some(g=>g.type==='proficiency'));
+  const groups=traitBenefitGroups(named,record,calculated);
+  const prof=groups.find(g=>g.type==='proficiency');
+  assert(prof);
+  assert.equal(prof.items[0].id,
+    'proficiency:race|'+source.toLowerCase()+'|'+race.toLowerCase()+':skill:'+skill,
+    'the editor still removes the original saved source identity');
+  const removed={...record,trait_benefit_removed:{x:[prof.items[0].id]}};
+  assert.equal(fixedProficiencies(removed,index,features).has('skill:'+skill),false);
+  const disabled={...record,origin_enabled:{[owner.origin_id]:false}};
+  assert.equal(fixedProficiencies(disabled,index,features).has('skill:'+skill),false);
+  assert.equal(proficiencyGrantOrigins(disabled,index,'skill',skill,features).length,0);
+  assert.equal(fixedProficiencies({...record,
+   origin_enabled:{['race|'+source.toLowerCase()+'|'+race.toLowerCase()]:false}},index,features)
+   .has('skill:'+skill),false);
+ }
+});
+
+test('stored proficiency choices migrate their display origin to the named trait without changing persistence ID',()=>{
+ const index=JSON.parse(readFileSync(new URL('../catalog/proficiency_grants.json',import.meta.url)));
+ const original='race|phb|half-elf';
+ const record={kind:'character',species:'Half-Elf',species_source:'PHB',level:2,
+  proficiency_choices:[{origin_id:original,kind:'skill',key:'insight'}]};
+ const features=collectStructuredFeatures(record,{originDetails:{races:{
+  'half-elf|phb':{entries:[{name:'Skill Versatility',entries:['A selected skill']}]}
+ }}});
+ const owner=features.find(f=>f.name==='Skill Versatility');
+ const grants=proficiencyGrantOrigins(record,index,'skill','insight',features);
+ assert.deepEqual(grants,[{id:owner.origin_id,name:'Tratto · Skill Versatility',origin_parent_id:original}]);
+ assert(fixedProficiencies(record,index,features).has('skill:insight'));
+ assert.deepEqual(record.proficiency_choices,[{origin_id:original,kind:'skill',key:'insight'}]);
+ assert(!fixedProficiencies({...record,origin_enabled:{[owner.origin_id]:false}},index,features).has('skill:insight'));
+ // An offline/missing feature catalog keeps working, preserving source provenance.
+ assert.deepEqual(proficiencyGrantOrigins(record,index,'skill','insight'),[{id:original,name:'Half-Elf'}]);
+ assert(fixedProficiencies(record,index).has('skill:insight'));
+});
+
+test('same-name traits with distinct feature IDs never share explicitly owned bonuses',()=>{
+ const trait=(id)=>({name:'Ability Score Improvement',feature_origin:id,
+  origin_key:'class|phb|fighter',origin:'Classe · Fighter',rank:2,category:'classi'});
+ const calculated={bonuses:[{id:'asi4',target:'ability:str',expression:'1',
+  origin_id:'feature:asi4',granting_trait:'Ability Score Improvement',
+  origin_parent_name:'Fighter'}]};
+ assert(traitBenefitGroups(trait('feature:asi4'),{},calculated).some(group=>group.type==='bonus'));
+ assert(!traitBenefitGroups(trait('feature:asi8'),{},calculated).some(group=>group.type==='bonus'));
+ assert(!traitBenefitGroups({name:'Descrizione · Fighter',origin:'Classe · Fighter',
+  origin_key:'class|phb|fighter',rank:0,category:'classi'}, {},calculated)
+   .some(group=>group.type==='bonus'));
 });

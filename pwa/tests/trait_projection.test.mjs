@@ -304,3 +304,37 @@ test('active states resolve to descriptive traits using the same condition text 
   {entries:async()=>[],conditionCatalog});
  assert.ok(!restored.some(row=>row.key.startsWith('state|condition:')));
 });
+
+test('typed spell grants never fall back to a species overview if the granting trait is unavailable',()=>{
+ const origin='species|aarakocra|mpmm',feature='feature:wind-caller';
+ const base=[
+  {name:'Descrizione · Aarakocra',origin:'Specie · Aarakocra',origin_key:origin,rank:0},
+  {name:'Flight',origin:'Specie · Aarakocra',origin_key:origin,rank:1}
+ ];
+ const grant={origin_id:feature,origin_name:'Wind Caller',
+  origin_parent_id:'race|mpmm|aarakocra',origin_parent_name:'Aarakocra',
+  granting_trait:'Wind Caller',spell_id:'gust'};
+ const spell=[{id:'gust',name:'Gust of Wind',level:2}];
+ const missing=withGrantedSpellPreviews(base,[grant],spell);
+ assert.equal(missing.flatMap(row=>row.granted_spells).length,0);
+ const owned=withGrantedSpellPreviews([
+  ...base,{name:'Wind Caller',origin:'Specie · Aarakocra',origin_key:origin,
+   feature_origin:feature,rank:1}], [grant],spell);
+ assert.equal(owned.find(row=>row.name==='Wind Caller').granted_spells[0].name,'Gust of Wind');
+ assert.equal(owned.find(row=>row.name==='Descrizione · Aarakocra').granted_spells.length,0);
+});
+
+test('an explicit feature spell binds by exact ID even when another same-name trait appears first',()=>{
+ const source='species|test|phb';
+ const grant={origin_id:'feature:level3',origin_name:'Wind Caller',
+  origin_parent_name:'Aarakocra',granting_trait:'Wind Caller',spell_id:'gust'};
+ const rows=[
+  {name:'Wind Caller',origin:'Specie · Aarakocra',origin_key:source,
+   feature_origin:'feature:level1'},
+  {name:'Wind Caller',origin:'Specie · Aarakocra',origin_key:source,
+   feature_origin:'feature:level3'}
+ ];
+ const result=withGrantedSpellPreviews(rows,[grant],[{id:'gust',name:'Gust of Wind',level:2}]);
+ assert.equal(result[0].granted_spells.length,0);
+ assert.equal(result[1].granted_spells.length,1);
+});
