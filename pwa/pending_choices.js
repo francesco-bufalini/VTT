@@ -115,6 +115,20 @@ function requirementEntries(source){
  }
  return entries;
 }
+// The next picker opens only when a completed choice *creates exactly one*
+// previously nonexistent, still-unresolved choice. Ignore all older pending
+// choices: a character may have several unrelated decisions left to make.
+// This is derived from the typed choice snapshots, not from feature names.
+export function singleNewPendingChoice(before=[],after=[],completed={}){
+ const prior=arr(before),next=arr(after),id=String(completed?.id||'');
+ if(!id||!prior.some(row=>row?.id===id))return null;
+ const saved=next.find(row=>row?.id===id);
+ if(saved&&Number(saved.remaining)>0)return null;
+ const seen=new Set(prior.map(row=>row?.id).filter(Boolean));
+ const fresh=next.filter(row=>row?.id&&!seen.has(row.id)&&Number(row.remaining)>0);
+ return fresh.length===1?fresh[0]:null;
+}
+
 export function pendingCharacterChoices(record={},calculated={},catalogs={}){
  const result=[],index=catalogs.proficiencyGrants||{};
  for(const source of selectedSources(record,index)){
