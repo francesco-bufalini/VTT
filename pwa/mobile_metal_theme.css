@@ -4958,16 +4958,20 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  color:#b9a387;font-size:11px;line-height:1.5;
 }
 .feat-picker-search{
- flex:0 0 auto;display:flex;align-items:center;gap:9px;
- min-width:0;min-height:40px;padding:0 10px;
+ /* Base label styles use flex-direction:column. Explicitly override it:
+    search glyph and text field must remain on ONE line on narrow mobiles. */
+ flex:0 0 auto;display:flex;flex-direction:row;flex-wrap:nowrap;
+ align-items:center;justify-content:flex-start;gap:9px;
+ box-sizing:border-box;width:100%;min-width:0;
+ height:42px;min-height:42px;max-height:42px;margin:0;padding:0 10px;
  border:1px solid #967b595e;border-radius:9px;background:#1a1817;
 }
 .feat-picker-search .vtt-action-glyph,.feat-picker-search svg{
- flex:0 0 17px;width:17px;height:17px;color:#bda079;
+ display:block;flex:0 0 17px;width:17px;height:17px;color:#bda079;
 }
 .feat-picker-search input[type=search]{
- box-sizing:border-box;display:block;flex:1;min-width:0;width:100%;
- height:39px;min-height:39px;padding:7px 0;
+ box-sizing:border-box;display:block;flex:1 1 0%;min-width:0;width:auto;
+ height:39px;min-height:39px;max-height:39px;margin:0;padding:7px 0;
  border:0!important;background:transparent!important;
  box-shadow:none!important;color:#f1dec1;font:500 13px/1.3 system-ui,sans-serif;
  outline:0!important;
