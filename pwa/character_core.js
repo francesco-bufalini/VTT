@@ -4,6 +4,31 @@ const array=value=>Array.isArray(value)?value:[];
 const integer=(value,fallback=0)=>Number.isFinite(Number(value))?Math.trunc(Number(value)):fallback;
 const zeroSlots=()=>Array(10).fill(0);
 
+/** Cumulative XP needed to reach each character level (D&D 5e, 2014/2024). */
+export const XP_THRESHOLDS=Object.freeze([
+ 0,0,300,900,2700,6500,14000,23000,34000,48000,64000,
+ 85000,100000,120000,140000,165000,195000,225000,265000,305000,355000
+]);
+export function minimumXpForLevel(level){
+ const n=Number(level);
+ return Number.isInteger(n)&&n>=1?XP_THRESHOLDS[Math.min(n,20)]:0;
+}
+export function minimumXpForCreature(record={}){
+ // Monster challenge rating is not character level. An unclassed character
+ // can keep custom XP without being assigned a class progression.
+ if(record.kind==='monster')return 0;
+ const classes=array(record.classes).filter(row=>row&&String(row.name||'').trim());
+ const total=classes.length?
+  classes.reduce((sum,row)=>sum+Math.max(1,integer(row.level,1)),0):
+  record.class?Math.max(1,integer(record.level,1)):0;
+ return minimumXpForLevel(total);
+}
+export function experienceFloorPatch(record,changes={}){
+ const updated={...record,...changes};
+ const min=minimumXpForCreature(updated),xp=Number(updated.xp??0);
+ return min>0&&(!Number.isSafeInteger(xp)||xp<min)?{xp:min}:{};
+}
+
 // Defaults mirror PlayerCharacterStore.create_character, not a separate
 // simplified browser schema. Imported records are NEVER normalized with these.
 export function initialCreature(kind,name,id,owner_id){

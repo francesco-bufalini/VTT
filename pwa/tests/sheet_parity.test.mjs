@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateSheet} from '../sheet_rules.js';
+import {minimumXpForLevel,minimumXpForCreature,experienceFloorPatch} from '../character_core.js';
 import {sheetRollFormula,rollSheetDice,formulaReadout,sheetRollChatFields,sheetModifierBreakdown,isPersistentSpell,fastestMovement,trackerRecoveryText,mountPlaySheet,refreshCalculatedValues} from '../sheet_rules_view.js';
 import {JSDOM} from 'jsdom';
 import {hitPointPatch,rowsFor,collectionPatch,nativeRowPatch,miniaturePatch,speciesCreatureType,nativeRows,identityPatch,primaryClassLevel,totalClassLevel,nativeSection} from '../native_sheet.js';
@@ -416,17 +417,57 @@ test('removing a spell assigned to another class cannot delete it',()=>{
  assert.deepEqual(onlyWizard.prepared_spells[0].casting_classes,[wizard]);
 });
 
+
+test('D&D XP minimum tracks cumulative character level in 2014 and 2024',()=>{
+ for(const [level,xp] of [[1,0],[2,300],[3,900],[4,2700],[5,6500],[6,14000],[7,23000],[10,64000],[15,165000],[20,355000]]){
+  assert.equal(minimumXpForLevel(level),xp);
+  assert.equal(minimumXpForCreature({kind:'character',rules_version:'2024',class:'Fighter',level}),xp);
+ }
+ assert.equal(minimumXpForCreature({kind:'character',class:'Wizard',level:20,xp:0}),355000);
+ assert.equal(minimumXpForCreature({kind:'character',class:'Wizard',level:3,
+  classes:[{name:'Wizard',level:3},{name:'Cleric',level:2}]}),6500);
+ assert.equal(minimumXpForCreature({kind:'character',level:20}),0,'no class has no character-level XP floor');
+ assert.equal(minimumXpForCreature({kind:'monster',class:'Wizard',level:20}),0);
+});
+
+test('raising class levels enforces the cumulative XP floor, without losing XP already earned',()=>{
+ const c={kind:'character',class:'Wizard',level:3,xp:1000,classes:[{name:'Wizard',level:3}]};
+ const grown=collectionPatch(c,'classes',[{name:'Wizard',level:3},{name:'Fighter',level:2}]);
+ assert.equal(grown.level,5);
+ assert.equal(grown.xp,6500);
+ const edited=nativeRowPatch({...c,...grown},'classes',1,'level',3);
+ assert.equal(edited.level,6);
+ assert.equal(edited.xp,14000);
+ const primary=identityPatch(c,'primary_class_level',5);
+ assert.equal(primary.level,5);
+ assert.equal(primary.xp,6500);
+ const veteran={...c,xp:50000};
+ assert.equal(collectionPatch(veteran,'classes',[{name:'Wizard',level:4}]).xp,undefined);
+ assert.deepEqual(experienceFloorPatch(veteran),{});
+});
+
+test('manual XP edits cannot fall below the current class-level minimum',()=>{
+ const c={kind:'character',class:'Fighter',level:5,xp:6500,
+  classes:[{name:'Fighter',level:5}]};
+ assert.deepEqual(identityPatch(c,'xp',6500),{xp:6500});
+ assert.deepEqual(identityPatch(c,'xp',7000),{xp:7000});
+ assert.throws(()=>identityPatch(c,'xp',6499),/almeno 6500 XP/);
+ assert.throws(()=>identityPatch(c,'xp',-1),/XP non validi/);
+ assert.deepEqual(identityPatch({kind:'character'},'xp',100),{xp:100});
+ assert.deepEqual(experienceFloorPatch({...c,xp:0}),{xp:6500});
+});
+
 test('classes header displays non-editable total level and editable XP on one line',()=>{
  const c={kind:'character',class:'Wizard',level:5,xp:1250,classes:[{name:'Wizard',level:3},{name:'Fighter',level:2}]};
  const markup=nativeSection(c,'info',{
-  field:(label,key,value)=>'<label>'+label+'<input data-field="'+key+'" value="'+value+'"></label>',
+  field:(label,key,value,type='text',more='')=>'<label>'+label+'<input data-field="'+key+'" type="'+type+'" value="'+value+'" '+more+'></label>',
   area:()=>'',panel:(title,body,cls='')=>'<section class="panel '+cls+'"><h2>'+title+'</h2>'+body+'</section>',
   catalogs:{},calculated:calculateSheet(c)
  });
  assert(markup.includes('class="panel classes-progression-panel"'));
  assert(markup.includes('class="progression-summary"'));
  assert(markup.includes('<output aria-label="Livello totale automatico">5</output>'));
- assert(markup.includes('data-field="xp" value="1250"'));
+ assert(markup.includes('data-field="xp" type="number" value="6500" min="6500" max="9007199254740991"'));
  assert(!markup.includes('Livello totale<input'));
 });
 
