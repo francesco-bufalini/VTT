@@ -654,6 +654,57 @@ async function loadLibraryMiniatures(){
  }
  paintLibraryMiniatures();
 }
+
+function confirmCreatureDeletion(rows){
+  const creatures=rows.map(row=>row.creature||row);
+  if(!creatures.length)return Promise.resolve(false);
+  const amount=creatures.length;
+  return new Promise(resolve=>{
+    const dialog=document.createElement('dialog');
+    dialog.id='library-delete-dialog';
+    dialog.className='library-create-dialog library-delete-dialog';
+    dialog.setAttribute('aria-labelledby','library-delete-title');
+    dialog.setAttribute('aria-describedby','library-delete-warning');
+    dialog.innerHTML='<div class="library-create-body">'+
+      dialogCloseButton('library-delete-close','Chiudi','library-create-close')+
+      '<h2 id="library-delete-title">Eliminare '+amount+' '+(amount===1?'creatura':'creature')+'?</h2>'+
+      '<p id="library-delete-warning">Le '+(amount===1?'seguente creatura verrà eliminata':'seguenti creature verranno eliminate')+
+      ' dall’archivio locale. L’operazione non può essere annullata.</p>'+
+      '<ul class="library-delete-list" aria-label="Creature da eliminare"></ul>'+
+      '<div class="library-create-actions">'+
+      '<button type="button" class="btn" data-library-delete-cancel>Annulla</button>'+
+      '<button type="button" class="btn primary library-delete-confirm" data-library-delete-confirm>Elimina '+
+      amount+' '+(amount===1?'creatura':'creature')+'</button></div></div>';
+    const list=dialog.querySelector('.library-delete-list');
+    for(const creature of creatures){
+      const item=document.createElement('li');
+      const name=document.createElement('strong');
+      const kind=document.createElement('span');
+      name.textContent=String(creature.name||'Creatura senza nome');
+      kind.textContent=creature.kind==='monster'?'Mostro':'Personaggio';
+      item.append(name,kind);
+      list.append(item);
+    }
+    let finished=false;
+    const complete=confirmed=>{
+      if(finished)return;
+      finished=true;
+      resolve(confirmed);
+      closeDialog(dialog,{remove:true});
+    };
+    dialog.addEventListener('close',()=>complete(false),{once:true});
+    for(const button of dialog.querySelectorAll('[data-act="library-delete-close"],[data-library-delete-cancel]'))
+      button.addEventListener('click',event=>{event.stopPropagation();complete(false);});
+    dialog.querySelector('[data-library-delete-confirm]').addEventListener('click',event=>{
+      event.stopPropagation();complete(true);
+    });
+    dialog.addEventListener('click',event=>{if(event.target===dialog)complete(false);});
+    document.body.append(dialog);
+    openDialog(dialog);
+    dialog.querySelector('[data-library-delete-cancel]').focus();
+  });
+}
+
 function librarySelectionActions(){
  const count=state.librarySelectedIds.size;
  return count?
@@ -5755,8 +5806,7 @@ async function handleAction(target){
       download(await exportCreatureBatch(rows.map(row=>row.creature.id)),"vtt-creature-selezionate.json");
       message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");return;
     }
-    if(!window.confirm("Eliminare definitivamente "+rows.length+
-        " creature da questo dispositivo? L'operazione non può essere annullata."))return;
+    if(!await confirmCreatureDeletion(rows))return;
     let deleted=0;
     for(const row of rows){
       if(await removeCreature(row.creature.id,"default",row.revision)){
@@ -5856,7 +5906,7 @@ async function handleAction(target){
   }
   if(act==="delete"){
     const record=state.editor.read();
-    if(!confirm('Eliminare "'+record.name+'"? Questa operazione non è reversibile.'))return;
+    if(!await confirmCreatureDeletion([record]))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
     state.creatureId=null;state.libraryMode=true;state.editor=null;await render();message("Scheda eliminata.");return;
