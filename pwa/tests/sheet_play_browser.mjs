@@ -46,8 +46,15 @@ try{
   for(const key of ['info','battle','magic','inventory','conditions']){
    await sheet(key);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),key+' overflow at '+viewport.width);
    const inlineEditors=page.locator('#sheet-play-view input:not([type=search]):visible,#sheet-play-view select:visible,#sheet-play-view textarea:visible');
-   assert.equal(await inlineEditors.count(),key==='inventory'?5:key==='magic'?1:0,
-     'Only coin amounts and the spellcasting ability are editable inline: '+key);
+   if(key==='magic'){
+    const castingEditors=page.locator('#sheet-play-view select[data-casting-section]:visible');
+    assert.ok(await castingEditors.count()>=1,'The class spellcasting ability remains editable');
+    assert.equal(await inlineEditors.count(),await castingEditors.count(),
+      'Only casting abilities, including visible granting origins, are editable inline');
+   }else{
+    assert.equal(await inlineEditors.count(),key==='inventory'?5:0,
+      'Only inventory coin amounts are editable outside spellcasting: '+key);
+   }
    if(key==='magic'){
     assert.equal(await page.locator('#sheet-play-view .play-magic-inline-casting select[data-casting-section]').count(),1,
       'The spellcasting ability is editable inside its class card');
