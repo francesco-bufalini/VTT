@@ -79,6 +79,27 @@ const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled
   return rows;
 });
 
+// Spell-to-bestiary choices live in a portable rules file rather than prose
+// parsing or a list of hard-coded spell branches in the PWA.
+let companionSpellRulesPromise=null;
+async function companionSpellChoices(spell, creature){
+  companionSpellRulesPromise??=fetch('/catalog/companion_spells.json')
+    .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();})
+    .catch(error=>{companionSpellRulesPromise=null;throw error;});
+  const rules=await companionSpellRulesPromise;
+  const normalize=value=>String(value||'').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const spellNames=[spell?.name,spell?.id].map(normalize);
+  const rule=rules.spells?.find(rule=>rule.names?.some(name=>
+    spellNames.some(value=>value===normalize(name)||value.endsWith(' '+normalize(name)))));
+  if(!rule || rule.editions?.length && !rule.editions.includes(String(creature.rules_version||'2014')))
+    return null;
+  const sources=await variantSources([],await (await import('./storage.js')).listRecords('global','homebrew'));
+  const names=new Set(rule.monsters.map(normalize));
+  const choices=sources.filter(source=>names.has(normalize(source.name)));
+  return {rule,choices};
+}
+
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
 const connection = document.querySelector("#connection");
@@ -3670,8 +3691,14 @@ async function refreshMapOnce() {
 // Android and PWA use the same native targeting commands, not independent
 // spell/area calculations. Never send a private creature sheet to the host.
 let desktopHooks=null;
-async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken=''){
-  if(desktopHooks?.cast){await flushPendingFields();return desktopHooks.cast({casterId,selection,requestedLevel,payment});}
+async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken='',companionSource=null){
+  if(desktopHooks?.cast){
+    await flushPendingFields();
+    const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
+    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>row.creature.companion_origin_spell_id===selection.id))
+      await createSubcreature(casterId,await companionSource.load(),companionSource);
+    return result;
+  }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
@@ -3697,6 +3724,13 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
     if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
     charged=true;
+    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>
+      row.creature.companion_origin_spell_id===selection.id)){
+      try{
+        await createSubcreature(casterId,await companionSource.load(),companionSource);
+        message('Famiglio aggiunto alle sottocreature.');
+      }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
+    }
     if(state.page==='session'){
       state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
       state.castSheets?.set(casterId,await computeLocalData(editor.read()));
@@ -5094,6 +5128,9 @@ async function handleAction(target){
     }
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
+    const companion=await companionSpellChoices({...spell,id},record).catch(error=>{
+      message("Famigli: "+errorMessage(error),true);return null;
+    });
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
     dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts(detailed),description,
       (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
@@ -5107,6 +5144,11 @@ async function handleAction(target){
           targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
          '<p class="warning">Nessun oggetto compatibile in inventario per questo incantesimo.</p>'):'')+
       (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
+      (companion?'<label>Creatura evocata dal bestiario<select id="action-cast-companion">'+
+        (companion.choices.length?companion.choices.map(source=>
+          '<option value="'+esc(source.key)+'">'+esc(source.name)+(source.source?' · '+esc(source.source):'')+'</option>').join(''):
+          '<option value="">Nessuna voce disponibile nel bestiario</option>')+
+        '</select></label>':'')+
       '<div class="actions magic-dialog-actions">'+
       (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
@@ -5141,17 +5183,32 @@ async function handleAction(target){
     const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
     if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
       eligible_damage:!!app.querySelector('[data-metamagic-damage]')?.checked,damage_type:app.querySelector('[data-metamagic-element]')?.value||''};
+    const companion=await companionSpellChoices({...detail,...selection},record);
+    const companionKey=app.querySelector('#action-cast-companion')?.value||'';
+    let companionSource=null;
+    if(companion){
+      companionSource=companion.choices.find(source=>source.key===companionKey);
+      if(!companionSource)throw Error('Scegli una creatura valida dalla lista dell’incantesimo.');
+    }
     const choice=app.querySelector('#action-cast-choice')?.value||'';
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
     if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
-      await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
+      await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
+        companionSource?{...companionSource,spell_id:selection.id}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
     if(Object.keys(plan.patch).length)await patch(plan.patch);
+    if(companionSource){
+      const loaded=await companionSource.load();
+      const existing=(await listSubcreatures(record.id)).some(row=>
+        row.creature.companion_origin_spell_id===selection.id);
+      if(!existing)await createSubcreature(record.id,loaded,
+        {...companionSource,spell_id:selection.id});
+    }
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
