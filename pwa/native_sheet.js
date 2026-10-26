@@ -1,4 +1,4 @@
-import {hitDicePools} from './character_core.js';
+import {hitDicePools,minimumXpForCreature,experienceFloorPatch} from './character_core.js';
 // Native-style sheet sections and mutations of the portable native schema.
 // Math is owned by sheet_rules.js; this module never calls the desktop.
 import {formulaReadout} from './sheet_rules_view.js';
@@ -350,6 +350,7 @@ export function collectionPatch(c,key,rows){
   const total=rows.filter(row=>row.name).reduce((sum,row)=>sum+Number(row.level||1),0);if(total>20)throw Error('La somma dei livelli non può superare 20');
   const primary=rows[0]||{};
   Object.assign(patch,{class:primary.name||'',class_source:primary.source||'',class_id:primary.id||'',subclass:primary.subclass||'',subclass_source:primary.subclass_source||'',subclass_id:primary.subclass_id||'',level:total||1});
+  Object.assign(patch,experienceFloorPatch(c,patch));
  }
  return patch;
 }
@@ -389,6 +390,12 @@ export function totalClassLevel(creature){
 }
 export function identityPatch(c,key,value){
  if(key==='level')throw Error('Il livello totale è calcolato automaticamente dalle classi');
+ if(key==='xp'){
+  const xp=Number(value),minimum=minimumXpForCreature(c);
+  if(!Number.isSafeInteger(xp)||xp<0)throw Error('XP non validi');
+  if(xp<minimum)throw Error('Il livello attuale richiede almeno '+minimum+' XP');
+  return {xp};
+ }
  if(key==='primary_class_level'){
   if(!c.class)throw Error('Seleziona prima la classe principale');
   const n=Number(value);
@@ -397,7 +404,8 @@ export function identityPatch(c,key,value){
   const others=classes.slice(1).filter(row=>row.name).reduce((total,row)=>total+Number(row.level||1),0);
   if(n+others>20)throw Error('La somma dei livelli delle classi non può superare 20');
   classes[0].level=n;
-  return {classes,level:n+others};
+  const changes={classes,level:n+others};
+  return {...changes,...experienceFloorPatch(c,changes)};
  }
  const patch={[key]:value};
  if(['species','subrace','background','class','subclass'].includes(key)&&value!==c[key])patch[key+'_id']='';
@@ -413,6 +421,8 @@ export function identityPatch(c,key,value){
    patch.classes=classes;
   }
  }
+ if(['class','class_source','subclass','subclass_source'].includes(key))
+  Object.assign(patch,experienceFloorPatch(c,patch));
  return patch;
 }
 // Use the native 5etools race catalog for creature types, including subraces.
@@ -555,7 +565,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
    panel('Classi',
       '<p class="sheet-section-description">Classi e punti esperienza del personaggio.</p>'+
       '<div class="progression-summary"><span class="progression-total">Liv. totale <output aria-label="Livello totale automatico">'+esc(totalClassLevel(c))+'</output></span>'+
-      number('XP','xp')+'</div>'+
+      number('XP','xp',Math.max(Number(c.xp)||0,minimumXpForCreature(c)),minimumXpForCreature(c),Number.MAX_SAFE_INTEGER)+'</div>'+
       cols(reference('Classe base','class','classes')+reference('Sottoclasse','subclass','subclasses')+
        (c.class?number('Livello classe principale','primary_class_level',primaryClassLevel(c),1,20):
         '<label>Livello classe principale<input type="number" value="0" disabled></label>')+
