@@ -1,3 +1,4 @@
+import {normalizeEffectExtension} from './effect_extensions.js';
 // Persistence of trait-specific benefit edits. No writes before explicit Save.
 // Automatic grants are suppressed through stable identities so Restore can
 // recover them from the catalog without copying stale rulebook data.
@@ -6,7 +7,7 @@ const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
  ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
- ['spells','Incantesimo'],['actions','Azione']
+ ['spells','Incantesimo'],['actions','Azione'],['effect_extensions','Estensione di incantesimo o capacità']
 ];
 export const PROFICIENCY_KINDS=[
  ['skill','Abilità'],['expertise','Maestria'],['save','Tiro salvezza'],
@@ -71,7 +72,7 @@ export function removeBenefitPatch(record,trait,item){
  const collection={base_overrides:'base_value_overrides',bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',defenses:'damage_defense_entries',
   resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',
-  attack_count:'attack_count_grants'}[item.type];
+  attack_count:'attack_count_grants',effect_extensions:'effect_extensions'}[item.type];
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
   if(item.type==='base_overrides')return 'base_override:'+String(row.id||'')===id&&!row.automatic;
@@ -85,6 +86,7 @@ export function removeBenefitPatch(record,trait,item){
   if(item.type==='spells')return 'spell:'+String(row.origin_id||'')+':'+String(row.spell_id||'')===id;
   if(item.type==='actions')return 'action:'+String(row.id||'')===id;
   if(item.type==='attack_count')return 'attack_count:'+String(row.id||'')===id;
+  if(item.type==='effect_extensions')return 'effect_extension:'+String(row.id||'')===id;
   return false;
  }): -1;
  // A user-created row is genuinely removed. Catalog-defined rows are masked
@@ -208,6 +210,13 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   if(!['free','slot'].includes(row.payment_mode))throw Error('Consumo non valido');
  }else if(kind==='actions'){
   field='action_grants';row={...common,name:required('name'),action_type:required('action_type')};
+ }else if(kind==='effect_extensions'){
+  field='effect_extensions';row=normalizeEffectExtension({...common,trait_key:trait.key,
+   parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||'',
+   target_kind:values.target_kind,target_name:required('target_name'),target_id:String(values.target_id||'').trim(),
+   operation:values.operation,value:values.value,trigger:values.trigger,
+   frequency:values.frequency,description:values.description||''});
+  if(!row)throw Error('Estensione non valida: controlla bersaglio, operazione, valore e condizione');
  }
  if(rows(record[field]).some(x=>x.id===id))throw Error('Beneficio già presente');
  return {[field]:[...rows(record[field]),row]};

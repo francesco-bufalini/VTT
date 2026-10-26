@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "extensions": [
+    {
+      "id": "invocation-agonizing-blast-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "optional_feature",
+        "name": "Agonizing Blast",
+        "source": "PHB",
+        "class_name": "Warlock",
+        "min_level": 2
+      },
+      "target_kind": "spell",
+      "target_name": "Eldritch Blast",
+      "operation": "bonus_damage",
+      "value": "cha_mod",
+      "trigger": "on_hit",
+      "frequency": "each",
+      "description": "Bonus ai danni di ogni raggio che colpisce"
+    },
+    {
+      "id": "invocation-eldritch-spear-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "optional_feature",
+        "name": "Eldritch Spear",
+        "source": "PHB",
+        "class_name": "Warlock",
+        "min_level": 2
+      },
+      "target_kind": "spell",
+      "target_name": "Eldritch Blast",
+      "operation": "set_range",
+      "value": "300",
+      "trigger": "passive",
+      "frequency": "each"
+    },
+    {
+      "id": "invocation-repelling-blast-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "optional_feature",
+        "name": "Repelling Blast",
+        "source": "PHB",
+        "class_name": "Warlock",
+        "min_level": 2
+      },
+      "target_kind": "spell",
+      "target_name": "Eldritch Blast",
+      "operation": "push",
+      "value": "10",
+      "trigger": "on_hit",
+      "frequency": "each",
+      "description": "Il bersaglio viene allontanato in linea retta"
+    },
+    {
+      "id": "invocation-grasp-of-hadar-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "optional_feature",
+        "name": "Grasp of Hadar",
+        "source": "XGE",
+        "class_name": "Warlock",
+        "min_level": 2
+      },
+      "target_kind": "spell",
+      "target_name": "Eldritch Blast",
+      "operation": "pull",
+      "value": "10",
+      "trigger": "on_hit",
+      "frequency": "once_per_turn",
+      "description": "Avvicina il bersaglio al lanciatore"
+    },
+    {
+      "id": "invocation-lance-of-lethargy-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "optional_feature",
+        "name": "Lance of Lethargy",
+        "source": "XGE",
+        "class_name": "Warlock",
+        "min_level": 2
+      },
+      "target_kind": "spell",
+      "target_name": "Eldritch Blast",
+      "operation": "reduce_speed",
+      "value": "10",
+      "trigger": "on_hit",
+      "frequency": "once_per_turn",
+      "description": "Riduce la velocità del bersaglio fino al termine del turno successivo"
+    },
+    {
+      "id": "creation-mote-check-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "feature",
+        "name": "Mote of Potential",
+        "class_name": "Bard",
+        "subclass": "College of Creation",
+        "min_level": 3
+      },
+      "target_kind": "ability",
+      "target_id": "vtt_bardic_inspiration",
+      "target_name": "Bardic Inspiration",
+      "target_aliases": [
+        "Ispirazione Bardica"
+      ],
+      "operation": "roll_twice",
+      "trigger": "ability_check",
+      "frequency": "once_per_use",
+      "description": "Quando si usa il dado di Ispirazione Bardica in una prova, lo si tira due volte e si sceglie il risultato migliore"
+    },
+    {
+      "id": "creation-mote-attack-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "feature",
+        "name": "Mote of Potential",
+        "class_name": "Bard",
+        "subclass": "College of Creation",
+        "min_level": 3
+      },
+      "target_kind": "ability",
+      "target_id": "vtt_bardic_inspiration",
+      "target_name": "Bardic Inspiration",
+      "target_aliases": [
+        "Ispirazione Bardica"
+      ],
+      "operation": "area_damage",
+      "value": "bardic_inspiration_die",
+      "trigger": "attack_roll",
+      "frequency": "once_per_use",
+      "description": "Danni da tuono entro 5 ft dal bersaglio dopo un colpo; TS Costituzione contro CD incantesimi del bardo per dimezzare"
+    },
+    {
+      "id": "creation-mote-save-2014",
+      "rules_version": "2014",
+      "owner": {
+        "kind": "feature",
+        "name": "Mote of Potential",
+        "class_name": "Bard",
+        "subclass": "College of Creation",
+        "min_level": 3
+      },
+      "target_kind": "ability",
+      "target_id": "vtt_bardic_inspiration",
+      "target_name": "Bardic Inspiration",
+      "target_aliases": [
+        "Ispirazione Bardica"
+      ],
+      "operation": "temporary_hp",
+      "value": "bardic_inspiration_die+cha_mod",
+      "trigger": "saving_throw",
+      "frequency": "once_per_use",
+      "description": "PF temporanei al termine del tiro salvezza"
+    }
+  ]
+}
