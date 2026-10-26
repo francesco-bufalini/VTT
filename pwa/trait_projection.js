@@ -182,7 +182,8 @@ export async function collectTraitRows(record={},calculated={},providers={}){
    }
   }
  }
- for(const feat of arr(record.feats_catalog)){
+ for(const raw of arr(record.feats_catalog)){
+  const feat=typeof raw==='string'?{name:raw}:raw;
   if(!feat?.name)continue;
   const info=await lookup('feats',feat.name,feat.source,feat.id)||feat;
   const granting=feat.granted_by?arr(calculated.features).find(row=>row.origin_id===feat.granted_by):null;
