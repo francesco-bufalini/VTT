@@ -1,7 +1,7 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
-import {featureCompanionRule,eligibleCompanionFeatureRules,spellCompanionRule,companionSources} from './companion_rules.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
@@ -140,8 +140,50 @@ async function createFeatureCompanion(parent,context,dialog){
 }
 async function manualCompanionRules(owner,calculated){
   const data=await companionRules();
-  return eligibleCompanionFeatureRules(owner,calculated,data,{manualOnly:true});
+  return eligibleCompanionFeatureRules(owner,calculated,data,{manualOnly:true}).flatMap(rule=>{
+    const feature=(calculated.features||[]).find(row=>matchesCompanionFeature(owner,calculated,rule,row));
+    return feature?[{id:rule.id,name:rule.names?.[0]||rule.id,
+      source:rule.class_name+(rule.subclass?' · '+rule.subclass:''),
+      originId:feature.origin_id}]:[];
+  });
 }
+async function openManualCompanionDialog(owner,descriptor){
+  const calculated=await computeLocalData(owner);
+  const context=await companionFeatureChoices(owner,calculated,descriptor.originId);
+  if(!context||context.rule.id!==descriptor.id)throw Error('Privilegio non disponibile.');
+  const dialog=document.createElement('dialog');
+  dialog.className='sheet-roll-dialog magic-spell-dialog';
+  dialog.id='companion-feature-dialog';
+  dialog.innerHTML=actionDialogIntro(descriptor.name,[
+    {label:'Origine',value:descriptor.source},
+    {label:'Creazione',value:'Scheda mostro collegata al proprietario'}
+  ],'', '', 'companion-feature-close')+
+  featureCompanionFields(context)+
+  '<p data-companion-result role="status"></p><div class="actions magic-dialog-actions">'+
+  '<button type="button" class="btn primary" data-companion-confirm>Genera sottocreatura</button>'+
+  '<button type="button" class="btn" data-companion-cancel>Annulla</button></div>';
+  dialog.querySelectorAll('[data-companion-cancel],[data-act="companion-feature-close"]').forEach(button=>
+    button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+  dialog.querySelector('[data-companion-confirm]').addEventListener('click',async event=>{
+    const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+    try{
+      const current=state.editor?.read();
+      if(!current||current.id!==owner.id)throw Error('Proprietario cambiato.');
+      const fresh=await computeLocalData(current);
+      const validated=await companionFeatureChoices(current,fresh,descriptor.originId);
+      if(!validated||validated.rule.id!==descriptor.id||validated.rule.activation!=='manual')
+        throw Error('Capacità non più disponibile.');
+      const row=await createFeatureCompanion(current,validated,dialog);
+      await state.editor?.flush();
+      closeDialog(dialog,{remove:true});
+      state.creatureId=row.id;state.editor=null;state.sheet='info';state.libraryMode=false;
+      await render();message('Sottocreatura collegata a '+owner.name+'.');
+    }catch(error){button.disabled=false;dialog.querySelector('[data-companion-result]').textContent=errorMessage(error);}
+  });
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  document.body.append(dialog);openDialog(dialog);
+}
+
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -5045,7 +5087,14 @@ async function handleAction(target){
     const editor=state.editor,creatureId=state.creatureId;
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
     const subcreatures=await listSubcreatures(creatureId);
+    const manualCompanions=editor.readBase().parent_creature_id?[]:
+      await manualCompanionRules(editor.read(),await computeLocalData(editor.read()));
     openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
+      manualCompanions,onCompanionFeature:async id=>{
+        const descriptor=manualCompanions.find(row=>row.id===id);
+        if(!descriptor)throw Error('Privilegio non disponibile.');
+        check();await openManualCompanionDialog(editor.read(),descriptor);
+      },
       addSubcreature:editor.readBase().parent_creature_id?null:async source=>{
         check();const loaded=await source.load();
         const saved=await createSubcreature(creatureId,loaded,source);
