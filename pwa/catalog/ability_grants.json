@@ -4713,5 +4713,171 @@
         }
       ]
     }
-  ]
+  ],
+  "base_value_overrides": {
+    "feats": [
+      {
+        "name": "Tavern Brawler",
+        "source": "PHB",
+        "overrides": [
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "replace",
+            "expression": "1d4"
+          }
+        ]
+      }
+    ],
+    "features": [
+      {
+        "class_name": "Sorcerer",
+        "class_source": "PHB",
+        "name": "Draconic Resilience",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
+      },
+      {
+        "class_name": "Sorcerer",
+        "class_source": "XPHB",
+        "name": "Draconic Resilience",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + cha_mod"
+          }
+        ]
+      }
+    ],
+    "items": [
+      {
+        "name": "Gauntlets of Ogre Power",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "19"
+          }
+        ]
+      },
+      {
+        "name": "Headband of Intellect",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:int",
+            "mode": "minimum",
+            "expression": "19"
+          }
+        ]
+      },
+      {
+        "name": "Amulet of Health",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:con",
+            "mode": "minimum",
+            "expression": "19"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Hill Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "21"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Stone Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "23"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Frost Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "23"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Fire Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "25"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Cloud Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "27"
+          }
+        ]
+      },
+      {
+        "name": "Belt of Storm Giant Strength",
+        "source": "DMG",
+        "overrides": [
+          {
+            "target": "ability:str",
+            "mode": "minimum",
+            "expression": "29"
+          }
+        ]
+      }
+    ],
+    "species": [
+      {
+        "name": "Lizardfolk",
+        "source": "VGM",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
+      },
+      {
+        "name": "Lizardfolk",
+        "source": "MPMM",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
+      }
+    ]
+  }
 }

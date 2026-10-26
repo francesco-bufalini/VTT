@@ -81,6 +81,8 @@ export function traitBenefitTargetLabel(value=''){
  if(TARGETS[key])return TARGETS[key];
  const [type,...rest]=key.split(':'),name=rest.join(':');
  if(type==='passive_skill')return (SKILLS[name]||name)+' passiva';
+ if(key==='ac_unarmored')return 'CA senza armatura';
+ if(type==='attack_damage_base')return 'Danno base · '+(name==='unarmed'?'Colpo senz’armi':name);
  if(type==='skill')return 'Abilità · '+(SKILLS[name]||name);
  if(type==='ability_check')return 'Prova · '+(ABILITIES[name]||name);
  if(type==='casting_hit')return 'Attacco magico · '+(ABILITIES[name]||name);
@@ -126,6 +128,14 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(!feat?.granted_by||!ids.has(feat.granted_by)||feat.disabled)continue;
   add('feats','Talenti concessi',feat.name,String(feat.source||''),
     'feat:'+String(feat.id||'')); 
+ }
+ // A replacement or score floor is a non-additive benefit; show the exact
+ // source and formula on its owning trait, not as a numeric bonus.
+ for(const rule of rows(calculated.base_value_overrides)){
+  if(!belongs(rule))continue;
+  const operation={replace:'Sostituisce',minimum:'Valore minimo',alternative:'Formula alternativa'}[rule.mode]||rule.mode;
+  add('base_overrides','Sostituzioni dei valori base',traitBenefitTargetLabel(rule.target),
+   operation+' · '+rule.expression,'base_override:'+String(rule.id||''));
  }
  // Attack-count grants are non-additive benefits owned by individual traits.
  const attackGrants=Array.isArray(calculated.attack_count_benefits)?
