@@ -565,7 +565,7 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   const key='proxy:'+sources.size;bind(key,node);
   return btn(title,glyph,'data-act="sheet-proxy" data-sheet-source="'+key+'"'+(node.disabled?' disabled':''),content);
  };
- const card=(title,body,tools='',extra='')=>'<section class="play-card '+extra+'"><header class="play-card-head"><h2>'+esc(title)+'</h2>'+tools+'</header>'+body+'</section>';
+ const card=(title,body,tools='',extra='',attrs='')=>'<section class="play-card '+extra+'"'+(attrs?' '+attrs:'')+'><header class="play-card-head"><h2>'+esc(title)+'</h2>'+tools+'</header>'+body+'</section>';
  const output=(key,sign=false,suffix='')=>'<output data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</output>';
  const scoreOutput=(key,label,sign=false,suffix='')=>'<button type="button" class="play-score-value" data-act="sheet-score-formula" data-target="'+esc(key)+'" data-label="'+esc(label)+'" data-calculated="'+esc(key)+'" data-signed="'+sign+'" data-suffix="'+esc(suffix)+'" aria-label="Formula: '+esc(label)+'">'+esc(calculatedValue(d,key,{signed:sign,suffix}))+'</button>';
  const val=(key)=>'<span data-read-field="'+key+'">'+esc(c[key]??0)+'</span>';
@@ -954,22 +954,49 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
         'Termina concentrazione','', '<span aria-hidden="true">×</span>'):'')+
     '</div></section>';
   for(const source of bank.querySelectorAll('.magic-source')){
-   const title=source.querySelector('h3')?.textContent||'Poteri';
+   const title=source.querySelector('.magic-source-title h3, h3')?.textContent||'Poteri';
+   const granted=source.classList.contains('magic-origin-panel');
+   // Source counters live in the hidden legacy bank. Project them into the
+   // actual mobile header instead of silently dropping them. The readouts are
+   // taken from the resolved pools; spend/recover still delegates to the
+   // original tracker action, so shared trackers never diverge.
+   const resources=[...source.querySelectorAll('.magic-source-header .magic-source-resource')]
+     .map(resource=>{
+      const label=resource.querySelector('.magic-source-resource-label')?.textContent.trim()||'';
+      const counter=resource.querySelector('.magic-source-resource-counter')?.textContent.trim()||
+        resource.querySelector('strong')?.textContent.trim()||'';
+      const trackerId=resource.dataset.magicTrackerId||'';
+      const controls=[...resource.querySelectorAll('button[data-act]')].map(button=>
+        proxy(button,button.getAttribute('aria-label')||button.title||'Gestisci risorsa','',
+          '<span aria-hidden="true">'+esc(button.textContent.trim())+'</span>')).join('');
+      return '<span class="play-magic-source-resource"'+
+        (trackerId?' data-play-magic-tracker="'+esc(trackerId)+'"':'')+'>'+
+        (label?'<span class="play-magic-source-resource-name">'+esc(label)+'</span>':'')+
+        (counter?'<strong class="play-magic-source-resource-count">'+esc(counter)+'</strong>':'')+
+        controls+'</span>';
+     }).join('');
+   const trackerId=source.querySelector('.magic-source-header [data-magic-tracker-id]')?.dataset.magicTrackerId||'';
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
     const node=row.querySelector('[data-act="power-spell"]');if(!node)return '';
     const level=row.closest('[data-magic-level]')?.dataset.magicLevel;
-    return '<div class="play-spell">'+proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span><small class="play-spell-level">'+esc(level==='0'?'Trucchetto':level?level+'°':'')+'</small>')+'</div>';
+    const levelLabel=level==='0'?'Trucchetto':level&&level!=='null'?level+'°':'';
+    const cost=granted?row.querySelector('.magic-power-cost')?.textContent.trim()||'':'';
+    return '<div class="play-spell'+(granted?' play-magic-origin-spell':'')+'">'+
+      proxy(node,node.textContent,'spark','<span>'+esc(node.textContent)+'</span>'+
+        (levelLabel?'<small class="play-spell-level">'+esc(levelLabel)+'</small>':'')+
+        (cost?'<small class="play-magic-spell-cost">'+esc(cost)+'</small>':''))+'</div>';
    }).join('');
-   // The actual selector, save controls and formula buttons used to live in a
-   // separate settings popup. Expose their exact interactive markup inline.
+   // The casting selector and actions share the same per-source editor, both
+   // for class spells and for grants from items, traits and other origins.
    const castingDetails=source.querySelector('.casting-statistics')?.outerHTML||'';
-   // Reuse the class selector in the native mobile sheet rather than hiding it
-   // inside the source bank or inventing another spell-selection state.
    const choices=[...source.querySelectorAll('.magic-source-controls .magic-selection-button')]
      .map(node=>proxy(node,node.textContent.trim(),'book','<span>'+esc(node.textContent.trim())+'</span>')).join('');
    html+=card(title,'<div class="play-magic-inline-casting">'+castingDetails+'</div>'+
      (choices?'<div class="play-magic-selection">'+choices+'</div>':'')+
-     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),'','play-magic-class-card');
+     (rows||'<p class="play-empty">Nessun incantesimo disponibile.</p>'),
+     resources?'<div class="play-magic-source-resources" aria-label="Risorse di lancio">'+resources+'</div>':'',
+     'play-magic-class-card'+(granted?' play-magic-granted-card':''),
+     granted&&trackerId?'data-magic-origin-tracker="'+esc(trackerId)+'"':'');
   }
   const originPanels=[...bank.querySelectorAll(':scope > .panel')].filter(n=>heading(n)!=='Incantesimi disponibili');
   originPanels.forEach((node,i)=>{
