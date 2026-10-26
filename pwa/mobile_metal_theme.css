@@ -5429,3 +5429,29 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
  .play-character-portrait .play-portrait-frame{width:min(100%,274px)}
  .play-portrait-controls button{min-height:40px}
 }
+
+
+/* Primary and additional backgrounds share the searchable feat-style picker. */
+.background-reference-button{
+ display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+ gap:10px;box-sizing:border-box;width:100%;min-height:43px;min-width:0;
+ padding:8px 12px;margin:0;text-align:left;
+ border:1px solid #9e7c5559;border-radius:9px;
+ background:linear-gradient(150deg,#362923a0,#221b1aaa);color:#ecd9bb;
+ font:500 13px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.background-reference-button:hover,.background-reference-button:focus-visible{
+ border-color:#e0b67b;background:#75523242;outline:2px solid #d2ab7140;outline-offset:1px;
+}
+.background-reference-value{min-width:0;flex:1;overflow-wrap:anywhere}
+.background-reference-value small{color:#bbaa92;font-size:11px;white-space:nowrap}
+.background-reference-search{flex:0 0 auto;display:grid;place-items:center;
+ width:27px;height:27px;border-radius:7px;background:#b18b5430;color:#e6c28a;font-size:23px;line-height:1}
+.background-picker-dialog .feat-picker-results{min-height:140px}
+.background-picker-dialog .feat-picker-body{gap:10px}
+.background-picker-dialog .feat-picker-row-name{min-height:39px}
+.background-picker-dialog .feat-picker-row .feat-picker-add{min-width:87px}
+@media(max-width:360px){
+ .background-reference-button{padding:8px 9px}
+ .background-picker-dialog .feat-picker-body{gap:8px}
+}
