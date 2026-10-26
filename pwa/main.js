@@ -81,7 +81,7 @@ const STARTUP_MODULE_PATHS = [
   "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js",
   "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/demo.js", "/catalog_data.js",
-  "/creature_format.js", "/main.js"
+  "/creature_format.js", "/share_transfer.js", "/main.js"
 ];
 const startupBrowserErrors = [];
 // main.js invokes boot() at top level: never dynamically re-import it.
@@ -92,7 +92,7 @@ const SERIAL_STARTUP_ORDER = [
   "/storage.js", "/creature_variants.js", "/creature_variants_view.js", "/creature_format.js", "/item_controls.js", "/spell_selection.js",
   "/structured_effects.js", "/condition_catalog.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/spell_metadata.js", "/documents.js",
-  "/character_core.js", "/client.js", "/feature_mechanics.js", "/sheet_rules.js",
+  "/character_core.js", "/client.js", "/share_transfer.js", "/feature_mechanics.js", "/sheet_rules.js",
   "/sheet_rules_view.js", "/native_sheet.js", "/action_economy.js", "/creatures.js",
   "/activated_abilities.js", "/class_spells.js", "/class_trackers.js",
   "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/quick_homebrew.js", "/catalog_data.js", "/demo.js"
