@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
-import {battleResourcePowers} from '../sheet_rules_view.js';
+import {battleResourcePowers,resourceLinkedSubclassTrait} from '../sheet_rules_view.js';
 import {battleAbilityEntries} from '../action_economy.js';
 import {recoveryPatch} from '../character_core.js';
 
@@ -37,18 +37,14 @@ test('College of Creation 2014: distinct trait-owned long-rest trackers at the c
    assert(tracker.origin_id.startsWith('feature:class|phb|bard|subclass|'));
   }
   const abilities=abilitiesForCreature(record,[],projection);
-  const available=abilities.filter(p=>expected.includes(p.name));
-  assert.deepEqual(available.map(p=>p.name).sort(),expected);
-  for(const power of available){
-   assert.equal(power.resource_cost,1);
-   assert.equal(power.activation_mode,'contextual');
-   assert.equal(power.feature_id,own.find(t=>t.name===power.name).origin_id);
-   assert.equal(power.tracker_id,own.find(t=>t.name===power.name).id);
-  }
   const actions=battleAbilityEntries(record,projection,[],abilities);
   const resources=battleResourcePowers(projection,actions,abilities);
-  for(const power of available){
-   assert(resources.some(row=>row.name===power.name&&row.tracker_id===power.tracker_id&&row.key==='tracker:'+power.tracker_id));
+  for(const tracker of own){
+   assert(!abilities.some(power=>power.name===tracker.name),
+    'Do not infer an action or one-use cost solely from a tracker');
+   const linked=resourceLinkedSubclassTrait(tracker,projection.features,resources);
+   assert.equal(linked?.origin_id,tracker.origin_id);
+   assert.equal(linked?.name,tracker.name);
   }
  }
  const other=bard(14,'College of Lore');
@@ -75,6 +71,8 @@ test('No subclass actions or free extra uses are fabricated from descriptive tra
   'Turning off the original trait suppresses its tracker, not saved usage counters');
  assert(!abilitiesForCreature(base,[],projection).some(p=>p.name==='Mote of Potential'),
   'A passive text entry must not be presented as a paid action');
+ assert.equal(resourceLinkedSubclassTrait({id:'other',origin_id:'feature:class|phb|bard|x'},
+  projection.features,[]),null,'Only actual subclass origins get linked');
 });
 
 test('Other 2014 subclasses use the same tracker-owned resource ability projection',()=>{
@@ -86,10 +84,10 @@ test('Other 2014 subclasses use the same tracker-owned resource ability projecti
  const superiority=projection.trackers.find(t=>t.name==='Superiority Die');
  assert(superiority,'Battle Master should retain the Combat Superiority resource');
  const power=abilitiesForCreature(fighter,[],projection).find(p=>p.name==='Combat Superiority');
- assert(power,'The owning trait is an actionable resource ability even when no action timing is declared');
- assert.equal(power.tracker_id,superiority.id);
- assert.equal(power.resource_cost,1);
- assert.equal(power.feature_id,superiority.origin_id);
+ assert(!power,'A shared superiority-dice pool must not become a fixed cost-1 action');
+ const link=resourceLinkedSubclassTrait(superiority,projection.features,[]);
+ assert.equal(link?.name,'Combat Superiority');
+ assert.equal(link.origin_id,superiority.origin_id);
  const champion={...fighter,subclass:'Champion',classes:[{...fighter.classes[0],subclass:'Champion'}]};
  const result=calculateSheet(champion,catalogs);
  assert(!result.trackers.some(t=>t.name==='Superiority Die'));
