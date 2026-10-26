@@ -47,6 +47,7 @@ const FILES := {
 	"/class_spells.js": ["res://pwa/class_spells.js", "text/javascript; charset=utf-8"],
 	"/class_trackers.js": ["res://pwa/class_trackers.js", "text/javascript; charset=utf-8"],
 	"/quick_homebrew.js": ["res://pwa/quick_homebrew.js", "text/javascript; charset=utf-8"],
+	"/character_homebrew.js": ["res://pwa/character_homebrew.js", "text/javascript; charset=utf-8"],
 	"/catalog/class_resource_overrides.json": ["res://vtt/data/class_resource_overrides.json", "application/json; charset=utf-8"],
 	"/structured_effects.js": ["res://pwa/structured_effects.js", "text/javascript; charset=utf-8"],
 	"/attack_count_benefits.js": ["res://pwa/attack_count_benefits.js", "text/javascript; charset=utf-8"],
