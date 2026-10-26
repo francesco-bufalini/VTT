@@ -272,6 +272,72 @@
       "display_name": "Scacciare non morti",
       "resource_name": "Channel Divinity",
       "description": "Utilizza Incanalare Divinità per scacciare i non morti."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Performance of Creation",
+      "book": "PHB",
+      "min_level": 3,
+      "activation": "action",
+      "display_name": "Esibizione della Creazione",
+      "resource_name": "Performance of Creation",
+      "resource_cost": 1,
+      "description": "Crea un oggetto non magico entro 10 ft: valore massimo 20 mo per livello da bardo, taglia Media (Grande dal 6°, Enorme dal 14°). Durata: bonus di competenza in ore. Un uso gratuito per riposo lungo; ulteriori usi richiedono uno slot di livello 2+ (spesa alternativa da gestire separatamente). Al 14° livello, Crescendo Creativo modifica quantità, taglie e valore."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Animating Performance",
+      "book": "PHB",
+      "min_level": 6,
+      "activation": "action",
+      "display_name": "Animare un oggetto",
+      "resource_name": "Animating Performance",
+      "resource_cost": 1,
+      "description": "Anima un oggetto non magico di taglia Grande o inferiore entro 30 ft, non indossato o trasportato: diventa un Oggetto Danzante per 1 ora. Un uso gratuito per riposo lungo; usi aggiuntivi richiedono uno slot di livello 3+ (spesa alternativa da gestire separatamente). Una sola creatura animata alla volta."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Animating Performance",
+      "book": "PHB",
+      "min_level": 6,
+      "activation": "bonus",
+      "display_name": "Comandare l'oggetto danzante",
+      "resource_name": "",
+      "resource_cost": 0,
+      "description": "Disponibile solo quando è presente il tuo Oggetto Danzante animato: con l'azione bonus impartisci un comando invece di lasciarlo Schivare. Puoi impartirlo anche nell'azione bonus con cui assegni Ispirazione Bardica, senza un costo aggiuntivo."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Performance of Creation",
+      "book": "XPHB",
+      "min_level": 3,
+      "activation": "action",
+      "display_name": "Esibizione della Creazione",
+      "resource_name": "Performance of Creation",
+      "resource_cost": 1,
+      "description": "Crea un oggetto non magico entro 10 ft: valore massimo 20 mo per livello da bardo, taglia Media (Grande dal 6°, Enorme dal 14°). Durata: bonus di competenza in ore. Un uso gratuito per riposo lungo; ulteriori usi richiedono uno slot di livello 2+ (spesa alternativa da gestire separatamente). Al 14° livello, Crescendo Creativo modifica quantità, taglie e valore."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Animating Performance",
+      "book": "XPHB",
+      "min_level": 6,
+      "activation": "action",
+      "display_name": "Animare un oggetto",
+      "resource_name": "Animating Performance",
+      "resource_cost": 1,
+      "description": "Anima un oggetto non magico di taglia Grande o inferiore entro 30 ft, non indossato o trasportato: diventa un Oggetto Danzante per 1 ora. Un uso gratuito per riposo lungo; usi aggiuntivi richiedono uno slot di livello 3+ (spesa alternativa da gestire separatamente). Una sola creatura animata alla volta."
+    },
+    {
+      "class_name": "Bard",
+      "feature_name": "Animating Performance",
+      "book": "XPHB",
+      "min_level": 6,
+      "activation": "bonus",
+      "display_name": "Comandare l'oggetto danzante",
+      "resource_name": "",
+      "resource_cost": 0,
+      "description": "Disponibile solo quando è presente il tuo Oggetto Danzante animato: con l'azione bonus impartisci un comando invece di lasciarlo Schivare. Puoi impartirlo anche nell'azione bonus con cui assegni Ispirazione Bardica, senza un costo aggiuntivo."
     }
   ]
 }
