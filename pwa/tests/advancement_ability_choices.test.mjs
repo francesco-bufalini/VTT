@@ -78,6 +78,8 @@ test('each class-level ASI allows score allocation or an owned feat, all linked 
  assert.equal(calc(c,index).abilities.str.score,10,'switching to a feat revokes ASI');
  const featChoice=find(pending(c,index),'advancement-feat:'+originId);
  assert(featChoice.options.includes('phb|alert'));
+ assert(!featChoice.options.includes('xphb|athlete'),
+   'A 2014 character must not be offered feats from the 2024 Player Handbook');
  c={...c,...savePendingChoice(c,featChoice,['phb|alert'])};
  assert.equal(c.feats_catalog.length,1);
  assert.equal(c.feats_catalog[0].granted_by,originId);
