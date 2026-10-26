@@ -6,14 +6,13 @@
 // date. Keep the known 2024+ 5etools sources here, and also honor structured
 // publication metadata whenever a catalog provides it.
 const MODERN_SOURCES = new Set([
-  // 2024 core books, adventures and reference material.
-  'XPHB', 'XDMG', 'VEOR', 'QFTIS', 'SATO', 'DMS2024',
-  'BASICRULES2024', 'BR2024',
-  // 2025 core rules and supplements.
-  'XMM', 'EFA', 'FRAIF', 'FRHOF', 'ABH', 'NF', 'LFL',
-  'SRD52', 'SAC25', 'SAC2025',
-  // 2026 material.
-  'RTHW'
+  // 5etools books.json and adventures.json publication dates (2024 onward).
+  // 2024
+  'BASICRULES2024', 'BR2024', 'DITLCOT', 'DMS2024', 'LRDT', 'PAF', 'QFTIS', 'SCOEE', 'UTHFTLH', 'VEOR', 'VNOTEE', 'XDMG', 'XPHB', 'XSCREEN',
+  // 2025
+  'ABH', 'BQGT', 'DRDE-ACFAS', 'DRDE-BD', 'DRDE-BTS', 'DRDE-DAS', 'DRDE-DOTSC', 'DRDE-FWTVC', 'DRDE-SD', 'DRDE-TDON', 'DRDE-TFV', 'DRDE-TWOO', 'EFA', 'FFOTR', 'FRAIF', 'FRHOF', 'HBTD', 'HOTB', 'LFL', 'NF', 'SRD52', 'WTTHC', 'XMM', 'XSAC',
+  // 2026
+  'AU', 'AUD', 'BQDD', 'CABOMP', 'HFLOTT', 'PL', 'RHW', 'RWG', 'SOS', 'XSCREENRHW',
 ]);
 const normalize=value=>String(value??'').trim().toUpperCase();
 const yearFrom=value=>{
@@ -27,7 +26,7 @@ const directYear=row=>{
     row?.publicationYear,row?.publication_year,row?.publishedYear,
     row?.releaseYear,row?.release_year,row?.sourceYear,row?.source_year,
     row?.published,row?.publicationDate,row?.publication_date,
-    row?.releaseDate,row?.release_date,row?.sourceDate,
+    row?.releaseDate,row?.release_date,row?.sourceDate,row?.year,
     row?.source?.published,row?.source?.date,row?.source?.year,
     row?.sourceMetadata?.published,row?.sourceMetadata?.date
   ]){
@@ -49,7 +48,9 @@ export function isContentAvailableForRules(row,rulesVersion='2014'){
     ['PERSONALIZZATO','HOMEBREW','CUSTOM'].includes(sourceCode(row)))return true;
   const year=directYear(row);
   if(year!==null)return year<2024;
-  if(['2024','2025','2026'].includes(String(row?.edition||row?.rules_version||'')))return false;
+  if(['2024','2025','2026','5.5E'].includes(normalize(row?.edition||row?.rules_version)))return false;
+  // Unearthed Arcana and similar sources often encode their year directly.
+  if(/20(?:2[4-9]|[3-9]\d)/.test(sourceCode(row)))return false;
   return !MODERN_SOURCES.has(sourceCode(row));
 }
 export function contentForRules(rows,rulesVersion='2014'){
