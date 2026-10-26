@@ -14,7 +14,7 @@ import { status, session, pair, unpair, hasPairingCredential, map, action, subsc
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_CONDITION_CATEGORY, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
-import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
+import { listCreatures, listSubcreatures, createSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -769,7 +769,9 @@ function syncLibrarySelectionUI(){
 }
 function syncLibraryFilterUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
- for(const entry of entries)entry.hidden=state.libraryFilter!=='all'&&entry.dataset.libraryKind!==state.libraryFilter;
+ for(const entry of entries)
+  entry.hidden=(entry.dataset.librarySubcreature==='true'&&state.libraryFilter!=='monster')||
+    (state.libraryFilter!=='all'&&entry.dataset.libraryKind!==state.libraryFilter);
  for(const button of app.querySelectorAll('[data-act="library-filter"]'))
   button.setAttribute('aria-pressed',String(button.dataset.kind===state.libraryFilter));
  const empty=app.querySelector('#library-no-results');
@@ -778,21 +780,23 @@ function syncLibraryFilterUI(){
 }
 async function libraryView(){
  if(state.creatureId&&!state.libraryMode)return editorView();
- const rows=await listCreatures();
+ const rows=await listCreatures("default",{includeSubcreatures:true});
+ const byId=new Map(rows.map(row=>[row.creature.id,row.creature]));
  const ids=new Set(rows.map(row=>row.creature.id));
  for(const id of state.librarySelectedIds)if(!ids.has(id))state.librarySelectedIds.delete(id);
  const list=rows.map(({creature:c})=>{
   const monster=c.kind==='monster';
   const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
   const classes=localClasses(c).map(m=>String(m.name)+' '+Math.max(1,Number(m.level)||1)).join(' · ');
-  const subline=classes||(c.level?'Liv. '+c.level:'');
-  return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
+  const subline=c.parent_creature_id?'Famiglio di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta'):
+    (classes||(c.level?'Liv. '+c.level:''));
+  return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-subcreature="'+Boolean(c.parent_creature_id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
    '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
    '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+(state.librarySelectedIds.has(c.id)?'checked':'')+'>'+
    '<span class="library-check-graphic" aria-hidden="true">✓</span></label>'+
    '<article class="creature-card"><button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+'" aria-label="Apri scheda di '+esc(c.name)+'">'+
    '<span class="library-creature-emblem">'+actionGlyph(monster?'shield':'proficiency')+'</span>'+
-   '<span class="creature-info"><span class="creature-category">'+(monster?'Mostro':'Personaggio')+'</span>'+
+   '<span class="creature-info"><span class="creature-category">'+(c.parent_creature_id?'Famiglio':monster?'Mostro':'Personaggio')+'</span>'+
    '<span class="creature-name">'+esc(c.name)+'</span>'+
    '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
    (subline?'<span class="creature-classes">'+esc(subline)+'</span>':'')+
@@ -4840,7 +4844,20 @@ async function handleAction(target){
     await flushPendingFields();
     const editor=state.editor,creatureId=state.creatureId;
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
-    openVariantsDialog({read:check,notify:message,icon:actionGlyph,save:async changes=>{check();await patch(changes);await render();},
+    const subcreatures=await listSubcreatures(creatureId);
+    openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
+      addSubcreature:async source=>{
+        check();const loaded=await source.load();
+        const saved=await createSubcreature(creatureId,loaded,source);
+        await editor.flush();
+        state.creatureId=saved.id;state.editor=null;state.sheet="info";state.libraryMode=false;
+        await render();message("Scheda mostro collegata a "+editor.read().name+".");
+      },
+      openSubcreature:async id=>{
+        if(!subcreatures.some(row=>row.creature.id===id))throw Error("Sottocreatura non disponibile.");
+        await editor.flush();state.creatureId=id;state.editor=null;state.sheet="info";await render();
+      },
+      save:async changes=>{check();await patch(changes);await render();},
       switchForm:async id=>{check();await applyFormPatch(editor.read(),{current_form_id:id});await render();},
       sources:async()=>variantSources((await listCreatures()).map(r=>r.creature),await (await import('./storage.js')).listRecords('global','homebrew'))});
     return;
@@ -6031,6 +6048,13 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="back"){
+    const parentId=state.editor?.readBase()?.parent_creature_id;
+    if(parentId){
+      await flushPendingFields();
+      state.creatureId=parentId;state.editor=null;state.sheet="info";state.libraryMode=false;
+      await render();
+      return;
+    }
     await navigate("library");
     window.scrollTo(0,0);app.focus({preventScroll:true});
     return;
@@ -6044,7 +6068,10 @@ async function handleAction(target){
   if(act==="export"){
     await state.editor?.flush();
     const c=state.editor.read();
-    if(await download(await exportCreature(c.id),filename(c.name)+".json"))
+    const rootId=c.parent_creature_id||c.id;
+    const root=c.parent_creature_id?(await loadCreature(rootId))?.data:c;
+    if(!root)throw Error("Proprietario della sottocreatura non disponibile.");
+    if(await download(await exportCreature(rootId),filename(root.name)+".json"))
       message("Scheda esportata in formato VTT.");
     return;
   }
@@ -6053,7 +6080,9 @@ async function handleAction(target){
     if(!await confirmCreatureDeletion([record]))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
-    state.creatureId=null;state.libraryMode=true;state.editor=null;await render();message("Scheda eliminata.");return;
+    const parentId=record.parent_creature_id;
+    state.creatureId=parentId||null;state.libraryMode=!parentId;state.editor=null;state.sheet="info";
+    await render();message("Scheda eliminata.");return;
   }
   if(act==="tracker-add"){
     const name=text(document.querySelector("#tracker-name")?.value);
