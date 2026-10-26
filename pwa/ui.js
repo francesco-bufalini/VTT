@@ -340,7 +340,7 @@ function sheetLoadingView(){
 const SHEET_TAB_GLYPHS={info:'information',battle:'weapon',
  magic:'spark',inventory:'inventory',conditions:'condition'};
 const INFO_HEADING_ICONS={'Identità':'identity',
- 'Classi e progressione':'progression','Talenti':'talents'};
+ 'Classi':'progression','Talenti':'talents'};
 const PLAY_SECTIONS=[['info','Info'],['battle','Azioni'],['magic','Poteri'],['inventory','Zaino']];
 const SECTION_COPY={battle:['Azioni','Risorse e azioni disponibili.'],magic:['Poteri','Incantesimi e capacità pronti per il tuo turno.'],inventory:['Inventario','Equipaggiamento, oggetti e documenti.'],conditions:['Condizioni','Gestisci gli stati che influenzano il personaggio.'],info:['Info','Identità, aspetto e progressione del personaggio.'],json:['Editor avanzato','Documento completo della scheda.']};
 function navigationButton(key,title){
@@ -3591,15 +3591,16 @@ function organizeSheetPanels(){
         '</div>';
       root.prepend(notice);
     }
-    // Keep this command next to the Info heading, not in Competenze.
-    const heading=app.querySelector('.page-head h1');
-    if(heading&&choices.length){
-      heading.classList.add('pending-choices-heading');
+    // Align the privilege-choice shortcut to the right of the Info title,
+    // using the same page-header button treatment as the other sheets.
+    const pageHead=app.querySelector('.page-head');
+    if(pageHead&&choices.length){
+      pageHead.classList.add('play-info-page-title');
       const manage=document.createElement('button');
-      manage.type='button';manage.className='pending-choices-manage';
+      manage.type='button';manage.className='play-button pending-choices-manage';
       manage.dataset.act='pending-choice-manage';
-      manage.textContent='Scelte dei privilegi';
-      heading.append(manage);
+      manage.innerHTML=actionGlyph('settings')+'<span>Scelte dei privilegi</span>';
+      pageHead.append(manage);
     }
   }
   // Opening a battle category also expands its action-timing groups.
