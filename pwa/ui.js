@@ -4103,7 +4103,16 @@ async function openFeatPickerDialog(){
     const rules=await loadRuleCatalogs();
     if(featAlreadyOwned(current,entry))throw Error('Talento già posseduto.');
     const patchData=addFeatWithOrigin(current,entry,originId,fresh,rules.abilityGrants||{});
-    await patch({...quickGrantPatch(current,entry),...patchData});
+    // Merge portable homebrew proficiency grants *after* the previous ASI feat
+    // has been removed, otherwise switching talents can lose new grants.
+    const granted=quickGrantPatch(current,{...entry,category:entry.category||entry._category||'feats'});
+    const previousChoices=current.proficiency_choices||[];
+    const newChoices=(granted.proficiency_choices||[]).filter(row=>
+      !previousChoices.some(saved=>saved.origin_id===row.origin_id&&
+        saved.kind===row.kind&&saved.key===row.key));
+    const choices=patchData.proficiency_choices||previousChoices;
+    await patch({...patchData,...(newChoices.length||patchData.proficiency_choices?
+      {proficiency_choices:[...choices,...newChoices]}:{})});
     closeDialog(dialog,{remove:true});
     await render();
     message('Talento '+entry.name+' aggiunto alla scheda.');
