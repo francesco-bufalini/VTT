@@ -413,6 +413,25 @@ function subclassKey(value){
  return String(value||'').toLowerCase().trim().replace(/^(?:school of |circle of |oath of |college of |domain of |way of the |way of |the )/,'').replace(/ (?:domain|school)$/,'');
 }
 // Same stable tracker IDs and recovery events as StructuredResourceTrackers.
+// Source-qualified feat mechanics are ordinary typed tracker/roll/action grants.
+// No talent names appear in the runtime projection logic.
+export function featMechanicGrants(record={},index={}){
+ const result={trackers:[],roll_modes:[],actions:[]};
+ for(const feat of arr(record.feats_catalog)){
+  if(!feat?.name||feat.disabled)continue;
+  const rule=arr(index.feat_mechanics).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
+  if(!rule)continue;
+  const origin_id='feat|'+norm(feat.source)+'|'+norm(feat.name);
+  for(const raw of arr(rule.trackers))result.trackers.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,automatic:true});
+  for(const raw of arr(rule.roll_modes))result.roll_modes.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name});
+  for(const raw of arr(rule.actions))result.actions.push({...raw,origin_id,
+    origin_name:'Talento · '+feat.name,origin_key:origin_id,automatic:true,
+    cost:Math.max(0,Number(raw.resource_cost)||0),time:raw.action_type||raw.activation||'reaction'});
+ }
+ return result;
+}
 export function resourceTrackers(record,catalog,resolve=()=>0){
  const rows=new Map();
  const features=[];
@@ -1045,6 +1064,7 @@ function calculateSheetValues(record={},catalogs={}){
     memo.set('casting_dc:'+a,8+(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_dc')??0));
     memo.set('casting_hit:'+a,(safe('proficiency')??0)+(abilities[a].modifier??0)+(safe('spell_attack')??0));
   }
+  const featMechanics=featMechanicGrants(record,index);
   const additional=structuredSpellGrants(record,classesCatalog?.additional_spells,catalogs.spells||[],features);
   // Permanently prepared subclass spells are attached to their actual feature,
   // not to the class itself; the same source identity powers UI and calculations.
@@ -1054,7 +1074,7 @@ function calculateSheetValues(record={},catalogs={}){
       catalogs.featureSpellGrants||[],classCasting));
   for(const warning of additional.warnings)warnings.add(warning);
   const trackerMap=new Map();
-  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers])
+  for(const row of [...resourceTrackers(record,{...classesCatalog,feature_rules:catalogs.featureRules},name=>resolveSymbol(name,resolve,new Set())),...additional.trackers,...featMechanics.trackers])
     if(!trackerMap.has(row.id)&&sourceEnabled(row)&&!suppressed.has('tracker:'+row.id))trackerMap.set(row.id,row);
   for(const stateTracker of traitStateTrackers(record,features,catalogs.traitStates||[]))
     trackerMap.set(stateTracker.id,stateTracker);
@@ -1116,6 +1136,8 @@ function calculateSheetValues(record={},catalogs={}){
     casting_classes:spellClasses,trackers,attacks,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     feature_rules:catalogs.featureRules||{},
+    feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
+    feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
     active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id),
     state_actions:traitStateActions(record,features,catalogs.traitStates||[]),
