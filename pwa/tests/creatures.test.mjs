@@ -219,8 +219,8 @@ test("invalid subcreature packages and wrong owners cannot create orphan sheets"
   await assert.rejects(importCreatureExport(damaged,scope),/subcreature/i);
   assert.equal((await listSubcreatures(parent.id,scope)).length,1);
   const stale=await loadCreature(parent.id,scope);
-  const editor=await openCreatureEditor(child.id,scope);
-  await editor.update({current_hp:0});
+  const editor=await openCreatureEditor(parent.id,scope);
+  await editor.update({notes:"Il proprietario è stato modificato"});
   await editor.flush();
   await assert.rejects(removeCreature(parent.id,scope,stale.revision),/changed/);
   assert.ok(await loadCreature(parent.id,scope));

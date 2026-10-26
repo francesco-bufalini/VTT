@@ -406,8 +406,11 @@ function syncNav(){
     state.page==='catalog'?'Catalogo':state.page==='session'?'Partita':'VTT Mobile';
   if(classLabel){
     const members=hasCreature?localClasses(creature||{}):[];
-    classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-    classLabel.hidden=!members.length;
+    const parentName=creature?.parent_creature_id?
+      (state.cachedCreatures||[]).find(c=>c.id===creature.parent_creature_id)?.name:'';
+    classLabel.textContent=parentName?'Famiglio di '+parentName:
+      members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+    classLabel.hidden=!parentName&&!members.length;
   }
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
   primary.hidden=!hasCreature;
@@ -700,9 +703,19 @@ async function loadLibraryMiniatures(){
  paintLibraryMiniatures();
 }
 
-function confirmCreatureDeletion(rows){
+async function confirmCreatureDeletion(rows){
   const creatures=rows.map(row=>row.creature||row);
-  if(!creatures.length)return Promise.resolve(false);
+  if(!creatures.length)return false;
+  const known=new Set(creatures.map(creature=>creature.id));
+  // A parent deletion also removes its attached sheets. Show their names
+  // before confirmation so the cascading operation is never surprising.
+  for(const creature of [...creatures]){
+    if(creature.parent_creature_id)continue;
+    for(const child of await listSubcreatures(creature.id)){
+      if(known.has(child.creature.id))continue;
+      known.add(child.creature.id);creatures.push(child.creature);
+    }
+  }
   const amount=creatures.length;
   return new Promise(resolve=>{
     const dialog=document.createElement('dialog');
@@ -726,7 +739,8 @@ function confirmCreatureDeletion(rows){
       const name=document.createElement('strong');
       const kind=document.createElement('span');
       name.textContent=String(creature.name||'Creatura senza nome');
-      kind.textContent=creature.kind==='monster'?'Mostro':'Personaggio';
+      kind.textContent=creature.parent_creature_id?'Sottocreatura collegata':
+        creature.kind==='monster'?'Mostro':'Personaggio';
       item.append(name,kind);
       list.append(item);
     }
@@ -4880,7 +4894,7 @@ async function handleAction(target){
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
     const subcreatures=await listSubcreatures(creatureId);
     openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
-      addSubcreature:async source=>{
+      addSubcreature:editor.readBase().parent_creature_id?null:async source=>{
         check();const loaded=await source.load();
         const saved=await createSubcreature(creatureId,loaded,source);
         await editor.flush();
