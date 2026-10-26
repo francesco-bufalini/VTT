@@ -3987,7 +3987,7 @@ async function openFeatPickerDialog(){
  if(!record)throw Error('Apri un personaggio prima di aggiungere talenti.');
  document.querySelector('#feat-picker-dialog')?.remove();
  const dialog=document.createElement('dialog');
- dialog.id='feat-picker-dialog';dialog.className='sheet-context-dialog feat-picker-dialog';
+ dialog.id='feat-picker-dialog';dialog.className='feat-picker-dialog';
  dialog.setAttribute('aria-labelledby','feat-picker-title');
  let candidates=[],query='',limit=48,selected=-1,originId='',loading=true,failed='',saving=false;
  const catalogs=await loadRuleCatalogs().catch(()=>({}));
@@ -4002,17 +4002,17 @@ async function openFeatPickerDialog(){
    return options.length?'<optgroup label="'+esc(label)+'">'+options.map(row=>
     '<option value="'+esc(row.id)+'">'+esc(row.label)+'</option>').join('')+'</optgroup>':'';
   }).join('');
- dialog.innerHTML='<header class="sheet-context-head"><div><small>PERSONAGGIO · TALENTI</small>'+
+ dialog.innerHTML='<header class="sheet-context-head feat-picker-head"><div><small>PERSONAGGIO · TALENTI</small>'+
   '<h2 id="feat-picker-title">Aggiungi talento</h2></div>'+
-  dialogCloseButton('feat-picker-close','Chiudi','play-button')+'</header>'+
-  '<div class="sheet-context-body feat-picker-body">'+
+  dialogCloseButton('feat-picker-close','Chiudi')+'</header>'+
+  '<div class="feat-picker-body">'+
   '<label class="feat-picker-origin-label">Tratto di origine'+
   '<select data-feat-origin required>'+choices+'</select></label>'+
-  '<p class="feat-picker-origin-note" data-feat-origin-note>Il talento sarà associato all’origine scelta.</p>'+
-  '<label class="feat-picker-search vtt-list-search">'+actionGlyph('search')+
+  '<p class="feat-picker-origin-note" data-feat-origin-note>Seleziona l’origine del talento.</p>'+
+  '<label class="feat-picker-search">'+actionGlyph('search')+
   '<input type="search" data-feat-search placeholder="Cerca per nome o fonte" autocomplete="off" aria-label="Cerca talento"></label>'+
   '<div class="feat-picker-count" data-feat-count></div>'+
-  '<div class="feat-picker-results vtt-selection-list" data-feat-results role="list">'+
+  '<div class="feat-picker-results" data-feat-results role="list">'+
   '<p class="hint">Caricamento talenti…</p></div>'+
   '<div class="feat-picker-detail" data-feat-detail hidden></div>'+
   '<p class="feat-picker-feedback" data-feat-feedback role="status" aria-live="polite"></p></div>';
@@ -4037,11 +4037,11 @@ async function openFeatPickerDialog(){
     const i=candidates.indexOf(row);
     const has=known.has(String(row.name).toLowerCase()+'|'+String(row.source||'').toLowerCase());
     const active=i===selected;
-    return '<div class="feat-picker-row magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'" role="listitem">'+
-      '<button type="button" class="feat-picker-row-name magic-catalog-name" data-feat-detail-index="'+i+
+    return '<div class="feat-picker-row'+(active?' is-selected':'')+'" role="listitem">'+
+      '<button type="button" class="feat-picker-row-name" data-feat-detail-index="'+i+
       '" aria-expanded="'+active+'" aria-label="Dettagli di '+esc(row.name)+'">'+
       '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
-      '<button type="button" class="feat-picker-add magic-catalog-action'+(has?' is-selected':'')+
+      '<button type="button" class="feat-picker-add'+(has?' is-selected':'')+
       '" data-feat-add-index="'+i+'"'+(has||saving?' disabled':'')+' aria-label="'+
       (has?'Talento già posseduto: ':'Aggiungi ')+esc(row.name)+'">'+
       (has?'✓ Posseduto':'+ Aggiungi')+'</button></div>';
