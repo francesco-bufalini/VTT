@@ -77,6 +77,8 @@ func run() -> void:
 	# Exercise opt-in cross-PWA sharing without any live board or network.
 	# _handle_share uses the same response writer as the authenticated route.
 	var sender_id := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	var sender_token := "1111111111111111111111111111111111111111111111111111111111111111"
+	var receiver_token := "2222222222222222222222222222222222222222222222222222222222222222"
 	var receiver_id := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 	var stranger_id := "cccccccccccccccccccccccccccccccc"
 	var transfer_id := "dddddddddddddddddddddddddddddddd"
@@ -84,8 +86,8 @@ func run() -> void:
 	var fake_clients: Array = host.get("_clients")
 	fake_clients.append(fake_client)
 	for row: Dictionary in [
-		{"device_id": sender_id, "device_name": "Computer A"},
-		{"device_id": receiver_id, "device_name": "iPhone B"}
+		{"device_id": sender_id, "device_token": sender_token, "device_name": "Computer A"},
+		{"device_id": receiver_id, "device_token": receiver_token, "device_name": "iPhone B"}
 	]:
 		fake_client.out = PackedByteArray()
 		host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify(row).to_utf8_buffer())
@@ -95,7 +97,7 @@ func run() -> void:
 	var encoded := Marshalls.raw_to_base64(content.to_utf8_buffer())
 	fake_client.out = PackedByteArray()
 	host.call("_handle_share", fake_client, "/api/share/chunk", JSON.stringify({
-		"device_id": sender_id, "recipient_id": receiver_id,
+		"device_id": sender_id, "device_token": sender_token, "recipient_id": receiver_id,
 		"transfer_id": transfer_id, "kind": "homebrew", "title": "Test",
 		"size": content.to_utf8_buffer().size(), "index": 0, "parts": 1, "data": encoded
 	}).to_utf8_buffer())
@@ -103,26 +105,26 @@ func run() -> void:
 		"Bounded chunks must reach a paired recipient")
 	fake_client.out = PackedByteArray()
 	host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify({
-		"device_id": receiver_id, "device_name": "iPhone B"
+		"device_id": receiver_id, "device_token": receiver_token, "device_name": "iPhone B"
 	}).to_utf8_buffer())
 	var inbox_reply: String = (fake_client.out as PackedByteArray).get_string_from_utf8()
 	assert(inbox_reply.contains("\"inbox\"") and inbox_reply.contains(transfer_id),
 		"The receiver should discover the complete incoming package")
 	fake_client.out = PackedByteArray()
 	host.call("_handle_share", fake_client, "/api/share/pull", JSON.stringify({
-		"device_id": stranger_id, "transfer_id": transfer_id, "index": 0
+		"device_id": stranger_id, "device_token": receiver_token, "transfer_id": transfer_id, "index": 0
 	}).to_utf8_buffer())
 	assert(not (fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
 		"Another device must not read the transfer")
 	fake_client.out = PackedByteArray()
 	host.call("_handle_share", fake_client, "/api/share/pull", JSON.stringify({
-		"device_id": receiver_id, "transfer_id": transfer_id, "index": 0
+		"device_id": receiver_id, "device_token": receiver_token, "transfer_id": transfer_id, "index": 0
 	}).to_utf8_buffer())
 	assert((fake_client.out as PackedByteArray).get_string_from_utf8().contains(encoded),
 		"Recipient should receive the original bytes")
 	fake_client.out = PackedByteArray()
 	host.call("_handle_share", fake_client, "/api/share/ack", JSON.stringify({
-		"device_id": receiver_id, "transfer_id": transfer_id
+		"device_id": receiver_id, "device_token": receiver_token, "transfer_id": transfer_id
 	}).to_utf8_buffer())
 	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"))
 	assert(not (host.get("_share_deliveries") as Dictionary).has(transfer_id),
