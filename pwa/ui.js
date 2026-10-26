@@ -2580,7 +2580,7 @@ function manualMagicSources(c,calculated){
   return [...groups.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
     .map(([id,meta])=>'<section class="magic-source"><h3>'+esc(meta.name)+'</h3>'+
       castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
-      spellList(c,'prepared_spells','manual',classes,{originId:id})+'</section>').join('');
+      spellList(c,'prepared_spells','manual',classes,{originId:id,includeSlots:false})+'</section>').join('');
 }
 function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null,minLevel=0}={}) {
   const rows=key==="prepared_spells"?availableSpells(c):
