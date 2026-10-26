@@ -791,6 +791,16 @@ function calculateSheetValues(record={},catalogs={}){
     if(!same(record.species,rule.name)||!same(record.species_source,rule.source))continue;
     baseAdd(rule,'race|'+norm(rule.source)+'|'+norm(rule.name),'Specie · '+rule.name);
   }
+  for(const optional of [
+    ...arr(record.optional_features_catalog),
+    ...arr(record.fighting_styles).filter(row=>typeof row==='string'||row?.name).map(row=>
+      typeof row==='string'?{name:row,source:'TCE'}:row)
+  ]){
+    if(!optional?.name||optional.disabled)continue;
+    const source=optional.source||'TCE';
+    const rule=arr(nativeBases.optional_features).find(row=>same(row.name,optional.name)&&same(row.source,source));
+    if(rule)baseAdd(rule,'optional|'+norm(source)+'|'+norm(optional.name),'Stile · '+optional.name);
+  }
   for(const feature of features){
     if(!featureEnabled(record,feature))continue;
     const rule=arr(nativeBases.features).find(row=>same(row.name,feature.name)&&
@@ -817,8 +827,19 @@ function calculateSheetValues(record={},catalogs={}){
     .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
       String(a.id||'').localeCompare(String(b.id||'')));
   const appliedBaseOverrides=new Map();
-  const overrideNumeric=(target,base,resolve,stack,mode)=>{
-    const applicable=baseFor(target).filter(row=>row.mode===mode);
+  const baseAllowed=row=>{
+    const rules=row?.requirements||{};
+    if((row.no_shield||rules.no_shield)&&shieldBonus>0)return false;
+    if((row.no_armor||rules.no_armor)&&armor)return false;
+    if((row.no_weapon_or_shield||rules.no_weapon_or_shield)&&arr(record.inventory).some(saved=>{
+      const item=resolveOwnedItem(saved);
+      return int(item.quantity,1)>0&&['weapon','shield'].includes(itemKind(item))&&
+        arr(item.equipped_slots).some(slot=>slot==='main'||slot==='off');
+    }))return false;
+    return true;
+  };
+  const overrideNumeric=(target,base,resolve,stack,mode,filter=()=>true)=>{
+    const applicable=baseFor(target).filter(row=>row.mode===mode&&baseAllowed(row)&&filter(row));
     const values=[];
     for(const row of applicable){
       try{
@@ -880,26 +901,22 @@ function calculateSheetValues(record={},catalogs={}){
         let natural=base;
         try{natural=parseArithmetic(record.armor_natural_formula||fallback,
           name=>resolveSymbol(name,resolve,stack));}catch{warnings.add("Formula CA naturale non valida");}
-        for(const feature of features){
-          if(!featureEnabled(record,feature))continue;
-          const owner=String(feature.class_name||feature.requirements?.class_name||String(feature.origin_key||'').split('|')[2]||'').toLowerCase();
-          const book=String(feature.class_source||String(feature.origin_key||'').split('|')[1]||'').toUpperCase();
-          let formula='';
-          if(feature.name==='Unarmored Defense'&&['PHB','XPHB'].includes(book)){
-            if(owner==='barbarian')formula='10 + dex_mod + con_mod';
-            if(owner==='monk'&&!shieldBonus)formula='10 + dex_mod + wis_mod';
-            if(owner==='bard'&&book==='XPHB'&&!shieldBonus)formula='10 + dex_mod + cha_mod';
-          }
-
-          if(formula)natural=Math.max(natural,parseArithmetic(formula,name=>resolveSymbol(name,resolve,stack)));
-        }
+        // Class, species and feat AC formulas all use the same typed,
+        // individually disableable source-qualified alternatives.
         natural=overrideNumeric('ac_unarmored',natural,resolve,stack,'alternative');
         return natural+shieldBonus;
       }
       const dex=resolve("ability_mod:dex",stack),type=String(armor.type||"").split("|")[0].toUpperCase();
       const cap=armor.dexterity_max!==undefined?int(armor.dexterity_max):type==="MA"?2:type==="HA"?0:99;
       const allowed=type!=="HA"||int(armor.dexterity_max)!==0?Math.min(dex,cap):0;
-      return int(armor.ac,10)+allowed+shieldBonus;
+      const equippedAc=int(armor.ac,10)+allowed;
+      // Some natural armors explicitly remain selectable when wearing inferior
+      // armor (Loxodon, Locathah, Lizardfolk). Tortle armor grants no benefit.
+      const tortleBase=overrideNumeric('ac_unarmored',0,resolve,stack,'alternative',
+        row=>row.ignore_armor===true);
+      if(tortleBase>0)return tortleBase+shieldBonus;
+      return overrideNumeric('ac_unarmored',equippedAc,resolve,stack,'alternative',
+        row=>row.allow_armor===true)+shieldBonus;
     }
     if(target==="speed")return simpleSpeed();
     if(prefix==="speed"){
@@ -1005,6 +1022,10 @@ function calculateSheetValues(record={},catalogs={}){
       (!source||!b.source||same(b.source,source)));
     if(group==="feat")return arr(record.feats_catalog).some(x=>!x.disabled&&
       same(x.name,name)&&(!source||same(x.source,source)));
+    if(group==="optional")return [
+      ...arr(record.optional_features_catalog),
+      ...arr(record.fighting_styles).map(x=>typeof x==='string'?{name:x,source:'TCE'}:x)
+    ].some(x=>x?.name&&!x.disabled&&same(x.name,name)&&(!source||same(x.source||'TCE',source)));
     if(group==="class")return localClasses(record).some(x=>
       same(x.name,name)&&(!source||!x.source||same(x.source,source)));
     // Native custom origins can explicitly exist in saved proficiency_origins.
@@ -1152,16 +1173,33 @@ function calculateSheetValues(record={},catalogs={}){
   const resolvedDamageBase=(id,damage)=>{
     const specific=baseFor('attack_damage_base:'+id);
     const fallback=id.startsWith('unarmed:')?baseFor('attack_damage_base:unarmed'):[];
-    const chosen=[...specific,...fallback].filter(row=>row.mode==='replace')
-      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
-        String(a.id||'').localeCompare(String(b.id||'')))[0];
-    if(!chosen)return damage;
-    const formula=String(chosen.expression||'').replace(/\s+/g,'');
-    if(!/^(?:\d+|[1-9]\d*d(?:4|6|8|10|12|20|100))(?:[+-]\d+)?$/.test(formula)){
-      warnings.add('Formula del danno base ignorata: '+formula);return damage;
+    const candidates=[...specific,...fallback].filter(row=>
+      ['replace','alternative'].includes(row.mode)&&baseAllowed(row));
+    const average=formula=>{
+      const match=String(formula).replace(/\s+/g,'').match(/^(?:(\d+)d(4|6|8|10|12|20|100)|(\d+))([+-]\d+)?$/i);
+      if(!match)return null;
+      return match[3]!==undefined?Number(match[3])+Number(match[4]||0):
+        Number(match[1])*(Number(match[2])+1)/2+Number(match[4]||0);
+    };
+    let result=String(damage||''),selected=null,score=average(result)??-Infinity;
+    for(const rule of candidates){
+      const formula=String(rule.expression||'').replace(/\s+/g,'');
+      const value=average(formula);
+      if(value===null){warnings.add('Formula del danno base ignorata: '+formula);continue;}
+      // A replacement becomes the base; additional optional formulas only
+      // supersede it when their expected die result is higher.
+      if(rule.mode==='replace'){
+        if(!selected||selected.mode==='replace'&&
+          (Number(rule.priority)||0)>(Number(selected.priority)||0)){
+          selected=rule;result=formula;score=value;
+        }
+      }else if(value>score){
+        selected=rule;result=formula;score=value;
+      }
     }
-    appliedBaseOverrides.set('attack_damage_base:'+id,{...chosen,enabled_target:'attack_damage_base:'+id});
-    return formula;
+    if(selected)appliedBaseOverrides.set('attack_damage_base:'+id,
+      {...selected,enabled_target:'attack_damage_base:'+id});
+    return result;
   };
   const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
