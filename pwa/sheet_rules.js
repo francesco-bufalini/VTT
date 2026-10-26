@@ -187,6 +187,10 @@ function indexRows(record,index,warnings){
     const value=record[field];
     if(!value)continue;
     const options=arr(index[group]).filter(r=>same(r.name,value)&&(!record[sourceField]||same(r.source,record[sourceField])));
+    // A source-wide 5etools rule can grant ASIs even without an explicit
+    // 'ability' field on the race itself (e.g. MPMM lineage creation).
+    if(!options.length&&record[sourceField]&&index.source_ability_choices?.[String(record[sourceField]).toUpperCase()])
+      options.push({name:value,source:record[sourceField]});
     if(!options.length){warnings.add("Bonus "+group+" non presenti nell’indice offline");continue;}
     if(!record[sourceField]&&new Set(options.map(r=>key(r))).size>1){
       warnings.add("Specifica la fonte di "+value+" per i bonus razziali");
