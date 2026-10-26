@@ -464,7 +464,11 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
   const entry=typeof feat==='string'?{name:feat}:feat||{};
   const detail=list(catalogs.featDetails)[i]||entry;
   const level=Number(entry.level??entry.acquired_level??entry.origin_level);
-  const levelText=Number.isInteger(level)&&level>=1&&level<=20?'Livello del privilegio: '+level:'Livello del privilegio: non specificato';
+  const originLabel=entry.granting_origin_name||
+    list(calculated?.origins).find(row=>row.id===entry.granted_by)?.name||'';
+  const levelText=originLabel?'Origine: '+originLabel:
+    Number.isInteger(level)&&level>=1&&level<=20?'Livello del privilegio: '+level:
+    (entry.source?'Fonte: '+entry.source:'Talento posseduto');
   const description=String(detail.description||entry.description||'').trim();
   const ownedKey='feat|'+(entry.id||String(entry.name||'').trim().toLowerCase()+'|'+String(entry.source||'').trim().toLowerCase());
   return '<div class="info-owned-feat-row"><details class="trait-card info-feat-entry"><summary><strong>'+esc(entry.name||'Talento')+'</strong><span class="info-feat-level">'+esc(levelText)+'</span>'+(entry.disabled?' · disattivato':'')+'</summary>'+
