@@ -6,7 +6,9 @@ const Shell = preload("res://vtt/desktop_creature_sheet.gd")
 const SheetWindow = preload("res://vtt/desktop_sheet_window.gd")
 class FakeView extends Control:
 	var parent_focus_calls := 0
+	var eval_calls: Array[String] = []
 	func focus_parent() -> void: parent_focus_calls += 1
+	func eval(script: String) -> void: eval_calls.append(script)
 class FakeArea extends Node:
 	var _panel := PanelContainer.new()
 	var _archive: RefCounted
@@ -106,6 +108,23 @@ func run() -> void:
 	assert(fake_area._selected_kind == "character", "Restore kind as well as ID when switching from a monster")
 	await process_frame
 	assert(fake_view.parent_focus_calls == 2, "Restore Godot keyboard focus after hiding the native child window")
+	# A malformed IPC reply object must not be interpreted as the creature ID.
+	# Previously this crashed at desktop_creature_sheet.gd:204 while closing.
+	shell.active = true
+	fake_area.closed = false
+	shell._on_message(JSON.stringify({"id": 37, "method": "close", "args": {"creatureId": {"id": 37, "value": true}}}))
+	assert(fake_area.closed and not shell.active, "Invalid IDs must not prevent closing")
+	assert(fake_area._selected_id == original.id, "Invalid IDs must not change selected creature")
+	assert(fake_view.eval_calls.size() == 1, "Close receives an IPC acknowledgment")
+	shell.active = true
+	fake_area.closed = false
+	shell._on_message(JSON.stringify({"id": 38, "method": "native", "args": {"creatureId": {"id": 37, "value": true}}}))
+	assert(not fake_area.closed and not shell.active, "Native return must tolerate invalid IDs")
+	assert(fake_area._selected_id == original.id)
+	shell.active = true
+	shell._on_message(JSON.stringify({"id": 39, "method": {"id": 37, "value": true}, "args": {}}))
+	assert(shell.active, "Malformed methods must not close the sheet")
+	assert(fake_view.eval_calls.size() == 3)
 	shell.queue_free()
 	fake_area.queue_free()
 	assert(not Shell.supported(), "Headless keeps native UI")

@@ -8,7 +8,12 @@ let closing=false;
 let fileBusy=false;
 async function close(mode='close',extra={}){
   if(closing||fileBusy)return; closing=true;
-  try { await desktopSheetSession.flush(); await request(mode,{creatureId:desktopSheetSession.currentId(),...extra}); }
+  try {
+    await desktopSheetSession.flush();
+    const requestedId=extra.creatureId??desktopSheetSession.currentId();
+    const creatureId=typeof requestedId==='string'?requestedId:'';
+    await request(mode,{...extra,creatureId});
+  }
   catch(error){ document.querySelector('#toast').textContent=error.message;document.querySelector('#toast').hidden=false; }
   finally{closing=false;}
 }
@@ -76,7 +81,7 @@ document.addEventListener('keydown',event=>{
 try{
   await mount(); stopRealtime();
   const id=await request('selected');
-  if(id)await desktopSheetSession.open(id);
+  if(typeof id==='string'&&id)await desktopSheetSession.open(id);
   await request('ready');
 }catch(error){
   await request('ready').catch(()=>{});

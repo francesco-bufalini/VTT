@@ -14,6 +14,12 @@ var _file_dialog: FileDialog
 var _file_request_id: Variant
 var window: SheetWindow
 
+# IPC payloads are untrusted JSON variants. Never coerce object replies into IDs.
+static func _request_string(value: Variant, fallback: String = "") -> String:
+	if value is String:
+		return value
+	return fallback
+
 static func supported() -> bool:
 	return OS.get_name() in ["Windows", "macOS"] and DisplayServer.get_name() != "headless" and ClassDB.class_exists("WebView")
 
@@ -93,7 +99,7 @@ func _finish(native: bool, creature_id: String = "") -> void:
 	view.call_deferred("focus_parent")
 
 func _native_action(method: String, args: Dictionary) -> void:
-	_finish(true, String(args.get("creatureId", "")))
+	_finish(true, _request_string(args.get("creatureId", "")))
 	match method:
 		"cast":
 			area._show_sheet_tab("Poteri")
@@ -166,14 +172,14 @@ func _write_export(path: String, text: String) -> Dictionary:
 	return {"value": {"saved": true, "filename": path.get_file()}}
 
 func _begin_download(args: Dictionary, request_id: Variant) -> void:
-	var text := String(args.get("text", ""))
+	var text := _request_string(args.get("text", ""))
 	if text.to_utf8_buffer().size() > 16 * 1024 * 1024 or not JSON.parse_string(text) is Dictionary:
 		_send_reply(request_id, {"error": "Esportazione JSON non valida o troppo grande."})
 		return
 	var dialog := FileDialog.new()
 	dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	dialog.title = "Esporta creature VTT"
-	dialog.current_file = String(args.get("filename", "creatura.json")).get_file()
+	dialog.current_file = _request_string(args.get("filename", "creatura.json"), "creatura.json").get_file()
 	dialog.file_selected.connect(func(path: String) -> void:
 		_complete_file_request(_write_export(path, text)))
 	_open_file_dialog(dialog, request_id)
@@ -184,7 +190,7 @@ func _on_message(raw: String) -> void:
 	if not value is Dictionary: return
 	var message: Dictionary = value
 	if not message.get("args", {}) is Dictionary: return
-	var method := String(message.get("method", ""))
+	var method := _request_string(message.get("method", ""))
 	if method in ["import", "download"]:
 		if is_instance_valid(_file_dialog):
 			_send_reply(message.get("id"), {"error": "Completa prima la scelta del file già aperta."})
@@ -201,5 +207,5 @@ func _on_message(raw: String) -> void:
 		_: reply = bridge.dispatch(method, message.get("args", {}))
 	reply["id"] = message.get("id")
 	view.call("eval", "globalThis.vttDesktopReceive(%s)" % JSON.stringify(reply))
-	if method in ["close", "native"]: _finish(method == "native", String(message.get("args", {}).get("creatureId", "")))
+	if method in ["close", "native"]: _finish(method == "native", _request_string(message.get("args", {}).get("creatureId", "")))
 	elif method == "cast": _native_action.call_deferred(method, message.get("args", {}))
