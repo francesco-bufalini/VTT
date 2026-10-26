@@ -438,17 +438,36 @@ export function speciesCreatureType(creature,catalogs={}){
  return values.map(v=>typeof v==='string'?v:v?.type||'').filter(Boolean)
   .map(v=>names[v.toLowerCase()]||v).join(', ')||'—';
 }
+// The 5etools race index contains both "Elf (High)" and "High" with the
+// *same* ID. Keep the picker and its save handler on this exact candidate set:
+// resolving an ID from the unfiltered catalog can select the flattened race
+// in place of the subrace, then incorrectly mark the saved choice "importato".
+export function availableReferenceRows(c,key,category,catalogs={}){
+ return contentForRules(list(catalogs[category]),c.rules_version).filter(r=>r?.name &&
+   (key!=='species'||!r.raceName) &&
+   (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&(!c.species_source||r.raceSource===c.species_source)) &&
+   (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
+   (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
+}
+// Repair only the specific records written by the duplicate-ID lookup bug.
+// The old picker saved "Elf (High)" as a subrace instead of "High", while
+// retaining the shared catalog ID. Do not rewrite intentional custom entries.
+export function flattenedSubraceRepairPatch(c,catalogs={}){
+ if(!c?.subrace_id||!c?.subrace||!c?.species)return null;
+ const row=availableReferenceRows(c,'subrace','races',catalogs).find(r=>
+   String(r.id||'')===String(c.subrace_id) &&
+   c.subrace===r.raceName+' ('+r.name+')' &&
+   (!c.subrace_source||r.source===c.subrace_source));
+ return row?{subrace:row.name,subrace_id:row.id,subrace_source:row.source||''}:null;
+}
 export function nativeSection(c,section,{field,area,panel,resources,resourcesEditor=resources,equipment='',armor='',attacks='',details='overview',catalogs={},calculated={}}){
  const cols=s=>'<div class="columns">'+s+'</div>';
  const select=(label,key,options,value=c[key])=>control(label,'data-field="'+key+'"',value,options);
  const reference=(label,key,category)=>{
-   const rows=contentForRules(list(catalogs[category]),c.rules_version).filter(r=>r?.name &&
-     (key!=='species'||!r.raceName) &&
-     (key!=='subrace'||!!r.raceName&&r.raceName===c.species&&(!c.species_source||r.raceSource===c.species_source)) &&
-     (key!=='subclass'||!!c.class&&(!r.class_name||r.class_name===c.class)&&(!c.class_source||!r.class_source||r.class_source===c.class_source)) &&
-     (key!=='class'||c.rules_version!=='2024'||r.source!=='PHB'));
+   const rows=availableReferenceRows(c,key,category,catalogs);
    const current=c[key]||'', source=c[key+'_source']||'';
-   const active=rows.find(r=>r.name===current&&(!source||r.source===source));
+   const active=rows.find(r=>r.name===current&&(!source||r.source===source)) ||
+     rows.find(r=>c[key+'_id']&&r.id===c[key+'_id']&&(!source||r.source===source));
    const options=[['','Nessuno'],...(!active&&current?[['__current__',current+' · importato']]:[]),
      ...rows.map(r=>[String(r.id||r.name+'|'+(r.source||'')),r.name+(r.source?' · '+r.source:'')])];
    const chosen=active?String(active.id||active.name+'|'+(active.source||'')):current?'__current__':'';
