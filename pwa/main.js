@@ -74,14 +74,14 @@ function deadline(promise, ms, description) {
 // Keep this list in sync with JavaScript routes in network/pwa_host.gd.
 const STARTUP_MODULE_PATHS = [
   "/creature_variants.js", "/creature_variants_view.js", "/ui.js", "/storage.js", "/native_sheet.js", "/sheet_rules_view.js",
-  "/sheet_rules.js", "/action_economy.js", "/creatures.js",
+  "/sheet_rules.js", "/action_economy.js", "/creatures.js", "/share_transfer.js",
   "/feature_mechanics.js", "/item_controls.js", "/character_core.js",
   "/spell_selection.js", "/structured_effects.js", "/client.js",
   "/activated_abilities.js", "/condition_catalog.js", "/documents.js",
   "/class_spells.js", "/class_trackers.js", "/quick_homebrew.js", "/character_homebrew.js",
   "/trait_benefits.js", "/trait_benefit_editor.js", "/trait_projection.js", "/spell_metadata.js", "/chat_notifications.js",
   "/tactical_view.js", "/session_map.js", "/demo.js", "/catalog_data.js",
-  "/creature_format.js", "/main.js"
+  "/creature_format.js", "/share_transfer.js", "/main.js"
 ];
 const startupBrowserErrors = [];
 // main.js invokes boot() at top level: never dynamically re-import it.

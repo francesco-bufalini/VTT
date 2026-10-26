@@ -14,7 +14,8 @@ import { status, session, pair, unpair, hasPairingCredential, map, action, subsc
 import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_CONDITION_CATEGORY, exhaustionLevel, exhaustionConditionRows, exhaustionSelectionPatch, conditionCatalogFrom5etools, mergeConditionCatalog } from "./condition_catalog.js";
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
-import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch,
+import {openSendDialog,pollIncomingShares} from './share_transfer.js';
+import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -218,8 +219,7 @@ function loadFullSpellCatalog(){
   }).finally(()=>{fullSpellCatalogRequest=null;});
   return fullSpellCatalogRequest;
 }
-// Rebuild only picker references on an archive/character change. The packaged
-// spell catalogue is already cached in memory; do not repeat its network load.
+// Refresh local shared-homebrew options without refetching the entire catalog.
 async function refreshCharacterHomebrewOptions(){
   state.referenceCatalogs={};
   state.spellDemandKey='';
@@ -227,11 +227,7 @@ async function refreshCharacterHomebrewOptions(){
   if(state.spellCatalogComplete){
     try{state.spellCatalog=await catalogEntries('spells');refreshSpellPickers();}
     catch(error){console.warn('Impossibile aggiornare gli incantesimi homebrew locali',error);}
-  }else{
-    // Partial on-demand references belong to the previously opened sheet.
-    // Re-resolve the new character's references instead of retaining stale ones.
-    state.spellCatalog=[];
-  }
+  }else state.spellCatalog=[];
 }
 function spellLearningClassNames(castingClasses=state.calculated?.casting_classes||[]){
   // The full catalogue loads lazily. Offer the ordinary class lists immediately
@@ -735,6 +731,9 @@ function librarySelectionActions(){
   '<button type="button" class="library-bulk-button library-bulk-export" data-act="library-export" aria-label="Esporta creature selezionate">'+
     '<span class="library-bulk-glyph" aria-hidden="true">'+actionGlyph('scroll')+'</span>'+
     '<span>Esporta</span></button>'+
+  '<button type="button" class="library-bulk-button library-bulk-export" data-act="library-send" aria-label="Manda creature selezionate">'+
+    '<span class="library-bulk-glyph" aria-hidden="true">'+actionGlyph('scroll')+'</span>'+
+    '<span>Manda</span></button>'+
   '<button type="button" class="library-bulk-button library-bulk-delete" data-act="library-delete" aria-label="Elimina creature selezionate">'+
     '<span class="library-bulk-glyph library-bulk-delete-symbol" aria-hidden="true">×</span>'+
     '<span>Elimina</span></button>':'';
@@ -888,8 +887,11 @@ async function catalogView() {
       (assignable && (state.cachedCreatures||[]).length?
       '<div class="separator"></div>'+(state.pendingItemOwner&&state.catalogCategory==='items'?'':'<label>Aggiungi alla scheda<select id="catalog-creature">')+
       (state.pendingItemOwner&&state.catalogCategory==='items'?'':state.cachedCreatures.map(c=>'<option value="'+esc(c.id)+'"'+((state.pendingItemOwner||state.catalogAssignCreatureId||state.featAssignReturnId||state.creatureId||state.cachedCreatures?.[0]?.id)===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join(""))+
-      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+'</div>'+
+      (state.pendingItemOwner&&state.catalogCategory==='items'?'':'</select></label>')+'<div class="actions">'+btn("catalog-assign","Aggiungi contenuto alla creatura","primary")+
+      (chosen._homebrew?btn('catalog-send','Manda'):'')+'</div>'+
       '':"")+
+      (chosen._homebrew&&!(assignable&&(state.cachedCreatures||[]).length)?
+        '<div class="actions">'+btn('catalog-send','Manda')+'</div>':'')+
       (chosen._homebrew && String(chosen.id||"").startsWith("homebrew:quick_local:")?
         '<div class="actions"><button class="btn danger" data-act="quick-delete" data-id="'+esc(chosen.id)+'">Elimina personalizzato</button></div>':''));
   }
@@ -1435,7 +1437,7 @@ async function editorView() {
     break;
   }
   return header(['info','json'].includes(state.sheet)?'Il personaggio':'Durante la sessione',...(SECTION_COPY[state.sheet]||['Scheda','']))+
-    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+
+    '<div data-local-sheet-calculations>'+body+(state.sheet==='info'?'':calculationNote(calculated,calculated.loadError))+'</div><p id="save-state" class="save-status'+(state.saveError?' error':'')+'" role="status" aria-live="polite">'+esc(state.saveError||'✓ Salvato sul dispositivo')+'</p><details class="archive-tools"><summary>Opzioni della scheda</summary><div class="actions">'+btn("export","Esporta JSON")+btn("send","Manda")+
     '<button type="button" class="btn" data-act="sheet" data-sheet="json">Editor JSON avanzato</button>'+
     btn("delete","Elimina scheda","danger")+'</div></details>';
 }
@@ -3234,11 +3236,20 @@ async function fetchChat() {
     if(chatPollGenerationInFlight===generation)chatPollGenerationInFlight=-1;
   }
 }
+async function refreshSharedCatalog(kind){
+  state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
+  await refreshCharacterHomebrewOptions();
+  if(state.page==='catalog'){
+    state.catalogSelected=-1;
+    await render();
+  }else if(state.page==='library'&&state.libraryMode)await render();
+}
 function startChat() {
   ++chatGeneration;
   clearInterval(state.pollChat);
   fetchChat();
-  state.pollChat=setInterval(()=>{ if(state.paired) fetchChat(); },2500);
+  void pollIncomingShares(state.paired&&state.online,refreshSharedCatalog,message);
+  state.pollChat=setInterval(()=>{ if(state.paired){fetchChat();void pollIncomingShares(state.online,refreshSharedCatalog,message);} },2500);
 }
 function randomDie(sides) {
   const range=0x100000000;
@@ -5884,6 +5895,11 @@ async function handleAction(target){
     state.catalogSelected=Number(target.dataset.index);
     await render();window.scrollTo(0,0);app.focus({preventScroll:true});return;
   }
+  if(act==="catalog-send"){
+    const entry=state.catalogRows[state.catalogSelected];
+    if(!entry?._homebrew||!entry.id)throw Error('Seleziona un contenuto homebrew da mandare.');
+    await openSendDialog('homebrew',entry.name,()=>exportCatalogHomebrewEntry(entry),message);return;
+  }
   if(act==="catalog-assign"){
     const cId=state.pendingItemOwner&&state.catalogCategory==="items"?state.pendingItemOwner:document.querySelector("#catalog-creature")?.value;
     const entry=state.catalogRows[state.catalogSelected];
@@ -5937,10 +5953,20 @@ async function handleAction(target){
     state.creatureId=await createDemoCreature();state.libraryMode=false;state.editor=null;state.sheet="info";
     await render();message("Eroe dimostrativo creato solo su questo dispositivo.");return;
   }
-  if(act==="library-export"||act==="library-delete"){
+  if(act==="library-export"||act==="library-delete"||act==="library-send"){
     const rows=(await listCreatures()).filter(row=>state.librarySelectedIds.has(row.creature.id));
     if(!rows.length)throw new Error("Seleziona almeno una creatura.");
-    if(act==="library-export"){
+    if(act==="library-send"){
+       if(rows.length>200)throw Error("Seleziona al massimo 200 creature.");
+       const title=rows.length===1?rows[0].creature.name:rows.length+' creature';
+       await openSendDialog('creature',title,async()=>{
+         const blob=rows.length===1?await exportCreature(rows[0].creature.id):
+           await exportCreatureBatch(rows.map(row=>row.creature.id));
+         return JSON.parse(await blob.text());
+       },message);
+       return;
+     }
+     if(act==="library-export"){
       if(rows.length>200)throw new Error("Puoi esportare fino a 200 creature in un file.");
       if(await download(await exportCreatureBatch(rows.map(row=>row.creature.id)),"vtt-creature-selezionate.json"))
         message("Esportate "+rows.length+" creature e i loro contenuti homebrew.");
@@ -6040,6 +6066,16 @@ async function handleAction(target){
     try{await state.editor?.flush();}catch(error){throw new Error("Salvataggio incompleto: "+errorMessage(error));}
     if(!state.creatureId)return;
     state.sheetPopup=target.dataset.openContext||"";state.sheetPopupTitle=target.title||"";state.page="library";state.libraryMode=false;state.sheet=['actions','traits'].includes(target.dataset.sheet)?(target.dataset.sheet==='traits'?'info':'battle'):target.dataset.sheet;await render();return;
+  }
+  if(act==="send"){
+    await flushPendingFields();
+    const record=state.editor?.read();
+    if(!record)throw Error('Apri una creatura prima di mandarla.');
+    await openSendDialog('creature',record.name,async()=>{
+      await flushPendingFields();
+      return JSON.parse(await (await exportCreature(record.id)).text());
+    },message);
+    return;
   }
   if(act==="export"){
     await state.editor?.flush();

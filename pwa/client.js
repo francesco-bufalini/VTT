@@ -130,6 +130,15 @@ export async function action(name, payload = {}) {
   return exchange("/api/action", await currentToken(), { action: name, payload });
 }
 
+// Session-scoped transfer inbox for paired PWA devices. Distinct devices use
+// their local archive identity; payloads remain in memory on the desktop until
+// the receiver accepts or rejects the transfer.
+export async function shareRequest(route, payload = {}) {
+  if (!["peers", "chunk", "pull", "ack"].includes(route))
+    throw new TypeError("Invalid sharing operation");
+  return exchange("/api/share/" + route, await currentToken(), payload, 30000);
+}
+
 // Poll public projection; callers own presentation and stale-data cleanup.
 // Stop the returned subscription when leaving the session.
 export function subscribeMap(onData, onError, intervalMs = 1500) {
