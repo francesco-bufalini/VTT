@@ -503,8 +503,11 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     if((subclassParts.length>1)!==!!row.origin_subclass)return false;
     if(row.origin_subclass){
      const [name,source]=subclassParts[1].split('|');
+     // Older characters omit the selected subclass source in their saved
+     // origin key; fall back to the source-qualified catalog feature itself.
+     const actualSource=source||f.subclass_source||'';
      if(subclassKey(name)!==subclassKey(row.origin_subclass)||
-       row.origin_subclass_source&&!same(source,row.origin_subclass_source))return false;
+       row.origin_subclass_source&&actualSource&&!same(actualSource,row.origin_subclass_source))return false;
     }
    }
    const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
