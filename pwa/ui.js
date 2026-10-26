@@ -34,6 +34,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
 import {isContentAvailableForRules} from './source_edition.js';
@@ -3983,6 +3984,142 @@ function openPendingChoiceDialog(choice){
  update();
  openDialog(dialog);
 }
+
+async function openFeatPickerDialog(){
+ const editor=state.editor,record=editor?.read();
+ if(!record)throw Error('Apri un personaggio prima di aggiungere talenti.');
+ document.querySelector('#feat-picker-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='feat-picker-dialog';dialog.className='sheet-context-dialog feat-picker-dialog';
+ dialog.setAttribute('aria-labelledby','feat-picker-title');
+ let candidates=[],query='',limit=48,selected=-1,originId='',loading=true,failed='',saving=false;
+ const catalogs=await loadRuleCatalogs().catch(()=>({}));
+ const origins=featGrantOrigins(record,state.calculated||{},catalogs.abilityGrants||{});
+ const sections=[
+  ['advancement','Privilegi di progressione'],['trait','Tratti che concedono talenti'],
+  ['origin','Origini del personaggio'],['other','Aggiunta manuale']
+ ];
+ const choices='<option value="">Seleziona il tratto o l’origine…</option>'+
+  sections.map(([group,label])=>{
+   const options=origins.filter(row=>row.group===group);
+   return options.length?'<optgroup label="'+esc(label)+'">'+options.map(row=>
+    '<option value="'+esc(row.id)+'">'+esc(row.label)+'</option>').join('')+'</optgroup>':'';
+  }).join('');
+ dialog.innerHTML='<header class="sheet-context-head"><div><small>PERSONAGGIO · TALENTI</small>'+
+  '<h2 id="feat-picker-title">Aggiungi talento</h2></div>'+
+  dialogCloseButton('feat-picker-close','Chiudi','play-button')+'</header>'+
+  '<div class="sheet-context-body feat-picker-body">'+
+  '<label class="feat-picker-origin-label">Tratto di origine'+
+  '<select data-feat-origin required>'+choices+'</select></label>'+
+  '<p class="feat-picker-origin-note" data-feat-origin-note>Il talento sarà associato all’origine scelta.</p>'+
+  '<label class="feat-picker-search vtt-list-search">'+actionGlyph('search')+
+  '<input type="search" data-feat-search placeholder="Cerca per nome o fonte" autocomplete="off" aria-label="Cerca talento"></label>'+
+  '<div class="feat-picker-count" data-feat-count></div>'+
+  '<div class="feat-picker-results vtt-selection-list" data-feat-results role="list">'+
+  '<p class="hint">Caricamento talenti…</p></div>'+
+  '<div class="feat-picker-detail" data-feat-detail hidden></div>'+
+  '<p class="feat-picker-feedback" data-feat-feedback role="status" aria-live="polite"></p></div>';
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);
+ openDialog(dialog);
+ const resultList=dialog.querySelector('[data-feat-results]');
+ const detail=dialog.querySelector('[data-feat-detail]');
+ const status=dialog.querySelector('[data-feat-feedback]');
+ const originNote=dialog.querySelector('[data-feat-origin-note]');
+ const owned=()=>new Set((editor.read().feats_catalog||[]).map(x=>
+  String(x?.name||x).toLowerCase()+'|'+String(x?.source||'').toLowerCase()));
+ const visible=()=>candidates.filter(row=>matchesSearch(query,row.name,row.source));
+ const paint=()=>{
+  if(!dialog.isConnected)return;
+  const filtered=visible(),known=owned(),shown=filtered.slice(0,limit);
+  dialog.querySelector('[data-feat-count]').textContent=loading?'Caricamento catalogo…':
+   failed?'Catalogo non disponibile':filtered.length+' talenti disponibili';
+  if(failed){resultList.innerHTML='<p class="hint">'+esc(failed)+'</p>';return;}
+  if(loading){resultList.innerHTML='<p class="hint">Caricamento talenti…</p>';return;}
+  resultList.innerHTML=shown.map(row=>{
+    const i=candidates.indexOf(row);
+    const has=known.has(String(row.name).toLowerCase()+'|'+String(row.source||'').toLowerCase());
+    const active=i===selected;
+    return '<div class="feat-picker-row magic-catalog-row vtt-selectable'+(active?' is-selected':'')+'" role="listitem">'+
+      '<button type="button" class="feat-picker-row-name magic-catalog-name" data-feat-detail-index="'+i+
+      '" aria-expanded="'+active+'" aria-label="Dettagli di '+esc(row.name)+'">'+
+      '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Senza fonte')+'</small></button>'+
+      '<button type="button" class="feat-picker-add magic-catalog-action'+(has?' is-selected':'')+
+      '" data-feat-add-index="'+i+'"'+(has||saving?' disabled':'')+' aria-label="'+
+      (has?'Talento già posseduto: ':'Aggiungi ')+esc(row.name)+'">'+
+      (has?'✓ Posseduto':'+ Aggiungi')+'</button></div>';
+  }).join('')||'<p class="hint">Nessun talento corrispondente.</p>';
+  if(filtered.length>shown.length)resultList.innerHTML+='<button type="button" class="feat-picker-more" data-feat-more>Mostra altri '+Math.min(48,filtered.length-shown.length)+'</button>';
+ };
+ const showDetail=async i=>{
+  const entry=candidates[i];if(!entry||!dialog.isConnected)return;
+  if(selected===i){selected=-1;detail.hidden=true;paint();return;}
+  selected=i;paint();detail.hidden=false;
+  detail.innerHTML='<p class="hint">Caricamento descrizione…</p>';
+  try{
+   const full=await detailedEntry('feats',entry);
+   if(!dialog.isConnected||selected!==i)return;
+   const description=flattenDescription(full)||'Descrizione non disponibile nel catalogo locale.';
+   detail.innerHTML='<header><strong>'+esc(full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small>'+
+    '<button type="button" data-feat-detail-close aria-label="Chiudi dettagli">×</button></header>'+
+    '<div class="feat-picker-description">'+esc(description)+'</div>';
+  }catch(error){if(dialog.isConnected&&selected===i)
+   detail.innerHTML='<p class="hint">'+esc(errorMessage(error))+'</p>';}
+ };
+ dialog.addEventListener('input',event=>{
+  if(!event.target.matches('[data-feat-search]'))return;
+  query=event.target.value;limit=48;selected=-1;detail.hidden=true;paint();
+ });
+ dialog.addEventListener('change',event=>{
+  if(!event.target.matches('[data-feat-origin]'))return;
+  originId=event.target.value;
+  const origin=origins.find(row=>row.id===originId);
+  originNote.textContent=origin?.note||(
+   originId==='manual'?'Il talento sarà aggiunto come tratto manuale.':
+   origin?'Il talento rimarrà collegato a questa origine e comparirà fra i tratti.':
+    'Seleziona da quale privilegio, specie o background proviene il talento.');
+  status.textContent='';
+ });
+ dialog.addEventListener('click',async event=>{
+  const button=event.target.closest('button');if(!button||saving)return;
+  if(button.dataset.act==='feat-picker-close'){
+   closeDialog(dialog,{remove:true});return;
+  }
+  if(button.hasAttribute('data-feat-detail-close')){
+   selected=-1;detail.hidden=true;paint();return;
+  }
+  if(button.hasAttribute('data-feat-more')){limit+=48;paint();return;}
+  if(button.hasAttribute('data-feat-detail-index')){
+   await showDetail(Number(button.dataset.featDetailIndex));return;
+  }
+  if(!button.hasAttribute('data-feat-add-index'))return;
+  const entry=candidates[Number(button.dataset.featAddIndex)];
+  if(!entry||!originId){status.textContent='Seleziona prima il tratto di origine.';return;}
+  if(editor!==state.editor){status.textContent='La scheda è cambiata: riapri il selettore.';return;}
+  saving=true;status.textContent='Aggiunta del talento…';paint();
+  try{
+    const current=editor.read();
+    const fresh=await computeLocalData(current);
+    const rules=await loadRuleCatalogs();
+    if(featAlreadyOwned(current,entry))throw Error('Talento già posseduto.');
+    const patchData=addFeatWithOrigin(current,entry,originId,fresh,rules.abilityGrants||{});
+    await patch({...quickGrantPatch(current,entry),...patchData});
+    closeDialog(dialog,{remove:true});
+    await render();
+    message('Talento '+entry.name+' aggiunto alla scheda.');
+  }catch(error){
+    status.textContent=errorMessage(error);saving=false;paint();
+  }
+ });
+ try{
+  const all=await catalogEntries('feats');
+  if(!dialog.isConnected)return;
+  candidates=all.filter(row=>row?.name&&row?.source&&isContentAvailableForRules(row,record.rules_version))
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name),'it',{sensitivity:'base'}));
+ }catch(error){failed='Impossibile caricare i talenti: '+errorMessage(error);}
+ finally{loading=false;paint();}
+}
+
 function openRemoveFeatDialog(originKey){
  const record=state.editor?.read();
  if(!record)throw Error('Apri una creatura prima di rimuovere talenti.');
@@ -5143,9 +5280,7 @@ async function handleAction(target){
     return;
   }
   if(act==='feat-catalog'){
-    state.featAssignReturnId=state.creatureId;state.catalogAssignCreatureId=state.creatureId;
-    state.catalogCategory='feats';state.catalogSelected=-1;state.catalogQuery='';
-    await navigate('catalog');return;
+    await openFeatPickerDialog();return;
   }
   if(act==='trait-state-end'){
     const trait=state.traitRows.find(row=>row.key===state.traitPopupKey);
