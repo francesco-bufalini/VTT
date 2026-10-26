@@ -4726,6 +4726,17 @@
             "expression": "1d4"
           }
         ]
+      },
+      {
+        "name": "Dragon Hide",
+        "source": "XGE",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
       }
     ],
     "features": [
@@ -4750,6 +4761,195 @@
             "target": "ac_unarmored",
             "mode": "alternative",
             "expression": "10 + dex_mod + cha_mod"
+          }
+        ]
+      },
+      {
+        "class_name": "Barbarian",
+        "class_source": "PHB",
+        "name": "Unarmored Defense",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + con_mod"
+          }
+        ]
+      },
+      {
+        "class_name": "Barbarian",
+        "class_source": "XPHB",
+        "name": "Unarmored Defense",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + con_mod"
+          }
+        ]
+      },
+      {
+        "class_name": "Monk",
+        "class_source": "PHB",
+        "name": "Unarmored Defense",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + wis_mod",
+            "no_shield": true
+          }
+        ]
+      },
+      {
+        "class_name": "Monk",
+        "class_source": "XPHB",
+        "name": "Unarmored Defense",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + wis_mod",
+            "no_shield": true
+          }
+        ]
+      },
+      {
+        "class_name": "Bard",
+        "class_source": "XPHB",
+        "name": "Unarmored Defense",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "10 + dex_mod + cha_mod",
+            "no_shield": true
+          }
+        ]
+      },
+      {
+        "class_name": "Monk",
+        "class_source": "PHB",
+        "name": "Martial Arts",
+        "overrides": [
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d4",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "PHB",
+              "min_level": 1,
+              "max_level": 4,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d6",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "PHB",
+              "min_level": 5,
+              "max_level": 10,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d8",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "PHB",
+              "min_level": 11,
+              "max_level": 16,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d10",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "PHB",
+              "min_level": 17,
+              "max_level": 20,
+              "no_armor": true,
+              "no_shield": true
+            }
+          }
+        ]
+      },
+      {
+        "class_name": "Monk",
+        "class_source": "XPHB",
+        "name": "Martial Arts",
+        "overrides": [
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d6",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "XPHB",
+              "min_level": 1,
+              "max_level": 4,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d8",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "XPHB",
+              "min_level": 5,
+              "max_level": 10,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d10",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "XPHB",
+              "min_level": 11,
+              "max_level": 16,
+              "no_armor": true,
+              "no_shield": true
+            }
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d12",
+            "requirements": {
+              "scope": "class",
+              "class_name": "Monk",
+              "class_source": "XPHB",
+              "min_level": 17,
+              "max_level": 20,
+              "no_armor": true,
+              "no_shield": true
+            }
           }
         ]
       }
@@ -4857,13 +5057,71 @@
     ],
     "species": [
       {
+        "name": "Autognome",
+        "source": "AAG",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
+      },
+      {
+        "name": "Thri-kreen",
+        "source": "AAG",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "13 + dex_mod"
+          }
+        ]
+      },
+      {
+        "name": "Goblin",
+        "source": "PSZ",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "11 + dex_mod"
+          }
+        ]
+      },
+      {
+        "name": "Loxodon",
+        "source": "GGR",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "12 + con_mod",
+            "allow_armor": true
+          }
+        ]
+      },
+      {
+        "name": "Locathah",
+        "source": "LR",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "12 + dex_mod",
+            "allow_armor": true
+          }
+        ]
+      },
+      {
         "name": "Lizardfolk",
         "source": "VGM",
         "overrides": [
           {
             "target": "ac_unarmored",
             "mode": "alternative",
-            "expression": "13 + dex_mod"
+            "expression": "13 + dex_mod",
+            "allow_armor": true
           }
         ]
       },
@@ -4874,7 +5132,68 @@
           {
             "target": "ac_unarmored",
             "mode": "alternative",
-            "expression": "13 + dex_mod"
+            "expression": "13 + dex_mod",
+            "allow_armor": true
+          }
+        ]
+      },
+      {
+        "name": "Tortle",
+        "source": "TTP",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "17",
+            "ignore_armor": true
+          }
+        ]
+      },
+      {
+        "name": "Tortle",
+        "source": "MPMM",
+        "overrides": [
+          {
+            "target": "ac_unarmored",
+            "mode": "alternative",
+            "expression": "17",
+            "ignore_armor": true
+          }
+        ]
+      }
+    ],
+    "optional_features": [
+      {
+        "name": "Unarmed Fighting",
+        "source": "TCE",
+        "overrides": [
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d6"
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d8",
+            "no_weapon_or_shield": true
+          }
+        ]
+      },
+      {
+        "name": "Unarmed Fighting",
+        "source": "XPHB",
+        "overrides": [
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d6"
+          },
+          {
+            "target": "attack_damage_base:unarmed",
+            "mode": "alternative",
+            "expression": "1d8",
+            "no_weapon_or_shield": true
           }
         ]
       }
