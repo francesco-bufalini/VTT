@@ -498,8 +498,10 @@ export function featureActionEntries(record,trackers,catalog={},features=[]){
   if(!feature?.origin_id)return null;
   return {name:rule.name,time:rule.activation,type:'Capacità',description:rule.detail||'',
    tracker:tracker?.name||rule.tracker_name||'',tracker_id:tracker?.id||'',
-   cost:tracker?1:0,origin:'personal',origin_id:feature.origin_id,
-   action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature};
+   cost:tracker?Math.max(0,Number(rule.resource_cost??1)):0,origin:'personal',origin_id:feature.origin_id,
+   action_id:'',rule_action_id:rule.action_id,rule_id:rule.id,feature:rule.feature,
+   target_mode:rule.target_mode||'',target_range_feet:Number(rule.target_range_feet||0),
+   exclude_self:rule.exclude_self===true};
  }).filter(Boolean);
 }
 export function modifyFeatureTrackers(record,trackers,catalog={}){

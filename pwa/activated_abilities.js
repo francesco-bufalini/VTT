@@ -87,6 +87,9 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
       resource_name:action?.tracker||tracker?.name||"",
       tracker_id:action?.tracker_id||tracker?.id||"",
       resource_cost:action?.cost??(tracker?1:0),
+      target_mode:action?.target_mode||"",
+      target_range_feet:action?.target_range_feet||0,
+      exclude_self:action?.exclude_self===true,
       description:text(feature.entries??feature.description??"")
     };
     add(definition,"Classe · "+owner+" · "+parts[1].toUpperCase(),feature.origin_id,owner);

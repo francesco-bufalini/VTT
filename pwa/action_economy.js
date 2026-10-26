@@ -535,7 +535,9 @@ export function battleAbilityEntries(record={},calculated={},entries=[],activate
    description:ability.description||'',time:raw==='contextual'?'contextual':timing(raw),type:'Capacità',
    origin:'personal',origin_id:ability.feature_id||ability.origin_id||'',
    tracker_id:String(ability.tracker_id||''),tracker:ability.tracker_name||ability.resource_name||'',
-   cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0)});
+   cost:Math.max(0,Number(ability.resource_cost??(ability.tracker_id?1:0))||0),
+   target_mode:ability.target_mode||'',target_range_feet:ability.target_range_feet||0,
+   exclude_self:ability.exclude_self===true});
   seen.add(name);
  }
  return result;

@@ -1110,7 +1110,28 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  document.body.append(dialog);openDialog(dialog);
 }
-async function activateOtherAbility(c,ability,persistentKey,requested){
+// Uses the session's real token snapshot rather than the spell targeting
+// command. Targeted abilities must select a recipient before paying any uses.
+async function startTargetedAbility(c,ability,persistentKey,requested){
+ if(!state.paired||!state.online)throw Error('Collega prima la partita al desktop.');
+ const stored=await loadCreature(c.id);
+ if(!stored)throw Error('Scheda locale non trovata.');
+ state.map=await map();
+ const caster=casterToken(stored.data,state.map,await ownerId());
+ if(!caster)throw Error('Associa prima un token a questa creatura nella partita.');
+ if(!tacticalViewer)tacticalViewer=new TacticalViewer({send:action,ownerId,notify:message});
+ await tacticalViewer.open(String(caster.id));
+ tacticalViewer.setAbilityTarget({
+  name:ability.name,range_feet:Number(ability.target_range_feet||0),
+  exclude_self:ability.exclude_self===true,
+  onSelected:async selected=>{
+   // The action confirmation remains editable, but the selected token is fixed.
+   // Cancellation never spends a resource or creates any applied condition.
+   await activateOtherAbility(c,ability,persistentKey,requested,selected);
+  }
+ });
+}
+async function activateOtherAbility(c,ability,persistentKey,requested,selectedTarget=null){
  document.querySelector('#other-ability-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
@@ -1118,8 +1139,15 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
+  {label:'Attivazione',value:({bonus:'Azione bonus',action:'Azione',reaction:'Reazione',free:'Nessun costo'}[ability.time||ability.action_type||ability.activation_mode]||
+   ability.time||ability.action_type||'Secondo il privilegio')},
+  ...(selectedTarget?[{label:'Bersaglio',value:selectedTarget.name}]:[]),
   {label:'Consumo',value:Number(ability.cost)>0?ability.cost+' utilizzi':'Nessun consumo'}
- ],ability.description||'', '', 'other-ability-close')+
+ ],ability.description||'',
+  ability.target_mode==='single_token'&&selectedTarget?
+    'Bersaglio selezionato dalla mappa. Controlla gittata e requisiti della capacità prima di confermare.':
+    ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
+  'other-ability-close')+
   abilityPaymentField(ability,calculated)+
   '<p data-ability-result role="status"></p>'+
   '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
@@ -1142,6 +1170,14 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
      String(row.id||row.ability_id||row.name)===requested)||
     (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
    if(!currentAbility)throw Error('Capacità non più disponibile.');
+   if(currentAbility.target_mode==='single_token'&&state.paired&&state.online){
+     if(!selectedTarget?.id)throw Error('Seleziona un bersaglio sulla mappa prima di usare la capacità.');
+     const currentMap=await map();
+     if(!(currentMap.tokens||[]).some(token=>String(token.id)===String(selectedTarget.id)))
+       throw Error('Il bersaglio selezionato non è più sulla mappa.');
+     if(currentAbility.exclude_self&&String(selectedTarget.id)===String(casterToken(current,currentMap,await ownerId())?.id||''))
+       throw Error('Questa capacità richiede una creatura diversa da te.');
+   }
    const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
@@ -1158,8 +1194,10 @@ async function activateOtherAbility(c,ability,persistentKey,requested){
    });
    if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();closeDialog(dialog,{remove:true});await render();
-   message(cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
-    currentAbility.name+': utilizzo confermato senza consumo.');
+   message((selectedTarget?'Bersaglio: '+selectedTarget.name+' · ':'')+
+    (cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
+    currentAbility.name+': utilizzo confermato senza consumo.')+
+    (selectedTarget?' Effetti da applicare secondo il privilegio.':''));
   }catch(error){button.disabled=false;dialog.querySelector('[data-ability-result]').textContent=errorMessage(error);}
  });
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -4891,7 +4929,11 @@ async function handleAction(target){
     if(ability.class_feature_id){
       await activateClassAbility(c,calculated,ability);return;
     }
-    await activateOtherAbility(c,ability,String(target.dataset.persistentKey||''),requested);
+    const persistentKey=String(target.dataset.persistentKey||'');
+    if(ability.target_mode==='single_token'&&state.paired&&state.online){
+      await startTargetedAbility(c,ability,persistentKey,requested);return;
+    }
+    await activateOtherAbility(c,ability,persistentKey,requested);
     return;
   }
   if(act==='tracker-reset'){
