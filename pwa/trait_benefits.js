@@ -119,6 +119,13 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
   if(group.seen.has(key))return;
   group.seen.add(key);group.items.push({label,value,id,...extra});
  };
+ // A chosen feat is an owned trait whose granting class-level ASI remains
+ // inspectable as the origin. Do not manufacture a second copy of its bonuses.
+ for(const feat of rows(record.feats_catalog)){
+  if(!feat?.granted_by||!ids.has(feat.granted_by)||feat.disabled)continue;
+  add('feats','Talenti concessi',feat.name,String(feat.source||''),
+    'feat:'+String(feat.id||'')); 
+ }
  // Attack-count grants are non-additive benefits owned by individual traits.
  const attackGrants=Array.isArray(calculated.attack_count_benefits)?
    calculated.attack_count_benefits:attackCountBenefits(record,calculated.features);

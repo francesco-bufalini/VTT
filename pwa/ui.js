@@ -3897,7 +3897,10 @@ function openPendingChoiceDialog(choice){
  const rows=choice.options.map(key=>{
    const mixed=choice.proficiency_kind==='mixed',at=mixed?key.indexOf(':'):-1;
    const kind=mixed?key.slice(0,at):'',item=mixed?key.slice(at+1):key;
-   const label=(kind==='skill'?'Abilità · ':kind==='tool'?'Strumento · ':'')+(labels[item]||item);
+   const label=choice.option_labels?.[key]||
+     (kind==='skill'?'Abilità · ':kind==='tool'?'Strumento · ':'')+(labels[item]||item);
+   if(choice.kind==='ability_fixed')
+    return '<div class="pending-choice-option vtt-selectable"><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+' · +'+esc(choice.amounts?.[key]||0)+'</span></div>';
    return '<label class="pending-choice-option vtt-selectable'+(choice.count===1?' pending-choice-option--single':'')+'"><input type="'+inputType+
      '" name="pending-options" value="'+esc(key)+'" '+(choice.selected.includes(key)?'checked':'')+
      '><span class="vtt-choice-check" aria-hidden="true">✓</span><span>'+esc(label)+'</span>'+
@@ -3917,14 +3920,18 @@ function openPendingChoiceDialog(choice){
    '<h2>'+esc(choice.label)+'</h2></div>'+
    dialogCloseButton('pending-choice-close','Chiudi','play-button')+'</header>'+
    '<div class="pending-choice-dialog-body"><p class="pending-choice-instruction">'+
-   'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
-   ' concesse dal privilegio. Le scelte sono associate alla loro origine.</p>'+
+   (choice.kind==='ability_fixed'?'Incrementi già applicati automaticamente dalla fonte selezionata.':
+    'Scegli fino a '+esc(choice.count)+' '+(choice.count===1?'opzione':'opzioni')+
+    ' concesse dal privilegio. Le scelte sono associate alla loro origine.')+'</p>'+
+   (choice.kind==='advancement_feat'?'<input type="search" data-pending-filter placeholder="Cerca un talento" aria-label="Cerca un talento">':'')+
    '<p class="pending-choice-progress" aria-live="polite">'+esc(choice.selected.length)+' / '+esc(choice.count)+' selezionate</p>'+
    (rows||customRow?'<div class="pending-choice-options vtt-selection-list">'+rows+customRow+'</div>':
     '<p class="hint">Nessuna opzione risolta dal catalogo locale. Le scelte già salvate rimangono inalterate.</p>')+
-   '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">Annulla</button>'+
-   '<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button></footer>';
+   '</div><footer class="pending-choice-actions"><button type="button" data-act="pending-choice-close">'+
+   (choice.kind==='ability_fixed'?'Chiudi':'Annulla')+'</button>'+
+   (choice.kind==='ability_fixed'?'':'<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button>')+'</footer>';
  const update=()=>{
+   if(choice.kind==='ability_fixed')return;
    const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
    const custom=dialog.querySelector('[data-pending-custom-value]');
    const customChecked=checked.some(row=>row.value==='__custom__');
@@ -3943,6 +3950,11 @@ function openPendingChoiceDialog(choice){
    if(save)save.disabled=invalid;
  };
  dialog.addEventListener('change',update);
+ dialog.querySelector('[data-pending-filter]')?.addEventListener('input',event=>{
+   const query=String(event.target.value||'').trim().toLocaleLowerCase();
+   for(const row of dialog.querySelectorAll('.pending-choice-options .pending-choice-option'))
+     row.hidden=!!query&&!row.textContent.toLocaleLowerCase().includes(query);
+ });
  dialog.querySelector('[data-pending-custom-value]')?.addEventListener('input',update);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
  app.append(dialog);

@@ -1,5 +1,6 @@
 import {variantOwns} from './creature_variants.js';
 import {removedBenefitIds} from './trait_benefit_editor.js';
+import {originVariants,effectiveAllocations,allocationVariants} from './ability_choice_rules.js';
 import {attackCountBenefits,attacksPerActionFromBenefits} from './attack_count_benefits.js';
 // Browser-only counterpart of creature_rules.gd / creature_bonus_rules.gd.
 // It never sends a character sheet over the network. Numeric 5etools inputs
@@ -169,15 +170,9 @@ function fixedAbilities(row){
   }
   return intersection;
 }
-// Source-qualified selectable score increases. Do not assign a choice silently.
-function selectedAbilityChoice(record,row,sid){
- const variants=arr(row.ability_choices);
- if(variants.length!==1||!variants[0]?.choose)return null;
- const choose=variants[0].choose,amount=Number(choose.amount??1);
- if(Number(choose.count??1)!==1||!Number.isFinite(amount)||amount<=0)return null;
- const ability=String(arr(record.origin_ability_choices).find(x=>x?.origin_id===sid)?.ability||'').toLowerCase();
- return ABILITIES.includes(ability)&&arr(choose.from).some(x=>same(x,ability))?
-   {ability,amount}:null;
+// Explicit 5etools allocations share a typed, source-qualified evaluator.
+function selectedAbilityChoices(record,row,sid,index,group,legacy=''){
+ return effectiveAllocations(record,sid,originVariants(index,group,row,row.source),legacy);
 }
 function indexRows(record,index,warnings){
   const rows=[];
@@ -192,6 +187,10 @@ function indexRows(record,index,warnings){
     const value=record[field];
     if(!value)continue;
     const options=arr(index[group]).filter(r=>same(r.name,value)&&(!record[sourceField]||same(r.source,record[sourceField])));
+    // A source-wide 5etools rule can grant ASIs even without an explicit
+    // 'ability' field on the race itself (e.g. MPMM lineage creation).
+    if(!options.length&&record[sourceField]&&index.source_ability_choices?.[String(record[sourceField]).toUpperCase()])
+      options.push({name:value,source:record[sourceField]});
     if(!options.length){warnings.add("Bonus "+group+" non presenti nell’indice offline");continue;}
     if(!record[sourceField]&&new Set(options.map(r=>key(r))).size>1){
       warnings.add("Specifica la fonte di "+value+" per i bonus razziali");
@@ -200,9 +199,10 @@ function indexRows(record,index,warnings){
     for(const row of options){
       const sid=group+"|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
       append(sid,row.name,fixedAbilities(row));
-      const choice=selectedAbilityChoice(record,row,sid);
-      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
-        if(grant)rows.push(grant);}
+      for(const choice of selectedAbilityChoices(record,row,sid,index,group)){
+        const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);
+      }
     }
   }
   for(const background of effectiveBackgrounds(record)){
@@ -212,9 +212,10 @@ function indexRows(record,index,warnings){
     for(const row of options){
       const sid="background|"+String(row.source||"").toLowerCase()+"|"+String(row.name||"").toLowerCase();
       append(sid,row.name,fixedAbilities(row));
-      const choice=selectedAbilityChoice(record,row,sid);
-      if(choice){const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
-        if(grant)rows.push(grant);}
+      for(const choice of selectedAbilityChoices(record,row,sid,index,"background")){
+        const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);
+      }
     }
   }
   if(record.subrace){
@@ -223,9 +224,10 @@ function indexRows(record,index,warnings){
     if(matches.length===1){
       const r=matches[0],sid="subrace|"+String(r.source).toLowerCase()+"|"+String(r.name).toLowerCase();
       append(sid,r.name,fixedAbilities(r));
-      const choice=selectedAbilityChoice(record,r,sid);
-      if(choice){const grant=numericGrant(sid,r.name,"ability_choice","ability:"+choice.ability,choice.amount);
-        if(grant)rows.push(grant);}
+      for(const choice of selectedAbilityChoices(record,r,sid,index,"subrace")){
+        const grant=numericGrant(sid,r.name,"ability_choice","ability:"+choice.ability,choice.amount);
+        if(grant)rows.push(grant);
+      }
     }else warnings.add("La sottorazza richiede un riferimento di fonte univoco");
   }
   for(const feat of arr(record.feats_catalog)){
@@ -233,12 +235,8 @@ function indexRows(record,index,warnings){
     for(const row of matches){
       const sid="feat|"+String(row.source).toLowerCase()+"|"+String(row.name).toLowerCase();
       append(sid,row.name,fixedAbilities(row));
-      const choice=String(feat.ability_choice||"").toLowerCase();
-      const variants=arr(row.ability_choices);
-      if(variants.length===1&&Number(variants[0]?.choose?.count??1)===1&&
-        arr(variants[0]?.choose?.from).includes(choice)){
-        const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice,
-          Number(variants[0].choose.amount??1));
+      for(const choice of selectedAbilityChoices(record,row,sid,index,"feat",feat.ability_choice)){
+        const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
         if(grant)rows.push(grant);
       }
     }
@@ -721,8 +719,21 @@ function calculateSheetValues(record={},catalogs={}){
       ['spellcasting','pact magic'].includes(String(feature.name||'').toLowerCase())&&
       featureEnabled(record,feature));
   };
+  // Each class advancement belongs to its own level-specific ASI feature.
+  const advancements=features.flatMap(feature=>{
+    if(!featureEnabled(record,feature))return [];
+    const policy=arr(index?.advancement_rules).find(rule=>
+      same(rule.feature_name,feature.name)&&arr(rule.sources).some(source=>
+      same(source,feature.class_source||String(feature.origin_key||'').split('|')[1])));
+    if(!policy)return [];
+    const owned=arr(record.advancement_choices).find(row=>row.origin_id===feature.origin_id);
+    if(owned?.mode!=='ability')return [];
+    return effectiveAllocations(record,feature.origin_id,allocationVariants(policy.ability_choices))
+      .map(({ability,amount})=>numericGrant(feature.origin_id,
+        'Tratto · '+feature.name,'advancement','ability:'+ability,amount)).filter(Boolean);
+  });
   const automatic=[...(index?indexRows(record,index,warnings):[]),
-    ...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
+    ...advancements,...itemRows(record,warnings,index?.artificer_infusions||[],features,catalogs.itemGrants),...structuredFeatureGrants(record,catalogs,features),...traitStateNumericGrants(record,features,catalogs.traitStates||[])];
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
