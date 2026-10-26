@@ -1129,6 +1129,9 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
    const liveCompanion=companion?await companionFeatureChoices(current,fresh,ability.origin_id):null;
     if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
+    if(liveCompanion?.rule.activation==='resource'&&
+       (!ability.tracker_id||options.tracker_id===''||Number(ability.cost)<1))
+      throw Error('La capacità richiede una risorsa associata per evocare la creatura.');
     const changes=ability.mode==='trait_state'?
     traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
     classAbilityActivationPatch(current,fresh,ability,options);
@@ -1287,7 +1290,14 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      if(currentAbility.exclude_self&&String(selectedTarget.id)===String(casterToken(current,currentMap,await ownerId())?.id||''))
        throw Error('Questa capacità richiede una creatura diversa da te.');
    }
-   const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   const minimumCost=Number(liveCompanion?.rule.tracker_cost||1);
+   if(liveCompanion?.rule.activation==='resource'&&
+      (!currentAbility.tracker_id||Number(currentAbility.cost)<minimumCost))
+      throw Error('La capacità richiede un tracker con il costo previsto dal privilegio.');
+   const cost=liveCompanion?.rule.activation==='resource'?minimumCost:
+     Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   if(liveCompanion?.rule.activation==='resource'&&choice==='')
+     throw Error('Questo privilegio richiede il consumo della risorsa associata.');
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';

@@ -93,7 +93,8 @@
               "value": "1",
               "reset": "long_rest"
             }
-          ]
+          ],
+          "alternate_slot_min": 3
         }
       ]
     },
@@ -295,7 +296,11 @@
         {
           "name": "Hidden Paths",
           "steps": [
-            {"level": 10, "value": "wis_mod", "reset": "long_rest"}
+            {
+              "level": 10,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
           ],
           "minimum": 1,
           "source": "XGE",
@@ -304,7 +309,11 @@
         {
           "name": "Walker in Dreams",
           "steps": [
-            {"level": 14, "value": "1", "reset": "long_rest"}
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "long_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Circle of Dreams"
@@ -312,7 +321,11 @@
         {
           "name": "Spirit Totem",
           "steps": [
-            {"level": 2, "value": "1", "reset": "short_rest"}
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Circle of the Shepherd"
@@ -320,7 +333,11 @@
         {
           "name": "Faithful Summons",
           "steps": [
-            {"level": 14, "value": "1", "reset": "long_rest"}
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "long_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Circle of the Shepherd"
@@ -790,7 +807,11 @@
         {
           "name": "Detect Portal",
           "steps": [
-            {"level": 3, "value": "1", "reset": "short_rest"}
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "short_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Horizon Walker"
@@ -798,7 +819,11 @@
         {
           "name": "Ethereal Step",
           "steps": [
-            {"level": 7, "value": "1", "reset": "short_rest"}
+            {
+              "level": 7,
+              "value": "1",
+              "reset": "short_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Horizon Walker"
@@ -806,7 +831,11 @@
         {
           "name": "Hunter's Sense",
           "steps": [
-            {"level": 3, "value": "wis_mod", "reset": "long_rest"}
+            {
+              "level": 3,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Monster Slayer",
@@ -815,7 +844,11 @@
         {
           "name": "Magic-User's Nemesis",
           "steps": [
-            {"level": 11, "value": "1", "reset": "short_rest"}
+            {
+              "level": 11,
+              "value": "1",
+              "reset": "short_rest"
+            }
           ],
           "source": "XGE",
           "subclass": "Monster Slayer"
@@ -883,13 +916,25 @@
         {
           "name": "Favored by the Gods",
           "source_counter": "Favored by Gods",
-          "steps": [{"level": 1, "value": "1", "reset": "short_rest"}],
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
           "source": "XGE",
           "subclass": "Divine Soul"
         },
         {
           "name": "Unearthly Recovery",
-          "steps": [{"level": 18, "value": "1", "reset": "long_rest"}],
+          "steps": [
+            {
+              "level": 18,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
           "source": "XGE",
           "subclass": "Divine Soul"
         },
@@ -897,7 +942,13 @@
           "name": "Wind Soul (Shared Flight)",
           "origin_feature": "Wind Soul",
           "source_counter": "Wind Soul",
-          "steps": [{"level": 18, "value": "1", "reset": "short_rest"}],
+          "steps": [
+            {
+              "level": 18,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
           "source": "XGE",
           "subclass": "Storm Sorcery"
         },
@@ -1230,8 +1281,16 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Action Surge (Fighter XPHB, levels 2 and 17)",
           "steps": [
-            {"level": 2, "value": "1", "reset": "short_rest"},
-            {"level": 17, "value": "2", "reset": "short_rest"}
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "2",
+              "reset": "short_rest"
+            }
           ]
         },
         {
@@ -1239,9 +1298,21 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Indomitable (Fighter XPHB, levels 9, 13 and 17)",
           "steps": [
-            {"level": 9, "value": "1", "reset": "long_rest"},
-            {"level": 13, "value": "2", "reset": "long_rest"},
-            {"level": 17, "value": "3", "reset": "long_rest"}
+            {
+              "level": 9,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "3",
+              "reset": "long_rest"
+            }
           ]
         }
       ]
@@ -1294,7 +1365,8 @@
               "value": "1",
               "reset": "long_rest"
             }
-          ]
+          ],
+          "alternate_slot_min": 3
         }
       ]
     },
@@ -1307,26 +1379,106 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Lay on Hands (Paladin XPHB, level 1); five times Paladin class level",
           "steps": [
-            {"level": 1, "value": "5", "reset": "long_rest"},
-            {"level": 2, "value": "10", "reset": "long_rest"},
-            {"level": 3, "value": "15", "reset": "long_rest"},
-            {"level": 4, "value": "20", "reset": "long_rest"},
-            {"level": 5, "value": "25", "reset": "long_rest"},
-            {"level": 6, "value": "30", "reset": "long_rest"},
-            {"level": 7, "value": "35", "reset": "long_rest"},
-            {"level": 8, "value": "40", "reset": "long_rest"},
-            {"level": 9, "value": "45", "reset": "long_rest"},
-            {"level": 10, "value": "50", "reset": "long_rest"},
-            {"level": 11, "value": "55", "reset": "long_rest"},
-            {"level": 12, "value": "60", "reset": "long_rest"},
-            {"level": 13, "value": "65", "reset": "long_rest"},
-            {"level": 14, "value": "70", "reset": "long_rest"},
-            {"level": 15, "value": "75", "reset": "long_rest"},
-            {"level": 16, "value": "80", "reset": "long_rest"},
-            {"level": 17, "value": "85", "reset": "long_rest"},
-            {"level": 18, "value": "90", "reset": "long_rest"},
-            {"level": 19, "value": "95", "reset": "long_rest"},
-            {"level": 20, "value": "100", "reset": "long_rest"}
+            {
+              "level": 1,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 2,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "20",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "25",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "30",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "35",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "40",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "45",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "50",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "55",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "60",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "65",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "70",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "75",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "80",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "85",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "90",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "95",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "100",
+              "reset": "long_rest"
+            }
           ]
         }
       ]
@@ -1340,7 +1492,11 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Innate Sorcery (Sorcerer XPHB, level 1)",
           "steps": [
-            {"level": 1, "value": "2", "reset": "long_rest"}
+            {
+              "level": 1,
+              "value": "2",
+              "reset": "long_rest"
+            }
           ]
         }
       ]
@@ -1354,7 +1510,11 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Arcane Recovery (Wizard XPHB, level 1); use after a short rest, one use per long rest",
           "steps": [
-            {"level": 1, "value": "1", "reset": "long_rest"}
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
           ]
         }
       ]
@@ -1367,22 +1527,46 @@
           "name": "Flash of Genius",
           "derived_from": "5etools classFeature Flash of Genius (Artificer TCE, level 7)",
           "minimum": 1,
-          "steps": [{"level": 7, "value": "int_mod", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 7,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Defensive Field",
           "subclass": "Armorer",
           "derived_from": "5etools subclassFeature Defensive Field (Armorer TCE, level 3)",
-          "steps": [{"level": 3, "value": "proficiency", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 3,
+              "value": "proficiency",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Experimental Elixir",
           "subclass": "Alchemist",
           "derived_from": "5etools subclassFeature Experimental Elixir (Alchemist TCE, levels 3, 6, 15); free elixirs only",
           "steps": [
-            {"level": 3, "value": "1", "reset": "long_rest"},
-            {"level": 6, "value": "2", "reset": "long_rest"},
-            {"level": 15, "value": "3", "reset": "long_rest"}
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "3",
+              "reset": "long_rest"
+            }
           ]
         },
         {
@@ -1390,41 +1574,77 @@
           "subclass": "Alchemist",
           "derived_from": "5etools subclassFeature Restorative Reagents (Alchemist TCE, level 9); free Lesser Restoration uses",
           "minimum": 1,
-          "steps": [{"level": 9, "value": "int_mod", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 9,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Chemical Mastery (Heal)",
           "origin_feature": "Chemical Mastery",
           "subclass": "Alchemist",
           "derived_from": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Heal use",
-          "steps": [{"level": 15, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Chemical Mastery (Greater Restoration)",
           "origin_feature": "Chemical Mastery",
           "subclass": "Alchemist",
           "derived_from": "5etools subclassFeature Chemical Mastery (Alchemist TCE, level 15); independent Greater Restoration use",
-          "steps": [{"level": 15, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Eldritch Cannon",
           "subclass": "Artillerist",
           "derived_from": "5etools subclassFeature Eldritch Cannon (Artillerist TCE, level 3); one free creation",
-          "steps": [{"level": 3, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Arcane Jolt",
           "subclass": "Battle Smith",
           "derived_from": "5etools subclassFeature Arcane Jolt (Battle Smith TCE, level 9)",
           "minimum": 1,
-          "steps": [{"level": 9, "value": "int_mod", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 9,
+              "value": "int_mod",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Perfected Armor",
           "origin_feature": "Guardian",
           "subclass": "Armorer",
           "derived_from": "5etools subclassFeature Guardian under Perfected Armor (Armorer TCE, level 15)",
-          "steps": [{"level": 15, "value": "proficiency", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 15,
+              "value": "proficiency",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     },
@@ -1436,7 +1656,13 @@
           "name": "Stroke of Luck",
           "source": "XPHB",
           "derived_from": "5etools classFeature Stroke of Luck (Rogue XPHB, level 20)",
-          "steps": [{"level": 20, "value": "1", "reset": "short_rest"}]
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ]
         }
       ]
     },
@@ -1450,14 +1676,26 @@
           "source": "XPHB",
           "derived_from": "5etools classFeature Tireless (Ranger XPHB, level 10); temporary-hit-point action uses only",
           "minimum": 1,
-          "steps": [{"level": 10, "value": "wis_mod", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 10,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ]
         },
         {
           "name": "Nature's Veil",
           "source": "XPHB",
           "derived_from": "5etools classFeature Nature's Veil (Ranger XPHB, level 14)",
           "minimum": 1,
-          "steps": [{"level": 14, "value": "wis_mod", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 14,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     },
@@ -1469,7 +1707,13 @@
           "name": "Persistent Rage",
           "source": "XPHB",
           "derived_from": "5etools classFeature Persistent Rage (Barbarian XPHB, level 15); initiative-triggered restoration of Rage uses only",
-          "steps": [{"level": 15, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     },
@@ -1481,7 +1725,13 @@
           "name": "Uncanny Metabolism",
           "source": "XPHB",
           "derived_from": "5etools classFeature Uncanny Metabolism (Monk XPHB, level 2); initiative-triggered recovery, with Focus Points and healing applied separately",
-          "steps": [{"level": 2, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     },
@@ -1493,7 +1743,13 @@
           "name": "Magical Cunning",
           "source": "XPHB",
           "derived_from": "5etools classFeature Magical Cunning (Warlock XPHB, level 2); rite use only, Pact Magic slot recovery applied separately",
-          "steps": [{"level": 2, "value": "1", "reset": "long_rest"}]
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     }

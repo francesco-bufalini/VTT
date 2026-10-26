@@ -471,7 +471,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     if(rows.has(id)){rows.get(id).recharge=step.reset||'manual';continue;}
     try{
      const max=Math.max(int(resource.minimum),parseArithmetic(step.value,resolve));
-     if(max>0)add({id,name:resource.name,max,max_formula:String(step.value),origin_name:resource.origin_feature||resource.name,origin_feature_key:resource.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass||'',origin_subclass_source:resource.subclass?(resource.source||member.subclass_source||''):'',recharge:step.reset||'manual',automatic:true});
+     if(max>0)add({id,name:resource.name,max,max_formula:String(step.value),origin_name:resource.origin_feature||resource.name,origin_feature_key:resource.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass||'',origin_subclass_source:resource.subclass?(resource.source||member.subclass_source||''):'',recharge:step.reset||'manual',alternate_slot_min:Math.max(0,int(resource.alternate_slot_min)),automatic:true});
     }catch{ /* An unsupported formula cannot invent a resource maximum. */ }
    }
   }

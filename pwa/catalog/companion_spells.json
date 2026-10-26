@@ -107,7 +107,8 @@
         "Medium",
         "Large"
       ],
-      "duration": "1 hour"
+      "duration": "1 hour",
+      "tracker_cost": 1
     },
     {
       "id": "summon_wildfire_spirit_2014",
@@ -124,7 +125,8 @@
       "activation": "resource",
       "tracker_name": "Wild Shape",
       "limit_per_owner_rule": 1,
-      "duration": "1 hour"
+      "duration": "1 hour",
+      "tracker_cost": 1
     },
     {
       "id": "steel_defender_2014",
@@ -198,7 +200,9 @@
         "Dire Wolf"
       ],
       "activation": "resource",
-      "limit_per_owner_rule": 1
+      "limit_per_owner_rule": 1,
+      "tracker_name": "Sorcery Points",
+      "tracker_cost": 3
     },
     {
       "id": "homunculus_servant_2014",
