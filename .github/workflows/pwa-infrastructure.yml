@@ -156,6 +156,7 @@ jobs:
               node tests/inventory_equipment_browser.mjs
               ;;
             sheets)
+              node tests/character_portrait_browser.mjs
               node tests/sheet_play_browser.mjs
               node tests/action_dashboard_browser.mjs
               node tests/infusions_browser.mjs
