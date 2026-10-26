@@ -2,6 +2,7 @@
 // used by the native VTT, not scraped at runtime or reimplemented game rules.
 import { listRecords, getRecord, deleteRecordIfRevision } from "./storage.js";
 import { saveHomebrewDefinition, listCreatures } from "./creatures.js";
+import { characterHomebrewEntries, appendSharedHomebrew } from "./character_homebrew.js";
 
 export const CATALOG_CATEGORIES = [
   ["spells","Incantesimi"],["items","Oggetti"],["magic_items","Oggetti magici"],["weapons","Armi"],
@@ -135,6 +136,9 @@ export async function selectedSpellEntries(ids=[],classes=[]){
         const spell={...record.data.data,...record.data,_category:"spells",_homebrew:true};
         if(spell.id)scopedSpells.set(spell.id,spell);
       }
+      // Embedded homebrew can belong to a different character in this archive.
+      for(const spell of characterHomebrewEntries("spells",await listCreatures()))
+        if(spell.id&&!scopedSpells.has(spell.id))scopedSpells.set(spell.id,spell);
       return [...scopedSpells.values()];
     })();
     scopedRequests.set(key,request);
@@ -146,9 +150,11 @@ export async function catalogEntries(category) {
   if(category==="spells"){
     const spells=await spellCatalog();
     const known=await listRecords("global","homebrew");
-    return [...spells.map(spell=>({...spell,_category:"spells",_homebrew:false})),
+    const base=[...spells.map(spell=>({...spell,_category:"spells",_homebrew:false})),
       ...known.filter(record=>record.id?.split(":")[2]==="spells")
         .map(record=>({...record.data.data,...record.data,_category:"spells",_homebrew:true}))];
+    return appendSharedHomebrew(base,characterHomebrewEntries("spells",await listCreatures()))
+      .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
   }
   const extra=["classes","subclasses","class_features","subclass_features","races","backgrounds"].includes(category);
   const data=extra?null:await loadReferenceCatalog();
@@ -174,7 +180,9 @@ export async function catalogEntries(category) {
       category===key;
     if(matches)rows.push({...value.data,...value,_category:key,_homebrew:true});
   }
-  return rows.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
+  // Include complete custom records kept in other local character sheets.
+  return appendSharedHomebrew(rows,characterHomebrewEntries(category,await listCreatures()))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
 }
 function textOf(value,items,depth=0){
   if(depth>7||items.length>75||value==null)return;
