@@ -175,7 +175,7 @@ Object.assign(abilityIndex,choicePolicies);
 const featMechanics=await read('../../vtt/data/feat_mechanics_2014.json');
 abilityIndex.feat_mechanics=featMechanics.feats;
 const baseOverrides=await read('../../vtt/data/base_value_overrides.json');
-abilityIndex.base_value_overrides={feats:baseOverrides.feats,features:baseOverrides.features,items:baseOverrides.items};
+abilityIndex.base_value_overrides={feats:baseOverrides.feats,features:baseOverrides.features,items:baseOverrides.items,species:baseOverrides.species};
 const featNumeric=await read('../../vtt/data/feat_numeric_bonuses_2014.json');
 abilityIndex.feat_numeric_bonuses=featNumeric.feats;
 const infusionNative=await read('../../vtt/data/artificer_infusions_5etools.json');
