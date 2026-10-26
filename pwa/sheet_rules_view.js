@@ -768,7 +768,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
     ' aria-label="Apri il tratto '+esc(linked.name)+'">'+icon('proficiency')+
     '<span><strong>'+esc(linked.name)+'</strong><small>Capacità di sottoclasse · '+esc(trackerRecoveryText(t))+'</small></span></button>'+
     '<button type="button" class="play-resource-use" data-act="tracker-trait-use" data-tracker-id="'+esc(t.id)+'"'+
-    ' data-origin-id="'+esc(linked.origin_id)+'"'+(left<1&&!Number(t.alternate_slot_min)?' disabled':'')+
+    ' data-origin-id="'+esc(linked.origin_id)+'"'+/* Alternative slot payments may be available even with zero tracker uses.
+      The activation dialog validates eligibility and available resources. */''+
     ' aria-label="Usa '+esc(linked.name)+'">Usa</button></div>':'';
    return '<div class="play-resource-group" data-resource-tracker="'+esc(t.id)+'"><div class="play-resource"><button class="play-resource-info" type="button" data-act="sheet-context" data-sheet-context="'+esc(context)+'" aria-label="Gestisci '+esc(t.name)+'">'+
     '<span class="play-resource-copy"><strong class="play-resource-name">'+esc(t.name)+'</strong><small class="play-resource-recovery">'+esc(trackerRecoveryText(t))+'</small></span>'+
