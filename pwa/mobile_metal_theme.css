@@ -5188,3 +5188,42 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
   .magic-slot-manager-controls.magic-tracker-controls{gap:4px}
   .magic-slot-manager-controls .magic-tracker-count{min-width:57px}
 }
+
+/* The visible native Powers view mirrors source resource controls, without
+   exposing the legacy settings menu or hiding depleted slot levels. */
+#sheet-play-view .play-slots{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));
+  gap:7px;overflow:visible;padding:11px;
+}
+#sheet-play-view .play-slots>.play-button{
+  width:100%;min-width:0;min-height:59px;gap:3px;padding:7px 4px;
+  border:1px solid #a9885d52;border-radius:9px;
+  background:linear-gradient(160deg,#634b373d,#27201eaa);
+}
+#sheet-play-view .play-slots>.play-button b{font-variant-numeric:tabular-nums}
+#sheet-play-view .play-slots>.play-button small{font-size:11px}
+#sheet-play-view .play-magic-concentration{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:11px 12px;border:1px solid #a27b4a55;border-radius:12px;
+  background:linear-gradient(135deg,#3a2a2766,#201b1b);
+}
+#sheet-play-view .play-magic-concentration>strong{flex:none;font-size:12px;color:#e2c699}
+#sheet-play-view .play-magic-concentration-status{
+  flex:1;min-width:0;font-size:12px;line-height:1.35;
+  color:#b8a997;overflow-wrap:anywhere;
+}
+#sheet-play-view .play-magic-concentration-status.is-active{color:#f4d6a7}
+#sheet-play-view .play-magic-concentration-actions{display:flex;align-items:center;gap:5px;flex:none}
+#sheet-play-view .play-magic-concentration-actions>.play-button{
+  min-width:34px;min-height:34px;width:34px;height:34px;
+  padding:0;border-radius:8px;border:1px solid #b18d6070;
+  background:#7455384a;color:#f0d1a1;font-size:21px;
+}
+#sheet-play-view .play-magic-concentration-actions>.play-button:last-child:not(:first-child){
+  border-color:transparent;background:transparent;color:#b7a99a;
+}
+@media(max-width:360px){
+  #sheet-play-view .play-slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #sheet-play-view .play-magic-concentration{gap:6px;padding:9px}
+  #sheet-play-view .play-magic-concentration>strong{font-size:11px}
+}
