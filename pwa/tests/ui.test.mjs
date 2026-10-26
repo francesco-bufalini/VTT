@@ -1327,8 +1327,7 @@ test('ASI opens its sole next picker automatically until ability allocation is c
  const feature={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
   name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',
   source:'PHB',level:4,entries:['ASI rule']};
- const files=new Set(['ability_grants','class_mechanics','proficiency_grants',
-   'feature_timing_recovery_rules','trait_states','roll_bonus_rules','species_attacks']);
+ const files=new Set(['ability_grants','class_mechanics','proficiency_grants']);
  clearLocalRuleCatalogCache();
  globalThis.fetch=async(url,options)=>{
   const sourcePath=String(url);
@@ -1338,6 +1337,10 @@ test('ASI opens its sole next picker automatically until ability allocation is c
    class_features:[feature],subclass_features:[]}),{status:200});
   if(key==='features')return new Response(JSON.stringify({feats:{'alert|phb':{entries:['Alert']}}}),{status:200});
   if(key==='backgrounds')return new Response(JSON.stringify({backgrounds:{}}),{status:200});
+  if(key==='feature_timing_recovery_rules')return new Response(JSON.stringify({version:1,actions:[],recoveries:[]}),{status:200});
+  if(key==='trait_states')return new Response(JSON.stringify({version:1,states:[],exhaustion:{}}),{status:200});
+  if(key==='roll_bonus_rules')return new Response(JSON.stringify({version:1,features:[]}),{status:200});
+  if(key==='species_attacks')return new Response(JSON.stringify({version:1,races:[]}),{status:200});
   if(files.has(key))return new Response(readFileSync(new URL('../catalog/'+key+'.json',import.meta.url),'utf8'),{status:200});
   return oldFetch(url,options);
  };
