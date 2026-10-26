@@ -2353,10 +2353,11 @@ function magicOverview(c,calculated){
  const pact=calculated.pact_slots||{};
  const entries=Array.from({length:9},(_,index)=>{
    const level=index+1,slot=classSlots[index]||{level,total:0,spent:0};
+   if(Number(slot.total)<=0)return '';
    return '<div class="magic-overview-slot"><span class="magic-overview-level">'+level+'°</span>'+
      magicLevelSlotChip(level,slot)+'</div>';
  }).join('');
- const pactSlot=Number(pact.level)>0?
+ const pactSlot=Number(pact.total)>0&&Number(pact.level)>0?
    '<div class="magic-overview-slot magic-overview-pact"><span class="magic-overview-level">Patto '+esc(pact.level)+'°</span>'+
    magicLevelSlotChip(Number(pact.level),pact,true)+'</div>':'';
  const active=(c.conditions||[]).includes('concentrating')||Boolean(c.concentrating_spell_id);
@@ -2365,7 +2366,8 @@ function magicOverview(c,calculated){
  return '<section class="magic-overview" aria-label="Slot e concentrazione">'+
    '<div class="magic-overview-heading"><h3>Slot incantesimo</h3>'+
    '<button type="button" class="btn small magic-overview-manage" data-act="magic-tool-open" data-magic-tool="slots">Gestisci slot</button></div>'+
-   '<div class="magic-overview-slots">'+entries+pactSlot+'</div>'+
+   '<div class="magic-overview-slots">'+(entries||pactSlot?entries+pactSlot:
+     '<p class="magic-overview-empty">Nessuno slot assegnato.</p>')+'</div>'+
    '<div class="magic-overview-concentration"><span class="magic-concentration-title">Concentrazione</span>'+
    '<span class="magic-concentration-current'+(active?' is-active':'')+'">'+
      esc(active?(name||'Attiva · nessun incantesimo'):'Non attiva')+'</span>'+
@@ -2400,9 +2402,14 @@ function magicToolsDialog(c,calculated){
    const maximum=Math.max(0,Number(slot?.total)||0),used=Math.max(0,Number(slot?.spent)||0);
    const remain=Math.max(0,maximum-used);
    const name=pact?'Patto · '+(Number(slot?.level)||'—')+'°':'Livello '+level;
+   const scoreTarget=pact?'pact_slot':'slot:'+level;
    return '<div class="magic-slot-manager-row"><strong>'+esc(name)+'</strong>'+
      '<div class="magic-slot-manager-controls magic-tracker-controls">'+
-       '<span class="magic-tracker-count"><strong>'+remain+'</strong> / '+maximum+'</span>'+
+       '<span class="magic-tracker-count"><strong>'+remain+'</strong> / '+
+         '<button type="button" class="magic-slot-maximum" data-act="sheet-score-formula"'+
+           ' data-target="'+scoreTarget+'" data-calculated="'+scoreTarget+'"'+
+           ' data-label="Massimo '+esc(name)+'" title="Visualizza la formula del massimo"'+
+           ' aria-label="Formula del massimo '+esc(name)+': '+maximum+'">'+maximum+'</button></span>'+
        '<button type="button" class="magic-tracker-change" data-act="slot-recover" data-level="'+(pact?0:level)+'"'+
          (used<=0?' disabled':'')+' aria-label="Ripristina uno slot '+esc(name)+'" title="Ripristina 1">+1</button>'+
        '<button type="button" class="magic-tracker-change" data-act="slot-use" data-level="'+(pact?0:level)+'"'+
