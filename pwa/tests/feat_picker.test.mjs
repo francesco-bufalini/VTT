@@ -156,9 +156,9 @@ test('name-only legacy feat obtains a real navigable trait with the same stable 
 
 test('feat search remains a single 42px flex row despite global stacked label styling',()=>{
  const css=read('../mobile_metal_theme.css'),ui=read('../ui.js');
- const search=css.match(/\\.feat-picker-search\\s*\\{([^}]+)\\}/)?.[1]||'';
- const icon=css.match(/\\.feat-picker-search \\.vtt-action-glyph,\\.feat-picker-search svg\\s*\\{([^}]+)\\}/)?.[1]||'';
- const input=css.match(/\\.feat-picker-search input\\[type=search\\]\\s*\\{([^}]+)\\}/)?.[1]||'';
+ const search=css.match(/\.feat-picker-search\s*\{([^}]+)\}/)?.[1]||'';
+ const icon=css.match(/\.feat-picker-search \.vtt-action-glyph,\.feat-picker-search svg\s*\{([^}]+)\}/)?.[1]||'';
+ const input=css.match(/\.feat-picker-search input\[type=search\]\s*\{([^}]+)\}/)?.[1]||'';
  assert.match(search,/display:flex/);
  assert.match(search,/flex-direction:row/,'override global label flex-direction:column');
  assert.match(search,/flex-wrap:nowrap/,'icon and input cannot wrap');
