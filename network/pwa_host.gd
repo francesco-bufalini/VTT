@@ -711,6 +711,10 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 	if not _share_valid_id(device_id):
 		_answer(client, 400, {"error": "invalid_device_id"})
 		return
+	var device_token: Variant = request.get("device_token", null)
+	if not device_token is String or (device_token as String).length() != 64 or not (device_token as String).is_valid_hex_number():
+		_answer(client, 400, {"error": "invalid_device_credential"})
+		return
 	_share_expire()
 	var now := Time.get_ticks_msec()
 	if path == "/api/share/peers":
@@ -718,7 +722,10 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 		if nickname.is_empty() or nickname.length() > 60:
 			_answer(client, 400, {"error": "invalid_device_name"})
 			return
-		_share_peers[device_id] = {"name": nickname, "seen": now}
+		if _share_peers.has(device_id) and _share_peers[device_id].token != device_token:
+			_answer(client, 401, {"error": "device_credential_mismatch"})
+			return
+		_share_peers[device_id] = {"name": nickname, "token": device_token, "seen": now}
 		var others: Array[Dictionary] = []
 		for peer_id: Variant in _share_peers.keys():
 			if peer_id != device_id:
@@ -731,8 +738,8 @@ func _handle_share(client: Dictionary, path: String, body: PackedByteArray) -> v
 					"size": entry.size, "parts": entry.parts, "sender_name": entry.sender_name})
 		_answer(client, 200, {"devices": others, "inbox": inbox})
 		return
-	if not _share_peers.has(device_id):
-		_answer(client, 400, {"error": "device_not_registered"})
+	if not _share_peers.has(device_id) or _share_peers[device_id].token != device_token:
+		_answer(client, 401, {"error": "device_not_registered_or_unauthorized"})
 		return
 	if path == "/api/share/chunk":
 		var recipient: Variant = request.get("recipient_id", null)
