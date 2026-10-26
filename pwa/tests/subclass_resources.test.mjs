@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
 import {abilitiesForCreature} from '../activated_abilities.js';
-import {battleResourcePowers,resourceLinkedSubclassTrait} from '../sheet_rules_view.js';
+import {battleResourcePowers,resourceLinkedSubclassTrait,subclassTrackerUsePatch,mountPlaySheet} from '../sheet_rules_view.js';
+import {JSDOM} from 'jsdom';
 import {battleAbilityEntries} from '../action_economy.js';
 import {recoveryPatch} from '../character_core.js';
 
@@ -45,6 +46,11 @@ test('College of Creation 2014: distinct trait-owned long-rest trackers at the c
    const linked=resourceLinkedSubclassTrait(tracker,projection.features,resources);
    assert.equal(linked?.origin_id,tracker.origin_id);
    assert.equal(linked?.name,tracker.name);
+   assert.equal(linked?.tracker_id,tracker.id);
+   assert.deepEqual(subclassTrackerUsePatch(record,projection,tracker.id,linked.origin_id,1)
+    .resource_tracker_spent[tracker.id],1);
+   assert.throws(()=>subclassTrackerUsePatch(record,projection,tracker.id,'other-origin',1),/non disponibile/);
+   assert.throws(()=>subclassTrackerUsePatch(record,projection,tracker.id,linked.origin_id,2),/insufficiente/);
   }
  }
  const other=bard(14,'College of Lore');
@@ -92,4 +98,53 @@ test('Other 2014 subclasses use the same tracker-owned resource ability projecti
  const result=calculateSheet(champion,catalogs);
  assert(!result.trackers.some(t=>t.name==='Superiority Die'));
  assert(!abilitiesForCreature(champion,[],result).some(p=>p.name==='Combat Superiority'));
+});
+
+test('Resources shows only actionable entries: tracker-only abilities get Use, passive descriptions do not',()=>{
+ const record={...bard(6),id:'creation-bard',name:'Artista'};
+ const calculated=calculateSheet(record,catalogs);
+ const dom=new JSDOM('<main id="app"><div data-local-sheet-calculations></div></main>');
+ const previous=globalThis.document;
+ try{
+  globalThis.document=dom.window.document;
+  const app=dom.window.document.querySelector('#app');
+  mountPlaySheet(app,{creature:record,calculated,sheet:'battle',icon:()=>''});
+  for(const name of ['Performance of Creation','Animating Performance']){
+   const tracker=calculated.trackers.find(t=>t.name===name);
+   assert(tracker);
+   const root=app.querySelector('[data-linked-subclass-resource="'+tracker.id+'"]');
+   assert(root,'Tracker-only subclass trait must appear directly under its counter: '+name);
+   assert.match(root.textContent,new RegExp(name));
+   const button=root.querySelector('[data-act="tracker-trait-use"]');
+   assert(button,'An unmodeled effect must still have a usable action');
+   assert.equal(button.dataset.originId,tracker.origin_id);
+   assert.equal(button.dataset.trackerId,tracker.id);
+   assert.equal(button.disabled,false);
+  }
+  assert.equal(app.querySelector('[data-resource-privilege="subclass-traits"]'),null,
+   'A passive-only subsection should never be rendered');
+  assert.equal(app.querySelector('[data-subclass-feature]'),null);
+  assert.equal(app.querySelector('[data-resource-tracker] [data-act="tracker-trait-use"][disabled]'),null);
+ }finally{
+  globalThis.document=previous;
+  dom.window.close();
+ }
+});
+
+test('A spent or disabled 2014 subclass tracker cannot use the manual action',()=>{
+ const record=bard(6),projection=calculateSheet(record,catalogs);
+ const row=projection.trackers.find(t=>t.name==='Animating Performance');
+ const used={...record,resource_tracker_spent:{[row.id]:1}};
+ assert.throws(()=>subclassTrackerUsePatch(used,calculateSheet(used,catalogs),row.id,row.origin_id,1),
+  /insufficiente/);
+ const disabled={...record,origin_enabled:{[row.origin_id]:false}};
+ assert.throws(()=>subclassTrackerUsePatch(disabled,calculateSheet(disabled,catalogs),row.id,row.origin_id,1),
+  /non disponibile/);
+ const foreign={...record,subclass:'College of Lore',classes:[{...record.classes[0],subclass:'College of Lore'}]};
+ assert.throws(()=>subclassTrackerUsePatch(foreign,calculateSheet(foreign,catalogs),row.id,row.origin_id,1),
+  /non disponibile/);
+ const revised=bard(6,'College of Creation','XPHB');
+ assert.throws(()=>subclassTrackerUsePatch(revised,calculateSheet(revised,catalogs),row.id,row.origin_id,1),
+  /non disponibile/);
+ assert.deepEqual(record.resource_tracker_spent,{});
 });
