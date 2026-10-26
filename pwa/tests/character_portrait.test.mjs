@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {isPortraitDataUrl,preparePortraitImage,
  PORTRAIT_MAX_INPUT_BYTES,PORTRAIT_MAX_DATA_LENGTH} from '../character_portrait.js';
@@ -33,4 +34,10 @@ test('sheet portrait stays on the base creature while a polymorph form is active
  assert.equal(changed.sheet_portrait_data,'photo');
  assert.equal(changed.variants[0].values.sheet_portrait_data,undefined);
  assert.equal(resolveVariant(changed).sheet_portrait_data,'photo');
+});
+
+test('Godot host permits embedded local character pictures without loosening script CSP',()=>{
+ const host=readFileSync(new URL('../../network/pwa_host.gd',import.meta.url),'utf8');
+ assert.match(host,/img-src 'self' blob: data:;/);
+ assert.match(host,/script-src 'self';/);
 });
