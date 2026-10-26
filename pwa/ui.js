@@ -668,7 +668,7 @@ function confirmCreatureDeletion(rows){
     dialog.innerHTML='<div class="library-create-body">'+
       dialogCloseButton('library-delete-close','Chiudi','library-create-close')+
       '<h2 id="library-delete-title">Eliminare '+amount+' '+(amount===1?'creatura':'creature')+'?</h2>'+
-      '<p id="library-delete-warning">Le '+(amount===1?'seguente creatura verrà eliminata':'seguenti creature verranno eliminate')+
+      '<p id="library-delete-warning">'+(amount===1?'La seguente creatura verrà eliminata':'Le seguenti creature verranno eliminate')+
       ' dall’archivio locale. L’operazione non può essere annullata.</p>'+
       '<ul class="library-delete-list" aria-label="Creature da eliminare"></ul>'+
       '<div class="library-create-actions">'+
