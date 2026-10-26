@@ -103,7 +103,7 @@
     {
       "class_name": "Bard",
       "class_source": "XPHB",
-      "name": "Unarmored Defense",
+      "name": "Dazzling Footwork",
       "overrides": [
         {
           "target": "ac_unarmored",
