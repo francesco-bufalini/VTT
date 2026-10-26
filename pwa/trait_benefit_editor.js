@@ -4,7 +4,7 @@
 const rows=value=>Array.isArray(value)?value:[];
 const norm=value=>String(value??'').trim().toLowerCase();
 export const BENEFIT_TYPES=[
- ['bonus','Bonus'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
+ ['bonus','Bonus'],['base_override','Sostituzione valore base'],['attack_count','Attacchi per azione'],['roll_mode','Vantaggio / svantaggio'],['proficiency','Competenza'],
  ['defenses','Resistenza / immunità / vulnerabilità'],['resources','Risorsa'],
  ['spells','Incantesimo'],['actions','Azione']
 ];
@@ -68,12 +68,13 @@ export function traitRemovedIds(record={},trait={}){
 export function removeBenefitPatch(record,trait,item){
  if(!trait?.key||!item?.id)throw Error('Beneficio non identificato');
  const id=String(item.id);
- const collection={bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
+ const collection={base_overrides:'base_value_overrides',bonus:id.startsWith('dice:')?'dice_bonuses':'formula_bonuses',dice:'dice_bonuses',roll_modes:'roll_mode_grants',
   proficiency:'proficiency_choices',defenses:'damage_defense_entries',
   resources:'resource_trackers',spells:'origin_spell_grants',actions:'action_grants',
   attack_count:'attack_count_grants'}[item.type];
  const original=rows(record[collection]);
  const idx=collection?original.findIndex(row=>{
+  if(item.type==='base_overrides')return 'base_override:'+String(row.id||'')===id&&!row.automatic;
   if(item.type==='bonus'&&id.startsWith('dice:'))return 'dice:'+String(row.id||'')===id;
   if(item.type==='bonus')return 'bonus:'+String(row.id||'')===id&&!row.automatic;
   if(item.type==='dice')return 'dice:'+String(row.id||'')===id;
@@ -111,7 +112,22 @@ export function addBenefitPatch(record,trait,kind,values={},id){
   return value;
  };
  let field,row;
- if(kind==='bonus'){
+ if(kind==='base_override'){
+  const target=required('target'),mode=required('mode'),expression=required('expression',150).replace(/\s+/g,'');
+  const damage=target.startsWith('attack_damage_base:');
+  if(!(/^(ability:(str|dex|con|int|wis|cha)|ac_unarmored|attack_damage_base:[a-z0-9_:|.-]+)$/.test(target)))
+    throw Error('Valore base non supportato');
+  if(damage&&mode!=='replace'||target==='ac_unarmored'&&mode!=='alternative'||
+     !damage&&target!=='ac_unarmored'&&!['replace','minimum'].includes(mode))
+    throw Error('Modalità di sostituzione incompatibile con il valore');
+  if(damage){
+    if(!/^(?:\d+|[1-9]\d*d(?:4|6|8|10|12|20|100))(?:[+-]\d+)?$/i.test(expression))
+      throw Error('Inserisci una formula di danno base, ad esempio 1d4');
+  }else if(!/^[a-z0-9_+*\-/. ()]+$/i.test(expression)||/\d*d\d+/i.test(expression))
+    throw Error('La formula del valore base deve essere numerica');
+  field='base_value_overrides';row={...common,target,mode,expression,
+    parent_origin:trait.feature_origin||trait.proficiency_origin||trait.origin_key||''};
+ }else if(kind==='bonus'){
   const target=required('target'),expression=required('expression',200).replace(/\s+/g,'');
   const diceMatch=expression.match(/^([1-9]\d*)d(4|6|8|10|12|20|100)([+-]\d+)?$/i);
   if(diceMatch&&Number(diceMatch[1])<=100){
