@@ -74,6 +74,62 @@ func run() -> void:
 	assert(not bool(foreign.active) and bool(foreign.other_rules))
 	var host := root.get_node_or_null("/root/PwaHost")
 	assert(host != null, "Desktop PWA autoload missing")
+	# Exercise opt-in cross-PWA sharing without any live board or network.
+	# _handle_share uses the same response writer as the authenticated route.
+	var sender_id := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	var receiver_id := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	var stranger_id := "cccccccccccccccccccccccccccccccc"
+	var transfer_id := "dddddddddddddddddddddddddddddddd"
+	var fake_client: Dictionary = {"out": PackedByteArray()}
+	var fake_clients: Array = host.get("_clients")
+	fake_clients.append(fake_client)
+	for row: Dictionary in [
+		{"device_id": sender_id, "device_name": "Computer A"},
+		{"device_id": receiver_id, "device_name": "iPhone B"}
+	]:
+		fake_client.out = PackedByteArray()
+		host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify(row).to_utf8_buffer())
+		assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
+			"Paired browsers must be discoverable")
+	var content := "{\"format\":\"vtt_homebrew_share_v1\",\"version\":1}"
+	var encoded := Marshalls.raw_to_base64(content.to_utf8_buffer())
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/chunk", JSON.stringify({
+		"device_id": sender_id, "recipient_id": receiver_id,
+		"transfer_id": transfer_id, "kind": "homebrew", "title": "Test",
+		"size": content.to_utf8_buffer().size(), "index": 0, "parts": 1, "data": encoded
+	}).to_utf8_buffer())
+	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
+		"Bounded chunks must reach a paired recipient")
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/peers", JSON.stringify({
+		"device_id": receiver_id, "device_name": "iPhone B"
+	}).to_utf8_buffer())
+	var inbox_reply: String = (fake_client.out as PackedByteArray).get_string_from_utf8()
+	assert(inbox_reply.contains("\"inbox\"") and inbox_reply.contains(transfer_id),
+		"The receiver should discover the complete incoming package")
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/pull", JSON.stringify({
+		"device_id": stranger_id, "transfer_id": transfer_id, "index": 0
+	}).to_utf8_buffer())
+	assert(not (fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"),
+		"Another device must not read the transfer")
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/pull", JSON.stringify({
+		"device_id": receiver_id, "transfer_id": transfer_id, "index": 0
+	}).to_utf8_buffer())
+	assert((fake_client.out as PackedByteArray).get_string_from_utf8().contains(encoded),
+		"Recipient should receive the original bytes")
+	fake_client.out = PackedByteArray()
+	host.call("_handle_share", fake_client, "/api/share/ack", JSON.stringify({
+		"device_id": receiver_id, "transfer_id": transfer_id
+	}).to_utf8_buffer())
+	assert((fake_client.out as PackedByteArray).get_string_from_utf8().begins_with("HTTP/1.1 200"))
+	assert(not (host.get("_share_deliveries") as Dictionary).has(transfer_id),
+		"Acknowledgment must remove temporary transfer data")
+	fake_clients.erase(fake_client)
+	(host.get("_share_peers") as Dictionary).clear()
+
 	# The bridge is intentionally disabled without a playable board scene.
 	assert(not (host.get("_server") as TCPServer).is_listening(),
 		"PWA should not bind its HTTP port before opening the board")
