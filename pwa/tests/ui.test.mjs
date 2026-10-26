@@ -1320,6 +1320,57 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  click('[data-nav="library"]');await until(()=>document.querySelector('[data-act="create"]'));
 });
 
+test('ASI opens its sole next picker automatically until ability allocation is complete',async t=>{
+ const {createCreature}=await import('../creatures.js');
+ const {clearLocalRuleCatalogCache}=await import('../sheet_rules.js');
+ const oldFetch=globalThis.fetch;
+ const feature={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
+  name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',
+  source:'PHB',level:4,entries:['ASI rule']};
+ const files=new Set(['ability_grants','class_mechanics','proficiency_grants',
+   'feature_timing_recovery_rules','trait_states','roll_bonus_rules','species_attacks']);
+ clearLocalRuleCatalogCache();
+ globalThis.fetch=async(url,options)=>{
+  const match=String(url).match(/^\\/catalog\\/([a-z_]+)\\.json$/),key=match?.[1];
+  if(key==='classes')return new Response(JSON.stringify({version:1,
+   class_features:[feature],subclass_features:[]}),{status:200});
+  if(key==='features')return new Response(JSON.stringify({feats:{'alert|phb':{entries:['Alert']}}}),{status:200});
+  if(key==='backgrounds')return new Response(JSON.stringify({backgrounds:{}}),{status:200});
+  if(files.has(key))return new Response(readFileSync(new URL('../catalog/'+key+'.json',import.meta.url),'utf8'),{status:200});
+  return oldFetch(url,options);
+ };
+ t.after(()=>{globalThis.fetch=oldFetch;clearLocalRuleCatalogCache();stopRealtime();});
+ const saved=await createCreature('character','ASI chaining test');
+ await saveCreature({...saved.data,class:'Fighter',class_source:'PHB',level:4,
+  classes:[{name:'Fighter',source:'PHB',level:4}],
+  abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10}},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ const mode=await until(()=>document.querySelector('[data-act="pending-choice-open"][data-choice-id^="advancement-mode:"]'));
+ mode.click();
+ const first=await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="advancement-mode:"]'));
+ const selectAndSave=async value=>{
+  const dialog=document.querySelector('#pending-choice-dialog');
+  const input=[...dialog.querySelectorAll('[name="pending-options"]')].find(row=>row.value===value);
+  assert.ok(input,'Missing option '+value+' for '+dialog.dataset.choiceId);
+  input.checked=true;
+  input.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  dialog.querySelector('[data-act="pending-choice-save"]').click();
+ };
+ await selectAndSave('ability');
+ await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="ability-mode:"]'));
+ await selectAndSave('0');
+ await until(()=>document.querySelector('#pending-choice-dialog[data-choice-id^="ability:"]'));
+ await selectAndSave('str');
+ await until(()=>!document.querySelector('#pending-choice-dialog'));
+ const stored=(await loadCreature(saved.data.id)).data;
+ assert(stored.origin_ability_choices.some(row=>
+  row.allocations?.some(allocation=>allocation.ability==='str')));
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test("Info contains scores, skills, tools, languages, weapons and armor without separate Abilità tab",async()=>{
  const {nativeSection}=await import("../native_sheet.js");
  const sample={kind:"character",name:"Test",species:"Elf",background:"Sage",feats_catalog:[{name:"Alert",source:"PHB",level:4}],abilities:{}};
