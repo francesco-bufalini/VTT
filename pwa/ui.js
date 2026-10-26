@@ -1935,9 +1935,11 @@ function inventoryEquipmentView(c,calculated={}){
   const naturalBase=c.kind==="monster"?(monsterAc??10):(c.armor_class_base??10);
   const naturalFormula=String(c.armor_natural_formula||
     ((c.kind==="character"&&Number(naturalBase)===10)?"10 + dex_mod":String(naturalBase)));
-  const chosenNatural=calculated.base_override_applied?.ac_unarmored?.expression;
+  const appliedNatural=calculated.base_override_applied?.ac_unarmored;
+  const chosenNatural=appliedNatural?.expression;
   const displayedNatural=chosenNatural?String(chosenNatural):naturalFormula;
-  const formula=armor?
+  const usedNatural=Boolean(chosenNatural&&(!armor||appliedNatural.allow_armor||appliedNatural.ignore_armor));
+  const formula=armor&&!usedNatural?
     String(Number(armor.ac)||10)+(armorDex?' + ('+armorDex+' DES)':'')+
       (shieldBonus?' + '+shieldBonus+' scudo':''):
     displayedNatural+(shieldBonus?' + '+shieldBonus+' scudo':'');
@@ -1957,7 +1959,7 @@ function inventoryEquipmentView(c,calculated={}){
   const defense='<div class="equipment-defense">'+
     '<div class="battle-defense-values"><div class="battle-stat"><span>CA totale</span>'+
       formulaReadout(calculated,'ac','Classe armatura',{showBonus:false})+'</div></div>'+
-    '<div class="battle-ac-formula"><strong>'+(armor?'Formula armatura indossata':'Formula CA naturale')+
+    '<div class="battle-ac-formula"><strong>'+(armor&&!usedNatural?'Formula armatura indossata':'Formula CA naturale')+
       '</strong><output>'+esc(formula)+'</output></div>'+
 
     '</div>';
