@@ -97,7 +97,7 @@ test('XPHB Ability Score Improvement feat itself offers +2 or +1/+1 through its 
  let c={...base(),rules_version:'2024',feats_catalog:[{name:'Ability Score Improvement',source:'XPHB'}]};
  const id='feat|xphb|ability score improvement';
  c={...c,...savePendingChoice(c,find(pending(c),'ability-mode:'+id),['0'])};
- c={...c,...savePendingChoice(c,find(pending(c),'ability:'+id+':0),['dex'])};
+ c={...c,...savePendingChoice(c,find(pending(c),'ability:'+id+':0'),['dex'])};
  assert.equal(calc(c).abilities.dex.score,12);
  const p=pending(c);
  const owner={category:'talenti',rank:0,origin_key:'feat|ability score improvement|xphb'};
