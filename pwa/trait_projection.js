@@ -186,7 +186,10 @@ export async function collectTraitRows(record={},calculated={},providers={}){
   if(!feat?.name)continue;
   const info=await lookup('feats',feat.name,feat.source,feat.id)||feat;
   const granting=feat.granted_by?arr(calculated.features).find(row=>row.origin_id===feat.granted_by):null;
-  const owner=granting?' · da '+granting.name+' (livello '+granting.level+')':'';
+  const otherOrigin=feat.granted_by?arr(calculated.origins).find(row=>row.id===feat.granted_by):null;
+  const from=granting?granting.name+' (livello '+granting.level+')':
+    feat.granting_origin_name||otherOrigin?.name||'';
+  const owner=from?' · da '+from:'';
   const options={category:'talenti',origin:'Talento · '+feat.name+owner,
    origin_key:'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source)),level:1,inactive:!!feat.disabled};
   add({name:feat.name,entries:info.entries??info.description??'',source:feat.source,
