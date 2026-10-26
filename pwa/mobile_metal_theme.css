@@ -5104,3 +5104,126 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 .magic-tools-dialog .magic-selection-current .magic-remove-spell.btn:focus-visible{
   background:#91664032;color:#f4d19e;outline-offset:-2px;
 }
+
+/* Poteri: persistent slot resources and concentration below the section title. */
+.magic-overview{
+  display:grid;gap:10px;margin:0 0 14px;padding:12px;
+  border:1px solid #af8a5b55;border-radius:12px;
+  background:linear-gradient(155deg,#362b2540,#211d1cc9);
+}
+.magic-overview-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.magic-overview-heading h3{margin:0;color:#f0d5ae;font-size:14px;font-weight:750}
+.magic-overview-manage.btn{min-height:32px;padding:5px 10px;white-space:nowrap;font-size:12px}
+.magic-overview-slots{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:7px;
+}
+.magic-overview-slot{
+  display:flex;align-items:center;justify-content:space-between;gap:4px;
+  min-width:0;padding:4px 5px;border:1px solid #98775240;
+  border-radius:8px;background:#1b19197a;
+}
+.magic-overview-level{flex:0 0 auto;color:#d8ba91;font-size:12px;font-weight:700}
+.magic-overview-slot .magic-level-slot{
+  flex:0 0 auto;min-height:27px;margin:0;padding:3px 5px;
+  font-size:12px;border-color:#9b7a565e;background:#312923a6;
+}
+.magic-overview-slot .magic-level-slot strong{font-size:13px}
+.magic-overview-pact{grid-column:span 2}
+.magic-overview-concentration{
+  display:flex;align-items:center;gap:9px;min-width:0;
+  padding-top:11px;border-top:1px solid #ae8b5d41;
+}
+.magic-concentration-title{flex:0 0 auto;color:#e4c99f;font-size:12px;font-weight:750}
+.magic-concentration-current{
+  min-width:0;flex:1;overflow-wrap:anywhere;color:#bfb3a2;
+  font-size:12px;line-height:1.35;
+}
+.magic-concentration-current.is-active{color:#f0d6b0}
+.magic-overview-icon{
+  flex:0 0 30px;height:30px;display:grid;place-items:center;
+  border:1px solid #b0916970;border-radius:8px;background:#73553650;
+  color:#f2d8b1;font-size:20px;line-height:1;cursor:pointer;
+}
+.magic-overview-icon:hover,.magic-overview-icon:focus-visible{
+  border-color:#e2bf8b;background:#8a653e6e;
+}
+.magic-overview-stop{background:transparent;border-color:transparent;color:#bcae9e}
+.magic-concentration-picker{display:grid;gap:13px}
+.magic-concentration-picker>label{display:grid;gap:7px;color:#e8cda5;font-size:12px;font-weight:650}
+.magic-concentration-picker select{width:100%;min-width:0}
+.magic-concentration-picker .actions{margin:0}
+.magic-slot-manager{display:grid;gap:2px}
+.magic-slot-manager>.hint{margin:0 0 10px}
+.magic-slot-manager-row{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;min-height:43px;padding:7px 2px;
+  border-bottom:1px solid #c5a27730;
+}
+.magic-slot-manager-row>strong{min-width:0;color:#ead1aa;font-size:13px;font-weight:700}
+.magic-slot-manager-controls.magic-tracker-controls{
+  flex:0 0 auto;justify-content:flex-end;gap:7px;margin:0;
+}
+.magic-slot-manager-controls .magic-tracker-count{min-width:69px;text-align:right;padding:0}
+.magic-slot-manager-controls .magic-tracker-change{min-width:35px;height:32px;font-size:12px}
+.magic-slot-manager>.actions{margin:12px 0}
+.magic-slot-settings{
+  margin-top:3px;padding:12px;border:1px solid #af895c51;
+  border-radius:10px;background:#211d1d7a;
+}
+.magic-slot-settings>summary{color:#e8cb9d;font-weight:700;cursor:pointer}
+.magic-slot-settings>label{display:grid;gap:5px;margin:10px 0}
+.magic-slot-manual-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+  margin:12px 0;
+}
+.magic-slot-manual-grid label{display:grid;gap:4px;font-size:12px;color:#e4c9a1}
+.magic-slot-manual-grid input{width:100%;min-width:0;max-width:none}
+@media(max-width:390px){
+  .magic-overview{padding:10px}
+  .magic-overview-slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .magic-overview-slot{padding:4px 3px;gap:2px}
+  .magic-overview-level{font-size:11px}
+  .magic-overview-slot .magic-level-slot{padding:3px}
+  .magic-overview-concentration{gap:6px}
+  .magic-slot-manager-controls.magic-tracker-controls{gap:4px}
+  .magic-slot-manager-controls .magic-tracker-count{min-width:57px}
+}
+
+/* The visible native Powers view mirrors source resource controls, without
+   exposing the legacy settings menu or hiding depleted slot levels. */
+#sheet-play-view .play-slots{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));
+  gap:7px;overflow:visible;padding:11px;
+}
+#sheet-play-view .play-slots>.play-button{
+  width:100%;min-width:0;min-height:59px;gap:3px;padding:7px 4px;
+  border:1px solid #a9885d52;border-radius:9px;
+  background:linear-gradient(160deg,#634b373d,#27201eaa);
+}
+#sheet-play-view .play-slots>.play-button b{font-variant-numeric:tabular-nums}
+#sheet-play-view .play-slots>.play-button small{font-size:11px}
+#sheet-play-view .play-magic-concentration{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:11px 12px;border:1px solid #a27b4a55;border-radius:12px;
+  background:linear-gradient(135deg,#3a2a2766,#201b1b);
+}
+#sheet-play-view .play-magic-concentration>strong{flex:none;font-size:12px;color:#e2c699}
+#sheet-play-view .play-magic-concentration-status{
+  flex:1;min-width:0;font-size:12px;line-height:1.35;
+  color:#b8a997;overflow-wrap:anywhere;
+}
+#sheet-play-view .play-magic-concentration-status.is-active{color:#f4d6a7}
+#sheet-play-view .play-magic-concentration-actions{display:flex;align-items:center;gap:5px;flex:none}
+#sheet-play-view .play-magic-concentration-actions>.play-button{
+  min-width:34px;min-height:34px;width:34px;height:34px;
+  padding:0;border-radius:8px;border:1px solid #b18d6070;
+  background:#7455384a;color:#f0d1a1;font-size:21px;
+}
+#sheet-play-view .play-magic-concentration-actions>.play-button:last-child:not(:first-child){
+  border-color:transparent;background:transparent;color:#b7a99a;
+}
+@media(max-width:360px){
+  #sheet-play-view .play-slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #sheet-play-view .play-magic-concentration{gap:6px;padding:9px}
+  #sheet-play-view .play-magic-concentration>strong{font-size:11px}
+}

@@ -1322,7 +1322,7 @@ async function editorView() {
       originPowersView(c,calculated,abilitiesForCreature(c,state.abilityCatalog||[],calculated),true)+'</div>';
     break;
   case "magic":
-    body=magicToolbar(calculated)+
+    body=magicOverview(c,calculated)+
       panel("Incantesimi disponibili",
         calculated.casting_classes.map(member=>{
           return '<section class="magic-source"><header class="magic-source-header"><h3>'+esc(member.name)+'</h3>'+
@@ -1334,12 +1334,9 @@ async function editorView() {
             '<button type="button" class="btn small magic-selection-button" data-act="magic-learn-select" data-magic-class="'+esc(member.id)+'">'+
               (member.mode==='Conosciuti'?'Impara / Dimentica incantesimi':'Gestisci incantesimi conosciuti')+'</button>'+
             '</div>'+
-            spellList(c,'prepared_spells',member.id,calculated.casting_classes)+'</section>';
+            spellList(c,'prepared_spells',member.id,calculated.casting_classes,{includeSlots:false})+'</section>';
         }).join('')+
         manualMagicSources(c,calculated)+
-        (!calculated.casting_classes.length && !manualMagicSources(c,calculated) && magicSlotSummary(calculated).size?
-          '<section class="magic-source magic-slot-only"><h3>Slot incantesimo</h3>'+
-          groupedMagicSpells([],()=>'',{slotSummary:magicSlotSummary(calculated)})+'</section>':''),
         'magic-panel')+
       originPowersView(c,calculated)+
       infusionPanel(c,calculated)+
@@ -2225,43 +2222,85 @@ function magicLevelSlotChip(level,slot,pact=false){
    (pact?'<span class="magic-pact-icon" aria-hidden="true">✦</span>':'')+
    '<strong data-slot-remaining="'+(pact?'pact':level)+'">'+remaining+'</strong><span> / '+total+'</span></button>';
 }
-function magicToolbar(calculated){
- const actions=[
-  ['concentration','condition','Concentrazione'],
-  ['slots','reset','Slot e risorse di lancio'],
-  ['catalog','search','Aggiungi incantesimi'],
-  ['choices','settings','Scelte dalle origini']
- ];
- return '<details class="magic-utility-menu archive-tools"><summary>Gestisci poteri e incantesimi</summary><nav class="magic-toolbar" aria-label="Strumenti degli incantesimi">'+
-   actions.map(([key,icon,label])=>'<button type="button" class="magic-tool-button" data-act="magic-tool-open" data-magic-tool="'+key+
-    '" aria-label="'+esc(label)+'" title="'+esc(label)+'" aria-haspopup="dialog" aria-expanded="'+(state.magicPopup===key?'true':'false')+'">'+
-    actionGlyph(icon)+'<span>'+esc(label)+'</span></button>').join('')+
-   '<button type="button" class="magic-tool-button" data-act="sheet" data-sheet="info" aria-label="Apri tratti per gestire gli incantesimi dalle origini" title="Apri i tratti">'+actionGlyph('proficiency')+'<span>Gestisci incantesimi dalle origini</span></button>'+
-   '</nav></details>';
+// Slot and concentration resources stay visible even if every slot is spent.
+function magicOverview(c,calculated){
+ const classSlots=calculated.spell_slots||[];
+ const pact=calculated.pact_slots||{};
+ const entries=Array.from({length:9},(_,index)=>{
+   const level=index+1,slot=classSlots[index]||{level,total:0,spent:0};
+   return '<div class="magic-overview-slot"><span class="magic-overview-level">'+level+'°</span>'+
+     magicLevelSlotChip(level,slot)+'</div>';
+ }).join('');
+ const pactSlot=Number(pact.level)>0?
+   '<div class="magic-overview-slot magic-overview-pact"><span class="magic-overview-level">Patto '+esc(pact.level)+'°</span>'+
+   magicLevelSlotChip(Number(pact.level),pact,true)+'</div>':'';
+ const active=(c.conditions||[]).includes('concentrating')||Boolean(c.concentrating_spell_id);
+ const id=String(c.concentrating_spell_id||'');
+ const name=id?((state.spellCatalog||[]).find(spell=>spell.id===id)?.name||id):'';
+ return '<section class="magic-overview" aria-label="Slot e concentrazione">'+
+   '<div class="magic-overview-heading"><h3>Slot incantesimo</h3>'+
+   '<button type="button" class="btn small magic-overview-manage" data-act="magic-tool-open" data-magic-tool="slots">Gestisci slot</button></div>'+
+   '<div class="magic-overview-slots">'+entries+pactSlot+'</div>'+
+   '<div class="magic-overview-concentration"><span class="magic-concentration-title">Concentrazione</span>'+
+   '<span class="magic-concentration-current'+(active?' is-active':'')+'">'+
+     esc(active?(name||'Attiva · nessun incantesimo'):'Non attiva')+'</span>'+
+   '<button type="button" class="magic-overview-icon" data-act="concentration-open" aria-label="'+
+     esc(active?'Sostituisci incantesimo di concentrazione':'Attiva concentrazione')+'" title="Aggiungi o sostituisci concentrazione">+</button>'+
+   (active?'<button type="button" class="magic-overview-icon magic-overview-stop" data-act="stop-concentration" aria-label="Termina concentrazione" title="Termina concentrazione">×</button>':'')+
+   '</div></section>';
 }
 function magicToolsDialog(c,calculated){
  const kind=state.magicPopup;
  if(!kind)return '';
- const concentration='<div class="magic-concentration"><span>'+esc((c.conditions||[]).includes('concentrating')?
-   c.concentrating_spell_id||'Attiva':'Nessuna')+'</span>'+
-   ((c.conditions||[]).includes('concentrating')?btn('stop-concentration','Interrompi','small'):'')+'</div>';
- const slots='<div class="slot-table magic-slots-editor"><strong>Liv.</strong><strong>Classi</strong><strong>Patto</strong>'+
-   (calculated.spell_slots||[]).map(slot=>{
-     const level=Number(slot.level),pact=calculated.pact_slots;
-     return '<span>'+level+'°</span><div>'+
-       '<span class="magic-slot-readout">'+esc(Math.max(0,slot.total-slot.spent))+' / '+esc(slot.total)+'</span>'+
-       '<label>Usati<input type="number" min="0" max="99" data-slot="'+level+'" value="'+esc(c.spell_slots_spent?.[level]||0)+'"></label>'+
-       '<details><summary>Massimo base</summary><input type="number" min="0" max="99" data-slot-total="'+level+'" value="'+esc(slot.base)+'"></details>'+
-       '</div><div>'+(pact.level===level?'<span class="magic-slot-readout">'+
-          esc(Math.max(0,pact.total-pact.spent))+' / '+esc(pact.total)+'</span>':'—')+'</div>';
-   }).join('')+'</div>'+
-   '<details class="magic-slot-settings"><summary>Impostazioni slot</summary><p class="hint">'+
-   ((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+
-   btn('slots-automatic','Usa progressione automatica')+
-   '<label>Massimo base del Patto<input type="number" min="0" max="99" data-pact-total value="'+esc(calculated.pact_slots.base)+'"></label>'+
-   field('Slot del Patto usati','pact_slots_spent',c.pact_slots_spent??0,'number','min="0" max="99"')+
-   field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??calculated.pact_slots.level,'number','min="1" max="9"')+
-   '</details><div class="actions">'+btn('slots-restore','Ripristina tutti gli slot')+'</div>';
+ // Use only already-loaded spells to keep the modal fast offline.
+ const spellChoices=new Map();
+ for(const row of [...availableSpells(c),...sessionSpellEntries(c,calculated,state.spellCatalog||[])]){
+   const id=spellId(row);
+   if(id&&!spellChoices.has(id))spellChoices.set(id,magicSpellInfo(row).name||id);
+ }
+ const focusedId=String(c.concentrating_spell_id||'');
+ if(focusedId&&!spellChoices.has(focusedId))
+   spellChoices.set(focusedId,(state.spellCatalog||[]).find(spell=>spell.id===focusedId)?.name||focusedId);
+ const concentration='<div class="magic-concentration-picker">'+
+   '<p class="hint">La concentrazione può essere attiva anche senza indicare un incantesimo.</p>'+
+   '<label>Incantesimo (facoltativo)<select id="concentration-spell">'+
+     '<option value="">Nessun incantesimo specificato</option>'+
+     [...spellChoices.entries()].sort((a,b)=>a[1].localeCompare(b[1],'it',{sensitivity:'base'}))
+       .map(([id,name])=>'<option value="'+esc(id)+'"'+(id===focusedId?' selected':'')+'>'+esc(name)+'</option>').join('')+
+   '</select></label>'+
+   '<div class="actions"><button type="button" class="btn primary" data-act="concentration-set">'+
+     ((c.conditions||[]).includes('concentrating')?'Aggiorna concentrazione':'Attiva concentrazione')+'</button></div></div>';
+ // Shared slotUsePatch supplies tracker-style bounded counters.
+ const slotTrackerRow=(level,slot,pact=false)=>{
+   const maximum=Math.max(0,Number(slot?.total)||0),used=Math.max(0,Number(slot?.spent)||0);
+   const remain=Math.max(0,maximum-used);
+   const name=pact?'Patto · '+(Number(slot?.level)||'—')+'°':'Livello '+level;
+   return '<div class="magic-slot-manager-row"><strong>'+esc(name)+'</strong>'+
+     '<div class="magic-slot-manager-controls magic-tracker-controls">'+
+       '<span class="magic-tracker-count"><strong>'+remain+'</strong> / '+maximum+'</span>'+
+       '<button type="button" class="magic-tracker-change" data-act="slot-recover" data-level="'+(pact?0:level)+'"'+
+         (used<=0?' disabled':'')+' aria-label="Ripristina uno slot '+esc(name)+'" title="Ripristina 1">+1</button>'+
+       '<button type="button" class="magic-tracker-change" data-act="slot-use" data-level="'+(pact?0:level)+'"'+
+         (used>=maximum?' disabled':'')+' aria-label="Consuma uno slot '+esc(name)+'" title="Consuma 1">−1</button>'+
+     '</div></div>';
+ };
+ const classSlots=Array.from({length:9},(_,index)=>calculated.spell_slots?.[index]||{level:index+1,total:0,spent:0,base:0});
+ const pact=calculated.pact_slots||{total:0,spent:0,base:0,level:0};
+ const slots='<div class="magic-slot-manager">'+
+   '<p class="hint">Consuma e ripristina gli utilizzi come negli altri tracker. I massimi si modificano separatamente.</p>'+
+   classSlots.map((slot,index)=>slotTrackerRow(index+1,slot)).join('')+
+   slotTrackerRow(0,pact,true)+
+   '<div class="actions"><button type="button" class="btn small" data-act="slots-restore">Ripristina tutti gli slot</button></div>'+
+   '<details class="magic-slot-settings"><summary>Massimi e progressione</summary>'+
+     '<p class="hint">'+
+       ((c.spell_slots_manual||!c.spell_slots_automatic&&c.spell_slots_total?.some(n=>n>0))?
+         'Massimi personalizzati':'Progressione automatica dalle classi')+'</p>'+
+     '<div class="magic-slot-manual-grid">'+classSlots.map((slot,index)=>
+       '<label>Livello '+(index+1)+'<input type="number" min="0" max="99" data-slot-total="'+(index+1)+'" value="'+esc(slot.base)+'"></label>').join('')+'</div>'+
+     '<label>Massimo base del Patto<input type="number" min="0" max="99" data-pact-total value="'+esc(pact.base)+'"></label>'+
+     field('Livello slot del Patto','pact_slot_level',c.pact_slot_level??pact.level,'number','min="1" max="9"')+
+     '<button type="button" class="btn small" data-act="slots-automatic">Usa progressione automatica</button>'+
+   '</details></div>';
  const selectedMember=calculated.casting_classes.find(member=>member.id===state.spellClass);
  const selectedTarget=(!selectedMember||selectedMember.book)&&state.spellTarget==='spellbook_spells'?'spellbook_spells':'prepared_spells';
  const counts=selectedMember?classSelectionCount(c,selectedMember,calculated.casting_classes,state.spellCatalog||[]):null;
@@ -2541,7 +2580,7 @@ function manualMagicSources(c,calculated){
   return [...groups.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
     .map(([id,meta])=>'<section class="magic-source"><h3>'+esc(meta.name)+'</h3>'+
       castingStatistics(c,id==='manual'?'manual':'origin:'+id,meta.ability)+
-      spellList(c,'prepared_spells','manual',classes,{originId:id})+'</section>').join('');
+      spellList(c,'prepared_spells','manual',classes,{originId:id,includeSlots:false})+'</section>').join('');
 }
 function spellList(c,key,classId=null,classes=[],{includeSlots=true,originId=null,minLevel=0}={}) {
   const rows=key==="prepared_spells"?availableSpells(c):
@@ -4654,6 +4693,18 @@ async function handleAction(target){
     search.focus();
     return;
   }
+  if(act==='concentration-open'){
+    if(state.sheet!=='magic')return;
+    state.magicPopup='concentration';await render();return;
+  }
+  if(act==='concentration-set'){
+    if(state.sheet!=='magic')return;
+    const creature=state.editor.read();
+    const id=String(app.querySelector('#concentration-spell')?.value||'');
+    const conditions=new Set(creature.conditions||[]);conditions.add('concentrating');
+    await patch({conditions:[...conditions],concentrating_spell_id:id});
+    state.magicPopup='';await render();return;
+  }
   if(act==='slot-menu'){
     if(state.sheet!=='magic')return;
     const level=Number(target.dataset.level),pact=target.dataset.pact==='true';
@@ -5294,7 +5345,7 @@ async function handleAction(target){
     await render();return;
   }
   if(act==='stop-concentration'){
-    const c=state.editor.read();await patch({conditions:(c.conditions||[]).filter(id=>id!=='concentrating'),concentrating_spell_id:''});await render();return;
+    const c=state.editor.read();await patch(concentrationEndPatch(c));state.magicPopup='';await render();return;
   }
   if(['slot-use','slot-recover','slots-restore','slots-automatic'].includes(act)){
     const c=state.editor.read();

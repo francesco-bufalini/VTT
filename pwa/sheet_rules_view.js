@@ -929,10 +929,30 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
   }
  }
  if(sheet==='magic'){
-  const tools=bank.querySelector('.magic-toolbar');bind('magic-tools',tools);
-  html='<div class="play-inline-tools"><span>'+((c.conditions||[]).includes('concentrating')?'Concentrazione attiva':'Nessuna concentrazione')+'</span>'+edit('magic-tools','Gestisci poteri e incantesimi','settings')+'</div>';
-  const slots=[...bank.querySelectorAll('.magic-level-slot')].filter((node,i,all)=>all.findIndex(n=>n.dataset.level===node.dataset.level&&n.dataset.act===node.dataset.act)===i);
-  if(slots.length)html+=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>proxy(node,node.getAttribute('aria-label')||'Consuma slot','', '<small>'+esc(node.dataset.level==='0'?'Patto':node.dataset.level+'°')+'</small><b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',proxy(bank.querySelector('[data-magic-tool="slots"]'),'Gestisci slot','reset'));
+  const overview=bank.querySelector('.magic-overview');
+  const slots=[...overview?.querySelectorAll('.magic-level-slot')||[]];
+  // Slot buttons remain rendered even for a creature with no remaining or
+  // granted slots; the source controls still own the actual mutations.
+  html=card('Slot incantesimo','<div class="play-slots">'+slots.map(node=>
+    proxy(node,node.getAttribute('aria-label')||'Gestisci slot','',
+      '<small>'+esc(node.dataset.pact==='true'?'Patto '+node.dataset.level+'°':node.dataset.level+'°')+'</small>'+
+      '<b>'+esc(node.textContent.trim())+'</b>')).join('')+'</div>',
+    proxy(overview?.querySelector('.magic-overview-manage'),'Gestisci slot','reset'));
+  const concentrated=(c.conditions||[]).includes('concentrating')||Boolean(c.concentrating_spell_id);
+  const concentratedId=String(c.concentrating_spell_id||'');
+  const concentratedName=concentratedId?
+    (spells.find(spell=>spell.id===concentratedId)?.name||concentratedId):'';
+  html+='<section class="play-magic-concentration" aria-label="Concentrazione">'+
+    '<strong>Concentrazione</strong>'+
+    '<span class="play-magic-concentration-status'+(concentrated?' is-active':'')+'">'+
+      esc(concentrated?(concentratedName||'Attiva · nessun incantesimo'):'Non attiva')+'</span>'+
+    '<div class="play-magic-concentration-actions">'+
+      proxy(overview?.querySelector('[data-act="concentration-open"]'),
+        concentrated?'Sostituisci concentrazione':'Attiva concentrazione','',
+        '<span aria-hidden="true">+</span>')+
+      (concentrated?proxy(overview?.querySelector('[data-act="stop-concentration"]'),
+        'Termina concentrazione','', '<span aria-hidden="true">×</span>'):'')+
+    '</div></section>';
   for(const source of bank.querySelectorAll('.magic-source')){
    const title=source.querySelector('h3')?.textContent||'Poteri';
    const rows=[...source.querySelectorAll('.magic-spell-row')].map(row=>{
