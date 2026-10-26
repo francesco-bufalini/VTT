@@ -42,6 +42,32 @@ export function featGrantOrigins(record={},calculated={},abilityGrants={}){
  }
  return result;
 }
+// Use the exact same identity as trait_projection.js. A feat is a link to
+// its real benefit-bearing trait, never a second independent description.
+export function featTraitOriginKey(feat={}){
+ const entry=ownedFeat(feat);
+ return 'feat|'+(entry.id||norm(entry.name)+'|'+norm(entry.source));
+}
+export function featOriginLabel(feat={},calculated={}){
+ const entry=ownedFeat(feat);
+ if(entry.granting_origin_name)return String(entry.granting_origin_name);
+ const id=String(entry.granted_by||'');
+ const feature=rows(calculated.features).find(row=>row.origin_id===id);
+ if(feature){
+  const parts=String(feature.origin_key||'').split('|');
+  const className=parts[0]==='class'?parts[2]:'';
+  const level=Number(feature.level);
+  return 'Tratto · '+feature.name+(className?' · '+className:'')+
+    (Number.isInteger(level)&&level>0?' (liv. '+level+')':'');
+ }
+ const other=rows(calculated.origins).find(row=>row.id===id);
+ if(other)return String(other.name||other.id);
+ if(id==='manual')return 'Manuale';
+ if(entry.origin_name)return String(entry.origin_name);
+ // A source book is not the origin of a feat. Do not invent one for old saves.
+ return 'Origine non specificata';
+}
+
 export function featAlreadyOwned(record={},feat={}){
  return rows(record.feats_catalog).map(ownedFeat).some(row=>
    matched(row.name,feat.name)&&matched(row.source,feat.source));
