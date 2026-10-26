@@ -5,7 +5,7 @@ import { getRecord, listRecords, putRecord, deleteRecordIfRevision, insertRecord
   localOwnerId } from "./storage.js";
 import { validateCreature, validDefinition, parseCreatureExport, makeOwnedCopy,
   referencedDefinitions, makeCreatureExport, MAX_CREATURE_BYTES } from "./creature_format.js";
-import { initialCreature } from "./character_core.js";
+import { initialCreature, experienceFloorPatch } from "./character_core.js";
 import { consolidateOwnedItems } from "./item_controls.js";
 
 const CREATURE_TYPE = "creature";
@@ -201,6 +201,11 @@ export async function openCreatureEditor(id, scope = "default") {
   const migrated=migrateSecondForm(stored.data);
   if(JSON.stringify(migrated)!==JSON.stringify(stored.data))
     stored=await saveCreature(migrated,scope,stored.revision);
+  // Repair legacy high-level characters with insufficient XP on first open.
+  // This is local IndexedDB migration; no desktop connection is required.
+  const xpRepair=experienceFloorPatch(stored.data);
+  if(Object.keys(xpRepair).length)
+    stored=await saveCreature({...stored.data,...xpRepair},scope,stored.revision);
   let pending = Promise.resolve(), blocked = null;
   let latest = structuredClone(stored.data);
   const editor = {
@@ -220,6 +225,8 @@ export async function openCreatureEditor(id, scope = "default") {
         return Promise.reject(new TypeError("Creature update must be an object"));
       if(Array.isArray(patch.inventory))patch={...patch,inventory:consolidateOwnedItems(patch.inventory)};
       const proposed = validateCreature(replaceBase?structuredClone(patch):applyVariantEdit(latest,structuredClone(patch)));
+      // Also cover direct/imported edits that bypass the Info field handlers.
+      Object.assign(proposed,experienceFloorPatch(proposed));
       if (Array.isArray(proposed.inventory))
         proposed.inventory = consolidateOwnedItems(proposed.inventory);
       if (proposed.id !== stored.data.id ||
