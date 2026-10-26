@@ -68,6 +68,25 @@ export function featOriginLabel(feat={},calculated={}){
  return 'Non specificata';
 }
 
+// Present class-linked 5etools feat alternatives as explicit selectable
+// variants. Keep the canonical feat name/source for saved origin identities.
+// Only split complete named class-list blocks: arbitrary alternate effects
+// are not assumed to be independent feat editions.
+export function expandedSpellFeatOptions(feats=[],additionalSpells=[]){
+ const result=[];
+ for(const feat of rows(feats)){
+  const source=rows(additionalSpells).find(row=>row.kind==='feat'&&
+    matched(row.name,feat.name)&&matched(row.source,feat.source));
+  const blocks=rows(source?.blocks);
+  const isClassChoice=blocks.length>1&&blocks.every(block=>
+    /^(Bard|Cleric|Druid|Sorcerer|Warlock|Wizard) Spells$/i.test(String(block?.name||'')));
+  if(!isClassChoice){result.push(feat);continue;}
+  for(const block of blocks)result.push({...feat,
+    spell_variant:block.name,
+    display_name:feat.name+' · '+block.name.replace(/ Spells$/i,'')});
+ }
+ return result;
+}
 export function featAlreadyOwned(record={},feat={}){
  return rows(record.feats_catalog).map(ownedFeat).some(row=>
    matched(row.name,feat.name)&&matched(row.source,feat.source));
@@ -99,6 +118,7 @@ export function addFeatWithOrigin(record={},entry={},selectedOrigin='',calculate
  changes.feats_catalog=[...changes.feats_catalog,{
   id:origin.asi?'advancement:'+origin.id:String(entry.id||''),
   name:String(entry.name),source:String(entry.source),
+  ...(entry.spell_variant?{spell_variant:String(entry.spell_variant)}:{}),
   granted_by:origin.id,granting_origin_name:origin.label
  }];
  return changes;
