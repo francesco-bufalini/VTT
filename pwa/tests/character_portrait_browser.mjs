@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {browserFixture,seedPlayCreature} from './browser_fixture.mjs';
 
-const fixture=await browserFixture();
+const fixture=await browserFixture({imagePolicy:true});
 const {page,origin,close,errors}=fixture;
 try{
  await seedPlayCreature(page,origin);
@@ -37,6 +37,16 @@ try{
  await chooser.setFiles({name:'ritratto.png',mimeType:'image/png',
   buffer:Buffer.from(image.split(',')[1],'base64')});
  await portrait.locator('.play-portrait-frame img').waitFor();
+ await page.waitForFunction(()=>{
+  const img=document.querySelector('.play-portrait-frame img');
+  return img?.complete;
+ });
+ const visible=await portrait.locator('.play-portrait-frame img').evaluate(img=>({
+  width:img.naturalWidth,height:img.naturalHeight,
+  frameWidth:img.getBoundingClientRect().width
+ }));
+ assert(visible.width>0&&visible.height>0&&visible.frameWidth>0,
+  'Uploaded portrait must really decode and render under the Godot host image CSP: '+JSON.stringify(visible));
  const read=()=>page.evaluate(async creatureId=>{
   const {loadCreature}=await import('/creatures.js');
   return (await loadCreature(creatureId)).data.sheet_portrait_data;
@@ -52,6 +62,9 @@ try{
  await page.reload();
  await page.locator('[data-act="open"]').click();
  await page.locator('#sheet-play-view .play-portrait-frame img').waitFor();
+ await page.waitForFunction(()=>document.querySelector('.play-portrait-frame img')?.complete);
+ assert(await page.locator('#sheet-play-view .play-portrait-frame img').evaluate(img=>img.naturalWidth>0&&img.naturalHeight>0),
+  'The reloaded portrait must still decode under CSP');
  assert.equal(await page.locator('#sheet-play-view .play-portrait-frame img').getAttribute('src'),saved,
   'The photo survives a reload from local IndexedDB');
  await page.locator('[data-act="info-portrait-remove"]').click();
