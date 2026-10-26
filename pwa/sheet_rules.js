@@ -470,7 +470,7 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
     if(rows.has(id)){rows.get(id).recharge=step.reset||'manual';continue;}
     try{
      const max=Math.max(int(resource.minimum),parseArithmetic(step.value,resolve));
-     if(max>0)add({id,name:resource.name,max,max_formula:String(step.value),origin_name:resource.origin_feature||resource.name,origin_feature_key:resource.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass||'',recharge:step.reset||'manual',automatic:true});
+     if(max>0)add({id,name:resource.name,max,max_formula:String(step.value),origin_name:resource.origin_feature||resource.name,origin_feature_key:resource.origin_feature_key||'',origin_class:member.name,origin_class_source:base.source,origin_subclass:resource.subclass||'',origin_subclass_source:resource.subclass?(resource.source||member.subclass_source||''):'',recharge:step.reset||'manual',automatic:true});
     }catch{ /* An unsupported formula cannot invent a resource maximum. */ }
    }
   }
@@ -497,7 +497,16 @@ export function resourceTrackers(record,catalog,resolve=()=>0){
  for(const row of rows.values()){
   const ref=String(row.origin_feature_key||'').replace(/^feature:/,''),wanted=String(row.origin_name||row.name).trim().toLowerCase();
   const matches=ref?features.filter(f=>f.key===ref):features.filter(f=>{
-   if(row.origin_class&&(!same(f.class_name,row.origin_class)||!same(f.class_source,row.origin_class_source)||f.origin_key.includes('|subclass|')!==!!row.origin_subclass||row.origin_subclass&&!f.origin_key.includes('|subclass|'+row.origin_subclass.toLowerCase()+'|')))return false;
+   if(row.origin_class){
+    if(!same(f.class_name,row.origin_class)||!same(f.class_source,row.origin_class_source))return false;
+    const subclassParts=String(f.origin_key||'').split('|subclass|');
+    if((subclassParts.length>1)!==!!row.origin_subclass)return false;
+    if(row.origin_subclass){
+     const [name,source]=subclassParts[1].split('|');
+     if(subclassKey(name)!==subclassKey(row.origin_subclass)||
+       row.origin_subclass_source&&!same(source,row.origin_subclass_source))return false;
+    }
+   }
    const name=f.name.trim().toLowerCase();return name===wanted||name.startsWith(wanted+' {')||name.startsWith(wanted+' (');
   });
   const exact=matches.filter(f=>f.name.trim().toLowerCase()===wanted);
