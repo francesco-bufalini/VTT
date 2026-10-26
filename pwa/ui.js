@@ -33,7 +33,7 @@ import {sheetRollOriginSegments,sheetScoreOriginSegments,sheetRollOriginHtml,she
 import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
 import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
@@ -3915,6 +3915,23 @@ function openPendingChoicesIndex(){
  app.append(dialog);
  openDialog(dialog);
 }
+// Shared by direct selection and automatic one-to-one follow-up choices.
+// A magical choice uses the existing Magia selector; all other structured
+// choices use the ordinary pending-choice modal.
+async function openCharacterChoice(choice){
+ if(app.querySelector('#trait-benefits-dialog'))dismissTraitBenefitDialog();
+ if(choice.kind==='spell'){
+  app.querySelector('#pending-choice-dialog')?.remove();
+  state.pendingSpellChoiceId=choice.source_choice_id;
+  state.sheet='magic';state.magicPopup='choices';await render();
+  const row=[...app.querySelectorAll('[data-pending-spell-choice]')]
+    .find(node=>node.dataset.pendingSpellChoice===choice.source_choice_id);
+  row?.scrollIntoView?.({block:'nearest'});
+  row?.querySelector('select')?.focus?.({preventScroll:true});
+  return;
+ }
+ openPendingChoiceDialog(choice);
+}
 function openPendingChoiceDialog(choice){
  app.querySelector('#pending-choice-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -4282,18 +4299,7 @@ async function handleAction(target){
   if(act==='pending-choice-open'){
     const choice=(state.calculated?.pending_choices||[]).find(row=>row.id===target.dataset.choiceId);
     if(!choice)throw Error('Scelta non disponibile nella scheda.');
-    if(app.querySelector('#trait-benefits-dialog'))dismissTraitBenefitDialog();
-    if(choice.kind==='spell'){
-      app.querySelector('#pending-choice-dialog')?.remove();
-      state.pendingSpellChoiceId=choice.source_choice_id;
-      state.sheet='magic';state.magicPopup='choices';await render();
-      const row=[...app.querySelectorAll('[data-pending-spell-choice]')]
-        .find(node=>node.dataset.pendingSpellChoice===choice.source_choice_id);
-      row?.scrollIntoView?.({block:'nearest'});
-      row?.querySelector('select')?.focus?.({preventScroll:true});
-      return;
-    }
-    openPendingChoiceDialog(choice);return;
+    await openCharacterChoice(choice);return;
   }
   if(act==='pending-choice-close'){
     const dialog=app.querySelector('#pending-choice-dialog');
@@ -4308,13 +4314,22 @@ async function handleAction(target){
     const selected=[...dialog.querySelectorAll('[name="pending-options"]:checked')].flatMap(row=>
       row.value==='__custom__'?(customField?.value||'').split(',').map(v=>v.trim())
         .filter(Boolean).map(value=>'__custom__:'+value):[row.value]);
-    const current=state.editor.read();
+    const editor=state.editor,creatureId=state.creatureId,current=editor.read();
     // Validate once again against freshly derived grants before persisting.
     const fresh=await computeLocalData(current);
     const live=fresh.pending_choices.find(row=>row.id===choice.id);
     if(!live)throw Error('Il privilegio non concede più questa scelta.');
     await patch(savePendingChoice(current,live,selected));
-    dialog.remove();await render();return;
+    dialog.remove();await render();
+    // Render and inspect actual saved choices before opening anything else.
+    // Several new pending choices or old unrelated choices must never open a
+    // guessed next dialog. A re-opened modal/changed character wins.
+    if(state.editor!==editor||state.creatureId!==creatureId||
+       app.querySelector('#pending-choice-dialog'))return;
+    const followUp=singleNewPendingChoice(fresh.pending_choices,
+      state.calculated?.pending_choices||[],live);
+    if(followUp)await openCharacterChoice(followUp);
+    return;
   }
   if(act==='battle-action-jump'){
     const actionId=String(target.dataset.actionId||'');
