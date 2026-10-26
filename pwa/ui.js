@@ -1379,7 +1379,7 @@ async function editorView() {
           return '<section class="magic-source"><header class="magic-source-header">'+
             '<div class="magic-source-title"><h3>'+esc(member.name)+'</h3>'+
             (member.source?'<span class="hint">'+esc(member.source)+'</span>':'')+'</div>'+
-            '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChips(calculated)+'</div></header>'+
+            '<div class="magic-source-resources" aria-label="Risorse di lancio">'+magicSlotUsageChip()+'</div></header>'+
             castingStatistics(c,member.id,member.ability)+
             '<div class="magic-source-controls">'+
             (member.mode==='Preparati'?
@@ -2268,21 +2268,11 @@ function magicSlotSummary(calculated=state.calculated){
  }
  return levels;
 }
-// The header is a readout of the same slot pools represented by the
-// interactive per-level buttons below. Never aggregate unrelated slot levels.
-function magicSlotUsageChips(calculated){
- const entries=[];
- for(const [level,pools] of magicSlotSummary(calculated)){
-   for(const [name,slot] of [['Slot',pools.classSlot],['Patto',pools.pact]]){
-     if(!slot)continue;
-     const remaining=Math.max(0,Number(slot.total||0)-Number(slot.spent||0));
-     entries.push('<span class="magic-source-resource" title="'+name+' livello '+level+'">'+
-       '<span class="magic-source-resource-label">'+name+' '+level+'°</span>'+
-       '<strong>'+remaining+' / '+Math.max(0,Number(slot.total)||0)+'</strong></span>');
-   }
- }
- return entries.join('')||'<span class="magic-source-resource">'+
-   '<span class="magic-source-resource-label">Slot</span><strong>0 / 0</strong></span>';
+// Spell source headers only identify their payment method. The detailed
+// normal/Pact slot levels and remaining uses stay in the Slot overview.
+function magicSlotUsageChip(){
+ return '<span class="magic-source-resource" title="Slot incantesimo">'+
+   '<span class="magic-source-resource-label">Slot</span></span>';
 }
 function magicTrackerUsageChip(tracker){
  const id=esc(tracker.id),name=esc(tracker.name||'Tracker');
@@ -2325,7 +2315,7 @@ function originSpellSections(c,calculated,renderRow){
  }
  return [...origins.entries()].sort((a,b)=>a[1].name.localeCompare(b[1].name,'it',{sensitivity:'base'}))
    .map(([origin,group])=>{
-     const badges=(group.usesSlots?magicSlotUsageChips(calculated):'')+
+     const badges=(group.usesSlots?magicSlotUsageChip():'')+
        [...group.trackers.values()].map(magicTrackerUsageChip).join('')+
        (group.missingTracker?'<span class="magic-source-resource magic-source-resource--warning">Tracker non disponibile</span>':'')+
        (group.hasFree&&!group.usesSlots&&!group.trackers.size&&!group.missingTracker?
