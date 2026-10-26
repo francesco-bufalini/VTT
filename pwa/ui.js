@@ -491,7 +491,8 @@ function stopSubscriptions() {
 }
 async function navigate(page){
   if(!sections.has(page))return;
-  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';}
+  if(page!=='catalog'){state.pendingItemOwner='';state.pendingItemContainer='';state.catalogAssignCreatureId='';}
+  else if(state.editor)state.catalogAssignCreatureId=state.creatureId||'';
   if(state.editor){try{await flushPendingFields();}catch(error){message("Salvataggio bloccato: "+errorMessage(error),true);return;}}
   const openedCreatureId=state.page==="library"&&!state.libraryMode?state.creatureId:null;
   stopSubscriptions();if(page==="session")realtimeStopped=false;
@@ -5862,7 +5863,7 @@ async function handleAction(target){
     state.inventorySelectedIndex=created.index;state.sheetPopup='';state.scrollSpellQuery='';
     await patch({inventory:created.inventory});await render();message("Pergamena aggiunta all'inventario.");return;
   }
-  if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";await navigate("catalog");state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;await render();return;}
+  if(act==="item-catalog"){const owner=state.creatureId;state.catalogCategory="items";state.catalogSelected=-1;state.catalogQuery="";state.pendingItemOwner=owner;state.pendingItemContainer=target.dataset.containerId||DEFAULT_INVENTORY_CONTAINER;await navigate("catalog");return;}
   if(act==="document-add"){
     if(!state.editor)throw Error("Apri una creatura prima di creare un documento.");
     const localId="doc_"+crypto.randomUUID().replace(/-/g,"");
