@@ -1245,8 +1245,13 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.match(document.querySelector('.play-magic-selection').textContent,/conosciuti|prepara|impara/i,
    'Class spell selection is directly accessible in the mobile play card');
  click('.play-magic-selection [data-act="sheet-proxy"]');
- await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-class'));
- assert.equal(document.querySelector('#spell-class').value,'class|phb|bard');
+ await until(()=>document.querySelector('#magic-tools-dialog[open] #spell-learn-filter'));
+ assert.equal(document.querySelector('#spell-class'),null,
+   'The class is taken from the selected spellcasting section without an extra picker');
+ assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-learn-back"]'),null);
+ assert.ok(document.querySelector('#magic-tools-dialog .magic-editor-filters #spell-search'),
+   'The class filter and spell search share the same toolbar row');
+ assert.equal(document.querySelector('#magic-tools-dialog .magic-editor-filters #spell-learn-filter')?.value,'all');
  assert.equal(document.querySelector('#spell-target'),null);
  assert.equal(document.querySelector('#magic-tools-dialog [data-act="magic-known-filter"]'),null);
  assert.equal(document.querySelector('#magic-tools-dialog .magic-selection-progress'),null);
@@ -1255,6 +1260,8 @@ test('native boxes, HP actions, automatic resources and slot edits remain usable
  assert.match(document.querySelector('#magic-tools-dialog .magic-selection-warning')?.textContent||'',/Conosciuti:\s*0\s*\/\s*\d+/,
   'Learning only shows known-spell counts without missing/excess commentary');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]'));
+ assert.equal(document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]')?.dataset.classId,
+   'class|phb|bard','Learning still uses the selected class by default');
  click('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="false"]');
  await until(()=>document.querySelector('#magic-tools-dialog [data-act="spell-known-toggle"][data-known="true"]'));
  const savedKnown=(await loadCreature(saved.data.id)).data;
