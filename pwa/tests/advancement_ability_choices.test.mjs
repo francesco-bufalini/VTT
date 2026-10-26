@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {calculateSheet} from '../sheet_rules.js';
-import {pendingCharacterChoices,savePendingChoice,choicesForTrait} from '../pending_choices.js';
+import {pendingCharacterChoices,savePendingChoice,singleNewPendingChoice,choicesForTrait} from '../pending_choices.js';
 import {collectTraitRows} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 const abilities=JSON.parse(readFileSync(new URL('../catalog/ability_grants.json',import.meta.url),'utf8'));
@@ -105,4 +105,62 @@ test('XPHB Ability Score Improvement feat itself offers +2 or +1/+1 through its 
  const owner={category:'talenti',rank:0,origin_key:'feat|ability score improvement|xphb'};
  assert(choicesForTrait(owner,c,p).some(row=>row.id==='ability-mode:'+id));
  assert(traitBenefitGroups(owner,c,calc(c)).some(group=>group.type==='bonus'));
+});
+
+test('saving ASI choice automatically exposes exactly one dependent modal at each step',()=>{
+ const asi={id:'5etools:class_features:phb:ability%20score%20improvement:fighter:4',
+  name:'Ability Score Improvement',class_name:'Fighter',class_source:'PHB',
+  source:'PHB',level:4};
+ const index={...catalogs,classFeatures:{class_features:[asi],subclass_features:[]}};
+ let c={...base(),class:'Fighter',class_source:'PHB',
+   classes:[{name:'Fighter',source:'PHB',level:4}]};
+ const sid=find(pending(c,index),'advancement-mode:'+pending(c,index).find(x=>x.kind==='advancement_mode').origin_id).origin_id;
+ const saved=(choice,selection)=>{
+  const before=pending(c,index);
+  c={...c,...savePendingChoice(c,choice,selection)};
+  return singleNewPendingChoice(before,pending(c,index),choice);
+ };
+ const main=find(pending(c,index),'advancement-mode:'+sid);
+ const second=saved(main,['ability']);
+ assert(second,'the ASI choice creates a follow-up variant');
+ assert.equal(second.kind,'ability_mode');
+ assert.equal(second.origin_id,sid);
+ const third=saved(second,['0']);
+ assert(third,'selecting a one-part distribution creates one ability choice');
+ assert.equal(third.kind,'ability');
+ assert.equal(third.count,1);
+ assert.equal(third.amount,2);
+ assert.equal(saved(third,['str']),null,'a completed chain does not reopen a popup');
+ // Switching to feats creates only the selected feat picker.
+ c={...c,...savePendingChoice(c,find(pending(c,index),'advancement-mode:'+sid),[])};
+ const featMode=find(pending(c,index),'advancement-mode:'+sid);
+ const featFollowUp=saved(featMode,['feat']);
+ assert(featFollowUp);assert.equal(featFollowUp.kind,'advancement_feat');
+ assert.equal(featFollowUp.origin_id,sid);
+ assert.equal(saved(featFollowUp,['phb|alert']),null);
+});
+
+test('auto-follow-up is suppressed for multiple newly created options, existing choices, or incomplete saves',()=>{
+ let c={...base(),species:'Aarakocra',species_source:'MPMM'};
+ const first=pending(c),mode=first.find(x=>x.kind==='ability_mode');
+ assert(mode);
+ c={...c,...savePendingChoice(c,mode,['0'])};
+ const next=pending(c);
+ assert.equal(next.filter(x=>x.id.startsWith('ability:race|mpmm|aarakocra:')).length,2);
+ assert.equal(singleNewPendingChoice(first,next,mode),null,
+  'two newly opened ability parts must not select one arbitrarily');
+ const previouslyOpen=[{id:'old',remaining:1,origin_id:'other'}];
+ const newlyOpen=[...previouslyOpen,{id:'new',kind:'proficiency',remaining:1}];
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1},...previouslyOpen],
+   [{id:'main',remaining:0},...newlyOpen],{id:'main'}).id,'new',
+ 'unrelated older unresolved choices must not suppress a unique NEW dependent choice');
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:1},{id:'new',remaining:1}],{id:'main'}),null,
+ 'partially completed parent must not open another modal');
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'new1',remaining:1},{id:'new2',remaining:1}],{id:'main'}),null);
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'unchanged',remaining:0}],{id:'main'}),null);
+ assert.equal(singleNewPendingChoice([{id:'main',remaining:1}],
+   [{id:'main',remaining:0},{id:'new',remaining:1}],{id:'stale'}),null);
 });
