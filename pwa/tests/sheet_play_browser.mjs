@@ -57,7 +57,7 @@ try{
    }
    if(key==='magic'){
     const classSource=page.locator('#sheet-play-view .play-magic-class-card:not(.play-magic-granted-card)').first();
-    assert.match(await classSource.locator('.play-card-head .play-magic-source-resources').textContent(),/Slot[^\\n]*\\d+\\s*\\/\\s*\\d+/,
+    assert.match(await classSource.locator('.play-card-head .play-magic-source-resources').textContent(),/Slot[^\n]*\d+\s*\/\s*\d+/,
       'The visible mobile class heading includes the slot pool, not only the hidden editor');
     const castingRows=page.locator('#sheet-play-view .play-magic-inline-casting .casting-statistics');
     assert.ok(await castingRows.count()>=1,
@@ -828,7 +828,7 @@ try{
  const magicFocus=page.locator('#sheet-play-view [data-magic-origin-tracker="focus"]');
  assert.equal(await magicFocus.count(),1,'The original tracker is still listed in Magic');
  const resource=magicFocus.locator('.play-card-head [data-play-magic-tracker="focus"]');
- assert.match(await resource.textContent(),/Focus arcano\\s*\\d+\\s*\/\\s*\\d+/,
+ assert.match(await resource.textContent(),/Focus arcano\s*\d+\s*\/\s*\d+/,
    'The actual mobile origin heading shows the linked tracker name and available uses');
  assert(await resource.isVisible(),'The tracker must be visible rather than kept in the hidden editor bank');
  const inlineGrantedSpell=magicFocus.locator('.play-magic-origin-spell [data-act="sheet-proxy"]');
