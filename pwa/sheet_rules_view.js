@@ -886,14 +886,11 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    const title=heading(node),i=panels.indexOf(node);
    if(['Caratteristiche','Riepilogo','Abilità','Altre competenze','Tratti'].includes(title))continue;
    const sub=title==='Aspetto'?
-    ['Specie '+(c.species||'da definire'),c.subrace?'Sottorazza '+c.subrace:'',
-     'Taglia '+(c.size_name||'Medium'),
-     c.default_miniature_id?'Miniatura base assegnata':'Miniatura base da assegnare',
-     c.current_miniature_id&&c.current_miniature_id!==c.default_miniature_id?'Forma alternativa attiva':''].filter(Boolean).join(' · '):
+    ['Specie '+(c.species||'da definire'),c.subrace||'',c.size_name||'Medium'].filter(Boolean).join(' · '):
     title==='Background'?([c.background,...(c.backgrounds_catalog||[]).filter(row=>!row.disabled).map(row=>row.name)].filter(Boolean).join(' · ')||'Nessun background assegnato'):
-    title.includes('Classi')?
-     [classNames||'Nessuna classe assegnata',c.subclass?'Sottoclasse '+c.subclass:'',
-      'Livello totale '+totalClassLevel,c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
+    title==='Classi'?
+     [classNames||'Nessuna classe assegnata',c.subclass||'',
+      c.xp!=null?c.xp+' XP':''].filter(Boolean).join(' · '):
     title==='Talenti'?(c.feats_catalog||[]).map(f=>typeof f==='string'?f:f.name).join(' · '):'';
    html+=go('panel:'+i,title,title==='Aspetto'?'eye':title==='Talenti'?'spark':'book',sub);
   }
