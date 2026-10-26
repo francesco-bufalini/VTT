@@ -4,6 +4,7 @@ import {hitDicePools} from './character_core.js';
 import {formulaReadout} from './sheet_rules_view.js';
 import {formulaValue} from './sheet_rules.js';
 import {contentForRules} from './source_edition.js';
+import {featOriginLabel,featTraitOriginKey} from './feat_picker.js';
 import {itemKind,resolveOwnedItem} from './item_controls.js';
 import {classFeatureActive,metamagicPlan} from './feature_mechanics.js';
 export const SHEET_SECTIONS = [["info","Info"],
@@ -462,19 +463,24 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
  const secondaryClasses=rowsFor(c,'classes').slice(1);
  const feats=list(c.feats_catalog).map((feat,i)=>{
   const entry=typeof feat==='string'?{name:feat}:feat||{};
-  const detail=list(catalogs.featDetails)[i]||entry;
+  const owner=featOriginLabel(entry,calculated);
   const level=Number(entry.level??entry.acquired_level??entry.origin_level);
-  const originLabel=entry.granting_origin_name||
-    list(calculated?.origins).find(row=>row.id===entry.granted_by)?.name||'';
-  const levelText=originLabel?'Origine: '+originLabel:
-    Number.isInteger(level)&&level>=1&&level<=20?'Livello del privilegio: '+level:
-    (entry.source?'Fonte: '+entry.source:'Talento posseduto');
-  const description=String(detail.description||entry.description||'').trim();
-  const ownedKey='feat|'+(entry.id||String(entry.name||'').trim().toLowerCase()+'|'+String(entry.source||'').trim().toLowerCase());
-  return '<div class="info-owned-feat-row"><details class="trait-card info-feat-entry"><summary><strong>'+esc(entry.name||'Talento')+'</strong><span class="info-feat-level">'+esc(levelText)+'</span>'+(entry.disabled?' · disattivato':'')+'</summary>'+
-   (description?'<p class="trait-description">'+esc(description)+'</p>':'<p class="feat-source">'+esc(entry.source||'Descrizione non disponibile')+'</p>')+
-   '</details>'+
-   (entry.name?'<button type="button" class="info-owned-feat-remove" data-act="feat-remove" data-feat-key="'+esc(ownedKey)+'" title="Rimuovi talento" aria-label="Rimuovi il talento '+esc(entry.name)+'">×</button>':'')+
+  const levelText=Number.isInteger(level)&&level>=1&&level<=20?
+    'Livello del privilegio: '+level:'';
+  const originKey=featTraitOriginKey(entry);
+  const book=String(entry.source||'').trim();
+  const title=String(entry.name||'Talento');
+  return '<div class="info-owned-feat-row">'+
+   '<button type="button" class="info-owned-feat-open" data-act="feat-open-trait"'+
+    ' data-feat-index="'+i+'" data-feat-origin="'+esc(originKey)+'"'+
+    ' aria-label="Apri il tratto di '+esc(title)+'">'+
+    '<span class="info-owned-feat-details"><strong>'+esc(title)+'</strong>'+
+    '<span class="info-feat-origin">Origine · '+esc(owner)+'</span>'+
+    (levelText?'<span class="info-feat-level">'+esc(levelText)+'</span>':'')+'</span>'+
+    (book?'<span class="info-feat-book">'+esc(book)+'</span>':'')+
+    '<span class="info-feat-chevron" aria-hidden="true">›</span></button>'+
+   (entry.name?'<button type="button" class="info-owned-feat-remove" data-act="feat-remove"'+
+    ' data-feat-key="'+esc(originKey)+'" title="Rimuovi talento" aria-label="Rimuovi il talento '+esc(title)+'">×</button>':'')+
    '</div>';
  }).join('')||'<p class="play-empty">Nessun talento registrato.</p>';
  const read=(target,label,signed=false,suffix='')=>formulaReadout(calculated,target,label,{signed,suffix});
