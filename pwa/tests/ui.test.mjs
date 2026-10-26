@@ -672,6 +672,9 @@ test("slot popup casts inline while compact search opens the existing spell deta
 });
 
 test("PWA granted spells group by origin while keeping shared tracker controls",async()=>{
+  // Keep this fixture independent of the preceding popup/navigation tests.
+  click('[data-nav="library"]');
+  await until(()=>document.querySelector('[data-act="library-add"]'));
   click('[data-act="library-add"]');await until(()=>document.querySelector('#library-create-dialog[open]'));click('[data-act="create"]');
   await until(()=>document.querySelector('[data-field="name"]'));
   change('[data-field="name"]',"Poteri tracker condivisi");
