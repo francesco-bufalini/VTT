@@ -34,7 +34,7 @@ import {traitStateActivationPatch} from './trait_state_rules.js';
 import {optionalRecoveryPatch,classFeatureActivationPatch,classFeatureEntries,classFeatureRollBonuses,classFeatureRollAdvantage,classFeatureRollSources,resolveClassRollMode,wildShapePatch,endWildShapePatch,metamagicOptions} from './feature_mechanics.js';
 import {changeTrackerUses,spendTrackerUses,hitDicePools} from "./character_core.js";
 import {pendingCharacterChoices,savePendingChoice,choicesForTrait,knownProficiencyOptions,removeOwnedFeatPatch} from "./pending_choices.js";
-import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin} from './feat_picker.js';
+import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,featTraitOriginKey} from './feat_picker.js';
 import {openDialog,closeDialog,dialogCloseButton,matchesSearch,pageResults,resultsFooter} from "./ui_primitives.js";
 import {inventorySearchResults} from "./inventory_search.js";
 import {isContentAvailableForRules} from './source_edition.js';
@@ -4223,6 +4223,30 @@ async function handleAction(target){
       results.innerHTML=renderSpellResults();
       results.scrollTop=previousScroll;
     }
+    return;
+  }
+  if(act==='feat-open-trait'){
+    const record=state.editor?.read();
+    const index=Number(target.dataset.featIndex);
+    const feat=record?.feats_catalog?.[index];
+    if(!record||!Number.isInteger(index)||index<0||!feat)
+      throw Error('Talento non più presente nella scheda.');
+    const entry=typeof feat==='string'?{name:feat}:feat;
+    const originKey=featTraitOriginKey(entry);
+    state.sheet='info';state.sheetPopup='';state.sheetPopupTitle='';
+    const findTrait=()=>state.traitRows.find(row=>row.category==='talenti'&&
+      row.rank===0&&row.origin_key===originKey);
+    if(!findTrait())await render();
+    const trait=findTrait();
+    if(!trait){message('Tratto del talento non disponibile nella scheda.',true);return;}
+    const match=[...app.querySelectorAll('.play-info-traits .trait-card')]
+      .find(card=>card.dataset.traitKey===trait.key);
+    if(!match){message('La sezione Tratti non è disponibile.',true);return;}
+    const disclosure=match.closest('.play-traits-disclosure');
+    if(disclosure)disclosure.open=true;
+    match.open=true;
+    match.scrollIntoView?.({block:'center',behavior:'smooth'});
+    match.querySelector('summary')?.focus?.({preventScroll:true});
     return;
   }
   if(act==='feat-remove'){
