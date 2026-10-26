@@ -50,6 +50,14 @@ export function effectiveAllocations(record,originId,variants,legacy=''){
 export function allocationChoiceRows(record,originId,name,variants,legacy=''){
  if(!variants.length)return [];
  const state=savedAllocation(record,originId,variants,legacy),rows=[];
+ // Preserve the original single-stat chooser and persisted ability_choice field.
+ // A migration would otherwise silently invalidate old selected feats.
+ if(variants.length===1&&variants[0].parts.length===1&&variants[0].parts[0].count===1){
+  const part=variants[0].parts[0],selected=state.allocations.map(x=>x.ability).filter(x=>part.options.includes(x));
+  return [{id:'ability:'+originId,kind:'ability',origin_id:originId,name,
+   label:'Caratteristica (+'+part.amount+')',amount:part.amount,
+   count:1,options:part.options,selected,remaining:selected.length?0:1}];
+ }
  if(variants.length>1)rows.push({
   id:'ability-mode:'+originId,kind:'ability_mode',origin_id:originId,name,
   label:'Distribuzione degli incrementi',count:1,
