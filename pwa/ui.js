@@ -4294,9 +4294,9 @@ async function openBackgroundPickerDialog(rawIndex='primary'){
   }catch(err){saving=false;feedback.textContent=errorMessage(err);repaint();}
  });
  try{
-  rows=availableReferenceRows(record,'background','backgrounds',{
-    backgrounds:await catalogEntries('backgrounds')});
-  state.referenceCatalogs.backgrounds=rows;
+  const allBackgrounds=await catalogEntries('backgrounds');
+  rows=availableReferenceRows(record,'background','backgrounds',{backgrounds:allBackgrounds});
+  state.referenceCatalogs.backgrounds=allBackgrounds;
  }catch(err){error='Catalogo background non disponibile: '+errorMessage(err);}
  finally{loading=false;repaint();}
 }
