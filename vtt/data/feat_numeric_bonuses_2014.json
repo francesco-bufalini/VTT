@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "source": "PHB (2014)",
+  "purpose": "Unconditional numeric feat benefits missing from typed 5etools ability fields. Only effects whose targets and formulas are supported by the generic sheet evaluator.",
+  "feats": [
+    {
+      "name": "Alert",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "initiative",
+          "expression": "5"
+        }
+      ]
+    },
+    {
+      "name": "Mobile",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "speed",
+          "expression": "10"
+        }
+      ]
+    },
+    {
+      "name": "Observant",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "passive_perception",
+          "expression": "5"
+        },
+        {
+          "target": "passive_skill:investigation",
+          "expression": "5"
+        }
+      ]
+    },
+    {
+      "name": "Tough",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "hp",
+          "expression": "2*level"
+        }
+      ]
+    }
+  ]
+}
