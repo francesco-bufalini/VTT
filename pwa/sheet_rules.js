@@ -808,7 +808,8 @@ function calculateSheetValues(record={},catalogs={}){
     ...baseRows.filter(row=>!excludedBases.has(row.id)&&!suppressed.has('base_override:'+row.id))
   ];
   const baseFor=target=>baseOverrides.filter(row=>row?.target===target&&!row.disabled&&
-    requirementsAllow(record,row)&&sourceEnabled(row))
+    requirementsAllow(record,row)&&sourceEnabled(row)&&
+    (!row.parent_origin||sourceEnabled({origin_id:row.parent_origin})))
     .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
       String(a.id||'').localeCompare(String(b.id||'')));
   const overrideNumeric=(target,base,resolve,stack,mode)=>{
