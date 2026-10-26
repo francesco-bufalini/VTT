@@ -4,6 +4,7 @@
 import {selectedSources,grantedFields,fixedProficiencies,effectiveBackgrounds} from './structured_effects.js';
 import {SKILLS} from './sheet_rules.js';
 import {traitBenefitSources} from './trait_benefits.js';
+import {contentForRules} from './source_edition.js';
 import {originVariants,allocationChoiceRows,saveAllocationChoice,allocationVariants} from './ability_choice_rules.js';
 
 const arr=x=>Array.isArray(x)?x:[];
@@ -204,7 +205,7 @@ export function pendingCharacterChoices(record={},calculated={},catalogs={}){
     const cut=key.lastIndexOf('|');return cut<0?null:
       {value:key.slice(cut+1)+'|'+key.slice(0,cut),name:key.slice(0,cut),source:key.slice(cut+1)};
    }).filter(Boolean).filter(f=>String(record.rules_version||'2014')==='2024'?
-      f.source==='xphb'||f.source==='efa':true)
+      f.source==='xphb'||f.source==='efa':contentForRules([f],record.rules_version).length>0)
      .sort((a,b)=>a.name.localeCompare(b.name));
    const ownedFeat=arr(record.feats_catalog).find(f=>f?.granted_by===sid);
    const value=ownedFeat?norm(ownedFeat.source)+'|'+norm(ownedFeat.name):'';
