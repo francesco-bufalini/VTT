@@ -185,7 +185,9 @@ export async function collectTraitRows(record={},calculated={},providers={}){
  for(const feat of arr(record.feats_catalog)){
   if(!feat?.name)continue;
   const info=await lookup('feats',feat.name,feat.source,feat.id)||feat;
-  const options={category:'talenti',origin:'Talento · '+feat.name,
+  const granting=feat.granted_by?arr(calculated.features).find(row=>row.origin_id===feat.granted_by):null;
+  const owner=granting?' · da '+granting.name+' (livello '+granting.level+')':'';
+  const options={category:'talenti',origin:'Talento · '+feat.name+owner,
    origin_key:'feat|'+(feat.id||norm(feat.name)+'|'+norm(feat.source)),level:1,inactive:!!feat.disabled};
   add({name:feat.name,entries:info.entries??info.description??'',source:feat.source,
    action_type:feat.action_type||info.action_type||info.activation||''},{...options,rank:0});
