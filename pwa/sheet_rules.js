@@ -557,8 +557,9 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   damageMod+=damageExtraModifier;
   const range=clamp(int(settings.range_feet,attack.range_feet)+bonus('attack_range:'+attack.id),5,1000);
   const longRange=attack.melee||!attack.long_range_feet?0:clamp(int(settings.long_range_feet,attack.long_range_feet)+bonus('attack_long_range:'+attack.id),5,5000);
-  out.push({...attack,ability,proficient,hit,damage:damage?damage+sign(damageMod):'Come da bestiario',
-    damage_base_formula:damage||'',damage_ability_modifier:damageAbilityModifier,
+  const usedBase=featureContext.damageBase?featureContext.damageBase(attack.id,damage):damage;
+  out.push({...attack,ability,proficient,hit,damage:usedBase?usedBase+sign(damageMod):'Come da bestiario',
+    damage_base_formula:usedBase||'',damage_ability_modifier:damageAbilityModifier,
     damage_extra_modifier:damageExtraModifier,range_feet:range,long_range_feet:longRange,
     explanation:baseHit!==null?'Bestiario '+baseHit+' · competenza già inclusa':'Caratteristica '+modifier+' + competenza '+(proficient?proficiency:0)+' + bonus '+bonus('attack_hit:'+attack.id),
     feature_damage:featureDamage,damage_explanation:featureDamage?'Ira +'+featureDamage:'',
@@ -608,8 +609,11 @@ export function attackCalculations(record,abilities,proficiency,proficiencies=[]
   const id=slot==='off'?'unarmed:off':'unarmed';
   append({id,name:"Colpo senz’armi"+(slot==='off'?' · secondaria':''),slot,
     melee:true,range_feet:5,long_range_feet:0,damage_type:'contundente'},'str',true,'1');
-  out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+
-    bonus('attack_damage:'+id)+classFeatureDamage(record,featureContext,{},'str')));
+  // The default 2014 strike has a minimum of 1 damage. A typed replacement
+  // such as 1d4 is a damage *die*, not a flat 1 plus another 1d4.
+  if(out[out.length-1].damage_base_formula==='1')
+    out[out.length-1].damage=String(Math.max(1,1+(abilities.str?.modifier??0)+
+      bonus('attack_damage:'+id)+classFeatureDamage(record,featureContext,{},'str')));
  };
  unarmed('main');
  if(!off&&!offBlocked)unarmed('off');
@@ -767,6 +771,59 @@ function calculateSheetValues(record={},catalogs={}){
   const disabled=new Set(arr(record.formula_bonuses).filter(r=>r?.disabled&&
     (r.automatic||String(r.id||"").startsWith("auto|"))).map(r=>r.id));
   const grants=[...manual,...automatic.filter(r=>!disabled.has(r.id)&&!suppressed.has('bonus:'+r.id))];
+  // Base formula replacements are not additive bonuses. Every rule has a
+  // stable origin, target and operation and reuses the normal source gates.
+  const nativeBases=index?.base_value_overrides||{};
+  const baseRows=[];
+  const baseAdd=(rule,origin_id,origin_name)=>{
+    for(const [ordinal,raw] of arr(rule?.overrides).entries()){
+      if(!raw?.target||!raw?.expression)continue;
+      const id=automaticId(origin_id,'base_value',raw.target,String(ordinal));
+      baseRows.push({...raw,id,origin_id,origin_name,automatic:true});
+    }
+  };
+  for(const feat of arr(record.feats_catalog)){
+    if(!feat?.name||feat.disabled)continue;
+    const rule=arr(nativeBases.feats).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
+    if(rule)baseAdd(rule,'feat|'+norm(feat.source)+'|'+norm(feat.name),'Talento · '+feat.name);
+  }
+  for(const feature of features){
+    if(!featureEnabled(record,feature))continue;
+    const rule=arr(nativeBases.features).find(row=>same(row.name,feature.name)&&
+      same(row.class_name,feature.class_name||feature.requirements?.class_name||
+        String(feature.origin_key||'').split('|')[2])&&
+      same(row.class_source,feature.class_source||String(feature.origin_key||'').split('|')[1]));
+    if(rule)baseAdd(rule,feature.origin_id,'Tratto · '+feature.name);
+  }
+  for(const saved of arr(record.inventory)){
+    const item=resolveOwnedItem(saved);
+    if(!item?.id||!itemActive(item,record))continue;
+    const rule=arr(nativeBases.items).find(row=>same(row.name,item.name)&&
+      (same(row.source,item.source)||!item.source&&String(record.rules_version||'2014')==='2014'));
+    if(rule)baseAdd(rule,'item:'+item.id,'Oggetto · '+item.name);
+  }
+  const excludedBases=new Set(arr(record.base_value_overrides).filter(row=>row?.automatic&&row.disabled).map(row=>row.id));
+  const baseOverrides=[
+    ...arr(record.base_value_overrides).filter(row=>!row?.automatic&&!String(row?.id||'').startsWith('auto|')),
+    ...baseRows.filter(row=>!excludedBases.has(row.id)&&!suppressed.has('base_override:'+row.id))
+  ];
+  const baseFor=target=>baseOverrides.filter(row=>row?.target===target&&!row.disabled&&
+    requirementsAllow(record,row)&&sourceEnabled(row))
+    .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
+      String(a.id||'').localeCompare(String(b.id||'')));
+  const overrideNumeric=(target,base,resolve,stack,mode)=>{
+    const applicable=baseFor(target).filter(row=>row.mode===mode);
+    const values=[];
+    for(const row of applicable){
+      try{
+        const value=parseArithmetic(row.expression,name=>resolveSymbol(name,resolve,stack));
+        if(Number.isFinite(value))values.push({row,value});
+      }catch(error){warnings.add('Sostituzione base ignorata per '+target+': '+error.message);}
+    }
+    if(!values.length)return base;
+    if(mode==='replace')return values[0].value;
+    return Math.max(base,...values.map(item=>item.value));
+  };
   if(arr(record.feats_catalog).length&&!index)warnings.add("Talenti strutturati non calcolati");
   if(classes.length&&!catalogs.classFeatures)warnings.add("Indice dei privilegi di classe non disponibile");
   if(record.additional_traits||arr(record.stat_block?.trait).length)
@@ -825,12 +882,10 @@ function calculateSheetValues(record={},catalogs={}){
             if(owner==='monk'&&!shieldBonus)formula='10 + dex_mod + wis_mod';
             if(owner==='bard'&&book==='XPHB'&&!shieldBonus)formula='10 + dex_mod + cha_mod';
           }
-          if(feature.name==='Draconic Resilience'&&owner==='sorcerer'){
-            if(book==='PHB')formula='13 + dex_mod';
-            if(book==='XPHB')formula='10 + dex_mod + cha_mod';
-          }
+
           if(formula)natural=Math.max(natural,parseArithmetic(formula,name=>resolveSymbol(name,resolve,stack)));
         }
+        natural=overrideNumeric('ac_unarmored',natural,resolve,stack,'alternative');
         return natural+shieldBonus;
       }
       const dex=resolve("ability_mod:dex",stack),type=String(armor.type||"").split("|")[0].toUpperCase();
@@ -998,8 +1053,9 @@ function calculateSheetValues(record={},catalogs={}){
     if(stack.has(target))throw Error("Dipendenza circolare: "+target);
     if(memo.has(target))return memo.get(target);
     const next=new Set(stack);next.add(target);
-    const base=targetBase(target,resolve,next);
-    const total=exhaustionAdjustedValue(base+sumGrants(target,next),target,exhaustion_effects);
+    const base=overrideNumeric(target,targetBase(target,resolve,next),resolve,next,'replace');
+    const value=base+sumGrants(target,next);
+    const total=exhaustionAdjustedValue(overrideNumeric(target,value,resolve,next,'minimum'),target,exhaustion_effects);
     if(!Number.isFinite(total))throw Error("Valore non finito per "+target);
     memo.set(target,total);return total;
   }
@@ -1084,7 +1140,20 @@ function calculateSheetValues(record={},catalogs={}){
     return {...row,max:maximum,spent:clamp(int(record.resource_tracker_spent?.[row.id]),0,maximum)};
   });
   for(const tracker of trackers)memo.set('tracker:'+tracker.id,tracker.max);
-  const featureContext={speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
+  const resolvedDamageBase=(id,damage)=>{
+    const specific=baseFor('attack_damage_base:'+id);
+    const fallback=id.startsWith('unarmed:')?baseFor('attack_damage_base:unarmed'):[];
+    const chosen=[...specific,...fallback].filter(row=>row.mode==='replace')
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||
+        String(a.id||'').localeCompare(String(b.id||'')))[0];
+    if(!chosen)return damage;
+    const formula=String(chosen.expression||'').replace(/\s+/g,'');
+    if(!/^(?:\d+|[1-9]\d*d(?:4|6|8|10|12|20|100))(?:[+-]\d+)?$/.test(formula)){
+      warnings.add('Formula del danno base ignorata: '+formula);return damage;
+    }
+    return formula;
+  };
+  const featureContext={damageBase:resolvedDamageBase,speciesAttacks:catalogs.speciesAttacks,features:features.map(f=>({...f,disabled:f.inactive||!sourceEnabled({origin_id:f.origin_id,parent_origin:f.origin_key})})),traitStates:catalogs.traitStates||[],trait_state_catalog:catalogs.traitStates||[],active_trait_state_ids:activeTraitStates(record,features,catalogs.traitStates||[]).map(row=>row.id)};
   const attacks=attackCalculations(record,abilities,safe('proficiency')??0,[...proficiencies.keys()],target=>safe(target)??0,featureContext);
   const attack_count_benefits=attackCountBenefits(record,featureContext.features);
   const originMap=new Map();
@@ -1136,6 +1205,7 @@ function calculateSheetValues(record={},catalogs={}){
     casting_classes:spellClasses,trackers,attacks,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     feature_rules:catalogs.featureRules||{},
+    base_value_overrides:baseOverrides.filter(row=>sourceEnabled(row)&&requirementsAllow(record,row)&&!row.disabled),
     feat_roll_modes:featMechanics.roll_modes.filter(row=>sourceEnabled(row)),
     feat_actions:featMechanics.actions.filter(row=>sourceEnabled(row)),
     active_feature_effects:[...classFeatureEffects(record,featureContext),...traitStateEffects(record,features,catalogs.traitStates||[])],
