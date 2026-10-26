@@ -154,7 +154,7 @@ export function classSelectionWarnings(member,count){
 }
 export function addSelectedSpell(creature,entry,target="prepared_spells",{member,classes=[],catalog=[],grantedSpells=[],allowNonClass=false}={}){
   if(!["prepared_spells","spellbook_spells"].includes(target))throw Error("Elenco non valido.");
-  if(!isContentAvailableForRules(entry,creature?.rules_version||'2014'))
+  if(!isContentAvailableForRules(entry,creature?.rules_version))
     throw Error('Questa fonte non è disponibile per le regole 2014.');
   const spell=spellRecord(entry),rows=target==="prepared_spells"?
     availableSpells(creature):arr(creature.spellbook_spells).slice();
@@ -447,7 +447,7 @@ export function originChoiceMatches(choice,spell,{otherLists=false}={}){
  return {matches:false,supported:anySupported};
 }
 export function applyOriginSpellChoice(record,choice,spell,{ability='',otherLists=false}={}){
- if(!isContentAvailableForRules(spell,record?.rules_version||'2014'))throw Error('Questa fonte non è disponibile per le regole 2014.');
+ if(!isContentAvailableForRules(spell,record?.rules_version))throw Error('Questa fonte non è disponibile per le regole 2014.');
  if(!originChoiceMatches(choice,spell,{otherLists}).matches)throw Error('Incantesimo non ammesso da questa concessione.');
  const rows=structuredClone(arr(record.origin_spell_grants)),selected=rows.filter(g=>g.source_choice_id===choice.id&&!g.disabled);
  if(selected.length>=choice.count)throw Error('Scelta già completa.');
