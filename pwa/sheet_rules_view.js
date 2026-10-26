@@ -962,7 +962,8 @@ export function mountPlaySheet(app,{creature:c,calculated:d,sheet,view={},icon,c
    // original tracker action, so shared trackers never diverge.
    const resources=[...source.querySelectorAll('.magic-source-header .magic-source-resource')]
      .map(resource=>{
-      const label=resource.querySelector('.magic-source-resource-label')?.textContent.trim()||'';
+      const label=resource.querySelector('.magic-source-resource-label')?.textContent.trim()||
+        (resource.querySelector('strong,button')?'':resource.textContent.trim());
       const counter=resource.querySelector('.magic-source-resource-counter')?.textContent.trim()||
         resource.querySelector('strong')?.textContent.trim()||'';
       const trackerId=resource.dataset.magicTrackerId||'';
