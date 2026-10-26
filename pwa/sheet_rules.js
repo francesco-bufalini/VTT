@@ -109,7 +109,7 @@ function symbolTarget(value){
     proficiency:"proficiency",prof:"proficiency",initiative:"initiative",ac:"ac",speed:"speed",
     climb_speed:"speed:climb",swim_speed:"speed:swim",fly_speed:"speed:fly",
     burrow_speed:"speed:burrow",max_hp:"hp",
-    passive_perception:"passive_perception",level:"level"
+    passive_perception:"passive_perception",passive_investigation:"passive_skill:investigation",level:"level"
   })[value]||null;
 }
 export function formulaValue(expression,calculated){
@@ -239,6 +239,17 @@ function indexRows(record,index,warnings){
         const grant=numericGrant(sid,row.name,"ability_choice","ability:"+choice.ability,choice.amount);
         if(grant)rows.push(grant);
       }
+    }
+    // 2014 feat effects absent from 5etools ability-choice fields. The same
+    // origin-gated formula pipeline handles both flat and level-scaled grants.
+    const numeric=arr(index.feat_numeric_bonuses).find(rule=>
+      same(rule.name,feat.name)&&same(rule.source,feat.source));
+    const sid='feat|'+String(feat.source||'').toLowerCase()+'|'+String(feat.name||'').toLowerCase();
+    for(const bonus of arr(numeric?.bonuses)){
+      const target=String(bonus?.target||'').trim(),expression=String(bonus?.expression||'').trim();
+      if(!target||!expression)continue;
+      rows.push({id:automaticId(sid,'feat_numeric',target),origin_id:sid,
+        origin_name:'Talento · '+feat.name,target,expression,automatic:true,disabled:false});
     }
   }
   return rows;
@@ -846,6 +857,8 @@ function calculateSheetValues(record={},catalogs={}){
       return resolve("ability_mod:"+skill[2],stack)+rank*resolve("proficiency",stack)+sumGrants("ability_check",stack);
     }
     if(target==="passive_perception")return 10+resolve("skill:perception",stack);
+    if(prefix==="passive_skill"&&SKILLS.some(([id])=>id===key))
+      return 10+resolve("skill:"+key,stack);
     return 0;
   };
   function monsterArmor(stat={}){
@@ -923,6 +936,7 @@ function calculateSheetValues(record={},catalogs={}){
     if(target.startsWith('save:'))return ['ability_mod:'+target.slice(5),'proficiency'];
     if(target.startsWith('skill:'))return ['ability_mod:'+(SKILLS.find(([id])=>id===target.slice(6))?.[2]||'wis'),'proficiency'];
     if(target==='passive_perception')return ['skill:perception'];
+    if(target.startsWith('passive_skill:'))return ['skill:'+target.slice('passive_skill:'.length)];
     if(target==='ac'&&inventory.some(it=>arr(it.equipped_slots).includes('body')&&['LA','MA'].includes(String(it.type).split('|')[0])))return ['ability_mod:dex'];
     if(target.startsWith('speed:')&&record.rules_version==='2024'&&int(record.movement_speeds?.[target.slice(6)]??record.species_speed?.[target.slice(6)])>0)return ['speed'];
     return [];
@@ -1019,7 +1033,7 @@ function calculateSheetValues(record={},catalogs={}){
   for(const v of ["climb","swim","fly","burrow"])speeds[v]=safe("speed:"+v);
   for(const slot of slots)memo.set('slot:'+slot.level,slot.total);
   memo.set('pact_slot',pactTotal);
-  for(const target of ['level','ac','initiative','hp','second_max','passive_perception'])safe(target);
+  for(const target of ['level','ac','initiative','hp','second_max','passive_perception','passive_skill:investigation'])safe(target);
   // Class spell entries retain the owning structured trait, not the class.
   const spellClasses=castingClasses(record,classesCatalog,Object.fromEntries(ABILITIES.map(a=>[a,abilities[a].modifier])))
     .map(member=>{
@@ -1116,6 +1130,7 @@ function calculateSheetValues(record={},catalogs={}){
     bonuses:grants.filter(r=>!r.disabled&&requirementsAllow(record,r)&&sourceEnabled(r)),
     stats:{level,proficiency:safe("proficiency"),initiative:safe("initiative"),
       armor_class:safe("ac"),max_hp:safe("hp"),passive_perception:safe("passive_perception"),
+      passive_investigation:safe("passive_skill:investigation"),
       speeds,automatic_hp:automaticHP,hit_dice:dice.available?dice.parts.map(p=>p.count+'d'+p.die+' ('+p.name+')').join(', '):record.hit_dice||'',
       jumps:{long:Math.max(0,abilities.str.score??0),high:Math.max(0,3+(abilities.str.modifier??0))}},
     spell_slots:slots,pact_slots:{base:Math.max(0,useSaved?int(record.pact_slots_total):progression.pact_total),total:pactTotal,spent:Math.max(0,Math.min(pactTotal,int(record.pact_slots_spent))),

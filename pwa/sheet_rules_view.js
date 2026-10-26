@@ -295,7 +295,8 @@ export function localSheetView(section,data,loadError=""){
       '<div class="derived-metrics">'+ABILITIES.map(id=>
         metric(id.toUpperCase(),signed(ability[id]?.modifier)+" · "+(ability[id]?.score??"—"))).join("")+
         metric("Bonus competenza",signed(stats.proficiency))+
-        metric("Percezione passiva",stats.passive_perception??"—")+'</div>'+
+        metric("Percezione passiva",stats.passive_perception??"—")+
+        metric("Indagare passivo",stats.passive_investigation??"—")+'</div>'+
       '<details><summary>Tiri salvezza</summary><div class="derived-metrics">'+
         ABILITIES.map(id=>metric(id.toUpperCase(),signed(data.saves?.[id]))).join("")+
       '</div></details><details><summary>Abilità</summary><div class="derived-metrics">'+
@@ -311,6 +312,7 @@ export function localSheetView(section,data,loadError=""){
     body='<div class="derived-metrics">'+metric("Classe armatura",stats.armor_class)+
       metric("Iniziativa",signed(stats.initiative))+metric("PF massimi",stats.max_hp)+
       metric("Percezione passiva",stats.passive_perception)+
+      metric("Indagare passivo",stats.passive_investigation)+
       metric("Camminata",(speeds.walk??"—")+" ft")+
       ["climb","swim","fly","burrow"].filter(id=>speeds[id]>0).map(id=>
         metric(({climb:"Scalata",swim:"Nuoto",fly:"Volo",burrow:"Scavo"})[id],

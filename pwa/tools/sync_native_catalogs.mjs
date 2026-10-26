@@ -170,6 +170,8 @@ const infusionSelectors={
 const abilityIndex=await read('../../vtt/data/structured_ability_grants_5etools.json');
 const choicePolicies=await read('../../vtt/data/ability_choice_policies_5etools.json');
 Object.assign(abilityIndex,choicePolicies);
+const featNumeric=await read('../../vtt/data/feat_numeric_bonuses_2014.json');
+abilityIndex.feat_numeric_bonuses=featNumeric.feats;
 const infusionNative=await read('../../vtt/data/artificer_infusions_5etools.json');
 abilityIndex.artificer_infusions=infusionNative.infusions.map(row=>{
   const typed=infusionSelectors[row.id]||{};
@@ -179,7 +181,8 @@ abilityIndex.artificer_infusions=infusionNative.infusions.map(row=>{
     fields.numeric_item_bonuses={...fields.numeric_item_bonuses,item_selector:typed.numeric_item_selector};
   return fields;
 });
-abilityIndex.meta={...abilityIndex.meta,artificer_infusions:'TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract'};
+abilityIndex.meta={...abilityIndex.meta,artificer_infusions:'TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract',
+ feat_numeric_bonuses:'PHB 2014 unconditional numeric feat effects from vtt/data/feat_numeric_bonuses_2014.json'};
 await writeFile(new URL('../catalog/ability_grants.json',import.meta.url),JSON.stringify(abilityIndex,null,2)+'\n');
 const mechanics=await read('../../vtt/data/class_mechanics_5etools.json');
 const resources=await read('../../vtt/data/class_resource_overrides.json');

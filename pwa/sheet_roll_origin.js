@@ -299,16 +299,18 @@ export function sheetScoreOriginSegments(record,calculated,target){
  let base=total;
  let formula='Valore di base';
  let baseName='Regole e dati della creatura';
- if(target==='passive_perception'){
-   // Passive perception inherits *exactly* the resolved Perception
-   // proficiency, expertise, item and category bonuses, plus its own grants.
-   sourceRows=sheetRollOriginSegments(record,calculated,'skill:perception')
+ if(target==='passive_perception'||target.startsWith('passive_skill:')){
+   // Passive skill scores inherit resolved training/bonuses without adding to
+   // the active d20 roll; feat-specific passive grants remain separate terms.
+   const skill=target==='passive_perception'?'perception':target.slice('passive_skill:'.length);
+   const label=SKILLS.find(([id])=>id===skill)?.[1]||skill;
+   sourceRows=sheetRollOriginSegments(record,calculated,'skill:'+skill)
      .filter(row=>row.kind!=='mode'&&row.kind!=='dice')
      .map(row=>row.kind==='base'?{
        ...row,formula:row.formula.replace(/^1d20/,'10'),
        expanded:row.expanded.replace(/^1d20/,'10'),
        value:row.value+10,
-       originName:'Percezione passiva · base'}:row);
+       originName:label+' passiva · base'}:row);
  }else{
    const baseValues={
      hp:()=>Number(record?.max_hp_base??record?.max_hp??1),

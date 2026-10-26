@@ -116,3 +116,33 @@ test("native fallback feature keys honor nested feat requirement level and activ
  const below=calculateSheet({...c,level:4,classes:[{...c.classes[0],level:4}]},catalogs);
  assert(!below.features.some(f=>f.name==="Level Gate"));
 });
+
+test("PHB 2014 supplemental feat grants are generated from native data",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const native=JSON.parse(readFileSync(new URL("../../vtt/data/feat_numeric_bonuses_2014.json",import.meta.url)));
+ const packaged=JSON.parse(readFileSync(new URL("../catalog/ability_grants.json",import.meta.url)));
+ assert.deepEqual(packaged.feat_numeric_bonuses,native.feats);
+ const base={...fighter(8),abilities:{str:10,dex:14,con:10,int:12,wis:14,cha:10}};
+ const catalogs={...catalog,abilityGrants:packaged};
+ const withFeat=feat=>calculateSheet({...base,feats_catalog:[{name:feat,source:"PHB"}]},catalogs);
+ const observant=withFeat("Observant");
+ assert.equal(observant.stats.passive_perception,17);
+ assert.equal(observant.stats.passive_investigation,16);
+ assert.equal(observant.skills.perception,2,"active Perception must not receive the feat bonus");
+ assert.equal(observant.skills.investigation,1,"active Investigation must not receive the feat bonus");
+ assert(observant.automatic_bonuses.some(b=>b.target==="passive_skill:investigation"&&b.origin_id==="feat|phb|observant"));
+ assert.equal(withFeat("Alert").stats.initiative,8);
+ assert.equal(withFeat("Mobile").stats.speeds.walk,40);
+ assert.equal(withFeat("Tough").stats.max_hp,36);
+ const levelTen={...base,level:10,classes:[{...base.classes[0],level:10}]};
+ assert.equal(calculateSheet({...levelTen,feats_catalog:[{name:"Tough",source:"PHB"}]},catalogs).stats.max_hp,40);
+ const noFeat=calculateSheet(base,catalogs);
+ assert.equal(noFeat.stats.passive_perception,12);
+ assert.equal(noFeat.stats.passive_investigation,11);
+ assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB",disabled:true}]},catalogs).stats.passive_perception,12);
+ assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB"}],origin_enabled:{"feat|phb|observant":false}},catalogs).stats.passive_investigation,11);
+ assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"XPHB"}]},catalogs).stats.passive_perception,12,"2024 Observant has different mechanics");
+ const suppressed=observant.automatic_bonuses.find(b=>b.target==="passive_perception");
+ assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB"}],formula_bonuses:[{id:suppressed.id,automatic:true,disabled:true}]},catalogs).stats.passive_perception,12);
+ assert.equal(calculateSheet({...base,feats_catalog:[{name:"Observant",source:"PHB"}],trait_benefit_removed:{test:["bonus:"+suppressed.id]}},catalogs).stats.passive_perception,12);
+});

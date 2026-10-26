@@ -7,7 +7,8 @@
       "data/feats.json",
       "data/backgrounds.json"
     ],
-    "artificer_infusions": "TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract"
+    "artificer_infusions": "TCE typed infusion mechanics projected from vtt/data/artificer_infusions_5etools.json; selectors follow structured item-enhancement contract",
+    "feat_numeric_bonuses": "PHB 2014 unconditional numeric feat effects from vtt/data/feat_numeric_bonuses_2014.json"
   },
   "race": [
     {
@@ -4629,6 +4630,52 @@
             "count": 2,
             "amount": 1
           }
+        }
+      ]
+    }
+  ],
+  "feat_numeric_bonuses": [
+    {
+      "name": "Alert",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "initiative",
+          "expression": "5"
+        }
+      ]
+    },
+    {
+      "name": "Mobile",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "speed",
+          "expression": "10"
+        }
+      ]
+    },
+    {
+      "name": "Observant",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "passive_perception",
+          "expression": "5"
+        },
+        {
+          "target": "passive_skill:investigation",
+          "expression": "5"
+        }
+      ]
+    },
+    {
+      "name": "Tough",
+      "source": "PHB",
+      "bonuses": [
+        {
+          "target": "hp",
+          "expression": "2*level"
         }
       ]
     }
