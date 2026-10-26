@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin} from '../feat_picker.js';
+import {featGrantOrigins,featAlreadyOwned,addFeatWithOrigin,featOriginLabel,featTraitOriginKey} from '../feat_picker.js';
+import {nativeSection} from '../native_sheet.js';
 import {collectTraitRows} from '../trait_projection.js';
 import {traitBenefitGroups} from '../trait_benefits.js';
 import {removeOwnedFeatPatch} from '../pending_choices.js';
@@ -94,4 +95,61 @@ test('dedicated feat popup is local, searchable and offline-served, not old comp
  assert.doesNotMatch(ui,/if\(act==='feat-catalog'\)\{[^}]*navigate\('catalog'\)/);
  assert.match(host,/\/feat_picker\.js/);
  assert.match(sw,/\/feat_picker\.js/);
+});
+
+test('feat origins show granting ASI, background, explicit manual and legacy unknown separately from book',()=>{
+ const c=record();
+ assert.match(featOriginLabel({name:'Alert',source:'PHB',granted_by:id},calculated),
+   /Tratto · Ability Score Improvement · fighter \(liv\. 4\)/);
+ assert.equal(featOriginLabel({name:'Alert',source:'PHB',granted_by:'race|phb|human'},calculated),'Human');
+ assert.equal(featOriginLabel({name:'Alert',source:'PHB',granted_by:'manual'},calculated),'Manuale');
+ assert.equal(featOriginLabel({name:'Alert',source:'PHB'},calculated),'Origine non specificata');
+ assert.equal(featOriginLabel({name:'Alert',source:'PHB',granting_origin_name:'Background · Soldato'},calculated),
+   'Background · Soldato');
+ assert.equal(featTraitOriginKey({name:'Alert',source:'PHB',id:'feats:alert:phb'}),
+   'feat|feats:alert:phb');
+ assert.equal(featTraitOriginKey({name:'Alert',source:'PHB'}),'feat|alert|phb');
+});
+test('owned feat lines show origin and point directly to the trait rather than expanding duplicate details',()=>{
+ const c={...record(),feats_catalog:[
+  {name:'Alert',source:'PHB',id:'feats:alert:phb',granted_by:id},
+  {name:'Lucky',source:'PHB',granted_by:'manual'},
+  {name:'Skilled',source:'PHB'}
+ ]};
+ const html=nativeSection(c,'info',{
+  field:()=>'',area:()=>'',panel:(name,body)=>'<section data-panel="'+name+'">'+body+'</section>',
+  calculated:{...calculated,proficiencies:[],values:{}}
+ });
+ const talentPanel=html.split('<section data-panel="Talenti">')[1]?.split('</section>')[0]||'';
+ assert.equal(talentPanel.split('data-act="feat-open-trait"').length-1,3);
+ assert.match(talentPanel,/data-feat-origin="feat\|feats:alert:phb"/);
+ assert.match(talentPanel,/Origine · Tratto · Ability Score Improvement/);
+ assert.match(talentPanel,/Origine · Manuale/);
+ assert.match(talentPanel,/Origine · Origine non specificata/);
+ assert.match(talentPanel,/info-feat-book">PHB/);
+ assert(!talentPanel.includes('info-feat-entry'));
+ assert.equal(talentPanel.split('data-act="feat-remove"').length-1,3,
+   'the removal X remains in the dedicated owned-feats panel');
+});
+test('feat click handler opens the existing real trait and responsive picker has independent layout',()=>{
+ const ui=read('../ui.js'),css=read('../mobile_metal_theme.css');
+ assert.match(ui,/if\(act==='feat-open-trait'\)/);
+ assert.match(ui,/featTraitOriginKey\(entry\)/);
+ assert.match(ui,/row\.category==='talenti'&&/);
+ assert.match(ui,/match\.open=true/);
+ assert.match(ui,/disclosure\.open=true/);
+ assert.match(css,/dialog\.feat-picker-dialog:not\(\[open\]\)\{display:none\}/);
+ assert.match(css,/\.feat-picker-results\{[\s\S]*?overflow-y:auto/);
+ assert.match(css,/\.info-feat-origin\{/);
+ assert.match(ui,/dialog\.className='feat-picker-dialog'/);
+ assert.doesNotMatch(ui,/dialog\.className='sheet-context-dialog feat-picker-dialog'/);
+});
+test('name-only legacy feat obtains a real navigable trait with the same stable identity',async()=>{
+ const record={kind:'character',feats_catalog:['Alert'],species:'',abilities:{},inventory:[]};
+ const rows=await collectTraitRows(record,{},{
+  entries:async category=>category==='feats'?[{name:'Alert',source:'PHB',entries:['Alert feat']}]:[],
+  detail:async(_category,row)=>row
+ });
+ assert(rows.some(row=>row.category==='talenti'&&row.rank===0&&
+   row.origin_key===featTraitOriginKey('Alert')));
 });
