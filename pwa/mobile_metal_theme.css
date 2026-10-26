@@ -5104,3 +5104,64 @@ dialog.feat-picker-dialog::backdrop{background:#090807bc;backdrop-filter:blur(3p
 .magic-tools-dialog .magic-selection-current .magic-remove-spell.btn:focus-visible{
   background:#91664032;color:#f4d19e;outline-offset:-2px;
 }
+
+/* Poteri: spell sections have the same structure for classes and other origins.
+   Expose the true shared spell-slot pool and the actual linked trackers beside
+   each source title; per-level slot buttons keep their existing controls. */
+.magic-panel .magic-source-header{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:7px 12px;min-width:0;margin:0 0 6px;
+}
+.magic-panel .magic-source-title{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0}
+.magic-panel .magic-source-title h3{margin:0;color:#f3d9b1;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+.magic-panel .magic-source-title .hint{font-size:11px}
+.magic-panel .magic-source-resources{
+  display:flex;align-items:center;justify-content:flex-end;gap:5px;
+  flex-wrap:wrap;min-width:0;margin-left:auto;
+}
+.magic-panel .magic-source-resource{
+  display:inline-flex;align-items:center;gap:5px;min-height:29px;min-width:0;
+  padding:4px 7px;border:1px solid #b08c5d4d;border-radius:8px;
+  background:#56402a35;color:#e2c8a2;font:600 11px/1.3 system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.magic-panel .magic-source-resource-label{min-width:0;overflow-wrap:anywhere;color:#d9bd93}
+.magic-panel .magic-source-resource strong{color:#f4dfb8;font-weight:750;white-space:nowrap}
+.magic-panel .magic-source-resource-counter{white-space:nowrap}
+.magic-panel .magic-source-tracker>button{
+  display:grid;place-items:center;flex:none;width:24px;height:25px;
+  margin:0;padding:0;border:0;border-radius:6px;background:#9f795037;
+  color:#eed5ac;font:700 16px/1 system-ui,sans-serif;cursor:pointer;
+}
+.magic-panel .magic-source-tracker>button:disabled{opacity:.36;cursor:default}
+.magic-panel .magic-source-tracker>button:not(:disabled):hover,
+.magic-panel .magic-source-tracker>button:focus-visible{
+  outline:2px solid #e2b87a;outline-offset:1px;background:#9970485c;
+}
+.magic-panel .magic-source-resource--warning{color:#f0bd94;border-color:#ce865c7d}
+.magic-panel .magic-source-resource--free{color:#bfae95;border-color:#98846a39;background:transparent}
+.magic-panel .magic-origin-panel .magic-spell-row{flex-wrap:wrap;gap:4px;min-width:0}
+.magic-panel .magic-origin-panel .magic-spell-open{flex:1 1 125px;min-width:0}
+.magic-panel .magic-origin-panel .magic-power-cost{flex:0 0 auto;margin:0 4px 0 0;font-size:11px}
+.magic-panel .magic-origin-panel .magic-spell-row>[data-act="power-trait"]{
+  display:grid;place-items:center;flex:0 0 30px;width:30px;min-width:30px;
+  min-height:30px;margin:0;padding:0;border:0;border-radius:7px;
+  background:transparent;color:#d6b98c;box-shadow:none;font-size:17px;
+}
+.magic-panel .magic-origin-panel .magic-origin-config{flex:0 0 auto;margin:0}
+.magic-panel .magic-origin-panel .magic-origin-config>summary{
+  display:grid;place-items:center;width:30px;height:30px;margin:0;padding:0;
+  border-radius:7px;color:#d6b98c;font-size:15px;
+}
+.magic-panel .magic-origin-panel .magic-origin-config[open]{flex:1 0 100%;margin-top:3px}
+.magic-panel .magic-origin-panel .magic-origin-config>summary:hover,
+.magic-panel .magic-origin-panel .magic-origin-config>summary:focus-visible,
+.magic-panel .magic-origin-panel [data-act="power-trait"]:hover,
+.magic-panel .magic-origin-panel [data-act="power-trait"]:focus-visible{
+  background:#8e683e3d;color:#ffe1b3;outline-offset:-2px;
+}
+@media(max-width:420px){
+ .magic-panel .magic-source-resources{justify-content:flex-start;margin-left:0}
+ .magic-panel .magic-source-resource{padding:4px 6px;gap:4px}
+ .magic-panel .magic-source-tracker>button{width:23px}
+}
