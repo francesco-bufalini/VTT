@@ -1331,7 +1331,9 @@ test('ASI opens its sole next picker automatically until ability allocation is c
    'feature_timing_recovery_rules','trait_states','roll_bonus_rules','species_attacks']);
  clearLocalRuleCatalogCache();
  globalThis.fetch=async(url,options)=>{
-  const match=String(url).match(/^\\/catalog\\/([a-z_]+)\\.json$/),key=match?.[1];
+  const sourcePath=String(url);
+  const key=sourcePath.startsWith('/catalog/')&&sourcePath.endsWith('.json')?
+    sourcePath.slice('/catalog/'.length,-'.json'.length):'';
   if(key==='classes')return new Response(JSON.stringify({version:1,
    class_features:[feature],subclass_features:[]}),{status:200});
   if(key==='features')return new Response(JSON.stringify({feats:{'alert|phb':{entries:['Alert']}}}),{status:200});
