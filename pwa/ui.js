@@ -4204,6 +4204,103 @@ function openPendingChoiceDialog(choice){
  openDialog(dialog);
 }
 
+
+async function openBackgroundPickerDialog(rawIndex='primary'){
+ const editor=state.editor,record=editor?.read(),creatureId=state.creatureId;
+ if(!editor||!record)throw Error('Apri prima la scheda del personaggio.');
+ const index=rawIndex==='primary'?null:Number(rawIndex);
+ if(index!==null&&(!Number.isSafeInteger(index)||index<0||!rowsFor(record,'backgrounds_catalog')[index]))
+  throw Error('Background aggiuntivo non più disponibile.');
+ document.querySelector('#background-picker-dialog')?.remove();
+ const dialog=document.createElement('dialog');
+ dialog.id='background-picker-dialog';
+ dialog.className='feat-picker-dialog background-picker-dialog';
+ dialog.setAttribute('aria-labelledby','background-picker-title');
+ dialog.innerHTML='<header class="feat-picker-head"><div><small>PERSONAGGIO · ORIGINI</small>'+
+   '<h2 id="background-picker-title">Scegli background</h2></div>'+
+   dialogCloseButton('background-picker-close','Chiudi')+'</header>'+
+   '<div class="feat-picker-body">'+
+   '<label class="feat-picker-search">'+actionGlyph('search')+
+   '<input type="search" data-background-search autocomplete="off" placeholder="Cerca per nome o fonte" aria-label="Cerca background"></label>'+
+   '<div class="feat-picker-count" data-background-count>Caricamento background…</div>'+
+   '<div class="feat-picker-results" data-background-results role="list"><p class="hint">Caricamento catalogo…</p></div>'+
+   '<div class="feat-picker-detail" data-background-detail hidden></div>'+
+   '<p class="feat-picker-feedback" data-background-feedback role="status" aria-live="polite"></p></div>';
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ document.body.append(dialog);
+ openDialog(dialog);
+ let rows=[],query='',limit=50,selected=-1,saving=false,loading=true,error='';
+ const output=dialog.querySelector('[data-background-results]');
+ const detail=dialog.querySelector('[data-background-detail]');
+ const feedback=dialog.querySelector('[data-background-feedback]');
+ const selectedName=index===null?record.background:
+   rowsFor(record,'backgrounds_catalog')[index]?.name;
+ const selectedSource=index===null?record.background_source:
+   rowsFor(record,'backgrounds_catalog')[index]?.source;
+ const current=entry=>entry&&entry.name===selectedName&&
+   String(entry.source||'')===String(selectedSource||'');
+ const repaint=()=>{
+  if(!dialog.isConnected)return;
+  if(loading){output.innerHTML='<p class="hint">Caricamento background…</p>';return;}
+  if(error){output.innerHTML='<p class="hint">'+esc(error)+'</p>';return;}
+  const found=rows.filter(row=>matchesSearch(query,row.name,row.source));
+  dialog.querySelector('[data-background-count]').textContent=found.length+' background disponibili';
+  output.innerHTML=(index===null?'<div class="feat-picker-row"><button type="button" class="feat-picker-row-name" data-background-clear>'+
+     '<strong>Nessuno</strong><small>Rimuovi il background principale</small></button></div>':'')+
+   found.slice(0,limit).map(row=>{
+    const i=rows.indexOf(row),active=i===selected,owned=current(row);
+    return '<div class="feat-picker-row'+(active?' is-selected':'')+'" role="listitem">'+
+      '<button type="button" class="feat-picker-row-name" data-background-preview="'+i+'" aria-expanded="'+active+'">'+
+      '<strong>'+esc(row.name)+'</strong><small>'+esc(row.source||'Fonte non specificata')+'</small></button>'+
+      '<button type="button" class="feat-picker-add" data-background-choose="'+i+'"'+(owned||saving?' disabled':'')+'>'+
+      (owned?'✓ Selezionato':'Scegli')+'</button></div>';
+   }).join('')+
+   (found.length>limit?'<button type="button" class="feat-picker-more" data-background-more>Mostra altri '+Math.min(50,found.length-limit)+'</button>':'');
+  if(!found.length)output.innerHTML+='<p class="hint">Nessun background corrispondente.</p>';
+ };
+ dialog.querySelector('[data-background-search]').addEventListener('input',event=>{
+  query=event.target.value;selected=-1;limit=50;detail.hidden=true;repaint();
+ });
+ dialog.addEventListener('click',async event=>{
+  const button=event.target.closest('button');if(!button||saving)return;
+  if(button.dataset.act==='background-picker-close'){closeDialog(dialog,{remove:true});return;}
+  if(button.hasAttribute('data-background-more')){limit+=50;repaint();return;}
+  if(button.hasAttribute('data-background-preview')){
+    const i=Number(button.dataset.backgroundPreview),entry=rows[i];if(!entry)return;
+    if(selected===i){selected=-1;detail.hidden=true;repaint();return;}
+    selected=i;detail.hidden=false;detail.innerHTML='<p class="hint">Caricamento descrizione…</p>';repaint();
+    const full=await detailedEntry('backgrounds',entry);
+    if(!dialog.isConnected||selected!==i)return;
+    detail.innerHTML='<header><strong>'+esc(full.name||entry.name)+'</strong><small>'+esc(entry.source||'')+'</small></header>'+
+      '<div class="feat-picker-description">'+esc(flattenDescription(full)||'Descrizione non disponibile nel catalogo locale.')+'</div>';
+    return;
+  }
+  if(!button.hasAttribute('data-background-choose')&&!button.hasAttribute('data-background-clear'))return;
+  const entry=button.hasAttribute('data-background-clear')?{}:rows[Number(button.dataset.backgroundChoose)];
+  if(!entry||state.editor!==editor||state.creatureId!==creatureId)
+    throw Error('La scheda è cambiata: riapri il selettore.');
+  const latest=editor.read();
+  if(entry.name&&!availableReferenceRows(latest,'background','backgrounds',{backgrounds:rows})
+      .some(row=>row===entry))
+    throw Error('Background non consentito da queste regole.');
+  saving=true;feedback.textContent='Salvataggio del background…';repaint();
+  try{
+    const changes=index===null?
+      {...referencePatch(latest,'background',entry),...(entry.name?quickGrantPatch(latest,entry):{})}:
+      rowReferencePatch(latest,'backgrounds_catalog',index,'name',entry);
+    await patch(changes);
+    closeDialog(dialog,{remove:true});
+    await render();
+  }catch(err){saving=false;feedback.textContent=errorMessage(err);repaint();}
+ });
+ try{
+  rows=availableReferenceRows(record,'background','backgrounds',{
+    backgrounds:await catalogEntries('backgrounds')});
+  state.referenceCatalogs.backgrounds=rows;
+ }catch(err){error='Catalogo background non disponibile: '+errorMessage(err);}
+ finally{loading=false;repaint();}
+}
+
 async function openFeatPickerDialog(){
  const editor=state.editor,record=editor?.read();
  if(!record)throw Error('Apri un personaggio prima di aggiungere talenti.');
@@ -5563,6 +5660,9 @@ async function handleAction(target){
     name?.scrollIntoView?.({block:"center"});
     name?.focus();
     return;
+  }
+  if(act==='background-picker-open'){
+    await openBackgroundPickerDialog(target.dataset.backgroundIndex||'primary');return;
   }
   if(act==='feat-catalog'){
     await openFeatPickerDialog();return;
