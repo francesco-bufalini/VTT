@@ -1299,6 +1299,34 @@
           ],
           "source": "PHB",
           "minimum": 1
+        },
+        {
+          "name": "Performance of Creation",
+          "subclass": "College of Creation",
+          "source": "TCE",
+          "origin_feature": "Performance of Creation",
+          "derived_from": "5etools TCE College of Creation feature at Bard level 3; free use only (spell-slot alternative is separate)",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Animating Performance",
+          "subclass": "College of Creation",
+          "source": "TCE",
+          "origin_feature": "Animating Performance",
+          "derived_from": "5etools TCE College of Creation feature at Bard level 6; free use only (spell-slot alternative is separate)",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
         }
       ]
     },
@@ -2540,6 +2568,34 @@
               "level": 5,
               "value": "cha_mod",
               "reset": "short_rest"
+            }
+          ]
+        },
+        {
+          "name": "Performance of Creation",
+          "subclass": "College of Creation",
+          "source": "TCE",
+          "origin_feature": "Performance of Creation",
+          "derived_from": "5etools TCE College of Creation feature at Bard level 3; free use only (spell-slot alternative is separate)",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ]
+        },
+        {
+          "name": "Animating Performance",
+          "subclass": "College of Creation",
+          "source": "TCE",
+          "origin_feature": "Animating Performance",
+          "derived_from": "5etools TCE College of Creation feature at Bard level 6; free use only (spell-slot alternative is separate)",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
             }
           ]
         }
