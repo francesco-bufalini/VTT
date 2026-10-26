@@ -787,6 +787,10 @@ function calculateSheetValues(record={},catalogs={}){
     const rule=arr(nativeBases.feats).find(row=>same(row.name,feat.name)&&same(row.source,feat.source));
     if(rule)baseAdd(rule,'feat|'+norm(feat.source)+'|'+norm(feat.name),'Talento · '+feat.name);
   }
+  for(const rule of arr(nativeBases.species)){
+    if(!same(record.species,rule.name)||!same(record.species_source,rule.source))continue;
+    baseAdd(rule,'race|'+norm(rule.source)+'|'+norm(rule.name),'Specie · '+rule.name);
+  }
   for(const feature of features){
     if(!featureEnabled(record,feature))continue;
     const rule=arr(nativeBases.features).find(row=>same(row.name,feature.name)&&
