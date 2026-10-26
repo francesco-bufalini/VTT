@@ -68,3 +68,22 @@ Verifica locale senza runner GitHub Actions:
 ```bash
 bash scripts/validate.sh --tests
 ```
+
+## Proprietà del privilegio nella PWA
+
+Il catalogo `vtt/data/proficiency_feature_ownership.json` contiene i
+collegamenti **tipizzati e verificati** tra competenze già concesse dalle
+origini 5etools e i loro tratti concreti. Viene incorporato dal generatore
+in `trait_proficiencies` (concessioni fisse) e
+`trait_proficiency_choices` (scelte attribuibili a un unico tratto).
+
+La scheda PWA risolve questi collegamenti usando l'ID del tratto
+`feature:` effettivamente posseduto. Per esempio, Intimidation dell'Half-Orc
+PHB appartiene a **Menacing**, Perception dell'Elf PHB a **Keen Senses**,
+e le abilità scelte dall'Half-Elf PHB a **Skill Versatility**.
+
+Gli ID salvati di `proficiency_choices` **non cambiano**. Se il catalogo
+dei tratti non è disponibile offline, il beneficio resta visibile sulla
+sorgente di origine; non viene assegnato a un privilegio indovinato.
+Disattivare la razza o il singolo tratto continua a sopprimere il beneficio.
+L'indice non crea competenze nuove e non interpreta il testo in esecuzione.

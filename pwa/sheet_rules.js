@@ -865,7 +865,7 @@ function calculateSheetValues(record={},catalogs={}){
   if(record.additional_traits||arr(record.stat_block?.trait).length)
     warnings.add("Tratti personalizzati: verificare i bonus non strutturati");
   // Disabled sources are handled by their identities and the parent-feature hierarchy.
-  const proficiencies=fixedProficiencies(record,catalogs.proficiencyGrants);
+  const proficiencies=fixedProficiencies(record,catalogs.proficiencyGrants,features);
   if(!catalogs.proficiencyGrants)
     warnings.add("Competenze automatiche da origini non disponibili senza il catalogo");
   const inventory=arr(record.inventory).map(resolveOwnedItem);
@@ -1259,7 +1259,7 @@ function calculateSheetValues(record={},catalogs={}){
     // weapons, armor, tools and languages), not only d20-linked skills/saves.
     proficiency_sources:Object.fromEntries([...proficiencies.keys()]
       .map(key=>{const [kind,...parts]=key.split(':');return [key,
-        proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'))];})),
+        proficiencyGrantOrigins(record,catalogs.proficiencyGrants,kind,parts.join(':'),features)];})),
     casting_classes:spellClasses,trackers,attacks,
     attack_count_benefits,attacks_per_action:attacksPerActionFromBenefits(attack_count_benefits),
     feature_rules:catalogs.featureRules||{},

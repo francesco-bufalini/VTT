@@ -1,0 +1,918 @@
+{
+  "meta": {
+    "version": 1,
+    "source": "Audited unambiguous feature ownership over 5etools typed proficiency grants",
+    "note": "Ownership metadata only; no new proficiencies. Runtime never parses descriptions."
+  },
+  "entries": [
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "DMG",
+      "fixed": {
+        "language:auran": "Language"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aarakocra",
+      "source": "EEPC",
+      "fixed": {
+        "language:common": "Language",
+        "language:auran": "Language"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Language",
+        "language:celestial": "Language"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aasimar",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:celestial": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aetherborn",
+      "source": "PSK",
+      "fixed": {
+        "skill:intimidation": "Menacing",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Astral Elf",
+      "source": "AAG",
+      "fixed": {
+        "skill:perception": "Keen Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Autognome",
+      "source": "AAG",
+      "choice": {
+        "tool": "Specialized Design"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aven",
+      "source": "PSA",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Aven",
+      "source": "PSD",
+      "fixed": {
+        "skill:perception": "Hawkeyed",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Bugbear",
+      "source": "ERLW",
+      "fixed": {
+        "skill:stealth": "Sneaky",
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Bugbear",
+      "source": "MPMM",
+      "fixed": {
+        "skill:stealth": "Sneaky"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Bugbear",
+      "source": "VGM",
+      "fixed": {
+        "skill:stealth": "Sneaky",
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Centaur",
+      "source": "GGR",
+      "fixed": {
+        "language:common": "Languages",
+        "language:sylvan": "Languages"
+      },
+      "choice": {
+        "skill": "Survivor"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Centaur",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Natural Affinity"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Changeling",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Changeling Instincts",
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Changeling",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Changeling Instincts"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Custom Lineage",
+      "source": "TCE",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Variable Trait",
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Dragonborn",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:draconic": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Dwarf",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:dwarvish": "Languages",
+        "weapon:battleaxe": "Dwarven Combat Training",
+        "weapon:handaxe": "Dwarven Combat Training",
+        "weapon:light hammer": "Dwarven Combat Training",
+        "weapon:warhammer": "Dwarven Combat Training"
+      },
+      "choice": {
+        "tool": "Tool Proficiency"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Dwarf (Kaladesh)",
+      "source": "PSK",
+      "fixed": {
+        "language:common": "Languages",
+        "language:dwarvish": "Languages"
+      },
+      "choice": {
+        "tool": "Artisan's Expertise"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Eladrin",
+      "source": "MPMM",
+      "fixed": {
+        "skill:perception": "Keen Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Elf",
+      "source": "PHB",
+      "fixed": {
+        "skill:perception": "Keen Senses",
+        "language:common": "Languages",
+        "language:elvish": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Elf (Kaladesh)",
+      "source": "PSK",
+      "fixed": {
+        "skill:perception": "Keen Senses",
+        "language:common": "Languages",
+        "language:elvish": "Languages",
+        "weapon:longsword": "Elf Weapon Training",
+        "weapon:shortsword": "Elf Weapon Training",
+        "weapon:shortbow": "Elf Weapon Training",
+        "weapon:longbow": "Elf Weapon Training"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Elf (Zendikar)",
+      "source": "PSZ",
+      "fixed": {
+        "skill:perception": "Keen Senses",
+        "language:common": "Languages",
+        "language:elvish": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Firbolg",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:elvish": "Languages",
+        "language:giant": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Genasi",
+      "source": "EEPC",
+      "fixed": {
+        "language:common": "Languages",
+        "language:primordial": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Gith",
+      "source": "MTF",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Githyanki",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Astral Knowledge",
+        "tool": "Astral Knowledge"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Gnome",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:gnomish": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Gnome (Deep)",
+      "source": "DMG",
+      "fixed": {
+        "language:gnomish": "Languages",
+        "language:terran": "Languages",
+        "language:undercommon": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goblin",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goblin",
+      "source": "PSZ",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goblin",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goliath",
+      "source": "MPMM",
+      "fixed": {
+        "skill:athletics": "Little Giant"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Goliath",
+      "source": "VGM",
+      "fixed": {
+        "skill:athletics": "Natural Athlete",
+        "language:common": "Languages",
+        "language:giant": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Grimlock",
+      "source": "DMG",
+      "fixed": {
+        "language:undercommon": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Grung",
+      "source": "OGA",
+      "fixed": {
+        "skill:perception": "Arboreal Alertness"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Half-Elf",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:elvish": "Languages"
+      },
+      "choice": {
+        "skill": "Skill Versatility",
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Half-Orc",
+      "source": "PHB",
+      "fixed": {
+        "skill:intimidation": "Menacing",
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Halfling",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:halfling": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Harengon",
+      "source": "MPMM",
+      "fixed": {
+        "skill:perception": "Leporine Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Harengon",
+      "source": "WBtW",
+      "fixed": {
+        "skill:perception": "Leporine Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Hexblood",
+      "source": "VRGR",
+      "choice": {
+        "skill": "Ancestral Legacy"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Hobgoblin",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Hobgoblin",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:goblin": "Languages"
+      },
+      "choice": {
+        "weapon": "Martial Training"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Human",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Human (Innistrad)",
+      "source": "PSI",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kalashtar",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kender",
+      "source": "DSotDQ",
+      "choice": {
+        "skill": "Kender Curiosity"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kenku",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:auran": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kenku",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:auran": "Languages"
+      },
+      "choice": {
+        "skill": "Kenku Training"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Khenra",
+      "source": "PSA",
+      "fixed": {
+        "language:common": "Languages",
+        "weapon:longsword": "Khenra Weapon Training",
+        "weapon:spear": "Khenra Weapon Training",
+        "weapon:javelin": "Khenra Weapon Training"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kobold",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:draconic": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kobold",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Kobold Legacy"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kobold",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:draconic": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kor",
+      "source": "PSZ",
+      "fixed": {
+        "skill:athletics": "Kor Climbing",
+        "skill:acrobatics": "Kor Climbing",
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Kuo-Toa",
+      "source": "DMG",
+      "fixed": {
+        "language:undercommon": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Leonin",
+      "source": "MOT",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Hunter's Instincts"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Lizardfolk",
+      "source": "DMG",
+      "fixed": {
+        "language:draconic": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Lizardfolk",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Nature's Intuition"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Lizardfolk",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:draconic": "Languages"
+      },
+      "choice": {
+        "skill": "Hunter's Lore"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Locathah",
+      "source": "LR",
+      "fixed": {
+        "skill:athletics": "Observant & Athletic",
+        "skill:perception": "Observant & Athletic",
+        "language:aquan": "Language",
+        "language:common": "Language"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Lorwyn Changeling",
+      "source": "LFL",
+      "choice": {
+        "skill": "Delightful Imitator"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Loxodon",
+      "source": "GGR",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Merfolk",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:aquan": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Merfolk",
+      "source": "PSZ",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Minotaur",
+      "source": "GGR",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Imposing Presence"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Minotaur (Amonkhet)",
+      "source": "PSA",
+      "fixed": {
+        "skill:intimidation": "Menacing",
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Naga",
+      "source": "PSA",
+      "fixed": {
+        "language:common": "Languages",
+        "tool:poisoner's kit": "Poison Affinity"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Orc",
+      "source": "DMG",
+      "fixed": {
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Orc",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      },
+      "choice": {
+        "skill": "Primal Intuition"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Orc",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      },
+      "choice": {
+        "skill": "Primal Intuition"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Orc (Ixalan)",
+      "source": "PSX",
+      "fixed": {
+        "skill:intimidation": "Menacing",
+        "language:common": "Languages",
+        "language:orc": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Owlin",
+      "source": "SCC",
+      "fixed": {
+        "skill:stealth": "Silent Feathers"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Satyr",
+      "source": "MOT",
+      "fixed": {
+        "skill:performance": "Reveler",
+        "skill:persuasion": "Reveler",
+        "language:common": "Languages",
+        "language:sylvan": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Satyr",
+      "source": "MPMM",
+      "fixed": {
+        "skill:performance": "Reveler",
+        "skill:persuasion": "Reveler"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Sea Elf",
+      "source": "MPMM",
+      "fixed": {
+        "skill:perception": "Keen Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Shadar-Kai",
+      "source": "MPMM",
+      "fixed": {
+        "skill:perception": "Keen Senses"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Shifter",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Shifter",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Bestial Instincts"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Simic Hybrid",
+      "source": "GGR",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Siren",
+      "source": "PSX",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tabaxi",
+      "source": "MPMM",
+      "fixed": {
+        "skill:perception": "Cat's Talent",
+        "skill:stealth": "Cat's Talent"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tabaxi",
+      "source": "VGM",
+      "fixed": {
+        "skill:perception": "Cat's Talents",
+        "skill:stealth": "Cat's Talents",
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tiefling",
+      "source": "PHB",
+      "fixed": {
+        "language:common": "Languages",
+        "language:infernal": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tortle",
+      "source": "MPMM",
+      "choice": {
+        "skill": "Nature's Intuition"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Tortle",
+      "source": "TTP",
+      "fixed": {
+        "skill:survival": "Survival Instinct",
+        "language:aquan": "Languages",
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Triton",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:primordial": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Vampire",
+      "source": "PSZ",
+      "fixed": {
+        "language:common": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Vedalken",
+      "source": "GGR",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Tireless Precision",
+        "language": "Languages",
+        "tool": "Tireless Precision"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Vedalken",
+      "source": "PSK",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "language": "Languages"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Verdan",
+      "source": "AI",
+      "fixed": {
+        "skill:persuasion": "Persuasive",
+        "language:common": "Language",
+        "language:goblin": "Language"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Warforged",
+      "source": "ERLW",
+      "fixed": {
+        "language:common": "Languages"
+      },
+      "choice": {
+        "skill": "Specialized Design",
+        "language": "Languages",
+        "tool": "Specialized Design"
+      }
+    },
+    {
+      "kind": "race",
+      "name": "Yuan-ti Pureblood",
+      "source": "VGM",
+      "fixed": {
+        "language:common": "Languages",
+        "language:abyssal": "Languages",
+        "language:draconic": "Languages"
+      }
+    }
+  ]
+}

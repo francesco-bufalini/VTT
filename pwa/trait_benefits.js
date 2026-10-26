@@ -287,7 +287,8 @@ export function traitBenefitGroups(trait={},record={},calculated={}){
  const proficiencies=Object.entries(calculated.proficiency_sources||{})
   .filter(([,sources])=>rows(sources).some(source=>source?.id&&ids.has(source.id)))
   .flatMap(([key,sources])=>rows(sources).filter(source=>source?.id&&ids.has(source.id)).map(source=>({
-   kind:key.split(':')[0],name:proficiencyLabel(key),originId:source.id,key
+   kind:key.split(':')[0],name:proficiencyLabel(key),
+   originId:source.origin_parent_id||source.id,key
   })))
   .sort((a,b)=>{
    const ai=proficiencyOrder.indexOf(a.kind),bi=proficiencyOrder.indexOf(b.kind);

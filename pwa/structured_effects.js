@@ -132,51 +132,88 @@ function liveSource(record,id){
     "item:"+row?.id===id&&Number(row.quantity??1)>0);
   return true; // Saved custom origins are not automatically invalidated by changing class.
 }
-export function fixedProficiencies(record,index={}){
-  const suppressed=removedBenefitIds(record);
-  const excluded=(source,kind,key)=>suppressed.has("proficiency:"+source+":"+kind+":"+norm(key));
-  const stored=array(record.proficiency_choices).filter(x=>x&&!x.disabled&&
-    !muted(record,String(x.origin_id||""))&&liveSource(record,String(x.origin_id||"")));
-  const result=new Map();
-  const add=(kind,key)=>result.set(kind+":"+norm(key),true);
-  for(const row of stored)if(kinds.includes(row.kind)&&row.key&&
-    !excluded(row.origin_id||'',row.kind,row.key))add(row.kind,row.key);
-  const migrate=!Object.hasOwn(record,"proficiency_choices")||
-    (!stored.length&&!array(record.proficiency_choices).length&&
-      !Object.hasOwn(record,"proficiency_origins"));
-  if(migrate)for(const [kind,field] of Object.entries(legacy))
-    for(const item of array(record[field]))add(kind,item);
-  for(const source of selectedSources(record,index)){
-    if(muted(record,source.id))continue;
-    for(const grant of fixedGrants(source)){
-      if(excluded(source.id,grant.kind,grant.key))continue;
-      const saved=array(record.proficiency_choices).find(x=>x.kind===grant.kind&&
-        norm(x.key)===grant.key&&x.origin_id===source.id);
-      if(saved?.disabled)continue;
-      add(grant.kind,grant.key);
-    }
-  }
-  return result;
+// Typed ownership is separate from proficiency mechanics: an entire race
+// can own many privileges, but each grant belongs to one concrete trait.
+export function proficiencyFeatureOwner(record={},source={},kind="",key="",features=[]){
+ const root=source?.source||{};
+ const named=root.trait_proficiencies?.[kind+":"+norm(key)]||
+   root.trait_proficiency_choices?.[kind];
+ if(!named||!array(features).length)return null;
+ let ownerKey="";
+ if(source.group==="race")ownerKey="species|"+(record.species_id||norm(record.species))+"|"+norm(record.species_source);
+ else if(source.group==="subrace")ownerKey="subrace|"+norm(record.subrace_source)+"|"+norm(record.subrace);
+ else if(source.group==="feat"){
+   const feat=array(record.feats_catalog).find(row=>match(row.name,root.name)&&match(row.source,root.source));
+   if(feat)ownerKey="feat|"+(feat.id||norm(feat.name)+"|"+norm(feat.source));
+ }
+ if(!ownerKey)return null;
+ const feature=array(features).find(row=>row.origin_key===ownerKey&&match(row.name,named));
+ return feature?.origin_id?{id:feature.origin_id,name:"Tratto · "+feature.name,
+   parent_id:source.id,feature}:null;
 }
-// Expose the actual grant sources, not a guessed name from the skill.
-export function proficiencyGrantOrigins(record={},index={},kind,key){
+function proficiencyOwnerActive(record,owner){
+ return !owner||(!owner.feature?.inactive&&!owner.feature?.disabled&&
+   !muted(record,owner.id)&&!muted(record,owner.feature?.origin_key));
+}
+export function fixedProficiencies(record,index={},features=[]){
  const suppressed=removedBenefitIds(record);
- const excluded=id=>suppressed.has('proficiency:'+id+':'+kind+':'+norm(key));
- const wanted=String(key||'').toLowerCase(),sources=[],seen=new Set();
- const add=(id,name)=>{
-   if(!id||seen.has(id))return;
-   seen.add(id);sources.push({id,name:name||id});
+ const excluded=(id,kind,key)=>suppressed.has("proficiency:"+id+":"+kind+":"+norm(key));
+ const selected=selectedSources(record,index),byId=new Map(selected.map(s=>[s.id,s]));
+ const stored=array(record.proficiency_choices).filter(row=>{
+  if(!row||row.disabled||muted(record,String(row.origin_id||""))||
+     !liveSource(record,String(row.origin_id||"")))return false;
+  const source=byId.get(row.origin_id);
+  return proficiencyOwnerActive(record,source&&
+    proficiencyFeatureOwner(record,source,row.kind,row.key,features));
+ });
+ const result=new Map(),add=(kind,key)=>result.set(kind+":"+norm(key),true);
+ for(const row of stored)if(kinds.includes(row.kind)&&row.key&&
+   !excluded(row.origin_id||'',row.kind,row.key))add(row.kind,row.key);
+ const migrate=!Object.hasOwn(record,"proficiency_choices")||
+   (!stored.length&&!array(record.proficiency_choices).length&&
+     !Object.hasOwn(record,"proficiency_origins"));
+ if(migrate)for(const [kind,field] of Object.entries(legacy))
+   for(const item of array(record[field]))add(kind,item);
+ for(const source of selected){
+  if(muted(record,source.id))continue;
+  for(const grant of fixedGrants(source)){
+   if(excluded(source.id,grant.kind,grant.key))continue;
+   const owner=proficiencyFeatureOwner(record,source,grant.kind,grant.key,features);
+   if(!proficiencyOwnerActive(record,owner))continue;
+   const saved=array(record.proficiency_choices).find(row=>row.kind===grant.kind&&
+     norm(row.key)===grant.key&&row.origin_id===source.id);
+   if(saved?.disabled)continue;
+   add(grant.kind,grant.key);
+  }
+ }
+ return result;
+}
+// Expose the exact granted-by feature, but keep saved grants and suppression
+// keyed to their existing parent IDs so old creature records still work.
+export function proficiencyGrantOrigins(record={},index={},kind,key,features=[]){
+ const suppressed=removedBenefitIds(record),wanted=norm(key);
+ const excluded=id=>suppressed.has('proficiency:'+id+':'+kind+':'+wanted);
+ const sources=[],seen=new Set(),selected=selectedSources(record,index);
+ const byId=new Map(selected.map(source=>[source.id,source]));
+ const add=(id,name,source)=>{
+  const owner=source&&proficiencyFeatureOwner(record,source,kind,wanted,features);
+  if(!proficiencyOwnerActive(record,owner))return;
+  const resolvedId=owner?.id||id;
+  if(!resolvedId||seen.has(resolvedId))return;
+  seen.add(resolvedId);
+  sources.push({id:resolvedId,name:owner?.name||name||id,
+   ...(owner?{origin_parent_id:id}:{})});
  };
  for(const row of array(record.proficiency_choices))
-   if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
-     !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id))
-     add(row.origin_id,row.origin_name||row.origin_id);
- for(const source of selectedSources(record,index)){
-   if(muted(record,source.id)||excluded(source.id))continue;
-   if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
-   const override=array(record.proficiency_choices).find(row=>row.kind===kind&&
-     norm(row.key)===wanted&&row.origin_id===source.id);
-   if(!override?.disabled)add(source.id,source.origin||source.source?.name);
+  if(row&&!row.disabled&&row.kind===kind&&norm(row.key)===wanted&&
+    !muted(record,row.origin_id)&&liveSource(record,row.origin_id)&&!excluded(row.origin_id))
+    add(row.origin_id,row.origin_name||row.origin_id,byId.get(row.origin_id));
+ for(const source of selected){
+  if(muted(record,source.id)||excluded(source.id))continue;
+  if(!fixedGrants(source).some(grant=>grant.kind===kind&&grant.key===wanted))continue;
+  const override=array(record.proficiency_choices).find(row=>row.kind===kind&&
+    norm(row.key)===wanted&&row.origin_id===source.id);
+  if(!override?.disabled)add(source.id,source.origin||source.source?.name,source);
  }
  return sources;
 }

@@ -229,6 +229,18 @@ mechanics.races=references.races.map(({id,name,source,speed,size,creatureTypes})
 const proficiencies=await read('../../vtt/data/proficiency_grants_5etools.json');
 const browserProficiencies=await read('../catalog/proficiency_grants.json');
 browserProficiencies.subrace=proficiencies.subrace;
+// Ownership is authored in the native typed index and must survive a PWA sync.
+// Supplemental browser-only feat grants remain untouched.
+for(const group of ['race','subrace','feat']){
+ const current=browserProficiencies[group]||[];
+ for(const source of proficiencies[group]||[]){
+  const row=current.find(candidate=>candidate.name===source.name&&candidate.source===source.source);
+  if(!row)continue;
+  for(const field of ['trait_proficiencies','trait_proficiency_choices']){
+   if(source[field])row[field]=source[field];
+  }
+ }
+}
 // Source-qualified, unconditional feat proficiencies missing from typed 5etools
 // fields use the existing proficiency evaluator (no runtime feat exceptions).
 const featProficiencies=await read('../../vtt/data/feat_proficiency_bonuses_2014.json');
