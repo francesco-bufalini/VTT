@@ -488,7 +488,7 @@ export function nativeSection(c,section,{field,area,panel,resources,resourcesEdi
     'Livello del privilegio: '+level:'';
   const originKey=featTraitOriginKey(entry);
   const book=String(entry.source||'').trim();
-  const title=String(entry.name||'Talento');
+  const title=String(entry.name||'Talento')+(entry.spell_variant?' · '+String(entry.spell_variant).replace(/ Spells$/i,''):'');
   return '<div class="info-owned-feat-row">'+
    '<button type="button" class="info-owned-feat-open" data-act="feat-open-trait"'+
     ' data-feat-index="'+i+'" data-feat-origin="'+esc(originKey)+'"'+
