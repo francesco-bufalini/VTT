@@ -69,17 +69,12 @@ export function abilitiesForCreature(creature={},manifest=[],projection={},optio
     const owner=parts[2];
     const id=nativeIds.get(owner+"|"+norm(feature.name));
     const explicit=feature.action_type||feature.activation_type||feature.activation;
-    // A subclass feature that owns a limited-use tracker is actionable even
-    // when its 5etools entry has no explicit timing. Link by exact trait ID,
-    // not a similarly named resource on another class or subclass.
-    const owned=parts[1]==="phb"&&parts[3]==="subclass"&&creature.rules_version!=="2024"?
-      rows(projection.trackers).find(t=>!t.disabled&&t.origin_id===feature.origin_id):null;
-    if(!id&&!explicit&&!owned)continue; // Passive, uncosted features stay read-only.
+    if(!id&&!explicit)continue; // Never turn passive features into actions.
     const action=timed.find(a=>id==="vtt_wild_shape"&&a.rule_action_id==="wild_shape")||
       timed.find(a=>norm(a.feature)===norm(feature.name)&&
         (String(a.origin_id||"").startsWith("feature:"+parts.slice(0,3).join("|"))||
          String(a.origin_id||"")===parts.slice(0,3).join("|")));
-    const tracker=owned||(id?trackerFor(projection,feature.name,owner):null);
+    const tracker=trackerFor(projection,feature.name,owner);
     const definition={
       id:id||"feature:"+feature.key,name:feature.name,
       source:feature.source||parts[1].toUpperCase(),
