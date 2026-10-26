@@ -879,7 +879,7 @@ function calculateSheetValues(record={},catalogs={}){
   const shield=[equipped("main"),equipped("off")].filter(it=>it&&itemKind(it)==="shield");
   const shieldBonus=shield.reduce((max,it)=>Math.max(max,Math.max(0,int(it.ac,2))),0);
   const simpleSpeed=()=>typeof record.species_speed==="number"?Math.max(0,int(record.species_speed)):
-    record.species_speed?.walk!==undefined?Math.max(0,int(record.species_speed.walk,30)):
+    record.species_speed?.walk!==undefined?Math.max(0,int(record.species_speed.walk?.number??record.species_speed.walk?.value??record.species_speed.walk,30)):
     Math.max(0,int(record.speed_base??record.speed,30));
   if(kind==="character"&&record.species&&!record.species_speed)
     warnings.add("Velocità della specie non disponibile nello snapshot locale");
