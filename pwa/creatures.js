@@ -119,8 +119,44 @@ export async function createSubcreature(parentId, source, reference = {}, scope 
     source: String(reference.source || raw.source || "").slice(0,80)
   };
   if (reference.spell_id) creature.companion_origin_spell_id = String(reference.spell_id).slice(0,256);
+  if (reference.feature_id) creature.companion_origin_feature_id = String(reference.feature_id).slice(0,256);
+  if (reference.rule_id) creature.companion_rule_id = String(reference.rule_id).slice(0,160);
+  if (reference.duration) creature.companion_duration = String(reference.duration).slice(0,80);
+  if (reference.template_id) creature.companion_template_id = String(reference.template_id).slice(0,160);
   return saveCreature(creature, scope, 0);
 }
+
+// Re-summoning an exclusive companion refreshes the existing sheet instead
+// of creating duplicates. Nonexclusive invocations use limit=0.
+export async function summonSubcreature(parentId, source, reference = {}, scope = "default") {
+  const max=Number(reference.limit_per_owner_rule??1);
+  if(!Number.isInteger(max)||max<0||max>50)throw Error("Limite evocazione non valido.");
+  const children=await listSubcreatures(parentId,scope);
+  const matches=children.filter(row=>
+    (reference.rule_id&&row.creature.companion_rule_id===reference.rule_id)||
+    (!reference.rule_id&&reference.spell_id&&row.creature.companion_origin_spell_id===reference.spell_id));
+  if(max===1&&matches.length){
+    const previous=matches[0],fresh=source?.kind==="monster"?structuredClone(source):
+      bestiarySheet(source?.stat_block||source,reference.miniature);
+    if(!fresh || fresh.kind!=="monster")throw Error("Profilo evocazione non valido.");
+    const replacement={...fresh,id:previous.creature.id,owner_id:previous.creature.owner_id,
+      kind:"monster",parent_creature_id:parentId,
+      transfer_revision:previous.creature.transfer_revision,
+      linked_token_sync_id:previous.creature.linked_token_sync_id||"",
+      linked_token_name:previous.creature.linked_token_name||"",
+      companion_rule_id:String(reference.rule_id||previous.creature.companion_rule_id||""),
+      ...(reference.spell_id?{companion_origin_spell_id:String(reference.spell_id)}:{}),
+      ...(reference.feature_id?{companion_origin_feature_id:String(reference.feature_id)}:{}),
+      ...(reference.duration?{companion_duration:String(reference.duration)}:{}),
+      ...(reference.template_id?{companion_template_id:String(reference.template_id)}:{}),
+      bestiary_ref:{name:String(reference.name||fresh.name).slice(0,160),
+        source:String(reference.source||fresh.stat_block?.source||"").slice(0,80)}};
+    return saveCreature(replacement,scope,previous.revision);
+  }
+  if(max>1&&matches.length>=max)throw Error("Limite di creature evocate raggiunto.");
+  return createSubcreature(parentId,source,reference,scope);
+}
+
 
 export async function removeCreature(id, scope = "default", expectedRevision) {
   const existing = await loadCreature(id, scope);

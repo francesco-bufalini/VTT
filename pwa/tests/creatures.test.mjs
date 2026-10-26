@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { parseCreatureExport, makeOwnedCopy, referencedDefinitions, makeCreatureExport } from "../creature_format.js";
 import { importCreatureExport, importCreatureFile, loadCreature, listCreatures,
   ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature,
-  createSubcreature, listSubcreatures } from "../creatures.js";
+  createSubcreature, summonSubcreature, listSubcreatures } from "../creatures.js";
 import { exportBackup, importBackup, putAttachment, getAttachment, listRecords } from "../storage.js";
 
 const feat = { id: "homebrew:personal:feats:brave", name: "Coraggioso",
@@ -225,4 +225,31 @@ test("invalid subcreature packages and wrong owners cannot create orphan sheets"
   await assert.rejects(removeCreature(parent.id,scope,stale.revision),/changed/);
   assert.ok(await loadCreature(parent.id,scope));
   assert.ok(await loadCreature(child.id,scope));
+});
+
+test("exclusive companions are re-summoned in one stable sheet while nonexclusive spells add sheets",async()=>{
+ const scope="test_companion_replacement_"+Date.now();
+ const owner=await createCreature('character','Bardo',scope);
+ const reference={name:'Dancing Item',source:'TCE',rule_id:'animating_performance_2014',
+   feature_id:'feature:creation',template_id:'dancing_item',limit_per_owner_rule:1};
+ const item=(hp,size)=>({name:'Dancing Item',source:'TCE',type:'construct',size,
+   hp:{average:hp},ac:[16],str:18,dex:14,con:16,int:4,wis:10,cha:6,speed:{walk:30}});
+ const first=await summonSubcreature(owner.id,item(40,'M'),reference,scope);
+ const editor=await openCreatureEditor(first.id,scope);
+ await editor.update({current_hp:2,notes:'Un oggetto precedente'});await editor.flush();
+ const again=await summonSubcreature(owner.id,item(55,'L'),reference,scope);
+ assert.equal(first.id,again.id,'A new animated item must replace the previous exclusive creature');
+ assert.equal(again.data.max_hp,55);
+ assert.equal(again.data.current_hp,55);
+ assert.equal(again.data.size_name,'Large');
+ assert.equal(again.data.notes,'','A replaced creature uses its new, fresh stat block');
+ assert.equal((await listSubcreatures(owner.id,scope)).length,1);
+ const undead={name:'Skeleton',source:'MM',hp:{average:13},ac:[13],size:'M',type:'undead'};
+ await summonSubcreature(owner.id,undead,{spell_id:'animate_dead',rule_id:'animate_dead_2014',
+   limit_per_owner_rule:0},scope);
+ await summonSubcreature(owner.id,undead,{spell_id:'animate_dead',rule_id:'animate_dead_2014',
+   limit_per_owner_rule:0},scope);
+ assert.equal((await listSubcreatures(owner.id,scope)).length,3);
+ const exported=JSON.parse(await (await exportCreature(owner.id,scope)).text());
+ assert.equal(exported.subcreatures.length,3);
 });

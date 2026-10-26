@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "spells": [
     {
       "id": "find_familiar_2014",
@@ -66,6 +66,419 @@
         "Saber-Toothed Tiger"
       ],
       "limit_per_owner_spell": 1
+    },
+    {
+      "id": "animate_dead_2014",
+      "names": [
+        "Animate Dead",
+        "Animare Morti"
+      ],
+      "editions": [
+        "2014"
+      ],
+      "monsters": [
+        "Skeleton",
+        "Zombie"
+      ],
+      "limit_per_owner_spell": 0,
+      "notes": "Una nuova scheda viene aggiunta per ciascun lancio; i bersagli aggiuntivi per slot di livello superiore richiedono gestione manuale."
     }
-  ]
+  ],
+  "features": [
+    {
+      "id": "animating_performance_2014",
+      "names": [
+        "Animating Performance"
+      ],
+      "class_name": "Bard",
+      "subclass": "College of Creation",
+      "min_class_level": 6,
+      "editions": [
+        "2014"
+      ],
+      "template": "dancing_item",
+      "activation": "resource",
+      "tracker_name": "Animating Performance",
+      "alternative_slot_min": 3,
+      "limit_per_owner_rule": 1,
+      "allowed_sizes": [
+        "Tiny",
+        "Small",
+        "Medium",
+        "Large"
+      ],
+      "duration": "1 hour",
+      "tracker_cost": 1
+    },
+    {
+      "id": "summon_wildfire_spirit_2014",
+      "names": [
+        "Summon Wildfire Spirit"
+      ],
+      "class_name": "Druid",
+      "subclass": "Circle of Wildfire",
+      "min_class_level": 2,
+      "editions": [
+        "2014"
+      ],
+      "template": "wildfire_spirit",
+      "activation": "resource",
+      "tracker_name": "Wild Shape",
+      "limit_per_owner_rule": 1,
+      "duration": "1 hour",
+      "tracker_cost": 1
+    },
+    {
+      "id": "steel_defender_2014",
+      "names": [
+        "Steel Defender"
+      ],
+      "class_name": "Artificer",
+      "subclass": "Battle Smith",
+      "min_class_level": 3,
+      "editions": [
+        "2014"
+      ],
+      "template": "steel_defender",
+      "activation": "manual",
+      "limit_per_owner_rule": 1,
+      "duration": "Until replaced or the artificer dies"
+    },
+    {
+      "id": "drake_companion_2014",
+      "names": [
+        "Drake Companion"
+      ],
+      "class_name": "Ranger",
+      "subclass": "Drakewarden",
+      "min_class_level": 3,
+      "editions": [
+        "2014"
+      ],
+      "template": "drake_companion",
+      "activation": "manual",
+      "limit_per_owner_rule": 1,
+      "duration": "PB hours"
+    },
+    {
+      "id": "rangers_companion_2014",
+      "names": [
+        "Ranger's Companion"
+      ],
+      "class_name": "Ranger",
+      "subclass": "Beast Master",
+      "min_class_level": 3,
+      "editions": [
+        "2014"
+      ],
+      "filter": {
+        "type": [
+          "beast"
+        ],
+        "max_cr": 0.25,
+        "sizes": [
+          "T",
+          "S",
+          "M"
+        ]
+      },
+      "activation": "manual",
+      "limit_per_owner_rule": 1
+    },
+    {
+      "id": "hound_of_ill_omen_2014",
+      "names": [
+        "Hound of Ill Omen"
+      ],
+      "class_name": "Sorcerer",
+      "subclass": "Shadow Magic",
+      "min_class_level": 6,
+      "editions": [
+        "2014"
+      ],
+      "monsters": [
+        "Dire Wolf"
+      ],
+      "activation": "resource",
+      "limit_per_owner_rule": 1,
+      "tracker_name": "Sorcery Points",
+      "tracker_cost": 3
+    },
+    {
+      "id": "homunculus_servant_2014",
+      "names": [
+        "Homunculus Servant"
+      ],
+      "class_name": "Artificer",
+      "min_class_level": 2,
+      "editions": [
+        "2014"
+      ],
+      "template": "homunculus_servant",
+      "activation": "manual",
+      "requires_optional_feature": true,
+      "limit_per_owner_rule": 1
+    }
+  ],
+  "templates": {
+    "dancing_item": {
+      "name": "Dancing Item",
+      "source": "TCE",
+      "type": "construct",
+      "size": "L",
+      "ac": 16,
+      "hp": {
+        "base": 10,
+        "class_name": "Bard",
+        "per_class_level": 5
+      },
+      "speed": {
+        "walk": 30,
+        "fly": 30,
+        "canHover": true
+      },
+      "abilities": {
+        "str": 18,
+        "dex": 14,
+        "con": 16,
+        "int": 4,
+        "wis": 10,
+        "cha": 6
+      },
+      "immune": [
+        "poison",
+        "psychic"
+      ],
+      "conditionImmune": [
+        "charmed",
+        "exhaustion",
+        "poisoned",
+        "frightened"
+      ],
+      "senses": [
+        "darkvision 60 ft."
+      ],
+      "trait": [
+        {
+          "name": "Immutable Form",
+          "entries": [
+            "Immune to effects that would alter its form."
+          ]
+        }
+      ],
+      "action": [
+        {
+          "name": "Force-Empowered Slam",
+          "entries": [
+            "Melee attack: use the owner's spell attack modifier; reach 5 ft. Hit: 1d10 + owner's proficiency bonus bludgeoning damage."
+          ]
+        }
+      ]
+    },
+    "wildfire_spirit": {
+      "name": "Wildfire Spirit",
+      "source": "TCE",
+      "type": "elemental",
+      "size": "S",
+      "ac": 13,
+      "hp": {
+        "base": 5,
+        "class_name": "Druid",
+        "per_class_level": 5
+      },
+      "speed": {
+        "walk": 30,
+        "fly": 30,
+        "canHover": true
+      },
+      "abilities": {
+        "str": 10,
+        "dex": 14,
+        "con": 14,
+        "int": 13,
+        "wis": 15,
+        "cha": 11
+      },
+      "immune": [
+        "fire"
+      ],
+      "conditionImmune": [
+        "charmed",
+        "frightened",
+        "grappled",
+        "prone",
+        "restrained"
+      ],
+      "senses": [
+        "darkvision 60 ft."
+      ],
+      "action": [
+        {
+          "name": "Flame Seed",
+          "entries": [
+            "Ranged spell attack using the owner's spell attack modifier; range 60 ft.; fire damage scales with proficiency bonus."
+          ]
+        },
+        {
+          "name": "Fiery Teleportation",
+          "entries": [
+            "The spirit and willing creatures within 5 ft. teleport up to 15 ft.; creatures left behind may take fire damage."
+          ]
+        }
+      ]
+    },
+    "steel_defender": {
+      "name": "Steel Defender",
+      "source": "TCE",
+      "type": "construct",
+      "size": "M",
+      "ac": 15,
+      "hp": {
+        "base": 2,
+        "class_name": "Artificer",
+        "per_class_level": 5,
+        "ability_mod": "int"
+      },
+      "speed": {
+        "walk": 40
+      },
+      "abilities": {
+        "str": 14,
+        "dex": 12,
+        "con": 14,
+        "int": 4,
+        "wis": 10,
+        "cha": 6
+      },
+      "immune": [
+        "poison"
+      ],
+      "conditionImmune": [
+        "charmed",
+        "exhaustion",
+        "poisoned"
+      ],
+      "senses": [
+        "darkvision 60 ft."
+      ],
+      "trait": [
+        {
+          "name": "Vigilant",
+          "entries": [
+            "The defender cannot be surprised."
+          ]
+        }
+      ],
+      "action": [
+        {
+          "name": "Force-Empowered Rend",
+          "entries": [
+            "Use the owner's spell attack modifier; 1d8 + PB force damage."
+          ]
+        },
+        {
+          "name": "Repair (3/Day)",
+          "entries": [
+            "Restore 2d8 + PB hit points to a construct or object within 5 ft."
+          ]
+        }
+      ]
+    },
+    "drake_companion": {
+      "name": "Drake Companion",
+      "source": "FTD",
+      "type": "dragon",
+      "size": "S",
+      "ac": {
+        "base": 14,
+        "per_pb": 1
+      },
+      "hp": {
+        "base": 5,
+        "class_name": "Ranger",
+        "per_class_level": 5
+      },
+      "speed": {
+        "walk": 40
+      },
+      "abilities": {
+        "str": 16,
+        "dex": 12,
+        "con": 15,
+        "int": 8,
+        "wis": 14,
+        "cha": 8
+      },
+      "senses": [
+        "darkvision 60 ft."
+      ],
+      "trait": [
+        {
+          "name": "Draconic Essence",
+          "entries": [
+            "Choose the drake's energy type when summoned; elemental immunity and bite damage vary."
+          ]
+        }
+      ],
+      "action": [
+        {
+          "name": "Bite",
+          "entries": [
+            "Attack using the owner's spell attack modifier; piercing damage plus the drake's elemental damage."
+          ]
+        }
+      ]
+    },
+    "homunculus_servant": {
+      "name": "Homunculus Servant",
+      "source": "TCE",
+      "type": "construct",
+      "size": "T",
+      "ac": 13,
+      "hp": {
+        "base": 1,
+        "class_name": "Artificer",
+        "per_class_level": 1,
+        "ability_mod": "int"
+      },
+      "speed": {
+        "walk": 20,
+        "fly": 30
+      },
+      "abilities": {
+        "str": 4,
+        "dex": 15,
+        "con": 12,
+        "int": 10,
+        "wis": 10,
+        "cha": 7
+      },
+      "immune": [
+        "poison"
+      ],
+      "conditionImmune": [
+        "exhaustion",
+        "poisoned"
+      ],
+      "senses": [
+        "darkvision 60 ft."
+      ],
+      "trait": [
+        {
+          "name": "Evasion",
+          "entries": [
+            "Dexterity saving throws against half damage can negate damage on success."
+          ]
+        }
+      ],
+      "action": [
+        {
+          "name": "Force Strike",
+          "entries": [
+            "Ranged spell attack using the owner's spell attack modifier; range 30 ft.; 1d4 + PB force damage."
+          ]
+        }
+      ]
+    }
+  }
 }

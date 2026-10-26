@@ -1,6 +1,7 @@
 import {concentrationDamageCheck,concentrationEndPatch,CONCENTRATION_ROLL_CONTEXT} from './concentration_rules.js';
 import {resolveVariant,applyVariantEdit,activeVariant,variantOwns,variantDamage,revertVariantDamage} from './creature_variants.js';
 import {openVariantsDialog,variantSources} from './creature_variants_view.js';
+import {featureCompanionRule,eligibleCompanionFeatureRules,matchesCompanionFeature,spellCompanionRule,companionSources} from './companion_rules.js';
 import { battleActionPanels, actionGlyph, actionVariants, loadFeatureActionOverrides, loadGeneralActionSupplements, nativeClassFeatureActions } from "./action_economy.js";
 import { SHEET_SECTIONS, DETAILS, ROW_FIELDS, BONUS_TARGETS, nativeSection, nativeRowPatch, rowsFor, collectionPatch, identityPatch, referencePatch, rowReferencePatch, availableReferenceRows, flattenedSubraceRepairPatch, hitPointPatch, slotUsePatch, recoveryPatch, completeRest, restRecoveryPreview, miniaturePatch } from "./native_sheet.js";
 import { itemKind, requiresAttunement, isCatalogItem, createOwnedItem, changeOwnedItem, changeItemOverride, changeEquippedWeaponSize, resolveOwnedItem, isSpellScroll, spellScrollName, spellScrollLevel, addSpellScroll, WEAPON_SIZES, infusionLimits, infusionGrantingTrait, learnedInfusions, isInfusionPrepared, prepareInfusionPatch, compatibleInfusionTargets, targetableInventoryItems, learnInfusionPatch, applyInfusionPatch, clearInfusionPatch, forgetInfusionPatch, validSlot, equipSlot, hasProperty } from "./item_controls.js";
@@ -15,7 +16,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
-import { listCreatures, listSubcreatures, createSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
+import { listCreatures, listSubcreatures, createSubcreature, summonSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -81,26 +82,108 @@ const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled
   return rows;
 });
 
-// Spell-to-bestiary choices live in a portable rules file rather than prose
-// parsing or a list of hard-coded spell branches in the PWA.
-let companionSpellRulesPromise=null;
-async function companionSpellChoices(spell, creature){
-  companionSpellRulesPromise??=fetch('/catalog/companion_spells.json')
+// Game rules are explicit data, not patterns guessed from feature prose.
+let companionRulesPromise=null;
+async function companionRules(){
+  companionRulesPromise??=fetch('/catalog/companion_spells.json')
     .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();})
-    .catch(error=>{companionSpellRulesPromise=null;throw error;});
-  const rules=await companionSpellRulesPromise;
-  const normalize=value=>String(value||'').toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  const spellNames=[spell?.name,spell?.id].map(normalize);
-  const rule=rules.spells?.find(rule=>rule.names?.some(name=>
-    spellNames.some(value=>value===normalize(name)||value.endsWith(' '+normalize(name)))));
-  if(!rule || rule.editions?.length && !rule.editions.includes(String(creature.rules_version||'2014')))
-    return null;
-  const sources=await variantSources([],await (await import('./storage.js')).listRecords('global','homebrew'));
-  const names=new Set(rule.monsters.map(normalize));
-  const choices=sources.filter(source=>names.has(normalize(source.name)));
-  return {rule,choices};
+    .catch(error=>{companionRulesPromise=null;throw error;});
+  return companionRulesPromise;
 }
+async function companionSpellChoices(spell,creature){
+  const data=await companionRules();
+  const rule=spellCompanionRule(data,spell,creature);
+  if(!rule)return null;
+  const sources=await variantSources([],await (await import('./storage.js')).listRecords('global','homebrew'));
+  return {rule,choices:companionSources(rule,data,sources,creature)};
+}
+async function companionFeatureChoices(creature,calculated,originId){
+  const data=await companionRules(),rule=featureCompanionRule(creature,calculated,data,originId);
+  if(!rule)return null;
+  const sources=rule.template?[]:await variantSources([],
+    await (await import('./storage.js')).listRecords('global','homebrew'));
+  return {rule,choices:companionSources(rule,data,sources,creature),originId};
+}
+function featureCompanionFields(context){
+  if(!context)return '';
+  const entries=context.choices||[],rule=context.rule;
+  return '<section class="feature-companion-options"><h3>Sottocreatura</h3>'+
+    '<label>Creatura da generare<select data-feature-companion>'+
+      (entries.length?entries.map(entry=>'<option value="'+esc(entry.key)+'">'+esc(entry.name)+
+      (entry.source?' · '+esc(entry.source):'')+'</option>').join(''):'<option value="">Nessuna creatura compatibile nel bestiario</option>')+
+    '</select></label>'+
+    (rule.allowed_sizes?.length?'<label>Taglia<select data-feature-companion-size>'+
+      rule.allowed_sizes.map(size=>'<option value="'+esc(size)+'"'+(size==='Medium'?' selected':'')+'>'+esc(size)+'</option>').join('')+'</select></label>':'')+
+    '<label>Nome della sottocreatura (facoltativo)<input data-feature-companion-name maxlength="120" placeholder="'+
+      esc(entries[0]?.name||'Nome')+'"></label>'+
+    (rule.duration?'<p class="hint">Durata: '+esc(rule.duration)+'.</p>':'')+
+    '</section>';
+}
+async function createFeatureCompanion(parent,context,dialog){
+  if(!context)return null;
+  const {rule,choices,originId}=context;
+  const key=dialog.querySelector('[data-feature-companion]')?.value;
+  const choice=choices.find(entry=>entry.key===key);
+  if(!choice)throw Error('Seleziona un mostro compatibile per il privilegio.');
+  const size=dialog.querySelector('[data-feature-companion-size]')?.value||'';
+  if(size&&!(rule.allowed_sizes||[]).includes(size))throw Error('Taglia non consentita.');
+  const requested=String(dialog.querySelector('[data-feature-companion-name]')?.value||'').trim();
+  if(requested.length>120)throw Error('Nome troppo lungo.');
+  let loaded=await choice.load({size,name:requested});
+  if(!loaded||typeof loaded!=='object')throw Error('Voce del bestiario non valida.');
+  if(requested)loaded={...loaded,name:requested};
+  return summonSubcreature(parent.id,loaded,{
+    ...choice,name:requested||loaded.name||choice.name,
+    feature_id:originId,rule_id:rule.id,
+    duration:rule.duration||'',limit_per_owner_rule:rule.limit_per_owner_rule??1
+  });
+}
+async function manualCompanionRules(owner,calculated){
+  const data=await companionRules();
+  return eligibleCompanionFeatureRules(owner,calculated,data,{manualOnly:true}).flatMap(rule=>{
+    const feature=(calculated.features||[]).find(row=>matchesCompanionFeature(owner,calculated,rule,row));
+    return feature?[{id:rule.id,name:rule.names?.[0]||rule.id,
+      source:rule.class_name+(rule.subclass?' · '+rule.subclass:''),
+      originId:feature.origin_id}]:[];
+  });
+}
+async function openManualCompanionDialog(owner,descriptor){
+  const calculated=await computeLocalData(owner);
+  const context=await companionFeatureChoices(owner,calculated,descriptor.originId);
+  if(!context||context.rule.id!==descriptor.id)throw Error('Privilegio non disponibile.');
+  const dialog=document.createElement('dialog');
+  dialog.className='sheet-roll-dialog magic-spell-dialog';
+  dialog.id='companion-feature-dialog';
+  dialog.innerHTML=actionDialogIntro(descriptor.name,[
+    {label:'Origine',value:descriptor.source},
+    {label:'Creazione',value:'Scheda mostro collegata al proprietario'}
+  ],'', '', 'companion-feature-close')+
+  featureCompanionFields(context)+
+  '<p data-companion-result role="status"></p><div class="actions magic-dialog-actions">'+
+  '<button type="button" class="btn primary" data-companion-confirm>Genera sottocreatura</button>'+
+  '<button type="button" class="btn" data-companion-cancel>Annulla</button></div>';
+  dialog.querySelectorAll('[data-companion-cancel],[data-act="companion-feature-close"]').forEach(button=>
+    button.addEventListener('click',()=>closeDialog(dialog,{remove:true})));
+  dialog.querySelector('[data-companion-confirm]').addEventListener('click',async event=>{
+    const button=event.currentTarget;if(button.disabled)return;button.disabled=true;
+    try{
+      const current=state.editor?.read();
+      if(!current||current.id!==owner.id)throw Error('Proprietario cambiato.');
+      const fresh=await computeLocalData(current);
+      const validated=await companionFeatureChoices(current,fresh,descriptor.originId);
+      if(!validated||validated.rule.id!==descriptor.id||validated.rule.activation!=='manual')
+        throw Error('Capacità non più disponibile.');
+      const row=await createFeatureCompanion(current,validated,dialog);
+      await state.editor?.flush();
+      closeDialog(dialog,{remove:true});
+      state.creatureId=row.id;state.editor=null;state.sheet='info';state.libraryMode=false;
+      await render();message('Sottocreatura collegata a '+owner.name+'.');
+    }catch(error){button.disabled=false;dialog.querySelector('[data-companion-result]').textContent=errorMessage(error);}
+  });
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  document.body.append(dialog);openDialog(dialog);
+}
+
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -1011,7 +1094,8 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   state.sheet='magic';await render();message('Scegli un incantesimo: la Metamagia si configura nella finestra di lancio.');return;
  }
  const enhanced=c.rules_version==='2024'&&['patient_defense','step_of_the_wind'].includes(ability.class_feature_id);
- document.querySelector('#class-feature-dialog')?.remove();
+ const companion=await companionFeatureChoices(c,calculated,ability.origin_id);
+  document.querySelector('#class-feature-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='class-feature-dialog';dialog.className='sheet-roll-dialog magic-spell-dialog';
  dialog.dataset.creatureId=c.id;dialog.dataset.abilityId=ability.id;
  const recovery=ability.mode==='recovery',conversion=ability.mode==='conversion',pool=ability.mode==='heal_pool';
@@ -1028,7 +1112,8 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
   (ability.mode==='metamagic_roll'?'<p>Scegli i dadi da sostituire: devi utilizzare i nuovi risultati.</p>'+
    (ability.name==='Empowered Spell'?'<label>Numero di dadi<input data-feature-count type="number" min="1" max="'+Math.max(1,Number(calculated.values['ability_mod:cha'])||1)+'" value="1"></label><label>Tipo di dado<select data-feature-sides>'+[4,6,8,10,12,20,100].map(n=>'<option value="'+n+'">d'+n+'</option>').join('')+'</select></label>':'<p>Ripeti 1d20 per il tiro per colpire fallito.</p>'):'')+
   (ability.mode==='context'?'<p>Conferma bersagli, condizioni e tiri indicati dal tratto. Il consumo sarà registrato alla conferma.</p>':'')+
-  '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
+  featureCompanionFields(companion)+
+   '<p data-feature-result role="status"></p><div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-feature-confirm>Conferma</button><button type="button" class="btn" data-feature-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-feature-cancel],[data-act="feature-close"]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();closeDialog(dialog,{remove:true});}));
  dialog.querySelector('[data-feature-confirm]').addEventListener('click',async event=>{
   if(event.currentTarget.disabled)return;
@@ -1042,12 +1127,19 @@ async function activateClassAbility(c,calculated,ability,{onConfirmed=null,onClo
     levels:[...dialog.querySelectorAll('[data-feature-recover]')].map(input=>Number(input.value)),
     tracker_id:abilityPaymentChoice(dialog)};
    if(ability.mode==='heal_roll')options.roll=randomDie(10);
-   const changes=ability.mode==='trait_state'?
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,ability.origin_id):null;
+    if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
+    if(liveCompanion?.rule.activation==='resource'&&
+       (!ability.tracker_id||options.tracker_id===''||Number(ability.cost)<1))
+      throw Error('La capacità richiede una risorsa associata per evocare la creatura.');
+    const changes=ability.mode==='trait_state'?
     traitStateActivationPatch(current,fresh.features,fresh.trait_state_catalog,ability.state_id,fresh.trackers,options):
     classAbilityActivationPatch(current,fresh,ability,options);
    const reroll=ability.mode==='metamagic_roll'?rollBattleDamage(ability.name==='Seeking Spell'?'1d20':options.count+'d'+options.sides,randomDie):null;
    await patch(changes);if(state.saveError)throw Error(state.saveError);
-   await state.editor.flush();dialog.dataset.confirmed='true';dialog.close();await render();
+   await state.editor.flush();
+    if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
+    dialog.dataset.confirmed='true';dialog.close();await render();
    if(onConfirmed)await onConfirmed({record:current,calculated:fresh,options,changes});
    if(reroll){state.roll={...reroll,label:ability.name,author:selectedName()};state.rollHistory.unshift({...state.roll});}
    message(reroll?ability.name+': '+reroll.notation+' → '+reroll.total+' · usa i nuovi risultati.':ability.mode==='heal_roll'?ability.name+': d10 '+options.roll+' · PF '+changes.current_hp:ability.name+' applicato.');
@@ -1068,7 +1160,14 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  if(!linked||linked.origin_id!==originId||c.rules_version==='2024')
   throw Error('Capacità della sottoclasse non disponibile.');
  const available=Math.max(0,Number(tracker.max||0)-Number(tracker.spent||0));
- if(available<1)throw Error('Nessun utilizzo disponibile per '+linked.name+'.');
+ const companion=await companionFeatureChoices(c,calculated,originId);
+  const minSlot=Number(companion?.rule?.alternative_slot_min||0);
+  const paymentOptions=minSlot?[
+    ...(available>0?[['tracker','Uso gratuito · '+tracker.name]]:[]),
+    ...(calculated.spell_slots||[]).filter(row=>Number(row.level)>=minSlot&&Number(row.total)>Number(row.spent)).map(row=>['slot:'+row.level,'Slot di '+row.level+'° livello']),
+    ...(calculated.pact_slots?.level>=minSlot&&calculated.pact_slots?.total>calculated.pact_slots?.spent?[['pact','Slot del Patto di '+calculated.pact_slots.level+'°']]:[])
+  ]:[];
+  if(available<1&&!paymentOptions.length)throw Error('Nessun utilizzo disponibile per '+linked.name+'.');
  const feature=(calculated.features||[]).find(f=>f.origin_id===originId);
  document.querySelector('#subclass-tracker-dialog')?.remove();
  const dialog=document.createElement('dialog');
@@ -1081,9 +1180,11 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
  ],feature?flattenDescription(feature):'',
  'Gli utilizzi verranno registrati. Gli effetti non ancora automatizzati vanno applicati manualmente.',
  'subclass-tracker-close')+
- (available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
+ (paymentOptions.length?'<label>Risorsa da utilizzare<select data-companion-payment>'+paymentOptions.map(([id,label])=>'<option value="'+esc(id)+'">'+esc(label)+'</option>').join('')+'</select></label>':
+   available>1?'<label>Utilizzi da consumare<input type="number" data-subclass-amount min="1" max="'+
   esc(available)+'" step="1" value="1"></label>':'')+
- '<p data-subclass-result role="status"></p>'+
+ featureCompanionFields(companion)+
+  '<p data-subclass-result role="status"></p>'+
  '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-subclass-confirm>Conferma utilizzo</button>'+
  '<button type="button" class="btn" data-subclass-cancel>Annulla</button></div>';
  dialog.querySelectorAll('[data-subclass-cancel],[data-act="subclass-tracker-close"]').forEach(button=>
@@ -1095,13 +1196,19 @@ async function activateSubclassTracker(c,calculated,trackerId,originId){
    if(!current||current.id!==dialog.dataset.creatureId)throw Error('La creatura è cambiata.');
    const raw=dialog.querySelector('[data-subclass-amount]')?.value??'1',amount=Number(raw);
    const fresh=await computeLocalData(current);
-   const changes=subclassTrackerUsePatch(current,fresh,trackerId,originId,amount);
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,originId):null;
+   if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
+   const pay=dialog.querySelector('[data-companion-payment]')?.value||'tracker';
+   if(paymentOptions.length&&!paymentOptions.some(([id])=>id===pay))throw Error('Risorsa di evocazione non valida.');
+   const changes=pay==='tracker'?subclassTrackerUsePatch(current,fresh,trackerId,originId,amount):pay==='pact'?slotUsePatch(current,0,1,fresh):pay.startsWith('slot:')?slotUsePatch(current,Number(pay.slice(5)),1,fresh):null;
+   if(!changes)throw Error('Pagamento non consentito.');
    await patch(changes);
    if(state.saveError)throw Error(state.saveError);
    await state.editor.flush();
+   if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
    closeDialog(dialog,{remove:true});await render();
-   message(linked.name+': '+amount+' '+(amount===1?'utilizzo consumato.':'utilizzi consumati.')+
-    ' Effetti da gestire manualmente.');
+   message(linked.name+': '+(pay==='tracker'?amount+' utilizzo consumato.':'slot consumato.')+
+    (liveCompanion?' Sottocreatura aggiornata.':' Effetti da gestire manualmente.'));
   }catch(error){
    button.disabled=false;
    dialog.querySelector('[data-subclass-result]').textContent=errorMessage(error);
@@ -1136,6 +1243,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
  const dialog=document.createElement('dialog');dialog.id='other-ability-dialog';
  dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.dataset.creatureId=c.id;
  const calculated=await computeLocalData(c);
+ const companion=await companionFeatureChoices(c,calculated,ability.origin_id||ability.feature_id||'');
  dialog.innerHTML=actionDialogIntro(ability.name,[
   {label:'Azione',value:ability.time||'Secondo il privilegio'},
   {label:'Origine',value:ability.origin_name||ability.origin||'Tratto'},
@@ -1149,6 +1257,7 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     ability.target_mode==='single_token'?'La partita non è collegata: scegli il bersaglio manualmente.':'',
   'other-ability-close')+
   abilityPaymentField(ability,calculated)+
+  featureCompanionFields(companion)+
   '<p data-ability-result role="status"></p>'+
   '<div class="actions magic-dialog-actions"><button type="button" class="btn primary" data-ability-confirm>Conferma</button>'+
   '<button type="button" class="btn" data-ability-cancel>Annulla</button></div>';
@@ -1170,6 +1279,9 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      String(row.id||row.ability_id||row.name)===requested)||
     (power?{...power,cost:power.resource_cost??(power.tracker_id?1:0)}:null);
    if(!currentAbility)throw Error('Capacità non più disponibile.');
+   const liveCompanion=companion?await companionFeatureChoices(current,fresh,
+     currentAbility.origin_id||currentAbility.feature_id||''):null;
+   if(companion&&!liveCompanion)throw Error('Privilegio non più disponibile.');
    if(currentAbility.target_mode==='single_token'&&state.paired&&state.online){
      if(!selectedTarget?.id)throw Error('Seleziona un bersaglio sulla mappa prima di usare la capacità.');
      const currentMap=await map();
@@ -1178,7 +1290,14 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
      if(currentAbility.exclude_self&&String(selectedTarget.id)===String(casterToken(current,currentMap,await ownerId())?.id||''))
        throw Error('Questa capacità richiede una creatura diversa da te.');
    }
-   const cost=Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   const minimumCost=Number(liveCompanion?.rule.tracker_cost||1);
+   if(liveCompanion?.rule.activation==='resource'&&
+      (!currentAbility.tracker_id||Number(currentAbility.cost)<minimumCost))
+      throw Error('La capacità richiede un tracker con il costo previsto dal privilegio.');
+   const cost=liveCompanion?.rule.activation==='resource'?minimumCost:
+     Math.max(0,Number(currentAbility.cost)||0),choice=abilityPaymentChoice(dialog);
+   if(liveCompanion?.rule.activation==='resource'&&choice==='')
+     throw Error('Questo privilegio richiede il consumo della risorsa associata.');
    if(choice!==undefined&&choice!==''&&choice!==currentAbility.tracker_id)
     throw Error('Tracker non collegato alla capacità.');
    const spend=choice===undefined||choice!=='';
@@ -1193,7 +1312,9 @@ async function activateOtherAbility(c,ability,persistentKey,requested,selectedTa
     return changes;
    });
    if(state.saveError)throw Error(state.saveError);
-   await state.editor.flush();closeDialog(dialog,{remove:true});await render();
+   await state.editor.flush();
+   if(liveCompanion)await createFeatureCompanion(current,liveCompanion,dialog);
+   closeDialog(dialog,{remove:true});await render();
    message((selectedTarget?'Bersaglio: '+selectedTarget.name+' · ':'')+
     (cost&&spend?currentAbility.name+': '+cost+' utilizzi consumati.':
     currentAbility.name+': utilizzo confermato senza consumo.')+
@@ -3825,8 +3946,8 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
   if(desktopHooks?.cast){
     await flushPendingFields();
     const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
-    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>row.creature.companion_origin_spell_id===selection.id))
-      await createSubcreature(casterId,await companionSource.load(),companionSource);
+    if(companionSource)
+      await summonSubcreature(casterId,await companionSource.load(),companionSource);
     return result;
   }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
@@ -3854,10 +3975,9 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
     if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
     charged=true;
-    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>
-      row.creature.companion_origin_spell_id===selection.id)){
+    if(companionSource){
       try{
-        await createSubcreature(casterId,await companionSource.load(),companionSource);
+        await summonSubcreature(casterId,await companionSource.load(),companionSource);
         message('Famiglio aggiunto alle sottocreature.');
       }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
     }
@@ -5020,7 +5140,14 @@ async function handleAction(target){
     const editor=state.editor,creatureId=state.creatureId;
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
     const subcreatures=await listSubcreatures(creatureId);
+    const manualCompanions=editor.readBase().parent_creature_id?[]:
+      await manualCompanionRules(editor.read(),await computeLocalData(editor.read()));
     openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
+      manualCompanions,onCompanionFeature:async id=>{
+        const descriptor=manualCompanions.find(row=>row.id===id);
+        if(!descriptor)throw Error('Privilegio non disponibile.');
+        check();await openManualCompanionDialog(editor.read(),descriptor);
+      },
       addSubcreature:editor.readBase().parent_creature_id?null:async source=>{
         check();const loaded=await source.load();
         const saved=await createSubcreature(creatureId,loaded,source);
@@ -5346,18 +5473,16 @@ async function handleAction(target){
     if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
       await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
-        companionSource?{...companionSource,spell_id:selection.id}:null);return;
+        companionSource?{...companionSource,spell_id:selection.id,
+          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
     if(Object.keys(plan.patch).length)await patch(plan.patch);
-    if(companionSource){
-      const loaded=await companionSource.load();
-      const existing=(await listSubcreatures(record.id)).some(row=>
-        row.creature.companion_origin_spell_id===selection.id);
-      if(!existing)await createSubcreature(record.id,loaded,
-        {...companionSource,spell_id:selection.id});
-    }
+    if(companionSource)
+      await summonSubcreature(record.id,await companionSource.load(),
+        {...companionSource,spell_id:selection.id,
+          rule_id:companion.rule.id,limit_per_owner_rule:companion.rule.limit_per_owner_spell??1});
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;

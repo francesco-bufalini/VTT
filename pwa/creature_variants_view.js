@@ -10,7 +10,8 @@ export function variantDescription(variant){
 }
 const formName=v=>(v.sections?.includes('*')||v.sections?.includes('name'))&&v.values?.name?v.values.name:v.name;
 export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=>'',
- subcreatures=[],addSubcreature=null,openSubcreature=null}){
+ subcreatures=[],addSubcreature=null,openSubcreature=null,
+ manualCompanions=[],onCompanionFeature=null}){
  document.querySelector('#creature-variants-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='creature-variants-dialog';dialog.className='sheet-context-dialog variants-dialog';dialog.setAttribute('aria-labelledby','variants-title');
  let draft=null,entries=[],selectedSource=null,selectedSourceKey='',sourceLimit=60;
@@ -29,11 +30,17 @@ export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=
       '<button type="button" class="vtt-variant-source-option vtt-selectable" data-subcreature-open="'+esc(child.id)+'"><strong>'+esc(child.name)+'</strong><small>'+esc(child.bestiary_ref?.source||'Mostro')+'</small></button>').join(''):'<p class="hint">Nessuna sottocreatura collegata.</p>')+'</div>'+
     '<button type="button" class="btn variant-create" data-subcreature-new>'+icon('increase')+'<span>Aggiungi famiglio dal bestiario</span></button>'+
     '<div data-subcreature-picker hidden><label class="vtt-list-search">Cerca nel bestiario<input type="search" data-subcreature-search placeholder="Nome del mostro"></label><div class="vtt-variant-source-list vtt-selection-list" data-subcreature-choices></div><button type="button" class="btn primary" data-subcreature-create disabled>Crea scheda mostro</button></div></section>':'')+
+   (manualCompanions.length?'<section class="variant-familiars"><h3>Creature da privilegi</h3>'+
+      manualCompanions.map(entry=>'<button type="button" class="vtt-variant-source-option vtt-selectable" data-companion-feature="'+esc(entry.id)+'"><strong>'+esc(entry.name)+'</strong><small>'+esc(entry.source||'Sottocreatura da capacità')+'</small></button>').join('')+'</section>':'')+
    '<section data-variant-editor></section></div>';
   dialog.querySelector('[data-act="variant-close"]').onclick=event=>{event.stopPropagation();close();};
   dialog.querySelector('[data-variant-new]').onclick=()=>{draft=createVariant(c,{preset:'alias',name:'Nuova variante'});edit();};
   dialog.querySelectorAll('[data-variant-switch]').forEach(b=>b.onclick=guard(async()=>{await switchForm(b.dataset.variantSwitch);draw();}));
   dialog.querySelectorAll('[data-variant-edit]').forEach(b=>b.onclick=()=>{draft=structuredClone(c.variants.find(v=>v.id===b.dataset.variantEdit));draft.name=formName(draft);edit();});
+  dialog.querySelectorAll('[data-companion-feature]').forEach(b=>b.onclick=guard(async()=>{
+    if(!onCompanionFeature)throw Error('Creazione da privilegio non disponibile.');
+    await onCompanionFeature(b.dataset.companionFeature);close();
+  }));
   dialog.querySelectorAll('[data-subcreature-open]').forEach(b=>b.onclick=guard(async()=>{
     close();await openSubcreature(b.dataset.subcreatureOpen);
   }));
