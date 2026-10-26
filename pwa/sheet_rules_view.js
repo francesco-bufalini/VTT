@@ -519,6 +519,7 @@ export function battleResourcePowers(calculated={},classAbilities=[],activated=[
     same.key=keyFor(cost,action.tracker_id);
    }
    if(!same.classAction?.class_feature_id||action.class_feature_id)same.classAction=action;
+   if(action.time&&action.time!=='contextual')same.timing=action.time;
    continue;
   }
   rows.push({kind:'ability',source:'class',id,name:action.name,
