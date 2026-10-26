@@ -7,6 +7,7 @@ import {openDialog,closeDialog,dialogCloseButton} from './ui_primitives.js';
 
 const CHUNK=128*1024, MAX_BYTES=16*1024*1024;
 const ignored=new Set();
+const postponed=new Map();
 let polling=false, lastPoll=0;
 const esc=value=>String(value??'').replace(/[&<>"']/g,
   c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,13 +22,13 @@ async function directory(){
  const device=await localDevice();
  return shareRequest('peers',{device_id:device.id,device_name:device.name});
 }
-function encode(bytes){
+export function encodeShareChunk(bytes){
  let raw='';
  for(let i=0;i<bytes.length;i+=8192)
    raw+=String.fromCharCode(...bytes.subarray(i,i+8192));
  return btoa(raw);
 }
-function decode(data){
+export function decodeShareChunk(data){
  const raw=atob(data),bytes=new Uint8Array(raw.length);
  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
  return bytes;
@@ -41,7 +42,7 @@ async function send(recipient,kind,title,payload,progress){
  for(let index=0;index<parts;index++){
    await shareRequest('chunk',{
      device_id,recipient_id:recipient,transfer_id,kind,title,index,parts,
-     size:bytes.length,data:encode(bytes.subarray(index*CHUNK,(index+1)*CHUNK))
+     size:bytes.length,data:encodeShareChunk(bytes.subarray(index*CHUNK,(index+1)*CHUNK))
    });
    progress(index+1,parts);
  }
@@ -62,11 +63,11 @@ export async function openSendDialog(kind,title,makePayload,notify=()=>{}){
   '<div class="library-create-actions">'+
   '<button type="button" class="btn" data-share-cancel>Annulla</button>'+
   '<button type="button" class="btn primary" data-share-confirm>Manda</button></div></div>';
- const close=()=>closeDialog(dialog,{remove:true});
+ let sending=false;
+ const close=()=>{if(!sending)closeDialog(dialog,{remove:true});};
  dialog.querySelector('[data-share-cancel]').addEventListener('click',close);
  dialog.querySelector('[data-act="share-close"]').addEventListener('click',close);
  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- let sending=false;
  dialog.addEventListener('cancel',event=>{if(sending)event.preventDefault();});
  dialog.querySelector('[data-share-confirm]').addEventListener('click',async()=>{
    if(sending)return;
@@ -82,6 +83,7 @@ export async function openSendDialog(kind,title,makePayload,notify=()=>{}){
      await send(select.value,kind,title,payload,(part,total)=>{
        status.textContent='Invio: '+part+' / '+total+' blocchi';
      });
+     sending=false;
      close();
      notify('Trasferimento inviato. Il destinatario deve accettare l’importazione.');
    }catch(error){
@@ -107,7 +109,8 @@ function incomingDialog(offer,onImported,notify){
    '<button type="button" class="btn" data-share-later>Più tardi</button>'+
    '<button type="button" class="btn" data-share-reject>Rifiuta</button>'+
    '<button type="button" class="btn primary" data-share-accept>Importa</button></div></div>';
- const postpone=()=>{ignored.add(offer.id);closeDialog(dialog,{remove:true});};
+ const postpone=()=>{postponed.set(offer.id,Date.now()+60000);closeDialog(dialog,{remove:true});};
+ const dismiss=()=>{ignored.add(offer.id);closeDialog(dialog,{remove:true});};
  const buttons=[...dialog.querySelectorAll('[data-share-later],[data-share-reject],[data-share-accept]')];
  dialog.querySelector('[data-share-later]').addEventListener('click',postpone);
  dialog.querySelector('[data-act="share-later"]').addEventListener('click',postpone);
@@ -119,7 +122,7 @@ function incomingDialog(offer,onImported,notify){
    busy=true;buttons.forEach(b=>b.disabled=true);
    try{
      await shareRequest('ack',{device_id:(await localDevice()).id,transfer_id:offer.id});
-     postpone();notify('Trasferimento rifiutato.');
+     dismiss();notify('Trasferimento rifiutato.');
    }catch(error){
      dialog.querySelector('[data-share-status]').textContent=errorText(error);
      buttons.forEach(b=>b.disabled=false);
@@ -140,7 +143,7 @@ function incomingDialog(offer,onImported,notify){
      for(let index=0;index<offer.parts;index++){
        status.textContent='Ricezione: '+(index+1)+' / '+offer.parts+' blocchi';
        const part=await shareRequest('pull',{device_id,transfer_id:offer.id,index});
-       const section=decode(part.data);
+       const section=decodeShareChunk(part.data);
        if(section.length!==Math.min(CHUNK,offer.size-offset))
          throw Error('Blocco del trasferimento danneggiato.');
        bytes.set(section,offset);offset+=section.length;
@@ -170,7 +173,8 @@ export async function pollIncomingShares(connected,onImported=async()=>{},notify
  polling=true;lastPoll=Date.now();
  try{
    const listing=await directory();
-   const next=(listing.inbox||[]).find(item=>item.id&&!ignored.has(item.id));
+   const next=(listing.inbox||[]).find(item=>item.id&&!ignored.has(item.id)&&
+     Date.now()>=(postponed.get(item.id)||0));
    if(next)incomingDialog(next,onImported,notify);
  }catch(error){
    // Matches nonblocking map/chat polls: temporary disconnects are expected.
