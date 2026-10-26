@@ -1484,6 +1484,7 @@ for(const maximum of [3,5]){
 }
 
 test('clicking an owned feat opens its original benefit-bearing trait, not a second details card',async()=>{
+ const {createCreature}=await import('../creatures.js');
  const saved=await createCreature('character','Navigazione talenti');
  await saveCreature({...saved.data,feats_catalog:[{
   id:'owned_click_alert',name:'Alert',source:'PHB',description:'Descrizione del tratto Alert',
