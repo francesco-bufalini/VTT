@@ -4962,3 +4962,60 @@ dialog.feat-picker-dialog.sheet-context-dialog{
  .feat-picker-dialog .sheet-context-body{padding:10px 12px calc(12px + env(safe-area-inset-bottom))}
  .feat-picker-results .feat-picker-add{min-width:76px;padding:5px 7px}
 }
+
+/* Compact spell editor: grouped prepared spells and a shared learning toolbar. */
+.magic-tools-dialog .magic-editor-filters{
+  display:grid;grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);
+  align-items:end;gap:9px;min-width:0;
+}
+.magic-tools-dialog .magic-editor-filters>.magic-learn-filter{
+  display:grid;align-content:end;gap:5px;min-width:0;margin:0;
+}
+.magic-tools-dialog .magic-editor-filters>.magic-learn-filter>span{
+  white-space:normal;color:#d8be98;font-size:12px;line-height:1.4;
+}
+.magic-tools-dialog .magic-editor-filters>.magic-learn-filter select{
+  box-sizing:border-box;width:100%;min-width:0;min-height:41px;margin:0;
+  border:1px solid #ab89605e;border-radius:9px;
+  background:#1716169a;color:#f1e0c8;padding:8px 9px;font-size:13px;
+}
+.magic-tools-dialog .magic-editor-filters>.magic-editor-search{
+  align-content:end;min-width:0;margin:0;
+}
+.magic-tools-dialog .magic-selection-current .magic-groups{display:grid;gap:8px}
+.magic-tools-dialog .magic-selection-current .magic-level{
+  overflow:hidden;margin:0;padding:0;border:1px solid #a2825652;
+  border-radius:9px;background:#231f1dad;
+}
+.magic-tools-dialog .magic-selection-current .magic-level-heading{
+  display:flex;align-items:center;min-height:33px;margin:0;
+  padding:7px 10px;background:#77553230;border-bottom:1px solid #a282563a;
+}
+.magic-tools-dialog .magic-selection-current .magic-level-heading h4{
+  margin:0;color:#e9c898;font:700 12px/1.35 system-ui,sans-serif;
+}
+.magic-tools-dialog .magic-selection-current .magic-entries{
+  display:grid;gap:0;margin:0;border:0;
+}
+.magic-tools-dialog .magic-selection-current .magic-spell-row{
+  display:flex;flex-wrap:nowrap;align-items:center;gap:8px;
+  min-height:42px;margin:0;padding:4px 8px;
+  border:0;border-bottom:1px solid #a4845a27;background:transparent;
+}
+.magic-tools-dialog .magic-selection-current .magic-spell-row:last-child{border-bottom:0}
+.magic-tools-dialog .magic-selection-current .magic-spell-open{
+  min-width:0;min-height:34px;padding:6px 5px;
+  color:#efdbc0;font:600 12px/1.4 system-ui,sans-serif;
+  text-align:left;white-space:normal;
+}
+.magic-tools-dialog .magic-selection-current .magic-remove-spell.btn{
+  display:grid;place-items:center;flex:0 0 31px;
+  width:31px;min-width:31px;min-height:31px;height:31px;
+  margin-left:auto;padding:0!important;border:0;border-radius:7px;
+  background:transparent;box-shadow:none;color:#ceb391;
+  font:400 22px/1 system-ui,sans-serif;
+}
+.magic-tools-dialog .magic-selection-current .magic-remove-spell.btn:hover,
+.magic-tools-dialog .magic-selection-current .magic-remove-spell.btn:focus-visible{
+  background:#91664032;color:#f4d19e;outline-offset:-2px;
+}
