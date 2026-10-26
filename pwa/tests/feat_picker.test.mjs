@@ -103,7 +103,7 @@ test('feat origins show granting ASI, background, explicit manual and legacy unk
    /Tratto · Ability Score Improvement · fighter \(liv\. 4\)/);
  assert.equal(featOriginLabel({name:'Alert',source:'PHB',granted_by:'race|phb|human'},calculated),'Human');
  assert.equal(featOriginLabel({name:'Alert',source:'PHB',granted_by:'manual'},calculated),'Manuale');
- assert.equal(featOriginLabel({name:'Alert',source:'PHB'},calculated),'Origine non specificata');
+ assert.equal(featOriginLabel({name:'Alert',source:'PHB'},calculated),'Non specificata');
  assert.equal(featOriginLabel({name:'Alert',source:'PHB',granting_origin_name:'Background · Soldato'},calculated),
    'Background · Soldato');
  assert.equal(featTraitOriginKey({name:'Alert',source:'PHB',id:'feats:alert:phb'}),
@@ -125,7 +125,7 @@ test('owned feat lines show origin and point directly to the trait rather than e
  assert.match(talentPanel,/data-feat-origin="feat\|feats:alert:phb"/);
  assert.match(talentPanel,/Origine · Tratto · Ability Score Improvement/);
  assert.match(talentPanel,/Origine · Manuale/);
- assert.match(talentPanel,/Origine · Origine non specificata/);
+ assert.match(talentPanel,/Origine · Non specificata/);
  assert.match(talentPanel,/info-feat-book">PHB/);
  assert(!talentPanel.includes('info-feat-entry'));
  assert.equal(talentPanel.split('data-act="feat-remove"').length-1,3,
