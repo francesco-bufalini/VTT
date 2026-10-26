@@ -189,6 +189,34 @@ test('non-reprinted XGE Ranger archetypes keep separate 2014 trait resources',()
   .some(row=>row.name==="Hunter's Sense"),false);
 });
 
+test('non-reprinted XGE Sorcerer origins keep limited uses on the granting trait',()=>{
+ const divine=creature('Sorcerer','2014',18,'Divine Soul');
+ const divineTrackers=calculateSheet(divine,catalogs).trackers;
+ const favored=divineTrackers.find(row=>row.name==='Favored by the Gods');
+ const recovery=divineTrackers.find(row=>row.name==='Unearthly Recovery');
+ assert.equal(favored?.max,1);
+ assert.equal(favored?.recharge,'short_rest');
+ assert.equal(favored?.origin_name,'Tratto · Favored by the Gods');
+ assert.equal(recovery?.max,1);
+ assert.equal(recovery?.recharge,'long_rest');
+ const divineActions=actionsFor(divine,divineTrackers)
+  .filter(row=>row.rule_id.startsWith('sorcerer_phb_xge_divine_'));
+ assert.deepEqual(divineActions.map(row=>row.time),['bonus','bonus']);
+ assert.equal(divineActions[1].tracker_id,recovery.id);
+ const storm=creature('Sorcerer','2014',18,'Storm Sorcery');
+ const stormTrackers=calculateSheet(storm,catalogs).trackers;
+ const flight=stormTrackers.find(row=>row.name==='Wind Soul (Shared Flight)');
+ assert.equal(flight?.max,1);
+ assert.equal(flight?.recharge,'short_rest');
+ assert.equal(flight?.origin_name,'Tratto · Wind Soul');
+ const stormActions=actionsFor(storm,stormTrackers)
+  .filter(row=>row.rule_id.startsWith('sorcerer_phb_xge_storm_'));
+ assert.deepEqual(stormActions.map(row=>row.time),['bonus','action','bonus','bonus','reaction','action']);
+ assert.equal(stormActions.at(-1).tracker_id,flight.id);
+ assert.equal(calculateSheet(creature('Sorcerer','2024',18,'Storm Sorcery'),catalogs).trackers
+  .some(row=>row.name==='Wind Soul (Shared Flight)'),false);
+});
+
 test('XGE Dreams and Shepherd retain class-level pools, shared uses and trait actions',()=>{
  const dreams=creature('Druid','2014',14,'Circle of Dreams');
  const own=calculateSheet(dreams,catalogs).trackers;

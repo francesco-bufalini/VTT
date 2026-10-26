@@ -7,6 +7,40 @@ scelte, condizioni e bersagli restano espliciti finché il modello non li suppor
 I casi aperti dei lotti controllati sono raccolti anche nella
 [lista separata](feature-modeling-backlog.md), senza introdurre dati surrogati.
 
+## Lotto 2026-10-26: Sorcerer XGE Divine Soul e Storm Sorcery
+
+Controllate le **13 voci** `subclassFeature` (6 Divine Soul, 7 Storm) della
+classe Sorcerer PHB in
+[5etools `class-sorcerer.json`](https://github.com/5etools-mirror-3/5etools-src/blob/master/data/class/class-sorcerer.json)
+(`6908da74b776651390b14c1970380279e55a632c`) e
+[FightClub5eXML `class-sorcerer-xge.xml`](https://github.com/vidalvanbergen/FightClub5eXML/blob/master/Sources/DND_5e/WizardsOfTheCoast/02_Supplements/Xanathars_Guide_to_Everything/class-sorcerer-xge.xml)
+(`fa8e42c7959283f2bf60ae822dbee7d0f2a41e74`). Le due sottoclassi
+XGE non dichiarano `reprintedAs`; Shadow Magic XGE rinvia invece a RHW ed
+è esclusa da questo lotto. Storm Sorcery era già apparsa in SCAG, ma qui i
+dati mantengono l'identità della voce **XGE** selezionata.
+
+| Sottoclasse e tratto (livello) | Esito |
+| --- | --- |
+| Divine Soul (1) | Intestazione della sottoclasse. |
+| Divine Magic (1) | Accesso alla lista Cleric quando si impara/sostituisce un incantesimo Sorcerer, affinità scelta e un incantesimo aggiuntivo: occorre persistere le scelte, senza concedere tutta la lista come incantesimi conosciuti. |
+| Favored by the Gods (1) | **Ora strutturato:** un uso per riposo breve del tratto XGE. Il 2d4 si aggiunge solo dopo un TS fallito o un attacco mancato; nessuna azione separata. |
+| Empowered Healing (6) | Un Sorcery Point speso al tiro di cura, una volta nel turno, per rilanciare dadi scelti; non un contatore indipendente. |
+| Otherworldly Wings (14) | **Ora strutturata:** azione bonus per manifestare/congedare le ali. Volo temporaneo 30 piedi e cessazione per Incapacitated/morte richiedono stato. |
+| Unearthly Recovery (18) | **Ora strutturati:** azione bonus e un uso per riposo lungo; soltanto sotto metà PF, cura metà PF massimi. |
+| Storm Sorcery (1) | Intestazione della sottoclasse XGE. |
+| Tempestuous Magic (1) | **Ora strutturata:** azione bonus immediatamente prima/dopo un incantesimo di livello almeno 1; volo 10 piedi e attacchi di opportunità dipendono dal lancio reale. |
+| Wind Speaker (1) | Lingua Primordial e comprensione dei quattro dialetti; da attribuire al tratto. |
+| Heart of the Storm (6) | Resistenza a fulmine/tuono; danno a creature scelte entro 10 piedi al lancio di incantesimo idoneo, metà livello da Sorcerer. Non danno costante. |
+| Storm Guide (6) | **Ora strutturate:** azione per sospendere la pioggia, azione bonus per terminarla e azione bonus per dirigere il vento; effetti disponibili solo con il meteo corrispondente. |
+| Storm's Fury (14) | **Ora strutturata:** reazione al colpo in mischia; danno da fulmine pari al livello da Sorcerer, TS FOR per la spinta. |
+| Wind Soul (18) | **Ora strutturati:** azione e un uso per riposo breve **solo** per condividere il volo con alleati. Immunità fulmine/tuono e volo personale 60 piedi sono passivi e non consumano l'uso. |
+
+I tre contatori sono espliciti nell'XML; `Favored by Gods` nell'XML è
+normalizzato al nome del tratto 5etools `Favored by the Gods`. Il contatore
+`Wind Soul (Shared Flight)` usa `origin_feature=Wind Soul` per non limitare
+le parti passive. Otto attivazioni e tre contatori sono separati dalla
+versione Sorcerer XPHB; gli effetti contestuali restano nella lista aperta.
+
 ## Lotto 2026-10-26: Ranger XGE Horizon Walker e Monster Slayer
 
 Esaminate tutte le **14 voci** `subclassFeature` delle due sottoclassi
