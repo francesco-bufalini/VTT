@@ -6,6 +6,8 @@ import {expandedSpellFeatOptions,addFeatWithOrigin} from '../feat_picker.js';
 import {featMechanicGrants,calculateSheet} from '../sheet_rules.js';
 import {classFeatureRollSources,resolveClassRollMode} from '../feature_mechanics.js';
 import {structuredSpellGrants,originChoiceMatches} from '../spell_selection.js';
+import {traitBenefitGroups} from '../trait_benefits.js';
+import {nativeClassFeatureActions,actionEntries} from '../action_economy.js';
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 
 test('damage prompts a concentration save with half damage DC (min 10), including temp HP',()=>{
@@ -36,11 +38,22 @@ test('Lucky tracker and War Caster rules are native-typed and source-qualified',
  assert.equal(typed.actions[0].resource_cost,0);
  assert.equal(typed.actions[0].action_type,'reaction');
  assert.equal(typed.roll_modes[0].context,'concentration_damage');
+ const actionRows=actionEntries(warrior,{feat_actions:typed.actions,features:[],trackers:[],attacks:[]});
+ assert(actionRows.some(row=>row.name==='Attacco opportunità con incantesimo'&&row.time==='reaction'&&row.cost===0));
+
  const calculated=calculateSheet(warrior,{abilityGrants:packaged,classMechanics:{},proficiencyGrants:{}});
  assert.equal(calculated.trackers.filter(t=>t.id===typed.trackers[0].id).length,1);
  assert.equal(classFeatureRollSources(warrior,calculated,'save:con').some(x=>x.origin_id==='feat|phb|war caster'),false);
  assert.equal(resolveClassRollMode(classFeatureRollSources(warrior,calculated,'save:con','concentration_damage')).mode,'advantage');
  assert.equal(classFeatureRollSources(warrior,calculated,'save:dex','concentration_damage').length,0);
+ const benefit=traitBenefitGroups({name:'War Caster',category:'talenti',rank:0,
+   origin_key:'feat|war caster|phb'},warrior,calculated);
+ assert(benefit.some(group=>group.type==='roll_modes'&&group.items.some(item=>
+   item.label.includes('concentrazione')&&item.value==='Vantaggio')));
+ assert(benefit.some(group=>group.type==='abilities'&&group.items.some(item=>
+   item.label==='Attacco opportunità con incantesimo'&&item.cost==='Nessun costo')));
+ assert(nativeClassFeatureActions(warrior,calculated).some(row=>row.name==='Attacco opportunità con incantesimo'));
+
  const without={...warrior,feats_catalog:[{name:'Lucky',source:'XPHB'},{name:'War Caster',source:'XPHB'}]};
  assert.equal(featMechanicGrants(without,packaged).trackers.length,0);
  assert.equal(featMechanicGrants({...warrior,feats_catalog:[{name:'Lucky',source:'PHB',disabled:true}]},packaged).trackers.length,0);
