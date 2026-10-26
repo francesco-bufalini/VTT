@@ -3931,6 +3931,7 @@ function openPendingChoiceDialog(choice){
    (choice.kind==='ability_fixed'?'Chiudi':'Annulla')+'</button>'+
    (choice.kind==='ability_fixed'?'':'<button type="button" data-act="pending-choice-save"'+(rows||customRow?'':' disabled')+'>Applica</button>')+'</footer>';
  const update=()=>{
+   if(choice.kind==='ability_fixed')return;
    const checked=[...dialog.querySelectorAll('[name="pending-options"]:checked')];
    const custom=dialog.querySelector('[data-pending-custom-value]');
    const customChecked=checked.some(row=>row.value==='__custom__');
