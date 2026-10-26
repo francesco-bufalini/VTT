@@ -4679,5 +4679,39 @@
         }
       ]
     }
+  ],
+  "feat_mechanics": [
+    {
+      "name": "War Caster",
+      "source": "PHB",
+      "roll_modes": [
+        {
+          "target": "save:con",
+          "context": "concentration_damage",
+          "mode": "advantage"
+        }
+      ],
+      "actions": [
+        {
+          "id": "feat:phb:war-caster:opportunity-spell",
+          "name": "Attacco opportunità con incantesimo",
+          "action_type": "reaction",
+          "resource_cost": 0,
+          "description": "Quando una creatura ostile provoca un attacco di opportunità, puoi usare la reazione per lanciare un incantesimo con tempo di lancio di 1 azione che bersagli soltanto quella creatura."
+        }
+      ]
+    },
+    {
+      "name": "Lucky",
+      "source": "PHB",
+      "trackers": [
+        {
+          "id": "feat:phb:lucky:luck-points",
+          "name": "Punti fortuna",
+          "max": 3,
+          "recharge": "long_rest"
+        }
+      ]
+    }
   ]
 }
