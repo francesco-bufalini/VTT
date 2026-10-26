@@ -746,3 +746,32 @@ test('Prova abilità is a basic capacity without a duplicate timed action',()=>{
  assert.equal(doc(panels.checks).querySelectorAll('[data-action-ability]').length,6);
  assert.equal(doc(panels.others).querySelector('[data-attack-id="ability_checks"]'),null);
 });
+
+
+test('College of Creation activation supplements are trait-owned, with distinct free and command costs',()=>{
+ const source=JSON.parse(readFileSync(new URL('../../vtt/data/action_feature_overrides.json',import.meta.url),'utf8'));
+ const overrides=source.entries;
+ const selected={kind:'character',rules_version:'2014',level:6,
+  classes:[{name:'Bard',source:'PHB',level:6,subclass:'College of Creation'}]};
+ const mk=name=>({name,origin_key:'class|phb|bard|subclass|college of creation|tce',
+  origin_id:'feature:'+name,entries:[name+' rules']});
+ const features=[mk('Mote of Potential'),mk('Performance of Creation'),mk('Animating Performance')];
+ const trackers=[{id:'free-create',name:'Performance of Creation',max:1,spent:0,origin_class:'Bard'},
+  {id:'free-animate',name:'Animating Performance',max:1,spent:0,origin_class:'Bard'}];
+ const own=record=>actionEntries(record,{features,trackers},[],overrides,[])
+   .filter(a=>a.id?.startsWith('class_override:'));
+ const actions=own(selected);
+ assert.equal(actions.length,3);
+ assert.equal(actions.find(a=>a.name==='Esibizione della Creazione')?.time,'action');
+ assert.equal(actions.find(a=>a.name==='Esibizione della Creazione')?.cost,1);
+ assert.equal(actions.find(a=>a.name==='Animare un oggetto')?.tracker,'Animating Performance');
+ assert.equal(actions.find(a=>a.name==='Animare un oggetto')?.cost,1);
+ assert.equal(actions.find(a=>a.name==="Comandare l'oggetto danzante")?.time,'bonus');
+ assert.equal(actions.find(a=>a.name==="Comandare l'oggetto danzante")?.cost,0);
+ assert.equal(own({...selected,classes:[{...selected.classes[0],level:3}],level:3}).length,1);
+ assert.equal(own({...selected,classes:[{...selected.classes[0],subclass:'College of Lore'}]}).length,3,
+  'simulated feature ownership remains decisive even if the stored subclass is inconsistent');
+ assert.equal(own({...selected,classes:[{...selected.classes[0],source:'XPHB'}],rules_version:'2024'}).length,3);
+ assert.equal(actionEntries(selected,{features:[],trackers},[],overrides,[])
+  .filter(a=>a.id?.startsWith('class_override:')).length,0);
+});
