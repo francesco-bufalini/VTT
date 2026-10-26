@@ -65,7 +65,7 @@ export function featOriginLabel(feat={},calculated={}){
  if(id==='manual')return 'Manuale';
  if(entry.origin_name)return String(entry.origin_name);
  // A source book is not the origin of a feat. Do not invent one for old saves.
- return 'Origine non specificata';
+ return 'Non specificata';
 }
 
 export function featAlreadyOwned(record={},feat={}){
