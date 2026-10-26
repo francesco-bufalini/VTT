@@ -15,7 +15,7 @@ import { conditionOptions, conditionLabel, CONDITION_CATEGORIES, EXHAUSTION_COND
 import {exhaustionRemovablePatch,exhaustionRollModifier} from "./exhaustion_rules.js";
 import { notificationsSupported, notificationsEnabled, toggleChatNotifications, notifyIncomingChat } from "./chat_notifications.js";
 import {openSendDialog,pollIncomingShares} from './share_transfer.js';
-import { listCreatures, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
+import { listCreatures, listSubcreatures, createSubcreature, loadCreature, createCreature, importCreatureFile, exportCreature, exportCreatureBatch, exportHomebrewPackage, exportCatalogHomebrewEntry,
   removeCreature, openCreatureEditor, ownerId, syncLinkedTokenStatuses } from "./creatures.js";
 import { TacticalViewer } from "./tactical_view.js";
 import { tokenGroups, snapshotRevision, snapshotBlob, casterToken, SessionMapViewer } from "./session_map.js";
@@ -79,6 +79,27 @@ const setItemEquipped=inventoryModule.setItemEquipped||((inventory,index,enabled
   item.equipped=true;
   return rows;
 });
+
+// Spell-to-bestiary choices live in a portable rules file rather than prose
+// parsing or a list of hard-coded spell branches in the PWA.
+let companionSpellRulesPromise=null;
+async function companionSpellChoices(spell, creature){
+  companionSpellRulesPromise??=fetch('/catalog/companion_spells.json')
+    .then(response=>{if(!response.ok)throw Error('Regole famigli non disponibili.');return response.json();})
+    .catch(error=>{companionSpellRulesPromise=null;throw error;});
+  const rules=await companionSpellRulesPromise;
+  const normalize=value=>String(value||'').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const spellNames=[spell?.name,spell?.id].map(normalize);
+  const rule=rules.spells?.find(rule=>rule.names?.some(name=>
+    spellNames.some(value=>value===normalize(name)||value.endsWith(' '+normalize(name)))));
+  if(!rule || rule.editions?.length && !rule.editions.includes(String(creature.rules_version||'2014')))
+    return null;
+  const sources=await variantSources([],await (await import('./storage.js')).listRecords('global','homebrew'));
+  const names=new Set(rule.monsters.map(normalize));
+  const choices=sources.filter(source=>names.has(normalize(source.name)));
+  return {rule,choices};
+}
 
 const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
@@ -381,8 +402,11 @@ function syncNav(){
     state.page==='catalog'?'Catalogo':state.page==='session'?'Partita':'VTT Mobile';
   if(classLabel){
     const members=hasCreature?localClasses(creature||{}):[];
-    classLabel.textContent=members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
-    classLabel.hidden=!members.length;
+    const parentName=creature?.parent_creature_id?
+      (state.cachedCreatures||[]).find(c=>c.id===creature.parent_creature_id)?.name:'';
+    classLabel.textContent=parentName?'Famiglio di '+parentName:
+      members.map(member=>member.name+' '+Math.max(1,Number(member.level)||1)).join(' · ');
+    classLabel.hidden=!parentName&&!members.length;
   }
   primary.innerHTML=hasCreature?PLAY_SECTIONS.map(([key,title])=>navigationButton(key,title)).join(''):'';
   primary.hidden=!hasCreature;
@@ -675,9 +699,19 @@ async function loadLibraryMiniatures(){
  paintLibraryMiniatures();
 }
 
-function confirmCreatureDeletion(rows){
+async function confirmCreatureDeletion(rows){
   const creatures=rows.map(row=>row.creature||row);
-  if(!creatures.length)return Promise.resolve(false);
+  if(!creatures.length)return false;
+  const known=new Set(creatures.map(creature=>creature.id));
+  // A parent deletion also removes its attached sheets. Show their names
+  // before confirmation so the cascading operation is never surprising.
+  for(const creature of [...creatures]){
+    if(creature.parent_creature_id)continue;
+    for(const child of await listSubcreatures(creature.id)){
+      if(known.has(child.creature.id))continue;
+      known.add(child.creature.id);creatures.push(child.creature);
+    }
+  }
   const amount=creatures.length;
   return new Promise(resolve=>{
     const dialog=document.createElement('dialog');
@@ -701,7 +735,8 @@ function confirmCreatureDeletion(rows){
       const name=document.createElement('strong');
       const kind=document.createElement('span');
       name.textContent=String(creature.name||'Creatura senza nome');
-      kind.textContent=creature.kind==='monster'?'Mostro':'Personaggio';
+      kind.textContent=creature.parent_creature_id?'Sottocreatura collegata':
+        creature.kind==='monster'?'Mostro':'Personaggio';
       item.append(name,kind);
       list.append(item);
     }
@@ -768,7 +803,9 @@ function syncLibrarySelectionUI(){
 }
 function syncLibraryFilterUI(){
  const entries=[...app.querySelectorAll('.library-creature-entry')];
- for(const entry of entries)entry.hidden=state.libraryFilter!=='all'&&entry.dataset.libraryKind!==state.libraryFilter;
+ for(const entry of entries)
+  entry.hidden=(entry.dataset.librarySubcreature==='true'&&state.libraryFilter!=='monster')||
+    (state.libraryFilter!=='all'&&entry.dataset.libraryKind!==state.libraryFilter);
  for(const button of app.querySelectorAll('[data-act="library-filter"]'))
   button.setAttribute('aria-pressed',String(button.dataset.kind===state.libraryFilter));
  const empty=app.querySelector('#library-no-results');
@@ -777,21 +814,23 @@ function syncLibraryFilterUI(){
 }
 async function libraryView(){
  if(state.creatureId&&!state.libraryMode)return editorView();
- const rows=await listCreatures();
+ const rows=await listCreatures("default",{includeSubcreatures:true});
+ const byId=new Map(rows.map(row=>[row.creature.id,row.creature]));
  const ids=new Set(rows.map(row=>row.creature.id));
  for(const id of state.librarySelectedIds)if(!ids.has(id))state.librarySelectedIds.delete(id);
  const list=rows.map(({creature:c})=>{
   const monster=c.kind==='monster';
   const species=c.species||c.race||(typeof c.stat_block?.type==='object'?c.stat_block.type.type:c.stat_block?.type)||c.type||'Razza non specificata';
   const classes=localClasses(c).map(m=>String(m.name)+' '+Math.max(1,Number(m.level)||1)).join(' · ');
-  const subline=classes||(c.level?'Liv. '+c.level:'');
-  return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
+  const subline=c.parent_creature_id?'Famiglio di '+(byId.get(c.parent_creature_id)?.name||'creatura sconosciuta'):
+    (classes||(c.level?'Liv. '+c.level:''));
+  return '<div class="library-creature-entry" data-library-id="'+esc(c.id)+'" data-library-subcreature="'+Boolean(c.parent_creature_id)+'" data-library-kind="'+(monster?'monster':'character')+'">'+
    '<label class="library-batch-check" aria-label="Seleziona '+esc(c.name)+'">'+
    '<input type="checkbox" data-library-select="'+esc(c.id)+'" '+(state.librarySelectedIds.has(c.id)?'checked':'')+'>'+
    '<span class="library-check-graphic" aria-hidden="true">✓</span></label>'+
    '<article class="creature-card"><button type="button" class="creature-open" data-act="open" data-id="'+esc(c.id)+'" aria-label="Apri scheda di '+esc(c.name)+'">'+
    '<span class="library-creature-emblem">'+actionGlyph(monster?'shield':'proficiency')+'</span>'+
-   '<span class="creature-info"><span class="creature-category">'+(monster?'Mostro':'Personaggio')+'</span>'+
+   '<span class="creature-info"><span class="creature-category">'+(c.parent_creature_id?'Famiglio':monster?'Mostro':'Personaggio')+'</span>'+
    '<span class="creature-name">'+esc(c.name)+'</span>'+
    '<span class="creature-meta"><span class="creature-details">'+esc(species)+'</span>'+
    (subline?'<span class="creature-classes">'+esc(subline)+'</span>':'')+
@@ -3677,8 +3716,14 @@ async function refreshMapOnce() {
 // Android and PWA use the same native targeting commands, not independent
 // spell/area calculations. Never send a private creature sheet to the host.
 let desktopHooks=null;
-async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken=''){
-  if(desktopHooks?.cast){await flushPendingFields();return desktopHooks.cast({casterId,selection,requestedLevel,payment});}
+async function startTargetedCast(casterId,selection,requestedLevel,payment='auto',expectedToken='',companionSource=null){
+  if(desktopHooks?.cast){
+    await flushPendingFields();
+    const result=await desktopHooks.cast({casterId,selection,requestedLevel,payment});
+    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>row.creature.companion_origin_spell_id===selection.id))
+      await createSubcreature(casterId,await companionSource.load(),companionSource);
+    return result;
+  }
   if(!state.paired||!state.online)throw Error("Collega prima la partita al desktop.");
   const stored=await loadCreature(casterId);
   if(!stored)throw Error("Scheda locale non trovata.");
@@ -3704,6 +3749,13 @@ async function startTargetedCast(casterId,selection,requestedLevel,payment='auto
     const accepted=spellCastPlan(current,selection,requestedLevel,await computeLocalData(current),payment);
     if(Object.keys(accepted.patch).length)await editor.update(accepted.patch);
     charged=true;
+    if(companionSource&&!(await listSubcreatures(casterId)).some(row=>
+      row.creature.companion_origin_spell_id===selection.id)){
+      try{
+        await createSubcreature(casterId,await companionSource.load(),companionSource);
+        message('Famiglio aggiunto alle sottocreature.');
+      }catch(error){message('Evocazione registrata, ma scheda famiglio non creata: '+errorMessage(error),true);}
+    }
     if(state.page==='session'){
       state.cachedCreatures=(await listCreatures()).map(row=>resolveVariant(row.creature));
       state.castSheets?.set(casterId,await computeLocalData(editor.read()));
@@ -4851,7 +4903,20 @@ async function handleAction(target){
     await flushPendingFields();
     const editor=state.editor,creatureId=state.creatureId;
     const check=()=>{if(state.editor!==editor||state.creatureId!==creatureId)throw Error('La creatura è cambiata.');return editor.readBase();};
-    openVariantsDialog({read:check,notify:message,icon:actionGlyph,save:async changes=>{check();await patch(changes);await render();},
+    const subcreatures=await listSubcreatures(creatureId);
+    openVariantsDialog({read:check,notify:message,icon:actionGlyph,subcreatures:subcreatures.map(row=>row.creature),
+      addSubcreature:editor.readBase().parent_creature_id?null:async source=>{
+        check();const loaded=await source.load();
+        const saved=await createSubcreature(creatureId,loaded,source);
+        await editor.flush();
+        state.creatureId=saved.id;state.editor=null;state.sheet="info";state.libraryMode=false;
+        await render();message("Scheda mostro collegata a "+editor.read().name+".");
+      },
+      openSubcreature:async id=>{
+        if(!subcreatures.some(row=>row.creature.id===id))throw Error("Sottocreatura non disponibile.");
+        await editor.flush();state.creatureId=id;state.editor=null;state.sheet="info";await render();
+      },
+      save:async changes=>{check();await patch(changes);await render();},
       switchForm:async id=>{check();await applyFormPatch(editor.read(),{current_form_id:id});await render();},
       sources:async()=>variantSources((await listCreatures()).map(r=>r.creature),await (await import('./storage.js')).listRecords('global','homebrew'))});
     return;
@@ -5088,6 +5153,9 @@ async function handleAction(target){
     }
     app.querySelector('#action-cast-dialog')?.remove();
     const dialog=document.createElement('dialog');dialog.className='sheet-roll-dialog magic-spell-dialog';dialog.id='action-cast-dialog';
+    const companion=await companionSpellChoices({...spell,id},record).catch(error=>{
+      message("Famigli: "+errorMessage(error),true);return null;
+    });
     const metaChoices=metamagicOptions(record).filter(o=>!['Empowered Spell','Seeking Spell'].includes(o.name));
     dialog.innerHTML=actionDialogIntro(spell.name||id,spellFacts(detailed),description,
       (level===0?'Trucchetto':level===null?'Livello non specificato':'Livello '+level)+
@@ -5101,6 +5169,11 @@ async function handleAction(target){
           targetItems.map(({item,index})=>'<option value="'+index+'">'+esc(item.name||item.id)+'</option>').join('')+'</select></label>':
          '<p class="warning">Nessun oggetto compatibile in inventario per questo incantesimo.</p>'):'')+
       (entry&&metaChoices.length?'<details class="metamagic-options"><summary>Metamagia</summary><label>Opzione<select data-metamagic-name><option value="">Nessuna</option>'+metaChoices.map(o=>'<option value="'+esc(o.name)+'">'+esc(o.name)+' · '+o.cost+' punti</option>').join('')+'</select></label><label class="check"><input data-metamagic-targets type="checkbox">Raddoppiato: confermo i requisiti di bersaglio del tratto per questa edizione</label><label class="check"><input data-metamagic-damage type="checkbox">Trasmutato: confermo che il danno originale sia elementale</label><label>Nuovo danno<select data-metamagic-element>'+['acid','cold','fire','lightning','poison','thunder'].map(e=>'<option>'+e+'</option>').join('')+'</select></label></details>':'')+
+      (companion?'<label>Creatura evocata dal bestiario<select id="action-cast-companion">'+
+        (companion.choices.length?companion.choices.map(source=>
+          '<option value="'+esc(source.key)+'">'+esc(source.name)+(source.source?' · '+esc(source.source):'')+'</option>').join(''):
+          '<option value="">Nessuna voce disponibile nel bestiario</option>')+
+        '</select></label>':'')+
       '<div class="actions magic-dialog-actions">'+
       (entry&&options.length&&(!targetSelector||targetItems.length)?'<button type="button" class="btn primary" data-act="action-cast-confirm" data-spell-id="'+esc(entry.id)+'" data-grant-id="'+esc(entry.grant_id||'')+'" data-casting-class="'+esc(entry.casting_class||'')+'">Lancia</button>':'')+
       '<button type="button" class="btn" data-act="action-cast-cancel">Chiudi</button></div>';
@@ -5135,17 +5208,32 @@ async function handleAction(target){
     const metaName=app.querySelector('[data-metamagic-name]')?.value||'';
     if(metaName)selection.metamagic={names:[metaName],eligible_targeting:!!app.querySelector('[data-metamagic-targets]')?.checked,
       eligible_damage:!!app.querySelector('[data-metamagic-damage]')?.checked,damage_type:app.querySelector('[data-metamagic-element]')?.value||''};
+    const companion=await companionSpellChoices({...detail,...selection},record);
+    const companionKey=app.querySelector('#action-cast-companion')?.value||'';
+    let companionSource=null;
+    if(companion){
+      companionSource=companion.choices.find(source=>source.key===companionKey);
+      if(!companionSource)throw Error('Scegli una creatura valida dalla lista dell’incantesimo.');
+    }
     const choice=app.querySelector('#action-cast-choice')?.value||'';
     const [payment,levelText]=choice.split(':');const level=Number(levelText);
     if(!['auto','slot','pact'].includes(payment)||!Number.isInteger(level)||level<0||level>9)
       throw Error('Risorsa di lancio non valida.');
     if(desktopHooks?.cast||(state.paired&&state.online)){
       app.querySelector('#action-cast-dialog')?.close();
-      await startTargetedCast(record.id,structuredClone(selection),level,payment);return;
+      await startTargetedCast(record.id,structuredClone(selection),level,payment,'',
+        companionSource?{...companionSource,spell_id:selection.id}:null);return;
     }
     const plan=spellCastPlan(record,selection,level,calculated,payment);
     app.querySelector('#action-cast-dialog')?.close();
     if(Object.keys(plan.patch).length)await patch(plan.patch);
+    if(companionSource){
+      const loaded=await companionSource.load();
+      const existing=(await listSubcreatures(record.id)).some(row=>
+        row.creature.companion_origin_spell_id===selection.id);
+      if(!existing)await createSubcreature(record.id,loaded,
+        {...companionSource,spell_id:selection.id});
+    }
     await render();
     message('Lancio registrato nella scheda locale. Gli effetti sulla mappa richiedono una partita collegata.');
     return;
@@ -6057,6 +6145,13 @@ async function handleAction(target){
     await render();return;
   }
   if(act==="back"){
+    const parentId=state.editor?.readBase()?.parent_creature_id;
+    if(parentId){
+      await flushPendingFields();
+      state.creatureId=parentId;state.editor=null;state.sheet="info";state.libraryMode=false;
+      await render();
+      return;
+    }
     await navigate("library");
     window.scrollTo(0,0);app.focus({preventScroll:true});
     return;
@@ -6080,7 +6175,10 @@ async function handleAction(target){
   if(act==="export"){
     await state.editor?.flush();
     const c=state.editor.read();
-    if(await download(await exportCreature(c.id),filename(c.name)+".json"))
+    const rootId=c.parent_creature_id||c.id;
+    const root=c.parent_creature_id?(await loadCreature(rootId))?.data:c;
+    if(!root)throw Error("Proprietario della sottocreatura non disponibile.");
+    if(await download(await exportCreature(rootId),filename(root.name)+".json"))
       message("Scheda esportata in formato VTT.");
     return;
   }
@@ -6089,7 +6187,9 @@ async function handleAction(target){
     if(!await confirmCreatureDeletion([record]))return;
     await state.editor.flush();
     await removeCreature(record.id,"default",state.editor.revision);
-    state.creatureId=null;state.libraryMode=true;state.editor=null;await render();message("Scheda eliminata.");return;
+    const parentId=record.parent_creature_id;
+    state.creatureId=parentId||null;state.libraryMode=!parentId;state.editor=null;state.sheet="info";
+    await render();message("Scheda eliminata.");return;
   }
   if(act==="tracker-add"){
     const name=text(document.querySelector("#tracker-name")?.value);

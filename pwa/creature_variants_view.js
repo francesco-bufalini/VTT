@@ -9,10 +9,12 @@ export function variantDescription(variant){
  return variant.sections.includes('*')?'Intera scheda':variant.sections.map(id=>VARIANT_SECTIONS.find(s=>s.id===id)?.label).filter(Boolean).join(' · ')||'Nessuna parte personalizzata';
 }
 const formName=v=>(v.sections?.includes('*')||v.sections?.includes('name'))&&v.values?.name?v.values.name:v.name;
-export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=>''}){
+export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=>'',
+ subcreatures=[],addSubcreature=null,openSubcreature=null}){
  document.querySelector('#creature-variants-dialog')?.remove();
  const dialog=document.createElement('dialog');dialog.id='creature-variants-dialog';dialog.className='sheet-context-dialog variants-dialog';dialog.setAttribute('aria-labelledby','variants-title');
  let draft=null,entries=[],selectedSource=null,selectedSourceKey='',sourceLimit=60;
+ let familiarEntries=[],familiarChoice='',familiarLimit=60;
  const guard=fn=>async event=>{const button=event?.currentTarget;try{if(button?.tagName==='BUTTON')button.disabled=true;await fn(event);}catch(e){notify(e.message,true);}finally{if(button?.isConnected)button.disabled=false;}};
  const close=()=>closeDialog(dialog,{remove:true});
  const draw=()=>{
@@ -21,11 +23,50 @@ export function openVariantsDialog({read,save,switchForm,sources,notify,icon=()=
    [{id:'',name:c.name},...(c.variants||[])].map(row=>{
     const current=(c.current_form_id||'')===row.id,name=row.id?formName(row):row.name;
     return '<article class="variant-card vtt-selectable'+(current?' is-current is-selected':'')+'"'+(current?' aria-current="true"':'')+'><span class="variant-emblem" aria-hidden="true">'+icon(row.id?'wild_shape':'proficiency')+'</span><div class="variant-copy"><strong>'+esc(name)+'</strong><small>'+esc(row.id?variantDescription(row):'Base')+'</small></div><div class="variant-actions"><button type="button" class="variants-icon-button variant-use" data-variant-switch="'+esc(row.id)+'" aria-label="'+(current?'Forma attuale · '+esc(name):'Usa forma '+esc(name))+'" title="'+(current?'Forma attuale':'Usa forma')+'"'+(current?' disabled':'')+'>'+(current?'<span aria-hidden="true">✓</span>':icon('wild_shape'))+'</button>'+(row.id?'<button type="button" class="variants-icon-button" data-variant-edit="'+esc(row.id)+'" aria-label="Modifica '+esc(name)+'" title="Modifica">'+icon('settings')+'</button>':'')+'</div></article>';
-   }).join('')+'</div><button type="button" class="btn variant-create" data-variant-new>'+icon('increase')+'<span>Crea variante</span></button><section data-variant-editor></section></div>';
+   }).join('')+'</div><button type="button" class="btn variant-create" data-variant-new>'+icon('increase')+'<span>Crea variante</span></button>'+
+   (addSubcreature?'<section class="variant-familiars"><h3>Famigli e sottocreature</h3>'+
+    '<div class="variant-list vtt-selection-list">'+(subcreatures.length?subcreatures.map(child=>
+      '<button type="button" class="vtt-variant-source-option vtt-selectable" data-subcreature-open="'+esc(child.id)+'"><strong>'+esc(child.name)+'</strong><small>'+esc(child.bestiary_ref?.source||'Mostro')+'</small></button>').join(''):'<p class="hint">Nessuna sottocreatura collegata.</p>')+'</div>'+
+    '<button type="button" class="btn variant-create" data-subcreature-new>'+icon('increase')+'<span>Aggiungi famiglio dal bestiario</span></button>'+
+    '<div data-subcreature-picker hidden><label class="vtt-list-search">Cerca nel bestiario<input type="search" data-subcreature-search placeholder="Nome del mostro"></label><div class="vtt-variant-source-list vtt-selection-list" data-subcreature-choices></div><button type="button" class="btn primary" data-subcreature-create disabled>Crea scheda mostro</button></div></section>':'')+
+   '<section data-variant-editor></section></div>';
   dialog.querySelector('[data-act="variant-close"]').onclick=event=>{event.stopPropagation();close();};
   dialog.querySelector('[data-variant-new]').onclick=()=>{draft=createVariant(c,{preset:'alias',name:'Nuova variante'});edit();};
   dialog.querySelectorAll('[data-variant-switch]').forEach(b=>b.onclick=guard(async()=>{await switchForm(b.dataset.variantSwitch);draw();}));
   dialog.querySelectorAll('[data-variant-edit]').forEach(b=>b.onclick=()=>{draft=structuredClone(c.variants.find(v=>v.id===b.dataset.variantEdit));draft.name=formName(draft);edit();});
+  dialog.querySelectorAll('[data-subcreature-open]').forEach(b=>b.onclick=guard(async()=>{
+    close();await openSubcreature(b.dataset.subcreatureOpen);
+  }));
+  const picker=dialog.querySelector('[data-subcreature-picker]');
+  const paintFamiliars=()=>{
+    if(!picker)return;
+    const query=picker.querySelector('[data-subcreature-search]').value;
+    const filtered=familiarEntries.filter(entry=>matchesSearch(query,entry.name,entry.source));
+    const {items,shown,total}=pageResults(filtered,familiarLimit);
+    picker.querySelector('[data-subcreature-choices]').innerHTML=items.map(entry=>
+      '<button type="button" class="vtt-variant-source-option vtt-selectable'+(entry.key===familiarChoice?' is-selected':'')+
+      '" aria-pressed="'+(entry.key===familiarChoice)+'" data-subcreature-option="'+esc(entry.key)+'"><strong>'+
+      esc(entry.name)+'</strong><small>'+esc(entry.source||'Bestiario')+'</small></button>').join('')+
+      resultsFooter('subcreature-more',shown,total,60);
+    picker.querySelector('[data-subcreature-create]').disabled=!familiarChoice;
+  };
+  dialog.querySelector('[data-subcreature-new]')?.addEventListener('click',guard(async()=>{
+    familiarEntries=await sources();familiarChoice='';familiarLimit=60;
+    picker.hidden=false;paintFamiliars();picker.querySelector('input').focus();
+  }));
+  picker?.querySelector('[data-subcreature-search]').addEventListener('input',()=>{familiarLimit=60;paintFamiliars();});
+  picker?.querySelector('[data-subcreature-choices]').addEventListener('click',event=>{
+    const more=event.target.closest('[data-act="subcreature-more"]');
+    if(more){familiarLimit+=60;paintFamiliars();return;}
+    const option=event.target.closest('[data-subcreature-option]');
+    if(!option)return;
+    familiarChoice=option.dataset.subcreatureOption;paintFamiliars();
+  });
+  picker?.querySelector('[data-subcreature-create]').addEventListener('click',guard(async()=>{
+    const entry=familiarEntries.find(source=>source.key===familiarChoice);
+    if(!entry)throw Error('Scegli una creatura dal bestiario.');
+    close();await addSubcreature(entry);
+  }));
  };
  const capture=()=>{
   const root=dialog.querySelector('[data-variant-editor]');

@@ -3,7 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCreatureExport, makeOwnedCopy, referencedDefinitions, makeCreatureExport } from "../creature_format.js";
 import { importCreatureExport, importCreatureFile, loadCreature, listCreatures,
-  ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature } from "../creatures.js";
+  ownerId, openCreatureEditor, exportCreature, exportCreatureBatch, removeCreature, createCreature,
+  createSubcreature, listSubcreatures } from "../creatures.js";
 import { exportBackup, importBackup, putAttachment, getAttachment, listRecords } from "../storage.js";
 
 const feat = { id: "homebrew:personal:feats:brave", name: "Coraggioso",
@@ -171,4 +172,57 @@ test('functional edits compose against latest state and retain identity checks',
  await assert.rejects(editor.update(()=>({id:'another-id'})),/identity/);
  await editor.update(current=>({name:current.name+' salvati'}));
  assert.equal((await loadCreature(row.id)).data.name,'Aggiornamenti atomici salvati');
+});
+
+test("subcreatures have independent sheets, remain hidden from the main roster and travel with their owner", async () => {
+  const scope="linked_familiars_"+Date.now();
+  const parent=await createCreature("character","Mago",scope);
+  const cat=await createSubcreature(parent.id,{
+    name:"Cat",source:"MM",hp:{average:2},ac:[12],speed:{walk:40},str:3,dex:15,con:10,int:3,wis:12,cha:7
+  },{name:"Cat",source:"MM",spell_id:"find-familiar"},scope);
+  assert.equal(cat.data.kind,"monster");
+  assert.equal(cat.data.parent_creature_id,parent.id);
+  assert.equal(cat.data.companion_origin_spell_id,"find-familiar");
+  assert.equal(cat.data.max_hp,2);
+  assert.equal((await listCreatures(scope)).length,1);
+  assert.equal((await listCreatures(scope,{includeSubcreatures:true})).length,2);
+  const editor=await openCreatureEditor(cat.id,scope);
+  await editor.update({current_hp:1,notes:"Gatto del mago"});
+  await editor.flush();
+  await assert.rejects(editor.update({parent_creature_id:"different_owner"}),/parent|identity/i);
+  const packaged=JSON.parse(await (await exportCreature(parent.id,scope)).text());
+  assert.equal(packaged.subcreatures.length,1);
+  assert.equal(packaged.subcreatures[0].current_hp,1);
+  assert.equal(packaged.subcreatures[0].notes,"Gatto del mago");
+  await assert.rejects(exportCreature(cat.id,scope),/proprietario/);
+  const imported=await importCreatureExport(packaged,scope);
+  const descendants=await listSubcreatures(imported.creature.id,scope);
+  assert.equal(descendants.length,1);
+  assert.notEqual(descendants[0].creature.id,cat.id);
+  assert.equal(descendants[0].creature.parent_creature_id,imported.creature.id);
+  assert.equal(descendants[0].creature.owner_id,await ownerId());
+  assert.equal(descendants[0].creature.notes,"Gatto del mago");
+  const beforeParent=await loadCreature(parent.id,scope);
+  await removeCreature(parent.id,scope,beforeParent.revision);
+  assert.equal(await loadCreature(parent.id,scope),null);
+  assert.equal(await loadCreature(cat.id,scope),null);
+  assert.equal((await listSubcreatures(imported.creature.id,scope)).length,1);
+});
+
+test("invalid subcreature packages and wrong owners cannot create orphan sheets",async()=>{
+  const scope="familiar_validation_"+Date.now();
+  const parent=await createCreature("character","Druido",scope);
+  await assert.rejects(createSubcreature("missing",{name:"Owl"}, {},scope),/proprietaria/);
+  const child=await createSubcreature(parent.id,{name:"Owl",hp:{average:1},ac:[11]},{name:"Owl"},scope);
+  const original=JSON.parse(await (await exportCreature(parent.id,scope)).text());
+  const damaged={...original,subcreatures:[{...original.subcreatures[0],parent_creature_id:"wrong"}]};
+  await assert.rejects(importCreatureExport(damaged,scope),/subcreature/i);
+  assert.equal((await listSubcreatures(parent.id,scope)).length,1);
+  const stale=await loadCreature(parent.id,scope);
+  const editor=await openCreatureEditor(parent.id,scope);
+  await editor.update({notes:"Il proprietario è stato modificato"});
+  await editor.flush();
+  await assert.rejects(removeCreature(parent.id,scope,stale.revision),/changed/);
+  assert.ok(await loadCreature(parent.id,scope));
+  assert.ok(await loadCreature(child.id,scope));
 });

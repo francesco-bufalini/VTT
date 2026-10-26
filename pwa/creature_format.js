@@ -30,6 +30,11 @@ export function validateCreature(value) {
       (value.owner_id !== undefined && typeof value.owner_id !== "string")) {
     throw new TypeError("Invalid VTT creature record");
   }
+  if (value.parent_creature_id !== undefined &&
+      (typeof value.parent_creature_id !== "string" || !value.parent_creature_id ||
+       value.parent_creature_id.length > 256 || value.parent_creature_id === value.id ||
+       value.kind !== "monster"))
+    throw new TypeError("Invalid subcreature ownership");
   validateVariants(value);
   // JSON-compatible records only. Explicitly enforce the native 16 MiB limit.
   if (textBytes(value) > MAX_CREATURE_BYTES) throw new Error("Creature exceeds 16 MiB");
@@ -48,7 +53,16 @@ export function parseCreatureExport(input) {
       textBytes(definitions) > MAX_HOMEBREW_BYTES || !definitions.every(validDefinition)) {
     throw new TypeError("Invalid portable homebrew definitions");
   }
-  return { creature: validateCreature(payload.creature), homebrew: clone(definitions) };
+  const creature = validateCreature(payload.creature);
+  const subs = payload.subcreatures ?? [];
+  if (creature.parent_creature_id || !Array.isArray(subs) || subs.length > 50 ||
+      !subs.every(row => object(row) && row.parent_creature_id === creature.id &&
+        !row.subcreatures && row.kind === "monster") ||
+      new Set(subs.map(row => row.id)).size !== subs.length ||
+      textBytes(payload) > MAX_CREATURE_BYTES)
+    throw new TypeError("Invalid portable subcreatures");
+  return { creature, homebrew: clone(definitions),
+    subcreatures: subs.map(validateCreature) };
 }
 
 export function makeOwnedCopy(creature, ownerId, newId) {
@@ -92,9 +106,10 @@ export function referencedDefinitions(creature, byId) {
   return output;
 }
 
-export function makeCreatureExport(creature, definitions = []) {
+export function makeCreatureExport(creature, definitions = [], subcreatures = []) {
   const payload = { format: CREATURE_FORMAT, version: CREATURE_VERSION,
-    creature: validateCreature(creature), homebrew_content: clone(definitions) };
+    creature: validateCreature(creature), homebrew_content: clone(definitions),
+    ...(subcreatures.length ? {subcreatures: subcreatures.map(validateCreature)} : {}) };
   // Godot's import dialog limits the complete file to 16 MiB.
   if (textBytes(payload) > MAX_CREATURE_BYTES) throw new Error("Portable export exceeds 16 MiB");
   parseCreatureExport(payload);
