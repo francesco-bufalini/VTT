@@ -1483,6 +1483,27 @@ for(const maximum of [3,5]){
  });
 }
 
+test('clicking an owned feat opens its original benefit-bearing trait, not a second details card',async()=>{
+ const saved=await createCreature('character','Navigazione talenti');
+ await saveCreature({...saved.data,feats_catalog:[{
+  id:'owned_click_alert',name:'Alert',source:'PHB',description:'Descrizione del tratto Alert',
+  granted_by:'manual'
+ }]},'default',saved.revision);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="open"][data-id="'+saved.data.id+'"]'));
+ click('[data-act="open"][data-id="'+saved.data.id+'"]');
+ const button=await until(()=>document.querySelector('[data-act="feat-open-trait"][data-feat-index="0"]'));
+ assert.match(button.textContent,/Origine · Manuale/);
+ assert.equal(document.querySelector('.info-feat-entry'),null);
+ button.click();
+ const trait=await until(()=>[...document.querySelectorAll('.play-info-traits .trait-card')]
+  .find(card=>card.dataset.traitOrigin==='feat|owned_click_alert'&&card.open));
+ assert.ok(trait.closest('.play-traits-disclosure')?.open);
+ assert.match(trait.textContent,/Alert/);
+ click('[data-nav="library"]');
+ await until(()=>document.querySelector('[data-act="create"]'));
+});
+
 test('failed hit-point save keeps the dialog and entered amount open',async t=>{
  t.after(stopRealtime);
  const {createCreature}=await import('../creatures.js');
